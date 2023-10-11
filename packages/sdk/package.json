@@ -3,11 +3,11 @@
   "version": "0.0.1",
   "type": "module",
   "module": "index.ts",
-  "devDependencies": {
-    "@mixan/types": "workspace:*",
-    "bun-types": "latest"
-  },
   "dependencies": {
+    "@mixan/types": "workspace:*"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
     "typescript": "^5.0.0"
   }
 }
