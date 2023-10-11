@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express"
 import { db } from "../db"
-import { verifyPassword } from "../services/password"
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {  
   const secret = req.headers['mixan-client-secret'] as string | undefined

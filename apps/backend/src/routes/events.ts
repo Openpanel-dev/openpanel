@@ -4,14 +4,19 @@ import { MixanRequest } from '../types/express';
 import { EventPayload } from '@mixan/types';
 import { getEvents, getProfileIdFromEvents } from '../services/event';
 import { success } from '../responses/success';
+import { makeError } from '../responses/errors';
 
 const router = Router();
 
 type PostRequest = MixanRequest<Array<EventPayload>>
 
 router.get('/events', async (req, res) => {
-  const events = await getEvents(req.client.project_id)
-  res.json(success(events))
+  try {
+    const events = await getEvents(req.client.project_id)
+    res.json(success(events))
+  } catch (error) {
+    res.json(makeError(error))
+  }
 })
 
 router.post('/events', async (req: PostRequest, res) => {

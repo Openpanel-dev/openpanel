@@ -1,4 +1,8 @@
-import { MixanIssue, MixanIssuesResponse } from "@mixan/types";
+import {
+  MixanIssue,
+  MixanErrorResponse,
+  MixanIssuesResponse,
+} from '@mixan/types'
 
 export function issues(arr: Array<MixanIssue>): MixanIssuesResponse {
   return {
@@ -7,7 +11,30 @@ export function issues(arr: Array<MixanIssue>): MixanIssuesResponse {
         field: item.field,
         message: item.message,
         value: item.value,
-      };
-    })
+      }
+    }),
+  }
+}
+
+export function makeError(error: unknown): MixanErrorResponse {
+  if (error instanceof Error) {
+    return {
+      code: 'Error',
+      message: error.message,
+    }
+  }
+
+  // @ts-ignore
+  if ('message' in error) {
+    return {
+      code: 'UnknownError',
+      // @ts-ignore
+      message: error.message,
+    }
+  }
+
+  return {
+    code: 'UnknownError',
+    message: 'Unknown error',
   }
 }
