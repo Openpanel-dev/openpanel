@@ -1,0 +1,13 @@
+{
+  "name": "@mixan/sdk",
+  "version": "0.0.1",
+  "type": "module",
+  "module": "index.ts",
+  "devDependencies": {
+    "@mixan/types": "workspace:*",
+    "bun-types": "latest"
+  },
+  "dependencies": {
+    "typescript": "^5.0.0"
+  }
+}

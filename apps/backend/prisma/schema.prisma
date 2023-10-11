@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name     String
+  projects Project[]
+  users    User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("organizations")
+}
+
+model Project {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  organization_id String       @db.Uuid
+  organization    Organization @relation(fields: [organization_id], references: [id])
+  events          Event[]
+  profiles        Profile[]
+  clients         Client[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("projects")
+}
+
+model User {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  email           String
+  password        String
+  organization_id String       @db.Uuid
+  organization    Organization @relation(fields: [organization_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("users")
+}
+
+model Event {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  properties Json
+  project_id String  @db.Uuid
+  project    Project @relation(fields: [project_id], references: [id])
+
+  profile_id String?  @db.Uuid
+  profile    Profile? @relation(fields: [profile_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("events")
+}
+
+model Profile {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  external_id String
+  first_name  String?
+  last_name   String?
+  email       String?
+  avatar      String?
+  properties  Json
+  project_id  String  @db.Uuid
+  project     Project @relation(fields: [project_id], references: [id])
+  events      Event[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([project_id, external_id])
+  @@map("profiles")
+}
+
+model Client {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  secret     String
+  project_id String  @db.Uuid
+  project    Project @relation(fields: [project_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("clients")
+}

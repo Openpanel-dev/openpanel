@@ -1,0 +1,12 @@
+{
+  "name": "@mixan/types",
+  "version": "0.0.1",
+  "type": "module",
+  "module": "index.ts",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "dependencies": {
+    "typescript": "^5.0.0"
+  }
+}
