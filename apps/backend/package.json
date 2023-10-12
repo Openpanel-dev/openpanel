@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "bun src/app.ts",
+    "start": "bunx prisma migrate deploy && bun src/app.ts",
     "dev": "bun --watch src/app.ts",
     "codegen": "bunx prisma generate"
   },
