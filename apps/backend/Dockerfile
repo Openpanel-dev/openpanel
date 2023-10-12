@@ -1,11 +1,7 @@
-FROM --platform=linux/amd64 oven/bun:1.0.5-slim
+FROM --platform=linux/amd64 oven/bun:1.0.5-slim as builder
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
-
-ENV PORT=3000
-
-ENV NODE_ENV=production
 
 # For prisma
 ARG NODE_VERSION=18
@@ -23,10 +19,9 @@ COPY packages/types/package.json packages/types/package.json
 COPY bun.lockb bun.lockb
 RUN bun install
 COPY . .
-
 WORKDIR /app/apps/backend
 RUN bunx prisma generate
-
+WORKDIR /app/apps/backend
 EXPOSE ${PORT}
 CMD ["bun", "start"]
 
