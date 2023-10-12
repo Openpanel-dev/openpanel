@@ -46,16 +46,23 @@ function main() {
     ...properties,
   })
 
-  execSync('bunx tsup', {
-    cwd: './packages/sdk',
-  })
+  try {
+    execSync('npx tsup', {
+      cwd: './packages/sdk',
+    })
+    execSync('npx tsup', {
+      cwd: './packages/types',
+    })
+  } catch(error) {
+    console.log('Build failed');
+    console.log(error);
+    process.exit(1)
+  }
+  
   execSync('npm publish --access=public', {
     cwd: './packages/sdk',
   })
 
-  execSync('bunx tsup', {
-    cwd: './packages/types',
-  })
   execSync('npm publish --access=public', {
     cwd: './packages/types',
   })
