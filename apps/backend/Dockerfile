@@ -21,6 +21,7 @@ RUN bun install
 COPY . .
 WORKDIR /app/apps/backend
 RUN bunx prisma generate
+RUN bunx prisma migrate deploy
 WORKDIR /app/apps/backend
 EXPOSE ${PORT}
 CMD ["bun", "start"]
