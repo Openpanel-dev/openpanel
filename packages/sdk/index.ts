@@ -8,6 +8,7 @@ import {
 
 type MixanOptions = {
   url: string
+  clientId: string
   clientSecret: string
   batchInterval?: number
   maxBatchSize?: number
@@ -19,11 +20,13 @@ type MixanOptions = {
 
 class Fetcher {
   private url: string
+  private clientId: string
   private clientSecret: string
   private logger: (...args: any[]) => void
 
   constructor(options: MixanOptions) {
     this.url = options.url
+    this.clientId = options.clientId
     this.clientSecret = options.clientSecret
     this.logger = options.verbose ? console.log : () => {}
   }
@@ -37,6 +40,7 @@ class Fetcher {
     this.logger(`Mixan request: ${url}`, JSON.stringify(data, null, 2))
     return fetch(url, {
       headers: {
+        ['mixan-client-id']: this.clientId,
         ['mixan-client-secret']: this.clientSecret,
         'Content-Type': 'application/json',
       },
@@ -137,6 +141,7 @@ export class Mixan {
   }
 
   event(name: string, properties: Record<string, any>) {
+    this.logger('Mixan: Queue event', name)
     this.eventBatcher.add({
       name,
       properties,
@@ -149,10 +154,10 @@ export class Mixan {
     const profileId = this.options.getProfileId()
     if(profileId) {
       this.profileId = profileId
-       this.logger('Use existing ID', this.profileId);
+       this.logger('Mixan: Use existing ID', this.profileId);
     } else {
       this.profileId = uuid()
-       this.logger('Create new ID', this.profileId);
+       this.logger('Mixan: Create new ID', this.profileId);
       this.options.saveProfileId(this.profileId)
       this.fetch.post('/profiles', {
         id: this.profileId,
@@ -162,12 +167,20 @@ export class Mixan {
   }
 
   async setUser(profile: ProfilePayload) {
+    if(!this.profileId) {
+      return this.logger('Mixan: Set user failed, no profileId');
+    }
+    this.logger('Mixan: Set user', profile);
     await this.fetch.post(`/profiles/${this.profileId}`, profile, {
       method: 'PUT'
     })
   }
 
   async setUserProperty(name: string, value: any) {
+    if(!this.profileId) {
+      return this.logger('Mixan: Set user property, no profileId');
+    }
+    this.logger('Mixan: Set user property', name, value);
     await this.fetch.post(`/profiles/${this.profileId}`, {
       properties: {
         [name]: value,
@@ -177,9 +190,11 @@ export class Mixan {
 
   async increment(name: string, value: number = 1) {
     if (!this.profileId) {
+      this.logger('Mixan: Increment failed, no profileId');
       return
     }
 
+    this.logger('Mixan: Increment user property', name, value);
     await this.fetch.post(`/profiles/${this.profileId}/increment`, {
       name,
       value,
@@ -190,9 +205,11 @@ export class Mixan {
 
   async decrement(name: string, value: number = 1) {
     if (!this.profileId) {
+      this.logger('Mixan: Decrement failed, no profileId');
       return
     }
 
+    this.logger('Mixan: Decrement user property', name, value);
     await this.fetch.post(`/profiles/${this.profileId}/decrement`, {
       name,
       value,
@@ -209,8 +226,10 @@ export class Mixan {
   }
 
   clear() {
-    this.eventBatcher.flush()
+    this.logger('Mixan: Clear, send remaining events and remove profileId');
+    this.eventBatcher.send()
     this.options.removeProfileId()
     this.profileId = undefined
+    this.setAnonymousUser()
   }
 }

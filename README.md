@@ -18,10 +18,29 @@ For pushing events
 import { Mixan } from '@mixan/sdk';
 
 const mixan = new Mixan({
-  clientSecret: '9fb405d2-7e16-489f-980c-67b25a6eab97',
-  url: 'http://localhost:8080',
+  clientId: 'uuid',
+  clientSecret: 'uuid',
+  url: 'http://localhost:8080/api/sdk',
   batchInterval: 10000,
-  verbose: false
+  verbose: false,
+  saveProfileId(id) {
+    // Web
+    localStorage.setItem('@profileId', id)
+    // // react-native-mmkv
+    // mmkv.setItem('@profileId', id)
+  },
+  removeProfileId() {
+    // Web
+    localStorage.removeItem('@profileId')
+    // // react-native-mmkv
+    // mmkv.delete('@profileId')
+  },
+  getProfileId() {
+    // Web
+    return localStorage.getItem('@profileId')
+    // // react-native-mmkv
+    // return mmkv.getString('@profileId')
+  },
 })
 
 mixan.setUser({

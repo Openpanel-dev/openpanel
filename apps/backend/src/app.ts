@@ -14,9 +14,7 @@ app.use(morgan(':method :url :status :response-time ms'))
 
 // Public routes
 app.get('/', (req, res) => res.json('Welcome to Mixan'))
-if (process.env.SETUP) {
-  app.use('/setup', setup)
-}
+app.use('/setup', setup)
 
 // Protected routes
 app.use(authMiddleware)
