@@ -4,9 +4,11 @@
   "type": "module",
   "module": "index.ts",
   "dependencies": {
-    "@mixan/types": "workspace:*"
+    "@mixan/types": "workspace:*",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
+    "@types/uuid": "^9.0.5",
     "bun-types": "latest",
     "typescript": "^5.0.0"
   }

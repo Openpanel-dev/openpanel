@@ -1,32 +1,15 @@
-import { EventPayload, ProfilePayload } from "@mixan/types";
-import { db } from "../db";
-import { Prisma } from "@prisma/client";
+import { EventPayload, ProfilePayload } from '@mixan/types'
+import { db } from '../db'
+import { Prisma } from '@prisma/client'
+import { HttpError } from '../responses/errors'
 
-export function createProfile(projectId: string, payload: ProfilePayload) {
-  const { id, email, first_name, last_name, avatar, properties } = payload
-  return db.profile.create({
-    data:{
-      external_id: id,
-      email,
-      first_name,
-      last_name,
-      avatar,
-      properties: properties || {},
-      project_id: projectId,
-    }
-  })
-}
+type DbProfile = Exclude<Prisma.PromiseReturnType<typeof getProfile>, null>
 
-type DbProfile = Exclude<Prisma.PromiseReturnType<typeof getProfileByExternalId>, null>
-
-export function getProfileByExternalId(projectId: string, externalId: string) {
-  return db.profile.findUnique({
+export function getProfile(id: string) {
+  return db.profile.findUniqueOrThrow({
     where: {
-      project_id_external_id: {
-        project_id: projectId,
-        external_id: externalId,
-      }
-    }
+      id,
+    },
   })
 }
 
@@ -34,42 +17,47 @@ export function getProfiles(projectId: string) {
   return db.profile.findMany({
     where: {
       project_id: projectId,
-    }
+    },
   })
 }
 
-export async function updateProfile(projectId: string, profileId: string, payload: Omit<ProfilePayload, 'id'>, oldProfile: DbProfile) {
-  const { email, first_name, last_name, avatar, properties } = payload
-  return db.profile.update({
+export async function tickProfileProperty({
+  profileId,
+  tick,
+  name,
+}: {
+  profileId: string
+  tick: number
+  name: string
+}) {
+  const profile = await getProfile(profileId)
+
+  if (!profile) {
+    throw new HttpError(404, `Profile not found ${profileId}`)
+  }
+
+  const properties = (
+    typeof profile.properties === 'object' ? profile.properties || {} : {}
+  ) as Record<string, number>
+  const value = name in properties ? properties[name] : 0
+
+  if (typeof value !== 'number') {
+    throw new HttpError(400, `Property "${name}" on user is of type ${typeof value}`)
+  }
+  
+  if (typeof tick !== 'number') {
+    throw new HttpError(400, `Value is not a number ${tick} (${typeof tick})`)
+  }
+
+  await db.profile.update({
     where: {
-      project_id_external_id: {
-        project_id: projectId,
-        external_id: profileId,
-      }
+      id: profileId,
     },
     data: {
-      email,
-      first_name,
-      last_name,
-      avatar,
       properties: {
-        ...(typeof oldProfile.properties === 'object' ? oldProfile.properties || {} : {}),
-        ...(properties || {}),
+        ...properties,
+        [name]: value + tick,
       },
     },
   })
-}
-
-export async function getInternalProfileId(profileId?: string | null) {
-  if(!profileId) {
-    return null
-  }
-
-  const profile = await db.profile.findFirst({
-    where: {
-      external_id: profileId,
-    }
-  })
-
-  return profile?.id || null
 }

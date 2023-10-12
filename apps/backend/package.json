@@ -17,6 +17,7 @@
     "express": "^4.18.2",
     "morgan": "^1.10.0",
     "prisma": "^5.4.2",
+    "random-animal-name": "^0.1.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

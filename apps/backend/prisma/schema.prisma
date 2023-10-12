@@ -69,7 +69,7 @@ model Event {
 
 model Profile {
   id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  external_id String
+  external_id String?
   first_name  String?
   last_name   String?
   email       String?
@@ -82,7 +82,6 @@ model Profile {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  @@unique([project_id, external_id])
   @@map("profiles")
 }
 

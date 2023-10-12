@@ -3,7 +3,7 @@ export type MixanJson = Record<string, any>
 export type EventPayload = {
   name: string
   time: string
-  externalId: string | null
+  profileId: string | null
   properties: MixanJson
 }
 
@@ -12,8 +12,8 @@ export type ProfilePayload = {
   last_name?: string
   email?: string
   avatar?: string
-  id: string
-  properties: MixanJson
+  id?: string
+  properties?: MixanJson
 }
 
 export type ProfileIncrementPayload = {
@@ -59,13 +59,11 @@ export type MixanIssue = {
   value: any
 }
 
-export type MixanIssuesResponse = {
-  issues: Array<MixanIssue>,
-}
-
 export type MixanErrorResponse = {
-  code: string
+  status: 'error'
+  code: number
   message: string
+  issues: Array<MixanIssue>
 }
 
 export type MixanResponse<T> = {

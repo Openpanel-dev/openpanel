@@ -1,40 +1,38 @@
 import {
   MixanIssue,
-  MixanErrorResponse,
-  MixanIssuesResponse,
+  MixanErrorResponse
 } from '@mixan/types'
 
-export function issues(arr: Array<MixanIssue>): MixanIssuesResponse {
-  return {
-    issues: arr.map((item) => {
-      return {
-        field: item.field,
-        message: item.message,
-        value: item.value,
-      }
-    }),
+export class HttpError extends Error {
+  public status: number
+  public message: string
+  public issues: MixanIssue[]
+
+  constructor(status: number, message: string | Error, issues?: MixanIssue[]) {
+    super(message instanceof Error ? message.message : message)
+    this.status = status
+    this.message = message instanceof Error ? message.message : message
+    this.issues = issues || []
+  }
+
+  toJson(): MixanErrorResponse  {
+    return {
+      code: this.status,
+      status: 'error',
+      message: this.message,
+      issues: this.issues,
+    }
   }
 }
 
-export function makeError(error: unknown): MixanErrorResponse {
-  if (error instanceof Error) {
-    return {
-      code: 'Error',
-      message: error.message,
-    }
-  }
+export function createIssues(arr: Array<MixanIssue>) {
+  throw new HttpError(400, 'Issues', arr)
+}
 
-  // @ts-ignore
-  if ('message' in error) {
-    return {
-      code: 'UnknownError',
-      // @ts-ignore
-      message: error.message,
-    }
-  }
+export function createError(status = 500, error: unknown | Error | string) {
+  if(error instanceof Error || typeof error === 'string') {
+    return new HttpError(status, error)
+  } 
 
-  return {
-    code: 'UnknownError',
-    message: 'Unknown error',
-  }
+  return new HttpError(500, 'Unexpected error occured')
 }

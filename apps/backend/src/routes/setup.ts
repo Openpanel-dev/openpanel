@@ -1,9 +1,8 @@
-import { Request, Response } from 'express'
+import { NextFunction, Request, Response } from 'express'
 import { db } from '../db'
-import { makeError } from '../responses/errors'
 import { v4 as uuid } from 'uuid'
 
-export async function setup(req: Request, res: Response) {
+export async function setup(req: Request, res: Response, next: NextFunction) {
   try {
     const organization = await db.organization.create({
       data: {
@@ -22,7 +21,7 @@ export async function setup(req: Request, res: Response) {
       data: {
         name: 'Acme Website Client',
         project_id: project.id,
-        secret: uuid(),
+        secret: '4bfc4a0b-37e0-4916-b634-95c6a32a2e77',
       },
     })
 
@@ -32,6 +31,6 @@ export async function setup(req: Request, res: Response) {
       client,
     })
   } catch (error) {
-    res.json(makeError(error))
+    next(error)
   }
 }

@@ -1,9 +1,10 @@
-import express from 'express'
+import express, { ErrorRequestHandler } from 'express'
 import events from './routes/events'
 import profiles from './routes/profiles'
 import { authMiddleware } from './middlewares/auth'
 import morgan from 'morgan'
 import { setup } from './routes/setup'
+import { errorHandler } from './middlewares/errors'
 
 const app = express()
 const port = process.env.PORT || 8080
@@ -21,6 +22,9 @@ if (process.env.SETUP) {
 app.use(authMiddleware)
 app.use('/api/sdk', events)
 app.use('/api/sdk', profiles)
+
+app.use(errorHandler)
+
 app.listen(port, () => {
   console.log(`Listening on port ${port}...`)
 })

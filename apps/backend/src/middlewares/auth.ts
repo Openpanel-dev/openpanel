@@ -1,14 +1,12 @@
 import { NextFunction, Request, Response } from "express"
 import { db } from "../db"
+import { createError } from "../responses/errors"
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {  
   const secret = req.headers['mixan-client-secret'] as string | undefined
 
   if(!secret) {
-    return res.status(401).json({
-      code: 'UNAUTHORIZED',
-      message: 'Missing client secret',
-    })
+    return next(createError(401, 'Misisng client secret'))
   }
 
   const client = await db.client.findFirst({
@@ -18,10 +16,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
   })
 
   if(!client) {
-    return res.status(401).json({
-      code: 'UNAUTHORIZED',
-      message: 'Invalid client secret',
-    })
+    return next(createError(401, 'Invalid client secret'))
   }
   
   req.client = {

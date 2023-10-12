@@ -1,7 +1,7 @@
+import { v4 as uuid } from 'uuid'
 import {
   EventPayload,
   MixanErrorResponse,
-  MixanIssuesResponse,
   MixanResponse,
   ProfilePayload,
 } from '@mixan/types'
@@ -12,6 +12,9 @@ type MixanOptions = {
   batchInterval?: number
   maxBatchSize?: number
   verbose?: boolean
+  saveProfileId: (profileId: string) => void,
+  getProfileId: () => string | null,
+  removeProfileId: () => void,
 }
 
 class Fetcher {
@@ -25,7 +28,11 @@ class Fetcher {
     this.logger = options.verbose ? console.log : () => {}
   }
 
-  post(path: string, data: Record<string, any>) {
+  post(
+    path: string,
+    data: Record<string, any>,
+    options: FetchRequestInit = {}
+  ) {
     const url = `${this.url}${path}`
     this.logger(`Mixan request: ${url}`, JSON.stringify(data, null, 2))
     return fetch(url, {
@@ -35,30 +42,19 @@ class Fetcher {
       },
       method: 'POST',
       body: JSON.stringify(data),
+      ...options,
     })
       .then(async (res) => {
         const response = await res.json<
-          MixanIssuesResponse | MixanErrorResponse | MixanResponse<unknown>
+          MixanErrorResponse | MixanResponse<unknown>
         >()
-        if ('status' in response && response.status === 'ok') {
-          return response
-        }
 
-        if ('code' in response) {
-          this.logger(`Mixan error: [${response.code}] ${response.message}`)
+        if('status' in response && response.status === 'error') {
+          this.logger(`Mixan request failed: ${url}`, JSON.stringify(response, null, 2))
           return null
         }
-
-        if ('issues' in response) {
-          this.logger(`Mixan issues:`)
-          response.issues.forEach((issue) => {
-            this.logger(`  - ${issue.message} (${issue.value})`)
-          })
-
-          return null
-        }
-
-        return null
+        
+        return response
       })
       .catch(() => {
         return null
@@ -99,7 +95,7 @@ class Batcher<T extends any> {
       return
     }
 
-    if (this.queue.length > this.maxBatchSize) {
+    if (this.queue.length >= this.maxBatchSize) {
       this.send()
       return
     }
@@ -116,16 +112,21 @@ class Batcher<T extends any> {
 export class Mixan {
   private fetch: Fetcher
   private eventBatcher: Batcher<EventPayload>
-  private profile: ProfilePayload | null = null
-
+  private profileId?: string
+  private options: MixanOptions
+  private logger: (...args: any[]) => void
+  
   constructor(options: MixanOptions) {
+    this.logger = options.verbose ? console.log : () => {}
+    this.options = options
     this.fetch = new Fetcher(options)
+    this.setAnonymousUser()
     this.eventBatcher = new Batcher(options, (queue) => {
       this.fetch.post(
         '/events',
         queue.map((item) => ({
           ...item,
-          externalId: item.externalId || this.profile?.id,
+          profileId: item.profileId || this.profileId || null,
         }))
       )
     })
@@ -140,18 +141,34 @@ export class Mixan {
       name,
       properties,
       time: this.timestamp(),
-      externalId: this.profile?.id || null,
+      profileId: this.profileId || null,
     })
   }
 
+  private setAnonymousUser() {
+    const profileId = this.options.getProfileId()
+    if(profileId) {
+      this.profileId = profileId
+       this.logger('Use existing ID', this.profileId);
+    } else {
+      this.profileId = uuid()
+       this.logger('Create new ID', this.profileId);
+      this.options.saveProfileId(this.profileId)
+      this.fetch.post('/profiles', {
+        id: this.profileId,
+        properties: {},
+      })
+    }
+  }
+
   async setUser(profile: ProfilePayload) {
-    this.profile = profile
-    await this.fetch.post('/profiles', profile)
+    await this.fetch.post(`/profiles/${this.profileId}`, profile, {
+      method: 'PUT'
+    })
   }
 
   async setUserProperty(name: string, value: any) {
-    await this.fetch.post('/profiles', {
-      ...this.profile,
+    await this.fetch.post(`/profiles/${this.profileId}`, {
       properties: {
         [name]: value,
       },
@@ -159,33 +176,41 @@ export class Mixan {
   }
 
   async increment(name: string, value: number = 1) {
-    if (!this.profile) {
+    if (!this.profileId) {
       return
     }
 
-    await this.fetch.post('/profiles/increment', {
-      id: this.profile.id,
+    await this.fetch.post(`/profiles/${this.profileId}/increment`, {
       name,
       value,
+    }, {
+      method: 'PUT'
     })
   }
 
   async decrement(name: string, value: number = 1) {
-    if (!this.profile) {
+    if (!this.profileId) {
       return
     }
 
-    await this.fetch.post('/profiles/decrement', {
-      id: this.profile.id,
+    await this.fetch.post(`/profiles/${this.profileId}/decrement`, {
       name,
       value,
+    }, {
+      method: 'PUT'
     })
   }
 
-  screenView(route: string, properties?: Record<string, any>) {
-    this.event('screen_view', {
+  async screenView(route: string, properties?: Record<string, any>) {
+    await this.event('screen_view', {
       ...(properties || {}),
       route,
     })
+  }
+
+  clear() {
+    this.eventBatcher.flush()
+    this.options.removeProfileId()
+    this.profileId = undefined
   }
 }
