@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 oven/bun:1.0.5-slim as builder
+FROM --platform=linux/amd64 oven/bun:1.0.4-slim as builder
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
