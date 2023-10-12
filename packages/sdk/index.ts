@@ -54,7 +54,7 @@ class Fetcher {
         >()
 
         if('status' in response && response.status === 'error') {
-          this.logger(`Mixan request failed: ${url}`, JSON.stringify(response, null, 2))
+          this.logger(`Mixan request failed: [${options.method || 'POST'}] ${url}`, JSON.stringify(response, null, 2))
           return null
         }
         
