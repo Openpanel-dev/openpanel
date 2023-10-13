@@ -14,9 +14,11 @@
   "dependencies": {
     "@mixan/types": "workspace:*",
     "@prisma/client": "^5.4.2",
+    "@types/ramda": "^0.29.6",
     "express": "^4.18.2",
     "morgan": "^1.10.0",
     "prisma": "^5.4.2",
+    "ramda": "^0.29.1",
     "random-animal-name": "^0.1.1",
     "uuid": "^9.0.1"
   },
