@@ -2,7 +2,7 @@ import { validateSdkRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { createError, handleError } from "@/server/exceptions";
 import { getProfile } from "@/services/profile.service";
-import { ProfilePayload } from "@mixan/types";
+import { type ProfilePayload } from "@mixan/types";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 interface Request extends NextApiRequest {
@@ -34,9 +34,9 @@ export default async function handler(req: Request, res: NextApiResponse) {
         avatar: body.avatar,
         properties: {
           ...(typeof profile.properties === "object"
-            ? profile.properties || {}
+            ? profile.properties ?? {}
             : {}),
-          ...(body.properties || {}),
+          ...(body.properties ?? {}),
         },
       },
     });

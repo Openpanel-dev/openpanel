@@ -1,5 +1,4 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { NextApiRequest, type GetServerSidePropsContext } from "next";
+import { type NextApiRequest, type GetServerSidePropsContext } from "next";
 import {
   getServerSession,
   type DefaultSession,
@@ -39,7 +38,7 @@ declare module "next-auth" {
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, user, token }) => ({
+    session: ({ session, token }) => ({
       ...session,
       user: {
         ...session.user,

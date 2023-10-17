@@ -63,7 +63,8 @@ export type MixanErrorResponse = {
   status: 'error'
   code: number
   message: string
-  issues: Array<MixanIssue>
+  issues?: Array<MixanIssue>
+  stack?: string
 }
 
 export type MixanResponse<T> = {

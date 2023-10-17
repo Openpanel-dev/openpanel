@@ -25,7 +25,7 @@ export async function tickProfileProperty({
   }
 
   const properties = (
-    typeof profile.properties === 'object' ? profile.properties || {} : {}
+    typeof profile.properties === 'object' ? profile.properties ?? {} : {}
   ) as Record<string, number>
   const value = name in properties ? properties[name] : 0
 
@@ -34,6 +34,7 @@ export async function tickProfileProperty({
   }
   
   if (typeof tick !== 'number') {
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     throw new HttpError(400, `Value is not a number ${tick} (${typeof tick})`)
   }
 

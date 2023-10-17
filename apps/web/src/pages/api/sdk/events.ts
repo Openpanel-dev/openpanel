@@ -1,7 +1,7 @@
 import { validateSdkRequest } from '@/server/auth'
 import { db } from '@/server/db'
 import { createError, handleError } from '@/server/exceptions'
-import { EventPayload } from '@mixan/types'
+import { type EventPayload } from '@mixan/types'
 import type { NextApiRequest, NextApiResponse } from 'next'
  
 interface Request extends NextApiRequest {

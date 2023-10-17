@@ -2,9 +2,9 @@ import { db } from "@/server/db";
 import { handleError } from "@/server/exceptions";
 import { hashPassword } from "@/services/hash.service";
 import { randomUUID } from "crypto";
-import { NextApiRequest, NextApiResponse } from "next";
+import { type NextApiRequest, type NextApiResponse } from "next";
 
-export default async function (req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const counts = await db.$transaction([
       db.organization.count(),

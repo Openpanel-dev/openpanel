@@ -1,8 +1,8 @@
 import {
-  MixanIssue,
-  MixanErrorResponse
+  type MixanIssue,
+  type MixanErrorResponse
 } from '@mixan/types'
-import { NextApiResponse } from 'next'
+import { type NextApiResponse } from 'next'
 
 export class HttpError extends Error {
   public status: number
@@ -13,7 +13,7 @@ export class HttpError extends Error {
     super(message instanceof Error ? message.message : message)
     this.status = status
     this.message = message instanceof Error ? message.message : message
-    this.issues = issues || []
+    this.issues = issues ?? []
   }
 
   toJson(): MixanErrorResponse  {
@@ -31,7 +31,7 @@ export function createIssues(arr: Array<MixanIssue>) {
   throw new HttpError(400, 'Issues', arr)
 }
 
-export function createError(status = 500, error: unknown | Error | string) {
+export function createError(status = 500, error: unknown) {
   if(error instanceof Error || typeof error === 'string') {
     return new HttpError(status, error)
   } 
@@ -39,7 +39,7 @@ export function createError(status = 500, error: unknown | Error | string) {
   return new HttpError(500, 'Unexpected error occured')
 }
 
-export function handleError(res: NextApiResponse, error: Error | HttpError | unknown) {
+export function handleError(res: NextApiResponse, error: unknown) {
   if(error instanceof HttpError) {
     return res.status(error.status).json(error.toJson())
   } 

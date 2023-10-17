@@ -33,7 +33,7 @@ export default async function handler(
         last_name: null,
         avatar: null,
         properties: {
-          ...(properties || {}),
+          ...(properties ?? {}),
         },
         project_id: projectId,
       },
