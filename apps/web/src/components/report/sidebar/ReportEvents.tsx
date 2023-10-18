@@ -36,11 +36,11 @@ export function ReportEvents() {
     <div>
       <h3 className="mb-2 font-medium">Events</h3>
       <div className="flex flex-col gap-4">
-        {selectedEvents.map((event, index) => {
+        {selectedEvents.map((event) => {
           return (
             <div key={event.name} className="border rounded-lg">
               <div className="flex gap-2 items-center p-2 px-4">
-                <div className="flex-shrink-0 bg-purple-500 w-5 h-5 rounded text-xs flex items-center justify-center text-white font-medium">{index}</div>
+                <div className="flex-shrink-0 bg-purple-500 w-5 h-5 rounded text-xs flex items-center justify-center text-white font-medium">{event.id}</div>
                 <Combobox
                   value={event.name}
                   onChange={(value) => {
@@ -70,7 +70,6 @@ export function ReportEvents() {
           onChange={(value) => {
             dispatch(
               addEvent({
-                displayName: `${value} (${selectedEvents.length})`,
                 name: value,
                 filters: [],
               }),

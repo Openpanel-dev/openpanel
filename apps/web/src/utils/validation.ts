@@ -3,7 +3,6 @@ import { z } from "zod";
 export const zChartEvent = z.object({
   id: z.string(),
   name: z.string(),
-  displayName: z.string(),
   filters: z.array(
     z.object({
       id: z.string(),

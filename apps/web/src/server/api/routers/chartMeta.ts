@@ -30,6 +30,14 @@ function propertyNameToSql(name: string) {
   return name;
 }
 
+function getEventLegend(event: IChartEvent) {
+  return `${event.name} (${event.id})`
+}
+
+function getTotalCount(arr: ResultItem[]) {
+  return arr.reduce((acc, item) => acc + item.count, 0);
+}
+
 export const config = {
   api: {
     responseLimit: false,
@@ -114,9 +122,14 @@ async function getChartData({
   console.log(sql);
 
   const result = await db.$queryRawUnsafe<ResultItem[]>(sql);
+
+  // group by sql label
   const series = result.reduce(
     (acc, item) => {
-      const label = item.label?.trim() ?? event.displayName;
+      // item.label can be null when using breakdowns on a property
+      // that doesn't exist on all events
+      // fallback on event legend
+      const label = item.label?.trim() ?? getEventLegend(event)
       if (label) {
         if (acc[label]) {
           acc[label]?.push(item);
@@ -133,17 +146,20 @@ async function getChartData({
   );
 
   return Object.keys(series).map((key) => {
+    const legend = breakdowns.length ? key : getEventLegend(event);
+    const data = series[key] ?? []
     return {
-      name: breakdowns.length ? key ?? "break a leg" : event.displayName,
+      name: legend,
+      totalCount: getTotalCount(data),
       data: fillEmptySpotsInTimeline(
-        series[key] ?? [],
+        data,
         interval,
         startDate,
         endDate,
       ).map((item) => {
         return {
-          ...item,
-          label: breakdowns.length ? key ?? "break a leg" : event.displayName,
+          label: legend,
+          count: item.count,
           date: new Date(item.date).toISOString(),
         };
       }),

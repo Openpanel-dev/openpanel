@@ -3,6 +3,7 @@ import {
   type IChartEvent,
   type IInterval,
 } from "@/types";
+import { getDaysOldDate } from "@/utils/date";
 import { type PayloadAction, createSlice } from "@reduxjs/toolkit";
 
 type InitialState = {
@@ -15,27 +16,20 @@ type InitialState = {
 
 // First approach: define the initial state using that type
 const initialState: InitialState = {
-  startDate: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7),
+  startDate: getDaysOldDate(7),
   endDate: new Date(),
   interval: "day",
   breakdowns: [
     {
       id: "A",
-      name: "properties.params.title",
-    },
+      name: 'properties.id'
+    }
   ],
   events: [
     {
       id: "A",
-      displayName: "screen_view (0)",
-      name: "screen_view",
-      filters: [
-        {
-          id: "1",
-          name: "properties.route",
-          value: "RecipeDetails",
-        },
-      ],
+      name: "sign_up",
+      filters: []
     },
   ],
 };
@@ -115,6 +109,18 @@ export const reportSlice = createSlice({
     changeEndDate: (state, action: PayloadAction<Date>) => {
       state.endDate = action.payload;
     },
+
+    changeDateRanges: (state, action: PayloadAction<number>) => {
+      if(action.payload === 1) {
+        state.interval = "hour";
+      } else if(action.payload <= 30) {
+        state.interval = "day";
+      } else {
+        state.interval = "month";
+      }
+      state.startDate = getDaysOldDate(action.payload);
+      state.endDate = new Date();
+    }
   },
 });
 
@@ -127,6 +133,7 @@ export const {
   removeBreakdown,
   changeBreakdown,
   changeInterval,
+  changeDateRanges,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

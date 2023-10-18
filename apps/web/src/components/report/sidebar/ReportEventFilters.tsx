@@ -141,7 +141,7 @@ function Filter({ filter, event }: FilterProps) {
         <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-emerald-600 text-xs font-medium text-white">
           <SlidersHorizontal size={10} />
         </div>
-        <RenderDots className="text-sm">{filter.name}</RenderDots>
+        <RenderDots className="text-sm flex-1">{filter.name}</RenderDots>
         <Button variant="ghost" size="sm" onClick={removeFilter}>
           <Trash size={16} />
         </Button>
