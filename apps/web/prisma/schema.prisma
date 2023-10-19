@@ -31,8 +31,10 @@ model Project {
   profiles        Profile[]
   clients         Client[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @default(now()) @updatedAt
+  reports    Report[]
+  dashboards Dashboard[]
 
   @@map("projects")
 }
@@ -96,4 +98,51 @@ model Client {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("clients")
+}
+
+enum Interval {
+  hour
+  day
+  month
+}
+
+enum ChartType {
+  linear
+  bar
+  pie
+  metric
+  area
+}
+
+model Dashboard {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  project_id String   @db.Uuid
+  project    Project  @relation(fields: [project_id], references: [id])
+  reports    Report[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("dashboards")
+}
+
+model Report {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  interval   Interval
+  range      Int
+  chart_type ChartType
+  breakdowns Json
+  events     Json
+  project_id String    @db.Uuid
+  project    Project   @relation(fields: [project_id], references: [id])
+
+  dashboard_id String    @db.Uuid
+  dashboard    Dashboard @relation(fields: [dashboard_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("reports")
 }

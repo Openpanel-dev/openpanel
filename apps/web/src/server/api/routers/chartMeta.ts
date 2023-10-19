@@ -5,12 +5,7 @@ import { db } from "@/server/db";
 import { map, path, pipe, sort, uniq } from "ramda";
 import { toDots } from "@/utils/object";
 import { Prisma } from "@prisma/client";
-import {
-  zChartBreakdowns,
-  zChartEvents,
-  zChartType,
-  zTimeInterval,
-} from "@/utils/validation";
+import { zChartInput } from "@/utils/validation";
 import { type IChartBreakdown, type IChartEvent } from "@/types";
 
 type ResultItem = {
@@ -21,17 +16,25 @@ type ResultItem = {
 
 function propertyNameToSql(name: string) {
   if (name.includes(".")) {
-    return name
+    const str = name
       .split(".")
       .map((item, index) => (index === 0 ? item : `'${item}'`))
       .join("->");
+    const findLastOf  = "->"
+    const lastArrow = str.lastIndexOf(findLastOf);
+    if(lastArrow === -1) {
+      return str;
+    } 
+    const first = str.slice(0, lastArrow);
+    const last = str.slice(lastArrow + findLastOf.length);
+    return `${first}->>${last}`
   }
 
   return name;
 }
 
 function getEventLegend(event: IChartEvent) {
-  return `${event.name} (${event.id})`
+  return `${event.name} (${event.id})`;
 }
 
 function getTotalCount(arr: ResultItem[]) {
@@ -84,7 +87,7 @@ async function getChartData({
       filters.forEach((filter) => {
         const { name, value } = filter;
         if (name.includes(".")) {
-          where.push(`${propertyNameToSql(name)} = '"${value}"'`);
+          where.push(`${propertyNameToSql(name)} = '${value}'`);
         } else {
           where.push(`${name} = '${value}'`);
         }
@@ -119,9 +122,8 @@ async function getChartData({
       GROUP BY ${groupBy.join(", ")}
       ORDER BY ${orderBy.join(", ")}
       `;
-  console.log(sql);
 
-  const result = await db.$queryRawUnsafe<ResultItem[]>(sql);
+      const result = await db.$queryRawUnsafe<ResultItem[]>(sql);
 
   // group by sql label
   const series = result.reduce(
@@ -129,7 +131,7 @@ async function getChartData({
       // item.label can be null when using breakdowns on a property
       // that doesn't exist on all events
       // fallback on event legend
-      const label = item.label?.trim() ?? getEventLegend(event)
+      const label = item.label?.trim() ?? getEventLegend(event);
       if (label) {
         if (acc[label]) {
           acc[label]?.push(item);
@@ -147,22 +149,19 @@ async function getChartData({
 
   return Object.keys(series).map((key) => {
     const legend = breakdowns.length ? key : getEventLegend(event);
-    const data = series[key] ?? []
+    const data = series[key] ?? [];
     return {
       name: legend,
       totalCount: getTotalCount(data),
-      data: fillEmptySpotsInTimeline(
-        data,
-        interval,
-        startDate,
-        endDate,
-      ).map((item) => {
-        return {
-          label: legend,
-          count: item.count,
-          date: new Date(item.date).toISOString(),
-        };
-      }),
+      data: fillEmptySpotsInTimeline(data, interval, startDate, endDate).map(
+        (item) => {
+          return {
+            label: legend,
+            count: item.count,
+            date: new Date(item.date).toISOString(),
+          };
+        },
+      ),
     };
   });
 }
@@ -237,16 +236,7 @@ export const chartMetaRouter = createTRPCRouter({
     }),
 
   chart: protectedProcedure
-    .input(
-      z.object({
-        startDate: z.date().nullish(),
-        endDate: z.date().nullish(),
-        chartType: zChartType,
-        interval: zTimeInterval,
-        events: zChartEvents,
-        breakdowns: zChartBreakdowns,
-      }),
-    )
+    .input(zChartInput)
     .query(
       async ({
         input: { chartType, events, breakdowns, interval, ...input },
@@ -285,12 +275,17 @@ function fillEmptySpotsInTimeline(
   endDate: Date,
 ) {
   const result = [];
-  const currentDate = new Date(startDate);
-  currentDate.setHours(2, 0, 0, 0);
-  const modifiedEndDate = new Date(endDate);
-  modifiedEndDate.setHours(2, 0, 0, 0);
-
-  while (currentDate.getTime() <= modifiedEndDate.getTime()) {
+  const clonedStartDate = new Date(startDate);
+  const clonedEndDate = new Date(endDate);
+  if(interval === 'hour') {
+    clonedStartDate.setMinutes(0, 0, 0);
+    clonedEndDate.setMinutes(0, 0, 0)
+  } else {
+    clonedStartDate.setHours(2, 0, 0, 0);
+    clonedEndDate.setHours(2, 0, 0, 0);
+  }
+  
+  while (clonedStartDate.getTime() <= clonedEndDate.getTime()) {
     const getYear = (date: Date) => date.getFullYear();
     const getMonth = (date: Date) => date.getMonth();
     const getDay = (date: Date) => date.getDate();
@@ -302,32 +297,32 @@ function fillEmptySpotsInTimeline(
 
       if (interval === "month") {
         return (
-          getYear(date) === getYear(currentDate) &&
-          getMonth(date) === getMonth(currentDate)
+          getYear(date) === getYear(clonedStartDate) &&
+          getMonth(date) === getMonth(clonedStartDate)
         );
       }
       if (interval === "day") {
         return (
-          getYear(date) === getYear(currentDate) &&
-          getMonth(date) === getMonth(currentDate) &&
-          getDay(date) === getDay(currentDate)
+          getYear(date) === getYear(clonedStartDate) &&
+          getMonth(date) === getMonth(clonedStartDate) &&
+          getDay(date) === getDay(clonedStartDate)
         );
       }
       if (interval === "hour") {
         return (
-          getYear(date) === getYear(currentDate) &&
-          getMonth(date) === getMonth(currentDate) &&
-          getDay(date) === getDay(currentDate) &&
-          getHour(date) === getHour(currentDate)
+          getYear(date) === getYear(clonedStartDate) &&
+          getMonth(date) === getMonth(clonedStartDate) &&
+          getDay(date) === getDay(clonedStartDate) &&
+          getHour(date) === getHour(clonedStartDate)
         );
       }
       if (interval === "minute") {
         return (
-          getYear(date) === getYear(currentDate) &&
-          getMonth(date) === getMonth(currentDate) &&
-          getDay(date) === getDay(currentDate) &&
-          getHour(date) === getHour(currentDate) &&
-          getMinute(date) === getMinute(currentDate)
+          getYear(date) === getYear(clonedStartDate) &&
+          getMonth(date) === getMonth(clonedStartDate) &&
+          getDay(date) === getDay(clonedStartDate) &&
+          getHour(date) === getHour(clonedStartDate) &&
+          getMinute(date) === getMinute(clonedStartDate)
         );
       }
     });
@@ -336,7 +331,7 @@ function fillEmptySpotsInTimeline(
       result.push(item);
     } else {
       result.push({
-        date: currentDate.toISOString(),
+        date: clonedStartDate.toISOString(),
         count: 0,
         label: null,
       });
@@ -344,19 +339,19 @@ function fillEmptySpotsInTimeline(
 
     switch (interval) {
       case "day": {
-        currentDate.setDate(currentDate.getDate() + 1);
+        clonedStartDate.setDate(clonedStartDate.getDate() + 1);
         break;
       }
       case "hour": {
-        currentDate.setHours(currentDate.getHours() + 1);
+        clonedStartDate.setHours(clonedStartDate.getHours() + 1);
         break;
       }
       case "minute": {
-        currentDate.setMinutes(currentDate.getMinutes() + 1);
+        clonedStartDate.setMinutes(clonedStartDate.getMinutes() + 1);
         break;
       }
       case "month": {
-        currentDate.setMonth(currentDate.getMonth() + 1);
+        clonedStartDate.setMonth(clonedStartDate.getMonth() + 1);
         break;
       }
     }

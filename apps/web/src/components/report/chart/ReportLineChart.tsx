@@ -1,7 +1,6 @@
 import { api } from "@/utils/api";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   Tooltip,
@@ -10,22 +9,13 @@ import {
 } from "recharts";
 import { ReportLineChartTooltip } from "./ReportLineChartTooltop";
 import { useFormatDateInterval } from "@/hooks/useFormatDateInterval";
-import {
-  type IChartBreakdown,
-  type IChartEvent,
-  type IInterval,
-} from "@/types";
+import { type IChartInput } from "@/types";
 import { getChartColor } from "@/utils/theme";
 import { ReportTable } from "./ReportTable";
 import { useEffect, useRef, useState } from "react";
 import { AutoSizer } from "@/components/AutoSizer";
 
-type ReportLineChartProps = {
-  interval: IInterval;
-  startDate: Date;
-  endDate: Date;
-  events: IChartEvent[];
-  breakdowns: IChartBreakdown[];
+type ReportLineChartProps = IChartInput & {
   showTable?: boolean;
 };
 
@@ -36,16 +26,20 @@ export function ReportLineChart({
   events,
   breakdowns,
   showTable,
+  chartType,
+  name,
 }: ReportLineChartProps) {
   const [visibleSeries, setVisibleSeries] = useState<string[]>([]);
+
   const chart = api.chartMeta.chart.useQuery(
     {
       interval,
-      chartType: "linear",
+      chartType,
       startDate,
       endDate,
       events,
       breakdowns,
+      name,
     },
     {
       enabled: events.length > 0,
@@ -58,25 +52,23 @@ export function ReportLineChart({
   useEffect(() => {
     if (!ref.current && chart.data) {
       const max = 20;
-      
+
       setVisibleSeries(
         chart.data?.series?.slice(0, max).map((serie) => serie.name) ?? [],
-        );
-        // ref.current = true;
-      }
-    }, [chart.data]);
-    
-    return (
-      <>
+      );
+      // ref.current = true;
+    }
+  }, [chart.data]);
+
+  return (
+    <>
       {chart.isSuccess && chart.data?.series?.[0]?.data && (
         <>
           <AutoSizer disableHeight>
             {({ width }) => (
-              <LineChart width={width} height={width * 0.5}>
-                {/* <Legend /> */}
+              <LineChart width={width} height={Math.min(width * 0.5, 400)}>
                 <YAxis dataKey={"count"}></YAxis>
                 <Tooltip content={<ReportLineChartTooltip />} />
-                {/* <Tooltip /> */}
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
                   dataKey="date"

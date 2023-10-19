@@ -1,4 +1,5 @@
 import {
+  type IChartInput,
   type IChartBreakdown,
   type IChartEvent,
   type IInterval,
@@ -6,32 +7,17 @@ import {
 import { getDaysOldDate } from "@/utils/date";
 import { type PayloadAction, createSlice } from "@reduxjs/toolkit";
 
-type InitialState = {
-  events: IChartEvent[];
-  breakdowns: IChartBreakdown[];
-  interval: IInterval;
-  startDate: Date;
-  endDate: Date;
-};
+type InitialState = IChartInput;
 
 // First approach: define the initial state using that type
 const initialState: InitialState = {
+  name: "",
+  chartType: "linear",
   startDate: getDaysOldDate(7),
   endDate: new Date(),
   interval: "day",
-  breakdowns: [
-    {
-      id: "A",
-      name: 'properties.id'
-    }
-  ],
-  events: [
-    {
-      id: "A",
-      name: "sign_up",
-      filters: []
-    },
-  ],
+  breakdowns: [],
+  events: [],
 };
 
 const IDS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
@@ -40,6 +26,12 @@ export const reportSlice = createSlice({
   name: "counter",
   initialState,
   reducers: {
+    reset() {
+      return initialState
+    },
+    setReport(state, action: PayloadAction<IChartInput>) {
+      return action.payload
+    },
     // Events
     addEvent: (state, action: PayloadAction<Omit<IChartEvent, "id">>) => {
       state.events.push({
@@ -111,21 +103,23 @@ export const reportSlice = createSlice({
     },
 
     changeDateRanges: (state, action: PayloadAction<number>) => {
-      if(action.payload === 1) {
+      if (action.payload === 1) {
         state.interval = "hour";
-      } else if(action.payload <= 30) {
+      } else if (action.payload <= 30) {
         state.interval = "day";
       } else {
         state.interval = "month";
       }
       state.startDate = getDaysOldDate(action.payload);
       state.endDate = new Date();
-    }
+    },
   },
 });
 
 // Action creators are generated for each case reducer function
 export const {
+  reset,
+  setReport,
   addEvent,
   removeEvent,
   changeEvent,
