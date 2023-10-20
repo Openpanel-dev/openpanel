@@ -7,7 +7,7 @@ export function UserDropdown() {
     <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button>
-            <Avatar className="text-black">
+            <Avatar>
               <AvatarFallback>CL</AvatarFallback>
             </Avatar>
           </button>
