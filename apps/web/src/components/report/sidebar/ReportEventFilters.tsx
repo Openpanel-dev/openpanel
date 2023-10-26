@@ -1,10 +1,10 @@
 import { api } from "@/utils/api";
-import { type IChartEvent } from "@/types";
 import {
-  CreditCard,
-  SlidersHorizontal,
-  Trash,
-} from "lucide-react";
+  type IChartEvent,
+  type IChartEventFilterValue,
+  type IChartEventFilter,
+} from "@/types";
+import { CreditCard, SlidersHorizontal, Trash } from "lucide-react";
 import {
   CommandDialog,
   CommandEmpty,
@@ -18,8 +18,11 @@ import { type Dispatch } from "react";
 import { RenderDots } from "@/components/ui/RenderDots";
 import { useDispatch } from "@/redux";
 import { changeEvent } from "../reportSlice";
-import { Combobox } from "@/components/ui/combobox";
 import { Button } from "@/components/ui/button";
+import { ComboboxMulti } from "@/components/ui/combobox-multi";
+import { Dropdown } from "@/components/Dropdown";
+import { operators } from "@/utils/constants";
+import { useMappings } from "@/hooks/useMappings";
 
 type ReportEventFiltersProps = {
   event: IChartEvent;
@@ -33,7 +36,7 @@ export function ReportEventFilters({
   setIsCreating,
 }: ReportEventFiltersProps) {
   const dispatch = useDispatch();
-  const propertiesQuery = api.chartMeta.properties.useQuery(
+  const propertiesQuery = api.chart.properties.useQuery(
     {
       event: event.name,
     },
@@ -50,7 +53,7 @@ export function ReportEventFilters({
         })}
 
         <CommandDialog open={isCreating} onOpenChange={setIsCreating} modal>
-          <CommandInput placeholder="Type a command or search..." />
+          <CommandInput placeholder="Search properties" />
           <CommandList>
             <CommandEmpty>Such emptyness 🤨</CommandEmpty>
             <CommandGroup heading="Properties">
@@ -67,7 +70,8 @@ export function ReportEventFilters({
                           {
                             id: (event.filters.length + 1).toString(),
                             name: item,
-                            value: "",
+                            operator: "is",
+                            value: [],
                           },
                         ],
                       }),
@@ -93,8 +97,9 @@ type FilterProps = {
 };
 
 function Filter({ filter, event }: FilterProps) {
+  const getLabel = useMappings()
   const dispatch = useDispatch();
-  const potentialValues = api.chartMeta.values.useQuery({
+  const potentialValues = api.chart.values.useQuery({
     event: event.name,
     property: filter.name,
   });
@@ -102,7 +107,7 @@ function Filter({ filter, event }: FilterProps) {
   const valuesCombobox =
     potentialValues.data?.values?.map((item) => ({
       value: item,
-      label: item,
+      label: getLabel(item),
     })) ?? [];
 
   const removeFilter = () => {
@@ -114,7 +119,9 @@ function Filter({ filter, event }: FilterProps) {
     );
   };
 
-  const changeFilter = (value: string) => {
+  const changeFilterValue = (
+    value: IChartEventFilterValue | IChartEventFilterValue[],
+  ) => {
     dispatch(
       changeEvent({
         ...event,
@@ -122,7 +129,25 @@ function Filter({ filter, event }: FilterProps) {
           if (item.id === filter.id) {
             return {
               ...item,
-              value,
+              value: Array.isArray(value) ? value : [value],
+            };
+          }
+
+          return item;
+        }),
+      }),
+    );
+  };
+
+  const changeFilterOperator = (operator: IChartEventFilter["operator"]) => {
+    dispatch(
+      changeEvent({
+        ...event,
+        filters: event.filters.map((item) => {
+          if (item.id === filter.id) {
+            return {
+              ...item,
+              operator,
             };
           }
 
@@ -141,21 +166,54 @@ function Filter({ filter, event }: FilterProps) {
         <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-emerald-600 text-xs font-medium text-white">
           <SlidersHorizontal size={10} />
         </div>
-        <RenderDots className="text-sm flex-1">{filter.name}</RenderDots>
+        <div className="flex flex-1 text-sm">
+        <RenderDots truncate>{filter.name}</RenderDots>
+        </div>
         <Button variant="ghost" size="sm" onClick={removeFilter}>
           <Trash size={16} />
         </Button>
       </div>
-      {/* <ComboboxMulti items={valuesCombobox} selected={[]} setSelected={(fn) => {
-        return fn(filter.value)
-        //
-      }} /> */}
-      <Combobox
+      <div className="flex gap-1">
+        <Dropdown
+          onChange={changeFilterOperator}
+          items={Object.entries(operators).map(([key, value]) => ({
+            value: key as IChartEventFilter["operator"],
+            label: value,
+          }))}
+          label="Segment"
+        >
+          <Button variant={"ghost"} className="whitespace-nowrap">
+            {operators[filter.operator]}
+          </Button>
+        </Dropdown>
+        <ComboboxMulti
+          placeholder="Select values"
+          items={valuesCombobox}
+          selected={filter.value.map((item) => ({
+            value: item?.toString() ?? "__filter_value_null__",
+            label: getLabel(item?.toString() ?? "__filter_value_null__"),
+          }))}
+          setSelected={(setFn) => {
+            if(typeof setFn === "function") {
+              const newValues = setFn(
+                filter.value.map((item) => ({
+                  value: item?.toString() ?? "__filter_value_null__",
+                  label: getLabel(item?.toString() ?? "__filter_value_null__"),
+                })),
+              );
+              changeFilterValue(newValues.map((item) => item.value));
+            } else {
+              changeFilterValue(setFn.map((item) => item.value));
+            }
+          }}
+        />
+      </div>
+      {/* <Combobox
         items={valuesCombobox}
         value={filter.value}
         placeholder="Select value"
         onChange={changeFilter}
-      />
+      /> */}
       {/* <Input
         value={filter.value}
         onChange={(e) => {

@@ -8,7 +8,7 @@ import {
 import { db } from "@/server/db";
 import Credentials from "next-auth/providers/credentials";
 import { createError } from "./exceptions";
-import { verifyPassword } from "@/services/hash.service";
+import { verifyPassword } from "@/server/services/hash.service";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -46,7 +46,9 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   },
-  // adapter: PrismaAdapter(db),
+  session: {
+    strategy: "jwt",
+  },
   providers: [
     Credentials({
       name: "Credentials",
@@ -60,7 +62,10 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (user) {
-          return user;
+          return {
+            ...user,
+            image: 'https://avatars.githubusercontent.com/u/18133?v=4'
+          };
         } else {
           return null;
         }

@@ -1,3 +1,4 @@
+import { useMappings } from "@/hooks/useMappings";
 import { type IToolTipProps } from "@/types";
 
 type ReportLineChartTooltipProps = IToolTipProps<{
@@ -8,20 +9,21 @@ type ReportLineChartTooltipProps = IToolTipProps<{
     count: number;
     label: string;
   };
-}>
+}>;
 
 export function ReportLineChartTooltip({
   active,
   payload,
 }: ReportLineChartTooltipProps) {
-  if (!active || !payload) {
+  const getLabel = useMappings();
+
+  if (!active || !payload) {
     return null;
   }
 
   if (!payload.length) {
     return null;
   }
-
 
   const limit = 3;
   const sorted = payload.slice(0).sort((a, b) => b.value - a.value);
@@ -39,7 +41,7 @@ export function ReportLineChartTooltip({
             ></div>
             <div className="flex flex-col">
               <div className="min-w-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap font-medium">
-                {item.payload.label}
+                {getLabel(item.payload.label)}
               </div>
               <div>{item.payload.count}</div>
             </div>

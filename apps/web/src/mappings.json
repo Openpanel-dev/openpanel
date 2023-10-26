@@ -1,0 +1,146 @@
+[
+	{
+		"id": "clbow140n0228u99ui1t24l85",
+		"name": "Mjölkproteinfritt"
+	},
+	{
+		"id": "cl04a3trn0015ix50tzy40pyf",
+		"name": "Måltider"
+	},
+	{
+		"id": "cl04a5p7s0401ix505n75yfcn",
+		"name": "Svårighetsgrad"
+	},
+	{
+		"id": "cl04a7k3i0813ix50aau6yxqg",
+		"name": "Tid"
+	},
+	{
+		"id": "cl04a47fu0103ix50dqckz2vc",
+		"name": "Frukost"
+	},
+	{
+		"id": "cl04a4hvu0152ix50o0w4iy8l",
+		"name": "Mellis"
+	},
+	{
+		"id": "cl04a58ju0281ix50kdmcwst6",
+		"name": "Dessert"
+	},
+	{
+		"id": "cl04a5fjc0321ix50xiwhuydy",
+		"name": "Smakportioner"
+	},
+	{
+		"id": "cl04a5kcu0361ix50bnmbhoxz",
+		"name": "Plockmat"
+	},
+	{
+		"id": "cl04a60sk0496ix50et419drf",
+		"name": "Medium"
+	},
+	{
+		"id": "cl04a67lx0536ix50sstoxnhi",
+		"name": "Avancerat"
+	},
+	{
+		"id": "cl04a7qi60850ix50je7vaxo3",
+		"name": "0-10 min"
+	},
+	{
+		"id": "cl04a7vxi0890ix50veumcuyu",
+		"name": "10-20 min"
+	},
+	{
+		"id": "cl04a82bj0930ix50bboh3tl9",
+		"name": "20-30 min"
+	},
+	{
+		"id": "cl04a8a7a0970ix50uet02cqh",
+		"name": "30-40 min"
+	},
+	{
+		"id": "cl04a8g151010ix50z4cnf2kg",
+		"name": "40-50 min"
+	},
+	{
+		"id": "cl04a8mqy1050ix50z0d1ho1a",
+		"name": "50-60 min"
+	},
+	{
+		"id": "cl04a5ujg0447ix50vd3vor87",
+		"name": "Lätt"
+	},
+	{
+		"id": "cl04a4qv60201ix50b8q5kn9r",
+		"name": "Lunch & Middag"
+	},
+	{
+		"id": "clak50jem0072ri9ugwygg5ko",
+		"name": "Annat"
+	},
+	{
+		"id": "clak510qm0120ri9upqkca39s",
+		"name": "För hela familjen"
+	},
+	{
+		"id": "clak59l8x0085yd9uzllcuci5",
+		"name": "Under 3 ingredienser"
+	},
+	{
+		"id": "clak59l8y0087yd9u53qperp8",
+		"name": "Under 5 ingredienser"
+	},
+	{
+		"id": "claslo2sg0404no9uo2tckm5i",
+		"name": "Huvudingredienser"
+	},
+	{
+		"id": "claslv9s20491no9ugo4fd9ns",
+		"name": "Fisk"
+	},
+	{
+		"id": "claslv9s30493no9umug5po29",
+		"name": "Kyckling"
+	},
+	{
+		"id": "claslv9s40495no9umor61pql",
+		"name": "Kött"
+	},
+	{
+		"id": "claslv9s40497no9uttwkt47n",
+		"name": "Korv"
+	},
+	{
+		"id": "claslv9s50499no9uch0lhs9i",
+		"name": "Vegetariskt"
+	},
+	{
+		"id": "clb1y44f40128np9uufck0iqf",
+		"name": "Årstider"
+	},
+	{
+		"id": "clb1y4ks80202np9uh43c84ts",
+		"name": "Jul"
+	},
+	{
+		"id": "clbovy0fd0081u99u8dr0yplr",
+		"name": "Allergier"
+	},
+	{
+		"id": "clbow140p0230u99uk9e7g1u1",
+		"name": "Äggfritt"
+	},
+	{
+		"id": "clbow140q0232u99uy3lwukvc",
+		"name": "Vetefritt"
+	},
+	{
+		"id": "clbow140q0234u99uiyrujxd4",
+		"name": "Glutenfritt"
+	},
+	{
+		"id": "clbow140r0236u99u5333gpei",
+		"name": "Nötfritt"
+	}
+]

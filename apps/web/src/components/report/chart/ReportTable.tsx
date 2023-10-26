@@ -5,9 +5,11 @@ import { useSelector } from "@/redux";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getChartColor } from "@/utils/theme";
 import { cn } from "@/utils/cn";
+import { useMappings } from "@/hooks/useMappings";
+
 
 type ReportTableProps = {
-  data: RouterOutputs["chartMeta"]["chart"];
+  data: RouterOutputs["chart"]["chart"];
   visibleSeries: string[];
   setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
 };
@@ -19,6 +21,7 @@ export function ReportTable({
 }: ReportTableProps) {
   const interval = useSelector((state) => state.report.interval);
   const formatDate = useFormatDateInterval(interval);
+  const getLabel = useMappings()
 
   function handleChange(name: string, checked: boolean) {
     setVisibleSeries((prev) => {
@@ -34,7 +37,7 @@ export function ReportTable({
   const cell = "p-2 last:pr-8 last:w-[8rem]";
   const value = "min-w-[6rem] text-right";
   const header = "text-sm font-medium";
-  const total = 'bg-gray-50 text-emerald-600 font-bold border-r border-border'
+  const total = 'bg-gray-50 text-emerald-600 font-medium border-r border-border'
   return (
     <div className="flex w-fit max-w-full rounded-md border border-border">
       {/* Labels */}
@@ -63,7 +66,7 @@ export function ReportTable({
                 checked={checked}
               />
               <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                {serie.name}
+                {getLabel(serie.name)}
               </div>
             </div>
           );

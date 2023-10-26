@@ -13,10 +13,17 @@ export function ReportDateRange() {
       <RadioGroup>
         <RadioGroupItem
           onClick={() => {
-            dispatch(changeDateRanges(1));
+            dispatch(changeDateRanges('today'));
           }}
         >
           Today
+        </RadioGroupItem>
+        <RadioGroupItem
+          onClick={() => {
+            dispatch(changeDateRanges(1));
+          }}
+        >
+          24 hours
         </RadioGroupItem>
         <RadioGroupItem
           onClick={() => {

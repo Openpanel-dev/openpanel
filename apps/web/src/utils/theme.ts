@@ -1,5 +1,5 @@
 import resolveConfig from "tailwindcss/resolveConfig";
-import tailwinConfig from "../../tailwind.config.js";
+import tailwinConfig from "../../tailwind.config";
 const config = resolveConfig(tailwinConfig);
 
 export const theme = config.theme as any;

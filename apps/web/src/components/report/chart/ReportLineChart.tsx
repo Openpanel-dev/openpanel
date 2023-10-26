@@ -31,7 +31,9 @@ export function ReportLineChart({
 }: ReportLineChartProps) {
   const [visibleSeries, setVisibleSeries] = useState<string[]>([]);
 
-  const chart = api.chartMeta.chart.useQuery(
+  const hasEmptyFilters = events.some((event) => event.filters.some((filter) => filter.value.length === 0));
+
+  const chart = api.chart.chart.useQuery(
     {
       interval,
       chartType,
@@ -42,7 +44,7 @@ export function ReportLineChart({
       name,
     },
     {
-      enabled: events.length > 0,
+      enabled: events.length > 0 && !hasEmptyFilters,
     },
   );
 
@@ -67,10 +69,11 @@ export function ReportLineChart({
           <AutoSizer disableHeight>
             {({ width }) => (
               <LineChart width={width} height={Math.min(width * 0.5, 400)}>
-                <YAxis dataKey={"count"}></YAxis>
+                <YAxis dataKey={"count"} width={30} fontSize={12}></YAxis>
                 <Tooltip content={<ReportLineChartTooltip />} />
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis
+                 fontSize={12}
                   dataKey="date"
                   tickFormatter={(m: Date) => {
                     return formatDate(m);

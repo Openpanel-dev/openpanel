@@ -1,12 +1,131 @@
 import { z } from "zod";
-
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
-import { map, path, pipe, sort, uniq } from "ramda";
+import { pipe, sort, uniq } from "ramda";
 import { toDots } from "@/utils/object";
-import { Prisma } from "@prisma/client";
 import { zChartInput } from "@/utils/validation";
-import { type IChartBreakdown, type IChartEvent } from "@/types";
+import { type IChartInput, type IChartEvent } from "@/types";
+
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+};
+
+export const chartRouter = createTRPCRouter({
+  events: protectedProcedure
+    .query(async () => {
+      const events = await db.event.findMany({
+        take: 500,
+        distinct: ["name"],
+      });
+
+      return events;
+    }),
+
+  properties: protectedProcedure
+    .input(z.object({ event: z.string() }).optional())
+    .query(async ({ input }) => {
+      const events = await db.event.findMany({
+        take: 500,
+        where: {
+          ...(input?.event
+            ? {
+                name: input.event,
+              }
+            : {}),
+        },
+      });
+
+      const properties = events
+        .reduce((acc, event) => {
+          const properties = event as Record<string, unknown>;
+          const dotNotation = toDots(properties);
+          return [...acc, ...Object.keys(dotNotation)];
+        }, [] as string[])
+        .map((item) => item.replace(/\.([0-9]+)\./g, ".*."))
+        .map((item) => item.replace(/\.([0-9]+)/g, "[*]"));
+
+      return pipe(
+        sort<string>((a, b) => a.length - b.length),
+        uniq,
+      )(properties);
+    }),
+
+  values: protectedProcedure
+    .input(z.object({ event: z.string(), property: z.string() }))
+    .query(async ({ input }) => {
+      if (isJsonPath(input.property)) {
+        const events = await db.$queryRawUnsafe<{ value: string }[]>(
+          `SELECT ${selectJsonPath(
+            input.property,
+          )} AS value from events WHERE name = '${
+            input.event
+          }' AND "createdAt" >= NOW() - INTERVAL '30 days'`,
+        );
+        return {
+          values: uniq(events.map((item) => item.value)),
+        };
+      } else {
+        const events = await db.event.findMany({
+          where: {
+            name: input.event,
+            [input.property]: {
+              not: null,
+            },
+            createdAt: {
+              gte: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 30),
+            },
+          },
+          distinct: input.property as any,
+          select: {
+            [input.property]: true,
+          },
+        });
+
+        return {
+          values: uniq(events.map((item) => item[input.property]!)),
+        };
+      }
+    }),
+
+  chart: protectedProcedure
+    .input(zChartInput)
+    .query(async ({ input: { events, ...input } }) => {
+      const startDate = input.startDate ?? new Date();
+      const endDate = input.endDate ?? new Date();
+      const series: Awaited<ReturnType<typeof getChartData>> = [];
+      for (const event of events) {
+        series.push(
+          ...(await getChartData({
+            ...input,
+            event,
+            startDate,
+            endDate,
+          })),
+        );
+      }
+
+      return {
+        series: series.sort((a, b) => {
+          const sumA = a.data.reduce((acc, item) => acc + item.count, 0);
+          const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
+          return sumB - sumA;
+        }),
+      };
+    }),
+});
+
+function selectJsonPath(property: string) {
+  const jsonPath = property
+    .replace(/^properties\./, "")
+    .replace(/\.\*\./g, ".**.");
+  return `jsonb_path_query(properties, '$.${jsonPath}')`;
+}
+
+function isJsonPath(property: string) {
+  return property.startsWith("properties");
+}
 
 type ResultItem = {
   label: string | null;
@@ -20,14 +139,14 @@ function propertyNameToSql(name: string) {
       .split(".")
       .map((item, index) => (index === 0 ? item : `'${item}'`))
       .join("->");
-    const findLastOf  = "->"
+    const findLastOf = "->";
     const lastArrow = str.lastIndexOf(findLastOf);
-    if(lastArrow === -1) {
+    if (lastArrow === -1) {
       return str;
-    } 
+    }
     const first = str.slice(0, lastArrow);
     const last = str.slice(lastArrow + findLastOf.length);
-    return `${first}->>${last}`
+    return `${first}->>${last}`;
   }
 
   return name;
@@ -41,12 +160,6 @@ function getTotalCount(arr: ResultItem[]) {
   return arr.reduce((acc, item) => acc + item.count, 0);
 }
 
-export const config = {
-  api: {
-    responseLimit: false,
-  },
-};
-
 async function getChartData({
   chartType,
   event,
@@ -55,17 +168,18 @@ async function getChartData({
   startDate,
   endDate,
 }: {
-  chartType: string;
   event: IChartEvent;
-  breakdowns: IChartBreakdown[];
-  interval: string;
-  startDate: Date;
-  endDate: Date;
-}) {
-  const select = [`count(*)::int as count`];
+} & Omit<IChartInput, 'events'>) {
+  const select = [];
   const where = [];
   const groupBy = [];
   const orderBy = [];
+
+  if (event.segment === "event") {
+    select.push(`count(*)::int as count`);
+  } else {
+    select.push(`count(DISTINCT profile_id)::int as count`);
+  }
 
   switch (chartType) {
     case "bar": {
@@ -86,10 +200,43 @@ async function getChartData({
     if (filters.length > 0) {
       filters.forEach((filter) => {
         const { name, value } = filter;
-        if (name.includes(".")) {
-          where.push(`${propertyNameToSql(name)} = '${value}'`);
-        } else {
-          where.push(`${name} = '${value}'`);
+        switch (filter.operator) {
+          case "is": {
+            if (name.includes(".*.") || name.endsWith("[*]")) {
+              where.push(
+                `properties @? '$.${name
+                  .replace(/^properties\./, "")
+                  .replace(/\.\*\./g, "[*].")} ? (${value
+                  .map((val) => `@ == "${val}"`)
+                  .join(" || ")})'`,
+              );
+            } else {
+              where.push(
+                `${propertyNameToSql(name)} in (${value
+                  .map((val) => `'${val}'`)
+                  .join(", ")})`,
+              );
+            }
+            break;
+          }
+          case "isNot": {
+            if (name.includes(".*.") || name.endsWith("[*]")) {
+              where.push(
+                `properties @? '$.${name
+                  .replace(/^properties\./, "")
+                  .replace(/\.\*\./g, "[*].")} ? (${value
+                  .map((val) => `@ != "${val}"`)
+                  .join(" && ")})'`,
+              );
+            } else if (name.includes(".")) {
+              where.push(
+                `${propertyNameToSql(name)} not in (${value
+                  .map((val) => `'${val}'`)
+                  .join(", ")})`,
+              );
+            }
+            break;
+          }
         }
       });
     }
@@ -98,7 +245,11 @@ async function getChartData({
   if (breakdowns.length) {
     const breakdown = breakdowns[0];
     if (breakdown) {
-      select.push(`${propertyNameToSql(breakdown.name)} as label`);
+      if (isJsonPath(breakdown.name)) {
+        select.push(`${selectJsonPath(breakdown.name)} as label`);
+      } else {
+        select.push(`${breakdown.name} as label`);
+      }
       groupBy.push(`label`);
     }
   } else {
@@ -123,7 +274,7 @@ async function getChartData({
       ORDER BY ${orderBy.join(", ")}
       `;
 
-      const result = await db.$queryRawUnsafe<ResultItem[]>(sql);
+  const result = await db.$queryRawUnsafe<ResultItem[]>(sql);
 
   // group by sql label
   const series = result.reduce(
@@ -166,108 +317,6 @@ async function getChartData({
   });
 }
 
-export const chartMetaRouter = createTRPCRouter({
-  events: protectedProcedure
-    // .input(z.object())
-    .query(async ({ input }) => {
-      const events = await db.event.findMany({
-        take: 500,
-        distinct: ["name"],
-      });
-
-      return events;
-    }),
-
-  properties: protectedProcedure
-    .input(z.object({ event: z.string() }).optional())
-    .query(async ({ input }) => {
-      const events = await db.event.findMany({
-        take: 500,
-        where: {
-          ...(input?.event
-            ? {
-                name: input.event,
-              }
-            : {}),
-        },
-      });
-
-      const properties = events.reduce((acc, event) => {
-        const properties = event as Record<string, unknown>;
-        const dotNotation = toDots(properties);
-        return [...acc, ...Object.keys(dotNotation)];
-      }, [] as string[]);
-
-      return pipe(
-        sort<string>((a, b) => a.length - b.length),
-        uniq,
-      )(properties);
-    }),
-
-  values: protectedProcedure
-    .input(z.object({ event: z.string(), property: z.string() }))
-    .query(async ({ input }) => {
-      const events = await db.event.findMany({
-        where: {
-          name: input.event,
-          properties: {
-            path: input.property.split(".").slice(1),
-            not: Prisma.DbNull,
-          },
-          createdAt: {
-            // Take last 30 days
-            gte: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 30),
-          },
-        },
-      });
-
-      const values = uniq(
-        map(path(input.property.split(".")), events),
-      ) as string[];
-
-      return {
-        types: uniq(
-          values.map((value) =>
-            Array.isArray(value) ? "array" : typeof value,
-          ),
-        ),
-        values,
-      };
-    }),
-
-  chart: protectedProcedure
-    .input(zChartInput)
-    .query(
-      async ({
-        input: { chartType, events, breakdowns, interval, ...input },
-      }) => {
-        const startDate = input.startDate ?? new Date();
-        const endDate = input.endDate ?? new Date();
-        const series: Awaited<ReturnType<typeof getChartData>> = [];
-        for (const event of events) {
-          series.push(
-            ...(await getChartData({
-              chartType,
-              event,
-              breakdowns,
-              interval,
-              startDate,
-              endDate,
-            })),
-          );
-        }
-
-        return {
-          series: series.sort((a, b) => {
-            const sumA = a.data.reduce((acc, item) => acc + item.count, 0);
-            const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
-            return sumB - sumA;
-          }),
-        };
-      },
-    ),
-});
-
 function fillEmptySpotsInTimeline(
   items: ResultItem[],
   interval: string,
@@ -277,14 +326,14 @@ function fillEmptySpotsInTimeline(
   const result = [];
   const clonedStartDate = new Date(startDate);
   const clonedEndDate = new Date(endDate);
-  if(interval === 'hour') {
+  if (interval === "hour") {
     clonedStartDate.setMinutes(0, 0, 0);
-    clonedEndDate.setMinutes(0, 0, 0)
+    clonedEndDate.setMinutes(0, 0, 0);
   } else {
     clonedStartDate.setHours(2, 0, 0, 0);
     clonedEndDate.setHours(2, 0, 0, 0);
   }
-  
+
   while (clonedStartDate.getTime() <= clonedEndDate.getTime()) {
     const getYear = (date: Date) => date.getFullYear();
     const getMonth = (date: Date) => date.getMonth();

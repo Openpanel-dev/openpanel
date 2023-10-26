@@ -24,6 +24,7 @@ type ComboboxProps = {
   }>;
   value: string;
   onChange: (value: string) => void;
+  children?: React.ReactNode
 };
 
 export function Combobox({
@@ -31,6 +32,7 @@ export function Combobox({
   items,
   value,
   onChange,
+  children
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   
@@ -43,17 +45,17 @@ export function Combobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        {children ?? <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className="w-full min-w-0 justify-between"
         >
-          {value ? find(value)?.label ?? "No match" : placeholder}
+          <span className="overflow-hidden text-ellipsis">{value ? find(value)?.label ?? "No match" : placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+        </Button>}
       </PopoverTrigger>
-      <PopoverContent className="w-full min-w-0 p-0">
+      <PopoverContent className="w-full min-w-0 p-0" align="start">
         <Command>
           <CommandInput placeholder="Search item..." />
           <CommandEmpty>Nothing selected</CommandEmpty>
@@ -61,8 +63,9 @@ export function Combobox({
             {items.map((item) => (
               <CommandItem
                 key={item.value}
+                value={item.value}
                 onSelect={(currentValue) => {
-                  const value = find(currentValue)?.value ?? "";
+                  const value = find(currentValue)?.value ?? currentValue;
                   onChange(value);
                   setOpen(false);
                 }}

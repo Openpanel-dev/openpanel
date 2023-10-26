@@ -1,13 +1,16 @@
 import { ReportSidebar } from "@/components/report/sidebar/ReportSidebar";
 import { ReportLineChart } from "@/components/report/chart/ReportLineChart";
 import { useDispatch, useSelector } from "@/redux";
-import { MainLayout } from "@/components/layouts/Main";
+import { MainLayout } from "@/components/layouts/MainLayout";
 import { ReportDateRange } from "@/components/report/ReportDateRange";
 import { useCallback, useEffect } from "react";
 import { reset, setReport } from "@/components/report/reportSlice";
 import { useReportId } from "@/components/report/hooks/useReportId";
 import { api } from "@/utils/api";
 import { useRouterBeforeLeave } from "@/hooks/useRouterBeforeLeave";
+import { createServerSideProps } from "@/server/getServerSideProps";
+
+export const getServerSideProps = createServerSideProps()
 
 export default function Page() {
   const { reportId } = useReportId();

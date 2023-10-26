@@ -1,7 +1,7 @@
 import { validateSdkRequest } from "@/server/auth";
 import { db } from "@/server/db";
 import { createError, handleError } from "@/server/exceptions";
-import { getProfile } from "@/services/profile.service";
+import { getProfile } from "@/server/services/profile.service";
 import { type ProfilePayload } from "@mixan/types";
 import type { NextApiRequest, NextApiResponse } from "next";
 

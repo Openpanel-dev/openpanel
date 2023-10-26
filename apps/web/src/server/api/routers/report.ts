@@ -10,6 +10,8 @@ import {
   type IChartEvent,
 } from "@/types";
 import { type Report as DbReport } from "@prisma/client";
+import { getProjectBySlug } from "@/server/services/project.service";
+import { getDashboardBySlug } from "@/server/services/dashboard.service";
 
 function transform(report: DbReport): IChartInput & { id: string } {
   return {
@@ -40,22 +42,27 @@ export const reportRouter = createTRPCRouter({
         })
         .then(transform);
     }),
-  getDashboard: protectedProcedure
+  list: protectedProcedure
     .input(
       z.object({
-        projectId: z.string(),
-        dashboardId: z.string(),
+        projectSlug: z.string(),
+        dashboardSlug: z.string(),
       }),
     )
-    .query(async ({ input: { projectId, dashboardId } }) => {
+    .query(async ({ input: { projectSlug, dashboardSlug } }) => {
+      const project = await getProjectBySlug(projectSlug);
+      const dashboard = await getDashboardBySlug(dashboardSlug);
       const reports = await db.report.findMany({
         where: {
-          project_id: projectId,
-          dashboard_id: dashboardId,
+          project_id: project.id,
+          dashboard_id: dashboard.id,
         },
       });
 
-      return reports.map(transform);
+      return {
+        reports: reports.map(transform),
+        dashboard,
+      }
     }),
   save: protectedProcedure
     .input(

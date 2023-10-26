@@ -1,6 +1,6 @@
 import { db } from "@/server/db";
 import { handleError } from "@/server/exceptions";
-import { hashPassword } from "@/services/hash.service";
+import { hashPassword } from "@/server/services/hash.service";
 import { randomUUID } from "crypto";
 import { type NextApiRequest, type NextApiResponse } from "next";
 
@@ -33,6 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         name: "Acme Website Client",
         project_id: project.id,
+        organization_id: organization.id,
         secret: await hashPassword(secret),
       },
     });

@@ -34,7 +34,7 @@ export function ReportBreakdownMore({ onClick }: ReportBreakdownMoreProps) {
             <MoreHorizontal />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[200px]">
+        <DropdownMenuContent align="start" className="w-[200px]">
           <DropdownMenuGroup>
             <DropdownMenuItem className="text-red-600" onClick={() => onClick('remove')}>
               <Trash className="mr-2 h-4 w-4" />

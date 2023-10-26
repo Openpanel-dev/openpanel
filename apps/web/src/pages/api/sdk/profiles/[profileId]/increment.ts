@@ -1,6 +1,6 @@
 import { validateSdkRequest } from "@/server/auth";
 import { createError, handleError } from "@/server/exceptions";
-import { tickProfileProperty } from "@/services/profile.service";
+import { tickProfileProperty } from "@/server/services/profile.service";
 import { type ProfileIncrementPayload } from "@mixan/types";
 import type { NextApiRequest, NextApiResponse } from "next";
 

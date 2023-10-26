@@ -10,7 +10,7 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
     return (
       <div
         className={cn(
-          "flex h-10 w-full divide-x rounded-md border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-10 divide-x rounded-md border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
           className
         )}
         ref={ref}
@@ -22,7 +22,7 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
 
 const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItemProps>(({className, ...props}, ref) => {
   return (
-    <button {...props} className={cn('flex-1 hover:bg-slate-100 transition-colors font-medium', className)} type="button" ref={ref} />
+    <button {...props} className={cn('flex-1 px-3 whitespace-nowrap leading-none hover:bg-slate-100 transition-colors font-medium', className)} type="button" ref={ref} />
   )
 })
 

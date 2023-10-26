@@ -5,14 +5,15 @@ import { addBreakdown, changeBreakdown, removeBreakdown } from "../reportSlice";
 import { type ReportEventMoreProps } from "./ReportEventMore";
 import { type IChartBreakdown } from "@/types";
 import { ReportBreakdownMore } from "./ReportBreakdownMore";
+import { RenderDots } from "@/components/ui/RenderDots";
 
 export function ReportBreakdowns() {
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const dispatch = useDispatch();
-  const propertiesQuery = api.chartMeta.properties.useQuery();
+  const propertiesQuery = api.chart.properties.useQuery();
   const propertiesCombobox = (propertiesQuery.data ?? []).map((item) => ({
     value: item,
-    label: item,
+    label: item, // <RenderDots truncate>{item}</RenderDots>,
   }));
 
   const handleMore = (breakdown: IChartBreakdown) => {

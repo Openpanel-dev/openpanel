@@ -73,4 +73,20 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .h1 {
+    @apply text-3xl font-medium;
+  }
+
+  .h2 {
+    @apply text-xl font-medium;
+  }
+  
+  .h3 {
+    @apply text-lg font-medium;
+  }
+ 
+  .h4 {
+    @apply font-medium;
+  }
 }

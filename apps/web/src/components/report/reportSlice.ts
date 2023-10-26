@@ -11,7 +11,7 @@ type InitialState = IChartInput;
 
 // First approach: define the initial state using that type
 const initialState: InitialState = {
-  name: "",
+  name: "screen_view",
   chartType: "linear",
   startDate: getDaysOldDate(7),
   endDate: new Date(),
@@ -102,7 +102,18 @@ export const reportSlice = createSlice({
       state.endDate = action.payload;
     },
 
-    changeDateRanges: (state, action: PayloadAction<number>) => {
+    changeDateRanges: (state, action: PayloadAction<number | 'today'>) => {
+      if(action.payload === 'today') {
+        state.startDate = new Date();
+        state.endDate = new Date();
+        state.startDate.setHours(0,0,0,0)
+        state.interval = 'hour'
+        return state
+      }
+
+      state.startDate = getDaysOldDate(action.payload);
+      state.endDate = new Date();
+
       if (action.payload === 1) {
         state.interval = "hour";
       } else if (action.payload <= 30) {
@@ -110,8 +121,6 @@ export const reportSlice = createSlice({
       } else {
         state.interval = "month";
       }
-      state.startDate = getDaysOldDate(action.payload);
-      state.endDate = new Date();
     },
   },
 });

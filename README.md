@@ -2,6 +2,26 @@
 
 Mixan is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now).
 
+## Whats left?
+
+* [ ] Real time data (mostly screen_views stats)
+  * [ ] Active users (5min, 10min, 30min)
+* [ ] Save report to a specific dashboard
+* [ ] View events in a list
+* [ ] View profiles in a list
+* [ ] Invite users
+* [ ] Drag n Drop reports on dashboard
+* [ ] Manage dashboards
+* [ ] Support more chart types
+  * [ ] Bar
+  * [ ] Pie
+  * [ ] Area
+* [ ] Support funnels
+* [ ] Create native sdk 
+* [ ] Create web sdk
+* [ ] Support multiple breakdowns
+* [ ] Aggregations (sum, average...)
+
 ## @mixan/sdk
 
 For pushing events

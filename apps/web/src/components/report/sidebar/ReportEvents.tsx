@@ -6,12 +6,14 @@ import { ReportEventFilters } from "./ReportEventFilters";
 import { useState } from "react";
 import { ReportEventMore, type ReportEventMoreProps } from "./ReportEventMore";
 import { type IChartEvent } from "@/types";
+import { Filter, GanttChart, Users } from "lucide-react";
+import { Dropdown } from "@/components/Dropdown";
 
 export function ReportEvents() {
   const [isCreating, setIsCreating] = useState(false);
   const selectedEvents = useSelector((state) => state.report.events);
   const dispatch = useDispatch();
-  const eventsQuery = api.chartMeta.events.useQuery();
+  const eventsQuery = api.chart.events.useQuery();
   const eventsCombobox = (eventsQuery.data ?? []).map((item) => ({
     value: item.name,
     label: item.name,
@@ -38,9 +40,11 @@ export function ReportEvents() {
       <div className="flex flex-col gap-4">
         {selectedEvents.map((event) => {
           return (
-            <div key={event.name} className="border rounded-lg">
-              <div className="flex gap-2 items-center p-2 px-4">
-                <div className="flex-shrink-0 bg-purple-500 w-5 h-5 rounded text-xs flex items-center justify-center text-white font-medium">{event.id}</div>
+            <div key={event.name} className="rounded-lg border">
+              <div className="flex items-center gap-2 p-2">
+                <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-purple-500 text-xs font-medium text-white">
+                  {event.id}
+                </div>
                 <Combobox
                   value={event.name}
                   onChange={(value) => {
@@ -57,10 +61,50 @@ export function ReportEvents() {
                 />
                 <ReportEventMore onClick={handleMore(event)} />
               </div>
-              <ReportEventFilters
-                {...{ isCreating, setIsCreating, event }}
 
-              />
+              {/* Segment and Filter buttons */}
+              <div className="flex gap-2 p-2 pt-0 text-sm">
+                <Dropdown
+                  onChange={(segment) => {
+                    dispatch(
+                      changeEvent({
+                        ...event,
+                        segment,
+                      }),
+                    );
+                  }}
+                  items={[
+                    {
+                      value: "event",
+                      label: "All events",
+                    },
+                    {
+                      value: "user",
+                      label: "Unique users",
+                    },
+                  ]}
+                  label="Segment"
+                >
+                  <button className="flex items-center gap-1 rounded-md border border-border p-1 px-2 font-medium leading-none text-xs">
+                    {event.segment === "user" ? (
+                      <><Users size={12} /> Unique users</>
+                      ) : (
+                      <><GanttChart size={12} /> All events</>
+                    )}
+                  </button>
+                </Dropdown>
+                <button
+                  onClick={() => {
+                    handleMore(event)("createFilter");
+                  }}
+                  className="flex items-center gap-1 rounded-md border border-border p-1 px-2 font-medium leading-none text-xs"
+                >
+                  <Filter size={12} /> Filter
+                </button>
+              </div>
+
+              {/* Filters */}
+              <ReportEventFilters {...{ isCreating, setIsCreating, event }} />
             </div>
           );
         })}
@@ -71,6 +115,7 @@ export function ReportEvents() {
             dispatch(
               addEvent({
                 name: value,
+                segment: "event",
                 filters: [],
               }),
             );
