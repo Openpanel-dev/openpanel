@@ -30,28 +30,31 @@ export type ProfileDecrementPayload = {
 
 // Batching
 export type BatchEvent = {
-  type: 'event',
+  type: 'event'
   payload: EventPayload
 }
 
 export type BatchProfile = {
-  type: 'profile',
+  type: 'profile'
   payload: ProfilePayload
 }
 
 export type BatchProfileIncrement = {
-  type: 'profile_increment',
+  type: 'profile_increment'
   payload: ProfileIncrementPayload
 }
 
 export type BatchProfileDecrement = {
-  type: 'profile_decrement',
+  type: 'profile_decrement'
   payload: ProfileDecrementPayload
 }
 
-export type BatchItem = BatchEvent | BatchProfile | BatchProfileIncrement | BatchProfileDecrement
+export type BatchItem =
+  | BatchEvent
+  | BatchProfile
+  | BatchProfileIncrement
+  | BatchProfileDecrement
 export type BatchPayload = Array<BatchItem>
-
 
 export type MixanIssue = {
   field: string
@@ -63,8 +66,8 @@ export type MixanErrorResponse = {
   status: 'error'
   code: number
   message: string
-  issues?: Array<MixanIssue>
-  stack?: string
+  issues?: Array<MixanIssue> | undefined
+  stack?: string | undefined
 }
 
 export type MixanResponse<T> = {

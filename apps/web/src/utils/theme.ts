@@ -1,5 +1,6 @@
 import resolveConfig from "tailwindcss/resolveConfig";
 import tailwinConfig from "../../tailwind.config";
+// @ts-expect-error
 const config = resolveConfig(tailwinConfig);
 
 export const theme = config.theme as any;

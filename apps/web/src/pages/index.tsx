@@ -8,7 +8,7 @@ export const getServerSideProps = createServerSideProps()
 
 export default function Home() {
   const router = useRouter()
-  const query = api.organization.current.useQuery();
+  const query = api.organization.first.useQuery();
   const organization = query.data ?? null;
 
   useEffect(() => {
