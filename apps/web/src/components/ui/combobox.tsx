@@ -24,7 +24,8 @@ type ComboboxProps = {
   }>;
   value: string;
   onChange: (value: string) => void;
-  children?: React.ReactNode
+  children?: React.ReactNode;
+  onCreate?: (value: string) => void;
 };
 
 export function Combobox({
@@ -32,10 +33,11 @@ export function Combobox({
   items,
   value,
   onChange,
-  children
+  children,
+  onCreate,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  
+  const [search, setSearch] = React.useState("");
   function find(value: string) {
     return items.find(
       (item) => item.value.toLowerCase() === value.toLowerCase(),
@@ -45,20 +47,34 @@ export function Combobox({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        {children ?? <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full min-w-0 justify-between"
-        >
-          <span className="overflow-hidden text-ellipsis">{value ? find(value)?.label ?? "No match" : placeholder}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>}
+        {children ?? (
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full min-w-0 justify-between"
+          >
+            <span className="overflow-hidden text-ellipsis">
+              {value ? find(value)?.label ?? "No match" : placeholder}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-full min-w-0 p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search item..." />
-          <CommandEmpty>Nothing selected</CommandEmpty>
+          <CommandInput placeholder="Search item..." value={search} onValueChange={setSearch} />
+          {typeof onCreate === "function" && search ? (
+            <CommandEmpty className="p-2">
+              <Button onClick={() => {
+                onCreate(search)
+                setSearch('')
+                setOpen(false)
+              }}>Create &quot;{search}&quot;</Button>
+            </CommandEmpty>
+          ) : (
+            <CommandEmpty>Nothing selected</CommandEmpty>
+          )}
           <CommandGroup className="max-h-[200px] overflow-auto">
             {items.map((item) => (
               <CommandItem

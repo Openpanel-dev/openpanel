@@ -28,6 +28,9 @@ const modals = {
   Confirm: dynamic(() => import('./Confirm'), {
     loading: Loading,
   }),
+  SaveReport: dynamic(() => import('./SaveReport'), {
+    loading: Loading,
+  }),
 };
 
 const emitter = mitt<{

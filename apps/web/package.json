@@ -52,6 +52,7 @@
     "react-syntax-highlighter": "^15.5.0",
     "react-virtualized-auto-sizer": "^1.0.20",
     "recharts": "^2.8.0",
+    "slugify": "^1.6.6",
     "superjson": "^1.13.1",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",

@@ -6,17 +6,19 @@ import { getOrganizationBySlug } from "@/server/services/organization.service";
 
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure
-  .input(z.object({
-    organizationSlug: z.string()
-  }))
-  .query(async ({ input }) => {
-    const organization = await getOrganizationBySlug(input.organizationSlug)
-    return db.project.findMany({
-      where: {
-        organization_id: organization.id,
-      },
-    });
-  }),
+    .input(
+      z.object({
+        organizationSlug: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const organization = await getOrganizationBySlug(input.organizationSlug);
+      return db.project.findMany({
+        where: {
+          organization_id: organization.id,
+        },
+      });
+    }),
   get: protectedProcedure
     .input(
       z.object({
@@ -27,7 +29,6 @@ export const projectRouter = createTRPCRouter({
       return db.project.findUniqueOrThrow({
         where: {
           id: input.id,
-          organization_id: "d433c614-69f9-443a-8961-92a662869929",
         },
       });
     }),
@@ -42,7 +43,6 @@ export const projectRouter = createTRPCRouter({
       return db.project.update({
         where: {
           id: input.id,
-          organization_id: "d433c614-69f9-443a-8961-92a662869929",
         },
         data: {
           name: input.name,
@@ -53,17 +53,19 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string(),
+        organizationSlug: z.string(),
       }),
     )
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
+      const organization = await getOrganizationBySlug(input.organizationSlug);
       return db.project.create({
         data: {
-          organization_id: "d433c614-69f9-443a-8961-92a662869929",
+          organization_id: organization.id,
           name: input.name,
         },
       });
     }),
-    remove: protectedProcedure
+  remove: protectedProcedure
     .input(
       z.object({
         id: z.string(),
@@ -73,9 +75,8 @@ export const projectRouter = createTRPCRouter({
       await db.project.delete({
         where: {
           id: input.id,
-          organization_id: "d433c614-69f9-443a-8961-92a662869929",
         },
       });
-      return true
+      return true;
     }),
 });

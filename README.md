@@ -4,9 +4,14 @@ Mixan is a simple analytics tool for logging events on web and react-native. My 
 
 ## Whats left?
 
+> Currently storing events on postgres but will probably move it to [clickhouse](https://clickhouse.com/) to speed up queries. Don't have any performance issues yet so will wait and see how well postgres can handle it.
+
+### GUI
+
+* [ ] Rename event label
 * [ ] Real time data (mostly screen_views stats)
   * [ ] Active users (5min, 10min, 30min)
-* [ ] Save report to a specific dashboard
+* [X] Save report to a specific dashboard
 * [ ] View events in a list
 * [ ] View profiles in a list
 * [ ] Invite users
@@ -17,10 +22,16 @@ Mixan is a simple analytics tool for logging events on web and react-native. My 
   * [ ] Pie
   * [ ] Area
 * [ ] Support funnels
-* [ ] Create native sdk 
-* [ ] Create web sdk
 * [ ] Support multiple breakdowns
 * [ ] Aggregations (sum, average...)
+
+### SDK
+
+* [ ] Store duration on screen view events (can be done in backend as well)
+* [ ] Create native sdk 
+  * [ ] Handle sessions
+* [ ] Create web sdk
+  * [ ] Screen view function should take in title, path and parse query string (especially utm tags)
 
 ## @mixan/sdk
 

@@ -20,7 +20,7 @@ type ModalHeaderProps = {
 
 export function ModalHeader({ title }: ModalHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between mb-6">
       <div className="font-medium">{title}</div>
       <Button variant="ghost" size="sm" onClick={() => popModal()}>
         <X className="h-4 w-4" />

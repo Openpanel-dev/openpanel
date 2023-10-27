@@ -119,7 +119,7 @@ export default function CreateProject() {
           render={({ field }) => {
             return (
               <div>
-                <Label className="mb-2 block">Project</Label>
+                <Label>Project</Label>
                 <Combobox
                   {...field}
                   onChange={(value) => {
