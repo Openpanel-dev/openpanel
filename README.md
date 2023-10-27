@@ -107,3 +107,10 @@ mixan.screenView('Profile', {
 ## @mixan/backend
 
 Self hosted service for collecting all events. Dockerfile and GUI will be added soon.
+
+## Screenshots
+
+![Line chart](images/line.png)
+![Bar chart](images/bar.png)
+![Dashboard](images/dashboard.png)
+![Settings](images/settings.png)
