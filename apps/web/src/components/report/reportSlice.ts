@@ -3,7 +3,9 @@ import {
   type IChartBreakdown,
   type IChartEvent,
   type IInterval,
+  type IChartType,
 } from "@/types";
+import { alphabetIds } from "@/utils/constants";
 import { getDaysOldDate } from "@/utils/date";
 import { type PayloadAction, createSlice } from "@reduxjs/toolkit";
 
@@ -13,14 +15,12 @@ type InitialState = IChartInput;
 const initialState: InitialState = {
   name: "screen_view",
   chartType: "linear",
-  startDate: getDaysOldDate(7),
-  endDate: new Date(),
+  startDate: getDaysOldDate(7).toISOString(),
+  endDate: new Date().toISOString(),
   interval: "day",
   breakdowns: [],
   events: [],
 };
-
-const IDS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"] as const;
 
 export const reportSlice = createSlice({
   name: "counter",
@@ -29,13 +29,13 @@ export const reportSlice = createSlice({
     reset() {
       return initialState
     },
-    setReport(state, action: PayloadAction<IChartInput>) {
-      return action.payload
+    setReport(state, action: PayloadAction<IChartInput>) {     
+      return action.payload      
     },
     // Events
     addEvent: (state, action: PayloadAction<Omit<IChartEvent, "id">>) => {
       state.events.push({
-        id: IDS[state.events.length]!,
+        id: alphabetIds[state.events.length]!,
         ...action.payload,
       });
     },
@@ -64,7 +64,7 @@ export const reportSlice = createSlice({
       action: PayloadAction<Omit<IChartBreakdown, "id">>,
     ) => {
       state.breakdowns.push({
-        id: IDS[state.breakdowns.length]!,
+        id: alphabetIds[state.breakdowns.length]!,
         ...action.payload,
       });
     },
@@ -91,28 +91,35 @@ export const reportSlice = createSlice({
     changeInterval: (state, action: PayloadAction<IInterval>) => {
       state.interval = action.payload;
     },
+    
+    // Chart type
+    changeChartType: (state, action: PayloadAction<IChartType>) => {
+      state.chartType = action.payload;
+    },
 
     // Date range
-    changeStartDate: (state, action: PayloadAction<Date>) => {
+    changeStartDate: (state, action: PayloadAction<string>) => {
       state.startDate = action.payload;
     },
 
     // Date range
-    changeEndDate: (state, action: PayloadAction<Date>) => {
+    changeEndDate: (state, action: PayloadAction<string>) => {
       state.endDate = action.payload;
     },
 
     changeDateRanges: (state, action: PayloadAction<number | 'today'>) => {
       if(action.payload === 'today') {
-        state.startDate = new Date();
-        state.endDate = new Date();
-        state.startDate.setHours(0,0,0,0)
+        const startDate = new Date()
+        startDate.setHours(0,0,0,0)
+
+        state.startDate = startDate.toISOString();
+        state.endDate = new Date().toISOString();
         state.interval = 'hour'
         return state
       }
 
-      state.startDate = getDaysOldDate(action.payload);
-      state.endDate = new Date();
+      state.startDate = getDaysOldDate(action.payload).toISOString();
+      state.endDate = new Date().toISOString()
 
       if (action.payload === 1) {
         state.interval = "hour";
@@ -137,6 +144,7 @@ export const {
   changeBreakdown,
   changeInterval,
   changeDateRanges,
+  changeChartType,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

@@ -8,6 +8,7 @@ import { ReportEventMore, type ReportEventMoreProps } from "./ReportEventMore";
 import { type IChartEvent } from "@/types";
 import { Filter, GanttChart, Users } from "lucide-react";
 import { Dropdown } from "@/components/Dropdown";
+import { ColorSquare } from "@/components/ColorSquare";
 
 export function ReportEvents() {
   const [isCreating, setIsCreating] = useState(false);
@@ -42,9 +43,9 @@ export function ReportEvents() {
           return (
             <div key={event.name} className="rounded-lg border">
               <div className="flex items-center gap-2 p-2">
-                <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-purple-500 text-xs font-medium text-white">
+                <ColorSquare>
                   {event.id}
-                </div>
+                </ColorSquare>
                 <Combobox
                   value={event.name}
                   onChange={(value) => {

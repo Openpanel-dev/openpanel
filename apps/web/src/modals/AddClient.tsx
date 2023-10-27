@@ -123,8 +123,6 @@ export default function CreateProject() {
                 <Combobox
                   {...field}
                   onChange={(value) => {
-                    console.log("wtf?", value);
-
                     field.onChange(value);
                   }}
                   items={

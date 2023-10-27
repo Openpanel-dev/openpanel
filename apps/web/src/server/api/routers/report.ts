@@ -8,21 +8,42 @@ import {
   type IChartInput,
   type IChartBreakdown,
   type IChartEvent,
+  type IChartEventFilter,
 } from "@/types";
 import { type Report as DbReport } from "@prisma/client";
 import { getProjectBySlug } from "@/server/services/project.service";
 import { getDashboardBySlug } from "@/server/services/dashboard.service";
+import { alphabetIds } from "@/utils/constants";
 
-function transform(report: DbReport): IChartInput & { id: string } {
+function transformFilter(filter: Partial<IChartEventFilter>, index: number): IChartEventFilter {
+  return {
+    id: filter.id ?? alphabetIds[index]!,
+    name: filter.name ?? 'Unknown Filter',
+    operator: filter.operator ?? 'is',
+    value: typeof filter.value === 'string' ? [filter.value] : filter.value ?? [],
+  }
+}
+
+function transformEvent(event: Partial<IChartEvent>, index: number): IChartEvent {
+  return {
+    segment: event.segment ?? 'event',
+    filters: (event.filters ?? []).map(transformFilter),
+    id: event.id ?? alphabetIds[index]!,
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    name: event.name || 'Untitled',
+  }
+}
+
+function transformReport(report: DbReport): IChartInput & { id: string } {
   return {
     id: report.id,
-    events: report.events as IChartEvent[],
+    events: (report.events  as IChartEvent[]).map(transformEvent),
     breakdowns: report.breakdowns as IChartBreakdown[],
-    startDate: getDaysOldDate(report.range),
-    endDate: new Date(),
+    startDate: getDaysOldDate(report.range).toISOString(),
+    endDate: new Date().toISOString(),
     chartType: report.chart_type,
     interval: report.interval,
-    name: report.name,
+    name: report.name || 'Untitled',
   };
 }
 
@@ -40,7 +61,7 @@ export const reportRouter = createTRPCRouter({
             id,
           },
         })
-        .then(transform);
+        .then(transformReport);
     }),
   list: protectedProcedure
     .input(
@@ -60,7 +81,7 @@ export const reportRouter = createTRPCRouter({
       });
 
       return {
-        reports: reports.map(transform),
+        reports: reports.map(transformReport),
         dashboard,
       }
     }),
@@ -82,7 +103,7 @@ export const reportRouter = createTRPCRouter({
           interval: report.interval,
           breakdowns: report.breakdowns,
           chart_type: report.chartType,
-          range: dateDifferanceInDays(report.endDate, report.startDate),
+          range: dateDifferanceInDays(new Date(report.endDate), new Date(report.startDate)),
         },
       });
     }),
@@ -108,7 +129,7 @@ export const reportRouter = createTRPCRouter({
           interval: report.interval,
           breakdowns: report.breakdowns,
           chart_type: report.chartType,
-          range: dateDifferanceInDays(report.endDate, report.startDate),
+          range: dateDifferanceInDays(new Date(report.endDate), new Date(report.startDate)),
         },
       });
     }),

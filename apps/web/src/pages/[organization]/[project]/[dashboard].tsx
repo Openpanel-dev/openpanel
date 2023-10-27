@@ -1,12 +1,12 @@
-import { ReportLineChart } from "@/components/report/chart/ReportLineChart";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { Container } from "@/components/Container";
 import { api } from "@/utils/api";
 import Link from "next/link";
 import { PageTitle } from "@/components/PageTitle";
 import { useOrganizationParams } from "@/hooks/useOrganizationParams";
-import { Suspense } from "react";
+import { Suspense, useMemo } from "react";
 import { createServerSideProps } from "@/server/getServerSideProps";
+import { Chart } from "@/components/report/chart";
 
 export const getServerSideProps = createServerSideProps()
 
@@ -19,7 +19,9 @@ export default function Dashboard() {
   });
   
   const dashboard = query.data?.dashboard ?? null;
-  const reports = query.data?.reports ?? [];
+  const reports = useMemo(() => {
+    return query.data?.reports ?? [];
+  }, [query])
 
   return (
     <MainLayout>
@@ -38,8 +40,8 @@ export default function Dashboard() {
                 >
                   {report.name}
                 </Link>
-                <div className="p-4 pl-2">
-                  <ReportLineChart {...report} showTable={false} />
+                <div className="p-4 pl-2 aspect-[1.8/1] overflow-auto">
+                  <Chart {...report} editMode={false} />
                 </div>
               </div>
             ))}

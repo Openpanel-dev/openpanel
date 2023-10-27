@@ -27,8 +27,6 @@ const MixanApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
-  console.log('session',session);
-  
   return (
     <div className={font.className}>
       <SessionProvider session={session}>

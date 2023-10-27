@@ -6,6 +6,7 @@ import { type ReportEventMoreProps } from "./ReportEventMore";
 import { type IChartBreakdown } from "@/types";
 import { ReportBreakdownMore } from "./ReportBreakdownMore";
 import { RenderDots } from "@/components/ui/RenderDots";
+import { ColorSquare } from "@/components/ColorSquare";
 
 export function ReportBreakdowns() {
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
@@ -36,9 +37,9 @@ export function ReportBreakdowns() {
           return (
             <div key={item.name} className="rounded-lg border">
               <div className="flex items-center gap-2 p-2 px-4">
-                <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-purple-500 text-xs font-medium text-white">
+                <ColorSquare>
                   {index}
-                </div>
+                </ColorSquare>
                 <Combobox
                   value={item.name}
                   onChange={(value) => {

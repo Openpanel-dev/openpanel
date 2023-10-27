@@ -1,5 +1,5 @@
 import { ReportSidebar } from "@/components/report/sidebar/ReportSidebar";
-import { ReportLineChart } from "@/components/report/chart/ReportLineChart";
+import { Chart } from "@/components/report/chart";
 import { useDispatch, useSelector } from "@/redux";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { ReportDateRange } from "@/components/report/ReportDateRange";
@@ -9,6 +9,7 @@ import { useReportId } from "@/components/report/hooks/useReportId";
 import { api } from "@/utils/api";
 import { useRouterBeforeLeave } from "@/hooks/useRouterBeforeLeave";
 import { createServerSideProps } from "@/server/getServerSideProps";
+import { ReportChartType } from "@/components/report/ReportChartType";
 
 export const getServerSideProps = createServerSideProps()
 
@@ -27,7 +28,7 @@ export default function Page() {
 
   // Set report if reportId exists
   useEffect(() => {
-    if(reportId && reportQuery.data) {
+    if(reportId && reportQuery.data) {      
       dispatch(setReport(reportQuery.data))
     }
   }, [reportId, reportQuery.data, dispatch])
@@ -40,9 +41,10 @@ export default function Page() {
       <div className="flex flex-col gap-4 p-4">
         <div className="flex gap-4">
           <ReportDateRange />
+          <ReportChartType />
         </div>
 
-        <ReportLineChart {...report} showTable />
+        <Chart {...report} editMode />
       </div>
     </MainLayout>
   );

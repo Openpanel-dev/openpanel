@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
-import { pipe, sort, uniq } from "ramda";
+import { last, pipe, sort, uniq } from "ramda";
 import { toDots } from "@/utils/object";
 import { zChartInput } from "@/utils/validation";
 import { type IChartInput, type IChartEvent } from "@/types";
@@ -13,15 +13,14 @@ export const config = {
 };
 
 export const chartRouter = createTRPCRouter({
-  events: protectedProcedure
-    .query(async () => {
-      const events = await db.event.findMany({
-        take: 500,
-        distinct: ["name"],
-      });
+  events: protectedProcedure.query(async () => {
+    const events = await db.event.findMany({
+      take: 500,
+      distinct: ["name"],
+    });
 
-      return events;
-    }),
+    return events;
+  }),
 
   properties: protectedProcedure
     .input(z.object({ event: z.string() }).optional())
@@ -106,12 +105,37 @@ export const chartRouter = createTRPCRouter({
         );
       }
 
-      return {
-        series: series.sort((a, b) => {
+      const sorted = [...series].sort((a, b) => {
+        if (input.chartType === "linear") {
           const sumA = a.data.reduce((acc, item) => acc + item.count, 0);
           const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
           return sumB - sumA;
-        }),
+        } else {
+          return b.totalCount - a.totalCount;
+        }
+      });
+
+      const meta = {
+        highest: sorted[0]?.totalCount ?? 0,
+        lowest: last(sorted)?.totalCount ?? 0,
+      };
+
+      return {
+        events: Object.entries(series.reduce((acc, item) => {
+          if(acc[item.event.id]) {
+            acc[item.event.id] += item.totalCount;
+          } else {
+            acc[item.event.id] = item.totalCount;
+          }
+          return acc
+        }, {} as Record<typeof series[number]['event']['id'], number>)).map(([id, count]) => ({
+            count,
+            ...events.find((event) => event.id === id)!,
+        })),
+        series: sorted.map((item) => ({
+          ...item,
+          meta,
+        })),
       };
     }),
 });
@@ -169,7 +193,7 @@ async function getChartData({
   endDate,
 }: {
   event: IChartEvent;
-} & Omit<IChartInput, 'events'>) {
+} & Omit<IChartInput, "events">) {
   const select = [];
   const where = [];
   const groupBy = [];
@@ -259,30 +283,34 @@ async function getChartData({
   }
 
   if (startDate) {
-    where.push(`"createdAt" >= '${startDate.toISOString()}'`);
+    where.push(`"createdAt" >= '${startDate}'`);
   }
 
   if (endDate) {
-    where.push(`"createdAt" <= '${endDate.toISOString()}'`);
+    where.push(`"createdAt" <= '${endDate}'`);
   }
 
-  const sql = `
-      SELECT ${select.join(", ")}
-      FROM events 
-      WHERE ${where.join(" AND ")}
-      GROUP BY ${groupBy.join(", ")}
-      ORDER BY ${orderBy.join(", ")}
-      `;
+  const sql = [
+    `SELECT ${select.join(", ")}`,
+    `FROM events`,
+    `WHERE ${where.join(" AND ")}`,
+  ];
 
-  const result = await db.$queryRawUnsafe<ResultItem[]>(sql);
+  if (groupBy.length) {
+    sql.push(`GROUP BY ${groupBy.join(", ")}`);
+  }
+  if (orderBy.length) {
+    sql.push(`ORDER BY ${orderBy.join(", ")}`);
+  }
+
+  const result = await db.$queryRawUnsafe<ResultItem[]>(sql.join("\n"));
 
   // group by sql label
   const series = result.reduce(
     (acc, item) => {
       // item.label can be null when using breakdowns on a property
       // that doesn't exist on all events
-      // fallback on event legend
-      const label = item.label?.trim() ?? getEventLegend(event);
+      const label = item.label?.trim() ?? event.id;
       if (label) {
         if (acc[label]) {
           acc[label]?.push(item);
@@ -301,18 +329,26 @@ async function getChartData({
   return Object.keys(series).map((key) => {
     const legend = breakdowns.length ? key : getEventLegend(event);
     const data = series[key] ?? [];
+
     return {
       name: legend,
+      event: {
+        id: event.id,
+        name: event.name,
+      },
       totalCount: getTotalCount(data),
-      data: fillEmptySpotsInTimeline(data, interval, startDate, endDate).map(
-        (item) => {
-          return {
-            label: legend,
-            count: item.count,
-            date: new Date(item.date).toISOString(),
-          };
-        },
-      ),
+      data:
+        chartType === "linear"
+          ? fillEmptySpotsInTimeline(data, interval, startDate, endDate).map(
+              (item) => {
+                return {
+                  label: legend,
+                  count: item.count,
+                  date: new Date(item.date).toISOString(),
+                };
+              },
+            )
+          : [],
     };
   });
 }
@@ -320,8 +356,8 @@ async function getChartData({
 function fillEmptySpotsInTimeline(
   items: ResultItem[],
   interval: string,
-  startDate: Date,
-  endDate: Date,
+  startDate: string,
+  endDate: string,
 ) {
   const result = [];
   const clonedStartDate = new Date(startDate);

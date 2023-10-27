@@ -1,4 +1,5 @@
-import { type zTimeInterval, type zChartBreakdown, type zChartEvent, type zChartInput } from "@/utils/validation";
+import { type RouterOutputs } from "@/utils/api";
+import { type zTimeInterval, type zChartBreakdown, type zChartEvent, type zChartInput, type zChartType } from "@/utils/validation";
 import { type Client, type Project } from "@prisma/client";
 import { type TooltipProps } from "recharts";
 import { type z } from "zod";
@@ -11,12 +12,12 @@ export type IChartEventFilter = IChartEvent['filters'][number]
 export type IChartEventFilterValue = IChartEvent['filters'][number]['value'][number]
 export type IChartBreakdown = z.infer<typeof zChartBreakdown>
 export type IInterval = z.infer<typeof zTimeInterval>
-
+export type IChartType = z.infer<typeof zChartType>
+export type IChartData = RouterOutputs["chart"]["chart"];
 
 export type IToolTipProps<T> = Omit<TooltipProps<number, string>, 'payload'> & {
   payload?: Array<T>
 }
-
 
 export type IProject = Project
 export type IClientWithProject = Client & {

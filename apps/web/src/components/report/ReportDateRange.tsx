@@ -7,13 +7,14 @@ import { type IInterval } from "@/types";
 export function ReportDateRange() {
   const dispatch = useDispatch();
   const interval = useSelector((state) => state.report.interval);
-  
+  const chartType = useSelector((state) => state.report.chartType);
+
   return (
     <>
       <RadioGroup>
         <RadioGroupItem
           onClick={() => {
-            dispatch(changeDateRanges('today'));
+            dispatch(changeDateRanges("today"));
           }}
         >
           Today
@@ -68,29 +69,31 @@ export function ReportDateRange() {
           1 year
         </RadioGroupItem>
       </RadioGroup>
-      <div className="w-full max-w-[200px]">
-        <Combobox
-          placeholder="Interval"
-          onChange={(value) => {
-            dispatch(changeInterval(value as IInterval));
-          }}
-          value={interval}
-          items={[
-            {
-              label: "Hour",
-              value: "hour",
-            },
-            {
-              label: "Day",
-              value: "day",
-            },
-            {
-              label: "Month",
-              value: "month",
-            },
-          ]}
-        ></Combobox>
-      </div>
+      {chartType === "linear" && (
+        <div className="w-full max-w-[200px]">
+          <Combobox
+            placeholder="Interval"
+            onChange={(value) => {
+              dispatch(changeInterval(value as IInterval));
+            }}
+            value={interval}
+            items={[
+              {
+                label: "Hour",
+                value: "hour",
+              },
+              {
+                label: "Day",
+                value: "day",
+              },
+              {
+                label: "Month",
+                value: "month",
+              },
+            ]}
+          />
+        </div>
+      )}
     </>
   );
 }

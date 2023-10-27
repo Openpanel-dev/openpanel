@@ -1,5 +1,6 @@
 import { useMappings } from "@/hooks/useMappings";
 import { type IToolTipProps } from "@/types";
+import { formatDate } from "@/utils/date";
 
 type ReportLineChartTooltipProps = IToolTipProps<{
   color: string;
@@ -29,9 +30,11 @@ export function ReportLineChartTooltip({
   const sorted = payload.slice(0).sort((a, b) => b.value - a.value);
   const visible = sorted.slice(0, limit);
   const hidden = sorted.slice(limit);
+  const first = visible[0]!;
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border bg-white p-3 text-sm shadow-xl">
+      {formatDate(new Date(first.payload.date))}
       {visible.map((item) => {
         return (
           <div key={item.payload.label} className="flex gap-2">

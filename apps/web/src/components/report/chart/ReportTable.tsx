@@ -1,15 +1,15 @@
 import * as React from "react";
-import { type RouterOutputs } from "@/utils/api";
 import { useFormatDateInterval } from "@/hooks/useFormatDateInterval";
 import { useSelector } from "@/redux";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getChartColor } from "@/utils/theme";
 import { cn } from "@/utils/cn";
 import { useMappings } from "@/hooks/useMappings";
+import { type IChartData } from "@/types";
 
 
 type ReportTableProps = {
-  data: RouterOutputs["chart"]["chart"];
+  data: IChartData;
   visibleSeries: string[];
   setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
 };

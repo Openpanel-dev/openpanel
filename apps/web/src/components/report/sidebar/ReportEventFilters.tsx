@@ -23,6 +23,7 @@ import { ComboboxMulti } from "@/components/ui/combobox-multi";
 import { Dropdown } from "@/components/Dropdown";
 import { operators } from "@/utils/constants";
 import { useMappings } from "@/hooks/useMappings";
+import { ColorSquare } from "@/components/ColorSquare";
 
 type ReportEventFiltersProps = {
   event: IChartEvent;
@@ -163,9 +164,9 @@ function Filter({ filter, event }: FilterProps) {
       className="px-4 py-2 shadow-[inset_6px_0_0] shadow-slate-200 first:border-t"
     >
       <div className="mb-2 flex items-center gap-2">
-        <div className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded bg-emerald-600 text-xs font-medium text-white">
+        <ColorSquare className="bg-emerald-500">
           <SlidersHorizontal size={10} />
-        </div>
+        </ColorSquare>
         <div className="flex flex-1 text-sm">
         <RenderDots truncate>{filter.name}</RenderDots>
         </div>
