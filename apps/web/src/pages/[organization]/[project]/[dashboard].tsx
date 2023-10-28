@@ -7,6 +7,7 @@ import { useOrganizationParams } from "@/hooks/useOrganizationParams";
 import { Suspense, useMemo } from "react";
 import { createServerSideProps } from "@/server/getServerSideProps";
 import { Chart } from "@/components/report/chart";
+import { timeRanges } from "@/utils/constants";
 
 export const getServerSideProps = createServerSideProps()
 
@@ -29,22 +30,26 @@ export default function Dashboard() {
         <Suspense fallback="Loading">
           <PageTitle>{dashboard?.name}</PageTitle>
           <div className="grid grid-cols-2 gap-4">
-            {reports.map((report) => (
-              <div
-                className="rounded-md border border-border bg-white shadow"
-                key={report.id}
-              >
-                <Link
-                  href={`/${params.organization}/reports/${report.id}`}
-                  className="block border-b border-border p-4 font-medium leading-none hover:underline"
+            {reports.map((report) => {
+              const range = timeRanges.find((item) => item.range === report.range)
+              return (
+                <div
+                  className="rounded-md border border-border bg-white shadow"
+                  key={report.id}
                 >
-                  {report.name}
-                </Link>
-                <div className="p-4 pl-2 aspect-[1.8/1] overflow-auto">
-                  <Chart {...report} editMode={false} />
+                  <Link
+                    href={`/${params.organization}/reports/${report.id}`}
+                    className="block border-b border-border p-4 leading-none hover:underline"
+                  >
+                    <div className="font-medium">{report.name}</div>
+                    {range && <div className="text-sm mt-2">{range.title}</div>}
+                  </Link>
+                  <div className="p-4 pl-2 aspect-[1.8/1] overflow-auto">
+                    <Chart {...report} editMode={false} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </Suspense>
       </Container>
