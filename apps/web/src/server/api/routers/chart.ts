@@ -3,8 +3,13 @@ import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
 import { last, pipe, sort, uniq } from "ramda";
 import { toDots } from "@/utils/object";
-import { zChartInput } from "@/utils/validation";
-import { type IChartInput, type IChartEvent } from "@/types";
+import { zChartInputWithDates } from "@/utils/validation";
+import {
+  type IChartInputWithDates,
+  type IChartEvent,
+  type IChartRange,
+} from "@/types";
+import { getDaysOldDate } from "@/utils/date";
 
 export const config = {
   api: {
@@ -89,18 +94,14 @@ export const chartRouter = createTRPCRouter({
     }),
 
   chart: protectedProcedure
-    .input(zChartInput)
+    .input(zChartInputWithDates)
     .query(async ({ input: { events, ...input } }) => {
-      const startDate = input.startDate ?? new Date();
-      const endDate = input.endDate ?? new Date();
       const series: Awaited<ReturnType<typeof getChartData>> = [];
       for (const event of events) {
         series.push(
           ...(await getChartData({
             ...input,
             event,
-            startDate,
-            endDate,
           })),
         );
       }
@@ -121,16 +122,21 @@ export const chartRouter = createTRPCRouter({
       };
 
       return {
-        events: Object.entries(series.reduce((acc, item) => {
-          if(acc[item.event.id]) {
-            acc[item.event.id] += item.totalCount;
-          } else {
-            acc[item.event.id] = item.totalCount;
-          }
-          return acc
-        }, {} as Record<typeof series[number]['event']['id'], number>)).map(([id, count]) => ({
-            count,
-            ...events.find((event) => event.id === id)!,
+        events: Object.entries(
+          series.reduce(
+            (acc, item) => {
+              if (acc[item.event.id]) {
+                acc[item.event.id] += item.totalCount;
+              } else {
+                acc[item.event.id] = item.totalCount;
+              }
+              return acc;
+            },
+            {} as Record<(typeof series)[number]["event"]["id"], number>,
+          ),
+        ).map(([id, count]) => ({
+          count,
+          ...events.find((event) => event.id === id)!,
         })),
         series: sorted.map((item) => ({
           ...item,
@@ -184,16 +190,45 @@ function getTotalCount(arr: ResultItem[]) {
   return arr.reduce((acc, item) => acc + item.count, 0);
 }
 
+function getDatesFromRange(range: IChartRange) {
+  if (range === 0) {
+    const startDate = new Date();
+    const endDate = new Date().toISOString();
+    startDate.setHours(0, 0, 0, 0);
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate,
+    };
+  }
+
+  const startDate = getDaysOldDate(range).toISOString();
+  const endDate = new Date().toISOString();
+  return {
+    startDate,
+    endDate,
+  };
+}
+
 async function getChartData({
   chartType,
   event,
   breakdowns,
   interval,
-  startDate,
-  endDate,
+  range,
+  startDate: _startDate,
+  endDate: _endDate,
 }: {
   event: IChartEvent;
-} & Omit<IChartInput, "events">) {
+} & Omit<IChartInputWithDates, "events">) {
+  const { startDate, endDate } =
+    _startDate && _endDate
+      ? {
+          startDate: _startDate,
+          endDate: _endDate,
+        }
+      : getDatesFromRange(range);
+
   const select = [];
   const where = [];
   const groupBy = [];
@@ -362,6 +397,8 @@ function fillEmptySpotsInTimeline(
   const result = [];
   const clonedStartDate = new Date(startDate);
   const clonedEndDate = new Date(endDate);
+  const today = new Date();
+
   if (interval === "hour") {
     clonedStartDate.setMinutes(0, 0, 0);
     clonedEndDate.setMinutes(0, 0, 0);
@@ -370,7 +407,16 @@ function fillEmptySpotsInTimeline(
     clonedEndDate.setHours(2, 0, 0, 0);
   }
 
-  while (clonedStartDate.getTime() <= clonedEndDate.getTime()) {
+  // Force if interval is month and the start date is the same month as today
+  const shouldForce = () =>
+    interval === "month" &&
+    clonedStartDate.getFullYear() === today.getFullYear() &&
+    clonedStartDate.getMonth() === today.getMonth();
+
+  while (
+    shouldForce() ||
+    clonedStartDate.getTime() <= clonedEndDate.getTime()
+  ) {
     const getYear = (date: Date) => date.getFullYear();
     const getMonth = (date: Date) => date.getMonth();
     const getDay = (date: Date) => date.getDate();

@@ -4,22 +4,26 @@ import {
   type IChartEvent,
   type IInterval,
   type IChartType,
+  type IChartRange,
 } from "@/types";
 import { alphabetIds } from "@/utils/constants";
-import { getDaysOldDate } from "@/utils/date";
 import { type PayloadAction, createSlice } from "@reduxjs/toolkit";
 
-type InitialState = IChartInput;
+type InitialState = IChartInput & {
+  startDate: string | null;
+  endDate: string | null;
+}
 
 // First approach: define the initial state using that type
 const initialState: InitialState = {
   name: "screen_view",
   chartType: "linear",
-  startDate: getDaysOldDate(7).toISOString(),
-  endDate: new Date().toISOString(),
   interval: "day",
   breakdowns: [],
   events: [],
+  range: 30,
+  startDate: null,
+  endDate: null,
 };
 
 export const reportSlice = createSlice({
@@ -30,7 +34,11 @@ export const reportSlice = createSlice({
       return initialState
     },
     setReport(state, action: PayloadAction<IChartInput>) {     
-      return action.payload      
+      return {
+        ...action.payload,
+        startDate: null,
+        endDate: null,
+      }
     },
     // Events
     addEvent: (state, action: PayloadAction<Omit<IChartEvent, "id">>) => {
@@ -107,21 +115,9 @@ export const reportSlice = createSlice({
       state.endDate = action.payload;
     },
 
-    changeDateRanges: (state, action: PayloadAction<number | 'today'>) => {
-      if(action.payload === 'today') {
-        const startDate = new Date()
-        startDate.setHours(0,0,0,0)
-
-        state.startDate = startDate.toISOString();
-        state.endDate = new Date().toISOString();
-        state.interval = 'hour'
-        return state
-      }
-
-      state.startDate = getDaysOldDate(action.payload).toISOString();
-      state.endDate = new Date().toISOString()
-
-      if (action.payload === 1) {
+    changeDateRanges: (state, action: PayloadAction<IChartRange>) => {
+      state.range = action.payload
+      if (action.payload === 0 || action.payload === 1) {
         state.interval = "hour";
       } else if (action.payload <= 30) {
         state.interval = "day";

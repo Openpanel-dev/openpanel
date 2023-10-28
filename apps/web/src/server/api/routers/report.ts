@@ -2,13 +2,13 @@ import { z } from "zod";
 
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { zChartInput } from "@/utils/validation";
-import { dateDifferanceInDays, getDaysOldDate } from "@/utils/date";
 import { db } from "@/server/db";
 import {
   type IChartInput,
   type IChartBreakdown,
   type IChartEvent,
   type IChartEventFilter,
+  type IChartRange,
 } from "@/types";
 import { type Report as DbReport } from "@prisma/client";
 import { getProjectBySlug } from "@/server/services/project.service";
@@ -39,11 +39,10 @@ function transformReport(report: DbReport): IChartInput & { id: string } {
     id: report.id,
     events: (report.events  as IChartEvent[]).map(transformEvent),
     breakdowns: report.breakdowns as IChartBreakdown[],
-    startDate: getDaysOldDate(report.range).toISOString(),
-    endDate: new Date().toISOString(),
     chartType: report.chart_type,
     interval: report.interval,
     name: report.name || 'Untitled',
+    range: report.range as IChartRange ?? 30,
   };
 }
 
@@ -103,7 +102,7 @@ export const reportRouter = createTRPCRouter({
           interval: report.interval,
           breakdowns: report.breakdowns,
           chart_type: report.chartType,
-          range: dateDifferanceInDays(new Date(report.endDate), new Date(report.startDate)),
+          range: report.range,
         },
       });
 
@@ -130,7 +129,7 @@ export const reportRouter = createTRPCRouter({
           interval: report.interval,
           breakdowns: report.breakdowns,
           chart_type: report.chartType,
-          range: dateDifferanceInDays(new Date(report.endDate), new Date(report.startDate)),
+          range: report.range,
         },
       });
     }),

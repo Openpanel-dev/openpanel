@@ -16,9 +16,3 @@ export function toDots(
     };
   }, {});
 }
-
-export function entries<K extends string | number | symbol, V>(
-  obj: Record<K, V>,
-): [K, V][] {
-  return Object.entries(obj) as [K, V][];
-}

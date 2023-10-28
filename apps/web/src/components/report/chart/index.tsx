@@ -8,23 +8,23 @@ type ReportLineChartProps = IChartInput
 
 export const Chart = withChartProivder(({
   interval,
-  startDate,
-  endDate,
   events,
   breakdowns,
   chartType,
   name,
+  range,
 }: ReportLineChartProps) =>  {
   const hasEmptyFilters = events.some((event) => event.filters.some((filter) => filter.value.length === 0));
   const chart = api.chart.chart.useQuery(
     {
       interval,
       chartType,
-      startDate,
-      endDate,
       events,
       breakdowns,
       name,
+      range,
+      startDate: null,
+      endDate: null,
     },
     {
       keepPreviousData: true,

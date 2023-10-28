@@ -12,7 +12,6 @@ export const getServerSideProps = createServerSideProps()
 export default function Home() {
   const params = useOrganizationParams();
   const query = api.dashboard.list.useQuery({
-    organizationSlug: params.organization,
     projectSlug: params.project,
   }, {
     enabled: Boolean(params.organization && params.project),

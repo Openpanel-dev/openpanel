@@ -9,6 +9,7 @@ import { popModal } from ".";
 import { toast } from "@/components/ui/use-toast";
 import { InputWithLabel } from "@/components/forms/InputWithLabel";
 import { useRefetchActive } from "@/hooks/useRefetchActive";
+import { useOrganizationParams } from "@/hooks/useOrganizationParams";
 
 const validator = z.object({
   name: z.string().min(1),
@@ -17,6 +18,7 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function AddProject() {
+  const params = useOrganizationParams()
   const refetch = useRefetchActive()
   const mutation = api.project.create.useMutation({
     onError: handleError,
@@ -41,7 +43,10 @@ export default function AddProject() {
       <ModalHeader title="Create project" />
       <form
         onSubmit={handleSubmit((values) => {
-          mutation.mutate(values);
+          mutation.mutate({
+            ...values,
+            organizationSlug: params.organization,
+          });
         })}
       >
         <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
