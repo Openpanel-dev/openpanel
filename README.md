@@ -4,7 +4,11 @@
 
 # mixan
 
-Mixan is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now).
+Mixan is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now). 
+
+* Easy to use
+* Own your own data
+* GDPR friendly
 
 ## Whats left?
 

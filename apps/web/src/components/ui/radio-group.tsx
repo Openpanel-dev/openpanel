@@ -3,7 +3,9 @@ import * as React from "react"
 import { cn } from "@/utils/cn"
 
 export type RadioGroupProps = React.InputHTMLAttributes<HTMLDivElement>
-export type RadioGroupItemProps = React.InputHTMLAttributes<HTMLButtonElement>
+export type RadioGroupItemProps = React.InputHTMLAttributes<HTMLButtonElement> & {
+  active?: boolean
+}
 
 const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
   ({ className, type, ...props }, ref) => {
@@ -20,9 +22,9 @@ const RadioGroup = React.forwardRef<HTMLDivElement, RadioGroupProps>(
   }
 )
 
-const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItemProps>(({className, ...props}, ref) => {
+const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItemProps>(({className, active, ...props}, ref) => {
   return (
-    <button {...props} className={cn('flex-1 px-3 whitespace-nowrap leading-none hover:bg-slate-100 transition-colors font-medium', className)} type="button" ref={ref} />
+    <button {...props} className={cn('flex-1 px-3 whitespace-nowrap leading-none hover:bg-slate-100 transition-colors font-medium', className, active && 'bg-slate-100')} type="button" ref={ref} />
   )
 })
 

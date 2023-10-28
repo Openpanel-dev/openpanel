@@ -106,6 +106,7 @@ export const reportRouter = createTRPCRouter({
           range: dateDifferanceInDays(new Date(report.endDate), new Date(report.startDate)),
         },
       });
+
     }),
   update: protectedProcedure
     .input(

@@ -1,16 +1,25 @@
 import { Button } from "@/components/ui/button";
 import { useReportId } from "../hooks/useReportId";
-import { api } from "@/utils/api";
+import { api, handleError } from "@/utils/api";
 import { useSelector } from "@/redux";
 import { pushModal } from "@/modals";
+import { toast } from "@/components/ui/use-toast";
 
 export function ReportSaveButton() {
   const { reportId } = useReportId();
-  const update = api.report.update.useMutation();
+  const update = api.report.update.useMutation({
+    onSuccess() {
+      toast({
+        title: "Success",
+        description: "Report updated.",
+      });
+    },
+    onError: handleError
+  });
   const report = useSelector((state) => state.report);
 
   if (reportId) {
-    return <Button onClick={() => {
+    return <Button loading={update.isLoading} onClick={() => {
       update.mutate({
         reportId,
         report,

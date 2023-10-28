@@ -13,6 +13,7 @@ import { type IChartInput } from "@/types";
 import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { useOrganizationParams } from "@/hooks/useOrganizationParams";
+import { useRouter } from "next/router";
 
 type SaveReportProps = {
   report: IChartInput;
@@ -28,17 +29,19 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function SaveReport({ report }: SaveReportProps) {
+  const router = useRouter()
   const { organization } = useOrganizationParams();
   const refetch = useRefetchActive();
   const save = api.report.save.useMutation({
     onError: handleError,
-    onSuccess() {
+    onSuccess(res) {
       toast({
         title: "Success",
         description: "Report saved.",
       });
       popModal();
       refetch();
+      router.push(`/${organization}/reports/${res.id}`)
     },
   });
 
