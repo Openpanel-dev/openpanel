@@ -8,30 +8,42 @@ import { SettingsLayout } from "@/components/layouts/SettingsLayout";
 import { toast } from "@/components/ui/use-toast";
 import { createServerSideProps } from "@/server/getServerSideProps";
 import { useOrganizationParams } from "@/hooks/useOrganizationParams";
+import { z } from "zod";
+import { InputError } from "@/components/forms/InputError";
+import { useRouter } from "next/router";
 
 export const getServerSideProps = createServerSideProps();
 
+const validator = z.object({
+  id: z.string().min(2),
+  name: z.string().min(2),
+});
+
+type IForm = z.infer<typeof validator>;
+
 export default function Organization() {
+  const router = useRouter()
   const params = useOrganizationParams();
   const query = api.organization.get.useQuery({
     slug: params.organization,
   });
   const mutation = api.organization.update.useMutation({
-    onSuccess() {
+    onSuccess(res) {
       toast({
         title: "Organization updated",
         description: "Your organization has been updated.",
       });
       query.refetch();
+      router.replace(`/${res.slug}/settings/organization`)
     },
     onError: handleError,
   });
   const data = query.data;
 
-  const { register, handleSubmit, reset, formState, getValues } = useForm({
+  const { register, handleSubmit, reset, formState } = useForm<IForm>({
     defaultValues: {
+      id: "",
       name: "",
-      slug: "",
     },
   });
 
@@ -45,7 +57,9 @@ export default function Organization() {
   return (
     <SettingsLayout>
       <form
-        onSubmit={handleSubmit((values) => mutation.mutate(values))}
+        onSubmit={handleSubmit((values) => {
+          mutation.mutate(values)
+        })}
         className="flex flex-col divide-y divide-border"
       >
         <ContentHeader
@@ -54,7 +68,7 @@ export default function Organization() {
         >
           <Button type="submit" disabled={!formState.isDirty}>Save</Button>
         </ContentHeader>
-        <ContentSection title="Name" text="The name of your organization.">
+        <ContentSection title="Name" text={["Notice. Changing name will result in a url change as well.", <InputError key="error" {...formState.errors.name} />]}>
           <Input {...register("name")} />
         </ContentSection>
         <ContentSection

@@ -35,7 +35,7 @@ export default function Profile() {
   });
   const data = query.data;
 
-  const { register, handleSubmit, reset, formState } = useForm({
+  const { register, handleSubmit, reset, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
       name: "",

@@ -3,6 +3,7 @@ import {
   type GetServerSidePropsResult,
 } from "next";
 import { getServerAuthSession } from "./auth";
+import { db } from "./db";
 
 export function createServerSideProps(
   cb?: (context: GetServerSidePropsContext) => Promise<any>,
@@ -10,7 +11,7 @@ export function createServerSideProps(
   return async function getServerSideProps(
     context: GetServerSidePropsContext,
   ): Promise<GetServerSidePropsResult<any>> {
-    const session = await getServerAuthSession(context);
+    const session = await getServerAuthSession(context); 
 
     if(!session) {
       return {
@@ -18,6 +19,23 @@ export function createServerSideProps(
           destination: "/api/auth/signin",
           permanent: false,
         },
+      }
+    }
+
+    if(context.params?.organization) {
+      const organization = await db.user.findFirst({
+        where: {
+          id: session.user.id,
+          organization: {
+            slug: context.params.organization as string
+          }
+        }
+      })
+      
+      if(!organization) {
+        return {
+          notFound: true,
+        }
       }
     }
 

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
 import { getOrganizationBySlug } from "@/server/services/organization.service";
+import { slug } from "@/utils/slug";
 
 export const organizationRouter = createTRPCRouter({
   first: protectedProcedure.query(({ ctx }) => {
@@ -28,17 +29,18 @@ export const organizationRouter = createTRPCRouter({
   update: protectedProcedure
     .input(
       z.object({
+        id: z.string(),
         name: z.string(),
-        slug: z.string(),
       }),
     )
     .mutation(({ input }) => {
       return db.organization.update({
         where: {
-          slug: input.slug,
+          id: input.id,
         },
         data: {
           name: input.name,
+          slug: slug(input.name)
         },
       });
     }),
