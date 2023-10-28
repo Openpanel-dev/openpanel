@@ -5,7 +5,7 @@ import {
   protectedProcedure,
 } from "@/server/api/trpc";
 import { db } from "@/server/db";
-import { hashPassword } from "@/server/services/hash.service";
+import { hashPassword, verifyPassword } from "@/server/services/hash.service";
 
 export const userRouter = createTRPCRouter({
   current: protectedProcedure.query(({ ctx }) => {
@@ -47,14 +47,10 @@ export const userRouter = createTRPCRouter({
         }
       })
 
-      if(user.password !== input.oldPassword) {
+      if(!(await verifyPassword(input.oldPassword, user.password))) {
         throw new Error('Old password is incorrect')
       }
-
-      if(user.password === input.password) {
-        throw new Error('New password cannot be the same as old password')
-      }
-
+      
       return db.user.update({
         where: {
           id: ctx.session.user.id

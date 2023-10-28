@@ -8,7 +8,7 @@ import {
 import { db } from "@/server/db";
 import Credentials from "next-auth/providers/credentials";
 import { createError } from "./exceptions";
-import { verifyPassword } from "@/server/services/hash.service";
+import { hashPassword, verifyPassword } from "@/server/services/hash.service";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -55,18 +55,26 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
+        if(!credentials?.password || !credentials?.email) {
+          return null
+        }
+
         const user = await db.user.findFirst({
           where: { email: credentials?.email },
         });
 
-        if (user) {
-          return {
-            ...user,
-            image: 'https://avatars.githubusercontent.com/u/18133?v=4'
-          };
-        } else {
-          return null;
+        if(!user) {
+          return null
         }
+        
+        if(!await verifyPassword(credentials.password, user.password)) {
+          return null
+        }
+
+        return {
+          ...user,
+          image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Abby'
+        };
       },
     }),
     /**

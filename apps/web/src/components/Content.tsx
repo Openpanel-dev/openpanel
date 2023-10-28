@@ -20,7 +20,7 @@ export function ContentHeader({ title, text, children }: ContentHeaderProps) {
 
 type ContentSectionProps = {
   title: string;
-  text: string;
+  text?: string | React.ReactNode;
   children: React.ReactNode;
   asCol?: boolean;
 };
@@ -41,7 +41,7 @@ export function ContentSection({
       {title && (
         <div className="max-w-[50%]">
           <h4 className="h4">{title}</h4>
-          <p className="text-sm text-muted-foreground">{text}</p>
+          {text && <p className="text-sm text-muted-foreground">{text}</p>}
         </div>
       )}
       <div>{children}</div>
