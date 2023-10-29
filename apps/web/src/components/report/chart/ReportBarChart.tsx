@@ -10,11 +10,12 @@ import {
   getSortedRowModel,
   type SortingState,
 } from "@tanstack/react-table";
-import { memo, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useElementSize } from "usehooks-ts";
 import { useChartContext } from "./ChartProvider";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const columnHelper =
   createColumnHelper<RouterOutputs["chart"]["chart"]["series"][number]>();
@@ -109,7 +110,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
         </div>
       )}
       <div className="overflow-x-auto">
-        <table
+        <Table
           {...{
             className: editMode ? '' : 'mini',
             style: {
@@ -117,11 +118,11 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
             },
           }}
         >
-          <thead>
+          <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th
+                  <TableHead
                     key={header.id}
                     {...{
                       colSpan: header.colSpan,
@@ -161,16 +162,16 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                           }
                         : {})}
                     />
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </thead>
-          <tbody>
+          </TableHeader>
+          <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <tr key={row.id}>
+              <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
-                  <td
+                  <TableCell
                     key={cell.id}
                     {...{
                       style: {
@@ -179,12 +180,12 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                     }}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

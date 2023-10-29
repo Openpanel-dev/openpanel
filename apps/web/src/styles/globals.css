@@ -120,24 +120,6 @@
   }
 }
 
-table {
-  @apply w-fit border border-border;
-}
-
-table.mini {
-  @apply text-xs;
-}
-
-th,
-td {
-  @apply border border-border px-4 py-2;
-}
-
-th {
-  /* relative is for resizing */
-  @apply relative text-left font-medium;
-}
-
 .resizer {
   position: absolute;
   right: 0;

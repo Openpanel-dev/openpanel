@@ -10,7 +10,6 @@ import { Chart } from "@/components/report/chart";
 import { timeRanges } from "@/utils/constants";
 import { type IChartRange } from "@/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { cn } from "@/utils/cn";
 import { getRangeLabel } from "@/utils/getRangeLabel";
 
 export const getServerSideProps = createServerSideProps();

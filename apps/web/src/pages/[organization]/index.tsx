@@ -24,7 +24,7 @@ export default function Home() {
   return (
     <MainLayout>
       <Container>
-        <PageTitle>Reports</PageTitle>
+        <PageTitle>Projects</PageTitle>
         <div className="grid grid-cols-2 gap-4">
           {projects.map((item) => (
             <Card key={item.id}>
