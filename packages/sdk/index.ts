@@ -111,8 +111,11 @@ class Batcher<T extends any> {
     if(this.timer) {
       clearTimeout(this.timer)
     }
-    this.callback(this.queue)
-    this.queue = []
+
+    if(this.queue.length > 0) {
+      this.callback(this.queue)
+      this.queue = []
+    }
   }
 }
 
