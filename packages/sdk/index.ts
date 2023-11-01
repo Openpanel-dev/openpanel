@@ -108,6 +108,9 @@ class Batcher<T extends any> {
   }
 
   send() {
+    if(this.timer) {
+      clearTimeout(this.timer)
+    }
     this.callback(this.queue)
     this.queue = []
   }
@@ -119,6 +122,8 @@ export class Mixan {
   private profileId?: string
   private options: MixanOptions
   private logger: (...args: any[]) => void
+  private globalProperties: Record<string, any> = {}
+  private lastScreenViewAt?: string
   
   constructor(options: MixanOptions) {
     this.logger = options.verbose ? console.log : () => {}
@@ -130,7 +135,7 @@ export class Mixan {
         '/events',
         queue.map((item) => ({
           ...item,
-          profileId: item.profileId || this.profileId || null,
+          profileId: item.profileId || this.profileId || null,
         }))
       )
     })
@@ -144,7 +149,10 @@ export class Mixan {
     this.logger('Mixan: Queue event', name)
     this.eventBatcher.add({
       name,
-      properties,
+      properties: {
+        ...this.globalProperties,
+        ...properties,
+      },
       time: this.timestamp(),
       profileId: this.profileId || null,
     })
@@ -154,10 +162,10 @@ export class Mixan {
     const profileId = this.options.getProfileId()
     if(profileId) {
       this.profileId = profileId
-       this.logger('Mixan: Use existing ID', this.profileId);
+      this.logger('Mixan: Use existing ID', this.profileId);
     } else {
       this.profileId = uuid()
-       this.logger('Mixan: Create new ID', this.profileId);
+      this.logger('Mixan: Create new ID', this.profileId);
       this.options.saveProfileId(this.profileId)
       this.fetch.post('/profiles', {
         id: this.profileId,
@@ -186,6 +194,11 @@ export class Mixan {
         [name]: value,
       },
     })
+  }
+
+  async setGlobalProperties(properties: Record<string, any>) {
+    this.logger('Mixan: Set global properties', properties);
+    this.globalProperties = properties ?? {}
   }
 
   async increment(name: string, value: number = 1) {
@@ -218,11 +231,28 @@ export class Mixan {
     })
   }
 
-  async screenView(route: string, properties?: Record<string, any>) {
+  async screenView(route: string, _properties?: Record<string, any>) {
+    const properties = _properties ?? {}
+    const now = new Date()
+    
+    if(this.lastScreenViewAt) {
+      const last = new Date(this.lastScreenViewAt)
+      const diff = now.getTime() - last.getTime()
+      this.logger(`Mixan: Screen view duration: ${diff}ms`)
+      properties['duration'] = diff
+    }
+    
+    this.lastScreenViewAt = now.toISOString()
     await this.event('screen_view', {
-      ...(properties || {}),
+      ...properties,
       route,
     })
+  }
+  
+  flush() {
+    this.logger('Mixan: Flushing events queue')
+    this.eventBatcher.send()
+    this.lastScreenViewAt = undefined
   }
 
   clear() {
