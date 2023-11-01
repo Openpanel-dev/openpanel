@@ -2,7 +2,7 @@ import { type IInterval } from "@/types";
 
 
 export function formatDateInterval(interval: IInterval, date: Date): string {
-  if (interval === "hour") {
+  if (interval === "hour" || interval === "minute") {
     return new Intl.DateTimeFormat("en-GB", {
       hour: "2-digit",
       minute: "2-digit",
@@ -14,11 +14,11 @@ export function formatDateInterval(interval: IInterval, date: Date): string {
   }
 
   if (interval === "day") {
-    return new Intl.DateTimeFormat("en-GB", { weekday: "short" }).format(
+    return new Intl.DateTimeFormat("en-GB", { weekday: "short", day: '2-digit', month: '2-digit' }).format(
       date,
     );
   }
-
+  
   return date.toISOString();
 }
 

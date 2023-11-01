@@ -3,7 +3,7 @@ import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 import { changeDateRanges, changeInterval } from "./reportSlice";
 import { Combobox } from "../ui/combobox";
 import { type IInterval } from "@/types";
-import { timeRanges } from "@/utils/constants";
+import { intervals, timeRanges } from "@/utils/constants";
 
 export function ReportDateRange() {
   const dispatch = useDispatch();
@@ -14,7 +14,7 @@ export function ReportDateRange() {
   return (
     <>
       <RadioGroup>
-        {timeRanges.map(item => {
+        {timeRanges.map((item) => {
           return (
             <RadioGroupItem
               key={item.range}
@@ -25,7 +25,7 @@ export function ReportDateRange() {
             >
               {item.title}
             </RadioGroupItem>
-          )
+          );
         })}
       </RadioGroup>
       {chartType === "linear" && (
@@ -36,20 +36,10 @@ export function ReportDateRange() {
               dispatch(changeInterval(value as IInterval));
             }}
             value={interval}
-            items={[
-              {
-                label: "Hour",
-                value: "hour",
-              },
-              {
-                label: "Day",
-                value: "day",
-              },
-              {
-                label: "Month",
-                value: "month",
-              },
-            ]}
+            items={Object.entries(intervals).map(([key, value]) => ({
+              label: value,
+              value: key,
+            }))}
           />
         </div>
       )}

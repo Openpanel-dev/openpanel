@@ -16,7 +16,9 @@ export function usePagination(take = 100) {
   );
 }
 
-export function Pagination(props: ReturnType<typeof usePagination>) {
+export type PaginationProps = ReturnType<typeof usePagination>
+
+export function Pagination(props: PaginationProps) {
   return (
     <div className="flex select-none items-center justify-end space-x-2 py-4">
       <Button

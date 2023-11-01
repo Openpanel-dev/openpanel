@@ -8,34 +8,29 @@ export const config = {
   },
 };
 
-export const eventRouter = createTRPCRouter({
+export const profileRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
         projectSlug: z.string(),
         take: z.number().default(100),
         skip: z.number().default(0),
-        profileId: z.string().optional(),
       }),
     )
-    .query(async ({ input: { take, skip, projectSlug, profileId } }) => {
+    .query(async ({ input: { take, skip, projectSlug } }) => {
       const project = await db.project.findUniqueOrThrow({
         where: {
           slug: projectSlug,
         },
       });
-      return db.event.findMany({
+      return db.profile.findMany({
         take,
         skip,
         where: {
           project_id: project.id,
-          profile_id: profileId
         },
         orderBy: {
           createdAt: "desc",
-        },
-        include: {
-          profile: true,
         },
       });
     }),

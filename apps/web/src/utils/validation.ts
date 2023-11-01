@@ -39,6 +39,8 @@ export const zChartInput = z.object({
   breakdowns: zChartBreakdowns,
   range: z
     .literal(0)
+    .or(z.literal(0.3))
+    .or(z.literal(0.6))
     .or(z.literal(1))
     .or(z.literal(7))
     .or(z.literal(14))

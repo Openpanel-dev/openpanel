@@ -190,11 +190,25 @@ function getTotalCount(arr: ResultItem[]) {
   return arr.reduce((acc, item) => acc + item.count, 0);
 }
 
+function isFloat(n: number) {
+  return n % 1 !== 0;
+}
+
 function getDatesFromRange(range: IChartRange) {
   if (range === 0) {
     const startDate = new Date();
     const endDate = new Date().toISOString();
     startDate.setHours(0, 0, 0, 0);
+
+    return {
+      startDate: startDate.toISOString(),
+      endDate: endDate,
+    };
+  }
+
+  if (isFloat(range)) {
+    const startDate = new Date(Date.now() - 1000 * 60 * (range * 100));
+    const endDate = new Date().toISOString();
 
     return {
       startDate: startDate.toISOString(),
@@ -210,25 +224,7 @@ function getDatesFromRange(range: IChartRange) {
   };
 }
 
-async function getChartData({
-  chartType,
-  event,
-  breakdowns,
-  interval,
-  range,
-  startDate: _startDate,
-  endDate: _endDate,
-}: {
-  event: IChartEvent;
-} & Omit<IChartInputWithDates, "events">) {
-  const { startDate, endDate } =
-    _startDate && _endDate
-      ? {
-          startDate: _startDate,
-          endDate: _endDate,
-        }
-      : getDatesFromRange(range);
-
+function getChartSql({ event, chartType, breakdowns, interval, startDate, endDate }: Omit<IGetChartDataInput,  'range'>) {
   const select = [];
   const where = [];
   const groupBy = [];
@@ -338,7 +334,54 @@ async function getChartData({
     sql.push(`ORDER BY ${orderBy.join(", ")}`);
   }
 
-  const result = await db.$queryRawUnsafe<ResultItem[]>(sql.join("\n"));
+  return sql.join("\n");
+}
+
+type IGetChartDataInput = {
+  event: IChartEvent;
+} & Omit<IChartInputWithDates, "events" | 'name'>
+
+async function getChartData({
+  chartType,
+  event,
+  breakdowns,
+  interval,
+  range,
+  startDate: _startDate,
+  endDate: _endDate,
+}: IGetChartDataInput) {
+  const { startDate, endDate } =
+    _startDate && _endDate
+      ? {
+          startDate: _startDate,
+          endDate: _endDate,
+        }
+      : getDatesFromRange(range);
+
+  const sql = getChartSql({
+    chartType,
+    event,
+    breakdowns,
+    interval,
+    startDate,
+    endDate,
+  })
+
+  let result = await db.$queryRawUnsafe<ResultItem[]>(sql);
+
+  if(result.length === 0 && breakdowns.length > 0) {
+    result = await db.$queryRawUnsafe<ResultItem[]>(getChartSql({
+      chartType,
+      event,
+      breakdowns: [],
+      interval,
+      startDate,
+      endDate,
+    }));
+  }
+
+  console.log(sql);
+  
 
   // group by sql label
   const series = result.reduce(
@@ -399,7 +442,10 @@ function fillEmptySpotsInTimeline(
   const clonedEndDate = new Date(endDate);
   const today = new Date();
 
-  if (interval === "hour") {
+  if(interval === 'minute') { 
+    clonedStartDate.setSeconds(0, 0)
+    clonedEndDate.setMinutes(clonedEndDate.getMinutes() + 1, 0, 0);
+  } else if (interval === "hour") {
     clonedStartDate.setMinutes(0, 0, 0);
     clonedEndDate.setMinutes(0, 0, 0);
   } else {

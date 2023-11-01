@@ -7,6 +7,7 @@ export function useOrganizationParams() {
       organization: z.string(),
       project: z.string(),
       dashboard: z.string(),
+      profileId: z.string().optional(),
     }),
   );
 }

@@ -117,7 +117,9 @@ export const reportSlice = createSlice({
 
     changeDateRanges: (state, action: PayloadAction<IChartRange>) => {
       state.range = action.payload
-      if (action.payload === 0 || action.payload === 1) {
+      if (action.payload === 0.3 || action.payload === 0.6) {
+        state.interval = "minute";
+      } else if (action.payload === 0 || action.payload === 1) {
         state.interval = "hour";
       } else if (action.payload <= 30) {
         state.interval = "day";

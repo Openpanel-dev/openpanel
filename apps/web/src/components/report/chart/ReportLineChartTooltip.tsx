@@ -1,6 +1,7 @@
+import { useFormatDateInterval } from "@/hooks/useFormatDateInterval";
 import { useMappings } from "@/hooks/useMappings";
+import { useSelector } from "@/redux";
 import { type IToolTipProps } from "@/types";
-import { formatDate } from "@/utils/date";
 
 type ReportLineChartTooltipProps = IToolTipProps<{
   color: string;
@@ -17,6 +18,8 @@ export function ReportLineChartTooltip({
   payload,
 }: ReportLineChartTooltipProps) {
   const getLabel = useMappings();
+  const interval = useSelector((state) => state.report.interval);
+  const formatDate = useFormatDateInterval(interval);
 
   if (!active || !payload) {
     return null;

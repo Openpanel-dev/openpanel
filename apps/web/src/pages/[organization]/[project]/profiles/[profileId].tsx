@@ -4,16 +4,24 @@ import { usePagination } from "@/components/Pagination";
 import { EventsTable } from "@/components/events/EventsTable";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { useOrganizationParams } from "@/hooks/useOrganizationParams";
+import { useQueryParams } from "@/hooks/useQueryParams";
 import { api } from "@/utils/api";
 
 import { useMemo } from "react";
+import { z } from "zod";
 
-export default function Events() {
+export default function ProfileId() {
   const pagination = usePagination();
   const params = useOrganizationParams();
+  const { profileId } = useQueryParams(
+    z.object({
+      profileId: z.string(),
+    }),
+  );
   const eventsQuery = api.event.list.useQuery(
     {
       projectSlug: params.project,
+      profileId,
       ...pagination,
     },
     {
@@ -25,7 +33,7 @@ export default function Events() {
   return (
     <MainLayout>
       <Container>
-        <PageTitle>Events</PageTitle>
+        <PageTitle>Profile</PageTitle>
         <EventsTable data={events} pagination={pagination} />
       </Container>
     </MainLayout>

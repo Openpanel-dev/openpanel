@@ -109,6 +109,7 @@ enum Interval {
   hour
   day
   month
+  minute
 }
 
 enum ChartType {
