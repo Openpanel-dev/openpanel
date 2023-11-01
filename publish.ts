@@ -47,10 +47,10 @@ function main() {
   })
 
   try {
-    execSync('npx tsup', {
+    execSync('bunx tsup', {
       cwd: './packages/sdk',
     })
-    execSync('npx tsup', {
+    execSync('bunx tsup', {
       cwd: './packages/types',
     })
   } catch(error) {
