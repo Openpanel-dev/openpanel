@@ -30,6 +30,8 @@ export function createIssues(arr: Array<MixanIssue>) {
 }
 
 export function createError(status = 500, error: unknown) {
+  console.log('create error', error);
+
   if (error instanceof Error || typeof error === 'string') {
     return new HttpError(status, error);
   }
@@ -38,6 +40,11 @@ export function createError(status = 500, error: unknown) {
 }
 
 export function handleError(res: NextApiResponse, error: unknown) {
+  console.log('-----------------');
+  console.log('ERROR');
+  console.log(error);
+  console.log('-----------------');
+
   if (error instanceof HttpError) {
     return res.status(error.status).json(error.toJson());
   }
