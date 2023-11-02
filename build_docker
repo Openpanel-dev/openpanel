@@ -1,0 +1,9 @@
+#!/bin/bash
+
+docker build \
+  --build-arg DATABASE_URL="postgresql://local@host.docker.internal:5432/mixan?schema=public" \
+  --build-arg NEXTAUTH_SECRET="secret_sauce" \
+  --build-arg NEXTAUTH_URL="http://localhost:3000" \
+  -t mixan/app:1.0 \
+  -f apps/web/Dockerfile \
+  .
