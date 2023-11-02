@@ -27,14 +27,14 @@ RUN apt update \
 FROM base AS build
 COPY . /app
 WORKDIR /app/apps/web
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 RUN pnpm dlx prisma generate
 RUN pnpm run build
 
 FROM base AS prod
 COPY . /app
 WORKDIR /app
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 FROM base AS runner
 COPY --from=build /app/package.json /app/package.json
