@@ -51,9 +51,9 @@ export function handleError(res: NextApiResponse, error: unknown) {
 
   if (error instanceof Error) {
     const httpError = createError(500, error);
-    res.status(httpError.status).json(httpError.toJson());
+    return res.status(httpError.status).json(httpError.toJson());
   }
 
   const httpError = createError(500, error);
-  res.status(httpError.status).json(httpError.toJson());
+  return res.status(httpError.status).json(httpError.toJson());
 }
