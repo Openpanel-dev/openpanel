@@ -1,30 +1,27 @@
-import { validateSdkRequest } from '@/server/auth'
-import { db } from '@/server/db'
-import { createError, handleError } from '@/server/exceptions'
-import type { NextApiRequest, NextApiResponse } from 'next'
-import randomAnimalName from 'random-animal-name'
- 
+import { validateSdkRequest } from "@/server/auth";
+import { db } from "@/server/db";
+import { createError, handleError } from "@/server/exceptions";
+import type { NextApiRequest, NextApiResponse } from "next";
+import randomAnimalName from "random-animal-name";
+
 interface Request extends NextApiRequest {
   body: {
-    id: string
-    properties?: Record<string, any>
-  }
+    id?: string;
+    properties?: Record<string, any>;
+  };
 }
 
-export default async function handler(
-  req: Request,
-  res: NextApiResponse
-) {
-  if(req.method !== 'POST') {
-    return handleError(res, createError(405, 'Method not allowed'))
+export default async function handler(req: Request, res: NextApiResponse) {
+  if (req.method !== "POST") {
+    return handleError(res, createError(405, "Method not allowed"));
   }
 
   try {
     // Check client id & secret
-    const projectId = await validateSdkRequest(req)
+    const projectId = await validateSdkRequest(req);
 
-    const { id, properties } = req.body
-    await db.profile.create({
+    const { id, properties } = req.body ?? {};
+    const profile = await db.profile.create({
       data: {
         id,
         external_id: null,
@@ -37,10 +34,10 @@ export default async function handler(
         },
         project_id: projectId,
       },
-    })
+    });
 
-    res.status(200).end()
+    res.status(200).json({ id: profile.id });
   } catch (error) {
-    handleError(res, error)
+    handleError(res, error);
   }
 }

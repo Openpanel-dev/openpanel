@@ -47,10 +47,10 @@ function main() {
   })
 
   try {
-    execSync('bunx tsup', {
+    execSync('pnpm dlx tsup', {
       cwd: './packages/sdk',
     })
-    execSync('bunx tsup', {
+    execSync('pnpm dlx tsup', {
       cwd: './packages/types',
     })
   } catch(error) {

@@ -4,7 +4,6 @@
   "type": "module",
   "module": "index.ts",
   "devDependencies": {
-    "bun-types": "latest",
     "tsup": "^7.2.0",
     "typescript": "^5.0.0"
   }

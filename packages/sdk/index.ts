@@ -34,7 +34,7 @@ class Fetcher {
   post<Response extends unknown>(
     path: string,
     data: Record<string, any> = {},
-    options: FetchRequestInit = {}
+    options: RequestInit = {}
   ): Promise<Response | null> {
     const url = `${this.url}${path}`
     this.logger(`Mixan request: ${url}`, JSON.stringify(data, null, 2))
@@ -49,9 +49,7 @@ class Fetcher {
       ...options,
     })
       .then(async (res) => {
-        const response = await res.json<
-          MixanErrorResponse | Response
-        >()
+        const response = await res.json() as (MixanErrorResponse | Response)
 
         if(!response) {
           return null
@@ -78,7 +76,7 @@ class Fetcher {
 
 class Batcher<T extends any> {
   queue: T[] = []
-  timer?: Timer
+  timer?: NodeJS.Timeout
   callback: (queue: T[]) => void
   maxBatchSize: number
   batchInterval: number

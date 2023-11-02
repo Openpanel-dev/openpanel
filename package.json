@@ -1,17 +1,16 @@
 {
   "name": "@mixan/root",
   "version": "1.0.0",
-  "workspaces": ["apps/*", "packages/*"],
   "keywords": [],
   "author": "",
+  "packageManager": "pnpm@8.7.6",
   "license": "ISC",
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "dev": "cd apps/web && bun dev"
+    "dev": "pnpm -r dev"
   },
   "devDependencies": {
-    "bun-types": "latest",
     "semver": "^7.5.4"
   },
   "peerDependencies": {
