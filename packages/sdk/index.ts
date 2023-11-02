@@ -1,22 +1,22 @@
-import { v4 as uuid } from 'uuid'
 import {
   EventPayload,
   MixanErrorResponse,
-  MixanResponse,
   ProfilePayload,
 } from '@mixan/types'
 
-type MixanOptions = {
+type NewMixanOptions = {
   url: string
   clientId: string
   clientSecret: string
   batchInterval?: number
   maxBatchSize?: number
+  sessionTimeout?: number
   verbose?: boolean
-  saveProfileId: (profileId: string) => void,
-  getProfileId: () => string | null,
-  removeProfileId: () => void,
+  saveProfileId: (profiId: string) => void
+  getProfileId: () => (string | null)
+  removeProfileId: () => void
 }
+type MixanOptions = Required<NewMixanOptions>
 
 class Fetcher {
   private url: string
@@ -31,11 +31,11 @@ class Fetcher {
     this.logger = options.verbose ? console.log : () => {}
   }
 
-  post(
+  post<Response extends unknown>(
     path: string,
-    data: Record<string, any>,
+    data: Record<string, any> = {},
     options: FetchRequestInit = {}
-  ) {
+  ): Promise<Response | null> {
     const url = `${this.url}${path}`
     this.logger(`Mixan request: ${url}`, JSON.stringify(data, null, 2))
     return fetch(url, {
@@ -50,17 +50,27 @@ class Fetcher {
     })
       .then(async (res) => {
         const response = await res.json<
-          MixanErrorResponse | MixanResponse<unknown>
+          MixanErrorResponse | Response
         >()
 
-        if('status' in response && response.status === 'error') {
-          this.logger(`Mixan request failed: [${options.method || 'POST'}] ${url}`, JSON.stringify(response, null, 2))
+        if(!response) {
           return null
         }
-        
-        return response
+
+        if (typeof response === 'object' && 'status' in response && response.status === 'error') {
+          this.logger(
+            `Mixan request failed: [${options.method || 'POST'}] ${url}`,
+            JSON.stringify(response, null, 2)
+          )
+          return null
+        }
+
+        return response as Response
       })
       .catch(() => {
+        this.logger(
+          `Mixan request failed: [${options.method || 'POST'}] ${url}`
+        )
         return null
       })
   }
@@ -70,19 +80,13 @@ class Batcher<T extends any> {
   queue: T[] = []
   timer?: Timer
   callback: (queue: T[]) => void
-  maxBatchSize = 10
-  batchInterval = 10000
+  maxBatchSize: number
+  batchInterval: number
 
   constructor(options: MixanOptions, callback: (queue: T[]) => void) {
     this.callback = callback
-
-    if (options.maxBatchSize) {
-      this.maxBatchSize = options.maxBatchSize
-    }
-
-    if (options.batchInterval) {
-      this.batchInterval = options.batchInterval
-    }
+    this.maxBatchSize = options.maxBatchSize
+    this.batchInterval = options.batchInterval
   }
 
   add(payload: T) {
@@ -108,11 +112,11 @@ class Batcher<T extends any> {
   }
 
   send() {
-    if(this.timer) {
+    if (this.timer) {
       clearTimeout(this.timer)
     }
 
-    if(this.queue.length > 0) {
+    if (this.queue.length > 0) {
       this.callback(this.queue)
       this.queue = []
     }
@@ -126,18 +130,29 @@ export class Mixan {
   private options: MixanOptions
   private logger: (...args: any[]) => void
   private globalProperties: Record<string, any> = {}
+  private lastEventAt?: string
   private lastScreenViewAt?: string
-  
-  constructor(options: MixanOptions) {
+
+  constructor(options: NewMixanOptions) {
     this.logger = options.verbose ? console.log : () => {}
-    this.options = options
-    this.fetch = new Fetcher(options)
-    this.setAnonymousUser()
-    this.eventBatcher = new Batcher(options, (queue) => {
+    this.options = {
+      sessionTimeout: 1000 * 60 * 30,
+      verbose: false,
+      batchInterval: 10000,
+      maxBatchSize: 10,
+      ...options,
+    }
+
+    this.fetch = new Fetcher(this.options)
+    this.eventBatcher = new Batcher(this.options, (queue) => {
       this.fetch.post(
         '/events',
         queue.map((item) => ({
           ...item,
+          properties: {
+            ...this.globalProperties,
+            ...item.properties,
+          },
           profileId: item.profileId || this.profileId || null,
         }))
       )
@@ -148,50 +163,74 @@ export class Mixan {
     return new Date().toISOString()
   }
 
-  event(name: string, properties: Record<string, any>) {
+  init() {
+    this.logger('Mixan: Init')
+    this.setAnonymousUser()
+  }
+
+  event(name: string, properties: Record<string, any> = {}) {
+    const now = new Date()
+    const isSessionStart =
+      now.getTime() - new Date(this.lastEventAt ?? '1970-01-01').getTime() >
+      this.options.sessionTimeout
+
+    if (isSessionStart) {
+      this.logger('Mixan: Session start')
+      this.eventBatcher.add({
+        name: 'session_start',
+        time: this.timestamp(),
+        properties: {},
+        profileId: this.profileId || null,
+      })
+    }
+
     this.logger('Mixan: Queue event', name)
     this.eventBatcher.add({
       name,
-      properties: {
-        ...this.globalProperties,
-        ...properties,
-      },
+      properties,
       time: this.timestamp(),
       profileId: this.profileId || null,
     })
+    this.lastEventAt = this.timestamp()
   }
 
-  private setAnonymousUser() {
+  private async setAnonymousUser(retryCount: number = 0) {
     const profileId = this.options.getProfileId()
-    if(profileId) {
+    if (profileId) {
       this.profileId = profileId
-      this.logger('Mixan: Use existing ID', this.profileId);
+      this.logger('Mixan: Use existing profile', this.profileId)
     } else {
-      this.profileId = uuid()
-      this.logger('Mixan: Create new ID', this.profileId);
-      this.options.saveProfileId(this.profileId)
-      this.fetch.post('/profiles', {
-        id: this.profileId,
-        properties: {},
-      })
+      const res = await this.fetch.post<{id: string}>('/profiles')
+      
+      if(res) {
+        this.profileId = res.id
+        this.options.saveProfileId(res.id)      
+        this.logger('Mixan: Create new profile', this.profileId)
+      } else if(retryCount < 2) {
+        setTimeout(() => {
+          this.setAnonymousUser(retryCount + 1)
+        }, 500);
+      } else {
+        this.logger('Mixan: Failed to create new profile')
+      }
     }
   }
 
   async setUser(profile: ProfilePayload) {
-    if(!this.profileId) {
-      return this.logger('Mixan: Set user failed, no profileId');
+    if (!this.profileId) {
+      return this.logger('Mixan: Set user failed, no profileId')
     }
-    this.logger('Mixan: Set user', profile);
+    this.logger('Mixan: Set user', profile)
     await this.fetch.post(`/profiles/${this.profileId}`, profile, {
-      method: 'PUT'
+      method: 'PUT',
     })
   }
 
   async setUserProperty(name: string, value: any) {
-    if(!this.profileId) {
-      return this.logger('Mixan: Set user property, no profileId');
+    if (!this.profileId) {
+      return this.logger('Mixan: Set user property, no profileId')
     }
-    this.logger('Mixan: Set user property', name, value);
+    this.logger('Mixan: Set user property', name, value)
     await this.fetch.post(`/profiles/${this.profileId}`, {
       properties: {
         [name]: value,
@@ -200,58 +239,66 @@ export class Mixan {
   }
 
   async setGlobalProperties(properties: Record<string, any>) {
-    this.logger('Mixan: Set global properties', properties);
+    this.logger('Mixan: Set global properties', properties)
     this.globalProperties = properties ?? {}
   }
 
   async increment(name: string, value: number = 1) {
     if (!this.profileId) {
-      this.logger('Mixan: Increment failed, no profileId');
+      this.logger('Mixan: Increment failed, no profileId')
       return
     }
 
-    this.logger('Mixan: Increment user property', name, value);
-    await this.fetch.post(`/profiles/${this.profileId}/increment`, {
-      name,
-      value,
-    }, {
-      method: 'PUT'
-    })
+    this.logger('Mixan: Increment user property', name, value)
+    await this.fetch.post(
+      `/profiles/${this.profileId}/increment`,
+      {
+        name,
+        value,
+      },
+      {
+        method: 'PUT',
+      }
+    )
   }
 
   async decrement(name: string, value: number = 1) {
     if (!this.profileId) {
-      this.logger('Mixan: Decrement failed, no profileId');
+      this.logger('Mixan: Decrement failed, no profileId')
       return
     }
 
-    this.logger('Mixan: Decrement user property', name, value);
-    await this.fetch.post(`/profiles/${this.profileId}/decrement`, {
-      name,
-      value,
-    }, {
-      method: 'PUT'
-    })
+    this.logger('Mixan: Decrement user property', name, value)
+    await this.fetch.post(
+      `/profiles/${this.profileId}/decrement`,
+      {
+        name,
+        value,
+      },
+      {
+        method: 'PUT',
+      }
+    )
   }
 
   async screenView(route: string, _properties?: Record<string, any>) {
     const properties = _properties ?? {}
     const now = new Date()
-    
-    if(this.lastScreenViewAt) {
+
+    if (this.lastScreenViewAt) {
       const last = new Date(this.lastScreenViewAt)
       const diff = now.getTime() - last.getTime()
       this.logger(`Mixan: Screen view duration: ${diff}ms`)
       properties['duration'] = diff
     }
-    
+
     this.lastScreenViewAt = now.toISOString()
     await this.event('screen_view', {
       ...properties,
       route,
     })
   }
-  
+
   flush() {
     this.logger('Mixan: Flushing events queue')
     this.eventBatcher.send()
@@ -259,7 +306,7 @@ export class Mixan {
   }
 
   clear() {
-    this.logger('Mixan: Clear, send remaining events and remove profileId');
+    this.logger('Mixan: Clear, send remaining events and remove profileId')
     this.eventBatcher.send()
     this.options.removeProfileId()
     this.profileId = undefined
