@@ -30,8 +30,6 @@ export function createIssues(arr: Array<MixanIssue>) {
 }
 
 export function createError(status = 500, error: unknown) {
-  console.log('create error', error);
-
   if (error instanceof Error || typeof error === 'string') {
     return new HttpError(status, error);
   }
