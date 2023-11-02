@@ -1,0 +1,9 @@
+{
+  "extends": "@mixan/tsconfig/base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+  },
+  "include": ["."],
+  "exclude": ["node_modules"]
+}

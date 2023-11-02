@@ -6,7 +6,6 @@
   "author": "Carl-Gerhard Lindesvärd",
   "packageManager": "pnpm@8.7.6",
   "module": "index.ts",
-  "type": "module",
   "scripts": {
     "dev": "pnpm -r dev",
     "format": "pnpm -r format --cache --cache-location=\"node_modules/.cache/.prettiercache\"",
@@ -15,11 +14,5 @@
     "lint:fix": "pnpm -r lint --fix",
     "lint:workspace": "pnpm dlx sherif@latest",
     "typecheck": "pnpm -r typecheck"
-  },
-  "devDependencies": {
-    "semver": "^7.5.4"
-  },
-  "peerDependencies": {
-    "typescript": "^5.2.0"
   }
 }

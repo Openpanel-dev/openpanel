@@ -6,15 +6,7 @@ settings:
 
 importers:
 
-  .:
-    dependencies:
-      typescript:
-        specifier: ^5.2.0
-        version: 5.2.2
-    devDependencies:
-      semver:
-        specifier: ^7.5.4
-        version: 7.5.4
+  .: {}
 
   apps/web:
     dependencies:
@@ -295,6 +287,28 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../typescript
+      typescript:
+        specifier: ^5.2.0
+        version: 5.2.2
+
+  tooling/publish:
+    dependencies:
+      semver:
+        specifier: ^7.5.4
+        version: 7.5.4
+    devDependencies:
+      '@mixan/prettier-config':
+        specifier: workspace:*
+        version: link:../prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../typescript
+      '@types/eslint':
+        specifier: ^8.44.2
+        version: 8.44.6
+      eslint:
+        specifier: ^8.48.0
+        version: 8.52.0
       typescript:
         specifier: ^5.2.0
         version: 5.2.2

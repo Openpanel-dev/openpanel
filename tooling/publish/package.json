@@ -1,0 +1,29 @@
+{
+  "name": "@mixan/publish",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "publish": "pnpm dlx ts-node publish.ts",
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@mixan/prettier-config": "workspace:*",
+    "@mixan/tsconfig": "workspace:*",
+    "@types/eslint": "^8.44.2",
+    "eslint": "^8.48.0",
+    "typescript": "^5.2.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "./base.js"
+    ]
+  },
+  "prettier": "@mixan/prettier-config",
+  "dependencies": {
+    "semver": "^7.5.4"
+  }
+}

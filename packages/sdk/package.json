@@ -1,7 +1,6 @@
 {
   "name": "@mixan/sdk",
   "version": "0.0.1",
-  "type": "module",
   "module": "index.ts",
   "scripts": {
     "lint": "eslint .",
