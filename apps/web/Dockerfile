@@ -1,4 +1,4 @@
-FROM node:20-slim AS base
+FROM --platform=linux/amd64 node:20-slim AS base
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
@@ -15,7 +15,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 RUN corepack enable
 
-ARG NODE_VERSION=18
+ARG NODE_VERSION=20
 
 RUN apt update \
     && apt install -y curl \
