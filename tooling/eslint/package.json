@@ -5,6 +5,7 @@
   "license": "MIT",
   "files": [
     "./base.js",
+    "./nextjs.js",
     "./react.js"
   ],
   "scripts": {
@@ -14,6 +15,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@next/eslint-plugin-next": "^13.4.19",
+    "@types/eslint": "^8.44.2",
     "@typescript-eslint/eslint-plugin": "^6.6.0",
     "@typescript-eslint/parser": "^6.6.0",
     "eslint-config-prettier": "^9.0.0",
@@ -24,11 +27,12 @@
     "eslint-plugin-react-hooks": "^4.6.0"
   },
   "devDependencies": {
-    "@types/eslint": "^8.44.2",
     "@mixan/prettier-config": "workspace:*",
     "@mixan/tsconfig": "workspace:*",
+    "@types/eslint": "^8.44.2",
     "eslint": "^8.48.0",
-    "typescript": "^5.2.0"
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
   },
   "eslintConfig": {
     "root": true,

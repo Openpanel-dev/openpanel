@@ -1,13 +1,14 @@
-import {
-  type IChartBreakdown,
-  type IChartEvent,
-  type IChartInput,
-  type IChartRange,
-  type IChartType,
-  type IInterval,
+import type {
+  IChartBreakdown,
+  IChartEvent,
+  IChartInput,
+  IChartRange,
+  IChartType,
+  IInterval,
 } from '@/types';
 import { alphabetIds } from '@/utils/constants';
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
 
 type InitialState = IChartInput & {
   startDate: string | null;

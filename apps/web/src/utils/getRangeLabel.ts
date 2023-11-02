@@ -1,4 +1,4 @@
-import { type IChartRange } from '@/types';
+import type { IChartRange } from '@/types';
 
 import { timeRanges } from './constants';
 

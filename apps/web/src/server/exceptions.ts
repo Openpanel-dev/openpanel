@@ -1,6 +1,6 @@
-import { type NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 
-import { type MixanErrorResponse, type MixanIssue } from '@mixan/types';
+import type { MixanErrorResponse, MixanIssue } from '@mixan/types';
 
 export class HttpError extends Error {
   public status: number;
@@ -25,7 +25,7 @@ export class HttpError extends Error {
   }
 }
 
-export function createIssues(arr: Array<MixanIssue>) {
+export function createIssues(arr: MixanIssue[]) {
   throw new HttpError(400, 'Issues', arr);
 }
 

@@ -1,9 +1,9 @@
-import { pick } from "ramda";
-import { createContext, memo, useContext, useMemo } from "react";
+import { createContext, memo, useContext, useMemo } from 'react';
+import { pick } from 'ramda';
 
-type ChartContextType = {
+interface ChartContextType {
   editMode: boolean;
-};
+}
 
 type ChartProviderProps = {
   children: React.ReactNode;
@@ -20,7 +20,7 @@ export function ChartProvider({ children, editMode }: ChartProviderProps) {
         () => ({
           editMode,
         }),
-        [editMode],
+        [editMode]
       )}
     >
       {children}
@@ -28,18 +28,22 @@ export function ChartProvider({ children, editMode }: ChartProviderProps) {
   );
 }
 
-export function withChartProivder<ComponentProps>(WrappedComponent: React.FC<ComponentProps>) {
+export function withChartProivder<ComponentProps>(
+  WrappedComponent: React.FC<ComponentProps>
+) {
   const WithChartProvider = (props: ComponentProps & ChartContextType) => {
     return (
       <ChartProvider {...props}>
         <WrappedComponent {...props} />
       </ChartProvider>
-    )
-  }
+    );
+  };
 
-  WithChartProvider.displayName = `WithChartProvider(${WrappedComponent.displayName ?? WrappedComponent.name ?? 'Component'})`
+  WithChartProvider.displayName = `WithChartProvider(${
+    WrappedComponent.displayName ?? WrappedComponent.name ?? 'Component'
+  })`;
 
-  return memo(WithChartProvider)
+  return memo(WithChartProvider);
 }
 
 export function useChartContext() {

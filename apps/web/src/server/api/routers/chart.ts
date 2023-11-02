@@ -1,10 +1,6 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import {
-  type IChartEvent,
-  type IChartInputWithDates,
-  type IChartRange,
-} from '@/types';
+import type { IChartEvent, IChartInputWithDates, IChartRange } from '@/types';
 import { getDaysOldDate } from '@/utils/date';
 import { toDots } from '@/utils/object';
 import { zChartInputWithDates } from '@/utils/validation';
@@ -157,11 +153,11 @@ function isJsonPath(property: string) {
   return property.startsWith('properties');
 }
 
-type ResultItem = {
+interface ResultItem {
   label: string | null;
   count: number;
   date: string;
-};
+}
 
 function propertyNameToSql(name: string) {
   if (name.includes('.')) {

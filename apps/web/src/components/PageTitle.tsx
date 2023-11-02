@@ -1,4 +1,4 @@
-import { type HtmlProps } from "@/types";
+import type { HtmlProps } from '@/types';
 
 type PageTitleProps = HtmlProps<HTMLDivElement>;
 

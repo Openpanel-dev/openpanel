@@ -1,28 +1,36 @@
-import { ColorSquare } from "@/components/ColorSquare";
-import { type IChartData } from "@/types";
-import { type RouterOutputs } from "@/utils/api";
-import { getChartColor } from "@/utils/theme";
+import { useMemo, useState } from 'react';
+import { ColorSquare } from '@/components/ColorSquare';
 import {
-  useReactTable,
-  getCoreRowModel,
-  flexRender,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import type { IChartData } from '@/types';
+import type { RouterOutputs } from '@/utils/api';
+import { cn } from '@/utils/cn';
+import { getChartColor } from '@/utils/theme';
+import {
   createColumnHelper,
+  flexRender,
+  getCoreRowModel,
   getSortedRowModel,
-  type SortingState,
-} from "@tanstack/react-table";
-import { useMemo, useState } from "react";
-import { useElementSize } from "usehooks-ts";
-import { useChartContext } from "./ChartProvider";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { cn } from "@/utils/cn";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+  useReactTable,
+} from '@tanstack/react-table';
+import type { SortingState } from '@tanstack/react-table';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useElementSize } from 'usehooks-ts';
+
+import { useChartContext } from './ChartProvider';
 
 const columnHelper =
-  createColumnHelper<RouterOutputs["chart"]["chart"]["series"][number]>();
+  createColumnHelper<RouterOutputs['chart']['chart']['series'][number]>();
 
-type ReportBarChartProps = {
+interface ReportBarChartProps {
   data: IChartData;
-};
+}
 
 export function ReportBarChart({ data }: ReportBarChartProps) {
   const { editMode } = useChartContext();
@@ -31,13 +39,13 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   const table = useReactTable({
     data: useMemo(
       () => (editMode ? data.series : data.series.slice(0, 20)),
-      [editMode, data],
+      [editMode, data]
     ),
     columns: useMemo(() => {
       return [
         columnHelper.accessor((row) => row.name, {
-          id: "label",
-          header: () => "Label",
+          id: 'label',
+          header: () => 'Label',
           cell(info) {
             return (
               <div className="flex items-center gap-2">
@@ -50,35 +58,35 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           size: width ? width * 0.3 : undefined,
         }),
         columnHelper.accessor((row) => row.totalCount, {
-          id: "totalCount",
+          id: 'totalCount',
           cell: (info) => (
             <div className="text-right font-medium">{info.getValue()}</div>
           ),
-          header: () => "Count",
+          header: () => 'Count',
           footer: (info) => info.column.id,
           size: width ? width * 0.1 : undefined,
           enableSorting: true,
         }),
         columnHelper.accessor((row) => row.totalCount, {
-          id: "graph",
+          id: 'graph',
           cell: (info) => (
             <div
               className="shine h-4 rounded [.mini_&]:h-3"
               style={{
                 width:
                   (info.getValue() / info.row.original.meta.highest) * 100 +
-                  "%",
+                  '%',
                 background: getChartColor(info.row.index),
               }}
             />
           ),
-          header: () => "Graph",
+          header: () => 'Graph',
           footer: (info) => info.column.id,
           size: width ? width * 0.6 : undefined,
         }),
       ];
     }, [width]),
-    columnResizeMode: "onChange",
+    columnResizeMode: 'onChange',
     state: {
       sorting,
     },
@@ -100,7 +108,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                   <ColorSquare>{event.id}</ColorSquare> {event.name}
                 </div>
                 <div className="mt-6 font-mono text-5xl font-light">
-                  {new Intl.NumberFormat("en-IN", {
+                  {new Intl.NumberFormat('en-IN', {
                     maximumSignificantDigits: 20,
                   }).format(event.count)}
                 </div>
@@ -134,16 +142,16 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                     <div
                       {...{
                         className: cn(
-                          "flex items-center gap-2",
+                          'flex items-center gap-2',
                           header.column.getCanSort() &&
-                            "cursor-pointer select-none",
+                            'cursor-pointer select-none'
                         ),
                         onClick: header.column.getToggleSortingHandler(),
                       }}
                     >
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext(),
+                        header.getContext()
                       )}
                       {{
                         asc: <ChevronUp className="ml-auto" size={14} />,
@@ -156,7 +164,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                             onMouseDown: header.getResizeHandler(),
                             onTouchStart: header.getResizeHandler(),
                             className: `resizer ${
-                              header.column.getIsResizing() ? "isResizing" : ""
+                              header.column.getIsResizing() ? 'isResizing' : ''
                             }`,
                             style: {},
                           }

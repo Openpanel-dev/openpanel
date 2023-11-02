@@ -24,17 +24,25 @@ RUN apt update \
     && rm n \
     && npm install -g n
 
+WORKDIR /app
+
+COPY package.json package.json
+COPY pnpm-lock.yaml pnpm-lock.yaml
+COPY pnpm-workspace.yaml pnpm-workspace.yaml
+COPY apps/web/package.json apps/web/package.json
+COPY packages/types/package.json packages/types/package.json
+
 FROM base AS build
-COPY . /app
 WORKDIR /app/apps/web
 RUN pnpm install --frozen-lockfile --ignore-scripts
+COPY . /app
 RUN pnpm dlx prisma generate
 RUN pnpm run build
 
 FROM base AS prod
-COPY . /app
-WORKDIR /app
+WORKDIR /app/apps/web
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN pnpm dlx prisma generate
 
 FROM base AS runner
 COPY --from=build /app/package.json /app/package.json
@@ -42,6 +50,5 @@ COPY --from=prod /app/node_modules /app/node_modules
 COPY --from=build /app/apps/web /app/apps/web
 COPY --from=prod /app/apps/web/node_modules /app/apps/web/node_modules
 WORKDIR /app/apps/web
-RUN pnpm dlx prisma generate
 EXPOSE 3000
 CMD [ "pnpm", "start" ]

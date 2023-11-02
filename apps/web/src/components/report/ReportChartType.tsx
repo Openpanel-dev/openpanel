@@ -1,13 +1,14 @@
-import { useDispatch, useSelector } from "@/redux";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import { useDispatch, useSelector } from '@/redux';
+import type { IChartType } from '@/types';
+import { chartTypes } from '@/utils/constants';
+
+import { Combobox } from '../ui/combobox';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import {
   changeChartType,
   changeDateRanges,
   changeInterval,
-} from "./reportSlice";
-import { Combobox } from "../ui/combobox";
-import { type IChartType } from "@/types";
-import { chartTypes } from "@/utils/constants";
+} from './reportSlice';
 
 export function ReportChartType() {
   const dispatch = useDispatch();

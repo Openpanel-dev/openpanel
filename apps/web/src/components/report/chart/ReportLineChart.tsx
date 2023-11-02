@@ -1,3 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
+import { AutoSizer } from '@/components/AutoSizer';
+import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
+import type { IChartData, IInterval } from '@/types';
+import { getChartColor } from '@/utils/theme';
 import {
   CartesianGrid,
   Line,
@@ -5,20 +10,16 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from "recharts";
-import { ReportLineChartTooltip } from "./ReportLineChartTooltip";
-import { useFormatDateInterval } from "@/hooks/useFormatDateInterval";
-import { type IChartData, type IInterval } from "@/types";
-import { getChartColor } from "@/utils/theme";
-import { ReportTable } from "./ReportTable";
-import { useEffect, useRef, useState } from "react";
-import { AutoSizer } from "@/components/AutoSizer";
-import { useChartContext } from "./ChartProvider";
+} from 'recharts';
 
-type ReportLineChartProps = {
+import { useChartContext } from './ChartProvider';
+import { ReportLineChartTooltip } from './ReportLineChartTooltip';
+import { ReportTable } from './ReportTable';
+
+interface ReportLineChartProps {
   data: IChartData;
   interval: IInterval;
-};
+}
 
 export function ReportLineChart({ interval, data }: ReportLineChartProps) {
   const { editMode } = useChartContext();
@@ -31,7 +32,7 @@ export function ReportLineChart({ interval, data }: ReportLineChartProps) {
       const max = 20;
 
       setVisibleSeries(
-        data?.series?.slice(0, max).map((serie) => serie.name) ?? [],
+        data?.series?.slice(0, max).map((serie) => serie.name) ?? []
       );
       // ref.current = true;
     }
@@ -42,7 +43,7 @@ export function ReportLineChart({ interval, data }: ReportLineChartProps) {
       <AutoSizer disableHeight>
         {({ width }) => (
           <LineChart width={width} height={Math.min(width * 0.5, 400)}>
-            <YAxis dataKey={"count"} width={30} fontSize={12}></YAxis>
+            <YAxis dataKey={'count'} width={30} fontSize={12}></YAxis>
             <Tooltip content={<ReportLineChartTooltip />} />
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
@@ -60,7 +61,7 @@ export function ReportLineChart({ interval, data }: ReportLineChartProps) {
               })
               .map((serie) => {
                 const realIndex = data?.series.findIndex(
-                  (item) => item.name === serie.name,
+                  (item) => item.name === serie.name
                 );
                 const key = serie.name;
                 const strokeColor = getChartColor(realIndex);

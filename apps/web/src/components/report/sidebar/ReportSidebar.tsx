@@ -1,6 +1,6 @@
-import { ReportEvents } from "./ReportEvents";
-import { ReportBreakdowns } from "./ReportBreakdowns";
-import { ReportSaveButton } from "./ReportSaveButton";
+import { ReportBreakdowns } from './ReportBreakdowns';
+import { ReportEvents } from './ReportEvents';
+import { ReportSaveButton } from './ReportSaveButton';
 
 export function ReportSidebar() {
   return (

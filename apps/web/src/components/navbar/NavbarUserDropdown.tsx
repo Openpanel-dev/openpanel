@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,11 +6,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useOrganizationParams } from "@/hooks/useOrganizationParams";
-import { User } from "lucide-react";
-import { signOut } from "next-auth/react";
-import Link from "next/link";
+} from '@/components/ui/dropdown-menu';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { User } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 export function NavbarUserDropdown() {
   const params = useOrganizationParams();

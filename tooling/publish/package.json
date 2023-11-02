@@ -9,21 +9,23 @@
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "semver": "^7.5.4"
+  },
   "devDependencies": {
+    "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
     "@mixan/tsconfig": "workspace:*",
     "@types/eslint": "^8.44.2",
     "eslint": "^8.48.0",
-    "typescript": "^5.2.0"
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
   },
   "eslintConfig": {
     "root": true,
     "extends": [
-      "./base.js"
+      "@mixan/eslint-config/base"
     ]
   },
-  "prettier": "@mixan/prettier-config",
-  "dependencies": {
-    "semver": "^7.5.4"
-  }
+  "prettier": "@mixan/prettier-config"
 }

@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "format": "prettier --write \"**/*.{tsx,mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -62,20 +62,23 @@
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
+    "@mixan/tsconfig": "workspace:*",
     "@types/bcrypt": "^5.0.0",
     "@types/node": "^18.16.0",
     "@types/ramda": "^0.29.6",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@types/react-syntax-highlighter": "^15.5.9",
+    "@typescript-eslint/eslint-plugin": "^6.6.0",
+    "@typescript-eslint/parser": "^6.6.0",
     "autoprefixer": "^10.4.14",
     "eslint": "^8.48.0",
-    "eslint-config-next": "^13.5.4",
     "postcss": "^8.4.27",
+    "prettier": "^3.0.3",
     "prettier-plugin-tailwindcss": "^0.5.1",
     "prisma": "^5.1.1",
     "tailwindcss": "^3.3.3",
-    "typescript": "^5.2.0"
+    "typescript": "^5.2.2"
   },
   "ct3aMetadata": {
     "initVersion": "7.21.0"
@@ -84,6 +87,7 @@
     "root": true,
     "extends": [
       "@mixan/eslint-config/base",
+      "@mixan/eslint-config/nextjs",
       "@mixan/eslint-config/react"
     ]
   },

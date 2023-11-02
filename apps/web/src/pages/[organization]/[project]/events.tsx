@@ -1,12 +1,11 @@
-import { Container } from "@/components/Container";
-import { PageTitle } from "@/components/PageTitle";
-import { usePagination } from "@/components/Pagination";
-import { EventsTable } from "@/components/events/EventsTable";
-import { MainLayout } from "@/components/layouts/MainLayout";
-import { useOrganizationParams } from "@/hooks/useOrganizationParams";
-import { api } from "@/utils/api";
-
-import { useMemo } from "react";
+import { useMemo } from 'react';
+import { Container } from '@/components/Container';
+import { EventsTable } from '@/components/events/EventsTable';
+import { MainLayout } from '@/components/layouts/MainLayout';
+import { PageTitle } from '@/components/PageTitle';
+import { usePagination } from '@/components/Pagination';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { api } from '@/utils/api';
 
 export default function Events() {
   const pagination = usePagination();
@@ -18,7 +17,7 @@ export default function Events() {
     },
     {
       keepPreviousData: true,
-    },
+    }
   );
   const events = useMemo(() => eventsQuery.data ?? [], [eventsQuery]);
 

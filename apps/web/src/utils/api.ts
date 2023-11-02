@@ -5,10 +5,11 @@
  * We also create a few inference helpers for input and output types.
  */
 import { toast } from '@/components/ui/use-toast';
-import { type AppRouter } from '@/server/api/root';
-import { httpLink, loggerLink, type TRPCClientErrorBase } from '@trpc/client';
+import type { AppRouter } from '@/server/api/root';
+import { httpLink, loggerLink } from '@trpc/client';
+import type { TRPCClientErrorBase } from '@trpc/client';
 import { createTRPCNext } from '@trpc/next';
-import { type inferRouterInputs, type inferRouterOutputs } from '@trpc/server';
+import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import superjson from 'superjson';
 
 const getBaseUrl = () => {

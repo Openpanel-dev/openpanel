@@ -1,16 +1,16 @@
-import { type RouterOutputs } from '@/utils/api';
-import { type timeRanges } from '@/utils/constants';
-import {
-  type zChartBreakdown,
-  type zChartEvent,
-  type zChartInput,
-  type zChartInputWithDates,
-  type zChartType,
-  type zTimeInterval,
+import type { RouterOutputs } from '@/utils/api';
+import type { timeRanges } from '@/utils/constants';
+import type {
+  zChartBreakdown,
+  zChartEvent,
+  zChartInput,
+  zChartInputWithDates,
+  zChartType,
+  zTimeInterval,
 } from '@/utils/validation';
-import { type Client, type Project } from '@prisma/client';
-import { type TooltipProps } from 'recharts';
-import { type z } from 'zod';
+import type { Client, Project } from '@prisma/client';
+import type { TooltipProps } from 'recharts';
+import type { z } from 'zod';
 
 export type HtmlProps<T> = React.DetailedHTMLProps<React.HTMLAttributes<T>, T>;
 
@@ -26,7 +26,7 @@ export type IChartType = z.infer<typeof zChartType>;
 export type IChartData = RouterOutputs['chart']['chart'];
 export type IChartRange = (typeof timeRanges)[number]['range'];
 export type IToolTipProps<T> = Omit<TooltipProps<number, string>, 'payload'> & {
-  payload?: Array<T>;
+  payload?: T[];
 };
 
 export type IProject = Project;

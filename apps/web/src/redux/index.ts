@@ -3,8 +3,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import {
   useDispatch as useBaseDispatch,
   useSelector as useBaseSelector,
-  type TypedUseSelectorHook,
 } from 'react-redux';
+import type { TypedUseSelectorHook } from 'react-redux';
 
 const store = configureStore({
   reducer: {

@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { db } from '@/server/db';
 import { handleError } from '@/server/exceptions';
 import { hashPassword } from '@/server/services/hash.service';
-import { type NextApiRequest, type NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(
   req: NextApiRequest,

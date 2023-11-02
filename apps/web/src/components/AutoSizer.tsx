@@ -1,3 +1,3 @@
-import AutoSizer from "react-virtualized-auto-sizer";
+import AutoSizer from 'react-virtualized-auto-sizer';
 
-export { AutoSizer }
+export { AutoSizer };

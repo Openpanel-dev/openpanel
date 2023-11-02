@@ -1,7 +1,4 @@
-import {
-  type GetServerSidePropsContext,
-  type GetServerSidePropsResult,
-} from 'next';
+import type { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 
 import { getServerAuthSession } from './auth';
 import { db } from './db';

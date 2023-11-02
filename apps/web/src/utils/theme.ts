@@ -2,13 +2,12 @@ import resolveConfig from 'tailwindcss/resolveConfig';
 
 import tailwinConfig from '../../tailwind.config';
 
-// @ts-expect-error
-const config = resolveConfig(tailwinConfig);
+const config = resolveConfig<any>(tailwinConfig);
 
-export const theme = config.theme as any;
+export const theme = config.theme;
 
 export function getChartColor(index: number): string {
-  const chartColors: string[] = Object.keys(theme?.colors ?? {})
+  const chartColors: string[] = Object.keys(theme.colors ?? {})
     .filter((key) => key.startsWith('chart-'))
     .map((key) => theme.colors[key] as string);
 

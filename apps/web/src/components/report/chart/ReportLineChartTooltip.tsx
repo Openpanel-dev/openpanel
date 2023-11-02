@@ -1,7 +1,7 @@
-import { useFormatDateInterval } from "@/hooks/useFormatDateInterval";
-import { useMappings } from "@/hooks/useMappings";
-import { useSelector } from "@/redux";
-import { type IToolTipProps } from "@/types";
+import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
+import { useMappings } from '@/hooks/useMappings';
+import { useSelector } from '@/redux';
+import type { IToolTipProps } from '@/types';
 
 type ReportLineChartTooltipProps = IToolTipProps<{
   color: string;

@@ -1,12 +1,13 @@
-import { api } from "@/utils/api";
-import { Combobox } from "@/components/ui/combobox";
-import { useDispatch, useSelector } from "@/redux";
-import { addBreakdown, changeBreakdown, removeBreakdown } from "../reportSlice";
-import { type ReportEventMoreProps } from "./ReportEventMore";
-import { type IChartBreakdown } from "@/types";
-import { ReportBreakdownMore } from "./ReportBreakdownMore";
-import { RenderDots } from "@/components/ui/RenderDots";
-import { ColorSquare } from "@/components/ColorSquare";
+import { ColorSquare } from '@/components/ColorSquare';
+import { Combobox } from '@/components/ui/combobox';
+import { RenderDots } from '@/components/ui/RenderDots';
+import { useDispatch, useSelector } from '@/redux';
+import type { IChartBreakdown } from '@/types';
+import { api } from '@/utils/api';
+
+import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
+import { ReportBreakdownMore } from './ReportBreakdownMore';
+import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportBreakdowns() {
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
@@ -18,9 +19,9 @@ export function ReportBreakdowns() {
   }));
 
   const handleMore = (breakdown: IChartBreakdown) => {
-    const callback: ReportEventMoreProps["onClick"] = (action) => {
+    const callback: ReportEventMoreProps['onClick'] = (action) => {
       switch (action) {
-        case "remove": {
+        case 'remove': {
           return dispatch(removeBreakdown(breakdown));
         }
       }
@@ -37,9 +38,7 @@ export function ReportBreakdowns() {
           return (
             <div key={item.name} className="rounded-lg border">
               <div className="flex items-center gap-2 p-2 px-4">
-                <ColorSquare>
-                  {index}
-                </ColorSquare>
+                <ColorSquare>{index}</ColorSquare>
                 <Combobox
                   value={item.name}
                   onChange={(value) => {
@@ -47,7 +46,7 @@ export function ReportBreakdowns() {
                       changeBreakdown({
                         ...item,
                         name: value,
-                      }),
+                      })
                     );
                   }}
                   items={propertiesCombobox}
@@ -61,12 +60,12 @@ export function ReportBreakdowns() {
 
         {selectedBreakdowns.length === 0 && (
           <Combobox
-            value={""}
+            value={''}
             onChange={(value) => {
               dispatch(
                 addBreakdown({
                   name: value,
-                }),
+                })
               );
             }}
             items={propertiesCombobox}

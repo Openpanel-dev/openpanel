@@ -1,4 +1,4 @@
-import { type IInterval } from '@/types';
+import type { IInterval } from '@/types';
 
 export function formatDateInterval(interval: IInterval, date: Date): string {
   if (interval === 'hour' || interval === 'minute') {

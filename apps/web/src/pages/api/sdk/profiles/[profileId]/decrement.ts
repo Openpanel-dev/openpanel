@@ -3,7 +3,7 @@ import { createError, handleError } from '@/server/exceptions';
 import { tickProfileProperty } from '@/server/services/profile.service';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { type ProfileIncrementPayload } from '@mixan/types';
+import type { ProfileIncrementPayload } from '@mixan/types';
 
 interface Request extends NextApiRequest {
   body: ProfileIncrementPayload;

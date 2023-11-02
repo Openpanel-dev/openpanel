@@ -1,32 +1,31 @@
-import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
-
-import { cn } from "@/utils/cn";
-import { Button } from "@/components/ui/button";
+import * as React from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-} from "@/components/ui/command";
+} from '@/components/ui/command';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from '@/components/ui/popover';
+import { cn } from '@/utils/cn';
+import { Check, ChevronsUpDown } from 'lucide-react';
 
-type ComboboxProps = {
+interface ComboboxProps {
   placeholder: string;
-  items: Array<{
+  items: {
     value: string;
     label: string;
-  }>;
+  }[];
   value: string;
   onChange: (value: string) => void;
   children?: React.ReactNode;
   onCreate?: (value: string) => void;
-};
+}
 
 export function Combobox({
   placeholder,
@@ -37,10 +36,10 @@ export function Combobox({
   onCreate,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [search, setSearch] = React.useState("");
+  const [search, setSearch] = React.useState('');
   function find(value: string) {
     return items.find(
-      (item) => item.value.toLowerCase() === value.toLowerCase(),
+      (item) => item.value.toLowerCase() === value.toLowerCase()
     );
   }
 
@@ -55,7 +54,7 @@ export function Combobox({
             className="w-full min-w-0 justify-between"
           >
             <span className="overflow-hidden text-ellipsis">
-              {value ? find(value)?.label ?? "No match" : placeholder}
+              {value ? find(value)?.label ?? 'No match' : placeholder}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -63,14 +62,22 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-full min-w-0 p-0" align="start">
         <Command>
-          <CommandInput placeholder="Search item..." value={search} onValueChange={setSearch} />
-          {typeof onCreate === "function" && search ? (
+          <CommandInput
+            placeholder="Search item..."
+            value={search}
+            onValueChange={setSearch}
+          />
+          {typeof onCreate === 'function' && search ? (
             <CommandEmpty className="p-2">
-              <Button onClick={() => {
-                onCreate(search)
-                setSearch('')
-                setOpen(false)
-              }}>Create &quot;{search}&quot;</Button>
+              <Button
+                onClick={() => {
+                  onCreate(search);
+                  setSearch('');
+                  setOpen(false);
+                }}
+              >
+                Create &quot;{search}&quot;
+              </Button>
             </CommandEmpty>
           ) : (
             <CommandEmpty>Nothing selected</CommandEmpty>
@@ -88,8 +95,8 @@ export function Combobox({
               >
                 <Check
                   className={cn(
-                    "mr-2 h-4 w-4 flex-shrink-0",
-                    value === item.value ? "opacity-100" : "opacity-0",
+                    'mr-2 h-4 w-4 flex-shrink-0',
+                    value === item.value ? 'opacity-100' : 'opacity-0'
                   )}
                 />
                 {item.label}

@@ -1,4 +1,6 @@
-type InputErrorProps = { message?: string };
+interface InputErrorProps {
+  message?: string;
+}
 
 export function InputError({ message }: InputErrorProps) {
   if (!message) {

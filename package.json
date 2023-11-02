@@ -14,5 +14,14 @@
     "lint:fix": "pnpm -r lint --fix",
     "lint:workspace": "pnpm dlx sherif@latest",
     "typecheck": "pnpm -r typecheck"
-  }
+  },
+  "dependencies": {
+    "@mixan/prettier-config": "^0.1.0",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "semver": "^7.5.4"
+  },
+  "prettier": "@mixan/prettier-config"
 }

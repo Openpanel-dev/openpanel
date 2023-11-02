@@ -1,32 +1,33 @@
-import { api, handleError } from "@/utils/api";
-import { ModalContent, ModalHeader } from "./Modal/Container";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { ButtonContainer } from "@/components/ButtonContainer";
-import { popModal } from ".";
-import { toast } from "@/components/ui/use-toast";
-import { InputWithLabel } from "@/components/forms/InputWithLabel";
-import { useRefetchActive } from "@/hooks/useRefetchActive";
-import { Combobox } from "@/components/ui/combobox";
-import { Label } from "@/components/ui/label";
-import { Copy } from "lucide-react";
-import { clipboard } from "@/utils/clipboard";
-import dynamic from "next/dynamic";
-import { useOrganizationParams } from "@/hooks/useOrganizationParams";
+import { ButtonContainer } from '@/components/ButtonContainer';
+import { InputWithLabel } from '@/components/forms/InputWithLabel';
+import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { Label } from '@/components/ui/label';
+import { toast } from '@/components/ui/use-toast';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { useRefetchActive } from '@/hooks/useRefetchActive';
+import { api, handleError } from '@/utils/api';
+import { clipboard } from '@/utils/clipboard';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Copy } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { Controller, useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-const Syntax = dynamic(import('@/components/Syntax'))
+import { popModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
+
+const Syntax = dynamic(import('@/components/Syntax'));
 
 const validator = z.object({
-  name: z.string().min(1, "Required"),
-  projectId: z.string().min(1, "Required"),
+  name: z.string().min(1, 'Required'),
+  projectId: z.string().min(1, 'Required'),
 });
 
 type IForm = z.infer<typeof validator>;
 
 export default function CreateProject() {
-  const params = useOrganizationParams()
+  const params = useOrganizationParams();
   const refetch = useRefetchActive();
   const query = api.project.list.useQuery({
     organizationSlug: params.organization,
@@ -35,8 +36,8 @@ export default function CreateProject() {
     onError: handleError,
     onSuccess() {
       toast({
-        title: "Success",
-        description: "Client created!",
+        title: 'Success',
+        description: 'Client created!',
       });
       refetch();
     },
@@ -44,8 +45,8 @@ export default function CreateProject() {
   const { register, handleSubmit, formState, control } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
-      name: "",
-      projectId: "",
+      name: '',
+      projectId: '',
     },
   });
 
@@ -110,7 +111,7 @@ export default function CreateProject() {
         <InputWithLabel
           label="Name"
           placeholder="Name"
-          {...register("name")}
+          {...register('name')}
           className="mb-4"
         />
         <Controller

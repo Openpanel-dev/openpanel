@@ -1,11 +1,8 @@
 import { db } from '@/server/db';
 import { verifyPassword } from '@/server/services/hash.service';
-import { type GetServerSidePropsContext, type NextApiRequest } from 'next';
-import {
-  getServerSession,
-  type DefaultSession,
-  type NextAuthOptions,
-} from 'next-auth';
+import type { GetServerSidePropsContext, NextApiRequest } from 'next';
+import { getServerSession } from 'next-auth';
+import type { DefaultSession, NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 
 import { createError } from './exceptions';

@@ -1,10 +1,8 @@
-import { api } from "@/utils/api";
-import {
-  type IChartEvent,
-  type IChartEventFilterValue,
-  type IChartEventFilter,
-} from "@/types";
-import { CreditCard, SlidersHorizontal, Trash } from "lucide-react";
+import type { Dispatch } from 'react';
+import { ColorSquare } from '@/components/ColorSquare';
+import { Dropdown } from '@/components/Dropdown';
+import { Button } from '@/components/ui/button';
+import { ComboboxMulti } from '@/components/ui/combobox-multi';
 import {
   CommandDialog,
   CommandEmpty,
@@ -13,23 +11,26 @@ import {
   CommandItem,
   CommandList,
   CommandSeparator,
-} from "@/components/ui/command";
-import { type Dispatch } from "react";
-import { RenderDots } from "@/components/ui/RenderDots";
-import { useDispatch } from "@/redux";
-import { changeEvent } from "../reportSlice";
-import { Button } from "@/components/ui/button";
-import { ComboboxMulti } from "@/components/ui/combobox-multi";
-import { Dropdown } from "@/components/Dropdown";
-import { operators } from "@/utils/constants";
-import { useMappings } from "@/hooks/useMappings";
-import { ColorSquare } from "@/components/ColorSquare";
+} from '@/components/ui/command';
+import { RenderDots } from '@/components/ui/RenderDots';
+import { useMappings } from '@/hooks/useMappings';
+import { useDispatch } from '@/redux';
+import type {
+  IChartEvent,
+  IChartEventFilter,
+  IChartEventFilterValue,
+} from '@/types';
+import { api } from '@/utils/api';
+import { operators } from '@/utils/constants';
+import { CreditCard, SlidersHorizontal, Trash } from 'lucide-react';
 
-type ReportEventFiltersProps = {
+import { changeEvent } from '../reportSlice';
+
+interface ReportEventFiltersProps {
   event: IChartEvent;
   isCreating: boolean;
   setIsCreating: Dispatch<boolean>;
-};
+}
 
 export function ReportEventFilters({
   event,
@@ -43,7 +44,7 @@ export function ReportEventFilters({
     },
     {
       enabled: !!event.name,
-    },
+    }
   );
 
   return (
@@ -71,11 +72,11 @@ export function ReportEventFilters({
                           {
                             id: (event.filters.length + 1).toString(),
                             name: item,
-                            operator: "is",
+                            operator: 'is',
                             value: [],
                           },
                         ],
-                      }),
+                      })
                     );
                   }}
                 >
@@ -92,13 +93,13 @@ export function ReportEventFilters({
   );
 }
 
-type FilterProps = {
+interface FilterProps {
   event: IChartEvent;
-  filter: IChartEvent["filters"][number];
-};
+  filter: IChartEvent['filters'][number];
+}
 
 function Filter({ filter, event }: FilterProps) {
-  const getLabel = useMappings()
+  const getLabel = useMappings();
   const dispatch = useDispatch();
   const potentialValues = api.chart.values.useQuery({
     event: event.name,
@@ -116,12 +117,12 @@ function Filter({ filter, event }: FilterProps) {
       changeEvent({
         ...event,
         filters: event.filters.filter((item) => item.id !== filter.id),
-      }),
+      })
     );
   };
 
   const changeFilterValue = (
-    value: IChartEventFilterValue | IChartEventFilterValue[],
+    value: IChartEventFilterValue | IChartEventFilterValue[]
   ) => {
     dispatch(
       changeEvent({
@@ -136,11 +137,11 @@ function Filter({ filter, event }: FilterProps) {
 
           return item;
         }),
-      }),
+      })
     );
   };
 
-  const changeFilterOperator = (operator: IChartEventFilter["operator"]) => {
+  const changeFilterOperator = (operator: IChartEventFilter['operator']) => {
     dispatch(
       changeEvent({
         ...event,
@@ -154,7 +155,7 @@ function Filter({ filter, event }: FilterProps) {
 
           return item;
         }),
-      }),
+      })
     );
   };
 
@@ -168,7 +169,7 @@ function Filter({ filter, event }: FilterProps) {
           <SlidersHorizontal size={10} />
         </ColorSquare>
         <div className="flex flex-1 text-sm">
-        <RenderDots truncate>{filter.name}</RenderDots>
+          <RenderDots truncate>{filter.name}</RenderDots>
         </div>
         <Button variant="ghost" size="sm" onClick={removeFilter}>
           <Trash size={16} />
@@ -178,12 +179,12 @@ function Filter({ filter, event }: FilterProps) {
         <Dropdown
           onChange={changeFilterOperator}
           items={Object.entries(operators).map(([key, value]) => ({
-            value: key as IChartEventFilter["operator"],
+            value: key as IChartEventFilter['operator'],
             label: value,
           }))}
           label="Segment"
         >
-          <Button variant={"ghost"} className="whitespace-nowrap">
+          <Button variant={'ghost'} className="whitespace-nowrap">
             {operators[filter.operator]}
           </Button>
         </Dropdown>
@@ -191,16 +192,16 @@ function Filter({ filter, event }: FilterProps) {
           placeholder="Select values"
           items={valuesCombobox}
           selected={filter.value.map((item) => ({
-            value: item?.toString() ?? "__filter_value_null__",
-            label: getLabel(item?.toString() ?? "__filter_value_null__"),
+            value: item?.toString() ?? '__filter_value_null__',
+            label: getLabel(item?.toString() ?? '__filter_value_null__'),
           }))}
           setSelected={(setFn) => {
-            if(typeof setFn === "function") {
+            if (typeof setFn === 'function') {
               const newValues = setFn(
                 filter.value.map((item) => ({
-                  value: item?.toString() ?? "__filter_value_null__",
-                  label: getLabel(item?.toString() ?? "__filter_value_null__"),
-                })),
+                  value: item?.toString() ?? '__filter_value_null__',
+                  label: getLabel(item?.toString() ?? '__filter_value_null__'),
+                }))
               );
               changeFilterValue(newValues.map((item) => item.value));
             } else {

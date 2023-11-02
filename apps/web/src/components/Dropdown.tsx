@@ -1,4 +1,5 @@
-import { cloneElement } from "react";
+import { cloneElement } from 'react';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,19 +8,24 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
+} from './ui/dropdown-menu';
 
-type DropdownProps<Value> = {
+interface DropdownProps<Value> {
   children: React.ReactNode;
   label?: string;
-  items: Array<{
+  items: {
     label: string;
     value: Value;
-  }>;
+  }[];
   onChange?: (value: Value) => void;
-};
+}
 
-export function Dropdown<Value extends string>({ children, label, items, onChange }: DropdownProps<Value>) {
+export function Dropdown<Value extends string>({
+  children,
+  label,
+  items,
+  onChange,
+}: DropdownProps<Value>) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>

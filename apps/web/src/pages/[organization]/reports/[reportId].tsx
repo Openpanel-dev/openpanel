@@ -1,5 +1,5 @@
-export { default } from "./index";
+import { createServerSideProps } from '@/server/getServerSideProps';
 
-import { createServerSideProps } from "@/server/getServerSideProps";
+export { default } from './index';
 
-export const getServerSideProps = createServerSideProps()
+export const getServerSideProps = createServerSideProps();

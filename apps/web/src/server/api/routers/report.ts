@@ -2,16 +2,16 @@ import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
 import { getDashboardBySlug } from '@/server/services/dashboard.service';
 import { getProjectBySlug } from '@/server/services/project.service';
-import {
-  type IChartBreakdown,
-  type IChartEvent,
-  type IChartEventFilter,
-  type IChartInput,
-  type IChartRange,
+import type {
+  IChartBreakdown,
+  IChartEvent,
+  IChartEventFilter,
+  IChartInput,
+  IChartRange,
 } from '@/types';
 import { alphabetIds } from '@/utils/constants';
 import { zChartInput } from '@/utils/validation';
-import { type Report as DbReport } from '@prisma/client';
+import type { Report as DbReport } from '@prisma/client';
 import { z } from 'zod';
 
 function transformFilter(

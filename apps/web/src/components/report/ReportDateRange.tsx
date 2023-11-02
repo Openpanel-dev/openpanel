@@ -1,9 +1,10 @@
-import { useDispatch, useSelector } from "@/redux";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
-import { changeDateRanges, changeInterval } from "./reportSlice";
-import { Combobox } from "../ui/combobox";
-import { type IInterval } from "@/types";
-import { intervals, timeRanges } from "@/utils/constants";
+import { useDispatch, useSelector } from '@/redux';
+import type { IInterval } from '@/types';
+import { intervals, timeRanges } from '@/utils/constants';
+
+import { Combobox } from '../ui/combobox';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { changeDateRanges, changeInterval } from './reportSlice';
 
 export function ReportDateRange() {
   const dispatch = useDispatch();
@@ -28,7 +29,7 @@ export function ReportDateRange() {
           );
         })}
       </RadioGroup>
-      {chartType === "linear" && (
+      {chartType === 'linear' && (
         <div className="w-full max-w-[200px]">
           <Combobox
             placeholder="Interval"

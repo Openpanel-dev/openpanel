@@ -1,16 +1,16 @@
-import { MainLayout } from "@/components/layouts/MainLayout";
-import { Container } from "@/components/Container";
-import { api } from "@/utils/api";
-import Link from "next/link";
-import { PageTitle } from "@/components/PageTitle";
-import { useOrganizationParams } from "@/hooks/useOrganizationParams";
-import { Suspense, useMemo, useState } from "react";
-import { createServerSideProps } from "@/server/getServerSideProps";
-import { Chart } from "@/components/report/chart";
-import { timeRanges } from "@/utils/constants";
-import { type IChartRange } from "@/types";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { getRangeLabel } from "@/utils/getRangeLabel";
+import { Suspense, useMemo, useState } from 'react';
+import { Container } from '@/components/Container';
+import { MainLayout } from '@/components/layouts/MainLayout';
+import { PageTitle } from '@/components/PageTitle';
+import { Chart } from '@/components/report/chart';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { createServerSideProps } from '@/server/getServerSideProps';
+import type { IChartRange } from '@/types';
+import { api } from '@/utils/api';
+import { timeRanges } from '@/utils/constants';
+import { getRangeLabel } from '@/utils/getRangeLabel';
+import Link from 'next/link';
 
 export const getServerSideProps = createServerSideProps();
 
@@ -66,7 +66,9 @@ export default function Dashboard() {
                     <div className="font-medium">{report.name}</div>
                     {chartRange && (
                       <div className="mt-2 text-sm flex gap-2">
-                        <span className={range ? "line-through" : ""}>{chartRange}</span>
+                        <span className={range ? 'line-through' : ''}>
+                          {chartRange}
+                        </span>
                         {range && <span>{getRangeLabel(range)}</span>}
                       </div>
                     )}

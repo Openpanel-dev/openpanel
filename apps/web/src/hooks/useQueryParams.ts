@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useRouter } from 'next/router';
-import { type z } from 'zod';
+import type { z } from 'zod';
 
 export function useQueryParams<Z extends z.ZodTypeAny = z.ZodNever>(zod: Z) {
   const router = useRouter();

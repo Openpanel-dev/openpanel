@@ -3,9 +3,7 @@
 
 /** @type { PrettierConfig | SortImportsConfig } */
 const config = {
-  plugins: [
-    '@ianvs/prettier-plugin-sort-imports',
-  ],
+  plugins: ['@ianvs/prettier-plugin-sort-imports'],
   importOrder: [
     '^(react/(.*)$)|^(react$)|^(react-native(.*)$)',
     '<THIRD_PARTY_MODULES>',
@@ -23,6 +21,6 @@ const config = {
   trailingComma: 'es5',
   printWidth: 80,
   tabWidth: 2,
-};
+}
 
-export default config;
+export default config

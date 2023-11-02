@@ -1,19 +1,20 @@
-import { api, handleError } from "@/utils/api";
-import { ModalContent, ModalHeader } from "./Modal/Container";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ButtonContainer } from "@/components/ButtonContainer";
-import { popModal } from ".";
-import { toast } from "@/components/ui/use-toast";
-import { InputWithLabel } from "@/components/forms/InputWithLabel";
-import { useRefetchActive } from "@/hooks/useRefetchActive";
+import { useEffect } from 'react';
+import { ButtonContainer } from '@/components/ButtonContainer';
+import { InputWithLabel } from '@/components/forms/InputWithLabel';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
+import { useRefetchActive } from '@/hooks/useRefetchActive';
+import { api, handleError } from '@/utils/api';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
-type EditClientProps = {
+import { popModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
+
+interface EditClientProps {
   id: string;
-};
+}
 
 const validator = z.object({
   id: z.string().min(1),
@@ -23,25 +24,25 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function EditClient({ id }: EditClientProps) {
-  const refetch = useRefetchActive()
+  const refetch = useRefetchActive();
   const mutation = api.client.update.useMutation({
     onError: handleError,
     onSuccess() {
       toast({
         title: 'Success',
         description: 'Client updated.',
-      })
-      popModal()
-      refetch()
-    }
+      });
+      popModal();
+      refetch();
+    },
   });
   const query = api.client.get.useQuery({ id });
   const data = query.data;
   const { register, handleSubmit, reset, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
-      id: "",
-      name: "",
+      id: '',
+      name: '',
     },
   });
 
@@ -61,8 +62,12 @@ export default function EditClient({ id }: EditClientProps) {
       >
         <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
         <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>Cancel</Button>
-          <Button type="submit" disabled={!formState.isDirty}>Save</Button>
+          <Button type="button" variant="outline" onClick={() => popModal()}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={!formState.isDirty}>
+            Save
+          </Button>
         </ButtonContainer>
       </form>
     </ModalContent>

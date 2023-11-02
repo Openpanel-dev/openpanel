@@ -1,7 +1,5 @@
-import * as React from "react"
-import { Filter, MoreHorizontal, Tags, Trash } from "lucide-react"
- 
-import { Button } from "@/components/ui/button"
+import * as React from 'react';
+import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
@@ -9,7 +7,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from '@/components/ui/command';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,47 +20,50 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
- 
+} from '@/components/ui/dropdown-menu';
+import { Filter, MoreHorizontal, Tags, Trash } from 'lucide-react';
+
 const labels = [
-  "feature",
-  "bug",
-  "enhancement",
-  "documentation",
-  "design",
-  "question",
-  "maintenance",
-]
- 
-export type ReportEventMoreProps = {
-  onClick: (action: 'createFilter' | 'remove') => void
+  'feature',
+  'bug',
+  'enhancement',
+  'documentation',
+  'design',
+  'question',
+  'maintenance',
+];
+
+export interface ReportEventMoreProps {
+  onClick: (action: 'createFilter' | 'remove') => void;
 }
 
 export function ReportEventMore({ onClick }: ReportEventMoreProps) {
-  const [open, setOpen] = React.useState(false)
- 
-  return (
+  const [open, setOpen] = React.useState(false);
 
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
-            <MoreHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[200px]">
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => onClick('createFilter')}>
-              <Filter className="mr-2 h-4 w-4" />
-              Add filter
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600" onClick={() => onClick('remove')}>
-              <Trash className="mr-2 h-4 w-4" />
-              Delete
-              <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-  )
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm">
+          <MoreHorizontal />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-[200px]">
+        <DropdownMenuGroup>
+          <DropdownMenuItem onClick={() => onClick('createFilter')}>
+            <Filter className="mr-2 h-4 w-4" />
+            Add filter
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-red-600"
+            onClick={() => onClick('remove')}
+          >
+            <Trash className="mr-2 h-4 w-4" />
+            Delete
+            <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }

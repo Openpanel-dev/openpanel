@@ -1,10 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
-import { popModal } from "..";
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
-type ModalContentProps = {
+import { popModal } from '..';
+
+interface ModalContentProps {
   children: React.ReactNode;
-};
+}
 
 export function ModalContent({ children }: ModalContentProps) {
   return (
@@ -14,9 +15,9 @@ export function ModalContent({ children }: ModalContentProps) {
   );
 }
 
-type ModalHeaderProps = {
+interface ModalHeaderProps {
   title: string | React.ReactNode;
-};
+}
 
 export function ModalHeader({ title }: ModalHeaderProps) {
   return (

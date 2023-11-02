@@ -16,7 +16,6 @@ const colors = [
 /** @type {import('tailwindcss').Config} */
 const config = {
   safelist: [...colors.map((color) => `chart-${color}`)],
-  darkMode: ['class'],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',

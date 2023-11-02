@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { Button } from "./ui/button";
+import { useMemo, useState } from 'react';
+
+import { Button } from './ui/button';
 
 export function usePagination(take = 100) {
   const [skip, setSkip] = useState(0);
@@ -12,11 +13,11 @@ export function usePagination(take = 100) {
       canPrev: skip > 0,
       canNext: true,
     }),
-    [skip, setSkip, take],
+    [skip, setSkip, take]
   );
 }
 
-export type PaginationProps = ReturnType<typeof usePagination>
+export type PaginationProps = ReturnType<typeof usePagination>;
 
 export function Pagination(props: PaginationProps) {
   return (

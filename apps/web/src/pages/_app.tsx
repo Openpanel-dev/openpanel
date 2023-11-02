@@ -2,9 +2,9 @@ import { Suspense } from 'react';
 import { Toaster } from '@/components/ui/toaster';
 import store from '@/redux';
 import { api } from '@/utils/api';
-import { type Session } from 'next-auth';
+import type { Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
-import { type AppType } from 'next/app';
+import type { AppType } from 'next/app';
 import { Space_Grotesk } from 'next/font/google';
 import { Provider as ReduxProvider } from 'react-redux';
 

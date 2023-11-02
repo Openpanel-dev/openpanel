@@ -1,14 +1,13 @@
-import { Container } from "@/components/Container";
-import { PageTitle } from "@/components/PageTitle";
-import { usePagination } from "@/components/Pagination";
-import { EventsTable } from "@/components/events/EventsTable";
-import { MainLayout } from "@/components/layouts/MainLayout";
-import { useOrganizationParams } from "@/hooks/useOrganizationParams";
-import { useQueryParams } from "@/hooks/useQueryParams";
-import { api } from "@/utils/api";
-
-import { useMemo } from "react";
-import { z } from "zod";
+import { useMemo } from 'react';
+import { Container } from '@/components/Container';
+import { EventsTable } from '@/components/events/EventsTable';
+import { MainLayout } from '@/components/layouts/MainLayout';
+import { PageTitle } from '@/components/PageTitle';
+import { usePagination } from '@/components/Pagination';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { useQueryParams } from '@/hooks/useQueryParams';
+import { api } from '@/utils/api';
+import { z } from 'zod';
 
 export default function ProfileId() {
   const pagination = usePagination();
@@ -16,7 +15,7 @@ export default function ProfileId() {
   const { profileId } = useQueryParams(
     z.object({
       profileId: z.string(),
-    }),
+    })
   );
   const eventsQuery = api.event.list.useQuery(
     {
@@ -26,7 +25,7 @@ export default function ProfileId() {
     },
     {
       keepPreviousData: true,
-    },
+    }
   );
   const events = useMemo(() => eventsQuery.data ?? [], [eventsQuery]);
 

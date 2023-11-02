@@ -1,10 +1,10 @@
-import { cn } from "@/utils/cn";
+import { cn } from '@/utils/cn';
 
-type ContentHeaderProps = {
+interface ContentHeaderProps {
   title: string;
   text: string;
   children?: React.ReactNode;
-};
+}
 
 export function ContentHeader({ title, text, children }: ContentHeaderProps) {
   return (
@@ -18,12 +18,12 @@ export function ContentHeader({ title, text, children }: ContentHeaderProps) {
   );
 }
 
-type ContentSectionProps = {
+interface ContentSectionProps {
   title: string;
   text?: string | React.ReactNode;
   children: React.ReactNode;
   asCol?: boolean;
-};
+}
 
 export function ContentSection({
   title,
@@ -34,8 +34,8 @@ export function ContentSection({
   return (
     <div
       className={cn(
-        "first:pt-0] flex py-6",
-        asCol ? "col flex" : "justify-between",
+        'first:pt-0] flex py-6',
+        asCol ? 'col flex' : 'justify-between'
       )}
     >
       {title && (

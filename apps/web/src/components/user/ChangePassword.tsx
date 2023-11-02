@@ -1,12 +1,13 @@
-import { api, handleError } from "@/utils/api";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { ContentHeader, ContentSection } from "@/components/Content";
-import { useForm } from "react-hook-form";
-import { toast } from "@/components/ui/use-toast";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { InputError } from "../forms/InputError";
+import { ContentHeader, ContentSection } from '@/components/Content';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/use-toast';
+import { api, handleError } from '@/utils/api';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+import { InputError } from '../forms/InputError';
 
 const validator = z
   .object({
@@ -17,9 +18,9 @@ const validator = z
   .superRefine(({ confirmPassword, password }, ctx) => {
     if (confirmPassword !== password) {
       ctx.addIssue({
-        path: ["confirmPassword"],
-        code: "custom",
-        message: "The passwords did not match",
+        path: ['confirmPassword'],
+        code: 'custom',
+        message: 'The passwords did not match',
       });
     }
   });
@@ -30,8 +31,8 @@ export function ChangePassword() {
   const mutation = api.user.changePassword.useMutation({
     onSuccess() {
       toast({
-        title: "Success",
-        description: "You have updated your password",
+        title: 'Success',
+        description: 'You have updated your password',
       });
     },
     onError: handleError,
@@ -40,16 +41,16 @@ export function ChangePassword() {
   const { register, handleSubmit, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
-      oldPassword: "",
-      password: "",
-      confirmPassword: "",
+      oldPassword: '',
+      password: '',
+      confirmPassword: '',
     },
   });
 
   return (
     <form
       onSubmit={handleSubmit((values) => {
-        mutation.mutate(values)
+        mutation.mutate(values);
       })}
       className="flex flex-col divide-y divide-border"
     >
@@ -57,26 +58,37 @@ export function ChangePassword() {
         title="Change password"
         text="Need to change your password?"
       >
-        <Button type="submit" disabled={!formState.isDirty}>Change it!</Button>
+        <Button type="submit" disabled={!formState.isDirty}>
+          Change it!
+        </Button>
       </ContentHeader>
-      <ContentSection title="Old password" text={<InputError {...formState.errors.oldPassword}/>}>
+      <ContentSection
+        title="Old password"
+        text={<InputError {...formState.errors.oldPassword} />}
+      >
         <Input
           type="password"
-          {...register("oldPassword")}
+          {...register('oldPassword')}
           placeholder="Old password"
         />
       </ContentSection>
-      <ContentSection title="New password" text={<InputError {...formState.errors.password}/>}>
+      <ContentSection
+        title="New password"
+        text={<InputError {...formState.errors.password} />}
+      >
         <Input
           type="password"
-          {...register("password")}
+          {...register('password')}
           placeholder="New password"
         />
       </ContentSection>
-      <ContentSection title="Confirm password" text={<InputError {...formState.errors.confirmPassword}/>}>
+      <ContentSection
+        title="Confirm password"
+        text={<InputError {...formState.errors.confirmPassword} />}
+      >
         <Input
           type="password"
-          {...register("confirmPassword")}
+          {...register('confirmPassword')}
           placeholder="Confirm password"
         />
       </ContentSection>

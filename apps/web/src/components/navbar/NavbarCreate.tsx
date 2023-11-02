@@ -1,5 +1,4 @@
-import { LineChart } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,9 +7,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useOrganizationParams } from "@/hooks/useOrganizationParams";
-import Link from "next/link";
+} from '@/components/ui/dropdown-menu';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { LineChart } from 'lucide-react';
+import Link from 'next/link';
 
 export function NavbarCreate() {
   const params = useOrganizationParams();

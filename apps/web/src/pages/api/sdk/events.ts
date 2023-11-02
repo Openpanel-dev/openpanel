@@ -3,10 +3,10 @@ import { db } from '@/server/db';
 import { createError, handleError } from '@/server/exceptions';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { type EventPayload } from '@mixan/types';
+import type { EventPayload } from '@mixan/types';
 
 interface Request extends NextApiRequest {
-  body: Array<EventPayload>;
+  body: EventPayload[];
 }
 
 export default async function handler(req: Request, res: NextApiResponse) {

@@ -1,14 +1,14 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
-
 import { Loader } from 'lucide-react';
 import mitt from 'mitt';
 import dynamic from 'next/dynamic';
 import { useOnClickOutside } from 'usehooks-ts';
-import { type ConfirmProps } from './Confirm';
+
+import type { ConfirmProps } from './Confirm';
 
 const Loading = () => (
-  <div className='fixed top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto bg-backdrop'>
-    <Loader className='mb-8 animate-spin' size={40} />
+  <div className="fixed top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto bg-backdrop">
+    <Loader className="mb-8 animate-spin" size={40} />
   </div>
 );
 
@@ -48,26 +48,29 @@ const emitter = mitt<{
 
 type ModalRoutes = keyof typeof modals;
 
-type StateItem = {
+interface StateItem {
   key: string;
   name: ModalRoutes;
   props: Record<string, unknown>;
-};
+}
 
-type ModalWrapperProps = {
+interface ModalWrapperProps {
   children: React.ReactNode;
   name: ModalRoutes;
   isOnTop: boolean;
-};
+}
 
 function ModalWrapper({ children, name, isOnTop }: ModalWrapperProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useOnClickOutside(ref, (event) => {
     const target = event.target as HTMLElement;
-    const isPortal = typeof target.closest === 'function' ? !!target.closest('[data-radix-popper-content-wrapper]') : false
-    
-    if (isOnTop && !isPortal) {      
+    const isPortal =
+      typeof target.closest === 'function'
+        ? !!target.closest('[data-radix-popper-content-wrapper]')
+        : false;
+
+    if (isOnTop && !isPortal) {
       emitter.emit('pop', {
         name,
       });
@@ -75,8 +78,8 @@ function ModalWrapper({ children, name, isOnTop }: ModalWrapperProps) {
   });
 
   return (
-    <div className='fixed top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto'>
-      <div ref={ref} className='w-inherit m-auto py-4'>
+    <div className="fixed top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto">
+      <div ref={ref} className="w-inherit m-auto py-4">
         <Suspense>{children}</Suspense>
       </div>
     </div>
@@ -141,7 +144,9 @@ export function ModalProvider() {
   });
   return (
     <>
-      {!!state.length && <div className="fixed top-0 left-0 right-0 bottom-0 bg-[rgba(0,0,0,0.2)]"></div>}
+      {!!state.length && (
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-[rgba(0,0,0,0.2)]"></div>
+      )}
       {state.map((item, index) => {
         const Modal = modals[item.name];
         return (
@@ -168,7 +173,7 @@ type OrUndefined<T> = T extends Record<string, never> ? undefined : T;
 
 export const pushModal = <
   T extends StateItem['name'],
-  B extends OrUndefined<GetComponentProps<(typeof modals)[T]>>
+  B extends OrUndefined<GetComponentProps<(typeof modals)[T]>>,
 >(
   name: T,
   ...rest: B extends undefined ? [] : [B]
@@ -179,7 +184,7 @@ export const pushModal = <
   });
 export const replaceModal = <
   T extends StateItem['name'],
-  B extends OrUndefined<GetComponentProps<(typeof modals)[T]>>
+  B extends OrUndefined<GetComponentProps<(typeof modals)[T]>>,
 >(
   name: T,
   ...rest: B extends undefined ? [] : [B]

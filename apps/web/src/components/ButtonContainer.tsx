@@ -1,8 +1,11 @@
-import { type HtmlProps } from "@/types";
-import { cn } from "@/utils/cn";
+import type { HtmlProps } from '@/types';
+import { cn } from '@/utils/cn';
 
-export function ButtonContainer({className,...props}: HtmlProps<HTMLDivElement>) {
+export function ButtonContainer({
+  className,
+  ...props
+}: HtmlProps<HTMLDivElement>) {
   return (
-    <div className={cn("flex justify-between mt-6", className)} {...props} />
+    <div className={cn('flex justify-between mt-6', className)} {...props} />
   );
 }

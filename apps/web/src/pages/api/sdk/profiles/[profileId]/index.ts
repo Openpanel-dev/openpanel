@@ -4,7 +4,7 @@ import { createError, handleError } from '@/server/exceptions';
 import { getProfile } from '@/server/services/profile.service';
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-import { type ProfilePayload } from '@mixan/types';
+import type { ProfilePayload } from '@mixan/types';
 
 interface Request extends NextApiRequest {
   body: ProfilePayload;
