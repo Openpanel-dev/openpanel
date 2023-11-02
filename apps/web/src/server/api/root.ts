@@ -1,13 +1,14 @@
-import { createTRPCRouter } from "@/server/api/trpc";
-import { chartRouter } from "./routers/chart";
-import { reportRouter } from "./routers/report";
-import { organizationRouter } from "./routers/organization";
-import { userRouter } from "./routers/user";
-import { projectRouter } from "./routers/project";
-import { clientRouter } from "./routers/client";
-import { dashboardRouter } from "./routers/dashboard";
-import { eventRouter } from "./routers/event";
-import { profileRouter } from "./routers/profile";
+import { createTRPCRouter } from '@/server/api/trpc';
+
+import { chartRouter } from './routers/chart';
+import { clientRouter } from './routers/client';
+import { dashboardRouter } from './routers/dashboard';
+import { eventRouter } from './routers/event';
+import { organizationRouter } from './routers/organization';
+import { profileRouter } from './routers/profile';
+import { projectRouter } from './routers/project';
+import { reportRouter } from './routers/report';
+import { userRouter } from './routers/user';
 
 /**
  * This is the primary router for your server.

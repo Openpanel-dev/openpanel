@@ -1,24 +1,24 @@
 import {
-  type IChartInput,
   type IChartBreakdown,
   type IChartEvent,
-  type IInterval,
-  type IChartType,
+  type IChartInput,
   type IChartRange,
-} from "@/types";
-import { alphabetIds } from "@/utils/constants";
-import { type PayloadAction, createSlice } from "@reduxjs/toolkit";
+  type IChartType,
+  type IInterval,
+} from '@/types';
+import { alphabetIds } from '@/utils/constants';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 type InitialState = IChartInput & {
-  startDate: string | null;
-  endDate: string | null;
-}
+  startDate: string | null;
+  endDate: string | null;
+};
 
 // First approach: define the initial state using that type
 const initialState: InitialState = {
-  name: "screen_view",
-  chartType: "linear",
-  interval: "day",
+  name: 'screen_view',
+  chartType: 'linear',
+  interval: 'day',
   breakdowns: [],
   events: [],
   range: 30,
@@ -27,21 +27,21 @@ const initialState: InitialState = {
 };
 
 export const reportSlice = createSlice({
-  name: "counter",
+  name: 'counter',
   initialState,
   reducers: {
     reset() {
-      return initialState
+      return initialState;
     },
-    setReport(state, action: PayloadAction<IChartInput>) {     
+    setReport(state, action: PayloadAction<IChartInput>) {
       return {
         ...action.payload,
         startDate: null,
         endDate: null,
-      }
+      };
     },
     // Events
-    addEvent: (state, action: PayloadAction<Omit<IChartEvent, "id">>) => {
+    addEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
       state.events.push({
         id: alphabetIds[state.events.length]!,
         ...action.payload,
@@ -51,10 +51,10 @@ export const reportSlice = createSlice({
       state,
       action: PayloadAction<{
         id: string;
-      }>,
+      }>
     ) => {
       state.events = state.events.filter(
-        (event) => event.id !== action.payload.id,
+        (event) => event.id !== action.payload.id
       );
     },
     changeEvent: (state, action: PayloadAction<IChartEvent>) => {
@@ -69,7 +69,7 @@ export const reportSlice = createSlice({
     // Breakdowns
     addBreakdown: (
       state,
-      action: PayloadAction<Omit<IChartBreakdown, "id">>,
+      action: PayloadAction<Omit<IChartBreakdown, 'id'>>
     ) => {
       state.breakdowns.push({
         id: alphabetIds[state.breakdowns.length]!,
@@ -80,10 +80,10 @@ export const reportSlice = createSlice({
       state,
       action: PayloadAction<{
         id: string;
-      }>,
+      }>
     ) => {
       state.breakdowns = state.breakdowns.filter(
-        (event) => event.id !== action.payload.id,
+        (event) => event.id !== action.payload.id
       );
     },
     changeBreakdown: (state, action: PayloadAction<IChartBreakdown>) => {
@@ -99,7 +99,7 @@ export const reportSlice = createSlice({
     changeInterval: (state, action: PayloadAction<IInterval>) => {
       state.interval = action.payload;
     },
-    
+
     // Chart type
     changeChartType: (state, action: PayloadAction<IChartType>) => {
       state.chartType = action.payload;
@@ -116,15 +116,15 @@ export const reportSlice = createSlice({
     },
 
     changeDateRanges: (state, action: PayloadAction<IChartRange>) => {
-      state.range = action.payload
+      state.range = action.payload;
       if (action.payload === 0.3 || action.payload === 0.6) {
-        state.interval = "minute";
+        state.interval = 'minute';
       } else if (action.payload === 0 || action.payload === 1) {
-        state.interval = "hour";
+        state.interval = 'hour';
       } else if (action.payload <= 30) {
-        state.interval = "day";
+        state.interval = 'day';
       } else {
-        state.interval = "month";
+        state.interval = 'month';
       }
     },
   },

@@ -1,7 +1,7 @@
-import mappings from '@/mappings.json'
+import mappings from '@/mappings.json';
 
 export function useMappings() {
   return (val: string) => {
-    return mappings.find((item) => item.id === val)?.name ?? val
-  }
+    return mappings.find((item) => item.id === val)?.name ?? val;
+  };
 }

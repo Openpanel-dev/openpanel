@@ -1,0 +1,17 @@
+{
+  "name": "@mixan/prettier-config",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.mjs",
+  "scripts": {
+    "clean": "rm -rf .turbo node_modules"
+  },
+  "dependencies": {
+    "@ianvs/prettier-plugin-sort-imports": "^4.1.0",
+    "prettier": "^3.0.3"
+  },
+  "devDependencies": {
+    "@mixan/tsconfig": "workspace:*",
+    "typescript": "^5.2.0"
+  }
+}

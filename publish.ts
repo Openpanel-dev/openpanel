@@ -1,7 +1,7 @@
 import sdkPkg from './packages/sdk/package.json'
 import typesPkg from './packages/types/package.json'
 import fs from 'node:fs'
-import {execSync} from 'node:child_process'
+import { execSync } from 'node:child_process'
 import semver from 'semver'
 
 function savePackageJson(path: string, data: Record<string, any>) {
@@ -10,15 +10,15 @@ function savePackageJson(path: string, data: Record<string, any>) {
 
 function main() {
   const [version] = process.argv.slice(2)
-  
-  if(!version) {
+
+  if (!version) {
     return console.error('Missing version')
   }
-  
-  if(!semver.valid(version)) {
+
+  if (!semver.valid(version)) {
     return console.error('Version is not valid')
   }
-  
+
   const properties = {
     private: false,
     version,
@@ -53,12 +53,12 @@ function main() {
     execSync('pnpm dlx tsup', {
       cwd: './packages/types',
     })
-  } catch(error) {
-    console.log('Build failed');
-    console.log(error);
+  } catch (error) {
+    console.log('Build failed')
+    console.log(error)
     process.exit(1)
   }
-  
+
   execSync('npm publish --access=public', {
     cwd: './packages/sdk',
   })

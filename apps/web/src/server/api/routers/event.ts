@@ -1,6 +1,6 @@
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { db } from "@/server/db";
+import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { db } from '@/server/db';
+import { z } from 'zod';
 
 export const config = {
   api: {
@@ -16,7 +16,7 @@ export const eventRouter = createTRPCRouter({
         take: z.number().default(100),
         skip: z.number().default(0),
         profileId: z.string().optional(),
-      }),
+      })
     )
     .query(async ({ input: { take, skip, projectSlug, profileId } }) => {
       const project = await db.project.findUniqueOrThrow({
@@ -29,10 +29,10 @@ export const eventRouter = createTRPCRouter({
         skip,
         where: {
           project_id: project.id,
-          profile_id: profileId
+          profile_id: profileId,
         },
         orderBy: {
-          createdAt: "desc",
+          createdAt: 'desc',
         },
         include: {
           profile: true,

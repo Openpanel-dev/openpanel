@@ -1,48 +1,54 @@
-import { z } from "zod";
-
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { zChartInput } from "@/utils/validation";
-import { db } from "@/server/db";
+import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { db } from '@/server/db';
+import { getDashboardBySlug } from '@/server/services/dashboard.service';
+import { getProjectBySlug } from '@/server/services/project.service';
 import {
-  type IChartInput,
   type IChartBreakdown,
   type IChartEvent,
   type IChartEventFilter,
+  type IChartInput,
   type IChartRange,
-} from "@/types";
-import { type Report as DbReport } from "@prisma/client";
-import { getProjectBySlug } from "@/server/services/project.service";
-import { getDashboardBySlug } from "@/server/services/dashboard.service";
-import { alphabetIds } from "@/utils/constants";
+} from '@/types';
+import { alphabetIds } from '@/utils/constants';
+import { zChartInput } from '@/utils/validation';
+import { type Report as DbReport } from '@prisma/client';
+import { z } from 'zod';
 
-function transformFilter(filter: Partial<IChartEventFilter>, index: number): IChartEventFilter {
+function transformFilter(
+  filter: Partial<IChartEventFilter>,
+  index: number
+): IChartEventFilter {
   return {
     id: filter.id ?? alphabetIds[index]!,
     name: filter.name ?? 'Unknown Filter',
     operator: filter.operator ?? 'is',
-    value: typeof filter.value === 'string' ? [filter.value] : filter.value ?? [],
-  }
+    value:
+      typeof filter.value === 'string' ? [filter.value] : filter.value ?? [],
+  };
 }
 
-function transformEvent(event: Partial<IChartEvent>, index: number): IChartEvent {
+function transformEvent(
+  event: Partial<IChartEvent>,
+  index: number
+): IChartEvent {
   return {
     segment: event.segment ?? 'event',
     filters: (event.filters ?? []).map(transformFilter),
     id: event.id ?? alphabetIds[index]!,
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     name: event.name || 'Untitled',
-  }
+  };
 }
 
 function transformReport(report: DbReport): IChartInput & { id: string } {
   return {
     id: report.id,
-    events: (report.events  as IChartEvent[]).map(transformEvent),
+    events: (report.events as IChartEvent[]).map(transformEvent),
     breakdowns: report.breakdowns as IChartBreakdown[],
     chartType: report.chart_type,
     interval: report.interval,
     name: report.name || 'Untitled',
-    range: report.range as IChartRange ?? 30,
+    range: (report.range as IChartRange) ?? 30,
   };
 }
 
@@ -51,7 +57,7 @@ export const reportRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      }),
+      })
     )
     .query(({ input: { id } }) => {
       return db.report
@@ -67,7 +73,7 @@ export const reportRouter = createTRPCRouter({
       z.object({
         projectSlug: z.string(),
         dashboardSlug: z.string(),
-      }),
+      })
     )
     .query(async ({ input: { projectSlug, dashboardSlug } }) => {
       const project = await getProjectBySlug(projectSlug);
@@ -82,7 +88,7 @@ export const reportRouter = createTRPCRouter({
       return {
         reports: reports.map(transformReport),
         dashboard,
-      }
+      };
     }),
   save: protectedProcedure
     .input(
@@ -90,7 +96,7 @@ export const reportRouter = createTRPCRouter({
         report: zChartInput,
         projectId: z.string(),
         dashboardId: z.string(),
-      }),
+      })
     )
     .mutation(({ input: { report, projectId, dashboardId } }) => {
       return db.report.create({
@@ -105,7 +111,6 @@ export const reportRouter = createTRPCRouter({
           range: report.range,
         },
       });
-
     }),
   update: protectedProcedure
     .input(
@@ -114,7 +119,7 @@ export const reportRouter = createTRPCRouter({
         report: zChartInput,
         projectId: z.string(),
         dashboardId: z.string(),
-      }),
+      })
     )
     .mutation(({ input: { report, projectId, dashboardId, reportId } }) => {
       return db.report.update({

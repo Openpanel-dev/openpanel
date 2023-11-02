@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "db:push": "prisma db push",
-    "dev": "next dev",
     "postinstall": "prisma generate",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "start": "next start"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -60,26 +60,32 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@mixan/eslint-config": "workspace:*",
+    "@mixan/prettier-config": "workspace:*",
     "@types/bcrypt": "^5.0.0",
-    "@types/eslint": "^8.44.2",
     "@types/node": "^18.16.0",
     "@types/ramda": "^0.29.6",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@types/react-syntax-highlighter": "^15.5.9",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
-    "@typescript-eslint/parser": "^6.3.0",
     "autoprefixer": "^10.4.14",
-    "eslint": "^8.47.0",
+    "eslint": "^8.48.0",
     "eslint-config-next": "^13.5.4",
     "postcss": "^8.4.27",
-    "prettier": "^3.0.0",
     "prettier-plugin-tailwindcss": "^0.5.1",
     "prisma": "^5.1.1",
     "tailwindcss": "^3.3.3",
-    "typescript": "^5.1.6"
+    "typescript": "^5.2.0"
   },
   "ct3aMetadata": {
     "initVersion": "7.21.0"
-  }
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@mixan/eslint-config/base",
+      "@mixan/eslint-config/react"
+    ]
+  },
+  "prettier": "@mixan/prettier-config"
 }

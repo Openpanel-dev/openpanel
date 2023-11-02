@@ -13,9 +13,9 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
-    
+
     "outDir": "dist",
     "allowImportingTsExtensions": false,
-    "noEmit": false,
+    "noEmit": false
   }
 }

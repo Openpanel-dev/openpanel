@@ -1,4 +1,4 @@
-import _slugify from 'slugify'
+import _slugify from 'slugify';
 
 const slugify = (str: string) => {
   return _slugify(
@@ -9,10 +9,10 @@ const slugify = (str: string) => {
       .replace('Å', 'A')
       .replace('Ä', 'A')
       .replace('Ö', 'O'),
-    { lower: true, strict: true, trim: true },
-  )
-}
+    { lower: true, strict: true, trim: true }
+  );
+};
 
 export function slug(str: string): string {
-  return slugify(str)
+  return slugify(str);
 }

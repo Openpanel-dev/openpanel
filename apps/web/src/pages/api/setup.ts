@@ -1,10 +1,13 @@
-import { db } from "@/server/db";
-import { handleError } from "@/server/exceptions";
-import { hashPassword } from "@/server/services/hash.service";
-import { randomUUID } from "crypto";
-import { type NextApiRequest, type NextApiResponse } from "next";
+import { randomUUID } from 'crypto';
+import { db } from '@/server/db';
+import { handleError } from '@/server/exceptions';
+import { hashPassword } from '@/server/services/hash.service';
+import { type NextApiRequest, type NextApiResponse } from 'next';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
     const counts = await db.$transaction([
       db.organization.count(),
@@ -13,25 +16,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     ]);
 
     if (counts.some((count) => count > 0)) {
-      return res.json("Setup already done");
+      return res.json('Setup already done');
     }
 
     const organization = await db.organization.create({
       data: {
-        name: "Acme Inc.",
+        name: 'Acme Inc.',
       },
     });
 
     const project = await db.project.create({
       data: {
-        name: "Acme Website",
+        name: 'Acme Website',
         organization_id: organization.id,
       },
     });
     const secret = randomUUID();
     const client = await db.client.create({
       data: {
-        name: "Acme Website Client",
+        name: 'Acme Website Client',
         project_id: project.id,
         organization_id: organization.id,
         secret: await hashPassword(secret),

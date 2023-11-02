@@ -1,5 +1,6 @@
-import { z } from "zod";
-import { operators, chartTypes, intervals } from "./constants";
+import { z } from 'zod';
+
+import { chartTypes, intervals, operators } from './constants';
 
 function objectToZodEnums<K extends string>(obj: Record<K, any>): [K, ...K[]] {
   const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
@@ -9,14 +10,14 @@ function objectToZodEnums<K extends string>(obj: Record<K, any>): [K, ...K[]] {
 export const zChartEvent = z.object({
   id: z.string(),
   name: z.string(),
-  segment: z.enum(["event", "user"]),
+  segment: z.enum(['event', 'user']),
   filters: z.array(
     z.object({
       id: z.string(),
       name: z.string(),
       operator: z.enum(objectToZodEnums(operators)),
       value: z.array(z.string().or(z.number()).or(z.boolean()).or(z.null())),
-    }),
+    })
   ),
 });
 export const zChartBreakdown = z.object({

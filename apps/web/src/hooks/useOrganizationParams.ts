@@ -1,5 +1,6 @@
-import { z } from "zod";
-import { useQueryParams } from "./useQueryParams";
+import { z } from 'zod';
+
+import { useQueryParams } from './useQueryParams';
 
 export function useOrganizationParams() {
   return useQueryParams(
@@ -8,6 +9,6 @@ export function useOrganizationParams() {
       project: z.string(),
       dashboard: z.string(),
       profileId: z.string().optional(),
-    }),
+    })
   );
 }

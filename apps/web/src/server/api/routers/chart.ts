@@ -1,15 +1,15 @@
-import { z } from "zod";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { db } from "@/server/db";
-import { last, pipe, sort, uniq } from "ramda";
-import { toDots } from "@/utils/object";
-import { zChartInputWithDates } from "@/utils/validation";
+import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { db } from '@/server/db';
 import {
-  type IChartInputWithDates,
   type IChartEvent,
+  type IChartInputWithDates,
   type IChartRange,
-} from "@/types";
-import { getDaysOldDate } from "@/utils/date";
+} from '@/types';
+import { getDaysOldDate } from '@/utils/date';
+import { toDots } from '@/utils/object';
+import { zChartInputWithDates } from '@/utils/validation';
+import { last, pipe, sort, uniq } from 'ramda';
+import { z } from 'zod';
 
 export const config = {
   api: {
@@ -21,7 +21,7 @@ export const chartRouter = createTRPCRouter({
   events: protectedProcedure.query(async () => {
     const events = await db.event.findMany({
       take: 500,
-      distinct: ["name"],
+      distinct: ['name'],
     });
 
     return events;
@@ -47,12 +47,12 @@ export const chartRouter = createTRPCRouter({
           const dotNotation = toDots(properties);
           return [...acc, ...Object.keys(dotNotation)];
         }, [] as string[])
-        .map((item) => item.replace(/\.([0-9]+)\./g, ".*."))
-        .map((item) => item.replace(/\.([0-9]+)/g, "[*]"));
+        .map((item) => item.replace(/\.([0-9]+)\./g, '.*.'))
+        .map((item) => item.replace(/\.([0-9]+)/g, '[*]'));
 
       return pipe(
         sort<string>((a, b) => a.length - b.length),
-        uniq,
+        uniq
       )(properties);
     }),
 
@@ -62,10 +62,10 @@ export const chartRouter = createTRPCRouter({
       if (isJsonPath(input.property)) {
         const events = await db.$queryRawUnsafe<{ value: string }[]>(
           `SELECT ${selectJsonPath(
-            input.property,
+            input.property
           )} AS value from events WHERE name = '${
             input.event
-          }' AND "createdAt" >= NOW() - INTERVAL '30 days'`,
+          }' AND "createdAt" >= NOW() - INTERVAL '30 days'`
         );
         return {
           values: uniq(events.map((item) => item.value)),
@@ -102,12 +102,12 @@ export const chartRouter = createTRPCRouter({
           ...(await getChartData({
             ...input,
             event,
-          })),
+          }))
         );
       }
 
       const sorted = [...series].sort((a, b) => {
-        if (input.chartType === "linear") {
+        if (input.chartType === 'linear') {
           const sumA = a.data.reduce((acc, item) => acc + item.count, 0);
           const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
           return sumB - sumA;
@@ -132,8 +132,8 @@ export const chartRouter = createTRPCRouter({
               }
               return acc;
             },
-            {} as Record<(typeof series)[number]["event"]["id"], number>,
-          ),
+            {} as Record<(typeof series)[number]['event']['id'], number>
+          )
         ).map(([id, count]) => ({
           count,
           ...events.find((event) => event.id === id)!,
@@ -148,13 +148,13 @@ export const chartRouter = createTRPCRouter({
 
 function selectJsonPath(property: string) {
   const jsonPath = property
-    .replace(/^properties\./, "")
-    .replace(/\.\*\./g, ".**.");
+    .replace(/^properties\./, '')
+    .replace(/\.\*\./g, '.**.');
   return `jsonb_path_query(properties, '$.${jsonPath}')`;
 }
 
 function isJsonPath(property: string) {
-  return property.startsWith("properties");
+  return property.startsWith('properties');
 }
 
 type ResultItem = {
@@ -164,12 +164,12 @@ type ResultItem = {
 };
 
 function propertyNameToSql(name: string) {
-  if (name.includes(".")) {
+  if (name.includes('.')) {
     const str = name
-      .split(".")
+      .split('.')
       .map((item, index) => (index === 0 ? item : `'${item}'`))
-      .join("->");
-    const findLastOf = "->";
+      .join('->');
+    const findLastOf = '->';
     const lastArrow = str.lastIndexOf(findLastOf);
     if (lastArrow === -1) {
       return str;
@@ -224,27 +224,34 @@ function getDatesFromRange(range: IChartRange) {
   };
 }
 
-function getChartSql({ event, chartType, breakdowns, interval, startDate, endDate }: Omit<IGetChartDataInput,  'range'>) {
+function getChartSql({
+  event,
+  chartType,
+  breakdowns,
+  interval,
+  startDate,
+  endDate,
+}: Omit<IGetChartDataInput, 'range'>) {
   const select = [];
   const where = [];
   const groupBy = [];
   const orderBy = [];
 
-  if (event.segment === "event") {
+  if (event.segment === 'event') {
     select.push(`count(*)::int as count`);
   } else {
     select.push(`count(DISTINCT profile_id)::int as count`);
   }
 
   switch (chartType) {
-    case "bar": {
-      orderBy.push("count DESC");
+    case 'bar': {
+      orderBy.push('count DESC');
       break;
     }
-    case "linear": {
+    case 'linear': {
       select.push(`date_trunc('${interval}', "createdAt") as date`);
-      groupBy.push("date");
-      orderBy.push("date");
+      groupBy.push('date');
+      orderBy.push('date');
       break;
     }
   }
@@ -256,38 +263,38 @@ function getChartSql({ event, chartType, breakdowns, interval, startDate, endDat
       filters.forEach((filter) => {
         const { name, value } = filter;
         switch (filter.operator) {
-          case "is": {
-            if (name.includes(".*.") || name.endsWith("[*]")) {
+          case 'is': {
+            if (name.includes('.*.') || name.endsWith('[*]')) {
               where.push(
                 `properties @? '$.${name
-                  .replace(/^properties\./, "")
-                  .replace(/\.\*\./g, "[*].")} ? (${value
+                  .replace(/^properties\./, '')
+                  .replace(/\.\*\./g, '[*].')} ? (${value
                   .map((val) => `@ == "${val}"`)
-                  .join(" || ")})'`,
+                  .join(' || ')})'`
               );
             } else {
               where.push(
                 `${propertyNameToSql(name)} in (${value
                   .map((val) => `'${val}'`)
-                  .join(", ")})`,
+                  .join(', ')})`
               );
             }
             break;
           }
-          case "isNot": {
-            if (name.includes(".*.") || name.endsWith("[*]")) {
+          case 'isNot': {
+            if (name.includes('.*.') || name.endsWith('[*]')) {
               where.push(
                 `properties @? '$.${name
-                  .replace(/^properties\./, "")
-                  .replace(/\.\*\./g, "[*].")} ? (${value
+                  .replace(/^properties\./, '')
+                  .replace(/\.\*\./g, '[*].')} ? (${value
                   .map((val) => `@ != "${val}"`)
-                  .join(" && ")})'`,
+                  .join(' && ')})'`
               );
-            } else if (name.includes(".")) {
+            } else if (name.includes('.')) {
               where.push(
                 `${propertyNameToSql(name)} not in (${value
                   .map((val) => `'${val}'`)
-                  .join(", ")})`,
+                  .join(', ')})`
               );
             }
             break;
@@ -322,24 +329,24 @@ function getChartSql({ event, chartType, breakdowns, interval, startDate, endDat
   }
 
   const sql = [
-    `SELECT ${select.join(", ")}`,
+    `SELECT ${select.join(', ')}`,
     `FROM events`,
-    `WHERE ${where.join(" AND ")}`,
+    `WHERE ${where.join(' AND ')}`,
   ];
 
   if (groupBy.length) {
-    sql.push(`GROUP BY ${groupBy.join(", ")}`);
+    sql.push(`GROUP BY ${groupBy.join(', ')}`);
   }
   if (orderBy.length) {
-    sql.push(`ORDER BY ${orderBy.join(", ")}`);
+    sql.push(`ORDER BY ${orderBy.join(', ')}`);
   }
 
-  return sql.join("\n");
+  return sql.join('\n');
 }
 
 type IGetChartDataInput = {
   event: IChartEvent;
-} & Omit<IChartInputWithDates, "events" | 'name'>
+} & Omit<IChartInputWithDates, 'events' | 'name'>;
 
 async function getChartData({
   chartType,
@@ -365,23 +372,24 @@ async function getChartData({
     interval,
     startDate,
     endDate,
-  })
+  });
 
   let result = await db.$queryRawUnsafe<ResultItem[]>(sql);
 
-  if(result.length === 0 && breakdowns.length > 0) {
-    result = await db.$queryRawUnsafe<ResultItem[]>(getChartSql({
-      chartType,
-      event,
-      breakdowns: [],
-      interval,
-      startDate,
-      endDate,
-    }));
+  if (result.length === 0 && breakdowns.length > 0) {
+    result = await db.$queryRawUnsafe<ResultItem[]>(
+      getChartSql({
+        chartType,
+        event,
+        breakdowns: [],
+        interval,
+        startDate,
+        endDate,
+      })
+    );
   }
 
   console.log(sql);
-  
 
   // group by sql label
   const series = result.reduce(
@@ -401,7 +409,7 @@ async function getChartData({
         ...acc,
       };
     },
-    {} as Record<string, ResultItem[]>,
+    {} as Record<string, ResultItem[]>
   );
 
   return Object.keys(series).map((key) => {
@@ -416,7 +424,7 @@ async function getChartData({
       },
       totalCount: getTotalCount(data),
       data:
-        chartType === "linear"
+        chartType === 'linear'
           ? fillEmptySpotsInTimeline(data, interval, startDate, endDate).map(
               (item) => {
                 return {
@@ -424,7 +432,7 @@ async function getChartData({
                   count: item.count,
                   date: new Date(item.date).toISOString(),
                 };
-              },
+              }
             )
           : [],
     };
@@ -435,17 +443,17 @@ function fillEmptySpotsInTimeline(
   items: ResultItem[],
   interval: string,
   startDate: string,
-  endDate: string,
+  endDate: string
 ) {
   const result = [];
   const clonedStartDate = new Date(startDate);
   const clonedEndDate = new Date(endDate);
   const today = new Date();
 
-  if(interval === 'minute') { 
-    clonedStartDate.setSeconds(0, 0)
+  if (interval === 'minute') {
+    clonedStartDate.setSeconds(0, 0);
     clonedEndDate.setMinutes(clonedEndDate.getMinutes() + 1, 0, 0);
-  } else if (interval === "hour") {
+  } else if (interval === 'hour') {
     clonedStartDate.setMinutes(0, 0, 0);
     clonedEndDate.setMinutes(0, 0, 0);
   } else {
@@ -455,7 +463,7 @@ function fillEmptySpotsInTimeline(
 
   // Force if interval is month and the start date is the same month as today
   const shouldForce = () =>
-    interval === "month" &&
+    interval === 'month' &&
     clonedStartDate.getFullYear() === today.getFullYear() &&
     clonedStartDate.getMonth() === today.getMonth();
 
@@ -472,20 +480,20 @@ function fillEmptySpotsInTimeline(
     const item = items.find((item) => {
       const date = new Date(item.date);
 
-      if (interval === "month") {
+      if (interval === 'month') {
         return (
           getYear(date) === getYear(clonedStartDate) &&
           getMonth(date) === getMonth(clonedStartDate)
         );
       }
-      if (interval === "day") {
+      if (interval === 'day') {
         return (
           getYear(date) === getYear(clonedStartDate) &&
           getMonth(date) === getMonth(clonedStartDate) &&
           getDay(date) === getDay(clonedStartDate)
         );
       }
-      if (interval === "hour") {
+      if (interval === 'hour') {
         return (
           getYear(date) === getYear(clonedStartDate) &&
           getMonth(date) === getMonth(clonedStartDate) &&
@@ -493,7 +501,7 @@ function fillEmptySpotsInTimeline(
           getHour(date) === getHour(clonedStartDate)
         );
       }
-      if (interval === "minute") {
+      if (interval === 'minute') {
         return (
           getYear(date) === getYear(clonedStartDate) &&
           getMonth(date) === getMonth(clonedStartDate) &&
@@ -515,19 +523,19 @@ function fillEmptySpotsInTimeline(
     }
 
     switch (interval) {
-      case "day": {
+      case 'day': {
         clonedStartDate.setDate(clonedStartDate.getDate() + 1);
         break;
       }
-      case "hour": {
+      case 'hour': {
         clonedStartDate.setHours(clonedStartDate.getHours() + 1);
         break;
       }
-      case "minute": {
+      case 'minute': {
         clonedStartDate.setMinutes(clonedStartDate.getMinutes() + 1);
         break;
       }
-      case "month": {
+      case 'month': {
         clonedStartDate.setMonth(clonedStartDate.getMonth() + 1);
         break;
       }

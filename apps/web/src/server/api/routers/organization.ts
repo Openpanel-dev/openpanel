@@ -1,9 +1,8 @@
-import { z } from "zod";
-
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { db } from "@/server/db";
-import { getOrganizationBySlug } from "@/server/services/organization.service";
-import { slug } from "@/utils/slug";
+import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { db } from '@/server/db';
+import { getOrganizationBySlug } from '@/server/services/organization.service';
+import { slug } from '@/utils/slug';
+import { z } from 'zod';
 
 export const organizationRouter = createTRPCRouter({
   first: protectedProcedure.query(({ ctx }) => {
@@ -21,17 +20,17 @@ export const organizationRouter = createTRPCRouter({
     .input(
       z.object({
         slug: z.string(),
-      }),
+      })
     )
     .query(({ input }) => {
-      return getOrganizationBySlug(input.slug)
+      return getOrganizationBySlug(input.slug);
     }),
   update: protectedProcedure
     .input(
       z.object({
         id: z.string(),
         name: z.string(),
-      }),
+      })
     )
     .mutation(({ input }) => {
       return db.organization.update({
@@ -40,7 +39,7 @@ export const organizationRouter = createTRPCRouter({
         },
         data: {
           name: input.name,
-          slug: slug(input.name)
+          slug: slug(input.name),
         },
       });
     }),

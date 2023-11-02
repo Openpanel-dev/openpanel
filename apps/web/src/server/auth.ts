@@ -1,14 +1,14 @@
-import { type NextApiRequest, type GetServerSidePropsContext } from "next";
+import { db } from '@/server/db';
+import { verifyPassword } from '@/server/services/hash.service';
+import { type GetServerSidePropsContext, type NextApiRequest } from 'next';
 import {
   getServerSession,
   type DefaultSession,
   type NextAuthOptions,
-} from "next-auth";
+} from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
 
-import { db } from "@/server/db";
-import Credentials from "next-auth/providers/credentials";
-import { createError } from "./exceptions";
-import { hashPassword, verifyPassword } from "@/server/services/hash.service";
+import { createError } from './exceptions';
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -16,9 +16,9 @@ import { hashPassword, verifyPassword } from "@/server/services/hash.service";
  *
  * @see https://next-auth.js.org/getting-started/typescript#module-augmentation
  */
-declare module "next-auth" {
+declare module 'next-auth' {
   interface Session extends DefaultSession {
-    user: DefaultSession["user"] & {
+    user: DefaultSession['user'] & {
       id: string;
     };
   }
@@ -45,35 +45,35 @@ export const authOptions: NextAuthOptions = {
     }),
   },
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   providers: [
     Credentials({
-      name: "Credentials",
+      name: 'Credentials',
       credentials: {
-        email: { label: "Email", type: "text", placeholder: "jsmith" },
-        password: { label: "Password", type: "password" },
+        email: { label: 'Email', type: 'text', placeholder: 'jsmith' },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if(!credentials?.password || !credentials?.email) {
-          return null
+        if (!credentials?.password || !credentials?.email) {
+          return null;
         }
 
         const user = await db.user.findFirst({
           where: { email: credentials?.email },
         });
 
-        if(!user) {
-          return null
+        if (!user) {
+          return null;
         }
-        
-        if(!await verifyPassword(credentials.password, user.password)) {
-          return null
+
+        if (!(await verifyPassword(credentials.password, user.password))) {
+          return null;
         }
 
         return {
           ...user,
-          image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Abby'
+          image: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Abby',
         };
       },
     }),
@@ -95,22 +95,22 @@ export const authOptions: NextAuthOptions = {
  * @see https://next-auth.js.org/configuration/nextjs
  */
 export const getServerAuthSession = (ctx: {
-  req: GetServerSidePropsContext["req"];
-  res: GetServerSidePropsContext["res"];
+  req: GetServerSidePropsContext['req'];
+  res: GetServerSidePropsContext['res'];
 }) => {
   return getServerSession(ctx.req, ctx.res, authOptions);
 };
 
 export async function validateSdkRequest(req: NextApiRequest): Promise<string> {
-  const clientId = req?.headers["mixan-client-id"] as string | undefined
-  const clientSecret = req.headers["mixan-client-secret"] as string | undefined
-  
+  const clientId = req?.headers['mixan-client-id'] as string | undefined;
+  const clientSecret = req.headers['mixan-client-secret'] as string | undefined;
+
   if (!clientId) {
-    throw createError(401, "Misisng client id");
+    throw createError(401, 'Misisng client id');
   }
 
   if (!clientSecret) {
-    throw createError(401, "Misisng client secret");
+    throw createError(401, 'Misisng client secret');
   }
 
   const client = await db.client.findUnique({
@@ -120,14 +120,12 @@ export async function validateSdkRequest(req: NextApiRequest): Promise<string> {
   });
 
   if (!client) {
-    throw createError(401, "Invalid client id");
+    throw createError(401, 'Invalid client id');
   }
-
-  
 
   if (!(await verifyPassword(clientSecret, client.secret))) {
-    throw createError(401, "Invalid client secret");
+    throw createError(401, 'Invalid client secret');
   }
 
-  return client.project_id
+  return client.project_id;
 }

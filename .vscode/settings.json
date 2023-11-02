@@ -1,0 +1,23 @@
+{
+  "editor.codeActionsOnSave": { "source.fixAll.eslint": true },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "[handlebars]": {
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": { "source.fixAll.eslint": false }
+  },
+  "files.associations": { "*.hbs": "handlebars" },
+  "eslint.workingDirectories": [
+    { "pattern": "apps/*/" },
+    { "pattern": "packages/*/" },
+    { "pattern": "tooling/*/" }
+  ],
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "[yaml]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.autoIndent": "advanced"
+  },
+  "editor.inlineSuggest.enabled": true
+}

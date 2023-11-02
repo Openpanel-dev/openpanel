@@ -1,8 +1,8 @@
-import { validateSdkRequest } from "@/server/auth";
-import { db } from "@/server/db";
-import { createError, handleError } from "@/server/exceptions";
-import type { NextApiRequest, NextApiResponse } from "next";
-import randomAnimalName from "random-animal-name";
+import { validateSdkRequest } from '@/server/auth';
+import { db } from '@/server/db';
+import { createError, handleError } from '@/server/exceptions';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import randomAnimalName from 'random-animal-name';
 
 interface Request extends NextApiRequest {
   body: {
@@ -12,8 +12,8 @@ interface Request extends NextApiRequest {
 }
 
 export default async function handler(req: Request, res: NextApiResponse) {
-  if (req.method !== "POST") {
-    return handleError(res, createError(405, "Method not allowed"));
+  if (req.method !== 'POST') {
+    return handleError(res, createError(405, 'Method not allowed'));
   }
 
   try {

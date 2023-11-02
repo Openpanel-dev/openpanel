@@ -1,9 +1,8 @@
-import { z } from "zod";
-
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { db } from "@/server/db";
-import { getProjectBySlug } from "@/server/services/project.service";
-import { slug } from "@/utils/slug";
+import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { db } from '@/server/db';
+import { getProjectBySlug } from '@/server/services/project.service';
+import { slug } from '@/utils/slug';
+import { z } from 'zod';
 
 export const dashboardRouter = createTRPCRouter({
   list: protectedProcedure
@@ -15,12 +14,12 @@ export const dashboardRouter = createTRPCRouter({
         .or(
           z.object({
             projectId: z.string(),
-          }),
-        ),
+          })
+        )
     )
     .query(async ({ input }) => {
       let projectId = null;
-      if ("projectId" in input) {
+      if ('projectId' in input) {
         projectId = input.projectId;
       } else {
         projectId = (await getProjectBySlug(input.projectSlug)).id;
@@ -37,7 +36,7 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         projectId: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input: { projectId, name } }) => {
       return db.dashboard.create({

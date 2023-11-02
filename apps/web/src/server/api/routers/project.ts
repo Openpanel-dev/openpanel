@@ -1,15 +1,14 @@
-import { z } from "zod";
-
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { db } from "@/server/db";
-import { getOrganizationBySlug } from "@/server/services/organization.service";
+import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { db } from '@/server/db';
+import { getOrganizationBySlug } from '@/server/services/organization.service';
+import { z } from 'zod';
 
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
         organizationSlug: z.string(),
-      }),
+      })
     )
     .query(async ({ input }) => {
       const organization = await getOrganizationBySlug(input.organizationSlug);
@@ -23,7 +22,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      }),
+      })
     )
     .query(({ input }) => {
       return db.project.findUniqueOrThrow({
@@ -37,7 +36,7 @@ export const projectRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
-      }),
+      })
     )
     .mutation(({ input }) => {
       return db.project.update({
@@ -54,7 +53,7 @@ export const projectRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         organizationSlug: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       const organization = await getOrganizationBySlug(input.organizationSlug);
@@ -69,7 +68,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      }),
+      })
     )
     .mutation(async ({ input }) => {
       await db.project.delete({

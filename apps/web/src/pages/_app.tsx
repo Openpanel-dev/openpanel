@@ -1,26 +1,22 @@
-import { type Session } from "next-auth";
-import { SessionProvider, getSession } from "next-auth/react";
-import App, {
-  type AppContext,
-  type AppInitialProps,
-  type AppType,
-} from "next/app";
-import store from "@/redux";
-import { Provider as ReduxProvider } from "react-redux";
-import { Suspense } from "react";
-import { Space_Grotesk } from "next/font/google";
-import { Toaster } from "@/components/ui/toaster";
+import { Suspense } from 'react';
+import { Toaster } from '@/components/ui/toaster';
+import store from '@/redux';
+import { api } from '@/utils/api';
+import { type Session } from 'next-auth';
+import { SessionProvider } from 'next-auth/react';
+import { type AppType } from 'next/app';
+import { Space_Grotesk } from 'next/font/google';
+import { Provider as ReduxProvider } from 'react-redux';
 
-import { api } from "@/utils/api";
+import '@/styles/globals.css';
 
-import "@/styles/globals.css";
-import { ModalProvider } from "@/modals";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { ModalProvider } from '@/modals';
 
 const font = Space_Grotesk({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--text",
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--text',
 });
 
 const MixanApp: AppType<{ session: Session | null }> = ({

@@ -1,12 +1,12 @@
-import { db } from "@/server/db"
-import { HttpError } from "@/server/exceptions"
+import { db } from '@/server/db';
+import { HttpError } from '@/server/exceptions';
 
 export function getProfile(id: string) {
   return db.profile.findUniqueOrThrow({
     where: {
       id,
     },
-  })
+  });
 }
 
 export async function tickProfileProperty({
@@ -14,28 +14,31 @@ export async function tickProfileProperty({
   tick,
   name,
 }: {
-  profileId: string
-  tick: number
-  name: string
+  profileId: string;
+  tick: number;
+  name: string;
 }) {
-  const profile = await getProfile(profileId)
+  const profile = await getProfile(profileId);
 
   if (!profile) {
-    throw new HttpError(404, `Profile not found ${profileId}`)
+    throw new HttpError(404, `Profile not found ${profileId}`);
   }
 
   const properties = (
     typeof profile.properties === 'object' ? profile.properties ?? {} : {}
-  ) as Record<string, number>
-  const value = name in properties ? properties[name] : 0
+  ) as Record<string, number>;
+  const value = name in properties ? properties[name] : 0;
 
   if (typeof value !== 'number') {
-    throw new HttpError(400, `Property "${name}" on user is of type ${typeof value}`)
+    throw new HttpError(
+      400,
+      `Property "${name}" on user is of type ${typeof value}`
+    );
   }
-  
+
   if (typeof tick !== 'number') {
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    throw new HttpError(400, `Value is not a number ${tick} (${typeof tick})`)
+    throw new HttpError(400, `Value is not a number ${tick} (${typeof tick})`);
   }
 
   await db.profile.update({
@@ -48,5 +51,5 @@ export async function tickProfileProperty({
         [name]: value + tick,
       },
     },
-  })
+  });
 }

@@ -3,12 +3,25 @@
   "version": "0.0.1",
   "type": "module",
   "module": "index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@mixan/types": "workspace:*"
   },
   "devDependencies": {
-    "@types/uuid": "^9.0.5",
+    "@mixan/eslint-config": "workspace:*",
+    "@mixan/prettier-config": "workspace:*",
     "tsup": "^7.2.0",
-    "typescript": "^5.0.0"
-  }
+    "typescript": "^5.2.0"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@mixan/eslint-config/base"
+    ]
+  },
+  "prettier": "@mixan/prettier-config"
 }
