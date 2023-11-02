@@ -105,6 +105,12 @@ export async function validateSdkRequest(req: NextApiRequest): Promise<string> {
   const clientId = req?.headers['mixan-client-id'] as string | undefined;
   const clientSecret = req.headers['mixan-client-secret'] as string | undefined;
 
+  console.log('clientId',clientId);
+  console.log('clientSecret',clientSecret);
+  console.log(JSON.stringify(req.headers, null, 2));
+  
+
+
   if (!clientId) {
     throw createError(401, 'Misisng client id');
   }
