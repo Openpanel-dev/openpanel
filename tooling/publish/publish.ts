@@ -17,6 +17,7 @@ function exit(message: string, error?: unknown) {
   console.log(`❌ ${message}`);
   if (error instanceof Error) {
     console.log(`Error: ${error.message}`);
+    console.log(error);
   } else if (typeof error === 'string') {
     console.log(`Error: ${error}`);
   }
@@ -82,11 +83,11 @@ function main() {
 
   try {
     execSync('npm publish --access=public', {
-      cwd: './packages/sdk',
+      cwd: workspacePath('./packages/sdk'),
     });
 
     execSync('npm publish --access=public', {
-      cwd: './packages/types',
+      cwd: workspacePath('./packages/types'),
     });
   } catch (error) {
     exit('Failed publish packages', error);
