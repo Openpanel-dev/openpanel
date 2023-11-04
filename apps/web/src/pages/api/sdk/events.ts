@@ -10,6 +10,10 @@ interface Request extends NextApiRequest {
 }
 
 export default async function handler(req: Request, res: NextApiResponse) {
+  if (req.method == 'OPTIONS') {
+    return res.status(202).json({});
+  }
+
   if (req.method !== 'POST') {
     return handleError(res, createError(405, 'Method not allowed'));
   }
