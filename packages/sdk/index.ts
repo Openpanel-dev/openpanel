@@ -4,7 +4,7 @@ import type {
   ProfilePayload,
 } from '@mixan/types';
 
-interface NewMixanOptions {
+export interface NewMixanOptions {
   url: string;
   clientId: string;
   clientSecret: string;
@@ -16,7 +16,7 @@ interface NewMixanOptions {
   getProfileId: () => string | null;
   removeProfileId: () => void;
 }
-type MixanOptions = Required<NewMixanOptions>;
+export type MixanOptions = Required<NewMixanOptions>;
 
 class Fetcher {
   private url: string;
@@ -38,6 +38,8 @@ class Fetcher {
   ): Promise<PostResponse | null> {
     const url = `${this.url}${path}`;
     this.logger(`Mixan request: ${url}`, JSON.stringify(data, null, 2));
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     return fetch(url, {
       headers: {
         ['mixan-client-id']: this.clientId,
@@ -46,6 +48,7 @@ class Fetcher {
       },
       method: 'POST',
       body: JSON.stringify(data ?? {}),
+      keepalive: true,
       ...(options ?? {}),
     })
       .then(async (res) => {
@@ -82,7 +85,7 @@ class Fetcher {
 
 class Batcher<T> {
   queue: T[] = [];
-  timer?: NodeJS.Timeout;
+  timer?: ReturnType<typeof setTimeout>;
   callback: (queue: T[]) => void;
   maxBatchSize: number;
   batchInterval: number;
