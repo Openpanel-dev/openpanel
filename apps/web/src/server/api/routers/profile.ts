@@ -34,4 +34,17 @@ export const profileRouter = createTRPCRouter({
         },
       });
     }),
+  get: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .query(async ({ input: { id } }) => {
+      return db.profile.findUniqueOrThrow({
+        where: {
+          id,
+        },
+      });
+    }),
 });

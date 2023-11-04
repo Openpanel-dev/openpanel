@@ -40,47 +40,52 @@ export function ReportLineChart({ interval, data }: ReportLineChartProps) {
 
   return (
     <>
-      <AutoSizer disableHeight>
-        {({ width }) => (
-          <LineChart width={width} height={Math.min(width * 0.5, 400)}>
-            <YAxis dataKey={'count'} width={30} fontSize={12}></YAxis>
-            <Tooltip content={<ReportLineChartTooltip />} />
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              fontSize={12}
-              dataKey="date"
-              tickFormatter={(m: string) => {
-                return formatDate(m);
-              }}
-              tickLine={false}
-              allowDuplicatedCategory={false}
-            />
-            {data?.series
-              .filter((serie) => {
-                return visibleSeries.includes(serie.name);
-              })
-              .map((serie) => {
-                const realIndex = data?.series.findIndex(
-                  (item) => item.name === serie.name
-                );
-                const key = serie.name;
-                const strokeColor = getChartColor(realIndex);
-                return (
-                  <Line
-                    type="monotone"
-                    key={key}
-                    isAnimationActive={false}
-                    strokeWidth={2}
-                    dataKey="count"
-                    stroke={strokeColor}
-                    data={serie.data}
-                    name={serie.name}
-                  />
-                );
-              })}
-          </LineChart>
-        )}
-      </AutoSizer>
+      <div className="max-sm:-mx-3">
+        <AutoSizer disableHeight>
+          {({ width }) => (
+            <LineChart
+              width={width}
+              height={Math.min(Math.max(width * 0.5, 250), 400)}
+            >
+              <YAxis dataKey={'count'} width={30} fontSize={12}></YAxis>
+              <Tooltip content={<ReportLineChartTooltip />} />
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                fontSize={12}
+                dataKey="date"
+                tickFormatter={(m: string) => {
+                  return formatDate(m);
+                }}
+                tickLine={false}
+                allowDuplicatedCategory={false}
+              />
+              {data?.series
+                .filter((serie) => {
+                  return visibleSeries.includes(serie.name);
+                })
+                .map((serie) => {
+                  const realIndex = data?.series.findIndex(
+                    (item) => item.name === serie.name
+                  );
+                  const key = serie.name;
+                  const strokeColor = getChartColor(realIndex);
+                  return (
+                    <Line
+                      type="monotone"
+                      key={key}
+                      isAnimationActive={false}
+                      strokeWidth={2}
+                      dataKey="count"
+                      stroke={strokeColor}
+                      data={serie.data}
+                      name={serie.name}
+                    />
+                  );
+                })}
+            </LineChart>
+          )}
+        </AutoSizer>
+      </div>
       {editMode && (
         <ReportTable
           data={data}

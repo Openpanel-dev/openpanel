@@ -47,6 +47,7 @@ export function EventsTable({ data, pagination }: EventsTableProps) {
           const profile = info.getValue();
           return (
             <Link
+              shallow
               href={`/${params.organization}/${params.project}/profiles/${profile?.id}`}
               className="flex items-center gap-2"
             >
@@ -91,7 +92,7 @@ export function EventsTable({ data, pagination }: EventsTableProps) {
         footer: () => 'Created At',
       }),
     ];
-  }, []);
+  }, [params]);
 
   return (
     <>

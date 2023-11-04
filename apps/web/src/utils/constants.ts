@@ -45,3 +45,7 @@ export const timeRanges = [
   { range: 180, title: '6mo' },
   { range: 365, title: '1y' },
 ] as const;
+
+export function isMinuteIntervalEnabledByRange(range: number) {
+  return range === 0.3 || range === 0.6;
+}

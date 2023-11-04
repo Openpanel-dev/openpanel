@@ -33,6 +33,7 @@ export function SettingsLayout({ children, className }: SettingsLayoutProps) {
           <Sidebar>
             {links.map(({ href, label }) => (
               <Link
+                shallow
                 key={href}
                 href={href}
                 className={cn(

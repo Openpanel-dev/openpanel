@@ -1,5 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import * as cache from '@/server/cache';
 import { db } from '@/server/db';
+import { getProjectBySlug } from '@/server/services/project.service';
 import type { IChartEvent, IChartInputWithDates, IChartRange } from '@/types';
 import { getDaysOldDate } from '@/utils/date';
 import { toDots } from '@/utils/object';
@@ -14,28 +16,46 @@ export const config = {
 };
 
 export const chartRouter = createTRPCRouter({
-  events: protectedProcedure.query(async () => {
-    const events = await db.event.findMany({
-      take: 500,
-      distinct: ['name'],
-    });
+  events: protectedProcedure
+    .input(z.object({ projectSlug: z.string() }))
+    .query(async ({ input: { projectSlug } }) => {
+      const project = await getProjectBySlug(projectSlug);
+      const events = await cache.getOr(
+        `events_${project.id}`,
+        1000 * 60 * 60,
+        () =>
+          db.event.findMany({
+            take: 500,
+            distinct: ['name'],
+            where: {
+              project_id: project.id,
+            },
+          })
+      );
 
-    return events;
-  }),
+      return events;
+    }),
 
   properties: protectedProcedure
-    .input(z.object({ event: z.string() }).optional())
-    .query(async ({ input }) => {
-      const events = await db.event.findMany({
-        take: 500,
-        where: {
-          ...(input?.event
-            ? {
-                name: input.event,
-              }
-            : {}),
-        },
-      });
+    .input(z.object({ event: z.string().optional(), projectSlug: z.string() }))
+    .query(async ({ input: { projectSlug, event } }) => {
+      const project = await getProjectBySlug(projectSlug);
+      const events = await cache.getOr(
+        `events_${project.id}_${event ?? 'all'}`,
+        1000 * 60 * 60,
+        () =>
+          db.event.findMany({
+            take: 500,
+            where: {
+              project_id: project.id,
+              ...(event
+                ? {
+                    name: event,
+                  }
+                : {}),
+            },
+          })
+      );
 
       const properties = events
         .reduce((acc, event) => {
@@ -53,51 +73,69 @@ export const chartRouter = createTRPCRouter({
     }),
 
   values: protectedProcedure
-    .input(z.object({ event: z.string(), property: z.string() }))
-    .query(async ({ input }) => {
-      if (isJsonPath(input.property)) {
+    .input(
+      z.object({
+        event: z.string(),
+        property: z.string(),
+        projectSlug: z.string(),
+      })
+    )
+    .query(async ({ input: { event, property, projectSlug } }) => {
+      const project = await getProjectBySlug(projectSlug);
+      if (isJsonPath(property)) {
         const events = await db.$queryRawUnsafe<{ value: string }[]>(
           `SELECT ${selectJsonPath(
-            input.property
-          )} AS value from events WHERE name = '${
-            input.event
-          }' AND "createdAt" >= NOW() - INTERVAL '30 days'`
+            property
+          )} AS value from events WHERE project_id = '${
+            project.id
+          }' AND name = '${event}' AND "createdAt" >= NOW() - INTERVAL '30 days'`
         );
+        console.log(
+          `SELECT ${selectJsonPath(
+            property
+          )} AS value from events WHERE project_id = '${
+            project.id
+          }' AND name = '${event}' AND "createdAt" >= NOW() - INTERVAL '30 days'`
+        );
+
         return {
           values: uniq(events.map((item) => item.value)),
         };
       } else {
         const events = await db.event.findMany({
           where: {
-            name: input.event,
-            [input.property]: {
+            project_id: project.id,
+            name: event,
+            [property]: {
               not: null,
             },
             createdAt: {
               gte: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 30),
             },
           },
-          distinct: input.property as any,
+          distinct: property as any,
           select: {
-            [input.property]: true,
+            [property]: true,
           },
         });
 
         return {
-          values: uniq(events.map((item) => item[input.property]!)),
+          values: uniq(events.map((item) => item[property]!)),
         };
       }
     }),
 
   chart: protectedProcedure
-    .input(zChartInputWithDates)
-    .query(async ({ input: { events, ...input } }) => {
+    .input(zChartInputWithDates.merge(z.object({ projectSlug: z.string() })))
+    .query(async ({ input: { projectSlug, events, ...input } }) => {
+      const project = await getProjectBySlug(projectSlug);
       const series: Awaited<ReturnType<typeof getChartData>> = [];
       for (const event of events) {
         series.push(
           ...(await getChartData({
             ...input,
             event,
+            projectId: project.id,
           }))
         );
       }
@@ -227,9 +265,12 @@ function getChartSql({
   interval,
   startDate,
   endDate,
-}: Omit<IGetChartDataInput, 'range'>) {
+  projectId,
+}: Omit<IGetChartDataInput, 'range'> & {
+  projectId: string;
+}) {
   const select = [];
-  const where = [];
+  const where = [`project_id = '${projectId}'`];
   const groupBy = [];
   const orderBy = [];
 
@@ -352,7 +393,10 @@ async function getChartData({
   range,
   startDate: _startDate,
   endDate: _endDate,
-}: IGetChartDataInput) {
+  projectId,
+}: IGetChartDataInput & {
+  projectId: string;
+}) {
   const { startDate, endDate } =
     _startDate && _endDate
       ? {
@@ -368,6 +412,7 @@ async function getChartData({
     interval,
     startDate,
     endDate,
+    projectId,
   });
 
   let result = await db.$queryRawUnsafe<ResultItem[]>(sql);
@@ -381,6 +426,7 @@ async function getChartData({
         interval,
         startDate,
         endDate,
+        projectId,
       })
     );
   }
@@ -453,8 +499,8 @@ function fillEmptySpotsInTimeline(
     clonedStartDate.setMinutes(0, 0, 0);
     clonedEndDate.setMinutes(0, 0, 0);
   } else {
-    clonedStartDate.setHours(2, 0, 0, 0);
-    clonedEndDate.setHours(2, 0, 0, 0);
+    clonedStartDate.setUTCHours(0, 0, 0, 0);
+    clonedEndDate.setUTCHours(0, 0, 0, 0);
   }
 
   // Force if interval is month and the start date is the same month as today

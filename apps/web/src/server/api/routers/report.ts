@@ -94,14 +94,18 @@ export const reportRouter = createTRPCRouter({
     .input(
       z.object({
         report: zChartInput,
-        projectId: z.string(),
         dashboardId: z.string(),
       })
     )
-    .mutation(({ input: { report, projectId, dashboardId } }) => {
+    .mutation(async ({ input: { report, dashboardId } }) => {
+      const dashboard = await db.dashboard.findUniqueOrThrow({
+        where: {
+          id: dashboardId,
+        },
+      });
       return db.report.create({
         data: {
-          project_id: projectId,
+          project_id: dashboard.project_id,
           dashboard_id: dashboardId,
           name: report.name,
           events: report.events,
@@ -117,18 +121,14 @@ export const reportRouter = createTRPCRouter({
       z.object({
         reportId: z.string(),
         report: zChartInput,
-        projectId: z.string(),
-        dashboardId: z.string(),
       })
     )
-    .mutation(({ input: { report, projectId, dashboardId, reportId } }) => {
+    .mutation(({ input: { report, reportId } }) => {
       return db.report.update({
         where: {
           id: reportId,
         },
         data: {
-          project_id: projectId,
-          dashboard_id: dashboardId,
           name: report.name,
           events: report.events,
           interval: report.interval,

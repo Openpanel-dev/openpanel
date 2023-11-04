@@ -93,9 +93,9 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    debugTable: true,
-    debugHeaders: true,
-    debugColumns: true,
+    // debugTable: true,
+    // debugHeaders: true,
+    // debugColumns: true,
   });
   return (
     <div ref={ref}>

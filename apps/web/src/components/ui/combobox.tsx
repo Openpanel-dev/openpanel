@@ -15,11 +15,14 @@ import {
 import { cn } from '@/utils/cn';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
+import { ScrollArea } from './scroll-area';
+
 interface ComboboxProps {
   placeholder: string;
   items: {
     value: string;
     label: string;
+    disabled?: boolean;
   }[];
   value: string;
   onChange: (value: string) => void;
@@ -51,7 +54,7 @@ export function Combobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full min-w-0 justify-between"
+            className="w-full justify-between min-w-[150px]"
           >
             <span className="overflow-hidden text-ellipsis">
               {value ? find(value)?.label ?? 'No match' : placeholder}
@@ -82,27 +85,30 @@ export function Combobox({
           ) : (
             <CommandEmpty>Nothing selected</CommandEmpty>
           )}
-          <CommandGroup className="max-h-[200px] overflow-auto">
-            {items.map((item) => (
-              <CommandItem
-                key={item.value}
-                value={item.value}
-                onSelect={(currentValue) => {
-                  const value = find(currentValue)?.value ?? currentValue;
-                  onChange(value);
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    'mr-2 h-4 w-4 flex-shrink-0',
-                    value === item.value ? 'opacity-100' : 'opacity-0'
-                  )}
-                />
-                {item.label}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <div className="max-h-[300px] overflow-scroll">
+            <CommandGroup>
+              {items.map((item) => (
+                <CommandItem
+                  key={item.value}
+                  value={item.value}
+                  onSelect={(currentValue) => {
+                    const value = find(currentValue)?.value ?? currentValue;
+                    onChange(value);
+                    setOpen(false);
+                  }}
+                  {...(item.disabled && { disabled: true })}
+                >
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4 flex-shrink-0',
+                      value === item.value ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  {item.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </div>
         </Command>
       </PopoverContent>
     </Popover>

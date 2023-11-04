@@ -1,11 +1,23 @@
 import { useCallback, useEffect } from 'react';
+import { Container } from '@/components/Container';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { Chart } from '@/components/report/chart';
 import { useReportId } from '@/components/report/hooks/useReportId';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportDateRange } from '@/components/report/ReportDateRange';
+import { ReportInterval } from '@/components/report/ReportInterval';
+import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import { reset, setReport } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
+import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { useRouterBeforeLeave } from '@/hooks/useRouterBeforeLeave';
 import { useDispatch, useSelector } from '@/redux';
 import { createServerSideProps } from '@/server/getServerSideProps';
@@ -39,18 +51,32 @@ export default function Page() {
   }, [reportId, reportQuery.data, dispatch]);
 
   return (
-    <MainLayout className="grid min-h-screen grid-cols-[400px_minmax(0,1fr)] divide-x">
-      <div>
+    <Sheet>
+      <MainLayout>
+        <Container>
+          <div className="flex flex-col gap-4 mt-8">
+            <div className="flex flex-col gap-4">
+              <ReportDateRange />
+              <div className="flex flex-col sm:flex-row gap-4 justify-between">
+                <div className="flex gap-4">
+                  <ReportChartType />
+                  <ReportInterval />
+                </div>
+                <div className="flex gap-4">
+                  <SheetTrigger asChild>
+                    <Button size="default">Select events & Filters</Button>
+                  </SheetTrigger>
+                  <ReportSaveButton />
+                </div>
+              </div>
+            </div>
+            <Chart {...report} editMode />
+          </div>
+        </Container>
+      </MainLayout>
+      <SheetContent className="!max-w-lg w-full">
         <ReportSidebar />
-      </div>
-      <div className="flex flex-col gap-4 p-4">
-        <div className="flex gap-4">
-          <ReportDateRange />
-          <ReportChartType />
-        </div>
-
-        <Chart {...report} editMode />
-      </div>
-    </MainLayout>
+      </SheetContent>
+    </Sheet>
   );
 }

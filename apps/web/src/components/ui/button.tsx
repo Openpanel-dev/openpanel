@@ -3,6 +3,7 @@ import { cn } from '@/utils/cn';
 import { Slot } from '@radix-ui/react-slot';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
+import type { LucideIcon, LucideProps } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 const buttonVariants = cva(
@@ -39,6 +40,7 @@ interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   loading?: boolean;
+  icon?: LucideIcon;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -51,11 +53,13 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       children,
       loading,
       disabled,
+      icon,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : 'button';
+    const Icon = loading ? Loader2 : icon ?? null;
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
@@ -63,7 +67,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={loading ?? disabled}
         {...props}
       >
-        {loading ? <Loader2 className="animate-spin" /> : <>{children}</>}
+        {Icon && (
+          <Icon className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+        )}
+        {children}
       </Comp>
     );
   }

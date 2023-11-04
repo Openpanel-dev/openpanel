@@ -1,6 +1,6 @@
 import { ColorSquare } from '@/components/ColorSquare';
 import { Combobox } from '@/components/ui/combobox';
-import { RenderDots } from '@/components/ui/RenderDots';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartBreakdown } from '@/types';
 import { api } from '@/utils/api';
@@ -10,9 +10,12 @@ import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportBreakdowns() {
+  const params = useOrganizationParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const dispatch = useDispatch();
-  const propertiesQuery = api.chart.properties.useQuery();
+  const propertiesQuery = api.chart.properties.useQuery({
+    projectSlug: params.project,
+  });
   const propertiesCombobox = (propertiesQuery.data ?? []).map((item) => ({
     value: item,
     label: item, // <RenderDots truncate>{item}</RenderDots>,

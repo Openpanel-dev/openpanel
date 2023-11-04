@@ -1,12 +1,15 @@
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { pushModal } from '@/modals';
 import { useSelector } from '@/redux';
 import { api, handleError } from '@/utils/api';
+import { SaveIcon } from 'lucide-react';
 
-import { useReportId } from '../hooks/useReportId';
+import { useReportId } from './hooks/useReportId';
 
 export function ReportSaveButton() {
+  const params = useOrganizationParams();
   const { reportId } = useReportId();
   const update = api.report.update.useMutation({
     onSuccess() {
@@ -27,10 +30,9 @@ export function ReportSaveButton() {
           update.mutate({
             reportId,
             report,
-            dashboardId: '9227feb4-ad59-40f3-b887-3501685733dd',
-            projectId: 'f7eabf0c-e0b0-4ac0-940f-1589715b0c3d',
           });
         }}
+        icon={SaveIcon}
       >
         Update
       </Button>
@@ -43,8 +45,9 @@ export function ReportSaveButton() {
             report,
           });
         }}
+        icon={SaveIcon}
       >
-        Create
+        Save
       </Button>
     );
   }

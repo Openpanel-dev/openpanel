@@ -27,25 +27,28 @@ export function NavbarUserDropdown() {
       <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuGroup>
           <DropdownMenuItem asChild className="cursor-pointer">
-            <Link href={`/${params.organization}/settings/organization`}>
+            <Link
+              href={`/${params.organization}/settings/organization`}
+              shallow
+            >
               <User className="mr-2 h-4 w-4" />
               Organization
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="cursor-pointer">
-            <Link href={`/${params.organization}/settings/projects`}>
+            <Link href={`/${params.organization}/settings/projects`} shallow>
               <User className="mr-2 h-4 w-4" />
               Projects
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="cursor-pointer">
-            <Link href={`/${params.organization}/settings/clients`}>
+            <Link href={`/${params.organization}/settings/clients`} shallow>
               <User className="mr-2 h-4 w-4" />
               Clients
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="cursor-pointer">
-            <Link href={`/${params.organization}/settings/profile`}>
+            <Link href={`/${params.organization}/settings/profile`} shallow>
               <User className="mr-2 h-4 w-4" />
               Profile
             </Link>

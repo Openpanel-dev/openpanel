@@ -1,13 +1,14 @@
-import { Suspense, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Container } from '@/components/Container';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { PageTitle } from '@/components/PageTitle';
-import { Chart } from '@/components/report/chart';
+import { LazyChart } from '@/components/report/chart/LazyChart';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { createServerSideProps } from '@/server/getServerSideProps';
 import type { IChartRange } from '@/types';
 import { api } from '@/utils/api';
+import { cn } from '@/utils/cn';
 import { timeRanges } from '@/utils/constants';
 import { getRangeLabel } from '@/utils/getRangeLabel';
 import Link from 'next/link';
@@ -32,59 +33,63 @@ export default function Dashboard() {
   return (
     <MainLayout>
       <Container>
-        <Suspense fallback="Loading">
-          <PageTitle>{dashboard?.name}</PageTitle>
+        <PageTitle>{dashboard?.name}</PageTitle>
 
-          <RadioGroup className="mb-8">
-            {timeRanges.map((item) => {
-              return (
-                <RadioGroupItem
-                  key={item.range}
-                  active={item.range === range}
-                  onClick={() => {
-                    setRange((p) => (p === item.range ? null : item.range));
-                  }}
+        <RadioGroup className="mb-8 overflow-auto">
+          {timeRanges.map((item) => {
+            return (
+              <RadioGroupItem
+                key={item.range}
+                active={item.range === range}
+                onClick={() => {
+                  setRange((p) => (p === item.range ? null : item.range));
+                }}
+              >
+                {item.title}
+              </RadioGroupItem>
+            );
+          })}
+        </RadioGroup>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {reports.map((report) => {
+            const chartRange = getRangeLabel(report.range);
+            return (
+              <div
+                className="rounded-md border border-border bg-white shadow"
+                key={report.id}
+              >
+                <Link
+                  href={`/${params.organization}/${params.project}/reports/${report.id}`}
+                  className="block border-b border-border p-4 leading-none hover:underline"
+                  shallow
                 >
-                  {item.title}
-                </RadioGroupItem>
-              );
-            })}
-          </RadioGroup>
-
-          <div className="grid grid-cols-2 gap-4">
-            {reports.map((report) => {
-              const chartRange = getRangeLabel(report.range);
-              return (
+                  <div className="font-medium">{report.name}</div>
+                  {chartRange !== null && (
+                    <div className="mt-2 text-sm flex gap-2">
+                      <span className={range !== null ? 'line-through' : ''}>
+                        {chartRange}
+                      </span>
+                      {range !== null && <span>{getRangeLabel(range)}</span>}
+                    </div>
+                  )}
+                </Link>
                 <div
-                  className="rounded-md border border-border bg-white shadow"
-                  key={report.id}
+                  className={cn(
+                    'p-4 pl-2',
+                    report.chartType === 'bar' && 'overflow-auto max-h-[300px]'
+                  )}
                 >
-                  <Link
-                    href={`/${params.organization}/reports/${report.id}`}
-                    className="block border-b border-border p-4 leading-none hover:underline"
-                  >
-                    <div className="font-medium">{report.name}</div>
-                    {chartRange && (
-                      <div className="mt-2 text-sm flex gap-2">
-                        <span className={range ? 'line-through' : ''}>
-                          {chartRange}
-                        </span>
-                        {range && <span>{getRangeLabel(range)}</span>}
-                      </div>
-                    )}
-                  </Link>
-                  <div className="aspect-[1.8/1] overflow-auto p-4 pl-2">
-                    <Chart
-                      {...report}
-                      range={range ?? report.range}
-                      editMode={false}
-                    />
-                  </div>
+                  <LazyChart
+                    {...report}
+                    range={range ?? report.range}
+                    editMode={false}
+                  />
                 </div>
-              );
-            })}
-          </div>
-        </Suspense>
+              </div>
+            );
+          })}
+        </div>
       </Container>
     </MainLayout>
   );

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/command';
 import { RenderDots } from '@/components/ui/RenderDots';
 import { useMappings } from '@/hooks/useMappings';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useDispatch } from '@/redux';
 import type {
   IChartEvent,
@@ -37,10 +38,12 @@ export function ReportEventFilters({
   isCreating,
   setIsCreating,
 }: ReportEventFiltersProps) {
+  const params = useOrganizationParams();
   const dispatch = useDispatch();
   const propertiesQuery = api.chart.properties.useQuery(
     {
       event: event.name,
+      projectSlug: params.project,
     },
     {
       enabled: !!event.name,
@@ -99,11 +102,13 @@ interface FilterProps {
 }
 
 function Filter({ filter, event }: FilterProps) {
+  const params = useOrganizationParams();
   const getLabel = useMappings();
   const dispatch = useDispatch();
   const potentialValues = api.chart.values.useQuery({
     event: event.name,
     property: filter.name,
+    projectSlug: params.project,
   });
 
   const valuesCombobox =

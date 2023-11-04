@@ -1,4 +1,3 @@
-import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,14 +16,17 @@ export function NavbarCreate() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm">Create</Button>
+        <button>Create</button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href={`/${params.organization}/reports`}>
+            <Link
+              shallow
+              href={`/${params.organization}/${params.project}/reports`}
+            >
               <LineChart className="mr-2 h-4 w-4" />
               <span>Create a report</span>
             </Link>

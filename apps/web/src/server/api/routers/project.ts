@@ -1,6 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
 import { getOrganizationBySlug } from '@/server/services/organization.service';
+import { getProjectBySlug } from '@/server/services/project.service';
 import { z } from 'zod';
 
 export const projectRouter = createTRPCRouter({
@@ -20,11 +21,17 @@ export const projectRouter = createTRPCRouter({
     }),
   get: protectedProcedure
     .input(
-      z.object({
-        id: z.string(),
-      })
+      z
+        .object({
+          id: z.string(),
+        })
+        .or(z.object({ slug: z.string() }))
     )
     .query(({ input }) => {
+      if ('slug' in input) {
+        return getProjectBySlug(input.slug);
+      }
+
       return db.project.findUniqueOrThrow({
         where: {
           id: input.id,

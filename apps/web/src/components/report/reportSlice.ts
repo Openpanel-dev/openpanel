@@ -6,7 +6,7 @@ import type {
   IChartType,
   IInterval,
 } from '@/types';
-import { alphabetIds } from '@/utils/constants';
+import { alphabetIds, isMinuteIntervalEnabledByRange } from '@/utils/constants';
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
@@ -104,6 +104,13 @@ export const reportSlice = createSlice({
     // Chart type
     changeChartType: (state, action: PayloadAction<IChartType>) => {
       state.chartType = action.payload;
+
+      if (
+        !isMinuteIntervalEnabledByRange(state.range) &&
+        state.interval === 'minute'
+      ) {
+        state.interval = 'hour';
+      }
     },
 
     // Date range

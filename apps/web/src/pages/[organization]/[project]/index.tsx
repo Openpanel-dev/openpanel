@@ -25,12 +25,13 @@ export default function Home() {
     <MainLayout>
       <Container>
         <PageTitle>Dashboards</PageTitle>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           {dashboards.map((item) => (
             <Card key={item.id}>
               <Link
                 href={`/${params.organization}/${params.project}/${item.slug}`}
                 className="block p-4 font-medium leading-none hover:underline"
+                shallow
               >
                 {item.name}
               </Link>

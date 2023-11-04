@@ -1,24 +1,40 @@
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { cn } from '@/utils/cn';
 import Link from 'next/link';
 
-import { NavbarCreate } from './NavbarCreate';
+import { NavbarUserDropdown } from './NavbarUserDropdown';
 
 export function NavbarMenu() {
   const params = useOrganizationParams();
   return (
-    <div className="flex gap-6 items-center">
-      <Link href={`/${params.organization}`}>Home</Link>
+    <div className={cn('flex gap-6 items-center text-sm', 'max-sm:flex-col')}>
       {params.project && (
-        <Link href={`/${params.organization}/${params.project}/events`}>
+        <Link shallow href={`/${params.organization}/${params.project}`}>
+          Home
+        </Link>
+      )}
+      {params.project && (
+        <Link shallow href={`/${params.organization}/${params.project}/events`}>
           Events
         </Link>
       )}
       {params.project && (
-        <Link href={`/${params.organization}/${params.project}/profiles`}>
+        <Link
+          shallow
+          href={`/${params.organization}/${params.project}/profiles`}
+        >
           Profiles
         </Link>
       )}
-      <NavbarCreate />
+      {params.project && (
+        <Link
+          shallow
+          href={`/${params.organization}/${params.project}/reports`}
+        >
+          Create report
+        </Link>
+      )}
+      <NavbarUserDropdown />
     </div>
   );
 }

@@ -49,6 +49,7 @@ export default function Events() {
             <Link
               href={`/${params.organization}/${params.project}/profiles/${profile?.id}`}
               className="flex items-center gap-2"
+              shallow
             >
               <Avatar className="h-6 w-6">
                 {profile?.avatar && <AvatarImage src={profile.avatar} />}
@@ -56,7 +57,16 @@ export default function Events() {
                   {profile?.first_name?.at(0)}
                 </AvatarFallback>
               </Avatar>
-              {`${profile?.first_name} ${profile?.last_name ?? ''}`}
+              <div className="flex flex-col">
+                <div>
+                  {[profile?.first_name, profile?.last_name]
+                    .filter(Boolean)
+                    .join(' ')}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  {profile.external_id}
+                </div>
+              </div>
             </Link>
           );
         },

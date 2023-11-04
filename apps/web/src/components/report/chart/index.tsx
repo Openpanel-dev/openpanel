@@ -1,3 +1,5 @@
+import { memo } from 'react';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import type { IChartInput } from '@/types';
 import { api } from '@/utils/api';
 
@@ -5,17 +7,18 @@ import { withChartProivder } from './ChartProvider';
 import { ReportBarChart } from './ReportBarChart';
 import { ReportLineChart } from './ReportLineChart';
 
-type ReportLineChartProps = IChartInput;
+export type ReportChartProps = IChartInput;
 
-export const Chart = withChartProivder(
-  ({
+export const Chart = memo(
+  withChartProivder(function Chart({
     interval,
     events,
     breakdowns,
     chartType,
     name,
     range,
-  }: ReportLineChartProps) => {
+  }: ReportChartProps) {
+    const params = useOrganizationParams();
     const hasEmptyFilters = events.some((event) =>
       event.filters.some((filter) => filter.value.length === 0)
     );
@@ -29,6 +32,7 @@ export const Chart = withChartProivder(
         range,
         startDate: null,
         endDate: null,
+        projectSlug: params.project,
       },
       {
         keepPreviousData: true,
@@ -63,5 +67,5 @@ export const Chart = withChartProivder(
     }
 
     return <p>Chart type &quot;{chartType}&quot; is not supported yet.</p>;
-  }
+  })
 );

@@ -8,6 +8,7 @@ import { organizationRouter } from './routers/organization';
 import { profileRouter } from './routers/profile';
 import { projectRouter } from './routers/project';
 import { reportRouter } from './routers/report';
+import { uiRouter } from './routers/ui';
 import { userRouter } from './routers/user';
 
 /**
@@ -25,6 +26,7 @@ export const appRouter = createTRPCRouter({
   client: clientRouter,
   event: eventRouter,
   profile: profileRouter,
+  ui: uiRouter,
 });
 
 // export type definition of API

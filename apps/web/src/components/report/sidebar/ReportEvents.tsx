@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
 import { Combobox } from '@/components/ui/combobox';
+import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartEvent } from '@/types';
 import { api } from '@/utils/api';
@@ -16,7 +17,10 @@ export function ReportEvents() {
   const [isCreating, setIsCreating] = useState(false);
   const selectedEvents = useSelector((state) => state.report.events);
   const dispatch = useDispatch();
-  const eventsQuery = api.chart.events.useQuery();
+  const params = useOrganizationParams();
+  const eventsQuery = api.chart.events.useQuery({
+    projectSlug: params.project,
+  });
   const eventsCombobox = (eventsQuery.data ?? []).map((item) => ({
     value: item.name,
     label: item.name,

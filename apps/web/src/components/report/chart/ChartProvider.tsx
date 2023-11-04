@@ -1,7 +1,6 @@
 import { createContext, memo, useContext, useMemo } from 'react';
-import { pick } from 'ramda';
 
-interface ChartContextType {
+export interface ChartContextType {
   editMode: boolean;
 }
 

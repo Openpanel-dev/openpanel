@@ -35,14 +35,15 @@ export const dashboardRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string(),
-        projectId: z.string(),
+        projectSlug: z.string(),
       })
     )
-    .mutation(async ({ input: { projectId, name } }) => {
+    .mutation(async ({ input: { projectSlug, name } }) => {
+      const project = await getProjectBySlug(projectSlug);
       return db.dashboard.create({
         data: {
           slug: slug(name),
-          project_id: projectId,
+          project_id: project.id,
           name,
         },
       });

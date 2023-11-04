@@ -10,7 +10,7 @@ import type { IChartInput } from '@/types';
 import { api, handleError } from '@/utils/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/router';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { popModal } from '.';
@@ -23,7 +23,6 @@ interface SaveReportProps {
 
 const validator = z.object({
   name: z.string().min(1, 'Required'),
-  projectId: z.string().min(1, 'Required'),
   dashboardId: z.string().min(1, 'Required'),
 });
 
@@ -31,7 +30,7 @@ type IForm = z.infer<typeof validator>;
 
 export default function SaveReport({ report }: SaveReportProps) {
   const router = useRouter();
-  const { organization } = useOrganizationParams();
+  const { organization, project } = useOrganizationParams();
   const refetch = useRefetchActive();
   const save = api.report.save.useMutation({
     onError: handleError,
@@ -42,7 +41,7 @@ export default function SaveReport({ report }: SaveReportProps) {
       });
       popModal();
       refetch();
-      router.push(`/${organization}/reports/${res.id}`);
+      router.push(`/${organization}/${project}/reports/${res.id}`);
     },
   });
 
@@ -51,7 +50,6 @@ export default function SaveReport({ report }: SaveReportProps) {
       resolver: zodResolver(validator),
       defaultValues: {
         name: '',
-        projectId: '',
         dashboardId: '',
       },
     });
@@ -68,28 +66,9 @@ export default function SaveReport({ report }: SaveReportProps) {
     },
   });
 
-  const projectId = useWatch({
-    name: 'projectId',
-    control,
+  const dashboasrdQuery = api.dashboard.list.useQuery({
+    projectSlug: project,
   });
-
-  const projectQuery = api.project.list.useQuery({
-    organizationSlug: organization,
-  });
-
-  const dashboasrdQuery = api.dashboard.list.useQuery(
-    {
-      projectId,
-    },
-    {
-      enabled: !!projectId,
-    }
-  );
-
-  const projects = (projectQuery.data ?? []).map((item) => ({
-    value: item.id,
-    label: item.name,
-  }));
 
   const dashboards = (dashboasrdQuery.data ?? []).map((item) => ({
     value: item.id,
@@ -119,35 +98,18 @@ export default function SaveReport({ report }: SaveReportProps) {
         />
         <Controller
           control={control}
-          name="projectId"
-          render={({ field }) => {
-            return (
-              <div>
-                <Label>Project</Label>
-                <Combobox
-                  {...field}
-                  items={projects}
-                  placeholder="Select a project"
-                />
-              </div>
-            );
-          }}
-        />
-        <Controller
-          control={control}
           name="dashboardId"
           render={({ field }) => {
             return (
               <div>
                 <Label>Dashboard</Label>
                 <Combobox
-                  disabled={!projectId}
                   {...field}
                   items={dashboards}
                   placeholder="Select a dashboard"
                   onCreate={(value) => {
                     dashboardMutation.mutate({
-                      projectId,
+                      projectSlug: project,
                       name: value,
                     });
                   }}

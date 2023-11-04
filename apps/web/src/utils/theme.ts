@@ -2,14 +2,16 @@ import resolveConfig from 'tailwindcss/resolveConfig';
 
 import tailwinConfig from '../../tailwind.config';
 
-const config = resolveConfig<any>(tailwinConfig);
+export const resolvedTailwindConfig = resolveConfig(tailwinConfig);
 
-export const theme = config.theme;
+export const theme = resolvedTailwindConfig.theme;
 
 export function getChartColor(index: number): string {
-  const chartColors: string[] = Object.keys(theme.colors ?? {})
+  const colors = theme?.colors ?? {};
+  const chartColors: string[] = Object.keys(colors)
     .filter((key) => key.startsWith('chart-'))
-    .map((key) => theme.colors[key] as string);
+    .map((key) => colors[key])
+    .filter((item): item is string => typeof item === 'string');
 
   return chartColors[index % chartColors.length]!;
 }
