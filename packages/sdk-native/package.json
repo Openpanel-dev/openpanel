@@ -1,26 +1,24 @@
 {
-  "name": "@mixan/publish",
-  "version": "0.1.0",
-  "private": true,
-  "license": "MIT",
+  "name": "@mixan/sdk-native",
+  "version": "0.0.1",
+  "module": "index.ts",
   "scripts": {
-    "publish": "pnpm dlx ts-node publish.ts",
+    "build": "rm -rf dist && tsup",
     "lint": "eslint .",
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "semver": "^7.5.4"
+    "@mixan/sdk": "workspace:*",
+    "@mixan/types": "workspace:*"
   },
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
     "@mixan/tsconfig": "workspace:*",
-    "@types/eslint": "^8.44.2",
-    "@types/node": "^18.16.0",
-    "@types/semver": "^7.5.4",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
+    "tsup": "^7.2.0",
     "typescript": "^5.2.2"
   },
   "eslintConfig": {

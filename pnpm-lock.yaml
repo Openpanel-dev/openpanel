@@ -22,6 +22,70 @@ importers:
         specifier: ^7.5.4
         version: 7.5.4
 
+  apps/test:
+    dependencies:
+      '@mixan-test/sdk':
+        specifier: workspace:@mixan/sdk@*
+        version: link:../../packages/sdk
+      '@mixan-test/sdk-web':
+        specifier: workspace:@mixan/sdk-web@*
+        version: link:../../packages/sdk-web
+      next:
+        specifier: '13.4'
+        version: 13.4.19(react-dom@18.2.0)(react@18.2.0)
+      react:
+        specifier: 18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: 18.2.0
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@mixan/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@mixan/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/react':
+        specifier: ^18.2.20
+        version: 18.2.34
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.14
+      '@types/react-syntax-highlighter':
+        specifier: ^15.5.9
+        version: 15.5.9
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.6.0
+        version: 6.9.1(@typescript-eslint/parser@6.9.1)(eslint@8.52.0)(typescript@5.2.2)
+      '@typescript-eslint/parser':
+        specifier: ^6.6.0
+        version: 6.9.1(eslint@8.52.0)(typescript@5.2.2)
+      autoprefixer:
+        specifier: ^10.4.14
+        version: 10.4.16(postcss@8.4.31)
+      eslint:
+        specifier: ^8.48.0
+        version: 8.52.0
+      postcss:
+        specifier: ^8.4.27
+        version: 8.4.31
+      prettier:
+        specifier: ^3.0.3
+        version: 3.0.3
+      prettier-plugin-tailwindcss:
+        specifier: ^0.5.1
+        version: 0.5.6(prettier@3.0.3)
+      tailwindcss:
+        specifier: ^3.3.3
+        version: 3.3.5
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+
   apps/web:
     dependencies:
       '@hookform/resolvers':
@@ -242,6 +306,71 @@ importers:
       '@mixan/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      eslint:
+        specifier: ^8.48.0
+        version: 8.52.0
+      prettier:
+        specifier: ^3.0.3
+        version: 3.0.3
+      tsup:
+        specifier: ^7.2.0
+        version: 7.2.0(typescript@5.2.2)
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+
+  packages/sdk-native:
+    dependencies:
+      '@mixan/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@mixan/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@mixan/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@mixan/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      eslint:
+        specifier: ^8.48.0
+        version: 8.52.0
+      prettier:
+        specifier: ^3.0.3
+        version: 3.0.3
+      tsup:
+        specifier: ^7.2.0
+        version: 7.2.0(typescript@5.2.2)
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
+
+  packages/sdk-web:
+    dependencies:
+      '@mixan/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@mixan/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      '@mixan/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@mixan/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
       eslint:
         specifier: ^8.48.0
         version: 8.52.0
@@ -362,6 +491,12 @@ importers:
       '@types/eslint':
         specifier: ^8.44.2
         version: 8.44.6
+      '@types/node':
+        specifier: ^18.16.0
+        version: 18.18.8
+      '@types/semver':
+        specifier: ^7.5.4
+        version: 7.5.4
       eslint:
         specifier: ^8.48.0
         version: 8.52.0
@@ -372,7 +507,11 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2
 
-  tooling/typescript: {}
+  tooling/typescript:
+    devDependencies:
+      tsup:
+        specifier: ^7.2.0
+        version: 7.2.0(typescript@5.2.2)
 
 packages:
 

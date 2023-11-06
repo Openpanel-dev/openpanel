@@ -39,10 +39,10 @@ Mixan is a simple analytics tool for logging events on web and react-native. My 
 ### SDK
 
 - [*] Store duration on screen view events (can be done in backend as well)
-- [ ] Create native sdk
-  - [ ] Handle sessions
-- [ ] Create web sdk
-  - [ ] Screen view function should take in title, path and parse query string (especially utm tags)
+- [x] Create native sdk
+  - [x] Handle sessions
+- [x] Create web sdk
+  - [x] Screen view function should take in title, path and parse query string (especially utm tags)
 
 ## @mixan/sdk
 

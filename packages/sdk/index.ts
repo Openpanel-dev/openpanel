@@ -11,10 +11,12 @@ export interface NewMixanOptions {
   batchInterval?: number;
   maxBatchSize?: number;
   sessionTimeout?: number;
+  session?: boolean;
   verbose?: boolean;
-  saveProfileId: (profiId: string) => void;
-  getProfileId: () => string | null;
-  removeProfileId: () => void;
+  setItem: (key: string, profileId: string) => void;
+  getItem: (key: string) => string | null;
+  removeItem: (key: string) => void;
+  trackIp?: boolean;
 }
 export type MixanOptions = Required<NewMixanOptions>;
 
@@ -39,7 +41,6 @@ class Fetcher {
     const url = `${this.url}${path}`;
     this.logger(`Mixan request: ${url}`, JSON.stringify(data, null, 2));
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     return fetch(url, {
       headers: {
         ['mixan-client-id']: this.clientId,
@@ -137,19 +138,23 @@ export class Mixan {
   private options: MixanOptions;
   private logger: (...args: any[]) => void;
   private globalProperties: Record<string, unknown> = {};
-  private lastEventAt?: string;
-  private lastScreenViewAt?: string;
+  private lastEventAt: string;
+  private promiseIp: Promise<string | null>;
 
   constructor(options: NewMixanOptions) {
     this.logger = options.verbose ? console.log : () => {};
     this.options = {
       sessionTimeout: 1000 * 60 * 30,
+      session: true,
       verbose: false,
       batchInterval: 10000,
       maxBatchSize: 10,
+      trackIp: false,
       ...options,
     };
 
+    this.lastEventAt =
+      this.options.getItem('@mixan:lastEventAt') ?? '1970-01-01';
     this.fetch = new Fetcher(this.options);
     this.eventBatcher = new Batcher(this.options, (queue) => {
       this.fetch.post(
@@ -164,13 +169,26 @@ export class Mixan {
         }))
       );
     });
+
+    this.promiseIp = this.options.trackIp
+      ? fetch('https://api.ipify.org')
+          .then((res) => res.text())
+          .catch(() => null)
+      : Promise.resolve(null);
   }
 
-  timestamp() {
-    return new Date().toISOString();
+  async ip() {
+    return this.promiseIp;
   }
 
-  init() {
+  timestamp(modify = 0) {
+    return new Date(Date.now() + modify).toISOString();
+  }
+
+  init(properties?: Record<string, unknown>) {
+    if (properties) {
+      this.setGlobalProperties(properties);
+    }
     this.logger('Mixan: Init');
     this.setAnonymousUser();
   }
@@ -178,14 +196,15 @@ export class Mixan {
   event(name: string, properties: Record<string, unknown> = {}) {
     const now = new Date();
     const isSessionStart =
-      now.getTime() - new Date(this.lastEventAt ?? '1970-01-01').getTime() >
-      this.options.sessionTimeout;
+      this.options.session &&
+      now.getTime() - new Date(this.lastEventAt).getTime() >
+        this.options.sessionTimeout;
 
     if (isSessionStart) {
       this.logger('Mixan: Session start');
       this.eventBatcher.add({
         name: 'session_start',
-        time: this.timestamp(),
+        time: this.timestamp(-10),
         properties: {},
         profileId: this.profileId ?? null,
       });
@@ -199,19 +218,28 @@ export class Mixan {
       profileId: this.profileId ?? null,
     });
     this.lastEventAt = this.timestamp();
+    this.options.setItem('@mixan:lastEventAt', this.lastEventAt);
   }
 
   private async setAnonymousUser(retryCount = 0) {
-    const profileId = this.options.getProfileId();
+    const profileId = this.options.getItem('@mixan:profileId');
     if (profileId) {
       this.profileId = profileId;
+      await this.setUser({
+        properties: this.globalProperties,
+      });
       this.logger('Mixan: Use existing profile', this.profileId);
     } else {
-      const res = await this.fetch.post<undefined, { id: string }>('/profiles');
+      const res = await this.fetch.post<ProfilePayload, { id: string }>(
+        '/profiles',
+        {
+          properties: this.globalProperties,
+        }
+      );
 
       if (res) {
         this.profileId = res.id;
-        this.options.saveProfileId(res.id);
+        this.options.setItem('@mixan:profileId', res.id);
         this.logger('Mixan: Create new profile', this.profileId);
       } else if (retryCount < 2) {
         setTimeout(() => {
@@ -249,8 +277,16 @@ export class Mixan {
   }
 
   setGlobalProperties(properties: Record<string, unknown>) {
+    if (typeof properties !== 'object') {
+      return this.logger(
+        'Mixan: Set global properties failed, properties must be an object'
+      );
+    }
     this.logger('Mixan: Set global properties', properties);
-    this.globalProperties = properties ?? {};
+    this.globalProperties = {
+      ...this.globalProperties,
+      ...properties,
+    };
   }
 
   async increment(name: string, value = 1) {
@@ -291,34 +327,16 @@ export class Mixan {
     );
   }
 
-  screenView(route: string, _properties?: Record<string, unknown>) {
-    const properties = _properties ?? {};
-    const now = new Date();
-
-    if (this.lastScreenViewAt) {
-      const last = new Date(this.lastScreenViewAt);
-      const diff = now.getTime() - last.getTime();
-      this.logger(`Mixan: Screen view duration: ${diff}ms`);
-      properties.duration = diff;
-    }
-
-    this.lastScreenViewAt = now.toISOString();
-    this.event('screen_view', {
-      ...properties,
-      route,
-    });
-  }
-
   flush() {
     this.logger('Mixan: Flushing events queue');
     this.eventBatcher.send();
-    this.lastScreenViewAt = undefined;
   }
 
   clear() {
     this.logger('Mixan: Clear, send remaining events and remove profileId');
     this.eventBatcher.send();
-    this.options.removeProfileId();
+    this.options.removeItem('@mixan:profileId');
+    this.options.removeItem('@mixan:session');
     this.profileId = undefined;
     this.setAnonymousUser();
   }
