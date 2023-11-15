@@ -43,6 +43,10 @@ function main() {
     module: './dist/index.mjs',
     types: './dist/index.d.ts',
     files: ['dist'],
+    exports: {
+      import: './dist/index.js',
+      require: './dist/index.cjs',
+    },
   };
 
   try {
