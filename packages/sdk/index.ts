@@ -13,10 +13,11 @@ export interface NewMixanOptions {
   sessionTimeout?: number;
   session?: boolean;
   verbose?: boolean;
+  profile?: boolean;
+  trackIp?: boolean;
   setItem: (key: string, profileId: string) => void;
   getItem: (key: string) => string | null;
   removeItem: (key: string) => void;
-  trackIp?: boolean;
 }
 export type MixanOptions = Required<NewMixanOptions>;
 
@@ -150,6 +151,7 @@ export class Mixan {
       batchInterval: 10000,
       maxBatchSize: 10,
       trackIp: false,
+      profile: true,
       ...options,
     };
 
@@ -222,6 +224,9 @@ export class Mixan {
   }
 
   private async setAnonymousUser(retryCount = 0) {
+    if (!this.options.profile) {
+      return;
+    }
     const profileId = this.options.getItem('@mixan:profileId');
     if (profileId) {
       this.profileId = profileId;
@@ -252,6 +257,9 @@ export class Mixan {
   }
 
   async setUser(profile: ProfilePayload) {
+    if (!this.options.profile) {
+      return;
+    }
     if (!this.profileId) {
       return this.logger('Mixan: Set user failed, no profileId');
     }
@@ -265,6 +273,9 @@ export class Mixan {
     name: string,
     value: string | number | boolean | Record<string, unknown> | unknown[]
   ) {
+    if (!this.options.profile) {
+      return;
+    }
     if (!this.profileId) {
       return this.logger('Mixan: Set user property, no profileId');
     }
@@ -290,6 +301,9 @@ export class Mixan {
   }
 
   async increment(name: string, value = 1) {
+    if (!this.options.profile) {
+      return;
+    }
     if (!this.profileId) {
       this.logger('Mixan: Increment failed, no profileId');
       return;
@@ -309,6 +323,9 @@ export class Mixan {
   }
 
   async decrement(name: string, value = 1) {
+    if (!this.options.profile) {
+      return;
+    }
     if (!this.profileId) {
       this.logger('Mixan: Decrement failed, no profileId');
       return;
