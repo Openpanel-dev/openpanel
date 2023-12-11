@@ -2,7 +2,12 @@ import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import * as cache from '@/server/cache';
 import { db } from '@/server/db';
 import { getProjectBySlug } from '@/server/services/project.service';
-import type { IChartEvent, IChartInputWithDates, IChartRange } from '@/types';
+import type {
+  IChartEvent,
+  IChartInputWithDates,
+  IChartRange,
+  IInterval,
+} from '@/types';
 import { getDaysOldDate } from '@/utils/date';
 import { toDots } from '@/utils/object';
 import { zChartInputWithDates } from '@/utils/validation';
@@ -81,6 +86,7 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { event, property, projectSlug } }) => {
+      const intervalInDays = 180;
       const project = await getProjectBySlug(projectSlug);
       if (isJsonPath(property)) {
         const events = await db.$queryRawUnsafe<{ value: string }[]>(
@@ -88,14 +94,7 @@ export const chartRouter = createTRPCRouter({
             property
           )} AS value from events WHERE project_id = '${
             project.id
-          }' AND name = '${event}' AND "createdAt" >= NOW() - INTERVAL '30 days'`
-        );
-        console.log(
-          `SELECT ${selectJsonPath(
-            property
-          )} AS value from events WHERE project_id = '${
-            project.id
-          }' AND name = '${event}' AND "createdAt" >= NOW() - INTERVAL '30 days'`
+          }' AND name = '${event}' AND "createdAt" >= NOW() - INTERVAL '${intervalInDays} days'`
         );
 
         return {
@@ -110,7 +109,9 @@ export const chartRouter = createTRPCRouter({
               not: null,
             },
             createdAt: {
-              gte: new Date(new Date().getTime() - 1000 * 60 * 60 * 24 * 30),
+              gte: new Date(
+                new Date().getTime() - 1000 * 60 * 60 * 24 * intervalInDays
+              ),
             },
           },
           distinct: property as any,
@@ -483,7 +484,7 @@ async function getChartData({
 
 function fillEmptySpotsInTimeline(
   items: ResultItem[],
-  interval: string,
+  interval: IInterval,
   startDate: string,
   endDate: string
 ) {
@@ -493,31 +494,36 @@ function fillEmptySpotsInTimeline(
   const today = new Date();
 
   if (interval === 'minute') {
-    clonedStartDate.setSeconds(0, 0);
-    clonedEndDate.setMinutes(clonedEndDate.getMinutes() + 1, 0, 0);
+    clonedStartDate.setUTCSeconds(0, 0);
+    clonedEndDate.setUTCMinutes(clonedEndDate.getUTCMinutes() + 1, 0, 0);
   } else if (interval === 'hour') {
-    clonedStartDate.setMinutes(0, 0, 0);
-    clonedEndDate.setMinutes(0, 0, 0);
+    clonedStartDate.setUTCMinutes(0, 0, 0);
+    clonedEndDate.setUTCMinutes(0, 0, 0);
   } else {
     clonedStartDate.setUTCHours(0, 0, 0, 0);
     clonedEndDate.setUTCHours(0, 0, 0, 0);
   }
 
+  if (interval === 'month') {
+    clonedStartDate.setDate(1);
+    clonedEndDate.setDate(1);
+  }
+
   // Force if interval is month and the start date is the same month as today
   const shouldForce = () =>
     interval === 'month' &&
-    clonedStartDate.getFullYear() === today.getFullYear() &&
-    clonedStartDate.getMonth() === today.getMonth();
+    clonedStartDate.getUTCFullYear() === today.getUTCFullYear() &&
+    clonedStartDate.getUTCMonth() === today.getUTCMonth();
 
   while (
     shouldForce() ||
     clonedStartDate.getTime() <= clonedEndDate.getTime()
   ) {
-    const getYear = (date: Date) => date.getFullYear();
-    const getMonth = (date: Date) => date.getMonth();
-    const getDay = (date: Date) => date.getDate();
-    const getHour = (date: Date) => date.getHours();
-    const getMinute = (date: Date) => date.getMinutes();
+    const getYear = (date: Date) => date.getUTCFullYear();
+    const getMonth = (date: Date) => date.getUTCMonth();
+    const getDay = (date: Date) => date.getUTCDate();
+    const getHour = (date: Date) => date.getUTCHours();
+    const getMinute = (date: Date) => date.getUTCMinutes();
 
     const item = items.find((item) => {
       const date = new Date(item.date);
@@ -555,7 +561,10 @@ function fillEmptySpotsInTimeline(
     });
 
     if (item) {
-      result.push(item);
+      result.push({
+        ...item,
+        date: clonedStartDate.toISOString(),
+      });
     } else {
       result.push({
         date: clonedStartDate.toISOString(),
@@ -566,19 +575,19 @@ function fillEmptySpotsInTimeline(
 
     switch (interval) {
       case 'day': {
-        clonedStartDate.setDate(clonedStartDate.getDate() + 1);
+        clonedStartDate.setDate(clonedStartDate.getUTCDate() + 1);
         break;
       }
       case 'hour': {
-        clonedStartDate.setHours(clonedStartDate.getHours() + 1);
+        clonedStartDate.setHours(clonedStartDate.getUTCHours() + 1);
         break;
       }
       case 'minute': {
-        clonedStartDate.setMinutes(clonedStartDate.getMinutes() + 1);
+        clonedStartDate.setMinutes(clonedStartDate.getUTCMinutes() + 1);
         break;
       }
       case 'month': {
-        clonedStartDate.setMonth(clonedStartDate.getMonth() + 1);
+        clonedStartDate.setMonth(clonedStartDate.getUTCMonth() + 1);
         break;
       }
     }

@@ -25,6 +25,7 @@ export function ReportLineChart({ interval, data }: ReportLineChartProps) {
   const { editMode } = useChartContext();
   const [visibleSeries, setVisibleSeries] = useState<string[]>([]);
   const formatDate = useFormatDateInterval(interval);
+  console.log(JSON.stringify(data.series[0]?.data, null, 2));
 
   const ref = useRef(false);
   useEffect(() => {

@@ -40,6 +40,8 @@ export const Chart = memo(
       }
     );
 
+    console.log(chart.data);
+
     const anyData = Boolean(chart.data?.series?.[0]?.data);
 
     if (chart.isFetching && !anyData) {

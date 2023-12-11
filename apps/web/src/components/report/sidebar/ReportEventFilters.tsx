@@ -15,7 +15,7 @@ import {
 import { RenderDots } from '@/components/ui/RenderDots';
 import { useMappings } from '@/hooks/useMappings';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
-import { useDispatch } from '@/redux';
+import { useDispatch, useSelector } from '@/redux';
 import type {
   IChartEvent,
   IChartEventFilter,

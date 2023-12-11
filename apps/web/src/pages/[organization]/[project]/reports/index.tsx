@@ -10,14 +10,7 @@ import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import { reset, setReport } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
 import { Button } from '@/components/ui/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useRouterBeforeLeave } from '@/hooks/useRouterBeforeLeave';
 import { useDispatch, useSelector } from '@/redux';
 import { createServerSideProps } from '@/server/getServerSideProps';
