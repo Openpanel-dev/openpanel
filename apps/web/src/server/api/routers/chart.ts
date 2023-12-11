@@ -299,8 +299,31 @@ function getChartSql({
     where.push(`name = '${name}'`);
     if (filters.length > 0) {
       filters.forEach((filter) => {
-        const { name, value } = filter;
-        switch (filter.operator) {
+        const { name, value, operator } = filter;
+        switch (operator) {
+          case 'contains': {
+            if (name.includes('.*.') || name.endsWith('[*]')) {
+              // TODO: Make sure this works
+              // where.push(
+              //   `properties @? '$.${name
+              //     .replace(/^properties\./, '')
+              //     .replace(/\.\*\./g, '[*].')} ? (@ like_regex "${value[0]}")'`
+              // );
+            } else {
+              where.push(
+                `(${value
+                  .map(
+                    (val) =>
+                      `${propertyNameToSql(name)} like '%${String(val).replace(
+                        /'/g,
+                        "''"
+                      )}%'`
+                  )
+                  .join(' OR ')})`
+              );
+            }
+            break;
+          }
           case 'is': {
             if (name.includes('.*.') || name.endsWith('[*]')) {
               where.push(

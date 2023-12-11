@@ -2,6 +2,7 @@ import type { Dispatch } from 'react';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
 import { Button } from '@/components/ui/button';
+import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { ComboboxMulti } from '@/components/ui/combobox-multi';
 import {
   CommandDialog,
@@ -187,60 +188,23 @@ function Filter({ filter, event }: FilterProps) {
             value: key as IChartEventFilter['operator'],
             label: value,
           }))}
-          label="Segment"
+          label="Operator"
         >
           <Button variant={'ghost'} className="whitespace-nowrap">
             {operators[filter.operator]}
           </Button>
         </Dropdown>
-        <ComboboxMulti
-          placeholder="Select values"
+        <ComboboxAdvanced
           items={valuesCombobox}
-          selected={filter.value.map((item) => ({
-            value: item?.toString() ?? '__filter_value_null__',
-            label: getLabel(item?.toString() ?? '__filter_value_null__'),
-          }))}
+          selected={filter.value}
           setSelected={(setFn) => {
-            if (typeof setFn === 'function') {
-              const newValues = setFn(
-                filter.value.map((item) => ({
-                  value: item?.toString() ?? '__filter_value_null__',
-                  label: getLabel(item?.toString() ?? '__filter_value_null__'),
-                }))
-              );
-              changeFilterValue(newValues.map((item) => item.value));
-            } else {
-              changeFilterValue(setFn.map((item) => item.value));
-            }
+            changeFilterValue(
+              typeof setFn === 'function' ? setFn(filter.value) : setFn
+            );
           }}
+          placeholder="Select..."
         />
       </div>
-      {/* <Combobox
-        items={valuesCombobox}
-        value={filter.value}
-        placeholder="Select value"
-        onChange={changeFilter}
-      /> */}
-      {/* <Input
-        value={filter.value}
-        onChange={(e) => {
-          dispatch(
-            changeEvent({
-              ...event,
-              filters: event.filters.map((item) => {
-                if (item.id === filter.id) {
-                  return {
-                    ...item,
-                    value: e.currentTarget.value,
-                  };
-                }
-
-                return item;
-              }),
-            }),
-          );
-        }}
-      /> */}
     </div>
   );
 }
