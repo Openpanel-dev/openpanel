@@ -236,20 +236,24 @@ function getDatesFromRange(range: IChartRange) {
   }
 
   if (isFloat(range)) {
-    const startDate = new Date(Date.now() - 1000 * 60 * (range * 100));
+    const startDate = new Date(
+      Date.now() - 1000 * 60 * (range * 100)
+    ).toISOString();
     const endDate = new Date().toISOString();
 
     return {
-      startDate: startDate.toISOString(),
-      endDate: endDate,
+      startDate,
+      endDate,
     };
   }
 
-  const startDate = getDaysOldDate(range).toISOString();
-  const endDate = new Date().toISOString();
+  const startDate = getDaysOldDate(range);
+  startDate.setUTCHours(0, 0, 0, 0);
+  const endDate = new Date();
+  endDate.setUTCHours(23, 59, 59, 999);
   return {
-    startDate,
-    endDate,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
   };
 }
 
@@ -271,6 +275,8 @@ function getChartSql({
 
   if (event.segment === 'event') {
     select.push(`count(*)::int as count`);
+  } else if (event.segment === 'user_average') {
+    select.push(`COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count`);
   } else {
     select.push(`count(DISTINCT profile_id)::int as count`);
   }
@@ -395,6 +401,8 @@ function getChartSql({
   if (orderBy.length) {
     sql.push(`ORDER BY ${orderBy.join(', ')}`);
   }
+
+  console.log('SQL ->', sql.join('\n'));
 
   return sql.join('\n');
 }

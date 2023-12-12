@@ -38,7 +38,7 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
   - [ ] Area
 - [ ] Support funnels
 - [ ] Support multiple breakdowns
-- [ ] Aggregations (sum, average...)
+- [x] Aggregations (sum, average...)
 
 ### SDK
 
