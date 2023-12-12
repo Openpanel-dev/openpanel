@@ -83,7 +83,7 @@ export function ReportTable({
                 />
                 <div
                   title={getLabel(serie.name)}
-                  className="min-w-0 overflow-scroll whitespace-nowrap scrollbar-hide"
+                  className="min-w-full overflow-scroll whitespace-nowrap scrollbar-hide"
                 >
                   {getLabel(serie.name)}
                 </div>
