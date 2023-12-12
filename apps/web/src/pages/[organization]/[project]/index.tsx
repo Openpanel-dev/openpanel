@@ -1,12 +1,13 @@
-import { Card } from '@/components/Card';
+import { Card, CardActions, CardActionsItem } from '@/components/Card';
 import { Container } from '@/components/Container';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { PageTitle } from '@/components/PageTitle';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { useRefetchActive } from '@/hooks/useRefetchActive';
 import { pushModal } from '@/modals';
 import { createServerSideProps } from '@/server/getServerSideProps';
-import { api } from '@/utils/api';
-import { Plus } from 'lucide-react';
+import { api, handleError } from '@/utils/api';
+import { Plus, Trash } from 'lucide-react';
 import Link from 'next/link';
 
 export const getServerSideProps = createServerSideProps();
@@ -22,6 +23,12 @@ export default function Home() {
     }
   );
   const dashboards = query.data ?? [];
+  const deletion = api.dashboard.delete.useMutation({
+    onError: handleError,
+    onSuccess() {
+      query.refetch();
+    },
+  });
 
   return (
     <MainLayout>
@@ -37,9 +44,24 @@ export default function Home() {
               >
                 {item.name}
               </Link>
+
+              <CardActions>
+                <CardActionsItem className="text-destructive w-full" asChild>
+                  <button
+                    onClick={() => {
+                      deletion.mutate({
+                        id: item.id,
+                      });
+                    }}
+                  >
+                    <Trash size={16} />
+                    Delete
+                  </button>
+                </CardActionsItem>
+              </CardActions>
             </Card>
           ))}
-          <Card hover>
+          <Card hover className="border-dashed">
             <button
               className="flex items-center justify-between w-full p-4 font-medium leading-none"
               onClick={() => {

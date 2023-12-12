@@ -9,20 +9,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { User } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 
 export function NavbarUserDropdown() {
   const params = useOrganizationParams();
+  const session = useSession();
+  const user = session.data?.user;
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button>
-          <Avatar>
-            <AvatarFallback>CL</AvatarFallback>
-          </Avatar>
-        </button>
+      <DropdownMenuTrigger>
+        <Avatar>
+          <AvatarFallback>{user?.name?.charAt(0) ?? '🤠'}</AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuGroup>

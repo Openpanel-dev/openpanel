@@ -31,7 +31,7 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 - [*] View profiles in a list
 - [ ] Invite users
 - [ ] Drag n Drop reports on dashboard
-- [ ] Manage dashboards
+- [x] Manage dashboards
 - [ ] Support more chart types
   - [x] Bar
   - [ ] Pie

@@ -1,35 +1,46 @@
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { cn } from '@/utils/cn';
 import { strip } from '@/utils/object';
+import type { LinkProps } from 'next/link';
 import Link from 'next/link';
 
 import { NavbarUserDropdown } from './NavbarUserDropdown';
 
+function Item({
+  children,
+  ...props
+}: LinkProps & { children: React.ReactNode }) {
+  return (
+    <Link
+      {...props}
+      className="h-9 items-center flex px-3 leading-none relative [&>div]:hover:opacity-100 [&>div]:hover:ring-1"
+      shallow
+    >
+      <div className="opacity-0 absolute inset-0 transition-all bg-gradient-to-r from-blue-50 to-purple-50 rounded ring-0 ring-purple-900" />
+      <span className="relative">{children}</span>
+    </Link>
+  );
+}
+
 export function NavbarMenu() {
   const params = useOrganizationParams();
   return (
-    <div className={cn('flex gap-6 items-center text-sm', 'max-sm:flex-col')}>
+    <div className={cn('flex gap-1 items-center text-sm', 'max-sm:flex-col')}>
       {params.project && (
-        <Link shallow href={`/${params.organization}/${params.project}`}>
-          Home
-        </Link>
+        <Item href={`/${params.organization}/${params.project}`}>Home</Item>
       )}
       {params.project && (
-        <Link shallow href={`/${params.organization}/${params.project}/events`}>
+        <Item href={`/${params.organization}/${params.project}/events`}>
           Events
-        </Link>
+        </Item>
       )}
       {params.project && (
-        <Link
-          shallow
-          href={`/${params.organization}/${params.project}/profiles`}
-        >
+        <Item href={`/${params.organization}/${params.project}/profiles`}>
           Profiles
-        </Link>
+        </Item>
       )}
       {params.project && (
-        <Link
-          shallow
+        <Item
           href={{
             pathname: `/${params.organization}/${params.project}/reports`,
             query: strip({
@@ -38,7 +49,7 @@ export function NavbarMenu() {
           }}
         >
           Create report
-        </Link>
+        </Item>
       )}
       <NavbarUserDropdown />
     </div>
