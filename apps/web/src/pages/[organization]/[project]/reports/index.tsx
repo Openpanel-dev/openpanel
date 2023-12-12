@@ -41,6 +41,10 @@ export default function Page() {
     if (reportId && reportQuery.data) {
       dispatch(setReport(reportQuery.data));
     }
+
+    if (!reportId) {
+      dispatch(reset());
+    }
   }, [reportId, reportQuery.data, dispatch]);
 
   return (
@@ -57,7 +61,7 @@ export default function Page() {
                 </div>
                 <div className="flex gap-4">
                   <SheetTrigger asChild>
-                    <Button size="default">Select events & Filters</Button>
+                    <Button size="default">Select events & filters</Button>
                   </SheetTrigger>
                   <ReportSaveButton />
                 </div>

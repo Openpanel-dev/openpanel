@@ -47,7 +47,7 @@ export function ReportLineChart({ interval, data }: ReportLineChartProps) {
               width={width}
               height={Math.min(Math.max(width * 0.5, 250), 400)}
             >
-              <YAxis dataKey={'count'} width={30} fontSize={12}></YAxis>
+              <YAxis dataKey={'count'} fontSize={12}></YAxis>
               <Tooltip content={<ReportLineChartTooltip />} />
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis

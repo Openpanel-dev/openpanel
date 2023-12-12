@@ -40,6 +40,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
+    "lottie-react": "^2.4.0",
     "lucide-react": "^0.286.0",
     "mitt": "^3.0.1",
     "next": "13.4",

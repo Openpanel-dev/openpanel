@@ -3,6 +3,7 @@ import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import type { IChartInput } from '@/types';
 import { api } from '@/utils/api';
 
+import { ChartAnimation } from './ChartAnimation';
 import { withChartProivder } from './ChartProvider';
 import { ReportBarChart } from './ReportBarChart';
 import { ReportLineChart } from './ReportLineChart';
@@ -22,6 +23,7 @@ export const Chart = memo(
     const hasEmptyFilters = events.some((event) =>
       event.filters.some((filter) => filter.value.length === 0)
     );
+    const enabled = events.length > 0 && !hasEmptyFilters;
     const chart = api.chart.chart.useQuery(
       {
         interval,
@@ -35,17 +37,19 @@ export const Chart = memo(
         projectSlug: params.project,
       },
       {
-        keepPreviousData: true,
-        enabled: events.length > 0 && !hasEmptyFilters,
+        keepPreviousData: false,
+        enabled,
       }
     );
 
-    console.log(chart.data);
-
     const anyData = Boolean(chart.data?.series?.[0]?.data);
 
-    if (chart.isFetching && !anyData) {
-      return <p>Loading...</p>;
+    if (!enabled) {
+      return <p>Select events & filters to begin</p>;
+    }
+
+    if (chart.isFetching) {
+      return <ChartAnimation name="airplane" className="w-96 mx-auto" />;
     }
 
     if (chart.isError) {
@@ -53,11 +57,11 @@ export const Chart = memo(
     }
 
     if (!chart.isSuccess) {
-      return <p>Loading...</p>;
+      return <ChartAnimation name="ballon" className="w-96 mx-auto" />;
     }
 
     if (!anyData) {
-      return <p>No data</p>;
+      return <ChartAnimation name="ballon" className="w-96 mx-auto" />;
     }
 
     if (chartType === 'bar') {
