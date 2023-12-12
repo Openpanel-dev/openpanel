@@ -15,6 +15,10 @@ Mixan is a simple analytics tool for logging events on web and react-native. My 
 
 > Currently storing events on postgres but will probably move it to [clickhouse](https://clickhouse.com/) to speed up queries. Don't have any performance issues yet so will wait and see how well postgres can handle it.
 
+### Speed/Benchmark
+
+As of today (2023-12-12) I have more then 1.2 million events in PSQL and performance is smooth as butter 🧈. Only thing that is slow (2s response time) is to get all unique events. Solved now with cache but can probably make better with `indexes` and avoid using `distinct`.
+
 ### GUI
 
 - [x] Fix tables on settings
