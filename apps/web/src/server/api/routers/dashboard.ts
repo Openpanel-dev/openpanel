@@ -1,10 +1,20 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
+import { getDashboardBySlug } from '@/server/services/dashboard.service';
 import { getProjectBySlug } from '@/server/services/project.service';
 import { slug } from '@/utils/slug';
 import { z } from 'zod';
 
 export const dashboardRouter = createTRPCRouter({
+  get: protectedProcedure
+    .input(
+      z.object({
+        slug: z.string(),
+      })
+    )
+    .query(async ({ input: { slug } }) => {
+      return getDashboardBySlug(slug);
+    }),
   list: protectedProcedure
     .input(
       z

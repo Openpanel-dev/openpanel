@@ -1,3 +1,5 @@
+import { anyPass, isEmpty, isNil, reject } from 'ramda';
+
 export function toDots(
   obj: Record<string, unknown>,
   path = ''
@@ -16,3 +18,5 @@ export function toDots(
     };
   }, {});
 }
+
+export const strip = reject(anyPass([isEmpty, isNil]));

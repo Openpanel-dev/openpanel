@@ -33,6 +33,12 @@ export const reportSlice = createSlice({
   name: 'counter',
   initialState,
   reducers: {
+    resetDirty(state) {
+      return {
+        ...state,
+        dirty: false,
+      };
+    },
     reset() {
       return initialState;
     },
@@ -165,6 +171,7 @@ export const {
   changeInterval,
   changeDateRanges,
   changeChartType,
+  resetDirty,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

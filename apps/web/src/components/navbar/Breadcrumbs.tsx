@@ -29,6 +29,16 @@ export function Breadcrumbs() {
     }
   );
 
+  const dashboard = api.dashboard.get.useQuery(
+    {
+      slug: params.dashboard,
+    },
+    {
+      enabled: !!params.dashboard,
+      staleTime: Infinity,
+    }
+  );
+
   return (
     <div className="border-b border-border text-xs">
       <Container className="flex items-center gap-2 h-8">
@@ -49,6 +59,18 @@ export function Breadcrumbs() {
             <ChevronRight size={10} />
             <Link shallow href={`/${org.data.slug}/${pro.data.slug}`}>
               {pro.data.name}
+            </Link>
+          </>
+        )}
+
+        {org.data && pro.data && dashboard.data && (
+          <>
+            <ChevronRight size={10} />
+            <Link
+              shallow
+              href={`/${org.data.slug}/${pro.data.slug}/${dashboard.data.slug}`}
+            >
+              {dashboard.data.name}
             </Link>
           </>
         )}

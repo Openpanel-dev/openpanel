@@ -3,7 +3,7 @@ import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import type { IChartInput } from '@/types';
 import { api } from '@/utils/api';
 
-import { ChartAnimation } from './ChartAnimation';
+import { ChartAnimation, ChartAnimationContainer } from './ChartAnimation';
 import { withChartProivder } from './ChartProvider';
 import { ReportBarChart } from './ReportBarChart';
 import { ReportLineChart } from './ReportLineChart';
@@ -45,15 +45,32 @@ export const Chart = memo(
     const anyData = Boolean(chart.data?.series?.[0]?.data);
 
     if (!enabled) {
-      return <p>Select events & filters to begin</p>;
+      return (
+        <ChartAnimationContainer>
+          <ChartAnimation name="ballon" className="w-96 mx-auto" />
+          <p className="text-center font-medium">
+            Please select at least one event to see the chart.
+          </p>
+        </ChartAnimationContainer>
+      );
     }
 
     if (chart.isFetching) {
-      return <ChartAnimation name="airplane" className="w-96 mx-auto" />;
+      return (
+        <ChartAnimationContainer>
+          <ChartAnimation name="airplane" className="w-96 mx-auto" />
+          <p className="text-center font-medium">Loading...</p>
+        </ChartAnimationContainer>
+      );
     }
 
     if (chart.isError) {
-      return <p>Error</p>;
+      return (
+        <ChartAnimationContainer>
+          <ChartAnimation name="noData" className="w-96 mx-auto" />
+          <p className="text-center font-medium">Something went wrong...</p>
+        </ChartAnimationContainer>
+      );
     }
 
     if (!chart.isSuccess) {
@@ -61,7 +78,12 @@ export const Chart = memo(
     }
 
     if (!anyData) {
-      return <ChartAnimation name="ballon" className="w-96 mx-auto" />;
+      return (
+        <ChartAnimationContainer>
+          <ChartAnimation name="noData" className="w-96 mx-auto" />
+          <p className="text-center font-medium">No data</p>
+        </ChartAnimationContainer>
+      );
     }
 
     if (chartType === 'bar') {
@@ -72,6 +94,13 @@ export const Chart = memo(
       return <ReportLineChart interval={interval} data={chart.data} />;
     }
 
-    return <p>Chart type &quot;{chartType}&quot; is not supported yet.</p>;
+    return (
+      <ChartAnimationContainer>
+        <ChartAnimation name="ballon" className="w-96 mx-auto" />
+        <p className="text-center font-medium">
+          Chart type &quot;{chartType}&quot; is not supported yet.
+        </p>
+      </ChartAnimationContainer>
+    );
   })
 );

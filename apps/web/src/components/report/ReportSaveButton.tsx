@@ -1,16 +1,19 @@
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { pushModal } from '@/modals';
-import { useSelector } from '@/redux';
+import { useDispatch, useSelector } from '@/redux';
 import { api, handleError } from '@/utils/api';
 import { SaveIcon } from 'lucide-react';
 
 import { useReportId } from './hooks/useReportId';
+import { resetDirty } from './reportSlice';
 
 export function ReportSaveButton() {
   const { reportId } = useReportId();
+  const dispatch = useDispatch();
   const update = api.report.update.useMutation({
     onSuccess() {
+      dispatch(resetDirty());
       toast({
         title: 'Success',
         description: 'Report updated.',

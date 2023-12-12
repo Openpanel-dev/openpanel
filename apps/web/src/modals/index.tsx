@@ -31,6 +31,9 @@ const modals = {
   SaveReport: dynamic(() => import('./SaveReport'), {
     loading: Loading,
   }),
+  AddDashboard: dynamic(() => import('./AddDashboard'), {
+    loading: Loading,
+  }),
 };
 
 const emitter = mitt<{

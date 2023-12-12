@@ -11,6 +11,7 @@ import { api } from '@/utils/api';
 import { cn } from '@/utils/cn';
 import { timeRanges } from '@/utils/constants';
 import { getRangeLabel } from '@/utils/getRangeLabel';
+import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 
 export const getServerSideProps = createServerSideProps();
@@ -60,19 +61,22 @@ export default function Dashboard() {
                 key={report.id}
               >
                 <Link
-                  href={`/${params.organization}/${params.project}/reports/${report.id}`}
-                  className="block border-b border-border p-4 leading-none hover:underline"
+                  href={`/${params.organization}/${params.project}/reports/${report.id}?dashboard=${params.dashboard}`}
+                  className="flex border-b border-border p-4 leading-none [&>svg]:hover:opacity-100 items-center justify-between"
                   shallow
                 >
-                  <div className="font-medium">{report.name}</div>
-                  {chartRange !== null && (
-                    <div className="mt-2 text-sm flex gap-2">
-                      <span className={range !== null ? 'line-through' : ''}>
-                        {chartRange}
-                      </span>
-                      {range !== null && <span>{getRangeLabel(range)}</span>}
-                    </div>
-                  )}
+                  <div>
+                    <div className="font-medium">{report.name}</div>
+                    {chartRange !== null && (
+                      <div className="mt-2 text-sm flex gap-2">
+                        <span className={range !== null ? 'line-through' : ''}>
+                          {chartRange}
+                        </span>
+                        {range !== null && <span>{getRangeLabel(range)}</span>}
+                      </div>
+                    )}
+                  </div>
+                  <ChevronRight className="opacity-0 transition-opacity" />
                 </Link>
                 <div
                   className={cn(

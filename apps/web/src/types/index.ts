@@ -12,7 +12,10 @@ import type { Client, Project } from '@prisma/client';
 import type { TooltipProps } from 'recharts';
 import type { z } from 'zod';
 
-export type HtmlProps<T> = React.DetailedHTMLProps<React.HTMLAttributes<T>, T>;
+export type HtmlProps<T> = Omit<
+  React.DetailedHTMLProps<React.HTMLAttributes<T>, T>,
+  'ref'
+>;
 
 export type IChartInput = z.infer<typeof zChartInput>;
 export type IChartInputWithDates = z.infer<typeof zChartInputWithDates>;

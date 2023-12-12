@@ -455,8 +455,6 @@ async function getChartData({
     );
   }
 
-  console.log(sql);
-
   // group by sql label
   const series = result.reduce(
     (acc, item) => {
@@ -528,8 +526,8 @@ function fillEmptySpotsInTimeline(
   }
 
   if (interval === 'month') {
-    clonedStartDate.setDate(1);
-    clonedEndDate.setDate(1);
+    clonedStartDate.setUTCDate(1);
+    clonedEndDate.setUTCDate(1);
   }
 
   // Force if interval is month and the start date is the same month as today
@@ -537,11 +535,17 @@ function fillEmptySpotsInTimeline(
     interval === 'month' &&
     clonedStartDate.getUTCFullYear() === today.getUTCFullYear() &&
     clonedStartDate.getUTCMonth() === today.getUTCMonth();
-
+  let prev = undefined;
   while (
     shouldForce() ||
     clonedStartDate.getTime() <= clonedEndDate.getTime()
   ) {
+    if (prev === clonedStartDate.getTime()) {
+      console.log('GET OUT NOW!');
+      break;
+    }
+    prev = clonedStartDate.getTime();
+
     const getYear = (date: Date) => date.getUTCFullYear();
     const getMonth = (date: Date) => date.getUTCMonth();
     const getDay = (date: Date) => date.getUTCDate();
@@ -598,19 +602,19 @@ function fillEmptySpotsInTimeline(
 
     switch (interval) {
       case 'day': {
-        clonedStartDate.setDate(clonedStartDate.getUTCDate() + 1);
+        clonedStartDate.setUTCDate(clonedStartDate.getUTCDate() + 1);
         break;
       }
       case 'hour': {
-        clonedStartDate.setHours(clonedStartDate.getUTCHours() + 1);
+        clonedStartDate.setUTCHours(clonedStartDate.getUTCHours() + 1);
         break;
       }
       case 'minute': {
-        clonedStartDate.setMinutes(clonedStartDate.getUTCMinutes() + 1);
+        clonedStartDate.setUTCMinutes(clonedStartDate.getUTCMinutes() + 1);
         break;
       }
       case 'month': {
-        clonedStartDate.setMonth(clonedStartDate.getUTCMonth() + 1);
+        clonedStartDate.setUTCMonth(clonedStartDate.getUTCMonth() + 1);
         break;
       }
     }

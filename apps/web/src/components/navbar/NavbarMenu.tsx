@@ -1,5 +1,6 @@
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { cn } from '@/utils/cn';
+import { strip } from '@/utils/object';
 import Link from 'next/link';
 
 import { NavbarUserDropdown } from './NavbarUserDropdown';
@@ -29,7 +30,12 @@ export function NavbarMenu() {
       {params.project && (
         <Link
           shallow
-          href={`/${params.organization}/${params.project}/reports`}
+          href={{
+            pathname: `/${params.organization}/${params.project}/reports`,
+            query: strip({
+              dashboard: params.dashboard,
+            }),
+          }}
         >
           Create report
         </Link>

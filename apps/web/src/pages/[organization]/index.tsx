@@ -29,10 +29,10 @@ export default function Home() {
         <PageTitle>Projects</PageTitle>
         <div className="grid sm:grid-cols-2 gap-4">
           {projects.map((item) => (
-            <Card key={item.id}>
+            <Card key={item.id} hover>
               <Link
                 href={`/${params.organization}/${item.slug}`}
-                className="block p-4 font-medium leading-none hover:underline"
+                className="block p-4 font-medium leading-none"
                 shallow
               >
                 {item.name}
