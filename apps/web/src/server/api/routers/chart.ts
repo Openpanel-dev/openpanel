@@ -1,6 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import * as cache from '@/server/cache';
 import { db } from '@/server/db';
+import { getUniqueEvents } from '@/server/services/event.service';
 import { getProjectBySlug } from '@/server/services/project.service';
 import type {
   IChartEvent,
@@ -27,15 +28,8 @@ export const chartRouter = createTRPCRouter({
       const project = await getProjectBySlug(projectSlug);
       const events = await cache.getOr(
         `events_${project.id}`,
-        1000 * 60 * 60,
-        () =>
-          db.event.findMany({
-            take: 500,
-            distinct: ['name'],
-            where: {
-              project_id: project.id,
-            },
-          })
+        1000 * 60 * 60 * 24,
+        () => getUniqueEvents({ projectId: project.id })
       );
 
       return events;

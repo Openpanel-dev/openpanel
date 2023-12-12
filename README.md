@@ -125,9 +125,18 @@ mixan.screenView('Profile', {
 mixan.clear();
 ```
 
-## @mixan/backend
+## @mixan/web
 
-Self hosted service for collecting all events. Dockerfile and GUI will be added soon.
+A nextjs web app. Collects all events and your gui to analyze your data.
+
+### Setup cronjobs (optional)
+
+Use of cronjobs is optional. Everything will work without them but they will enhance the events with more data. We also use cronjobs to warm up the cache to make the user experiance a bit better.
+
+We use https://cron-job.org (free) to handle our cronjobs, you can use any provider you want.
+
+- **https://domain.com/api/cron/cache/update** Will update the memory cache
+- **https://domain.com/api/cron/events/enrich** Enrich events (adds duration etc)
 
 ## Screenshots
 
