@@ -10,6 +10,7 @@ import type {
   IInterval,
 } from '@/types';
 import { getDaysOldDate } from '@/utils/date';
+import { average, isFloat, round, sum } from '@/utils/math';
 import { toDots } from '@/utils/object';
 import { zChartInputWithDates } from '@/utils/validation';
 import { last, pipe, sort, uniq } from 'ramda';
@@ -141,13 +142,13 @@ export const chartRouter = createTRPCRouter({
           const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
           return sumB - sumA;
         } else {
-          return b.totalCount - a.totalCount;
+          return b.metrics.total - a.metrics.total;
         }
       });
 
       const meta = {
-        highest: sorted[0]?.totalCount ?? 0,
-        lowest: last(sorted)?.totalCount ?? 0,
+        highest: sorted[0]?.metrics.total ?? 0,
+        lowest: last(sorted)?.metrics.total ?? 0,
       };
 
       return {
@@ -155,9 +156,9 @@ export const chartRouter = createTRPCRouter({
           series.reduce(
             (acc, item) => {
               if (acc[item.event.id]) {
-                acc[item.event.id] += item.totalCount;
+                acc[item.event.id] += item.metrics.total;
               } else {
-                acc[item.event.id] = item.totalCount;
+                acc[item.event.id] = item.metrics.total;
               }
               return acc;
             },
@@ -213,14 +214,6 @@ function propertyNameToSql(name: string) {
 
 function getEventLegend(event: IChartEvent) {
   return `${event.name} (${event.id})`;
-}
-
-function getTotalCount(arr: ResultItem[]) {
-  return arr.reduce((acc, item) => acc + item.count, 0);
-}
-
-function isFloat(n: number) {
-  return n % 1 !== 0;
 }
 
 function getDatesFromRange(range: IChartRange) {
@@ -488,14 +481,17 @@ async function getChartData({
         id: event.id,
         name: event.name,
       },
-      totalCount: getTotalCount(data),
+      metrics: {
+        total: sum(data.map((item) => item.count)),
+        average: round(average(data.map((item) => item.count))),
+      },
       data:
         chartType === 'linear'
           ? fillEmptySpotsInTimeline(data, interval, startDate, endDate).map(
               (item) => {
                 return {
                   label: legend,
-                  count: item.count,
+                  count: round(item.count),
                   date: new Date(item.date).toISOString(),
                 };
               }

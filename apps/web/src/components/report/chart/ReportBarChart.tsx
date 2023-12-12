@@ -57,7 +57,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           footer: (info) => info.column.id,
           size: width ? width * 0.3 : undefined,
         }),
-        columnHelper.accessor((row) => row.totalCount, {
+        columnHelper.accessor((row) => row.metrics.total, {
           id: 'totalCount',
           cell: (info) => (
             <div className="text-right font-medium">{info.getValue()}</div>
@@ -67,7 +67,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           size: width ? width * 0.1 : undefined,
           enableSorting: true,
         }),
-        columnHelper.accessor((row) => row.totalCount, {
+        columnHelper.accessor((row) => row.metrics.total, {
           id: 'graph',
           cell: (info) => (
             <div

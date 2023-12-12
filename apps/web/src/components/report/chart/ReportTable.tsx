@@ -97,6 +97,7 @@ export function ReportTable({
           {/* Header */}
           <div className={cn('w-max', row)}>
             <div className={cn(header, value, cell, total)}>Total</div>
+            <div className={cn(header, value, cell, total)}>Average</div>
             {data.series[0]?.data.map((serie) => (
               <div
                 key={serie.date.toString()}
@@ -112,7 +113,10 @@ export function ReportTable({
             return (
               <div className={cn('w-max', row)} key={serie.name}>
                 <div className={cn(header, value, cell, total)}>
-                  {serie.totalCount}
+                  {serie.metrics.total}
+                </div>
+                <div className={cn(header, value, cell, total)}>
+                  {serie.metrics.average}
                 </div>
                 {serie.data.map((item) => {
                   return (
@@ -127,9 +131,13 @@ export function ReportTable({
         </div>
       </div>
       <div className="flex gap-2">
-        <div>Summary</div>
+        <div>Total</div>
         <div>
-          {data.series.reduce((acc, serie) => serie.totalCount + acc, 0)}
+          {data.series.reduce((acc, serie) => serie.metrics.total + acc, 0)}
+        </div>
+        <div>Average</div>
+        <div>
+          {data.series.reduce((acc, serie) => serie.metrics.average + acc, 0)}
         </div>
       </div>
     </>
