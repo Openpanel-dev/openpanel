@@ -27,8 +27,8 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
   - [ ] Active users (5min, 10min, 30min)
 - [x] Save report to a specific dashboard
 - [x] View events in a list
-  - [ ] Simple filters
-- [*] View profiles in a list
+  - [x] Simple filters
+- [x] View profiles in a list
 - [ ] Invite users
 - [ ] Drag n Drop reports on dashboard
 - [x] Manage dashboards
@@ -42,7 +42,7 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 
 ### SDK
 
-- [*] Store duration on screen view events (can be done in backend as well)
+- [x] Store duration on screen view events (can be done in backend as well)
 - [x] Create native sdk
   - [x] Handle sessions
 - [x] Create web sdk

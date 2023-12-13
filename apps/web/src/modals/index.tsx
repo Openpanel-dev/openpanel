@@ -183,6 +183,7 @@ export const pushModal = <
 ) =>
   emitter.emit('push', {
     name,
+    // @ts-expect-error
     props: Array.isArray(rest) && rest[0] ? rest[0] : {},
   });
 export const replaceModal = <
@@ -194,6 +195,7 @@ export const replaceModal = <
 ) =>
   emitter.emit('replace', {
     name,
+    // @ts-expect-error
     props: Array.isArray(rest) && rest[0] ? rest[0] : {},
   });
 export const popModal = (name?: StateItem['name']) =>

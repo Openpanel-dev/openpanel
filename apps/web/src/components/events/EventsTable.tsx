@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 import { DataTable } from '@/components/DataTable';
-import { Pagination } from '@/components/Pagination';
-import type { PaginationProps } from '@/components/Pagination';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
@@ -17,10 +15,9 @@ const columnHelper =
 
 interface EventsTableProps {
   data: RouterOutputs['event']['list'];
-  pagination: PaginationProps;
 }
 
-export function EventsTable({ data, pagination }: EventsTableProps) {
+export function EventsTable({ data }: EventsTableProps) {
   const params = useOrganizationParams();
   const columns = useMemo(() => {
     return [
@@ -94,11 +91,5 @@ export function EventsTable({ data, pagination }: EventsTableProps) {
     ];
   }, [params]);
 
-  return (
-    <>
-      <Pagination {...pagination} />
-      <DataTable data={data} columns={columns} />
-      <Pagination {...pagination} />
-    </>
-  );
+  return <DataTable data={data} columns={columns} />;
 }

@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Container } from '@/components/Container';
 import { EventsTable } from '@/components/events/EventsTable';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { PageTitle } from '@/components/PageTitle';
-import { usePagination } from '@/components/Pagination';
+import { Pagination, usePagination } from '@/components/Pagination';
+import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useQueryParams } from '@/hooks/useQueryParams';
-import { createServerSideProps } from '@/server/getServerSideProps';
 import { api } from '@/utils/api';
 import { getProfileName } from '@/utils/getters';
 import { z } from 'zod';
@@ -19,6 +19,14 @@ export default function ProfileId() {
       profileId: z.string(),
     })
   );
+  const [eventFilters, setEventFilters] = useState<string[]>([]);
+  const filterEventsQuery = api.chart.events.useQuery({
+    projectSlug: params.project,
+  });
+  const filterEvents = (filterEventsQuery.data ?? []).map((item) => ({
+    value: item.name,
+    label: item.name,
+  }));
   const profileQuery = api.profile.get.useQuery({
     id: profileId,
   });
@@ -26,6 +34,7 @@ export default function ProfileId() {
     {
       projectSlug: params.project,
       profileId,
+      events: eventFilters,
       ...pagination,
     },
     {
@@ -40,7 +49,19 @@ export default function ProfileId() {
       <Container>
         <PageTitle>{getProfileName(profile)}</PageTitle>
         <pre>{JSON.stringify(profile?.properties, null, 2)}</pre>
-        <EventsTable data={events} pagination={pagination} />
+        <div className="flex justify-between items-center">
+          <div>
+            <ComboboxAdvanced
+              items={filterEvents}
+              selected={eventFilters}
+              setSelected={setEventFilters}
+              placeholder="Filter by event"
+            />
+          </div>
+          <Pagination {...pagination} />
+        </div>
+        <EventsTable data={events} />
+        <Pagination {...pagination} />
       </Container>
     </MainLayout>
   );

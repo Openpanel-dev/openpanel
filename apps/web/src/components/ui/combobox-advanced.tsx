@@ -5,7 +5,7 @@ import { Command, CommandGroup, CommandItem } from '@/components/ui/command';
 import { Checkbox } from './checkbox';
 import { Input } from './input';
 
-type IValue = string | number | boolean | null;
+type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
 
 interface ComboboxAdvancedProps {
@@ -60,7 +60,7 @@ export function ComboboxAdvanced({
     );
   };
 
-  const renderUnknownItem = (value: string | number | null | boolean) => {
+  const renderUnknownItem = (value: IValue) => {
     const item = items.find((item) => item.value === value);
     return item ? renderItem(item) : renderItem({ value, label: value });
   };
@@ -92,7 +92,7 @@ export function ComboboxAdvanced({
       </button>
       <div className="relative mt-2">
         {open && (
-          <div className="max-h-80 absolute w-full z-10 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+          <div className="max-h-80 min-w-[300px] absolute w-full z-10 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandGroup className="max-h-80 overflow-auto">
               <div className="p-1 mb-2">
                 <Input

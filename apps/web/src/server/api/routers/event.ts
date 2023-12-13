@@ -16,27 +16,37 @@ export const eventRouter = createTRPCRouter({
         take: z.number().default(100),
         skip: z.number().default(0),
         profileId: z.string().optional(),
+        events: z.array(z.string()).optional(),
       })
     )
-    .query(async ({ input: { take, skip, projectSlug, profileId } }) => {
-      const project = await db.project.findUniqueOrThrow({
-        where: {
-          slug: projectSlug,
-        },
-      });
-      return db.event.findMany({
-        take,
-        skip,
-        where: {
-          project_id: project.id,
-          profile_id: profileId,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        include: {
-          profile: true,
-        },
-      });
-    }),
+    .query(
+      async ({ input: { take, skip, projectSlug, profileId, events } }) => {
+        const project = await db.project.findUniqueOrThrow({
+          where: {
+            slug: projectSlug,
+          },
+        });
+        return db.event.findMany({
+          take,
+          skip,
+          where: {
+            project_id: project.id,
+            profile_id: profileId,
+            ...(events && events.length > 0
+              ? {
+                  name: {
+                    in: events,
+                  },
+                }
+              : {}),
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          include: {
+            profile: true,
+          },
+        });
+      }
+    ),
 });
