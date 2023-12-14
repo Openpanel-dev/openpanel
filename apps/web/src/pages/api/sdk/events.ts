@@ -32,7 +32,7 @@ export default async function handler(req: Request, res: NextApiResponse) {
       })),
     });
 
-    res.status(200).end();
+    res.status(200).json({ status: 'ok' });
   } catch (error) {
     handleError(res, error);
   }
