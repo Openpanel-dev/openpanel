@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import semver from 'semver';
 
-import sdkPkg from '../../packages/sdk/package.json';
 import typesPkg from '../../packages/types/package.json';
+
+const sdkPackages = ['sdk', 'sdk-native', 'sdk-web'];
+// const sdkPackages = ['sdk'];
 
 const workspacePath = (relativePath: string) =>
   path.resolve(__dirname, '../../', relativePath);
@@ -50,17 +52,20 @@ function main() {
   };
 
   try {
-    savePackageJson(workspacePath('./packages/sdk/package.json'), {
-      ...sdkPkg,
-      ...properties,
-      dependencies: Object.entries(sdkPkg.dependencies).reduce(
-        (acc, [depName, depVersion]) => ({
-          ...acc,
-          [depName]: depName.startsWith('@mixan') ? version : depVersion,
-        }),
-        {}
-      ),
-    });
+    for (const name of sdkPackages) {
+      const pkgJson = require(workspacePath(`./packages/${name}/package.json`));
+      savePackageJson(workspacePath(`./packages/${name}/package.json`), {
+        ...pkgJson,
+        ...properties,
+        dependencies: Object.entries(pkgJson.dependencies).reduce(
+          (acc, [depName, depVersion]) => ({
+            ...acc,
+            [depName]: depName.startsWith('@mixan') ? version : depVersion,
+          }),
+          {}
+        ),
+      });
+    }
 
     savePackageJson(workspacePath('./packages/types/package.json'), {
       ...typesPkg,
@@ -73,11 +78,13 @@ function main() {
   console.log('✅ Update JSON files');
 
   try {
-    execSync('pnpm dlx tsup', {
-      cwd: workspacePath('./packages/sdk'),
-    });
-    execSync('pnpm dlx tsup', {
-      cwd: workspacePath('./packages/types'),
+    for (const name of sdkPackages) {
+      execSync('pnpm build', {
+        cwd: workspacePath(`./packages/${name}`),
+      });
+    }
+    execSync('pnpm build', {
+      cwd: workspacePath(`./packages/types`),
     });
   } catch (error) {
     exit('Failed build packages', error);
@@ -86,9 +93,11 @@ function main() {
   console.log('✅ Built packages');
 
   try {
-    execSync('npm publish --access=public', {
-      cwd: workspacePath('./packages/sdk'),
-    });
+    for (const name of sdkPackages) {
+      execSync('npm publish --access=public', {
+        cwd: workspacePath(`./packages/${name}`),
+      });
+    }
 
     execSync('npm publish --access=public', {
       cwd: workspacePath('./packages/types'),

@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "module": "index.ts",
   "scripts": {
+    "build": "rm -rf dist && tsup",
     "lint": "eslint .",
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
