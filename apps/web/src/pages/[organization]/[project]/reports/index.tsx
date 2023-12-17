@@ -12,7 +12,6 @@ import { reset, setName, setReport } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useRouterBeforeLeave } from '@/hooks/useRouterBeforeLeave';
 import { popModal, pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 import { createServerSideProps } from '@/server/getServerSideProps';
@@ -32,13 +31,6 @@ export default function Page() {
     }
   );
 
-  // Reset report state before leaving
-  useRouterBeforeLeave(
-    useCallback(() => {
-      dispatch(reset());
-    }, [dispatch])
-  );
-
   // Set report if reportId exists
   useEffect(() => {
     if (reportId && reportQuery.data) {
@@ -48,6 +40,11 @@ export default function Page() {
     if (!reportId) {
       dispatch(reset());
     }
+
+    // Reset report state before leaving
+    return () => {
+      dispatch(reset());
+    };
   }, [reportId, reportQuery.data, dispatch]);
 
   return (
