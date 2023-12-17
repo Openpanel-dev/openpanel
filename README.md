@@ -22,7 +22,7 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 ### GUI
 
 - [x] Fix tables on settings
-- [ ] Rename event label
+- [x] Rename event label
 - [ ] Real time data (mostly screen_views stats)
   - [ ] Active users (5min, 10min, 30min)
 - [x] Save report to a specific dashboard

@@ -213,7 +213,7 @@ function propertyNameToSql(name: string) {
 }
 
 function getEventLegend(event: IChartEvent) {
-  return `${event.name} (${event.id})`;
+  return event.displayName ?? `${event.name} (${event.id})`;
 }
 
 function getDatesFromRange(range: IChartRange) {

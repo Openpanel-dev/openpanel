@@ -35,8 +35,8 @@ function transformEvent(
     segment: event.segment ?? 'event',
     filters: (event.filters ?? []).map(transformFilter),
     id: event.id ?? alphabetIds[index]!,
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    name: event.name || 'Untitled',
+    name: event.name || 'unknown_event',
+    displayName: event.displayName,
   };
 }
 

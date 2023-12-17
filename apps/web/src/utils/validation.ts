@@ -10,6 +10,7 @@ function objectToZodEnums<K extends string>(obj: Record<K, any>): [K, ...K[]] {
 export const zChartEvent = z.object({
   id: z.string(),
   name: z.string(),
+  displayName: z.string().optional(),
   segment: z.enum(['event', 'user', 'user_average']),
   filters: z.array(
     z.object({

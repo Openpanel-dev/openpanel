@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
 import { Combobox } from '@/components/ui/combobox';
+import { Input } from '@/components/ui/input';
+import { useDebounceFn } from '@/hooks/useDebounceFn';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartEvent } from '@/types';
@@ -25,6 +27,9 @@ export function ReportEvents() {
     value: item.name,
     label: item.name,
   }));
+  const dispatchChangeEvent = useDebounceFn((event: IChartEvent) => {
+    dispatch(changeEvent(event));
+  });
 
   const handleMore = (event: IChartEvent) => {
     const callback: ReportEventMoreProps['onClick'] = (action) => {
@@ -63,6 +68,18 @@ export function ReportEvents() {
                   }}
                   items={eventsCombobox}
                   placeholder="Select event"
+                />
+                <Input
+                  placeholder={
+                    event.name ? `${event.name} (${event.id})` : 'Display name'
+                  }
+                  defaultValue={event.displayName}
+                  onChange={(e) => {
+                    dispatchChangeEvent({
+                      ...event,
+                      displayName: e.target.value,
+                    });
+                  }}
                 />
                 <ReportEventMore onClick={handleMore(event)} />
               </div>
