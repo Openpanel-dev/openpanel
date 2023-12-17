@@ -27,7 +27,9 @@ export function NavbarMenu() {
   return (
     <div className={cn('flex gap-1 items-center text-sm', 'max-sm:flex-col')}>
       {params.project && (
-        <Item href={`/${params.organization}/${params.project}`}>Home</Item>
+        <Item href={`/${params.organization}/${params.project}`}>
+          Dashboards
+        </Item>
       )}
       {params.project && (
         <Item href={`/${params.organization}/${params.project}/events`}>

@@ -47,7 +47,7 @@ export const Chart = memo(
     if (!enabled) {
       return (
         <ChartAnimationContainer>
-          <ChartAnimation name="ballon" className="w-96 mx-auto" />
+          <ChartAnimation name="ballon" className="max-w-sm w-fill mx-auto" />
           <p className="text-center font-medium">
             Please select at least one event to see the chart.
           </p>
@@ -58,7 +58,7 @@ export const Chart = memo(
     if (chart.isFetching) {
       return (
         <ChartAnimationContainer>
-          <ChartAnimation name="airplane" className="w-96 mx-auto" />
+          <ChartAnimation name="airplane" className="max-w-sm w-fill mx-auto" />
           <p className="text-center font-medium">Loading...</p>
         </ChartAnimationContainer>
       );
@@ -67,20 +67,22 @@ export const Chart = memo(
     if (chart.isError) {
       return (
         <ChartAnimationContainer>
-          <ChartAnimation name="noData" className="w-96 mx-auto" />
+          <ChartAnimation name="noData" className="max-w-sm w-fill mx-auto" />
           <p className="text-center font-medium">Something went wrong...</p>
         </ChartAnimationContainer>
       );
     }
 
     if (!chart.isSuccess) {
-      return <ChartAnimation name="ballon" className="w-96 mx-auto" />;
+      return (
+        <ChartAnimation name="ballon" className="max-w-sm w-fill mx-auto" />
+      );
     }
 
     if (!anyData) {
       return (
         <ChartAnimationContainer>
-          <ChartAnimation name="noData" className="w-96 mx-auto" />
+          <ChartAnimation name="noData" className="max-w-sm w-fill mx-auto" />
           <p className="text-center font-medium">No data</p>
         </ChartAnimationContainer>
       );
@@ -96,7 +98,7 @@ export const Chart = memo(
 
     return (
       <ChartAnimationContainer>
-        <ChartAnimation name="ballon" className="w-96 mx-auto" />
+        <ChartAnimation name="ballon" className="max-w-sm w-fill mx-auto" />
         <p className="text-center font-medium">
           Chart type &quot;{chartType}&quot; is not supported yet.
         </p>

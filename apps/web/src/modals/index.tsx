@@ -34,6 +34,12 @@ const modals = {
   AddDashboard: dynamic(() => import('./AddDashboard'), {
     loading: Loading,
   }),
+  EditDashboard: dynamic(() => import('./EditDashboard'), {
+    loading: Loading,
+  }),
+  EditReport: dynamic(() => import('./EditReport'), {
+    loading: Loading,
+  }),
 };
 
 const emitter = mitt<{

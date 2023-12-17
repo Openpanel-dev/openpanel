@@ -83,6 +83,9 @@ export const reportRouter = createTRPCRouter({
           project_id: project.id,
           dashboard_id: dashboard.id,
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
 
       return {
@@ -135,6 +138,19 @@ export const reportRouter = createTRPCRouter({
           breakdowns: report.breakdowns,
           chart_type: report.chartType,
           range: report.range,
+        },
+      });
+    }),
+  delete: protectedProcedure
+    .input(
+      z.object({
+        reportId: z.string(),
+      })
+    )
+    .mutation(({ input: { reportId } }) => {
+      return db.report.delete({
+        where: {
+          id: reportId,
         },
       });
     }),

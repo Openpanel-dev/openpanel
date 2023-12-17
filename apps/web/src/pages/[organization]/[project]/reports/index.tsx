@@ -1,20 +1,23 @@
 import { useCallback, useEffect } from 'react';
 import { Container } from '@/components/Container';
 import { MainLayout } from '@/components/layouts/MainLayout';
+import { PageTitle } from '@/components/PageTitle';
 import { Chart } from '@/components/report/chart';
 import { useReportId } from '@/components/report/hooks/useReportId';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportDateRange } from '@/components/report/ReportDateRange';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
-import { reset, setReport } from '@/components/report/reportSlice';
+import { reset, setName, setReport } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useRouterBeforeLeave } from '@/hooks/useRouterBeforeLeave';
+import { popModal, pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 import { createServerSideProps } from '@/server/getServerSideProps';
 import { api } from '@/utils/api';
+import { Pencil } from 'lucide-react';
 
 export const getServerSideProps = createServerSideProps();
 
@@ -51,6 +54,27 @@ export default function Page() {
     <Sheet>
       <MainLayout>
         <Container>
+          <PageTitle>
+            <span className="flex items-center gap-4">
+              {report.name}
+              <Button
+                variant={'outline'}
+                onClick={() => {
+                  pushModal('EditReport', {
+                    form: {
+                      name: report.name,
+                    },
+                    onSubmit: (values) => {
+                      dispatch(setName(values.name));
+                      popModal('EditReport');
+                    },
+                  });
+                }}
+              >
+                <Pencil size={16} />
+              </Button>
+            </span>
+          </PageTitle>
           <div className="flex flex-col gap-4 mt-8">
             <div className="flex flex-col gap-4">
               <ReportDateRange />

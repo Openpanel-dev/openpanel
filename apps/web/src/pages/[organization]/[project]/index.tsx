@@ -7,7 +7,7 @@ import { useRefetchActive } from '@/hooks/useRefetchActive';
 import { pushModal } from '@/modals';
 import { createServerSideProps } from '@/server/getServerSideProps';
 import { api, handleError } from '@/utils/api';
-import { Plus, Trash } from 'lucide-react';
+import { Pencil, Plus, Trash } from 'lucide-react';
 import Link from 'next/link';
 
 export const getServerSideProps = createServerSideProps();
@@ -46,6 +46,18 @@ export default function Home() {
               </Link>
 
               <CardActions>
+                <CardActionsItem className="w-full" asChild>
+                  <button
+                    onClick={() => {
+                      pushModal('EditDashboard', {
+                        id: item.id,
+                      });
+                    }}
+                  >
+                    <Pencil size={16} />
+                    Edit
+                  </button>
+                </CardActionsItem>
                 <CardActionsItem className="text-destructive w-full" asChild>
                   <button
                     onClick={() => {

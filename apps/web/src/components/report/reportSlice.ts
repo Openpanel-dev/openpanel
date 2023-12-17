@@ -19,7 +19,7 @@ type InitialState = IChartInput & {
 // First approach: define the initial state using that type
 const initialState: InitialState = {
   dirty: false,
-  name: 'screen_view',
+  name: 'Untitled',
   chartType: 'linear',
   interval: 'day',
   breakdowns: [],
@@ -30,7 +30,7 @@ const initialState: InitialState = {
 };
 
 export const reportSlice = createSlice({
-  name: 'counter',
+  name: 'report',
   initialState,
   reducers: {
     resetDirty(state) {
@@ -49,6 +49,10 @@ export const reportSlice = createSlice({
         endDate: null,
         dirty: false,
       };
+    },
+    setName(state, action: PayloadAction<string>) {
+      state.dirty = true;
+      state.name = action.payload;
     },
     // Events
     addEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
@@ -162,6 +166,7 @@ export const reportSlice = createSlice({
 export const {
   reset,
   setReport,
+  setName,
   addEvent,
   removeEvent,
   changeEvent,

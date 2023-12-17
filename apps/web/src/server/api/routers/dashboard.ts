@@ -10,12 +10,22 @@ import { z } from 'zod';
 export const dashboardRouter = createTRPCRouter({
   get: protectedProcedure
     .input(
-      z.object({
-        slug: z.string(),
-      })
+      z
+        .object({
+          slug: z.string(),
+        })
+        .or(z.object({ id: z.string() }))
     )
-    .query(async ({ input: { slug } }) => {
-      return getDashboardBySlug(slug);
+    .query(async ({ input }) => {
+      if ('id' in input) {
+        return db.dashboard.findUnique({
+          where: {
+            id: input.id,
+          },
+        });
+      } else {
+        return getDashboardBySlug(input.slug);
+      }
     }),
   list: protectedProcedure
     .input(
@@ -41,6 +51,9 @@ export const dashboardRouter = createTRPCRouter({
         where: {
           project_id: projectId,
         },
+        orderBy: {
+          createdAt: 'desc',
+        },
       });
     }),
   create: protectedProcedure
@@ -57,6 +70,23 @@ export const dashboardRouter = createTRPCRouter({
           slug: slug(name),
           project_id: project.id,
           name,
+        },
+      });
+    }),
+  update: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+      })
+    )
+    .mutation(({ input }) => {
+      return db.dashboard.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          name: input.name,
         },
       });
     }),

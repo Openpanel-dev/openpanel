@@ -54,7 +54,7 @@ export default function SaveReport({ report }: SaveReportProps) {
     useForm<IForm>({
       resolver: zodResolver(validator),
       defaultValues: {
-        name: '',
+        name: report.name,
         dashboardId: '',
       },
     });
@@ -136,7 +136,7 @@ export default function SaveReport({ report }: SaveReportProps) {
           <Button type="button" variant="outline" onClick={() => popModal()}>
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button type="submit" disabled={!formState.isValid}>
             Save
           </Button>
         </ButtonContainer>

@@ -1,17 +1,25 @@
 import { useMemo, useState } from 'react';
+import { CardActions, CardActionsItem } from '@/components/Card';
 import { Container } from '@/components/Container';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { PageTitle } from '@/components/PageTitle';
 import { LazyChart } from '@/components/report/chart/LazyChart';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { createServerSideProps } from '@/server/getServerSideProps';
 import type { IChartRange } from '@/types';
-import { api } from '@/utils/api';
+import { api, handleError } from '@/utils/api';
 import { cn } from '@/utils/cn';
 import { timeRanges } from '@/utils/constants';
 import { getRangeLabel } from '@/utils/getRangeLabel';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, MoreHorizontal, Trash } from 'lucide-react';
 import Link from 'next/link';
 
 export const getServerSideProps = createServerSideProps();
@@ -28,6 +36,13 @@ export default function Dashboard() {
   const reports = useMemo(() => {
     return query.data?.reports ?? [];
   }, [query]);
+
+  const deletion = api.report.delete.useMutation({
+    onError: handleError,
+    onSuccess() {
+      query.refetch();
+    },
+  });
 
   const [range, setRange] = useState<null | IChartRange>(null);
 
@@ -62,7 +77,7 @@ export default function Dashboard() {
               >
                 <Link
                   href={`/${params.organization}/${params.project}/reports/${report.id}?dashboard=${params.dashboard}`}
-                  className="flex border-b border-border p-4 leading-none [&>svg]:hover:opacity-100 items-center justify-between"
+                  className="flex border-b border-border p-4 leading-none [&_svg]:hover:opacity-100 items-center justify-between"
                   shallow
                 >
                   <div>
@@ -76,7 +91,33 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
-                  <ChevronRight className="opacity-0 transition-opacity" />
+                  <div className="flex items-center gap-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="h-8 w-8 hover:border rounded justify-center items-center flex">
+                        <MoreHorizontal size={16} />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-[200px]">
+                        <DropdownMenuGroup>
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              deletion.mutate({
+                                reportId: report.id,
+                              });
+                            }}
+                          >
+                            <Trash size={16} className="mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuGroup>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <ChevronRight
+                      className="opacity-10 transition-opacity"
+                      size={16}
+                    />
+                  </div>
                 </Link>
                 <div
                   className={cn(
