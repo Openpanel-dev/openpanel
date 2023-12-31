@@ -3,14 +3,30 @@ import { Container } from '@/components/Container';
 import { MainLayout } from '@/components/layouts/MainLayout';
 import { PageTitle } from '@/components/PageTitle';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
 import { pushModal } from '@/modals';
+import { db } from '@/server/db';
 import { createServerSideProps } from '@/server/getServerSideProps';
 import { api, handleError } from '@/utils/api';
 import { Pencil, Plus, Trash } from 'lucide-react';
 import Link from 'next/link';
 
-export const getServerSideProps = createServerSideProps();
+export const getServerSideProps = createServerSideProps(async (context) => {
+  const projectSlug = context.params?.project as string;
+  try {
+    await db.project.findFirstOrThrow({
+      select: {
+        id: true,
+      },
+      where: {
+        slug: projectSlug,
+      },
+    });
+  } catch (error) {
+    return {
+      notFound: true,
+    };
+  }
+});
 
 export default function Home() {
   const params = useOrganizationParams();

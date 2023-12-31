@@ -13,7 +13,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { db } from '@/server/db';
 import { createServerSideProps } from '@/server/getServerSideProps';
+import { getDashboardBySlug } from '@/server/services/dashboard.service';
 import type { IChartRange } from '@/types';
 import { api, handleError } from '@/utils/api';
 import { cn } from '@/utils/cn';
@@ -22,7 +24,27 @@ import { getRangeLabel } from '@/utils/getRangeLabel';
 import { ChevronRight, MoreHorizontal, Trash } from 'lucide-react';
 import Link from 'next/link';
 
-export const getServerSideProps = createServerSideProps();
+export const getServerSideProps = createServerSideProps(async (context) => {
+  const projectSlug = context.params?.project as string;
+  const dashboardSlug = context.params?.dashboard as string;
+  try {
+    await db.dashboard.findFirstOrThrow({
+      select: {
+        id: true,
+      },
+      where: {
+        slug: dashboardSlug,
+        project: {
+          slug: projectSlug,
+        },
+      },
+    });
+  } catch (error) {
+    return {
+      notFound: true,
+    };
+  }
+});
 
 export default function Dashboard() {
   const params = useOrganizationParams();

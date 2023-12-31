@@ -21,7 +21,7 @@ export function createServerSideProps(
     }
 
     if (context.params?.organization) {
-      const organization = await db.user.findFirst({
+      const user = await db.user.findFirst({
         where: {
           id: session.user.id,
           organization: {
@@ -30,9 +30,33 @@ export function createServerSideProps(
         },
       });
 
-      if (!organization) {
+      if (!user) {
         return {
           notFound: true,
+        };
+      }
+    } else {
+      const user = await db.user.findFirst({
+        where: {
+          id: session.user.id,
+        },
+        include: {
+          organization: true,
+        },
+      });
+
+      if (!user) {
+        return {
+          notFound: true,
+        };
+      }
+
+      if (user.organization) {
+        return {
+          redirect: {
+            destination: `/${user.organization.slug}`,
+            permanent: false,
+          },
         };
       }
     }
