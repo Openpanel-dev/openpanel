@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { chartTypes, intervals, operators } from './constants';
+import { chartTypes, intervals, operators, timeRanges } from './constants';
 
 function objectToZodEnums<K extends string>(obj: Record<K, any>): [K, ...K[]] {
   const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
@@ -11,7 +11,7 @@ export const zChartEvent = z.object({
   id: z.string(),
   name: z.string(),
   displayName: z.string().optional(),
-  segment: z.enum(['event', 'user', 'user_average']),
+  segment: z.enum(['event', 'user', 'user_average', 'one_event_per_user']),
   filters: z.array(
     z.object({
       id: z.string(),
@@ -39,17 +39,7 @@ export const zChartInput = z.object({
   interval: zTimeInterval,
   events: zChartEvents,
   breakdowns: zChartBreakdowns,
-  range: z
-    .literal(0)
-    .or(z.literal(0.3))
-    .or(z.literal(0.6))
-    .or(z.literal(1))
-    .or(z.literal(7))
-    .or(z.literal(14))
-    .or(z.literal(30))
-    .or(z.literal(90))
-    .or(z.literal(180))
-    .or(z.literal(365)),
+  range: z.enum(objectToZodEnums(timeRanges)),
 });
 
 export const zChartInputWithDates = zChartInput.extend({

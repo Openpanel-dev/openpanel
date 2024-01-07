@@ -10,16 +10,16 @@ export function ReportDateRange() {
 
   return (
     <RadioGroup className="overflow-auto">
-      {timeRanges.map((item) => {
+      {Object.values(timeRanges).map((key) => {
         return (
           <RadioGroupItem
-            key={item.range}
-            active={item.range === range}
+            key={key}
+            active={key === range}
             onClick={() => {
-              dispatch(changeDateRanges(item.range));
+              dispatch(changeDateRanges(key));
             }}
           >
-            {item.title}
+            {key}
           </RadioGroupItem>
         );
       })}

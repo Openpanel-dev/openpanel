@@ -70,6 +70,7 @@
     "@mixan/prettier-config": "workspace:*",
     "@mixan/tsconfig": "workspace:*",
     "@types/bcrypt": "^5.0.0",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^18.16.0",
     "@types/ramda": "^0.29.6",
     "@types/react": "^18.2.20",

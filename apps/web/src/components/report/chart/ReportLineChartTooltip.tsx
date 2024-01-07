@@ -2,6 +2,7 @@ import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useMappings } from '@/hooks/useMappings';
 import { useSelector } from '@/redux';
 import type { IToolTipProps } from '@/types';
+import { alphabetIds } from '@/utils/constants';
 
 type ReportLineChartTooltipProps = IToolTipProps<{
   color: string;
@@ -10,7 +11,7 @@ type ReportLineChartTooltipProps = IToolTipProps<{
     date: Date;
     count: number;
     label: string;
-  };
+  } & Record<string, any>;
 }>;
 
 export function ReportLineChartTooltip({
@@ -34,11 +35,13 @@ export function ReportLineChartTooltip({
   const visible = sorted.slice(0, limit);
   const hidden = sorted.slice(limit);
   const first = visible[0]!;
+  const isBarChart = first.payload.count === undefined;
 
   return (
     <div className="flex flex-col gap-2 rounded-xl border bg-white p-3 text-sm shadow-xl">
       {formatDate(new Date(first.payload.date))}
-      {visible.map((item) => {
+      {visible.map((item, index) => {
+        const id = alphabetIds[index];
         return (
           <div key={item.payload.label} className="flex gap-2">
             <div
@@ -47,9 +50,13 @@ export function ReportLineChartTooltip({
             ></div>
             <div className="flex flex-col">
               <div className="min-w-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap font-medium">
-                {getLabel(item.payload.label)}
+                {isBarChart
+                  ? item.payload[`${id}:label`]
+                  : getLabel(item.payload.label)}
               </div>
-              <div>{item.payload.count}</div>
+              <div>
+                {isBarChart ? item.payload[`${id}:count`] : item.payload.count}
+              </div>
             </div>
           </div>
         );

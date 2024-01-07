@@ -13,7 +13,7 @@ const breakpoints = theme?.screens ?? {
 export function useBreakpoint<K extends string>(breakpointKey: K) {
   const breakpointValue = breakpoints[breakpointKey as keyof ScreensConfig];
   const bool = useMediaQuery({
-    query: `(max-width: ${breakpointValue})`,
+    query: `(max-width: ${breakpointValue as string})`,
   });
   const capitalizedKey =
     breakpointKey[0]?.toUpperCase() + breakpointKey.substring(1);

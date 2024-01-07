@@ -23,8 +23,15 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 
 - [x] Fix tables on settings
 - [x] Rename event label
-- [ ] Real time data (mostly screen_views stats)
-  - [ ] Active users (5min, 10min, 30min)
+- [ ] Common web dashboard
+  - [x] User histogram (last 30 minutes)
+  - [ ] Bounce rate
+  - [ ] Session duration
+  - [ ] Views per session
+  - [ ] Unique users
+  - [ ] Total users
+  - [ ] Total pageviews
+  - [ ] Total events
 - [x] Save report to a specific dashboard
 - [x] View events in a list
   - [x] Simple filters
@@ -34,6 +41,7 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 - [x] Manage dashboards
 - [ ] Support more chart types
   - [x] Bar
+  - [x] Histogram
   - [ ] Pie
   - [ ] Area
 - [ ] Support funnels

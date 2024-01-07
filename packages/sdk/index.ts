@@ -353,7 +353,7 @@ export class Mixan {
     this.logger('Mixan: Clear, send remaining events and remove profileId');
     this.eventBatcher.send();
     this.options.removeItem('@mixan:profileId');
-    this.options.removeItem('@mixan:session');
+    this.options.removeItem('@mixan:lastEventAt');
     this.profileId = undefined;
     this.setAnonymousUser();
   }

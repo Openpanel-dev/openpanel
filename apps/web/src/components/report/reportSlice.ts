@@ -24,7 +24,7 @@ const initialState: InitialState = {
   interval: 'day',
   breakdowns: [],
   events: [],
-  range: 30,
+  range: '1m',
   startDate: null,
   endDate: null,
 };
@@ -149,11 +149,11 @@ export const reportSlice = createSlice({
     changeDateRanges: (state, action: PayloadAction<IChartRange>) => {
       state.dirty = true;
       state.range = action.payload;
-      if (action.payload === 0.3 || action.payload === 0.6) {
+      if (action.payload === '30min' || action.payload === '1h') {
         state.interval = 'minute';
-      } else if (action.payload === 0 || action.payload === 1) {
+      } else if (action.payload === 'today' || action.payload === '24h') {
         state.interval = 'hour';
-      } else if (action.payload <= 30) {
+      } else if (action.payload === '7d' || action.payload === '14d') {
         state.interval = 'day';
       } else {
         state.interval = 'month';

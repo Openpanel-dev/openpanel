@@ -15,12 +15,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { db } from '@/server/db';
 import { createServerSideProps } from '@/server/getServerSideProps';
-import { getDashboardBySlug } from '@/server/services/dashboard.service';
 import type { IChartRange } from '@/types';
 import { api, handleError } from '@/utils/api';
 import { cn } from '@/utils/cn';
 import { timeRanges } from '@/utils/constants';
-import { getRangeLabel } from '@/utils/getRangeLabel';
 import { ChevronRight, MoreHorizontal, Trash } from 'lucide-react';
 import Link from 'next/link';
 
@@ -74,16 +72,16 @@ export default function Dashboard() {
         <PageTitle>{dashboard?.name}</PageTitle>
 
         <RadioGroup className="mb-8 overflow-auto">
-          {timeRanges.map((item) => {
+          {Object.values(timeRanges).map((key) => {
             return (
               <RadioGroupItem
-                key={item.range}
-                active={item.range === range}
+                key={key}
+                active={key === range}
                 onClick={() => {
-                  setRange((p) => (p === item.range ? null : item.range));
+                  setRange((p) => (p === key ? null : key));
                 }}
               >
-                {item.title}
+                {key}
               </RadioGroupItem>
             );
           })}
@@ -91,7 +89,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {reports.map((report) => {
-            const chartRange = getRangeLabel(report.range);
+            const chartRange = timeRanges[report.range];
             return (
               <div
                 className="rounded-md border border-border bg-white shadow"
@@ -109,7 +107,7 @@ export default function Dashboard() {
                         <span className={range !== null ? 'line-through' : ''}>
                           {chartRange}
                         </span>
-                        {range !== null && <span>{getRangeLabel(range)}</span>}
+                        {range !== null && <span>{range}</span>}
                       </div>
                     )}
                   </div>

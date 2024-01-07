@@ -6,6 +6,7 @@ import { api } from '@/utils/api';
 import { ChartAnimation, ChartAnimationContainer } from './ChartAnimation';
 import { withChartProivder } from './ChartProvider';
 import { ReportBarChart } from './ReportBarChart';
+import { ReportHistogramChart } from './ReportHistogramChart';
 import { ReportLineChart } from './ReportLineChart';
 
 export type ReportChartProps = IChartInput;
@@ -86,6 +87,10 @@ export const Chart = memo(
           <p className="text-center font-medium">No data</p>
         </ChartAnimationContainer>
       );
+    }
+
+    if (chartType === 'histogram') {
+      return <ReportHistogramChart interval={interval} data={chart.data} />;
     }
 
     if (chartType === 'bar') {

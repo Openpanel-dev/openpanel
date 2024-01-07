@@ -38,7 +38,11 @@ export function ReportInterval() {
         {
           value: 'month',
           label: 'Month',
-          disabled: range < 1,
+          disabled:
+            range === 'today' ||
+            range === '24h' ||
+            range === '1h' ||
+            range === '30min',
         },
       ]}
     />

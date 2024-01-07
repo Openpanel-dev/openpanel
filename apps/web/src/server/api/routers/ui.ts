@@ -1,5 +1,4 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@/server/db';
 import { z } from 'zod';
 
 export const config = {
@@ -15,7 +14,7 @@ export const uiRouter = createTRPCRouter({
         url: z.string(),
       })
     )
-    .query(async ({ input: { url } }) => {
+    .query(({ input: { url } }) => {
       const parts = url.split('/').filter(Boolean);
       return parts;
     }),

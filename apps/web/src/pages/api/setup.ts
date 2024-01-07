@@ -10,6 +10,7 @@ export default async function handler(
 ) {
   try {
     const counts = await db.$transaction([
+      db.user.count(),
       db.organization.count(),
       db.project.count(),
       db.client.count(),
@@ -22,6 +23,15 @@ export default async function handler(
     const organization = await db.organization.create({
       data: {
         name: 'Acme Inc.',
+      },
+    });
+
+    const user = await db.user.create({
+      data: {
+        name: 'Carl',
+        password: await hashPassword('password'),
+        email: 'lindesvard@gmail.com',
+        organization_id: organization.id,
       },
     });
 

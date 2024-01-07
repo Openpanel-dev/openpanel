@@ -9,7 +9,7 @@ import type {
   IChartInput,
   IChartRange,
 } from '@/types';
-import { alphabetIds } from '@/utils/constants';
+import { alphabetIds, timeRanges } from '@/utils/constants';
 import { zChartInput } from '@/utils/validation';
 import type { Report as DbReport } from '@prisma/client';
 import { z } from 'zod';
@@ -48,7 +48,7 @@ function transformReport(report: DbReport): IChartInput & { id: string } {
     chartType: report.chart_type,
     interval: report.interval,
     name: report.name || 'Untitled',
-    range: (report.range as IChartRange) ?? 30,
+    range: report.range as IChartRange ?? timeRanges['1m'],
   };
 }
 

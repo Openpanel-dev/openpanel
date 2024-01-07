@@ -1,12 +1,14 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import * as cache from '@/server/cache';
+import { getChartSql } from '@/server/chart-sql/getChartSql';
+import { isJsonPath, selectJsonPath } from '@/server/chart-sql/helpers';
 import { db } from '@/server/db';
 import { getUniqueEvents } from '@/server/services/event.service';
 import { getProjectBySlug } from '@/server/services/project.service';
 import type {
   IChartEvent,
-  IChartInputWithDates,
   IChartRange,
+  IGetChartDataInput,
   IInterval,
 } from '@/types';
 import { getDaysOldDate } from '@/utils/date';
@@ -33,7 +35,12 @@ export const chartRouter = createTRPCRouter({
         () => getUniqueEvents({ projectId: project.id })
       );
 
-      return events;
+      return [
+        {
+          name: '*',
+        },
+        ...events,
+      ];
     }),
 
   properties: protectedProcedure
@@ -124,12 +131,21 @@ export const chartRouter = createTRPCRouter({
   chart: protectedProcedure
     .input(zChartInputWithDates.merge(z.object({ projectSlug: z.string() })))
     .query(async ({ input: { projectSlug, events, ...input } }) => {
+      const { startDate, endDate } =
+        input.startDate && input.endDate
+          ? {
+              startDate: input.startDate,
+              endDate: input.endDate,
+            }
+          : getDatesFromRange(input.range);
       const project = await getProjectBySlug(projectSlug);
       const series: Awaited<ReturnType<typeof getChartData>> = [];
       for (const event of events) {
         series.push(
           ...(await getChartData({
             ...input,
+            startDate,
+            endDate,
             event,
             projectId: project.id,
           }))
@@ -176,40 +192,10 @@ export const chartRouter = createTRPCRouter({
     }),
 });
 
-function selectJsonPath(property: string) {
-  const jsonPath = property
-    .replace(/^properties\./, '')
-    .replace(/\.\*\./g, '.**.');
-  return `jsonb_path_query(properties, '$.${jsonPath}')`;
-}
-
-function isJsonPath(property: string) {
-  return property.startsWith('properties');
-}
-
 interface ResultItem {
   label: string | null;
   count: number;
   date: string;
-}
-
-function propertyNameToSql(name: string) {
-  if (name.includes('.')) {
-    const str = name
-      .split('.')
-      .map((item, index) => (index === 0 ? item : `'${item}'`))
-      .join('->');
-    const findLastOf = '->';
-    const lastArrow = str.lastIndexOf(findLastOf);
-    if (lastArrow === -1) {
-      return str;
-    }
-    const first = str.slice(0, lastArrow);
-    const last = str.slice(lastArrow + findLastOf.length);
-    return `${first}->>${last}`;
-  }
-
-  return name;
 }
 
 function getEventLegend(event: IChartEvent) {
@@ -217,7 +203,7 @@ function getEventLegend(event: IChartEvent) {
 }
 
 function getDatesFromRange(range: IChartRange) {
-  if (range === 0) {
+  if (range === 'today') {
     const startDate = new Date();
     const endDate = new Date().toISOString();
     startDate.setHours(0, 0, 0, 0);
@@ -228,9 +214,9 @@ function getDatesFromRange(range: IChartRange) {
     };
   }
 
-  if (isFloat(range)) {
+  if (range === '30min' || range === '1h') {
     const startDate = new Date(
-      Date.now() - 1000 * 60 * (range * 100)
+      Date.now() - 1000 * 60 * (range === '30min' ? 30 : 60)
     ).toISOString();
     const endDate = new Date().toISOString();
 
@@ -240,7 +226,25 @@ function getDatesFromRange(range: IChartRange) {
     };
   }
 
-  const startDate = getDaysOldDate(range);
+  let days = 1;
+
+  if (range === '24h') {
+    days = 1;
+  } else if (range === '7d') {
+    days = 7;
+  } else if (range === '14d') {
+    days = 14;
+  } else if (range === '1m') {
+    days = 30;
+  } else if (range === '3m') {
+    days = 90;
+  } else if (range === '6m') {
+    days = 180;
+  } else if (range === '1y') {
+    days = 365;
+  }
+
+  const startDate = getDaysOldDate(days);
   startDate.setUTCHours(0, 0, 0, 0);
   const endDate = new Date();
   endDate.setUTCHours(23, 59, 59, 999);
@@ -250,202 +254,14 @@ function getDatesFromRange(range: IChartRange) {
   };
 }
 
-function getChartSql({
-  event,
-  chartType,
-  breakdowns,
-  interval,
-  startDate,
-  endDate,
-  projectId,
-}: Omit<IGetChartDataInput, 'range'> & {
-  projectId: string;
-}) {
-  const select = [];
-  const where = [`project_id = '${projectId}'`];
-  const groupBy = [];
-  const orderBy = [];
+async function getChartData(payload: IGetChartDataInput) {
+  let result = await db.$queryRawUnsafe<ResultItem[]>(getChartSql(payload));
 
-  if (event.segment === 'event') {
-    select.push(`count(*)::int as count`);
-  } else if (event.segment === 'user_average') {
-    select.push(`COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count`);
-  } else {
-    select.push(`count(DISTINCT profile_id)::int as count`);
-  }
-
-  switch (chartType) {
-    case 'bar': {
-      orderBy.push('count DESC');
-      break;
-    }
-    case 'linear': {
-      select.push(`date_trunc('${interval}', "createdAt") as date`);
-      groupBy.push('date');
-      orderBy.push('date');
-      break;
-    }
-  }
-
-  if (event) {
-    const { name, filters } = event;
-    where.push(`name = '${name}'`);
-    if (filters.length > 0) {
-      filters.forEach((filter) => {
-        const { name, value, operator } = filter;
-        switch (operator) {
-          case 'contains': {
-            if (name.includes('.*.') || name.endsWith('[*]')) {
-              // TODO: Make sure this works
-              // where.push(
-              //   `properties @? '$.${name
-              //     .replace(/^properties\./, '')
-              //     .replace(/\.\*\./g, '[*].')} ? (@ like_regex "${value[0]}")'`
-              // );
-            } else {
-              where.push(
-                `(${value
-                  .map(
-                    (val) =>
-                      `${propertyNameToSql(name)} like '%${String(val).replace(
-                        /'/g,
-                        "''"
-                      )}%'`
-                  )
-                  .join(' OR ')})`
-              );
-            }
-            break;
-          }
-          case 'is': {
-            if (name.includes('.*.') || name.endsWith('[*]')) {
-              where.push(
-                `properties @? '$.${name
-                  .replace(/^properties\./, '')
-                  .replace(/\.\*\./g, '[*].')} ? (${value
-                  .map((val) => `@ == "${val}"`)
-                  .join(' || ')})'`
-              );
-            } else {
-              where.push(
-                `${propertyNameToSql(name)} in (${value
-                  .map((val) => `'${val}'`)
-                  .join(', ')})`
-              );
-            }
-            break;
-          }
-          case 'isNot': {
-            if (name.includes('.*.') || name.endsWith('[*]')) {
-              where.push(
-                `properties @? '$.${name
-                  .replace(/^properties\./, '')
-                  .replace(/\.\*\./g, '[*].')} ? (${value
-                  .map((val) => `@ != "${val}"`)
-                  .join(' && ')})'`
-              );
-            } else if (name.includes('.')) {
-              where.push(
-                `${propertyNameToSql(name)} not in (${value
-                  .map((val) => `'${val}'`)
-                  .join(', ')})`
-              );
-            }
-            break;
-          }
-        }
-      });
-    }
-  }
-
-  if (breakdowns.length) {
-    const breakdown = breakdowns[0];
-    if (breakdown) {
-      if (isJsonPath(breakdown.name)) {
-        select.push(`${selectJsonPath(breakdown.name)} as label`);
-      } else {
-        select.push(`${breakdown.name} as label`);
-      }
-      groupBy.push(`label`);
-    }
-  } else {
-    if (event.name) {
-      select.push(`'${event.name}' as label`);
-    }
-  }
-
-  if (startDate) {
-    where.push(`"createdAt" >= '${startDate}'`);
-  }
-
-  if (endDate) {
-    where.push(`"createdAt" <= '${endDate}'`);
-  }
-
-  const sql = [
-    `SELECT ${select.join(', ')}`,
-    `FROM events`,
-    `WHERE ${where.join(' AND ')}`,
-  ];
-
-  if (groupBy.length) {
-    sql.push(`GROUP BY ${groupBy.join(', ')}`);
-  }
-  if (orderBy.length) {
-    sql.push(`ORDER BY ${orderBy.join(', ')}`);
-  }
-
-  console.log('SQL ->', sql.join('\n'));
-
-  return sql.join('\n');
-}
-
-type IGetChartDataInput = {
-  event: IChartEvent;
-} & Omit<IChartInputWithDates, 'events' | 'name'>;
-
-async function getChartData({
-  chartType,
-  event,
-  breakdowns,
-  interval,
-  range,
-  startDate: _startDate,
-  endDate: _endDate,
-  projectId,
-}: IGetChartDataInput & {
-  projectId: string;
-}) {
-  const { startDate, endDate } =
-    _startDate && _endDate
-      ? {
-          startDate: _startDate,
-          endDate: _endDate,
-        }
-      : getDatesFromRange(range);
-
-  const sql = getChartSql({
-    chartType,
-    event,
-    breakdowns,
-    interval,
-    startDate,
-    endDate,
-    projectId,
-  });
-
-  let result = await db.$queryRawUnsafe<ResultItem[]>(sql);
-
-  if (result.length === 0 && breakdowns.length > 0) {
+  if (result.length === 0 && payload.breakdowns.length > 0) {
     result = await db.$queryRawUnsafe<ResultItem[]>(
       getChartSql({
-        chartType,
-        event,
+        ...payload,
         breakdowns: [],
-        interval,
-        startDate,
-        endDate,
-        projectId,
       })
     );
   }
@@ -455,7 +271,7 @@ async function getChartData({
     (acc, item) => {
       // item.label can be null when using breakdowns on a property
       // that doesn't exist on all events
-      const label = item.label?.trim() ?? event.id;
+      const label = item.label?.trim() ?? payload.event.id;
       if (label) {
         if (acc[label]) {
           acc[label]?.push(item);
@@ -472,30 +288,35 @@ async function getChartData({
   );
 
   return Object.keys(series).map((key) => {
-    const legend = breakdowns.length ? key : getEventLegend(event);
+    const legend = payload.breakdowns.length
+      ? key
+      : getEventLegend(payload.event);
     const data = series[key] ?? [];
 
     return {
       name: legend,
       event: {
-        id: event.id,
-        name: event.name,
+        id: payload.event.id,
+        name: payload.event.name,
       },
       metrics: {
         total: sum(data.map((item) => item.count)),
         average: round(average(data.map((item) => item.count))),
       },
       data:
-        chartType === 'linear'
-          ? fillEmptySpotsInTimeline(data, interval, startDate, endDate).map(
-              (item) => {
-                return {
-                  label: legend,
-                  count: round(item.count),
-                  date: new Date(item.date).toISOString(),
-                };
-              }
-            )
+        payload.chartType === 'linear' || payload.chartType === 'histogram'
+          ? fillEmptySpotsInTimeline(
+              data,
+              payload.interval,
+              payload.startDate,
+              payload.endDate
+            ).map((item) => {
+              return {
+                label: legend,
+                count: round(item.count),
+                date: new Date(item.date).toISOString(),
+              };
+            })
           : [],
     };
   });

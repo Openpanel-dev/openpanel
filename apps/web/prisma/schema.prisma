@@ -115,6 +115,7 @@ enum Interval {
 enum ChartType {
   linear
   bar
+  histogram
   pie
   metric
   area
@@ -138,7 +139,7 @@ model Report {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
   interval   Interval
-  range      Int
+  range      String    @default("1m")
   chart_type ChartType
   breakdowns Json
   events     Json

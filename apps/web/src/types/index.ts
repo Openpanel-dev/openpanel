@@ -27,7 +27,7 @@ export type IChartBreakdown = z.infer<typeof zChartBreakdown>;
 export type IInterval = z.infer<typeof zTimeInterval>;
 export type IChartType = z.infer<typeof zChartType>;
 export type IChartData = RouterOutputs['chart']['chart'];
-export type IChartRange = (typeof timeRanges)[number]['range'];
+export type IChartRange = keyof typeof timeRanges;
 export type IToolTipProps<T> = Omit<TooltipProps<number, string>, 'payload'> & {
   payload?: T[];
 };
@@ -36,3 +36,13 @@ export type IProject = Project;
 export type IClientWithProject = Client & {
   project: IProject;
 };
+
+export type IGetChartDataInput = {
+  event: IChartEvent;
+  projectId: string;
+  startDate: string;
+  endDate: string;
+} & Omit<
+  IChartInputWithDates,
+  'events' | 'name' | 'startDate' | 'endDate' | 'range'
+>;
