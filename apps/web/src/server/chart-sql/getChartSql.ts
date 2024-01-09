@@ -7,6 +7,12 @@ import {
   selectJsonPath,
 } from './helpers';
 
+function log(sql: string) {
+  const logs = ['--- START', sql, '--- END'];
+  console.log(logs.join('\n'));
+  return sql;
+}
+
 export function getChartSql({
   event,
   breakdowns,
@@ -64,8 +70,10 @@ export function getChartSql({
         ORDER BY profile_id, "createdAt" DESC
       ) as subQuery`;
 
-    return `${getSelect()} ${getFrom()} ${getGroupBy()} ${getOrderBy()}`;
+    return log(`${getSelect()} ${getFrom()} ${getGroupBy()} ${getOrderBy()}`);
   }
 
-  return `${getSelect()} ${getFrom()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
+  return log(
+    `${getSelect()} ${getFrom()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`
+  );
 }
