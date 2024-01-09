@@ -18,12 +18,6 @@ import { zChartInputWithDates } from '@/utils/validation';
 import { last, pipe, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
-export const config = {
-  api: {
-    responseLimit: false,
-  },
-};
-
 export const chartRouter = createTRPCRouter({
   events: protectedProcedure
     .input(z.object({ projectSlug: z.string() }))

@@ -1,12 +1,6 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { z } from 'zod';
 
-export const config = {
-  api: {
-    responseLimit: false,
-  },
-};
-
 export const uiRouter = createTRPCRouter({
   breadcrumbs: protectedProcedure
     .input(
