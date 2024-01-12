@@ -90,14 +90,24 @@ model Profile {
   @@map("profiles")
 }
 
+model EventFailed {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("event_failed")
+}
+
 model Client {
   id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String
-  secret          String
+  secret          String?
   project_id      String       @db.Uuid
   project         Project      @relation(fields: [project_id], references: [id])
   organization_id String       @db.Uuid
   organization    Organization @relation(fields: [organization_id], references: [id])
+  cors            String       @default("*")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

@@ -1,45 +1,56 @@
 import type { NewMixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
+import type { PartialBy } from '@mixan/types';
 
 import { parseQuery } from './src/parseQuery';
 import { getDevice, getOS, getTimezone } from './src/utils';
-
-type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
-type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 export class MixanWeb extends Mixan {
   constructor(
     options: PartialBy<NewMixanOptions, 'setItem' | 'removeItem' | 'getItem'>
   ) {
+    const hasStorage = typeof localStorage === 'undefined';
     super({
-      batchInterval: options.batchInterval ?? 1000,
-      setItem:
-        typeof localStorage === 'undefined'
-          ? () => {}
-          : localStorage.setItem.bind(localStorage),
-      removeItem:
-        typeof localStorage === 'undefined'
-          ? () => {}
-          : localStorage.removeItem.bind(localStorage),
-      getItem:
-        typeof localStorage === 'undefined'
-          ? () => null
-          : localStorage.getItem.bind(localStorage),
+      batchInterval: options.batchInterval ?? 2000,
+      setItem: hasStorage ? () => {} : localStorage.setItem.bind(localStorage),
+      removeItem: hasStorage
+        ? () => {}
+        : localStorage.removeItem.bind(localStorage),
+      getItem: hasStorage
+        ? () => null
+        : localStorage.getItem.bind(localStorage),
       ...options,
     });
   }
 
-  isServer() {
+  private isServer() {
     return typeof document === 'undefined';
   }
 
-  async properties() {
+  private parseUrl(url?: string) {
+    if (!url || url === '') {
+      return {
+        direct: true,
+      };
+    }
+
+    const ref = new URL(url);
     return {
-      ip: await super.ip(),
+      host: ref.host,
+      hostname: ref.hostname,
+      url: ref.href,
+      path: ref.pathname,
+      query: parseQuery(ref.search),
+      hash: ref.hash,
+    };
+  }
+
+  private properties() {
+    return {
       os: getOS(),
       device: getDevice(),
       ua: navigator.userAgent,
-      referrer: document.referrer,
+      referrer: this.parseUrl(document.referrer),
       language: navigator.language,
       timezone: getTimezone(),
       screen: {
@@ -47,22 +58,28 @@ export class MixanWeb extends Mixan {
         height: window.screen.height,
         pixelRatio: window.devicePixelRatio,
       },
+      title: document.title,
+      ...this.parseUrl(window.location.href),
     };
   }
 
-  async init(properties?: Record<string, unknown>) {
+  public init(properties?: Record<string, unknown>) {
     if (this.isServer()) {
       return;
     }
 
     super.init({
-      ...(await this.properties()),
+      ...this.properties(),
       ...(properties ?? {}),
     });
     this.screenView();
+
+    window.addEventListener('beforeunload', () => {
+      this.flush();
+    });
   }
 
-  trackOutgoingLinks() {
+  public trackOutgoingLinks() {
     if (this.isServer()) {
       return;
     }
@@ -82,16 +99,15 @@ export class MixanWeb extends Mixan {
     });
   }
 
-  screenView(properties?: Record<string, unknown>): void {
+  public screenView(properties?: Record<string, unknown>): void {
     if (this.isServer()) {
       return;
     }
 
     super.event('screen_view', {
       ...properties,
-      route: window.location.pathname,
-      url: window.location.href,
-      query: parseQuery(window.location.search ?? ''),
+      ...this.parseUrl(window.location.href),
+      title: document.title,
     });
   }
 }

@@ -1,37 +1,60 @@
 import type {
-  EventPayload,
+  BatchPayload,
+  BatchUpdateProfilePayload,
+  BatchUpdateSessionPayload,
   MixanErrorResponse,
-  ProfilePayload,
 } from '@mixan/types';
+
+type MixanLogger = (...args: unknown[]) => void;
 
 export interface NewMixanOptions {
   url: string;
   clientId: string;
-  clientSecret: string;
+  clientSecret?: string;
   batchInterval?: number;
   maxBatchSize?: number;
   sessionTimeout?: number;
   session?: boolean;
   verbose?: boolean;
-  profile?: boolean;
   trackIp?: boolean;
+  ipUrl?: string;
   setItem: (key: string, profileId: string) => void;
   getItem: (key: string) => string | null;
   removeItem: (key: string) => void;
 }
+
 export type MixanOptions = Required<NewMixanOptions>;
+
+export interface MixanState {
+  profileId: string;
+  lastEventAt: number;
+  properties: Record<string, unknown>;
+}
+
+function createLogger(verbose: boolean): MixanLogger {
+  return verbose ? (...args) => console.log('[Mixan]', ...args) : () => {};
+}
+
+function uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 class Fetcher {
   private url: string;
   private clientId: string;
   private clientSecret: string;
-  private logger: (...args: any[]) => void;
 
-  constructor(options: MixanOptions) {
+  constructor(
+    options: MixanOptions,
+    private logger: MixanLogger
+  ) {
     this.url = options.url;
     this.clientId = options.clientId;
     this.clientSecret = options.clientSecret;
-    this.logger = options.verbose ? console.log : () => {};
   }
 
   post<PostData, PostResponse>(
@@ -40,91 +63,96 @@ class Fetcher {
     options?: RequestInit
   ): Promise<PostResponse | null> {
     const url = `${this.url}${path}`;
-    this.logger(`Mixan request: ${url}`, JSON.stringify(data, null, 2));
+    let timer: ReturnType<typeof setTimeout>;
 
-    return fetch(url, {
-      headers: {
-        ['mixan-client-id']: this.clientId,
-        ['mixan-client-secret']: this.clientSecret,
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-      body: JSON.stringify(data ?? {}),
-      keepalive: true,
-      ...(options ?? {}),
-    })
-      .then(async (res) => {
-        const response = (await res.json()) as
-          | MixanErrorResponse
-          | PostResponse;
+    return new Promise((resolve) => {
+      const wrappedFetch = (attempt: number) => {
+        clearTimeout(timer);
 
-        if (!response) {
-          return null;
-        }
-
-        if (
-          typeof response === 'object' &&
-          'status' in response &&
-          response.status === 'error'
-        ) {
-          this.logger(
-            `Mixan request failed: [${options?.method ?? 'POST'}] ${url}`,
-            JSON.stringify(response, null, 2)
-          );
-          return null;
-        }
-
-        return response as PostResponse;
-      })
-      .catch(() => {
         this.logger(
-          `Mixan request failed: [${options?.method ?? 'POST'}] ${url}`
+          `Request attempt ${attempt + 1}: ${url}`,
+          JSON.stringify(data, null, 2)
         );
-        return null;
-      });
+
+        fetch(url, {
+          headers: {
+            ['mixan-client-id']: this.clientId,
+            ['mixan-client-secret']: this.clientSecret,
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
+          body: JSON.stringify(data ?? {}),
+          keepalive: true,
+          ...(options ?? {}),
+        })
+          .then(async (res) => {
+            if (res.status !== 200) {
+              return retry(attempt, resolve);
+            }
+
+            const response = (await res.json()) as
+              | MixanErrorResponse
+              | PostResponse;
+
+            if (!response) {
+              return resolve(null);
+            }
+
+            resolve(response as PostResponse);
+          })
+          .catch(() => {
+            return retry(attempt, resolve);
+          });
+      };
+
+      function retry(
+        attempt: number,
+        resolve: (value: PostResponse | null) => void
+      ) {
+        if (attempt > 3) {
+          return resolve(null);
+        }
+
+        timer = setTimeout(
+          () => {
+            wrappedFetch(attempt + 1);
+          },
+          Math.pow(2, attempt) * 500
+        );
+      }
+
+      wrappedFetch(0);
+    });
   }
 }
 
-class Batcher<T> {
-  queue: T[] = [];
+class Batcher {
+  queue: BatchPayload[] = [];
   timer?: ReturnType<typeof setTimeout>;
-  callback: (queue: T[]) => void;
-  maxBatchSize: number;
-  batchInterval: number;
 
-  constructor(options: MixanOptions, callback: (queue: T[]) => void) {
-    this.callback = callback;
-    this.maxBatchSize = options.maxBatchSize;
-    this.batchInterval = options.batchInterval;
-  }
+  constructor(
+    private options: MixanOptions,
+    private callback: (payload: BatchPayload[]) => void,
+    private logger: MixanLogger
+  ) {}
 
-  add(payload: T) {
-    this.queue.push(payload);
-    this.flush();
-  }
-
-  flush() {
+  add(action: BatchPayload) {
     if (this.timer) {
       clearTimeout(this.timer);
     }
 
-    if (this.queue.length === 0) {
-      return;
-    }
+    this.logger(`Add to queue ${action.type}`);
+    this.queue.push(action);
 
-    if (this.queue.length >= this.maxBatchSize) {
+    if (this.queue.length >= this.options.maxBatchSize) {
       this.send();
-      return;
+    } else {
+      this.timer = setTimeout(this.send.bind(this), this.options.batchInterval);
     }
-
-    this.timer = setTimeout(this.send.bind(this), this.batchInterval);
   }
 
   send() {
-    if (this.timer) {
-      clearTimeout(this.timer);
-    }
-
+    this.logger('Send queue', this.queue.length > 0);
     if (this.queue.length > 0) {
       this.callback(this.queue);
       this.queue = [];
@@ -133,17 +161,18 @@ class Batcher<T> {
 }
 
 export class Mixan {
-  private fetch: Fetcher;
-  private eventBatcher: Batcher<EventPayload>;
-  private profileId?: string;
   private options: MixanOptions;
+  private fetch: Fetcher;
+  private batcher: Batcher;
   private logger: (...args: any[]) => void;
-  private globalProperties: Record<string, unknown> = {};
-  private lastEventAt: string;
-  private promiseIp: Promise<string | null>;
+  private state: MixanState = {
+    profileId: '',
+    lastEventAt: 0,
+    properties: {},
+  };
 
   constructor(options: NewMixanOptions) {
-    this.logger = options.verbose ? console.log : () => {};
+    this.logger = createLogger(options.verbose ?? false);
     this.options = {
       sessionTimeout: 1000 * 60 * 30,
       session: true,
@@ -151,210 +180,234 @@ export class Mixan {
       batchInterval: 10000,
       maxBatchSize: 10,
       trackIp: false,
-      profile: true,
+      clientSecret: '',
+      ipUrl: 'https://api.ipify.org',
       ...options,
     };
-
-    this.lastEventAt =
-      this.options.getItem('@mixan:lastEventAt') ?? '1970-01-01';
-    this.fetch = new Fetcher(this.options);
-    this.eventBatcher = new Batcher(this.options, (queue) => {
-      this.fetch.post(
-        '/events',
-        queue.map((item) => ({
-          ...item,
-          properties: {
-            ...this.globalProperties,
-            ...item.properties,
-          },
-          profileId: item.profileId ?? this.profileId ?? null,
-        }))
-      );
-    });
-
-    this.promiseIp = this.options.trackIp
-      ? fetch('https://api.ipify.org')
-          .then((res) => res.text())
-          .catch(() => null)
-      : Promise.resolve(null);
+    this.fetch = new Fetcher(this.options, this.logger);
+    this.batcher = new Batcher(
+      this.options,
+      (queue) => {
+        this.fetch.post('/batch', queue);
+      },
+      this.logger
+    );
   }
 
-  async ip() {
-    return this.promiseIp;
+  // Public
+
+  public init(properties?: Record<string, unknown>) {
+    this.logger('Init');
+    this.state.properties = properties ?? {};
+    this.createProfile();
+    this.createSession();
+    this.ipLookup();
   }
 
-  timestamp(modify = 0) {
-    return new Date(Date.now() + modify).toISOString();
-  }
+  public setUser(payload: Omit<BatchUpdateProfilePayload, 'profileId'>) {
+    this.createSession();
 
-  init(properties?: Record<string, unknown>) {
-    if (properties) {
-      this.setGlobalProperties(properties);
-    }
-    this.logger('Mixan: Init');
-    this.setAnonymousUser();
-  }
-
-  event(name: string, properties: Record<string, unknown> = {}) {
-    const now = new Date();
-    const isSessionStart =
-      this.options.session &&
-      now.getTime() - new Date(this.lastEventAt).getTime() >
-        this.options.sessionTimeout;
-
-    if (isSessionStart) {
-      this.logger('Mixan: Session start');
-      this.eventBatcher.add({
-        name: 'session_start',
-        time: this.timestamp(-10),
-        properties: {},
-        profileId: this.profileId ?? null,
-      });
-    }
-
-    this.logger('Mixan: Queue event', name);
-    this.eventBatcher.add({
-      name,
-      properties,
-      time: this.timestamp(),
-      profileId: this.profileId ?? null,
-    });
-    this.lastEventAt = this.timestamp();
-    this.options.setItem('@mixan:lastEventAt', this.lastEventAt);
-  }
-
-  private async setAnonymousUser(retryCount = 0) {
-    if (!this.options.profile) {
-      return;
-    }
-    const profileId = this.options.getItem('@mixan:profileId');
-    if (profileId) {
-      this.profileId = profileId;
-      await this.setUser({
-        properties: this.globalProperties,
-      });
-      this.logger('Mixan: Use existing profile', this.profileId);
-    } else {
-      const res = await this.fetch.post<ProfilePayload, { id: string }>(
-        '/profiles',
-        {
-          properties: this.globalProperties,
-        }
-      );
-
-      if (res) {
-        this.profileId = res.id;
-        this.options.setItem('@mixan:profileId', res.id);
-        this.logger('Mixan: Create new profile', this.profileId);
-      } else if (retryCount < 2) {
-        setTimeout(() => {
-          this.setAnonymousUser(retryCount + 1);
-        }, 500);
-      } else {
-        this.logger('Mixan: Failed to create new profile');
-      }
-    }
-  }
-
-  async setUser(profile: ProfilePayload) {
-    if (!this.options.profile) {
-      return;
-    }
-    if (!this.profileId) {
-      return this.logger('Mixan: Set user failed, no profileId');
-    }
-    this.logger('Mixan: Set user', profile);
-    await this.fetch.post(`/profiles/${this.profileId}`, profile, {
-      method: 'PUT',
-    });
-  }
-
-  async setUserProperty(
-    name: string,
-    value: string | number | boolean | Record<string, unknown> | unknown[]
-  ) {
-    if (!this.options.profile) {
-      return;
-    }
-    if (!this.profileId) {
-      return this.logger('Mixan: Set user property, no profileId');
-    }
-    this.logger('Mixan: Set user property', name, value);
-    await this.fetch.post(`/profiles/${this.profileId}`, {
-      properties: {
-        [name]: value,
+    this.batcher.add({
+      type: 'update_profile',
+      payload: {
+        ...payload,
+        properties: payload.properties ?? {},
+        profileId: this.state.profileId,
       },
     });
   }
 
-  setGlobalProperties(properties: Record<string, unknown>) {
+  public setSession(properties: BatchUpdateSessionPayload['properties']) {
+    this.createSession();
+
+    this.batcher.add({
+      type: 'update_session',
+      payload: {
+        properties,
+        profileId: this.state.profileId,
+      },
+    });
+  }
+
+  public increment(name: string, value: number) {
+    this.createSession();
+
+    this.batcher.add({
+      type: 'increment',
+      payload: {
+        name,
+        value,
+        profileId: this.state.profileId,
+      },
+    });
+  }
+
+  public decrement(name: string, value: number) {
+    this.createSession();
+
+    this.batcher.add({
+      type: 'decrement',
+      payload: {
+        name,
+        value,
+        profileId: this.state.profileId,
+      },
+    });
+  }
+
+  public event(name: string, properties?: Record<string, unknown>) {
+    this.createSession();
+
+    this.batcher.add({
+      type: 'event',
+      payload: {
+        name,
+        properties: {
+          ...this.state.properties,
+          ...(properties ?? {}),
+        },
+        time: this.timestamp(),
+        profileId: this.state.profileId,
+      },
+    });
+  }
+
+  public setGlobalProperties(properties: Record<string, unknown>) {
     if (typeof properties !== 'object') {
       return this.logger(
-        'Mixan: Set global properties failed, properties must be an object'
+        'Set global properties failed, properties must be an object'
       );
     }
-    this.logger('Mixan: Set global properties', properties);
-    this.globalProperties = {
-      ...this.globalProperties,
+
+    this.logger('Set global properties', properties);
+    this.state.properties = {
+      ...this.state.properties,
       ...properties,
     };
   }
 
-  async increment(name: string, value = 1) {
-    if (!this.options.profile) {
-      return;
-    }
-    if (!this.profileId) {
-      this.logger('Mixan: Increment failed, no profileId');
-      return;
-    }
-
-    this.logger('Mixan: Increment user property', name, value);
-    await this.fetch.post(
-      `/profiles/${this.profileId}/increment`,
-      {
-        name,
-        value,
-      },
-      {
-        method: 'PUT',
-      }
-    );
+  public flush() {
+    this.batcher.send();
   }
 
-  async decrement(name: string, value = 1) {
-    if (!this.options.profile) {
-      return;
-    }
-    if (!this.profileId) {
-      this.logger('Mixan: Decrement failed, no profileId');
-      return;
-    }
-
-    this.logger('Mixan: Decrement user property', name, value);
-    await this.fetch.post(
-      `/profiles/${this.profileId}/decrement`,
-      {
-        name,
-        value,
-      },
-      {
-        method: 'PUT',
-      }
-    );
-  }
-
-  flush() {
-    this.logger('Mixan: Flushing events queue');
-    this.eventBatcher.send();
-  }
-
-  clear() {
-    this.logger('Mixan: Clear, send remaining events and remove profileId');
-    this.eventBatcher.send();
+  public clear() {
+    this.logger('Clear / Logout');
+    this.flush();
+    this.options.removeItem('@mixan:ip');
     this.options.removeItem('@mixan:profileId');
     this.options.removeItem('@mixan:lastEventAt');
-    this.profileId = undefined;
-    this.setAnonymousUser();
+    this.state.profileId = '';
+    this.state.lastEventAt = 0;
+    this.createProfile();
+  }
+
+  public setUserProperty(name: string, value: unknown, update = true) {
+    this.batcher.add({
+      type: 'set_profile_property',
+      payload: {
+        name,
+        value,
+        update,
+        profileId: this.state.profileId,
+      },
+    });
+  }
+
+  // Private
+
+  private timestamp(modify = 0) {
+    this.setLastEventAt();
+    return new Date(Date.now() + modify).toISOString();
+  }
+
+  private createProfile() {
+    const profileId = this.options.getItem('@mixan:profileId');
+
+    if (profileId) {
+      this.logger('Reusing existing profile');
+      this.state.profileId = profileId;
+    } else {
+      this.logger('Creating profile');
+      this.state.profileId = uuid();
+      this.options.setItem('@mixan:profileId', this.state.profileId);
+      this.batcher.add({
+        type: 'create_profile',
+        payload: {
+          profileId: this.state.profileId,
+          properties: this.state.properties,
+        },
+      });
+    }
+  }
+
+  private checkSession() {
+    if (!this.options.session) {
+      return false;
+    }
+
+    if (this.state.lastEventAt === 0) {
+      const str = this.options.getItem('@mixan:lastEventAt') ?? '0';
+      const value = parseInt(str, 10);
+      this.state.lastEventAt = isNaN(value) ? 0 : value;
+    }
+
+    return Date.now() - this.state.lastEventAt > this.options.sessionTimeout;
+  }
+
+  private createSession() {
+    if (!this.checkSession()) {
+      return;
+    }
+
+    const time = this.timestamp(-10);
+
+    this.batcher.add({
+      type: 'event',
+      payload: {
+        name: 'session_start',
+        properties: this.state.properties,
+        profileId: this.state.profileId,
+        time,
+      },
+    });
+  }
+
+  private setLastEventAt() {
+    this.state.lastEventAt = Date.now();
+    this.options.setItem(
+      '@mixan:lastEventAt',
+      this.state.lastEventAt.toString()
+    );
+  }
+
+  private async ipLookup() {
+    if (!this.options.trackIp) {
+      return null;
+    }
+
+    let ip: string | null;
+
+    const cachedIp = this.options.getItem('@mixan:ip');
+    if (cachedIp) {
+      ip = cachedIp;
+    } else {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 1000);
+      ip = await fetch(this.options.ipUrl, {
+        signal: controller.signal,
+      })
+        .then((res) => res.text())
+        .catch(() => null)
+        .finally(() => clearTimeout(timeout));
+    }
+
+    if (ip) {
+      this.options.setItem('@mixan:ip', ip);
+      this.setGlobalProperties({ ip });
+      if (!cachedIp) {
+        this.setUserProperty('ip', ip, false);
+        this.setSession({ ip });
+      }
+    }
   }
 }

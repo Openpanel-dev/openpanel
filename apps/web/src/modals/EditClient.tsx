@@ -19,6 +19,7 @@ interface EditClientProps {
 const validator = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
+  cors: z.string().min(1),
 });
 
 type IForm = z.infer<typeof validator>;
@@ -43,6 +44,7 @@ export default function EditClient({ id }: EditClientProps) {
     defaultValues: {
       id: '',
       name: '',
+      cors: '',
     },
   });
 
@@ -60,7 +62,18 @@ export default function EditClient({ id }: EditClientProps) {
           mutation.mutate(values);
         })}
       >
-        <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
+        <div className="flex flex-col gap-4">
+          <InputWithLabel
+            label="Name"
+            placeholder="Name"
+            {...register('name')}
+          />
+          <InputWithLabel
+            label="Cors"
+            placeholder="Cors"
+            {...register('cors')}
+          />
+        </div>
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
             Cancel

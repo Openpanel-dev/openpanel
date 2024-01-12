@@ -9,5 +9,9 @@ interface SyntaxProps {
 }
 
 export default function Syntax({ code }: SyntaxProps) {
-  return <SyntaxHighlighter style={docco}>{code}</SyntaxHighlighter>;
+  return (
+    <SyntaxHighlighter wrapLongLines style={docco}>
+      {code}
+    </SyntaxHighlighter>
+  );
 }

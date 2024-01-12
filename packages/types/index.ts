@@ -1,5 +1,9 @@
+export type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
 export type MixanJson = Record<string, any>;
 
+// Deprecated
 export interface EventPayload {
   name: string;
   time: string;
@@ -7,6 +11,7 @@ export interface EventPayload {
   properties: MixanJson;
 }
 
+// Deprecated
 export interface ProfilePayload {
   first_name?: string;
   last_name?: string;
@@ -16,45 +21,97 @@ export interface ProfilePayload {
   properties?: MixanJson;
 }
 
+export type BatchPayload =
+  | {
+      type: 'increment';
+      payload: BatchProfileIncrementPayload;
+    }
+  | {
+      type: 'decrement';
+      payload: BatchProfileDecrementPayload;
+    }
+  | {
+      type: 'event';
+      payload: BatchEventPayload;
+    }
+  | {
+      type: 'create_profile';
+      payload: BatchCreateProfilePayload;
+    }
+  | {
+      type: 'update_profile';
+      payload: BatchUpdateProfilePayload;
+    }
+  | {
+      type: 'update_session';
+      payload: BatchUpdateSessionPayload;
+    }
+  | {
+      type: 'set_profile_property';
+      payload: BatchSetProfilePropertyPayload;
+    };
+
+export interface BatchSetProfilePropertyPayload {
+  profileId: string;
+  name: string;
+  value: any;
+  update: boolean;
+}
+
+export interface CreateProfileResponse {
+  id: string;
+}
+
+export interface BatchCreateProfilePayload {
+  profileId: string;
+  properties?: MixanJson;
+}
+
+export interface BatchUpdateSessionPayload {
+  profileId: string;
+  properties?: MixanJson;
+}
+
+export interface BatchEventPayload {
+  name: string;
+  time: string;
+  profileId: string;
+  properties: MixanJson;
+}
+
+export interface BatchUpdateProfilePayload {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  avatar?: string;
+  id?: string;
+  properties?: MixanJson;
+  profileId: string;
+}
+
 export interface ProfileIncrementPayload {
   name: string;
   value: number;
-  id: string;
+  profileId: string;
 }
 
 export interface ProfileDecrementPayload {
   name: string;
   value: number;
-  id: string;
+  profileId: string;
 }
 
-// Batching
-export interface BatchEvent {
-  type: 'event';
-  payload: EventPayload;
+export interface BatchProfileIncrementPayload {
+  name: string;
+  value: number;
+  profileId: string;
 }
 
-export interface BatchProfile {
-  type: 'profile';
-  payload: ProfilePayload;
+export interface BatchProfileDecrementPayload {
+  name: string;
+  value: number;
+  profileId: string;
 }
-
-export interface BatchProfileIncrement {
-  type: 'profile_increment';
-  payload: ProfileIncrementPayload;
-}
-
-export interface BatchProfileDecrement {
-  type: 'profile_decrement';
-  payload: ProfileDecrementPayload;
-}
-
-export type BatchItem =
-  | BatchEvent
-  | BatchProfile
-  | BatchProfileIncrement
-  | BatchProfileDecrement;
-export type BatchPayload = BatchItem[];
 
 export interface MixanIssue {
   field: string;

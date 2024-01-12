@@ -6,15 +6,8 @@ export class MixanNative extends Mixan {
     super(options);
   }
 
-  async properties() {
-    return {
-      ip: await super.ip(),
-    };
-  }
-
-  async init(properties: Record<string, unknown>) {
+  init(properties?: Record<string, unknown>) {
     super.init({
-      ...(await this.properties()),
       ...(properties ?? {}),
     });
   }

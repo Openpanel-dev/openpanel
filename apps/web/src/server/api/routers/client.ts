@@ -59,6 +59,7 @@ export const clientRouter = createTRPCRouter({
         name: z.string(),
         projectId: z.string(),
         organizationSlug: z.string(),
+        withCors: z.boolean().default(true),
       })
     )
     .mutation(async ({ input }) => {
@@ -69,13 +70,14 @@ export const clientRouter = createTRPCRouter({
           organization_id: organization.id,
           project_id: input.projectId,
           name: input.name,
-          secret: await hashPassword(secret),
+          secret: input.withCors ? null : await hashPassword(secret),
         },
       });
 
       return {
-        clientSecret: secret,
+        clientSecret: input.withCors ? null : secret,
         clientId: client.id,
+        cors: client.cors,
       };
     }),
   remove: protectedProcedure

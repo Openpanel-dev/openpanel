@@ -1,6 +1,10 @@
 import { db } from '@/server/db';
 import { verifyPassword } from '@/server/services/hash.service';
-import type { GetServerSidePropsContext, NextApiRequest } from 'next';
+import type {
+  GetServerSidePropsContext,
+  NextApiRequest,
+  NextApiResponse,
+} from 'next';
 import { getServerSession } from 'next-auth';
 import type { DefaultSession, NextAuthOptions } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
@@ -98,16 +102,15 @@ export const getServerAuthSession = (ctx: {
   return getServerSession(ctx.req, ctx.res, authOptions);
 };
 
-export async function validateSdkRequest(req: NextApiRequest): Promise<string> {
+export async function validateSdkRequest(
+  req: NextApiRequest,
+  res: NextApiResponse
+): Promise<string> {
   const clientId = req?.headers['mixan-client-id'] as string | undefined;
   const clientSecret = req.headers['mixan-client-secret'] as string | undefined;
 
   if (!clientId) {
     throw createError(401, 'Misisng client id');
-  }
-
-  if (!clientSecret) {
-    throw createError(401, 'Misisng client secret');
   }
 
   const client = await db.client.findUnique({
@@ -120,8 +123,12 @@ export async function validateSdkRequest(req: NextApiRequest): Promise<string> {
     throw createError(401, 'Invalid client id');
   }
 
-  if (!(await verifyPassword(clientSecret, client.secret))) {
-    throw createError(401, 'Invalid client secret');
+  if (client.secret) {
+    if (!(await verifyPassword(clientSecret || '', client.secret))) {
+      throw createError(401, 'Invalid client secret');
+    }
+  } else if (client.cors !== '*') {
+    res.setHeader('Access-Control-Allow-Origin', client.cors);
   }
 
   return client.project_id;

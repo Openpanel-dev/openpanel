@@ -11,7 +11,8 @@ interface Request extends NextApiRequest {
 
 export default async function handler(req: Request, res: NextApiResponse) {
   if (req.method == 'OPTIONS') {
-    return res.status(202).json({});
+    await validateSdkRequest(req, res);
+    return res.status(200).json({});
   }
 
   if (req.method !== 'POST') {
@@ -20,7 +21,7 @@ export default async function handler(req: Request, res: NextApiResponse) {
 
   try {
     // Check client id & secret
-    const projectId = await validateSdkRequest(req);
+    const projectId = await validateSdkRequest(req, res);
 
     await db.event.createMany({
       data: req.body.map((event) => ({

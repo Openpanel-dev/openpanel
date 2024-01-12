@@ -9,9 +9,9 @@ type InputWithLabelProps = InputProps & {
 };
 
 export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
-  ({ label, ...props }, ref) => {
+  ({ label, className, ...props }, ref) => {
     return (
-      <div>
+      <div className={className}>
         <Label htmlFor={label} className="block mb-2">
           {label}
         </Label>

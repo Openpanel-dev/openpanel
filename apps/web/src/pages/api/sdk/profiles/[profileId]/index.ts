@@ -12,7 +12,8 @@ interface Request extends NextApiRequest {
 
 export default async function handler(req: Request, res: NextApiResponse) {
   if (req.method == 'OPTIONS') {
-    return res.status(202).json({});
+    await validateSdkRequest(req, res);
+    return res.status(200).json({});
   }
 
   if (req.method !== 'PUT' && req.method !== 'POST') {
@@ -21,7 +22,7 @@ export default async function handler(req: Request, res: NextApiResponse) {
 
   try {
     // Check client id & secret
-    await validateSdkRequest(req);
+    await validateSdkRequest(req, res);
 
     const profileId = req.query.profileId as string;
     const profile = await getProfile(profileId);

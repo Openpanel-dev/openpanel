@@ -24,16 +24,25 @@ export const columns: ColumnDef<IClientWithProject>[] = [
     header: 'Client ID',
   },
   {
+    accessorKey: 'cors',
+    header: 'Cors',
+  },
+  {
     accessorKey: 'secret',
     header: 'Secret',
-    cell: () => <div className="italic text-muted-foreground">Hidden</div>,
+    cell: (info) =>
+      info.getValue() ? (
+        <div className="italic text-muted-foreground">Hidden</div>
+      ) : (
+        'None'
+      ),
   },
   {
     accessorKey: 'createdAt',
     header: 'Created at',
     cell({ row }) {
       const date = row.original.createdAt;
-      return <div>{formatDate(date)}</div>;
+      return formatDate(date);
     },
   },
   {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
