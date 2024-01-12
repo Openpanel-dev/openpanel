@@ -72,7 +72,6 @@ export class MixanWeb extends Mixan {
       ...this.properties(),
       ...(properties ?? {}),
     });
-    this.screenView();
 
     window.addEventListener('beforeunload', () => {
       this.flush();
