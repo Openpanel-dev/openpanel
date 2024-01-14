@@ -1,4 +1,4 @@
-import type { Profile } from '@prisma/client';
+import type { Profile } from '@mixan/db';
 
 export function getProfileName(profile: Profile | undefined | null) {
   if (!profile) return '';

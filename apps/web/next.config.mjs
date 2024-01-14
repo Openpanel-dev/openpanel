@@ -7,9 +7,13 @@ await import('./src/env.mjs');
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
-  transpilePackages: [],
+  transpilePackages: ['@mixan/queue'],
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
+  experimental: {
+    // Avoid "Critical dependency: the request of a dependency is an expression"
+    serverComponentsExternalPackages: ['bullmq'],
+  },
   /**
    * If you are using `appDir` then you must comment the below `i18n` config out.
    *

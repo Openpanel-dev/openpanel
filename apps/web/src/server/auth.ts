@@ -128,7 +128,16 @@ export async function validateSdkRequest(
       throw createError(401, 'Invalid client secret');
     }
   } else if (client.cors !== '*') {
-    res.setHeader('Access-Control-Allow-Origin', client.cors);
+    const ok = client.cors.split(',').find((origin) => {
+      if (origin === req.headers.origin) {
+        return true;
+      }
+    });
+    if (ok) {
+      res.setHeader('Access-Control-Allow-Origin', String(req.headers.origin));
+    } else {
+      throw createError(401, 'Invalid cors settings');
+    }
   }
 
   return client.project_id;

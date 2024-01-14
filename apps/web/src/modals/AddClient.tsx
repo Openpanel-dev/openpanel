@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/components/ui/use-toast';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useRefetchActive } from '@/hooks/useRefetchActive';
@@ -144,8 +143,12 @@ export default function CreateProject() {
           name="withCors"
           control={control}
           render={({ field }) => (
-            <label className="flex items-center gap-2 text-sm font-medium leading-none mb-4">
+            <label
+              htmlFor="cors"
+              className="flex items-center gap-2 text-sm font-medium leading-none mb-4"
+            >
               <Checkbox
+                id="cors"
                 ref={field.ref}
                 onBlur={field.onBlur}
                 defaultChecked={field.value}

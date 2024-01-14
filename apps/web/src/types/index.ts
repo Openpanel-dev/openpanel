@@ -8,9 +8,10 @@ import type {
   zChartType,
   zTimeInterval,
 } from '@/utils/validation';
-import type { Client, Project } from '@prisma/client';
 import type { TooltipProps } from 'recharts';
 import type { z } from 'zod';
+
+import type { Client, Project } from '@mixan/db';
 
 export type HtmlProps<T> = Omit<
   React.DetailedHTMLProps<React.HTMLAttributes<T>, T>,

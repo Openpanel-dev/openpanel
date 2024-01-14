@@ -41,6 +41,7 @@ export const clientRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
+        cors: z.string(),
       })
     )
     .mutation(({ input }) => {
@@ -50,6 +51,7 @@ export const clientRouter = createTRPCRouter({
         },
         data: {
           name: input.name,
+          cors: input.cors,
         },
       });
     }),

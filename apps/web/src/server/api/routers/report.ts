@@ -11,8 +11,9 @@ import type {
 } from '@/types';
 import { alphabetIds, timeRanges } from '@/utils/constants';
 import { zChartInput } from '@/utils/validation';
-import type { Report as DbReport } from '@prisma/client';
 import { z } from 'zod';
+
+import type { Report as DbReport } from '@mixan/db';
 
 function transformFilter(
   filter: Partial<IChartEventFilter>,
@@ -48,7 +49,7 @@ function transformReport(report: DbReport): IChartInput & { id: string } {
     chartType: report.chart_type,
     interval: report.interval,
     name: report.name || 'Untitled',
-    range: report.range as IChartRange ?? timeRanges['1m'],
+    range: (report.range as IChartRange) ?? timeRanges['1m'],
   };
 }
 

@@ -7,6 +7,9 @@
   "packageManager": "pnpm@8.7.6",
   "module": "index.ts",
   "scripts": {
+    "db:codegen": "pnpm -r --filter db run codegen",
+    "migrate": "pnpm -r --filter db run migrate",
+    "migrate:deploy": "pnpm -r --filter db run migrate:deploy",
     "dev": "pnpm -r dev",
     "format": "pnpm -r format --cache --cache-location=\"node_modules/.cache/.prettiercache\"",
     "format:fix": "pnpm -r format --write --cache --cache-location=\"node_modules/.cache/.prettiercache\"",
@@ -16,11 +19,10 @@
     "typecheck": "pnpm -r typecheck"
   },
   "dependencies": {
+    "dotenv-cli": "^7.3.0",
     "@mixan/prettier-config": "^0.1.0",
     "prettier": "^3.0.3",
-    "typescript": "^5.2.2"
-  },
-  "devDependencies": {
+    "typescript": "^5.2.2",
     "semver": "^7.5.4"
   },
   "prettier": "@mixan/prettier-config"

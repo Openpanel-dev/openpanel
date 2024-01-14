@@ -1,0 +1,30 @@
+{
+  "name": "@mixan/queue",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bullmq": "^5.1.1"
+  },
+  "devDependencies": {
+    "@mixan/eslint-config": "workspace:*",
+    "@mixan/prettier-config": "workspace:*",
+    "@mixan/tsconfig": "workspace:*",
+    "@mixan/types": "workspace:*",
+    "@types/node": "^18.16.0",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "typescript": "^5.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@mixan/eslint-config/base"
+    ]
+  },
+  "prettier": "@mixan/prettier-config"
+}

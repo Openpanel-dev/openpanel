@@ -69,38 +69,34 @@ For pushing events
 ### Usage
 
 ```ts
-import { Mixan } from '@mixan/sdk';
+import { MixanWeb } from '@mixan/sdk-web';
 
-const mixan = new Mixan({
+// import { MixanNative } from '@mixan/sdk-native';
+
+const mixan = new MixanWeb({
   clientId: 'uuid',
-  clientSecret: 'uuid',
   url: 'http://localhost:8080/api/sdk',
   batchInterval: 10000,
   verbose: false,
-  saveProfileId(id) {
-    // Web
-    localStorage.setItem('@profileId', id);
-    // // react-native-mmkv
-    // mmkv.setItem('@profileId', id)
-  },
-  removeProfileId() {
-    // Web
-    localStorage.removeItem('@profileId');
-    // // react-native-mmkv
-    // mmkv.delete('@profileId')
-  },
-  getProfileId() {
-    // Web
-    return localStorage.getItem('@profileId');
-    // // react-native-mmkv
-    // return mmkv.getString('@profileId')
-  },
+  trackIp: true,
 });
+
+// const mixan = new MixanNative({
+//   clientId: 'uuid',
+//   clientSecret: 'uuid',
+//   url: 'http://localhost:8080/api/sdk',
+//   batchInterval: 10000,
+//   verbose: false,
+//   trackIp: true,
+// });
 
 // Call this before you send any events
 // It will create a anonymous profile
 // This profile will be merged if you call `setUser` in a later stage
 mixan.init();
+
+// tracks all outgoing links as a `link_out` event
+mixan.trackOutgoingLinks();
 
 mixan.setUser({
   id: 'id',
@@ -125,10 +121,13 @@ mixan.event('sign_in', {
   provider: 'gmail',
 });
 
-// short hand for 'screen_view', can also take any properties
-mixan.screenView('Profile', {
-  id: '123',
-  // any other properties, url, public
+// Screen view for web
+mixan.screenView();
+
+// Screen view for native
+mixan.screenView('Article', {
+  id: '3',
+  title: 'Nice article here',
 });
 
 // Call this when a user is logged out.
@@ -149,6 +148,11 @@ We use https://cron-job.org (free) to handle our cronjobs, you can use any provi
 
 - **https://domain.com/api/cron/cache/update** Will update the memory cache
 - **https://domain.com/api/cron/events/enrich** Enrich events (adds duration etc)
+
+## Development
+
+1. Run `docker-compose up -d` to get redis and postgres running
+2. Then `pnpm dev` to boot the web and worker (queue)
 
 ## Screenshots
 

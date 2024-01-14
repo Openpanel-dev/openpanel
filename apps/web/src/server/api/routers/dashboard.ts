@@ -3,9 +3,10 @@ import { db } from '@/server/db';
 import { getDashboardBySlug } from '@/server/services/dashboard.service';
 import { getProjectBySlug } from '@/server/services/project.service';
 import { slug } from '@/utils/slug';
-import { Prisma } from '@prisma/client';
 import { PrismaError } from 'prisma-error-enum';
 import { z } from 'zod';
+
+import { Prisma } from '@mixan/db';
 
 export const dashboardRouter = createTRPCRouter({
   get: protectedProcedure

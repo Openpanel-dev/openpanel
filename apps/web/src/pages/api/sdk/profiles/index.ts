@@ -4,14 +4,10 @@ import { createError, handleError } from '@/server/exceptions';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import randomAnimalName from 'random-animal-name';
 
-import type {
-  CreateProfilePayload,
-  CreateProfileResponse,
-  ProfilePayload,
-} from '@mixan/types';
+import type { CreateProfileResponse, ProfilePayload } from '@mixan/types';
 
 interface Request extends NextApiRequest {
-  body: ProfilePayload | CreateProfilePayload;
+  body: ProfilePayload;
 }
 
 export default async function handler(req: Request, res: NextApiResponse) {

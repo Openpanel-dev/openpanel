@@ -1,6 +1,7 @@
 import { formatDate } from '@/utils/date';
-import type { Project as IProject } from '@prisma/client';
 import type { ColumnDef } from '@tanstack/react-table';
+
+import type { Project as IProject } from '@mixan/db';
 
 import { ProjectActions } from './ProjectActions';
 
