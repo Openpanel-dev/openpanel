@@ -1,5 +1,5 @@
+import { api } from '@/app/_trpc/client';
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
-import { api } from '@/utils/api';
 import { ChevronRight, HomeIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,30 +11,30 @@ export function Breadcrumbs() {
 
   const org = api.organization.get.useQuery(
     {
-      slug: params.organization,
+      id: params.organizationId,
     },
     {
-      enabled: !!params.organization,
+      enabled: !!params.organizationId,
       staleTime: Infinity,
     }
   );
 
   const pro = api.project.get.useQuery(
     {
-      slug: params.project,
+      id: params.projectId,
     },
     {
-      enabled: !!params.project,
+      enabled: !!params.projectId,
       staleTime: Infinity,
     }
   );
 
   const dashboard = api.dashboard.get.useQuery(
     {
-      slug: params.dashboard,
+      id: params.dashboardId,
     },
     {
-      enabled: !!params.dashboard,
+      enabled: !!params.dashboardId,
       staleTime: Infinity,
     }
   );
@@ -48,7 +48,7 @@ export function Breadcrumbs() {
         {org.data && (
           <>
             <HomeIcon size={14} />
-            <Link shallow href={`/${org.data.slug}`}>
+            <Link shallow href={`/${org.data.id}`}>
               {org.data.name}
             </Link>
           </>
@@ -57,7 +57,7 @@ export function Breadcrumbs() {
         {org.data && pro.data && (
           <>
             <ChevronRight size={10} />
-            <Link shallow href={`/${org.data.slug}/${pro.data.slug}`}>
+            <Link shallow href={`/${org.data.id}/${pro.data.id}`}>
               {pro.data.name}
             </Link>
           </>
@@ -68,7 +68,7 @@ export function Breadcrumbs() {
             <ChevronRight size={10} />
             <Link
               shallow
-              href={`/${org.data.slug}/${pro.data.slug}/${dashboard.data.slug}`}
+              href={`/${org.data.id}/${pro.data.id}/${dashboard.data.id}`}
             >
               {dashboard.data.name}
             </Link>

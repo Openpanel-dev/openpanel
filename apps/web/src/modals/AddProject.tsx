@@ -1,11 +1,12 @@
+'use client';
+
+import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { useOrganizationParams } from '@/hooks/useOrganizationParams';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
-import { api, handleError } from '@/utils/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -17,18 +18,19 @@ const validator = z.object({
 });
 
 type IForm = z.infer<typeof validator>;
-
-export default function AddProject() {
-  const params = useOrganizationParams();
-  const refetch = useRefetchActive();
+interface AddProjectProps {
+  organizationId: string;
+}
+export default function AddProject({ organizationId }: AddProjectProps) {
+  const router = useRouter();
   const mutation = api.project.create.useMutation({
     onError: handleError,
     onSuccess() {
+      router.refresh();
       toast({
         title: 'Success',
         description: 'Project created! Lets create a client for it 🤘',
       });
-      refetch();
       popModal();
     },
   });
@@ -46,11 +48,17 @@ export default function AddProject() {
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            organizationSlug: params.organization,
+            organizationId,
           });
         })}
       >
-        <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
+        <div className="flex flex-col gap-4">
+          <InputWithLabel
+            label="Name"
+            placeholder="Name"
+            {...register('name')}
+          />
+        </div>
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
             Cancel

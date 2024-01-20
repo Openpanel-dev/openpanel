@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,29 +17,31 @@ import {
 import { cn } from '@/utils/cn';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
-import { ScrollArea } from './scroll-area';
-
-interface ComboboxProps {
+interface ComboboxProps<T> {
   placeholder: string;
   items: {
-    value: string;
+    value: T;
     label: string;
     disabled?: boolean;
   }[];
-  value: string;
-  onChange: (value: string) => void;
+  value: T | null | undefined;
+  onChange: (value: T) => void;
   children?: React.ReactNode;
-  onCreate?: (value: string) => void;
+  onCreate?: (value: T) => void;
+  className?: string;
+  searchable?: boolean;
 }
 
-export function Combobox({
+export function Combobox<T extends string>({
   placeholder,
   items,
   value,
   onChange,
   children,
   onCreate,
-}: ComboboxProps) {
+  className,
+  searchable,
+}: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   function find(value: string) {
@@ -54,9 +58,9 @@ export function Combobox({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-full justify-between min-w-[150px]"
+            className={cn('justify-between min-w-[150px]', className)}
           >
-            <span className="overflow-hidden text-ellipsis">
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap">
               {value ? find(value)?.label ?? 'No match' : placeholder}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -65,11 +69,13 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-full min-w-0 p-0" align="start">
         <Command>
-          <CommandInput
-            placeholder="Search item..."
-            value={search}
-            onValueChange={setSearch}
-          />
+          {searchable === true && (
+            <CommandInput
+              placeholder="Search item..."
+              value={search}
+              onValueChange={setSearch}
+            />
+          )}
           {typeof onCreate === 'function' && search ? (
             <CommandEmpty className="p-2">
               <Button
@@ -85,7 +91,7 @@ export function Combobox({
           ) : (
             <CommandEmpty>Nothing selected</CommandEmpty>
           )}
-          <div className="max-h-[300px] overflow-scroll">
+          <div className="max-h-[300px] overflow-y-auto over-x-hidden">
             <CommandGroup>
               {items.map((item) => (
                 <CommandItem

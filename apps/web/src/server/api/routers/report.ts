@@ -1,57 +1,8 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import { getDashboardBySlug } from '@/server/services/dashboard.service';
-import { getProjectBySlug } from '@/server/services/project.service';
-import type {
-  IChartBreakdown,
-  IChartEvent,
-  IChartEventFilter,
-  IChartInput,
-  IChartRange,
-} from '@/types';
-import { alphabetIds, timeRanges } from '@/utils/constants';
+import { transformReport } from '@/server/services/reports.service';
 import { zChartInput } from '@/utils/validation';
 import { z } from 'zod';
-
-import type { Report as DbReport } from '@mixan/db';
-
-function transformFilter(
-  filter: Partial<IChartEventFilter>,
-  index: number
-): IChartEventFilter {
-  return {
-    id: filter.id ?? alphabetIds[index]!,
-    name: filter.name ?? 'Unknown Filter',
-    operator: filter.operator ?? 'is',
-    value:
-      typeof filter.value === 'string' ? [filter.value] : filter.value ?? [],
-  };
-}
-
-function transformEvent(
-  event: Partial<IChartEvent>,
-  index: number
-): IChartEvent {
-  return {
-    segment: event.segment ?? 'event',
-    filters: (event.filters ?? []).map(transformFilter),
-    id: event.id ?? alphabetIds[index]!,
-    name: event.name || 'unknown_event',
-    displayName: event.displayName,
-  };
-}
-
-function transformReport(report: DbReport): IChartInput & { id: string } {
-  return {
-    id: report.id,
-    events: (report.events as IChartEvent[]).map(transformEvent),
-    breakdowns: report.breakdowns as IChartBreakdown[],
-    chartType: report.chart_type,
-    interval: report.interval,
-    name: report.name || 'Untitled',
-    range: (report.range as IChartRange) ?? timeRanges['1m'],
-  };
-}
 
 export const reportRouter = createTRPCRouter({
   get: protectedProcedure
@@ -72,22 +23,27 @@ export const reportRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
-        projectSlug: z.string(),
-        dashboardSlug: z.string(),
+        projectId: z.string(),
+        dashboardId: z.string(),
       })
     )
-    .query(async ({ input: { projectSlug, dashboardSlug } }) => {
-      const project = await getProjectBySlug(projectSlug);
-      const dashboard = await getDashboardBySlug(dashboardSlug);
-      const reports = await db.report.findMany({
-        where: {
-          project_id: project.id,
-          dashboard_id: dashboard.id,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
+    .query(async ({ input: { projectId, dashboardId } }) => {
+      const [dashboard, reports] = await db.$transaction([
+        db.dashboard.findUniqueOrThrow({
+          where: {
+            id: dashboardId,
+          },
+        }),
+        db.report.findMany({
+          where: {
+            project_id: projectId,
+            dashboard_id: dashboardId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        }),
+      ]);
 
       return {
         reports: reports.map(transformReport),
@@ -116,6 +72,7 @@ export const reportRouter = createTRPCRouter({
           interval: report.interval,
           breakdowns: report.breakdowns,
           chart_type: report.chartType,
+          line_type: report.lineType,
           range: report.range,
         },
       });
@@ -138,6 +95,7 @@ export const reportRouter = createTRPCRouter({
           interval: report.interval,
           breakdowns: report.breakdowns,
           chart_type: report.chartType,
+          line_type: report.lineType,
           range: report.range,
         },
       });

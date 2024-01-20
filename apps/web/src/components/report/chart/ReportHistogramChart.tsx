@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import type { IChartData, IInterval } from '@/types';
-import { alphabetIds } from '@/utils/constants';
-import { getChartColor } from '@/utils/theme';
+import { useRechartDataModel } from '@/hooks/useRechartDataModel';
+import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import type { IInterval } from '@/types';
+import { cn } from '@/utils/cn';
+import { getChartColor, theme } from '@/utils/theme';
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 
+import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';
-import { ReportLineChartTooltip } from './ReportLineChartTooltip';
+import { ReportChartTooltip } from './ReportChartTooltip';
 import { ReportTable } from './ReportTable';
 
 interface ReportHistogramChartProps {
@@ -15,80 +18,61 @@ interface ReportHistogramChartProps {
   interval: IInterval;
 }
 
+function BarHover(props: any) {
+  const bg = theme?.colors?.slate?.['200'] as string;
+  return <rect {...props} rx="8" fill={bg} fill-opacity={0.5} />;
+}
+
 export function ReportHistogramChart({
   interval,
   data,
 }: ReportHistogramChartProps) {
   const { editMode } = useChartContext();
-  const [visibleSeries, setVisibleSeries] = useState<string[]>([]);
   const formatDate = useFormatDateInterval(interval);
+  const { series, setVisibleSeries } = useVisibleSeries(data);
 
-  const ref = useRef(false);
-  useEffect(() => {
-    if (!ref.current && data) {
-      const max = 20;
-
-      setVisibleSeries(
-        data?.series?.slice(0, max).map((serie) => serie.name) ?? []
-      );
-      // ref.current = true;
-    }
-  }, [data]);
-
-  const rel = data.series[0]?.data.map(({ date }) => {
-    return {
-      date,
-      ...data.series.reduce((acc, serie, idx) => {
-        return {
-          ...acc,
-          ...serie.data.reduce(
-            (acc2, item) => {
-              const id = alphabetIds[idx];
-              if (item.date === date) {
-                acc2[`${id}:count`] = item.count;
-                acc2[`${id}:label`] = item.label;
-              }
-              return acc2;
-            },
-            {} as Record<string, any>
-          ),
-        };
-      }, {}),
-    };
-  });
+  const rechartData = useRechartDataModel(data);
 
   return (
     <>
-      <div className="max-sm:-mx-3">
+      <div
+        className={cn(
+          'max-sm:-mx-3',
+          editMode && 'border border-border bg-white rounded-md p-4'
+        )}
+      >
         <AutoSizer disableHeight>
           {({ width }) => (
             <BarChart
               width={width}
               height={Math.min(Math.max(width * 0.5, 250), 400)}
-              data={rel}
+              data={rechartData}
             >
-              <CartesianGrid strokeDasharray="3 3" />
-              <Tooltip content={<ReportLineChartTooltip />} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
               <XAxis
                 fontSize={12}
                 dataKey="date"
                 tickFormatter={formatDate}
                 tickLine={false}
+                axisLine={false}
               />
-              {data.series.map((serie, index) => {
-                const id = alphabetIds[index];
+              <YAxis
+                fontSize={12}
+                axisLine={false}
+                tickLine={false}
+                width={getYAxisWidth(data.metrics.max)}
+              />
+              {series.map((serie) => {
                 return (
-                  <>
-                    <YAxis dataKey={`${id}:count`} fontSize={12}></YAxis>
-                    <Bar
-                      stackId={id}
-                      key={serie.name}
-                      isAnimationActive={false}
-                      name={serie.name}
-                      dataKey={`${id}:count`}
-                      fill={getChartColor(index)}
-                    />
-                  </>
+                  <Bar
+                    stackId={serie.index}
+                    key={serie.name}
+                    name={serie.name}
+                    dataKey={`${serie.index}:count`}
+                    fill={getChartColor(serie.index)}
+                    radius={8}
+                  />
                 );
               })}
             </BarChart>
@@ -98,7 +82,7 @@ export function ReportHistogramChart({
       {editMode && (
         <ReportTable
           data={data}
-          visibleSeries={visibleSeries}
+          visibleSeries={series}
           setVisibleSeries={setVisibleSeries}
         />
       )}

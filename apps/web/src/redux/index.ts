@@ -6,16 +6,19 @@ import {
 } from 'react-redux';
 import type { TypedUseSelectorHook } from 'react-redux';
 
-const store = configureStore({
-  reducer: {
-    report: reportSlice,
-  },
-});
+const makeStore = () =>
+  configureStore({
+    reducer: {
+      report: reportSlice,
+    },
+  });
 
-export type RootState = ReturnType<typeof store.getState>;
+export type AppStore = ReturnType<typeof makeStore>;
 
-export type AppDispatch = typeof store.dispatch;
+export type RootState = ReturnType<AppStore['getState']>;
+
+export type AppDispatch = AppStore['dispatch'];
 export const useDispatch: () => AppDispatch = useBaseDispatch;
 export const useSelector: TypedUseSelectorHook<RootState> = useBaseSelector;
 
-export default store;
+export default makeStore;

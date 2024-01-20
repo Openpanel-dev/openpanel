@@ -1,9 +1,11 @@
-import { useRefetchActive } from '@/hooks/useRefetchActive';
+'use client';
+
+import { api } from '@/app/_trpc/client';
 import { pushModal, showConfirm } from '@/modals';
 import type { IClientWithProject } from '@/types';
-import { api } from '@/utils/api';
 import { clipboard } from '@/utils/clipboard';
 import { MoreHorizontal } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '../ui/button';
 import {
@@ -16,15 +18,16 @@ import {
 } from '../ui/dropdown-menu';
 import { toast } from '../ui/use-toast';
 
-export function ClientActions({ id }: IClientWithProject) {
-  const refetch = useRefetchActive();
+export function ClientActions(client: IClientWithProject) {
+  const { id } = client;
+  const router = useRouter();
   const deletion = api.client.remove.useMutation({
     onSuccess() {
       toast({
         title: 'Success',
         description: 'Client revoked, incoming requests will be rejected.',
       });
-      refetch();
+      router.refresh();
     },
   });
   return (
@@ -42,7 +45,7 @@ export function ClientActions({ id }: IClientWithProject) {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
-            pushModal('EditClient', { id });
+            pushModal('EditClient', client);
           }}
         >
           Edit

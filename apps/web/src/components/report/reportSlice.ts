@@ -2,25 +2,34 @@ import type {
   IChartBreakdown,
   IChartEvent,
   IChartInput,
+  IChartLineType,
   IChartRange,
   IChartType,
   IInterval,
 } from '@/types';
-import { alphabetIds, isMinuteIntervalEnabledByRange } from '@/utils/constants';
+import {
+  alphabetIds,
+  getDefaultIntervalByRange,
+  isHourIntervalEnabledByRange,
+  isMinuteIntervalEnabledByRange,
+} from '@/utils/constants';
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 
 type InitialState = IChartInput & {
   dirty: boolean;
+  ready: boolean;
   startDate: string | null;
   endDate: string | null;
 };
 
 // First approach: define the initial state using that type
 const initialState: InitialState = {
+  ready: false,
   dirty: false,
   name: 'Untitled',
   chartType: 'linear',
+  lineType: 'monotone',
   interval: 'day',
   breakdowns: [],
   events: [],
@@ -42,12 +51,19 @@ export const reportSlice = createSlice({
     reset() {
       return initialState;
     },
+    ready() {
+      return {
+        ...initialState,
+        ready: true,
+      };
+    },
     setReport(state, action: PayloadAction<IChartInput>) {
       return {
         ...action.payload,
         startDate: null,
         endDate: null,
         dirty: false,
+        ready: true,
       };
     },
     setName(state, action: PayloadAction<string>) {
@@ -132,6 +148,19 @@ export const reportSlice = createSlice({
       ) {
         state.interval = 'hour';
       }
+
+      if (
+        !isHourIntervalEnabledByRange(state.range) &&
+        state.interval === 'hour'
+      ) {
+        state.interval = 'day';
+      }
+    },
+
+    // Line type
+    changeLineType: (state, action: PayloadAction<IChartLineType>) => {
+      state.dirty = true;
+      state.lineType = action.payload;
     },
 
     // Date range
@@ -149,15 +178,7 @@ export const reportSlice = createSlice({
     changeDateRanges: (state, action: PayloadAction<IChartRange>) => {
       state.dirty = true;
       state.range = action.payload;
-      if (action.payload === '30min' || action.payload === '1h') {
-        state.interval = 'minute';
-      } else if (action.payload === 'today' || action.payload === '24h') {
-        state.interval = 'hour';
-      } else if (action.payload === '7d' || action.payload === '14d') {
-        state.interval = 'day';
-      } else {
-        state.interval = 'month';
-      }
+      state.interval = getDefaultIntervalByRange(action.payload);
     },
   },
 });
@@ -165,6 +186,7 @@ export const reportSlice = createSlice({
 // Action creators are generated for each case reducer function
 export const {
   reset,
+  ready,
   setReport,
   setName,
   addEvent,
@@ -176,6 +198,7 @@ export const {
   changeInterval,
   changeDateRanges,
   changeChartType,
+  changeLineType,
   resetDirty,
 } = reportSlice.actions;
 

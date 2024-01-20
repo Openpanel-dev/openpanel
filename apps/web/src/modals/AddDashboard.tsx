@@ -1,10 +1,12 @@
+'use client';
+
+import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
-import { api, handleError } from '@/utils/api';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -12,8 +14,7 @@ import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
 interface AddDashboardProps {
-  organizationSlug: string;
-  projectSlug: string;
+  projectId: string;
 }
 
 const validator = z.object({
@@ -22,11 +23,8 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export default function AddDashboard({
-  // organizationSlug,
-  projectSlug,
-}: AddDashboardProps) {
-  const refetch = useRefetchActive();
+export default function AddDashboard({ projectId }: AddDashboardProps) {
+  const router = useRouter();
 
   const { register, handleSubmit, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -38,7 +36,7 @@ export default function AddDashboard({
   const mutation = api.dashboard.create.useMutation({
     onError: handleError,
     onSuccess() {
-      refetch();
+      router.refresh();
       toast({
         title: 'Success',
         description: 'Dashboard created.',
@@ -49,13 +47,13 @@ export default function AddDashboard({
 
   return (
     <ModalContent>
-      <ModalHeader title="Edit client" />
+      <ModalHeader title="Add dashboard" />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit(({ name }) => {
           mutation.mutate({
             name,
-            projectSlug,
+            projectId,
           });
         })}
       >

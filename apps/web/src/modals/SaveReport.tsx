@@ -1,17 +1,15 @@
-import { useEffect } from 'react';
+'use client';
+
+import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { useOrganizationParams } from '@/hooks/useOrganizationParams';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
 import type { IChartInput } from '@/types';
-import { api, handleError } from '@/utils/api';
-import { strip } from '@/utils/object';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/router';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -32,8 +30,12 @@ type IForm = z.infer<typeof validator>;
 
 export default function SaveReport({ report }: SaveReportProps) {
   const router = useRouter();
-  const { organization, project, dashboard } = useOrganizationParams();
-  const refetch = useRefetchActive();
+  const params = useParams();
+  const organizationId = params.organizationId as string;
+  const projectId = params.projectId as string;
+  const searchParams = useSearchParams();
+  const dashboardId = searchParams.get('dashboardId') ?? undefined;
+
   const save = api.report.save.useMutation({
     onError: handleError,
     onSuccess(res) {
@@ -42,11 +44,11 @@ export default function SaveReport({ report }: SaveReportProps) {
         description: 'Report saved.',
       });
       popModal();
-      refetch();
-      router.push({
-        pathname: `/${organization}/${project}/reports/${res.id}`,
-        query: strip({ dashboard }),
-      });
+      router.push(
+        `/${organizationId}/${projectId}/reports/${
+          res.id
+        }?${searchParams.toString()}`
+      );
     },
   });
 
@@ -55,7 +57,7 @@ export default function SaveReport({ report }: SaveReportProps) {
       resolver: zodResolver(validator),
       defaultValues: {
         name: report.name,
-        dashboardId: '',
+        dashboardId,
       },
     });
 
@@ -72,22 +74,13 @@ export default function SaveReport({ report }: SaveReportProps) {
   });
 
   const dashboardQuery = api.dashboard.list.useQuery({
-    projectSlug: project,
+    projectId,
   });
 
   const dashboards = (dashboardQuery.data ?? []).map((item) => ({
     value: item.id,
     label: item.name,
   }));
-
-  useEffect(() => {
-    if (dashboard && dashboardQuery.data) {
-      const match = dashboardQuery.data.find((item) => item.slug === dashboard);
-      if (match) {
-        setValue('dashboardId', match.id);
-      }
-    }
-  }, [dashboard, dashboardQuery]);
 
   return (
     <ModalContent>
@@ -123,7 +116,7 @@ export default function SaveReport({ report }: SaveReportProps) {
                   placeholder="Select a dashboard"
                   onCreate={(value) => {
                     dashboardMutation.mutate({
-                      projectSlug: project,
+                      projectId,
                       name: value,
                     });
                   }}

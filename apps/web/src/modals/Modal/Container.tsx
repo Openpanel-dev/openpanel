@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 
@@ -17,16 +19,23 @@ export function ModalContent({ children }: ModalContentProps) {
 
 interface ModalHeaderProps {
   title: string | React.ReactNode;
+  onClose?: (() => void) | false;
 }
 
-export function ModalHeader({ title }: ModalHeaderProps) {
+export function ModalHeader({ title, onClose }: ModalHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="font-medium">{title}</div>
-      <Button variant="ghost" size="sm" onClick={() => popModal()}>
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </Button>
+      {onClose !== false && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => (onClose ? onClose() : popModal())}
+        >
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </Button>
+      )}
     </div>
   );
 }

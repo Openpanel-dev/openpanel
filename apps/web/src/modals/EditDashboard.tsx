@@ -1,20 +1,20 @@
-import { useEffect } from 'react';
+'use client';
+
+import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
-import { api, handleError } from '@/utils/api';
+import type { IServiceDashboardWithProject } from '@/server/services/dashboard.service';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-interface EditDashboardProps {
-  id: string;
-}
+type EditDashboardProps = IServiceDashboardWithProject;
 
 const validator = z.object({
   id: z.string().min(1),
@@ -23,34 +23,28 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export default function EditDashboard({ id }: EditDashboardProps) {
-  const refetch = useRefetchActive();
+export default function EditDashboard({ id, name }: EditDashboardProps) {
+  const router = useRouter();
+  const { register, handleSubmit, reset, formState } = useForm<IForm>({
+    resolver: zodResolver(validator),
+    defaultValues: {
+      id,
+      name,
+    },
+  });
+
   const mutation = api.dashboard.update.useMutation({
     onError: handleError,
     onSuccess() {
+      reset();
       toast({
         title: 'Success',
         description: 'Dashboard updated.',
       });
       popModal();
-      refetch();
+      router.refresh();
     },
   });
-  const query = api.dashboard.get.useQuery({ id });
-  const data = query.data;
-  const { register, handleSubmit, reset, formState } = useForm<IForm>({
-    resolver: zodResolver(validator),
-    defaultValues: {
-      id: '',
-      name: '',
-    },
-  });
-
-  useEffect(() => {
-    if (data) {
-      reset(data);
-    }
-  }, [data, reset]);
 
   return (
     <ModalContent>
@@ -60,7 +54,12 @@ export default function EditDashboard({ id }: EditDashboardProps) {
           mutation.mutate(values);
         })}
       >
-        <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
+        <InputWithLabel
+          label="Name"
+          placeholder="Name"
+          {...register('name')}
+          defaultValue={name}
+        />
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
             Cancel

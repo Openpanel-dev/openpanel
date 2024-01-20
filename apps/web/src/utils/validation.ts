@@ -1,8 +1,16 @@
 import { z } from 'zod';
 
-import { chartTypes, intervals, operators, timeRanges } from './constants';
+import {
+  chartTypes,
+  intervals,
+  lineTypes,
+  operators,
+  timeRanges,
+} from './constants';
 
-function objectToZodEnums<K extends string>(obj: Record<K, any>): [K, ...K[]] {
+export function objectToZodEnums<K extends string>(
+  obj: Record<K, any>
+): [K, ...K[]] {
   const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
   return [firstKey!, ...otherKeys];
 }
@@ -31,11 +39,14 @@ export const zChartBreakdowns = z.array(zChartBreakdown);
 
 export const zChartType = z.enum(objectToZodEnums(chartTypes));
 
+export const zLineType = z.enum(objectToZodEnums(lineTypes));
+
 export const zTimeInterval = z.enum(objectToZodEnums(intervals));
 
 export const zChartInput = z.object({
   name: z.string(),
   chartType: zChartType,
+  lineType: zLineType,
   interval: zTimeInterval,
   events: zChartEvents,
   breakdowns: zChartBreakdowns,

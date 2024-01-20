@@ -26,27 +26,27 @@ export function NavbarMenu() {
   const params = useOrganizationParams();
   return (
     <div className={cn('flex gap-1 items-center text-sm', 'max-sm:flex-col')}>
-      {params.project && (
-        <Item href={`/${params.organization}/${params.project}`}>
+      {params.projectId && (
+        <Item href={`/${params.organizationId}/${params.projectId}`}>
           Dashboards
         </Item>
       )}
-      {params.project && (
-        <Item href={`/${params.organization}/${params.project}/events`}>
+      {params.projectId && (
+        <Item href={`/${params.organizationId}/${params.projectId}/events`}>
           Events
         </Item>
       )}
-      {params.project && (
-        <Item href={`/${params.organization}/${params.project}/profiles`}>
+      {params.projectId && (
+        <Item href={`/${params.organizationId}/${params.projectId}/profiles`}>
           Profiles
         </Item>
       )}
-      {params.project && (
+      {params.projectId && (
         <Item
           href={{
-            pathname: `/${params.organization}/${params.project}/reports`,
+            pathname: `/${params.organizationId}/${params.projectId}/reports`,
             query: strip({
-              dashboard: params.dashboard,
+              dashboardId: params.dashboardId,
             }),
           }}
         >

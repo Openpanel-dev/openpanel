@@ -1,3 +1,5 @@
+'use client';
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +19,7 @@ export function Card({ children, hover, className }: CardProps) {
   return (
     <div
       className={cn(
-        'border border-border rounded relative',
+        'border border-border rounded relative bg-white',
         hover && 'transition-all hover:shadow hover:border-black',
         className
       )}

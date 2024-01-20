@@ -1,13 +1,18 @@
+'use client';
+
 import { memo } from 'react';
-import { useOrganizationParams } from '@/hooks/useOrganizationParams';
+import { api } from '@/app/_trpc/client';
+import { useAppParams } from '@/hooks/useAppParams';
 import type { IChartInput } from '@/types';
-import { api } from '@/utils/api';
 
 import { ChartAnimation, ChartAnimationContainer } from './ChartAnimation';
 import { withChartProivder } from './ChartProvider';
+import { ReportAreaChart } from './ReportAreaChart';
 import { ReportBarChart } from './ReportBarChart';
 import { ReportHistogramChart } from './ReportHistogramChart';
 import { ReportLineChart } from './ReportLineChart';
+import { ReportMetricChart } from './ReportMetricChart';
+import { ReportPieChart } from './ReportPieChart';
 
 export type ReportChartProps = IChartInput;
 
@@ -19,8 +24,9 @@ export const Chart = memo(
     chartType,
     name,
     range,
+    lineType,
   }: ReportChartProps) {
-    const params = useOrganizationParams();
+    const params = useAppParams();
     const hasEmptyFilters = events.some((event) =>
       event.filters.some((filter) => filter.value.length === 0)
     );
@@ -29,13 +35,15 @@ export const Chart = memo(
       {
         interval,
         chartType,
+        // dont send lineType since it does not need to be sent
+        lineType: 'monotone',
         events,
         breakdowns,
         name,
         range,
         startDate: null,
         endDate: null,
-        projectSlug: params.project,
+        projectId: params.projectId,
       },
       {
         keepPreviousData: false,
@@ -97,8 +105,32 @@ export const Chart = memo(
       return <ReportBarChart data={chart.data} />;
     }
 
+    if (chartType === 'metric') {
+      return <ReportMetricChart data={chart.data} />;
+    }
+
+    if (chartType === 'pie') {
+      return <ReportPieChart data={chart.data} />;
+    }
+
     if (chartType === 'linear') {
-      return <ReportLineChart interval={interval} data={chart.data} />;
+      return (
+        <ReportLineChart
+          lineType={lineType}
+          interval={interval}
+          data={chart.data}
+        />
+      );
+    }
+
+    if (chartType === 'area') {
+      return (
+        <ReportAreaChart
+          lineType={lineType}
+          interval={interval}
+          data={chart.data}
+        />
+      );
     }
 
     return (

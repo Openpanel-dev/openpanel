@@ -1,24 +1,23 @@
+'use client';
+
+import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
+import Syntax from '@/components/Syntax';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
-import { useOrganizationParams } from '@/hooks/useOrganizationParams';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
-import { api, handleError } from '@/utils/api';
 import { clipboard } from '@/utils/clipboard';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-
-const Syntax = dynamic(import('@/components/Syntax'));
 
 const validator = z.object({
   name: z.string().min(1, 'Required'),
@@ -28,13 +27,16 @@ const validator = z.object({
 });
 
 type IForm = z.infer<typeof validator>;
+interface AddClientProps {
+  organizationId: string;
+}
 
-export default function CreateProject() {
-  const params = useOrganizationParams();
-  const refetch = useRefetchActive();
+export default function AddClient({ organizationId }: AddClientProps) {
+  const router = useRouter();
   const query = api.project.list.useQuery({
-    organizationSlug: params.organization,
+    organizationId,
   });
+
   const mutation = api.client.create.useMutation({
     onError: handleError,
     onSuccess() {
@@ -42,9 +44,10 @@ export default function CreateProject() {
         title: 'Success',
         description: 'Client created!',
       });
-      refetch();
+      router.refresh();
     },
   });
+
   const { register, handleSubmit, formState, control } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
@@ -128,7 +131,7 @@ export default function CreateProject() {
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            organizationSlug: params.organization,
+            organizationId,
           });
         })}
       >

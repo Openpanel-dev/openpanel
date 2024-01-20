@@ -1,8 +1,8 @@
+import { api, handleError } from '@/app/_trpc/client';
 import { ContentHeader, ContentSection } from '@/components/Content';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
-import { api, handleError } from '@/utils/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';

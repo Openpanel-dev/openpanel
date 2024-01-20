@@ -4,29 +4,28 @@ import { getChartSql } from '@/server/chart-sql/getChartSql';
 import { isJsonPath, selectJsonPath } from '@/server/chart-sql/helpers';
 import { db } from '@/server/db';
 import { getUniqueEvents } from '@/server/services/event.service';
-import { getProjectBySlug } from '@/server/services/project.service';
 import type {
   IChartEvent,
   IChartRange,
   IGetChartDataInput,
   IInterval,
 } from '@/types';
+import { alphabetIds } from '@/utils/constants';
 import { getDaysOldDate } from '@/utils/date';
-import { average, isFloat, round, sum } from '@/utils/math';
+import { average, round, sum } from '@/utils/math';
 import { toDots } from '@/utils/object';
 import { zChartInputWithDates } from '@/utils/validation';
-import { last, pipe, sort, uniq } from 'ramda';
+import { pipe, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
 export const chartRouter = createTRPCRouter({
   events: protectedProcedure
-    .input(z.object({ projectSlug: z.string() }))
-    .query(async ({ input: { projectSlug } }) => {
-      const project = await getProjectBySlug(projectSlug);
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input: { projectId } }) => {
       const events = await cache.getOr(
-        `events_${project.id}`,
+        `events_${projectId}`,
         1000 * 60 * 60 * 24,
-        () => getUniqueEvents({ projectId: project.id })
+        () => getUniqueEvents({ projectId: projectId })
       );
 
       return [
@@ -38,17 +37,16 @@ export const chartRouter = createTRPCRouter({
     }),
 
   properties: protectedProcedure
-    .input(z.object({ event: z.string().optional(), projectSlug: z.string() }))
-    .query(async ({ input: { projectSlug, event } }) => {
-      const project = await getProjectBySlug(projectSlug);
+    .input(z.object({ event: z.string().optional(), projectId: z.string() }))
+    .query(async ({ input: { projectId, event } }) => {
       const events = await cache.getOr(
-        `events_${project.id}_${event ?? 'all'}`,
+        `events_${projectId}_${event ?? 'all'}`,
         1000 * 60 * 60,
         () =>
           db.event.findMany({
             take: 500,
             where: {
-              project_id: project.id,
+              project_id: projectId,
               ...(event
                 ? {
                     name: event,
@@ -78,19 +76,16 @@ export const chartRouter = createTRPCRouter({
       z.object({
         event: z.string(),
         property: z.string(),
-        projectSlug: z.string(),
+        projectId: z.string(),
       })
     )
-    .query(async ({ input: { event, property, projectSlug } }) => {
+    .query(async ({ input: { event, property, projectId } }) => {
       const intervalInDays = 180;
-      const project = await getProjectBySlug(projectSlug);
       if (isJsonPath(property)) {
         const events = await db.$queryRawUnsafe<{ value: string }[]>(
           `SELECT ${selectJsonPath(
             property
-          )} AS value from events WHERE project_id = '${
-            project.id
-          }' AND name = '${event}' AND "createdAt" >= NOW() - INTERVAL '${intervalInDays} days'`
+          )} AS value from events WHERE project_id = '${projectId}' AND name = '${event}' AND "createdAt" >= NOW() - INTERVAL '${intervalInDays} days'`
         );
 
         return {
@@ -99,7 +94,7 @@ export const chartRouter = createTRPCRouter({
       } else {
         const events = await db.event.findMany({
           where: {
-            project_id: project.id,
+            project_id: projectId,
             name: event,
             [property]: {
               not: null,
@@ -123,8 +118,8 @@ export const chartRouter = createTRPCRouter({
     }),
 
   chart: protectedProcedure
-    .input(zChartInputWithDates.merge(z.object({ projectSlug: z.string() })))
-    .query(async ({ input: { projectSlug, events, ...input } }) => {
+    .input(zChartInputWithDates.merge(z.object({ projectId: z.string() })))
+    .query(async ({ input: { projectId, events, ...input } }) => {
       const { startDate, endDate } =
         input.startDate && input.endDate
           ? {
@@ -132,18 +127,16 @@ export const chartRouter = createTRPCRouter({
               endDate: input.endDate,
             }
           : getDatesFromRange(input.range);
-      const project = await getProjectBySlug(projectSlug);
       const series: Awaited<ReturnType<typeof getChartData>> = [];
       for (const event of events) {
-        series.push(
-          ...(await getChartData({
-            ...input,
-            startDate,
-            endDate,
-            event,
-            projectId: project.id,
-          }))
-        );
+        const result = await getChartData({
+          ...input,
+          startDate,
+          endDate,
+          event,
+          projectId: projectId,
+        });
+        series.push(...result);
       }
 
       const sorted = [...series].sort((a, b) => {
@@ -152,13 +145,18 @@ export const chartRouter = createTRPCRouter({
           const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
           return sumB - sumA;
         } else {
-          return b.metrics.total - a.metrics.total;
+          return b.metrics.sum - a.metrics.sum;
         }
       });
 
-      const meta = {
-        highest: sorted[0]?.metrics.total ?? 0,
-        lowest: last(sorted)?.metrics.total ?? 0,
+      const metrics = {
+        max: Math.max(...sorted.map((item) => item.metrics.max)),
+        min: Math.min(...sorted.map((item) => item.metrics.min)),
+        sum: sum(sorted.map((item) => item.metrics.sum, 0)),
+        averge: round(
+          average(sorted.map((item) => item.metrics.average, 0)),
+          2
+        ),
       };
 
       return {
@@ -166,9 +164,9 @@ export const chartRouter = createTRPCRouter({
           series.reduce(
             (acc, item) => {
               if (acc[item.event.id]) {
-                acc[item.event.id] += item.metrics.total;
+                acc[item.event.id] += item.metrics.sum;
               } else {
-                acc[item.event.id] = item.metrics.total;
+                acc[item.event.id] = item.metrics.sum;
               }
               return acc;
             },
@@ -180,8 +178,12 @@ export const chartRouter = createTRPCRouter({
         })),
         series: sorted.map((item) => ({
           ...item,
-          meta,
+          metrics: {
+            ...item.metrics,
+            totalMetrics: metrics,
+          },
         })),
+        metrics,
       };
     }),
 });
@@ -282,36 +284,47 @@ async function getChartData(payload: IGetChartDataInput) {
   );
 
   return Object.keys(series).map((key) => {
-    const legend = payload.breakdowns.length
-      ? key
-      : getEventLegend(payload.event);
-    const data = series[key] ?? [];
+    // If we have breakdowns, we want to use the breakdown key as the legend
+    // But only if it successfully broke it down, otherwise we use the getEventLabel
+    const legend =
+      payload.breakdowns.length && !alphabetIds.includes(key as 'A')
+        ? key
+        : getEventLegend(payload.event);
+    const data =
+      payload.chartType === 'area' ||
+      payload.chartType === 'linear' ||
+      payload.chartType === 'histogram' ||
+      payload.chartType === 'metric'
+        ? fillEmptySpotsInTimeline(
+            series[key] ?? [],
+            payload.interval,
+            payload.startDate,
+            payload.endDate
+          ).map((item) => {
+            return {
+              label: legend,
+              count: round(item.count),
+              date: new Date(item.date).toISOString(),
+            };
+          })
+        : (series[key] ?? []).map((item) => ({
+            label: item.label,
+            count: round(item.count),
+            date: new Date(item.date).toISOString(),
+          }));
+
+    const counts = data.map((item) => item.count);
 
     return {
       name: legend,
-      event: {
-        id: payload.event.id,
-        name: payload.event.name,
-      },
+      event: payload.event,
       metrics: {
-        total: sum(data.map((item) => item.count)),
-        average: round(average(data.map((item) => item.count))),
+        sum: sum(counts),
+        average: round(average(counts)),
+        max: Math.max(...counts),
+        min: Math.min(...counts),
       },
-      data:
-        payload.chartType === 'linear' || payload.chartType === 'histogram'
-          ? fillEmptySpotsInTimeline(
-              data,
-              payload.interval,
-              payload.startDate,
-              payload.endDate
-            ).map((item) => {
-              return {
-                label: legend,
-                count: round(item.count),
-                date: new Date(item.date).toISOString(),
-              };
-            })
-          : [],
+      data,
     };
   });
 }

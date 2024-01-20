@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { cn } from '@/utils/cn';
 import * as SheetPrimitive from '@radix-ui/react-dialog';

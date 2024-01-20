@@ -1,21 +1,28 @@
 import { useDispatch, useSelector } from '@/redux';
 import type { IInterval } from '@/types';
-import { isMinuteIntervalEnabledByRange } from '@/utils/constants';
+import {
+  isHourIntervalEnabledByRange,
+  isMinuteIntervalEnabledByRange,
+} from '@/utils/constants';
 
 import { Combobox } from '../ui/combobox';
 import { changeInterval } from './reportSlice';
 
-export function ReportInterval() {
+interface ReportIntervalProps {
+  className?: string;
+}
+export function ReportInterval({ className }: ReportIntervalProps) {
   const dispatch = useDispatch();
   const interval = useSelector((state) => state.report.interval);
   const range = useSelector((state) => state.report.range);
   const chartType = useSelector((state) => state.report.chartType);
-  if (chartType !== 'linear') {
+  if (chartType !== 'linear' && chartType !== 'histogram') {
     return null;
   }
 
   return (
     <Combobox
+      className={className}
       placeholder="Interval"
       onChange={(value) => {
         dispatch(changeInterval(value as IInterval));
@@ -30,6 +37,7 @@ export function ReportInterval() {
         {
           value: 'hour',
           label: 'Hour',
+          disabled: !isHourIntervalEnabledByRange(range),
         },
         {
           value: 'day',

@@ -1,3 +1,5 @@
+'use client';
+
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Loader } from 'lucide-react';
 import mitt from 'mitt';
@@ -7,7 +9,7 @@ import { useOnClickOutside } from 'usehooks-ts';
 import type { ConfirmProps } from './Confirm';
 
 const Loading = () => (
-  <div className="fixed top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto bg-backdrop">
+  <div className="fixed left-0 top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto bg-backdrop">
     <Loader className="mb-8 animate-spin" size={40} />
   </div>
 );
@@ -65,11 +67,11 @@ interface StateItem {
 
 interface ModalWrapperProps {
   children: React.ReactNode;
-  name: ModalRoutes;
-  isOnTop: boolean;
+  name?: ModalRoutes;
+  isOnTop?: boolean;
 }
 
-function ModalWrapper({ children, name, isOnTop }: ModalWrapperProps) {
+export function ModalWrapper({ children, name, isOnTop }: ModalWrapperProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useOnClickOutside(ref, (event) => {
@@ -79,7 +81,7 @@ function ModalWrapper({ children, name, isOnTop }: ModalWrapperProps) {
         ? !!target.closest('[data-radix-popper-content-wrapper]')
         : false;
 
-    if (isOnTop && !isPortal) {
+    if (isOnTop && !isPortal && name) {
       emitter.emit('pop', {
         name,
       });
@@ -111,6 +113,8 @@ export function ModalProvider() {
 
   useEffect(() => {
     emitter.on('push', ({ name, props }) => {
+      console.log('hej?', name, props);
+
       setState((p) => [
         ...p,
         {
@@ -154,7 +158,7 @@ export function ModalProvider() {
   return (
     <>
       {!!state.length && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 bg-[rgba(0,0,0,0.2)]"></div>
+        <div className="fixed top-0 left-0 right-0 bottom-0 bg-[rgba(0,0,0,0.2)] z-50"></div>
       )}
       {state.map((item, index) => {
         const Modal = modals[item.name];

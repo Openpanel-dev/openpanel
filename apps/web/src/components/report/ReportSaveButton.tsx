@@ -1,15 +1,20 @@
+'use client';
+
+import { api, handleError } from '@/app/_trpc/client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
-import { api, handleError } from '@/utils/api';
 import { SaveIcon } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
-import { useReportId } from './hooks/useReportId';
 import { resetDirty } from './reportSlice';
 
-export function ReportSaveButton() {
-  const { reportId } = useReportId();
+interface ReportSaveButtonProps {
+  className?: string;
+}
+export function ReportSaveButton({ className }: ReportSaveButtonProps) {
+  const { reportId } = useParams();
   const dispatch = useDispatch();
   const update = api.report.update.useMutation({
     onSuccess() {
@@ -26,11 +31,12 @@ export function ReportSaveButton() {
   if (reportId) {
     return (
       <Button
+        className={className}
         disabled={!report.dirty}
         loading={update.isLoading}
         onClick={() => {
           update.mutate({
-            reportId,
+            reportId: reportId as string,
             report,
           });
         }}
@@ -42,6 +48,7 @@ export function ReportSaveButton() {
   } else {
     return (
       <Button
+        className={className}
         disabled={!report.dirty}
         onClick={() => {
           pushModal('SaveReport', {

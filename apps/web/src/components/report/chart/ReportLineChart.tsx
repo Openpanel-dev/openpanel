@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
+import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import type { IChartData, IInterval } from '@/types';
+import { useRechartDataModel } from '@/hooks/useRechartDataModel';
+import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import type { IChartLineType, IInterval } from '@/types';
+import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import {
   CartesianGrid,
@@ -12,76 +16,76 @@ import {
   YAxis,
 } from 'recharts';
 
+import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';
-import { ReportLineChartTooltip } from './ReportLineChartTooltip';
+import { ReportChartTooltip } from './ReportChartTooltip';
 import { ReportTable } from './ReportTable';
 
 interface ReportLineChartProps {
   data: IChartData;
   interval: IInterval;
+  lineType: IChartLineType;
 }
 
-export function ReportLineChart({ interval, data }: ReportLineChartProps) {
+export function ReportLineChart({
+  lineType,
+  interval,
+  data,
+}: ReportLineChartProps) {
   const { editMode } = useChartContext();
-  const [visibleSeries, setVisibleSeries] = useState<string[]>([]);
   const formatDate = useFormatDateInterval(interval);
-
-  const ref = useRef(false);
-  useEffect(() => {
-    if (!ref.current && data) {
-      const max = 20;
-
-      setVisibleSeries(
-        data?.series?.slice(0, max).map((serie) => serie.name) ?? []
-      );
-      // ref.current = true;
-    }
-  }, [data]);
+  const { series, setVisibleSeries } = useVisibleSeries(data);
+  const rechartData = useRechartDataModel(data);
 
   return (
     <>
-      <div className="max-sm:-mx-3">
+      <div
+        className={cn(
+          'max-sm:-mx-3',
+          editMode && 'border border-border bg-white rounded-md p-4'
+        )}
+      >
         <AutoSizer disableHeight>
           {({ width }) => (
             <LineChart
               width={width}
               height={Math.min(Math.max(width * 0.5, 250), 400)}
+              data={rechartData}
             >
-              <YAxis dataKey={'count'} fontSize={12}></YAxis>
-              <Tooltip content={<ReportLineChartTooltip />} />
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={true}
+                vertical={false}
+              />
+              <YAxis
+                width={getYAxisWidth(data.metrics.max)}
+                fontSize={12}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip content={<ReportChartTooltip />} />
               <XAxis
+                axisLine={false}
                 fontSize={12}
                 dataKey="date"
-                tickFormatter={(m: string) => {
-                  return formatDate(m);
-                }}
+                tickFormatter={(m: string) => formatDate(m)}
                 tickLine={false}
                 allowDuplicatedCategory={false}
               />
-              {data?.series
-                .filter((serie) => {
-                  return visibleSeries.includes(serie.name);
-                })
-                .map((serie) => {
-                  const realIndex = data?.series.findIndex(
-                    (item) => item.name === serie.name
-                  );
-                  const key = serie.name;
-                  const strokeColor = getChartColor(realIndex);
-                  return (
-                    <Line
-                      type="monotone"
-                      key={key}
-                      isAnimationActive={false}
-                      strokeWidth={2}
-                      dataKey="count"
-                      stroke={strokeColor}
-                      data={serie.data}
-                      name={serie.name}
-                    />
-                  );
-                })}
+              {series.map((serie) => {
+                return (
+                  <Line
+                    type={lineType}
+                    key={serie.name}
+                    isAnimationActive={false}
+                    strokeWidth={2}
+                    dataKey={`${serie.index}:count`}
+                    stroke={getChartColor(serie.index)}
+                    name={serie.name}
+                  />
+                );
+              })}
             </LineChart>
           )}
         </AutoSizer>
@@ -89,7 +93,7 @@ export function ReportLineChart({ interval, data }: ReportLineChartProps) {
       {editMode && (
         <ReportTable
           data={data}
-          visibleSeries={visibleSeries}
+          visibleSeries={series}
           setVisibleSeries={setVisibleSeries}
         />
       )}

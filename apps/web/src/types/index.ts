@@ -1,4 +1,3 @@
-import type { RouterOutputs } from '@/utils/api';
 import type { timeRanges } from '@/utils/constants';
 import type {
   zChartBreakdown,
@@ -6,6 +5,7 @@ import type {
   zChartInput,
   zChartInputWithDates,
   zChartType,
+  zLineType,
   zTimeInterval,
 } from '@/utils/validation';
 import type { TooltipProps } from 'recharts';
@@ -27,7 +27,7 @@ export type IChartEventFilterValue =
 export type IChartBreakdown = z.infer<typeof zChartBreakdown>;
 export type IInterval = z.infer<typeof zTimeInterval>;
 export type IChartType = z.infer<typeof zChartType>;
-export type IChartData = RouterOutputs['chart']['chart'];
+export type IChartLineType = z.infer<typeof zLineType>;
 export type IChartRange = keyof typeof timeRanges;
 export type IToolTipProps<T> = Omit<TooltipProps<number, string>, 'payload'> & {
   payload?: T[];

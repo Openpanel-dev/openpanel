@@ -7,8 +7,7 @@
  * need to use are documented accordingly near the end.
  */
 
-import { getServerAuthSession } from '@/server/auth';
-import { db } from '@/server/db';
+import { getSession } from '@/server/auth';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateNextContextOptions } from '@trpc/server/adapters/next';
 import type { Session } from 'next-auth';
@@ -37,10 +36,9 @@ interface CreateContextOptions {
  *
  * @see https://create.t3.gg/en/usage/trpc#-serverapitrpcts
  */
-const createInnerTRPCContext = (opts: CreateContextOptions) => {
+export const createInnerTRPCContext = (opts: CreateContextOptions) => {
   return {
     session: opts.session,
-    db,
   };
 };
 
@@ -51,9 +49,8 @@ const createInnerTRPCContext = (opts: CreateContextOptions) => {
  * @see https://trpc.io/docs/context
  */
 export const createTRPCContext = async (opts: CreateNextContextOptions) => {
-  const { req, res } = opts;
   // Get the session from the server using the getServerSession wrapper function
-  const session = await getServerAuthSession({ req, res });
+  const session = await getSession();
 
   return createInnerTRPCContext({
     session,

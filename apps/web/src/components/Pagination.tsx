@@ -12,6 +12,7 @@ export function usePagination(take = 100) {
       take,
       canPrev: skip > 0,
       canNext: true,
+      page: skip / take + 1,
     }),
     [skip, setSkip, take]
   );
@@ -21,7 +22,8 @@ export type PaginationProps = ReturnType<typeof usePagination>;
 
 export function Pagination(props: PaginationProps) {
   return (
-    <div className="flex select-none items-center justify-end space-x-2 py-4">
+    <div className="flex select-none items-center justify-end gap-2">
+      <div className="font-medium text-xs">Page: {props.page}</div>
       <Button
         variant="outline"
         size="sm"

@@ -1,3 +1,5 @@
+'use client';
+
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { Button } from '@/components/ui/button';
 

@@ -1,40 +1,34 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@/server/db';
-import { getOrganizationBySlug } from '@/server/services/organization.service';
-import { getProjectBySlug } from '@/server/services/project.service';
+import { db, getId } from '@/server/db';
+import { slug } from '@/utils/slug';
 import { z } from 'zod';
 
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
-        organizationSlug: z.string(),
+        organizationId: z.string().nullable(),
       })
     )
-    .query(async ({ input }) => {
-      const organization = await getOrganizationBySlug(input.organizationSlug);
+    .query(async ({ input: { organizationId } }) => {
+      if (organizationId === null) return [];
+
       return db.project.findMany({
         where: {
-          organization_id: organization.id,
+          organization_id: organizationId,
         },
       });
     }),
   get: protectedProcedure
     .input(
-      z
-        .object({
-          id: z.string(),
-        })
-        .or(z.object({ slug: z.string() }))
+      z.object({
+        id: z.string(),
+      })
     )
-    .query(({ input }) => {
-      if ('slug' in input) {
-        return getProjectBySlug(input.slug);
-      }
-
+    .query(({ input: { id } }) => {
       return db.project.findUniqueOrThrow({
         where: {
-          id: input.id,
+          id,
         },
       });
     }),
@@ -58,15 +52,15 @@ export const projectRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        name: z.string(),
-        organizationSlug: z.string(),
+        name: z.string().min(1),
+        organizationId: z.string(),
       })
     )
     .mutation(async ({ input }) => {
-      const organization = await getOrganizationBySlug(input.organizationSlug);
       return db.project.create({
         data: {
-          organization_id: organization.id,
+          id: await getId('project', input.name),
+          organization_id: input.organizationId,
           name: input.name,
         },
       });

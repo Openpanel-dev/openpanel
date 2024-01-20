@@ -25,7 +25,7 @@ export function NavbarCreate() {
           <DropdownMenuItem asChild>
             <Link
               shallow
-              href={`/${params.organization}/${params.project}/reports`}
+              href={`/${params.organizationId}/${params.projectId}/reports`}
             >
               <LineChart className="mr-2 h-4 w-4" />
               <span>Create a report</span>

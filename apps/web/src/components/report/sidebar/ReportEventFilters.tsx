@@ -1,9 +1,9 @@
 import type { Dispatch } from 'react';
+import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
-import { ComboboxMulti } from '@/components/ui/combobox-multi';
 import {
   CommandDialog,
   CommandEmpty,
@@ -15,16 +15,15 @@ import {
 } from '@/components/ui/command';
 import { RenderDots } from '@/components/ui/RenderDots';
 import { useMappings } from '@/hooks/useMappings';
-import { useOrganizationParams } from '@/hooks/useOrganizationParams';
-import { useDispatch, useSelector } from '@/redux';
+import { useDispatch } from '@/redux';
 import type {
   IChartEvent,
   IChartEventFilter,
   IChartEventFilterValue,
 } from '@/types';
-import { api } from '@/utils/api';
 import { operators } from '@/utils/constants';
 import { CreditCard, SlidersHorizontal, Trash } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
 import { changeEvent } from '../reportSlice';
 
@@ -39,12 +38,12 @@ export function ReportEventFilters({
   isCreating,
   setIsCreating,
 }: ReportEventFiltersProps) {
-  const params = useOrganizationParams();
+  const params = useParams();
   const dispatch = useDispatch();
   const propertiesQuery = api.chart.properties.useQuery(
     {
       event: event.name,
-      projectSlug: params.project,
+      projectId: params.projectId as string,
     },
     {
       enabled: !!event.name,
@@ -103,13 +102,13 @@ interface FilterProps {
 }
 
 function Filter({ filter, event }: FilterProps) {
-  const params = useOrganizationParams();
+  const params = useParams<{ organizationId: string; projectId: string }>();
   const getLabel = useMappings();
   const dispatch = useDispatch();
   const potentialValues = api.chart.values.useQuery({
     event: event.name,
     property: filter.name,
-    projectSlug: params.project,
+    projectId: params?.projectId!,
   });
 
   const valuesCombobox =
@@ -196,8 +195,8 @@ function Filter({ filter, event }: FilterProps) {
         </Dropdown>
         <ComboboxAdvanced
           items={valuesCombobox}
-          selected={filter.value}
-          setSelected={(setFn) => {
+          value={filter.value}
+          onChange={(setFn) => {
             changeFilterValue(
               typeof setFn === 'function' ? setFn(filter.value) : setFn
             );

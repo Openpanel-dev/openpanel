@@ -1,20 +1,22 @@
+'use client';
+
+import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Combobox } from '@/components/ui/combobox';
-import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartBreakdown } from '@/types';
-import { api } from '@/utils/api';
+import { useParams } from 'next/navigation';
 
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportBreakdowns() {
-  const params = useOrganizationParams();
+  const params = useParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const dispatch = useDispatch();
   const propertiesQuery = api.chart.properties.useQuery({
-    projectSlug: params.project,
+    projectId: params.projectId as string,
   });
   const propertiesCombobox = (propertiesQuery.data ?? []).map((item) => ({
     value: item,
@@ -43,6 +45,8 @@ export function ReportBreakdowns() {
               <div className="flex items-center gap-2 p-2 px-4">
                 <ColorSquare>{index}</ColorSquare>
                 <Combobox
+                  className="flex-1"
+                  searchable
                   value={item.name}
                   onChange={(value) => {
                     dispatch(
@@ -63,6 +67,7 @@ export function ReportBreakdowns() {
 
         {selectedBreakdowns.length === 0 && (
           <Combobox
+            searchable
             value={''}
             onChange={(value) => {
               dispatch(

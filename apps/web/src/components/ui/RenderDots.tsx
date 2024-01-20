@@ -1,3 +1,5 @@
+'use client';
+
 import { cn } from '@/utils/cn';
 import { Asterisk, ChevronRight } from 'lucide-react';
 

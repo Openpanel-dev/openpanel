@@ -1,10 +1,8 @@
-import { useEffect } from 'react';
+'use client';
+
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
-import { api, handleError } from '@/utils/api';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { SubmitHandler } from 'react-hook-form';
 import { useForm } from 'react-hook-form';

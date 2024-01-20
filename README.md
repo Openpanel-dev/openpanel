@@ -17,10 +17,23 @@ Mixan is a simple analytics tool for logging events on web and react-native. My 
 
 ### Speed/Benchmark
 
-As of today (2023-12-12) I have more then 1.2 million events in PSQL and performance is smooth as butter 🧈. Only thing that is slow (2s response time) is to get all unique events. Solved now with cache but can probably make better with `indexes` and avoid using `distinct`.
+As of today (~~2023-12-12~~ 2024-01-16) I have more then ~~1.2~~ 2.8 million events and 20 thousand profiles in postgres and performance is smooth as butter\* 🧈. Only thing that is slow (2s response time) is to get all unique events. Solved now with cache but can probably make better with `indexes` and avoid using `distinct`.
+
+\* Smooth as butter is somewhat exaggerated but I would say it still fast! It takes 1.4 sec to search through all events (3 million) with advanced where clause. I think this performance is absolutly good enough.
 
 ### GUI
 
+- [x] Fix design for report editor
+- [x] Fix profiles
+  - [x] Pagination
+  - [x] Filter by event name
+- [x] Fix [profileId]
+  - [x] Add events
+  - [x] Improve design for properties and linked profiles
+- [x] New design for events
+- [ ] Map events to convertions
+- [ ] Map ids
+- [x] Fix menu links when projectId is undefined
 - [x] Fix tables on settings
 - [x] Rename event label
 - [ ] Common web dashboard
@@ -36,14 +49,16 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 - [x] View events in a list
   - [x] Simple filters
 - [x] View profiles in a list
-- [ ] Invite users
+- [x] Invite users
 - [ ] Drag n Drop reports on dashboard
 - [x] Manage dashboards
-- [ ] Support more chart types
+- [x] Support more chart types
   - [x] Bar
   - [x] Histogram
-  - [ ] Pie
-  - [ ] Area
+  - [x] Pie
+  - [x] Area
+  - [x] Metric
+  - [x] Line
 - [ ] Support funnels
 - [ ] Support multiple breakdowns
 - [x] Aggregations (sum, average...)

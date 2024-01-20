@@ -1,10 +1,20 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import { getOrganizationBySlug } from '@/server/services/organization.service';
-import { slug } from '@/utils/slug';
+import { getOrganizationById } from '@/server/services/organization.service';
 import { z } from 'zod';
 
 export const organizationRouter = createTRPCRouter({
+  list: protectedProcedure.query(({ ctx }) => {
+    return db.organization.findMany({
+      where: {
+        users: {
+          some: {
+            id: ctx.session.user.id,
+          },
+        },
+      },
+    });
+  }),
   first: protectedProcedure.query(({ ctx }) => {
     return db.organization.findFirst({
       where: {
@@ -19,11 +29,11 @@ export const organizationRouter = createTRPCRouter({
   get: protectedProcedure
     .input(
       z.object({
-        slug: z.string(),
+        id: z.string(),
       })
     )
     .query(({ input }) => {
-      return getOrganizationBySlug(input.slug);
+      return getOrganizationById(input.id);
     }),
   update: protectedProcedure
     .input(
@@ -39,7 +49,6 @@ export const organizationRouter = createTRPCRouter({
         },
         data: {
           name: input.name,
-          slug: slug(input.name),
         },
       });
     }),

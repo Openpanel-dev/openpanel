@@ -1,14 +1,16 @@
+'use client';
+
 import { useState } from 'react';
+import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
-import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartEvent } from '@/types';
-import { api } from '@/utils/api';
 import { Filter, GanttChart, Users } from 'lucide-react';
+import { useParams } from 'next/navigation';
 
 import { addEvent, changeEvent, removeEvent } from '../reportSlice';
 import { ReportEventFilters } from './ReportEventFilters';
@@ -19,9 +21,9 @@ export function ReportEvents() {
   const [isCreating, setIsCreating] = useState(false);
   const selectedEvents = useSelector((state) => state.report.events);
   const dispatch = useDispatch();
-  const params = useOrganizationParams();
+  const params = useParams();
   const eventsQuery = api.chart.events.useQuery({
-    projectSlug: params.project,
+    projectId: String(params.projectId),
   });
   const eventsCombobox = (eventsQuery.data ?? []).map((item) => ({
     value: item.name,
@@ -56,6 +58,8 @@ export function ReportEvents() {
               <div className="flex items-center gap-2 p-2">
                 <ColorSquare>{event.id}</ColorSquare>
                 <Combobox
+                  className="flex-1"
+                  searchable
                   value={event.name}
                   onChange={(value) => {
                     dispatch(

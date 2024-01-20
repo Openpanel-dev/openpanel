@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import type { IChartData, RouterOutputs } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import {
   Table,
@@ -8,8 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { IChartData } from '@/types';
-import type { RouterOutputs } from '@/utils/api';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import {
@@ -36,6 +35,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   const { editMode } = useChartContext();
   const [ref, { width }] = useElementSize();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const maxCount = Math.max(...data.series.map((serie) => serie.metrics.sum));
   const table = useReactTable({
     data: useMemo(
       () => (editMode ? data.series : data.series.slice(0, 20)),
@@ -57,7 +57,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           footer: (info) => info.column.id,
           size: width ? width * 0.3 : undefined,
         }),
-        columnHelper.accessor((row) => row.metrics.total, {
+        columnHelper.accessor((row) => row.metrics.sum, {
           id: 'totalCount',
           cell: (info) => (
             <div className="text-right font-medium">{info.getValue()}</div>
@@ -67,15 +67,13 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           size: width ? width * 0.1 : undefined,
           enableSorting: true,
         }),
-        columnHelper.accessor((row) => row.metrics.total, {
+        columnHelper.accessor((row) => row.metrics.sum, {
           id: 'graph',
           cell: (info) => (
             <div
               className="shine h-4 rounded [.mini_&]:h-3"
               style={{
-                width:
-                  (info.getValue() / info.row.original.meta.highest) * 100 +
-                  '%',
+                width: (info.getValue() / maxCount) * 100 + '%',
                 background: getChartColor(info.row.index),
               }}
             />
@@ -93,30 +91,10 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
     getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
-    // debugTable: true,
-    // debugHeaders: true,
-    // debugColumns: true,
   });
+
   return (
     <div ref={ref}>
-      {editMode && (
-        <div className="mb-8 flex flex-wrap gap-4">
-          {data.events.map((event) => {
-            return (
-              <div className="border border-border p-4" key={event.id}>
-                <div className="flex items-center gap-2 text-lg font-medium">
-                  <ColorSquare>{event.id}</ColorSquare> {event.name}
-                </div>
-                <div className="mt-6 font-mono text-5xl font-light">
-                  {new Intl.NumberFormat('en-IN', {
-                    maximumSignificantDigits: 20,
-                  }).format(event.count)}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
       <div className="overflow-x-auto">
         <Table
           {...{

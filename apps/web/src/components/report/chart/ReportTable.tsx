@@ -1,15 +1,20 @@
 import * as React from 'react';
+import type { IChartData } from '@/app/_trpc/client';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useMappings } from '@/hooks/useMappings';
 import { useSelector } from '@/redux';
-import type { IChartData } from '@/types';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
 interface ReportTableProps {
   data: IChartData;
-  visibleSeries: string[];
+  visibleSeries: IChartData['series'];
   setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
@@ -40,31 +45,23 @@ export function ReportTable({
     'bg-gray-50 text-emerald-600 font-medium border-r border-border';
   return (
     <>
-      <div className="flex w-fit max-w-full rounded-md border border-border">
+      <div className="flex w-fit max-w-full rounded-md border border-border bg-white">
         {/* Labels */}
         <div className="border-r border-border">
           <div className={cn(header, row, cell)}>Name</div>
-          {/* <div
-          className={cn(
-            'flex max-w-[200px] w-full min-w-full items-center gap-2',
-            row,
-            cell
-          )}
-        >
-          <div className="font-medium min-w-0 overflow-scroll whitespace-nowrap scrollbar-hide">
-            Summary
-          </div>
-        </div> */}
           {data.series.map((serie, index) => {
-            const checked = visibleSeries.includes(serie.name);
+            const checked = !!visibleSeries.find(
+              (item) => item.name === serie.name
+            );
 
             return (
               <div
                 key={serie.name}
                 className={cn(
-                  'flex max-w-[200px] w-full min-w-full items-center gap-2',
+                  'flex max-w-[200px] lg:max-w-[400px] xl:max-w-[600px] w-full min-w-full items-center gap-2',
                   row,
-                  cell
+                  // avoid using cell since its better on the right side
+                  'p-2'
                 )}
               >
                 <Checkbox
@@ -81,12 +78,16 @@ export function ReportTable({
                   }
                   checked={checked}
                 />
-                <div
-                  title={getLabel(serie.name)}
-                  className="min-w-full overflow-scroll whitespace-nowrap scrollbar-hide"
-                >
-                  {getLabel(serie.name)}
-                </div>
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div className="min-w-0 overflow-hidden whitespace-nowrap text-ellipsis">
+                      {getLabel(serie.name)}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{getLabel(serie.name)}</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             );
           })}
@@ -113,7 +114,7 @@ export function ReportTable({
             return (
               <div className={cn('w-max', row)} key={serie.name}>
                 <div className={cn(header, value, cell, total)}>
-                  {serie.metrics.total}
+                  {serie.metrics.sum}
                 </div>
                 <div className={cn(header, value, cell, total)}>
                   {serie.metrics.average}
@@ -130,14 +131,22 @@ export function ReportTable({
           })}
         </div>
       </div>
-      <div className="flex gap-2">
-        <div>Total</div>
-        <div>
-          {data.series.reduce((acc, serie) => serie.metrics.total + acc, 0)}
+      <div className="flex gap-4">
+        <div className="flex gap-1">
+          <div>Total</div>
+          <div>{data.metrics.sum}</div>
         </div>
-        <div>Average</div>
-        <div>
-          {data.series.reduce((acc, serie) => serie.metrics.average + acc, 0)}
+        <div className="flex gap-1">
+          <div>Average</div>
+          <div>{data.metrics.averge}</div>
+        </div>
+        <div className="flex gap-1">
+          <div>Min</div>
+          <div>{data.metrics.min}</div>
+        </div>
+        <div className="flex gap-1">
+          <div>Max</div>
+          <div>{data.metrics.max}</div>
         </div>
       </div>
     </>

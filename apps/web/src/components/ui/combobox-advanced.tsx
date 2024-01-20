@@ -1,6 +1,9 @@
+'use client';
+
 import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandGroup, CommandItem } from '@/components/ui/command';
+import { useOnClickOutside } from 'usehooks-ts';
 
 import { Checkbox } from './checkbox';
 import { Input } from './input';
@@ -9,23 +12,25 @@ type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
 
 interface ComboboxAdvancedProps {
-  selected: IValue[];
-  setSelected: React.Dispatch<React.SetStateAction<IValue[]>>;
+  value: IValue[];
+  onChange: React.Dispatch<React.SetStateAction<IValue[]>>;
   items: IItem[];
   placeholder: string;
 }
 
 export function ComboboxAdvanced({
   items,
-  selected,
-  setSelected,
+  value,
+  onChange,
   placeholder,
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
+  const ref = React.useRef<HTMLDivElement | null>(null);
+  useOnClickOutside(ref, () => setOpen(false));
 
   const selectables = items
-    .filter((item) => !selected.find((s) => s === item.value))
+    .filter((item) => !value.find((s) => s === item.value))
     .filter(
       (item) =>
         (typeof item.label === 'string' &&
@@ -35,7 +40,7 @@ export function ComboboxAdvanced({
     );
 
   const renderItem = (item: IItem) => {
-    const checked = !!selected.find((s) => s === item.value);
+    const checked = !!value.find((s) => s === item.value);
     return (
       <CommandItem
         key={String(item.value)}
@@ -45,7 +50,7 @@ export function ComboboxAdvanced({
         }}
         onSelect={() => {
           setInputValue('');
-          setSelected((prev) => {
+          onChange((prev) => {
             if (prev.includes(item.value)) {
               return prev.filter((s) => s !== item.value);
             }
@@ -66,15 +71,15 @@ export function ComboboxAdvanced({
   };
 
   return (
-    <Command className="overflow-visible bg-white">
+    <Command className="overflow-visible bg-white" ref={ref}>
       <button
         type="button"
         className="group border border-input px-3 py-2 text-sm ring-offset-background rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
         onClick={() => setOpen((prev) => !prev)}
       >
         <div className="flex gap-1 flex-wrap">
-          {selected.length === 0 && placeholder}
-          {selected.slice(0, 2).map((value) => {
+          {value.length === 0 && placeholder}
+          {value.slice(0, 2).map((value) => {
             const item = items.find((item) => item.value === value) ?? {
               value,
               label: value,
@@ -85,13 +90,13 @@ export function ComboboxAdvanced({
               </Badge>
             );
           })}
-          {selected.length > 2 && (
-            <Badge variant="secondary">+{selected.length - 2} more</Badge>
+          {value.length > 2 && (
+            <Badge variant="secondary">+{value.length - 2} more</Badge>
           )}
         </div>
       </button>
-      <div className="relative mt-2">
-        {open && (
+      {open && (
+        <div className="relative top-2">
           <div className="max-h-80 min-w-[300px] absolute w-full z-10 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
             <CommandGroup className="max-h-80 overflow-auto">
               <div className="p-1 mb-2">
@@ -102,13 +107,16 @@ export function ComboboxAdvanced({
                 />
               </div>
               {inputValue === ''
-                ? selected.map(renderUnknownItem)
-                : renderUnknownItem(inputValue)}
+                ? value.map(renderUnknownItem)
+                : renderItem({
+                    value: inputValue,
+                    label: `Pick "${inputValue}"`,
+                  })}
               {selectables.map(renderItem)}
             </CommandGroup>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </Command>
   );
 }

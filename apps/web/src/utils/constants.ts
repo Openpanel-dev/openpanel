@@ -14,6 +14,24 @@ export const chartTypes = {
   area: 'Area',
 };
 
+export const lineTypes = {
+  monotone: 'Monotone',
+  monotoneX: 'Monotone X',
+  monotoneY: 'Monotone Y',
+  linear: 'Linear',
+  natural: 'Natural',
+  basis: 'Basis',
+  step: 'Step',
+  stepBefore: 'Step before',
+  stepAfter: 'Step after',
+  basisClosed: 'Basis closed',
+  basisOpen: 'Basis open',
+  bumpX: 'Bump X',
+  bumpY: 'Bump Y',
+  bump: 'Bump',
+  linearClosed: 'Linear closed',
+};
+
 export const intervals = {
   minute: 'Minute',
   day: 'Day',
@@ -49,4 +67,23 @@ export const timeRanges = {
 
 export function isMinuteIntervalEnabledByRange(range: keyof typeof timeRanges) {
   return range === '30min' || range === '1h';
+}
+
+export function isHourIntervalEnabledByRange(range: keyof typeof timeRanges) {
+  return (
+    isMinuteIntervalEnabledByRange(range) ||
+    range === 'today' ||
+    range === '24h'
+  );
+}
+
+export function getDefaultIntervalByRange(range: keyof typeof timeRanges) {
+  if (range === '30min' || range === '1h') {
+    return 'minute';
+  } else if (range === 'today' || range === '24h') {
+    return 'hour';
+  } else if (range === '7d' || range === '14d' || range === '1m') {
+    return 'day';
+  }
+  return 'month';
 }

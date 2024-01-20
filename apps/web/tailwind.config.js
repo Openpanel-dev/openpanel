@@ -1,5 +1,5 @@
 const colors = [
-  '#7856ff',
+  '#2563EB',
   '#ff7557',
   '#7fe1d8',
   '#f8bc3c',
@@ -11,6 +11,7 @@ const colors = [
   '#febbb2',
   '#cb80dc',
   '#5cb7af',
+  '#7856ff',
 ];
 
 /** @type {import('tailwindcss').Config} */
@@ -23,13 +24,6 @@ const config = {
     './src/**/*.{ts,tsx}',
   ],
   theme: {
-    container: {
-      center: true,
-      padding: '2rem',
-      screens: {
-        '2xl': '1400px',
-      },
-    },
     extend: {
       colors: {
         border: 'hsl(var(--border))',

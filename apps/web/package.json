@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm with-env next dev",
+    "dev": "rm -rf .next && pnpm with-env next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -40,16 +40,19 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^0.2.0",
+    "hamburger-react": "^2.5.0",
     "lodash.debounce": "^4.0.8",
     "lottie-react": "^2.4.0",
     "lucide-react": "^0.286.0",
     "mitt": "^3.0.1",
-    "next": "13.4",
+    "next": "~14.0.4",
     "next-auth": "^4.23.0",
+    "nuqs": "^1.15.2",
     "prisma-error-enum": "^0.1.3",
     "ramda": "^0.29.1",
     "random-animal-name": "^0.1.1",
     "react": "18.2.0",
+    "react-animate-height": "^3.2.3",
     "react-dom": "18.2.0",
     "react-hook-form": "^7.47.0",
     "react-in-viewport": "1.0.0-alpha.30",
@@ -93,8 +96,8 @@
     "root": true,
     "extends": [
       "@mixan/eslint-config/base",
-      "@mixan/eslint-config/nextjs",
-      "@mixan/eslint-config/react"
+      "@mixan/eslint-config/react",
+      "@mixan/eslint-config/nextjs"
     ]
   },
   "prettier": "@mixan/prettier-config"

@@ -1,11 +1,13 @@
+'use client';
+
 import * as React from 'react';
 import { cn } from '@/utils/cn';
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="border border-border rounded-md">
+  React.HTMLAttributes<HTMLTableElement> & { wrapper?: boolean }
+>(({ className, wrapper, ...props }, ref) => (
+  <div className={cn('border border-border rounded-md bg-white', className)}>
     <div className="relative w-full overflow-auto ">
       <table
         ref={ref}

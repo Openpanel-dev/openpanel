@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { cn } from '@/utils/cn';

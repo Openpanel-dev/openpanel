@@ -2,21 +2,19 @@ import { randomUUID } from 'crypto';
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
 import { hashPassword } from '@/server/services/hash.service';
-import { getOrganizationBySlug } from '@/server/services/organization.service';
 import { z } from 'zod';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
-        organizationSlug: z.string(),
+        organizationId: z.string(),
       })
     )
-    .query(async ({ input }) => {
-      const organization = await getOrganizationBySlug(input.organizationSlug);
+    .query(async ({ input: { organizationId } }) => {
       return db.client.findMany({
         where: {
-          organization_id: organization.id,
+          organization_id: organizationId,
         },
         include: {
           project: true,
@@ -60,16 +58,15 @@ export const clientRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         projectId: z.string(),
-        organizationSlug: z.string(),
+        organizationId: z.string(),
         withCors: z.boolean().default(true),
       })
     )
     .mutation(async ({ input }) => {
-      const organization = await getOrganizationBySlug(input.organizationSlug);
       const secret = randomUUID();
       const client = await db.client.create({
         data: {
-          organization_id: organization.id,
+          organization_id: input.organizationId,
           project_id: input.projectId,
           name: input.name,
           secret: input.withCors ? null : await hashPassword(secret),

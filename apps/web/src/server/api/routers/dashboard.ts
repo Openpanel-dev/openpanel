@@ -1,75 +1,72 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import { getDashboardBySlug } from '@/server/services/dashboard.service';
-import { getProjectBySlug } from '@/server/services/project.service';
-import { slug } from '@/utils/slug';
 import { PrismaError } from 'prisma-error-enum';
 import { z } from 'zod';
 
-import { Prisma } from '@mixan/db';
+import type { Prisma } from '@mixan/db';
 
 export const dashboardRouter = createTRPCRouter({
   get: protectedProcedure
-    .input(
-      z
-        .object({
-          slug: z.string(),
-        })
-        .or(z.object({ id: z.string() }))
-    )
+    .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      if ('id' in input) {
-        return db.dashboard.findUnique({
-          where: {
-            id: input.id,
-          },
-        });
-      } else {
-        return getDashboardBySlug(input.slug);
-      }
+      return db.dashboard.findUnique({
+        where: {
+          id: input.id,
+        },
+      });
     }),
   list: protectedProcedure
     .input(
       z
         .object({
-          projectSlug: z.string(),
+          projectId: z.string(),
         })
         .or(
           z.object({
-            projectId: z.string(),
+            organizationId: z.string(),
           })
         )
     )
     .query(async ({ input }) => {
-      let projectId = null;
       if ('projectId' in input) {
-        projectId = input.projectId;
+        return db.dashboard.findMany({
+          where: {
+            project_id: input.projectId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          include: {
+            project: true,
+          },
+        });
       } else {
-        projectId = (await getProjectBySlug(input.projectSlug)).id;
+        return db.dashboard.findMany({
+          where: {
+            project: {
+              organization_id: input.organizationId,
+            },
+          },
+          include: {
+            project: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        });
       }
-
-      return db.dashboard.findMany({
-        where: {
-          project_id: projectId,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      });
     }),
   create: protectedProcedure
     .input(
       z.object({
         name: z.string(),
-        projectSlug: z.string(),
+        projectId: z.string(),
       })
     )
-    .mutation(async ({ input: { projectSlug, name } }) => {
-      const project = await getProjectBySlug(projectSlug);
+    .mutation(async ({ input: { projectId, name } }) => {
       return db.dashboard.create({
         data: {
-          slug: slug(name),
-          project_id: project.id,
+          project_id: projectId,
           name,
         },
       });
@@ -95,17 +92,33 @@ export const dashboardRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
+        forceDelete: z.boolean().optional(),
       })
     )
-    .mutation(async ({ input: { id } }) => {
+    .mutation(async ({ input: { id, forceDelete } }) => {
       try {
+        if (forceDelete) {
+          await db.report.deleteMany({
+            where: {
+              dashboard_id: id,
+            },
+          });
+        }
+        await db.recentDashboards.deleteMany({
+          where: {
+            dashboard_id: id,
+          },
+        });
         await db.dashboard.delete({
           where: {
             id,
           },
         });
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      } catch (e) {
+        // Below does not work...
+        // error instanceof Prisma.PrismaClientKnownRequestError
+        if (typeof e === 'object' && e && 'code' in e) {
+          const error = e as Prisma.PrismaClientKnownRequestError;
           switch (error.code) {
             case PrismaError.ForeignConstraintViolation:
               throw new Error(

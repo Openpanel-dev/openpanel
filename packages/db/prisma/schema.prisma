@@ -11,33 +11,33 @@ datasource db {
 }
 
 model Organization {
-  id       String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id       String    @id @default(dbgenerated("gen_random_uuid()"))
   name     String
-  slug     String    @unique @default(dbgenerated("gen_random_uuid()"))
   projects Project[]
   users    User[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
   clients   Client[]
+  Invite    Invite[]
 
   @@map("organizations")
 }
 
 model Project {
-  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String       @id @default(dbgenerated("gen_random_uuid()"))
   name            String
-  slug            String       @unique @default(dbgenerated("gen_random_uuid()"))
-  organization_id String       @db.Uuid
+  organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id])
   events          Event[]
   profiles        Profile[]
   clients         Client[]
 
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @default(now()) @updatedAt
-  reports    Report[]
-  dashboards Dashboard[]
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @default(now()) @updatedAt
+  reports          Report[]
+  dashboards       Dashboard[]
+  RecentDashboards RecentDashboards[]
 
   @@map("projects")
 }
@@ -47,11 +47,12 @@ model User {
   name            String
   email           String
   password        String
-  organization_id String       @db.Uuid
+  organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @default(now()) @updatedAt
+  RecentDashboards RecentDashboards[]
 
   @@map("users")
 }
@@ -60,7 +61,7 @@ model Event {
   id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
   properties Json
-  project_id String  @db.Uuid
+  project_id String
   project    Project @relation(fields: [project_id], references: [id])
 
   profile_id String?  @db.Uuid
@@ -80,7 +81,7 @@ model Profile {
   email       String?
   avatar      String?
   properties  Json
-  project_id  String  @db.Uuid
+  project_id  String
   project     Project @relation(fields: [project_id], references: [id])
   events      Event[]
 
@@ -103,9 +104,9 @@ model Client {
   id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String
   secret          String?
-  project_id      String       @db.Uuid
+  project_id      String
   project         Project      @relation(fields: [project_id], references: [id])
-  organization_id String       @db.Uuid
+  organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id])
   cors            String       @default("*")
 
@@ -113,6 +114,20 @@ model Client {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("clients")
+}
+
+model RecentDashboards {
+  id              String    @id @default(dbgenerated("gen_random_uuid()"))
+  project_id      String
+  project         Project   @relation(fields: [project_id], references: [id])
+  organization_id String
+  dashboard_id    String
+  dashboard       Dashboard @relation(fields: [dashboard_id], references: [id])
+  user_id         String    @db.Uuid
+  user            User      @relation(fields: [user_id], references: [id])
+  createdAt       DateTime  @default(now())
+
+  @@map("recent_dashboards")
 }
 
 enum Interval {
@@ -132,15 +147,15 @@ enum ChartType {
 }
 
 model Dashboard {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String   @id @default(dbgenerated("gen_random_uuid()"))
   name       String
-  slug       String   @unique @default(dbgenerated("gen_random_uuid()"))
-  project_id String   @db.Uuid
+  project_id String
   project    Project  @relation(fields: [project_id], references: [id])
   reports    Report[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @default(now()) @updatedAt
+  RecentDashboards RecentDashboards[]
 
   @@map("dashboards")
 }
@@ -151,16 +166,31 @@ model Report {
   interval   Interval
   range      String    @default("1m")
   chart_type ChartType
+  line_type  String    @default("monotone")
   breakdowns Json
   events     Json
-  project_id String    @db.Uuid
+  project_id String
   project    Project   @relation(fields: [project_id], references: [id])
 
-  dashboard_id String    @db.Uuid
+  dashboard_id String
   dashboard    Dashboard @relation(fields: [dashboard_id], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("reports")
+}
+
+model Invite {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String
+  organization_id String
+  organization    Organization @relation(fields: [organization_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  accepted Boolean @default(false)
+
+  @@map("invites")
 }

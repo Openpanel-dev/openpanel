@@ -6,15 +6,23 @@ import { Label } from '../ui/label';
 
 type InputWithLabelProps = InputProps & {
   label: string;
+  error?: string | undefined;
 };
 
 export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
   ({ label, className, ...props }, ref) => {
     return (
       <div className={className}>
-        <Label htmlFor={label} className="block mb-2">
-          {label}
-        </Label>
+        <div className="block mb-2 flex justify-between">
+          <Label className="mb-0" htmlFor={label}>
+            {label}
+          </Label>
+          {props.error && (
+            <span className="text-sm text-destructive leading-none">
+              {props.error}
+            </span>
+          )}
+        </div>
         <Input ref={ref} id={label} {...props} />
       </div>
     );

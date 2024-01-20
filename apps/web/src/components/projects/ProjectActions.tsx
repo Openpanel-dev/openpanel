@@ -1,9 +1,11 @@
-import { useRefetchActive } from '@/hooks/useRefetchActive';
+'use client';
+
+import { api } from '@/app/_trpc/client';
 import { pushModal, showConfirm } from '@/modals';
 import type { IProject } from '@/types';
-import { api } from '@/utils/api';
 import { clipboard } from '@/utils/clipboard';
 import { MoreHorizontal } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { Button } from '../ui/button';
 import {
@@ -16,15 +18,16 @@ import {
 } from '../ui/dropdown-menu';
 import { toast } from '../ui/use-toast';
 
-export function ProjectActions({ id }: IProject) {
-  const refetch = useRefetchActive();
+export function ProjectActions(project: IProject) {
+  const { id } = project;
+  const router = useRouter();
   const deletion = api.project.remove.useMutation({
     onSuccess() {
       toast({
         title: 'Success',
         description: 'Project deleted successfully.',
       });
-      refetch();
+      router.refresh();
     },
   });
 
@@ -43,7 +46,7 @@ export function ProjectActions({ id }: IProject) {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
-            pushModal('EditProject', { id });
+            pushModal('EditProject', project);
           }}
         >
           Edit

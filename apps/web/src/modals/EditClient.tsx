@@ -1,20 +1,20 @@
-import { useEffect } from 'react';
+'use client';
+
+import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { useRefetchActive } from '@/hooks/useRefetchActive';
-import { api, handleError } from '@/utils/api';
+import type { IClientWithProject } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-interface EditClientProps {
-  id: string;
-}
+type EditClientProps = IClientWithProject;
 
 const validator = z.object({
   id: z.string().min(1),
@@ -24,35 +24,29 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export default function EditClient({ id }: EditClientProps) {
-  const refetch = useRefetchActive();
+export default function EditClient({ id, name, cors }: EditClientProps) {
+  const router = useRouter();
+  const { register, handleSubmit, reset, formState } = useForm<IForm>({
+    resolver: zodResolver(validator),
+    defaultValues: {
+      id,
+      name,
+      cors,
+    },
+  });
+
   const mutation = api.client.update.useMutation({
     onError: handleError,
     onSuccess() {
+      reset();
       toast({
         title: 'Success',
         description: 'Client updated.',
       });
       popModal();
-      refetch();
+      router.refresh();
     },
   });
-  const query = api.client.get.useQuery({ id });
-  const data = query.data;
-  const { register, handleSubmit, reset, formState } = useForm<IForm>({
-    resolver: zodResolver(validator),
-    defaultValues: {
-      id: '',
-      name: '',
-      cors: '',
-    },
-  });
-
-  useEffect(() => {
-    if (data) {
-      reset(data);
-    }
-  }, [data, reset]);
 
   return (
     <ModalContent>
@@ -67,11 +61,13 @@ export default function EditClient({ id }: EditClientProps) {
             label="Name"
             placeholder="Name"
             {...register('name')}
+            defaultValue={name}
           />
           <InputWithLabel
             label="Cors"
             placeholder="Cors"
             {...register('cors')}
+            defaultValue={cors}
           />
         </div>
         <ButtonContainer>

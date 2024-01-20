@@ -24,6 +24,9 @@ export const ChartAnimationContainer = (
 ) => (
   <div
     {...props}
-    className={cn('border border-border rounded-md p-8', props.className)}
+    className={cn(
+      'border border-border rounded-md p-8 bg-white',
+      props.className
+    )}
   />
 );

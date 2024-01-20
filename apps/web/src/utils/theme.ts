@@ -4,7 +4,7 @@ import tailwinConfig from '../../tailwind.config';
 
 export const resolvedTailwindConfig = resolveConfig(tailwinConfig);
 
-export const theme = resolvedTailwindConfig.theme;
+export const theme = resolvedTailwindConfig.theme as Record<string, any>;
 
 export function getChartColor(index: number): string {
   const colors = theme?.colors ?? {};
