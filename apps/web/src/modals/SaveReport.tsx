@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { useAppParams } from '@/hooks/useAppParams';
 import type { IChartInput } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -30,11 +31,11 @@ type IForm = z.infer<typeof validator>;
 
 export default function SaveReport({ report }: SaveReportProps) {
   const router = useRouter();
-  const params = useParams();
-  const organizationId = params.organizationId as string;
-  const projectId = params.projectId as string;
+  const params = useAppParams();
+  const organizationId = params.organizationId;
+  const projectId = params.projectId;
   const searchParams = useSearchParams();
-  const dashboardId = searchParams.get('dashboardId') ?? undefined;
+  const dashboardId = searchParams?.get('dashboardId') ?? undefined;
 
   const save = api.report.save.useMutation({
     onError: handleError,
@@ -47,7 +48,7 @@ export default function SaveReport({ report }: SaveReportProps) {
       router.push(
         `/${organizationId}/${projectId}/reports/${
           res.id
-        }?${searchParams.toString()}`
+        }?${searchParams?.toString()}`
       );
     },
   });

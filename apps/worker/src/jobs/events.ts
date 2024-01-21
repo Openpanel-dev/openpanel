@@ -1,3 +1,4 @@
+import { getDevice, getOS } from '@/utils/user-agent';
 import type { Job } from 'bullmq';
 import { mergeDeepRight } from 'ramda';
 
@@ -152,6 +153,12 @@ export async function eventsJob(job: Job<EventsQueuePayload>) {
           break;
         }
         case 'event': {
+          const userAgent = payload.properties.ua as string | undefined;
+          if (userAgent) {
+            payload.properties.device = getDevice(userAgent);
+            payload.properties.os = getOS(userAgent);
+            delete payload.properties.ua;
+          }
           await db.event.create({
             data: {
               name: payload.name,

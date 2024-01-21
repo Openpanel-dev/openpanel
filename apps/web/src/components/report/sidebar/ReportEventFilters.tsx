@@ -14,6 +14,7 @@ import {
   CommandSeparator,
 } from '@/components/ui/command';
 import { RenderDots } from '@/components/ui/RenderDots';
+import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { useDispatch } from '@/redux';
 import type {
@@ -38,12 +39,12 @@ export function ReportEventFilters({
   isCreating,
   setIsCreating,
 }: ReportEventFiltersProps) {
-  const params = useParams();
+  const params = useAppParams();
   const dispatch = useDispatch();
   const propertiesQuery = api.chart.properties.useQuery(
     {
       event: event.name,
-      projectId: params.projectId as string,
+      projectId: params.projectId,
     },
     {
       enabled: !!event.name,

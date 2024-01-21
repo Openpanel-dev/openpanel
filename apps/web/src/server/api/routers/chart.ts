@@ -45,6 +45,7 @@ export const chartRouter = createTRPCRouter({
         () =>
           db.event.findMany({
             take: 500,
+            distinct: 'name',
             where: {
               project_id: projectId,
               ...(event
@@ -124,6 +125,14 @@ export const chartRouter = createTRPCRouter({
       let diff = 0;
 
       switch (input.range) {
+        case '30min': {
+          diff = 1000 * 60 * 30;
+          break;
+        }
+        case '1h': {
+          diff = 1000 * 60 * 60;
+          break;
+        }
         case '24h':
         case 'today': {
           diff = 1000 * 60 * 60 * 24;
@@ -243,7 +252,10 @@ function getPreviousDataDiff(current: number, previous: number | undefined) {
   );
 
   return {
-    diff: Number.isNaN(diff) || !Number.isFinite(diff) ? null : diff,
+    diff:
+      Number.isNaN(diff) || !Number.isFinite(diff) || current === previous
+        ? null
+        : diff,
     state:
       current > previous
         ? 'positive'

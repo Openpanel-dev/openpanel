@@ -1,19 +1,19 @@
 'use client';
 
 import { Card } from '@/components/Card';
+import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import type { getProjectsByOrganizationId } from '@/server/services/project.service';
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
 
 interface ListProjectsProps {
   projects: Awaited<ReturnType<typeof getProjectsByOrganizationId>>;
 }
 
 export function ListProjects({ projects }: ListProjectsProps) {
-  const params = useParams();
-  const organizationId = params.organizationId as string;
+  const params = useAppParams();
+  const organizationId = params.organizationId;
 
   return (
     <>

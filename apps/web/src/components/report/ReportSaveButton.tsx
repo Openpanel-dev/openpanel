@@ -3,6 +3,7 @@
 import { api, handleError } from '@/app/_trpc/client';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 import { SaveIcon } from 'lucide-react';
@@ -14,7 +15,7 @@ interface ReportSaveButtonProps {
   className?: string;
 }
 export function ReportSaveButton({ className }: ReportSaveButtonProps) {
-  const { reportId } = useParams();
+  const { reportId } = useAppParams<{ reportId: string | undefined }>();
   const dispatch = useDispatch();
   const update = api.report.update.useMutation({
     onSuccess() {
@@ -36,7 +37,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
         loading={update.isLoading}
         onClick={() => {
           update.mutate({
-            reportId: reportId as string,
+            reportId: reportId,
             report,
           });
         }}

@@ -3,20 +3,20 @@
 import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Combobox } from '@/components/ui/combobox';
+import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartBreakdown } from '@/types';
-import { useParams } from 'next/navigation';
 
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportBreakdowns() {
-  const params = useParams();
+  const params = useAppParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const dispatch = useDispatch();
   const propertiesQuery = api.chart.properties.useQuery({
-    projectId: params.projectId as string,
+    projectId: params.projectId,
   });
   const propertiesCombobox = (propertiesQuery.data ?? []).map((item) => ({
     value: item,

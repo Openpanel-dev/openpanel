@@ -17,11 +17,8 @@ export function PreviousDiffIndicator({
 }: PreviousDiffIndicatorProps) {
   const { previous } = useChartContext();
   const number = useNumber();
-  if (
-    (children === undefined && (diff === null || diff === undefined)) ||
-    previous === false
-  ) {
-    return null;
+  if (diff === null || diff === undefined || previous === false) {
+    return children ?? null;
   }
 
   return (

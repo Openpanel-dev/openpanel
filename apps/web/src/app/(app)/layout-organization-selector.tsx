@@ -1,8 +1,8 @@
 'use client';
 
+import { useAppParams } from '@/hooks/useAppParams';
 import type { IServiceOrganization } from '@/server/services/organization.service';
 import { Building } from 'lucide-react';
-import { useParams } from 'next/navigation';
 
 interface LayoutOrganizationSelectorProps {
   organizations: IServiceOrganization[];
@@ -11,7 +11,7 @@ interface LayoutOrganizationSelectorProps {
 export default function LayoutOrganizationSelector({
   organizations,
 }: LayoutOrganizationSelectorProps) {
-  const params = useParams();
+  const params = useAppParams();
 
   const organization = organizations.find(
     (item) => item.id === params.organizationId

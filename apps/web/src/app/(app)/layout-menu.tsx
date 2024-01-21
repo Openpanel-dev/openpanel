@@ -1,5 +1,6 @@
 'use client';
 
+import { useAppParams } from '@/hooks/useAppParams';
 import type { IServiceRecentDashboards } from '@/server/services/dashboard.service';
 import {
   BuildingIcon,
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 function LinkWithIcon({
   href,
@@ -44,12 +45,11 @@ export default function LayoutMenu({
   fallbackProjectId,
 }: LayoutMenuProps) {
   const pathname = usePathname();
-  const params = useParams();
-  const projectId = (
+  const params = useAppParams();
+  const projectId =
     !params.projectId || params.projectId === 'undefined'
       ? fallbackProjectId
-      : params.projectId
-  ) as string | null;
+      : params.projectId;
 
   return (
     <>
@@ -73,7 +73,7 @@ export default function LayoutMenu({
         label="Settings"
         href={`/${params.organizationId}/settings/organization`}
       />
-      {pathname.includes('/settings/') && (
+      {pathname?.includes('/settings/') && (
         <div className="pl-7">
           <LinkWithIcon
             icon={BuildingIcon}

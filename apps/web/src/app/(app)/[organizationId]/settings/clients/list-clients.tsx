@@ -2,19 +2,18 @@
 
 import { StickyBelowHeader } from '@/app/(app)/layout-sticky-below-header';
 import { columns } from '@/components/clients/table';
-import { ContentHeader } from '@/components/Content';
 import { DataTable } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
+import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import type { getClientsByOrganizationId } from '@/server/services/clients.service';
-import { KeySquareIcon, PlusIcon } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { PlusIcon } from 'lucide-react';
 
 interface ListClientsProps {
   clients: Awaited<ReturnType<typeof getClientsByOrganizationId>>;
 }
 export default function ListClients({ clients }: ListClientsProps) {
-  const organizationId = useParams().organizationId as string;
+  const organizationId = useAppParams().organizationId;
 
   return (
     <>

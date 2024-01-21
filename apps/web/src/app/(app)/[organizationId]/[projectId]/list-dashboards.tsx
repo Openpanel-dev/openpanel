@@ -1,14 +1,15 @@
 'use client';
 
-import { api, handleError, handleErrorToastOptions } from '@/app/_trpc/client';
+import { api, handleErrorToastOptions } from '@/app/_trpc/client';
 import { Card, CardActions, CardActionsItem } from '@/components/Card';
 import { ToastAction } from '@/components/ui/toast';
 import { toast } from '@/components/ui/use-toast';
+import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import type { getDashboardsByProjectId } from '@/server/services/dashboard.service';
-import { Pencil, Plus, Trash } from 'lucide-react';
+import { Pencil, Trash } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 interface ListDashboardsProps {
   dashboards: Awaited<ReturnType<typeof getDashboardsByProjectId>>;
@@ -16,7 +17,7 @@ interface ListDashboardsProps {
 
 export function ListDashboards({ dashboards }: ListDashboardsProps) {
   const router = useRouter();
-  const params = useParams();
+  const params = useAppParams();
   const { organizationId, projectId } = params;
   const deletion = api.dashboard.delete.useMutation({
     onError: (error, variables) => {

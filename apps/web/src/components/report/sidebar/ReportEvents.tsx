@@ -6,6 +6,7 @@ import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
+import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartEvent } from '@/types';
@@ -21,9 +22,9 @@ export function ReportEvents() {
   const [isCreating, setIsCreating] = useState(false);
   const selectedEvents = useSelector((state) => state.report.events);
   const dispatch = useDispatch();
-  const params = useParams();
+  const params = useAppParams();
   const eventsQuery = api.chart.events.useQuery({
-    projectId: String(params.projectId),
+    projectId: params.projectId,
   });
   const eventsCombobox = (eventsQuery.data ?? []).map((item) => ({
     value: item.name,
@@ -157,6 +158,7 @@ export function ReportEvents() {
 
         <Combobox
           value={''}
+          searchable
           onChange={(value) => {
             dispatch(
               addEvent({

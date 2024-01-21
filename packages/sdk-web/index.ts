@@ -3,7 +3,7 @@ import { Mixan } from '@mixan/sdk';
 import type { PartialBy } from '@mixan/types';
 
 import { parseQuery } from './src/parseQuery';
-import { getDevice, getOS, getTimezone } from './src/utils';
+import { getTimezone } from './src/utils';
 
 export class MixanWeb extends Mixan {
   constructor(
@@ -29,16 +29,12 @@ export class MixanWeb extends Mixan {
 
   private parseUrl(url?: string) {
     if (!url || url === '') {
-      return {
-        direct: true,
-      };
+      return {};
     }
 
     const ref = new URL(url);
     return {
       host: ref.host,
-      hostname: ref.hostname,
-      url: ref.href,
       path: ref.pathname,
       query: parseQuery(ref.search),
       hash: ref.hash,
@@ -47,16 +43,13 @@ export class MixanWeb extends Mixan {
 
   private properties() {
     return {
-      os: getOS(),
-      device: getDevice(),
       ua: navigator.userAgent,
-      referrer: this.parseUrl(document.referrer),
+      referrer: document.referrer || undefined,
       language: navigator.language,
       timezone: getTimezone(),
       screen: {
         width: window.screen.width,
         height: window.screen.height,
-        pixelRatio: window.devicePixelRatio,
       },
       title: document.title,
       ...this.parseUrl(window.location.href),
