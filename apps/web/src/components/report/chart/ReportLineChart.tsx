@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
@@ -32,7 +32,7 @@ export function ReportLineChart({
   interval,
   data,
 }: ReportLineChartProps) {
-  const { editMode } = useChartContext();
+  const { editMode, previous } = useChartContext();
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(data);
@@ -75,15 +75,30 @@ export function ReportLineChart({
               />
               {series.map((serie) => {
                 return (
-                  <Line
-                    type={lineType}
-                    key={serie.name}
-                    isAnimationActive={false}
-                    strokeWidth={2}
-                    dataKey={`${serie.index}:count`}
-                    stroke={getChartColor(serie.index)}
-                    name={serie.name}
-                  />
+                  <React.Fragment key={serie.name}>
+                    <Line
+                      type={lineType}
+                      key={serie.name}
+                      name={serie.name}
+                      isAnimationActive={false}
+                      strokeWidth={2}
+                      dataKey={`${serie.index}:count`}
+                      stroke={getChartColor(serie.index)}
+                    />
+                    {previous && (
+                      <Line
+                        type={lineType}
+                        key={`${serie.name}:prev`}
+                        name={`${serie.name}:prev`}
+                        isAnimationActive={false}
+                        strokeWidth={1}
+                        dot={false}
+                        strokeDasharray={'6 6'}
+                        dataKey={`${serie.index}:prev:count`}
+                        stroke={getChartColor(serie.index)}
+                      />
+                    )}
+                  </React.Fragment>
                 );
               })}
             </LineChart>

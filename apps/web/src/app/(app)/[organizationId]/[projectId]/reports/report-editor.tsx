@@ -57,6 +57,7 @@ export default function ReportEditor({
           </div>
         </SheetTrigger>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 col-span-4">
+          <ReportChartType className="min-w-0 flex-1" />
           <Combobox
             className="min-w-0 flex-1"
             placeholder="Range"
@@ -70,7 +71,6 @@ export default function ReportEditor({
             }))}
           />
           <ReportInterval className="min-w-0 flex-1" />
-          <ReportChartType className="min-w-0 flex-1" />
           <ReportLineType className="min-w-0 flex-1" />
         </div>
         <div className="col-start-2 md:col-start-6 row-start-1 text-right">

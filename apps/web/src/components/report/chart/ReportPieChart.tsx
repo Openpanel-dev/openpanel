@@ -3,6 +3,7 @@ import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { cn } from '@/utils/cn';
+import { round } from '@/utils/math';
 import { getChartColor } from '@/utils/theme';
 import { Cell, Pie, PieChart, Tooltip } from 'recharts';
 
@@ -14,10 +15,55 @@ interface ReportPieChartProps {
   data: IChartData;
 }
 
+const RADIAN = Math.PI / 180;
+const renderLabel = ({
+  x,
+  y,
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  payload,
+  ...props
+}: any) => {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+  const xx = cx + radius * Math.cos(-midAngle * RADIAN);
+  const yy = cy + radius * Math.sin(-midAngle * RADIAN);
+  const label = payload.label;
+  const percent = round(payload.percent * 100, 1);
+
+  return (
+    <>
+      <text
+        x={xx}
+        y={yy}
+        fill="white"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={12}
+      >
+        {percent}%
+      </text>
+      <text
+        x={x}
+        y={y}
+        fill="black"
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontSize={12}
+      >
+        {label}
+      </text>
+    </>
+  );
+};
+
 export function ReportPieChart({ data }: ReportPieChartProps) {
   const { editMode } = useChartContext();
   const { series, setVisibleSeries } = useVisibleSeries(data);
 
+  const sum = series.reduce((acc, serie) => acc + serie.metrics.sum, 0);
   // Get max 10 series and than combine others into one
   const pieData = series.map((serie) => {
     return {
@@ -26,6 +72,7 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
       index: serie.index,
       label: serie.name,
       count: serie.metrics.sum,
+      percent: serie.metrics.sum / sum,
     };
   });
 
@@ -50,8 +97,9 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
                   dataKey={'count'}
                   data={pieData}
                   innerRadius={height / 4}
-                  outerRadius={height / 2 - 20}
+                  outerRadius={height / 2.5}
                   isAnimationActive={false}
+                  label={renderLabel}
                 >
                   {pieData.map((item) => {
                     return (

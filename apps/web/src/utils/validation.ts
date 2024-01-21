@@ -51,6 +51,7 @@ export const zChartInput = z.object({
   events: zChartEvents,
   breakdowns: zChartBreakdowns,
   range: z.enum(objectToZodEnums(timeRanges)),
+  previous: z.boolean(),
 });
 
 export const zChartInputWithDates = zChartInput.extend({

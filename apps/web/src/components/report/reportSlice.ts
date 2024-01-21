@@ -36,6 +36,7 @@ const initialState: InitialState = {
   range: '1m',
   startDate: null,
   endDate: null,
+  previous: false,
 };
 
 export const reportSlice = createSlice({

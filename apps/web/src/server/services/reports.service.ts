@@ -51,6 +51,7 @@ export function transformReport(
     interval: report.interval,
     name: report.name || 'Untitled',
     range: (report.range as IChartRange) ?? timeRanges['1m'],
+    previous: report.previous ?? false,
   };
 }
 

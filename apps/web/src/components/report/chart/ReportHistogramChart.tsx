@@ -1,3 +1,4 @@
+import React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
@@ -27,7 +28,7 @@ export function ReportHistogramChart({
   interval,
   data,
 }: ReportHistogramChartProps) {
-  const { editMode } = useChartContext();
+  const { editMode, previous } = useChartContext();
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
 
@@ -65,14 +66,25 @@ export function ReportHistogramChart({
               />
               {series.map((serie) => {
                 return (
-                  <Bar
-                    stackId={serie.index}
-                    key={serie.name}
-                    name={serie.name}
-                    dataKey={`${serie.index}:count`}
-                    fill={getChartColor(serie.index)}
-                    radius={8}
-                  />
+                  <React.Fragment key={serie.name}>
+                    {previous && (
+                      <Bar
+                        key={`${serie.name}:prev`}
+                        name={`${serie.name}:prev`}
+                        dataKey={`${serie.index}:prev:count`}
+                        fill={getChartColor(serie.index)}
+                        fillOpacity={0.2}
+                        radius={8}
+                      />
+                    )}
+                    <Bar
+                      key={serie.name}
+                      name={serie.name}
+                      dataKey={`${serie.index}:count`}
+                      fill={getChartColor(serie.index)}
+                      radius={8}
+                    />
+                  </React.Fragment>
                 );
               })}
             </BarChart>

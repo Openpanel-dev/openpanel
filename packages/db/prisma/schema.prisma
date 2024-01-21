@@ -171,6 +171,7 @@ model Report {
   events     Json
   project_id String
   project    Project   @relation(fields: [project_id], references: [id])
+  previous   Boolean   @default(false)
 
   dashboard_id String
   dashboard    Dashboard @relation(fields: [dashboard_id], references: [id])

@@ -16,7 +16,12 @@ export function ReportInterval({ className }: ReportIntervalProps) {
   const interval = useSelector((state) => state.report.interval);
   const range = useSelector((state) => state.report.range);
   const chartType = useSelector((state) => state.report.chartType);
-  if (chartType !== 'linear' && chartType !== 'histogram') {
+  if (
+    chartType !== 'linear' &&
+    chartType !== 'histogram' &&
+    chartType !== 'area' &&
+    chartType !== 'metric'
+  ) {
     return null;
   }
 

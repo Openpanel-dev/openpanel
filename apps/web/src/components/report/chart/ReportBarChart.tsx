@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import {
@@ -22,6 +23,7 @@ import type { SortingState } from '@tanstack/react-table';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useElementSize } from 'usehooks-ts';
 
+import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
 
 const columnHelper =
@@ -36,6 +38,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   const [ref, { width }] = useElementSize();
   const [sorting, setSorting] = useState<SortingState>([]);
   const maxCount = Math.max(...data.series.map((serie) => serie.metrics.sum));
+  const number = useNumber();
   const table = useReactTable({
     data: useMemo(
       () => (editMode ? data.series : data.series.slice(0, 20)),
@@ -60,7 +63,12 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
         columnHelper.accessor((row) => row.metrics.sum, {
           id: 'totalCount',
           cell: (info) => (
-            <div className="text-right font-medium">{info.getValue()}</div>
+            <div className="text-right font-medium flex gap-2">
+              <div>{number.format(info.getValue())}</div>
+              <PreviousDiffIndicator
+                {...info.row.original.metrics.previous.sum}
+              />
+            </div>
           ),
           header: () => 'Count',
           footer: (info) => info.column.id,

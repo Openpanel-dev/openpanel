@@ -119,74 +119,198 @@ export const chartRouter = createTRPCRouter({
 
   chart: protectedProcedure
     .input(zChartInputWithDates.merge(z.object({ projectId: z.string() })))
-    .query(async ({ input: { projectId, events, ...input } }) => {
-      const { startDate, endDate } =
-        input.startDate && input.endDate
-          ? {
-              startDate: input.startDate,
-              endDate: input.endDate,
-            }
-          : getDatesFromRange(input.range);
-      const series: Awaited<ReturnType<typeof getChartData>> = [];
-      for (const event of events) {
-        const result = await getChartData({
-          ...input,
-          startDate,
-          endDate,
-          event,
-          projectId: projectId,
-        });
-        series.push(...result);
+    .query(async ({ input }) => {
+      const current = getDatesFromRange(input.range);
+      let diff = 0;
+
+      switch (input.range) {
+        case '24h':
+        case 'today': {
+          diff = 1000 * 60 * 60 * 24;
+          break;
+        }
+        case '7d': {
+          diff = 1000 * 60 * 60 * 24 * 17;
+          break;
+        }
+        case '14d': {
+          diff = 1000 * 60 * 60 * 24 * 14;
+          break;
+        }
+        case '1m': {
+          diff = 1000 * 60 * 60 * 24 * 30;
+          break;
+        }
+        case '3m': {
+          diff = 1000 * 60 * 60 * 24 * 90;
+          break;
+        }
+        case '6m': {
+          diff = 1000 * 60 * 60 * 24 * 180;
+          break;
+        }
       }
 
-      const sorted = [...series].sort((a, b) => {
-        if (input.chartType === 'linear') {
-          const sumA = a.data.reduce((acc, item) => acc + item.count, 0);
-          const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
-          return sumB - sumA;
-        } else {
-          return b.metrics.sum - a.metrics.sum;
-        }
-      });
+      const promises = [wrapper(input)];
 
-      const metrics = {
-        max: Math.max(...sorted.map((item) => item.metrics.max)),
-        min: Math.min(...sorted.map((item) => item.metrics.min)),
-        sum: sum(sorted.map((item) => item.metrics.sum, 0)),
-        averge: round(
-          average(sorted.map((item) => item.metrics.average, 0)),
-          2
-        ),
-      };
+      if (input.previous) {
+        promises.push(
+          wrapper({
+            ...input,
+            ...{
+              startDate: new Date(
+                new Date(current.startDate).getTime() - diff
+              ).toISOString(),
+              endDate: new Date(
+                new Date(current.endDate).getTime() - diff
+              ).toISOString(),
+            },
+          })
+        );
+      }
+
+      const awaitedPromises = await Promise.all(promises);
+      const data = awaitedPromises[0]!;
+      const previousData = awaitedPromises[1];
 
       return {
-        events: Object.entries(
-          series.reduce(
-            (acc, item) => {
-              if (acc[item.event.id]) {
-                acc[item.event.id] += item.metrics.sum;
-              } else {
-                acc[item.event.id] = item.metrics.sum;
-              }
-              return acc;
+        ...data,
+        series: data.series.map((item, sIndex) => {
+          function getPreviousDiff(key: keyof (typeof data)['metrics']) {
+            const prev = previousData?.series?.[sIndex]?.metrics?.[key];
+            const diff = getPreviousDataDiff(item.metrics[key], prev);
+
+            return diff && prev
+              ? {
+                  diff: diff?.diff,
+                  state: diff?.state,
+                  value: prev,
+                }
+              : null;
+          }
+
+          return {
+            ...item,
+            metrics: {
+              ...item.metrics,
+              previous: {
+                sum: getPreviousDiff('sum'),
+                average: getPreviousDiff('average'),
+              },
             },
-            {} as Record<(typeof series)[number]['event']['id'], number>
-          )
-        ).map(([id, count]) => ({
-          count,
-          ...events.find((event) => event.id === id)!,
-        })),
-        series: sorted.map((item) => ({
-          ...item,
-          metrics: {
-            ...item.metrics,
-            totalMetrics: metrics,
-          },
-        })),
-        metrics,
+            data: item.data.map((item, dIndex) => {
+              const diff = getPreviousDataDiff(
+                item.count,
+                previousData?.series?.[sIndex]?.data?.[dIndex]?.count
+              );
+              return {
+                ...item,
+                previous:
+                  diff && previousData?.series?.[sIndex]?.data?.[dIndex]
+                    ? Object.assign(
+                        {},
+                        previousData?.series?.[sIndex]?.data?.[dIndex],
+                        diff
+                      )
+                    : null,
+              };
+            }),
+          };
+        }),
       };
     }),
 });
+
+const chartValidator = zChartInputWithDates.merge(
+  z.object({ projectId: z.string() })
+);
+type ChartInput = z.infer<typeof chartValidator>;
+
+function getPreviousDataDiff(current: number, previous: number | undefined) {
+  if (!previous) {
+    return null;
+  }
+
+  const diff = round(
+    ((current > previous
+      ? current / previous
+      : current < previous
+      ? previous / current
+      : 0) -
+      1) *
+      100,
+    1
+  );
+
+  return {
+    diff: Number.isNaN(diff) || !Number.isFinite(diff) ? null : diff,
+    state:
+      current > previous
+        ? 'positive'
+        : current < previous
+        ? 'negative'
+        : 'neutral',
+  };
+}
+
+async function wrapper({ events, projectId, ...input }: ChartInput) {
+  const { startDate, endDate } =
+    input.startDate && input.endDate
+      ? {
+          startDate: input.startDate,
+          endDate: input.endDate,
+        }
+      : getDatesFromRange(input.range);
+  const series: Awaited<ReturnType<typeof getChartData>> = [];
+  for (const event of events) {
+    const result = await getChartData({
+      ...input,
+      startDate,
+      endDate,
+      event,
+      projectId: projectId,
+    });
+    series.push(...result);
+  }
+
+  const sorted = [...series].sort((a, b) => {
+    if (input.chartType === 'linear') {
+      const sumA = a.data.reduce((acc, item) => acc + item.count, 0);
+      const sumB = b.data.reduce((acc, item) => acc + item.count, 0);
+      return sumB - sumA;
+    } else {
+      return b.metrics.sum - a.metrics.sum;
+    }
+  });
+
+  const metrics = {
+    max: Math.max(...sorted.map((item) => item.metrics.max)),
+    min: Math.min(...sorted.map((item) => item.metrics.min)),
+    sum: sum(sorted.map((item) => item.metrics.sum, 0)),
+    average: round(average(sorted.map((item) => item.metrics.average, 0)), 2),
+  };
+
+  return {
+    events: Object.entries(
+      series.reduce(
+        (acc, item) => {
+          if (acc[item.event.id]) {
+            acc[item.event.id] += item.metrics.sum;
+          } else {
+            acc[item.event.id] = item.metrics.sum;
+          }
+          return acc;
+        },
+        {} as Record<(typeof series)[number]['event']['id'], number>
+      )
+    ).map(([id, count]) => ({
+      count,
+      ...events.find((event) => event.id === id)!,
+    })),
+    series: sorted,
+    metrics,
+  };
+}
 
 interface ResultItem {
   label: string | null;
@@ -294,7 +418,9 @@ async function getChartData(payload: IGetChartDataInput) {
       payload.chartType === 'area' ||
       payload.chartType === 'linear' ||
       payload.chartType === 'histogram' ||
-      payload.chartType === 'metric'
+      payload.chartType === 'metric' ||
+      payload.chartType === 'pie' ||
+      payload.chartType === 'bar'
         ? fillEmptySpotsInTimeline(
             series[key] ?? [],
             payload.interval,

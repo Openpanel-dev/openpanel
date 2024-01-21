@@ -25,6 +25,7 @@ export const Chart = memo(
     name,
     range,
     lineType,
+    previous,
   }: ReportChartProps) {
     const params = useAppParams();
     const hasEmptyFilters = events.some((event) =>
@@ -44,6 +45,7 @@ export const Chart = memo(
         startDate: null,
         endDate: null,
         projectId: params.projectId,
+        previous,
       },
       {
         keepPreviousData: false,

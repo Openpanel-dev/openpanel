@@ -1,5 +1,4 @@
 import { cn } from '@/utils/cn';
-import { Space_Grotesk } from 'next/font/google';
 
 import Providers from './providers';
 
@@ -7,17 +6,8 @@ import '@/styles/globals.css';
 
 import { getSession } from '@/server/auth';
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 import Auth from './auth';
-
-// import { cookies } from 'next/headers';
-
-const font = Space_Grotesk({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--text',
-});
 
 export const metadata = {};
 
@@ -38,10 +28,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className="light">
       <body
-        className={cn(
-          'min-h-screen font-sans antialiased grainy bg-slate-50',
-          font.className
-        )}
+        className={cn('min-h-screen font-sans antialiased grainy bg-slate-50')}
       >
         <Providers cookies={cookies().getAll()} session={session}>
           {session ? children : <Auth />}

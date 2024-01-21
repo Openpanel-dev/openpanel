@@ -21,6 +21,7 @@ export type RouterInputs = inferRouterInputs<AppRouter>;
  */
 export type RouterOutputs = inferRouterOutputs<AppRouter>;
 export type IChartData = RouterOutputs['chart']['chart'];
+export type IChartSerieDataItem = IChartData['series'][number]['data'][number];
 
 export function handleError(error: TRPCClientErrorBase<any>) {
   toast({

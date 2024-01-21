@@ -1,11 +1,14 @@
 import type { IChartData } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
+import { useNumber } from '@/hooks/useNumerFormatter';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { cn } from '@/utils/cn';
 import { theme } from '@/utils/theme';
+import { ChevronDown, ChevronUp, ChevronUpCircle } from 'lucide-react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
 
+import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
 
 interface ReportMetricChartProps {
@@ -16,6 +19,7 @@ export function ReportMetricChart({ data }: ReportMetricChartProps) {
   const { editMode } = useChartContext();
   const { series } = useVisibleSeries(data, editMode ? undefined : 2);
   const color = theme?.colors['chart-0'];
+  const number = useNumber();
   return (
     <div
       className={cn(
@@ -29,7 +33,7 @@ export function ReportMetricChart({ data }: ReportMetricChartProps) {
             className="relative border border-border p-4 rounded-md bg-white overflow-hidden"
             key={serie.name}
           >
-            <div className="absolute -top-1 -left-1 -right-1 -bottom-1 z-0 opacity-50">
+            <div className="absolute -top-1 -left-1 -right-1 -bottom-1 z-0 opacity-20">
               <AutoSizer>
                 {({ width, height }) => (
                   <AreaChart
@@ -65,10 +69,19 @@ export function ReportMetricChart({ data }: ReportMetricChartProps) {
                 <ColorSquare>{serie.event.id}</ColorSquare>
                 {serie.name ?? serie.event.displayName ?? serie.event.name}
               </div>
-              <div className="mt-6 font-mono text-4xl font-light">
-                {new Intl.NumberFormat('en', {
-                  maximumSignificantDigits: 20,
-                }).format(serie.metrics.sum)}
+              <div className="flex justify-between items-end">
+                <div className="mt-6 font-mono text-3xl font-bold">
+                  {number.format(serie.metrics.sum)}
+                </div>
+                {!!serie.metrics.previous.sum && (
+                  <div className="flex flex-col items-end">
+                    <PreviousDiffIndicator {...serie.metrics.previous.sum}>
+                      <div className="font-mono">
+                        {number.format(serie.metrics.previous.sum.value)}
+                      </div>
+                    </PreviousDiffIndicator>
+                  </div>
+                )}
               </div>
             </div>
           </div>
