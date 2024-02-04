@@ -1,5 +1,7 @@
 import { unstable_cache } from 'next/cache';
 
+import { chQuery } from '@mixan/db';
+
 import { db } from '../db';
 
 export type IServiceProject = Awaited<ReturnType<typeof getProjectById>>;
@@ -16,6 +18,17 @@ export function getProjectsByOrganizationId(organizationId: string) {
   return db.project.findMany({
     where: {
       organization_id: organizationId,
+    },
+  });
+}
+
+export async function getProjectWithMostEvents(organizationId: string) {
+  return db.project.findFirst({
+    where: {
+      organization_id: organizationId,
+    },
+    orderBy: {
+      eventsCount: 'desc',
     },
   });
 }

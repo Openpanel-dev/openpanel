@@ -1,13 +1,15 @@
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingDownIcon, TrendingUpIcon } from 'lucide-react';
 
+import { Badge } from '../ui/badge';
 import { useChartContext } from './chart/ChartProvider';
 
 interface PreviousDiffIndicatorProps {
   diff?: number | null | undefined;
   state?: string | null | undefined;
   children?: React.ReactNode;
+  inverted?: boolean;
 }
 
 export function PreviousDiffIndicator({
@@ -15,25 +17,38 @@ export function PreviousDiffIndicator({
   state,
   children,
 }: PreviousDiffIndicatorProps) {
-  const { previous } = useChartContext();
+  const { previous, previousIndicatorInverted } = useChartContext();
   const number = useNumber();
   if (diff === null || diff === undefined || previous === false) {
     return children ?? null;
   }
 
+  if (previousIndicatorInverted === true) {
+    return (
+      <>
+        <Badge
+          className="flex gap-1"
+          variant={state === 'positive' ? 'destructive' : 'success'}
+        >
+          {state === 'negative' && <TrendingUpIcon size={15} />}
+          {state === 'positive' && <TrendingDownIcon size={15} />}
+          {number.format(diff)}%
+        </Badge>
+        {children}
+      </>
+    );
+  }
+
   return (
     <>
-      <div
-        className={cn('flex items-center', [
-          state === 'positive' && 'text-emerald-500',
-          state === 'negative' && 'text-rose-500',
-          state === 'neutral' && 'text-slate-400',
-        ])}
+      <Badge
+        className="flex gap-1"
+        variant={state === 'positive' ? 'success' : 'destructive'}
       >
-        {state === 'positive' && <ChevronUp size={20} />}
-        {state === 'negative' && <ChevronDown size={20} />}
+        {state === 'positive' && <TrendingUpIcon size={15} />}
+        {state === 'negative' && <TrendingDownIcon size={15} />}
         {number.format(diff)}%
-      </div>
+      </Badge>
       {children}
     </>
   );

@@ -27,6 +27,8 @@ type InitialState = IChartInput & {
 const initialState: InitialState = {
   ready: false,
   dirty: false,
+  // TODO: remove this
+  projectId: '',
   name: 'Untitled',
   chartType: 'linear',
   lineType: 'monotone',
@@ -37,6 +39,9 @@ const initialState: InitialState = {
   startDate: null,
   endDate: null,
   previous: false,
+  formula: undefined,
+  unit: undefined,
+  metric: 'sum',
 };
 
 export const reportSlice = createSlice({
@@ -98,6 +103,12 @@ export const reportSlice = createSlice({
         }
         return event;
       });
+    },
+
+    // Previous
+    changePrevious: (state, action: PayloadAction<boolean>) => {
+      state.dirty = true;
+      state.previous = action.payload;
     },
 
     // Breakdowns
@@ -181,6 +192,12 @@ export const reportSlice = createSlice({
       state.range = action.payload;
       state.interval = getDefaultIntervalByRange(action.payload);
     },
+
+    // Formula
+    changeFormula: (state, action: PayloadAction<string>) => {
+      state.dirty = true;
+      state.formula = action.payload;
+    },
   },
 });
 
@@ -201,6 +218,8 @@ export const {
   changeChartType,
   changeLineType,
   resetDirty,
+  changeFormula,
+  changePrevious,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

@@ -5,9 +5,6 @@ import Providers from './providers';
 import '@/styles/globals.css';
 
 import { getSession } from '@/server/auth';
-import { cookies } from 'next/headers';
-
-import Auth from './auth';
 
 export const metadata = {};
 
@@ -30,9 +27,7 @@ export default async function RootLayout({
       <body
         className={cn('min-h-screen font-sans antialiased grainy bg-slate-50')}
       >
-        <Providers cookies={cookies().getAll()} session={session}>
-          {session ? children : <Auth />}
-        </Providers>
+        <Providers session={session}>{children}</Providers>
       </body>
     </html>
   );

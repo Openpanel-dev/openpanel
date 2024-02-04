@@ -1,6 +1,6 @@
 import { cn } from '@/utils/cn';
 
-interface WidgetHeadProps {
+export interface WidgetHeadProps {
   children: React.ReactNode;
   className?: string;
 }
@@ -17,7 +17,7 @@ export function WidgetHead({ children, className }: WidgetHeadProps) {
   );
 }
 
-interface WidgetBodyProps {
+export interface WidgetBodyProps {
   children: React.ReactNode;
   className?: string;
 }
@@ -25,7 +25,7 @@ export function WidgetBody({ children, className }: WidgetBodyProps) {
   return <div className={cn('p-4', className)}>{children}</div>;
 }
 
-interface WidgetProps {
+export interface WidgetProps {
   children: React.ReactNode;
   className?: string;
 }

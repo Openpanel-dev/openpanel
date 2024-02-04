@@ -30,6 +30,7 @@ model Project {
   organization_id String
   organization    Organization @relation(fields: [organization_id], references: [id])
   events          Event[]
+  eventsCount     Int          @default(0)
   profiles        Profile[]
   clients         Client[]
 
@@ -64,8 +65,7 @@ model Event {
   project_id String
   project    Project @relation(fields: [project_id], references: [id])
 
-  profile_id String?  @db.Uuid
-  profile    Profile? @relation(fields: [profile_id], references: [id])
+  profile_id String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -73,8 +73,16 @@ model Event {
   @@map("events")
 }
 
+model Salt {
+  salt      String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("salts")
+}
+
 model Profile {
-  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String   @id
   external_id String?
   first_name  String?
   last_name   String?
@@ -82,11 +90,9 @@ model Profile {
   avatar      String?
   properties  Json
   project_id  String
-  project     Project @relation(fields: [project_id], references: [id])
-  events      Event[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  project     Project  @relation(fields: [project_id], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
 
   @@map("profiles")
 }
@@ -160,6 +166,13 @@ model Dashboard {
   @@map("dashboards")
 }
 
+enum Metric {
+  sum
+  average
+  min
+  max
+}
+
 model Report {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
@@ -169,6 +182,9 @@ model Report {
   line_type  String    @default("monotone")
   breakdowns Json
   events     Json
+  formula    String?
+  unit       String?
+  metric     Metric    @default(sum)
   project_id String
   project    Project   @relation(fields: [project_id], references: [id])
   previous   Boolean   @default(false)

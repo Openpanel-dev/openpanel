@@ -2,6 +2,7 @@ import { getSession } from '@/server/auth';
 import { getRecentDashboardsByUserId } from '@/server/services/dashboard.service';
 import { getOrganizations } from '@/server/services/organization.service';
 
+import Auth from '../auth';
 import { LayoutSidebar } from './layout-sidebar';
 
 interface AppLayoutProps {
@@ -15,8 +16,12 @@ export default async function AppLayout({ children }: AppLayoutProps) {
     ? await getRecentDashboardsByUserId(session?.user.id)
     : [];
 
+  if (!session) {
+    return <Auth />;
+  }
+
   return (
-    <div>
+    <div id="dashboard">
       <LayoutSidebar {...{ organizations, recentDashboards }} />
       <div className="lg:pl-72 transition-all">{children}</div>
     </div>

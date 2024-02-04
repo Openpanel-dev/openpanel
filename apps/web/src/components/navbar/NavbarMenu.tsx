@@ -1,8 +1,9 @@
 import { useOrganizationParams } from '@/hooks/useOrganizationParams';
 import { cn } from '@/utils/cn';
-import { strip } from '@/utils/object';
 import type { LinkProps } from 'next/link';
 import Link from 'next/link';
+
+import { strip } from '@mixan/common';
 
 import { NavbarUserDropdown } from './NavbarUserDropdown';
 

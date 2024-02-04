@@ -5,10 +5,13 @@ import { cn } from '@/utils/cn';
 
 const Table = React.forwardRef<
   HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement> & { wrapper?: boolean }
->(({ className, wrapper, ...props }, ref) => (
+  React.HTMLAttributes<HTMLTableElement> & {
+    wrapper?: boolean;
+    overflow?: boolean;
+  }
+>(({ className, wrapper, overflow = true, ...props }, ref) => (
   <div className={cn('border border-border rounded-md bg-white', className)}>
-    <div className="relative w-full overflow-auto ">
+    <div className={cn('relative w-full', overflow && 'overflow-auto')}>
       <table
         ref={ref}
         className={cn(

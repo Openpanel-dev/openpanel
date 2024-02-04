@@ -34,7 +34,7 @@ export function ReportAreaChart({
   const { editMode } = useChartContext();
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const formatDate = useFormatDateInterval(interval);
-  const rechartData = useRechartDataModel(data);
+  const rechartData = useRechartDataModel(series);
 
   return (
     <>

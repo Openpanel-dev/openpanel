@@ -1,6 +1,7 @@
 'use client';
 
 import { memo } from 'react';
+import type { RouterOutputs } from '@/app/_trpc/client';
 import { api } from '@/app/_trpc/client';
 import { useAppParams } from '@/hooks/useAppParams';
 import type { IChartInput } from '@/types';
@@ -11,10 +12,13 @@ import { ReportAreaChart } from './ReportAreaChart';
 import { ReportBarChart } from './ReportBarChart';
 import { ReportHistogramChart } from './ReportHistogramChart';
 import { ReportLineChart } from './ReportLineChart';
+import { ReportMapChart } from './ReportMapChart';
 import { ReportMetricChart } from './ReportMetricChart';
 import { ReportPieChart } from './ReportPieChart';
 
-export type ReportChartProps = IChartInput;
+export type ReportChartProps = IChartInput & {
+  initialData?: RouterOutputs['chart']['chart'];
+};
 
 export const Chart = memo(
   withChartProivder(function Chart({
@@ -26,18 +30,23 @@ export const Chart = memo(
     range,
     lineType,
     previous,
+    formula,
+    unit,
+    metric,
+    initialData,
   }: ReportChartProps) {
     const params = useAppParams();
     const hasEmptyFilters = events.some((event) =>
       event.filters.some((filter) => filter.value.length === 0)
     );
     const enabled = events.length > 0 && !hasEmptyFilters;
+
     const chart = api.chart.chart.useQuery(
       {
-        interval,
-        chartType,
         // dont send lineType since it does not need to be sent
         lineType: 'monotone',
+        interval,
+        chartType,
         events,
         breakdowns,
         name,
@@ -46,10 +55,14 @@ export const Chart = memo(
         endDate: null,
         projectId: params.projectId,
         previous,
+        formula,
+        unit,
+        metric,
       },
       {
-        keepPreviousData: false,
+        keepPreviousData: true,
         enabled,
+        initialData,
       }
     );
 
@@ -66,10 +79,10 @@ export const Chart = memo(
       );
     }
 
-    if (chart.isFetching) {
+    if (chart.isLoading) {
       return (
         <ChartAnimationContainer>
-          <ChartAnimation name="airplane" className="max-w-sm w-fill mx-auto" />
+          {/* <ChartAnimation name="airplane" className="max-w-sm w-fill mx-auto" /> */}
           <p className="text-center font-medium">Loading...</p>
         </ChartAnimationContainer>
       );
@@ -97,6 +110,10 @@ export const Chart = memo(
           <p className="text-center font-medium">No data</p>
         </ChartAnimationContainer>
       );
+    }
+
+    if (chartType === 'map') {
+      return <ReportMapChart data={chart.data} />;
     }
 
     if (chartType === 'histogram') {

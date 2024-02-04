@@ -19,7 +19,7 @@ export function ReportChartTooltip({
   active,
   payload,
 }: ReportLineChartTooltipProps) {
-  const { previous } = useChartContext();
+  const { previous, unit } = useChartContext();
   const getLabel = useMappings();
   const interval = useSelector((state) => state.report.interval);
   const formatDate = useFormatDateInterval(interval);
@@ -41,7 +41,7 @@ export function ReportChartTooltip({
   const hidden = sorted.slice(limit);
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border bg-white p-3 text-sm shadow-xl">
+    <div className="flex flex-col gap-2 rounded-xl border bg-white p-3 text-sm shadow-xl min-w-[180px]">
       {visible.map((item, index) => {
         // If we have a <Cell /> component, payload can be nested
         const payload = item.payload.payload ?? item.payload;
@@ -57,11 +57,11 @@ export function ReportChartTooltip({
             {index === 0 && data.date && (
               <div className="flex justify-between gap-8">
                 <div>{formatDate(new Date(data.date))}</div>
-                {previous && data.previous?.date && (
+                {/* {previous && data.previous?.date && (
                   <div className="text-slate-400 italic">
                     {formatDate(new Date(data.previous.date))}
                   </div>
-                )}
+                )} */}
               </div>
             )}
             <div className="flex gap-2">
@@ -74,11 +74,15 @@ export function ReportChartTooltip({
                   {getLabel(data.label)}
                 </div>
                 <div className="flex justify-between gap-8">
-                  <div>{number.format(data.count)}</div>
+                  <div>
+                    {number.format(data.count)}
+                    {unit}
+                  </div>
 
                   <div className="flex gap-1">
                     <PreviousDiffIndicator {...data.previous}>
-                      {!!data.previous && `(${data.previous.count})`}
+                      {!!data.previous &&
+                        `(${data.previous.value + (unit ? unit : '')})`}
                     </PreviousDiffIndicator>
                   </div>
                 </div>

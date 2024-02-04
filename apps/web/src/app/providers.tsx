@@ -8,29 +8,25 @@ import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
 import makeStore from '@/redux';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { httpBatchLink } from '@trpc/client';
+import { httpLink } from '@trpc/client';
 import type { Session } from 'next-auth';
 import { SessionProvider } from 'next-auth/react';
-import type { RequestCookie } from 'next/dist/compiled/@edge-runtime/cookies';
 import { Provider as ReduxProvider } from 'react-redux';
 import superjson from 'superjson';
-
-import { CookieProvider } from './cookie-provider';
 
 export default function Providers({
   children,
   session,
-  cookies,
 }: {
   children: React.ReactNode;
   session: Session | null;
-  cookies: RequestCookie[];
 }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
+            networkMode: 'always',
             refetchOnMount: true,
             refetchOnWindowFocus: false,
           },
@@ -41,7 +37,7 @@ export default function Providers({
     api.createClient({
       transformer: superjson,
       links: [
-        httpBatchLink({
+        httpLink({
           url: 'http://localhost:3000/api/trpc',
         }),
       ],
@@ -60,7 +56,7 @@ export default function Providers({
         <api.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
             <TooltipProvider delayDuration={200}>
-              <CookieProvider value={cookies}>{children}</CookieProvider>
+              {children}
               <Toaster />
               <ModalProvider />
             </TooltipProvider>

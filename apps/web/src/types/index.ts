@@ -3,9 +3,9 @@ import type {
   zChartBreakdown,
   zChartEvent,
   zChartInput,
-  zChartInputWithDates,
   zChartType,
   zLineType,
+  zMetric,
   zTimeInterval,
 } from '@/utils/validation';
 import type { TooltipProps } from 'recharts';
@@ -19,7 +19,6 @@ export type HtmlProps<T> = Omit<
 >;
 
 export type IChartInput = z.infer<typeof zChartInput>;
-export type IChartInputWithDates = z.infer<typeof zChartInputWithDates>;
 export type IChartEvent = z.infer<typeof zChartEvent>;
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =
@@ -27,6 +26,7 @@ export type IChartEventFilterValue =
 export type IChartBreakdown = z.infer<typeof zChartBreakdown>;
 export type IInterval = z.infer<typeof zTimeInterval>;
 export type IChartType = z.infer<typeof zChartType>;
+export type IChartMetric = z.infer<typeof zMetric>;
 export type IChartLineType = z.infer<typeof zLineType>;
 export type IChartRange = keyof typeof timeRanges;
 export type IToolTipProps<T> = Omit<TooltipProps<number, string>, 'payload'> & {
@@ -43,7 +43,4 @@ export type IGetChartDataInput = {
   projectId: string;
   startDate: string;
   endDate: string;
-} & Omit<
-  IChartInputWithDates,
-  'events' | 'name' | 'startDate' | 'endDate' | 'range'
->;
+} & Omit<IChartInput, 'events' | 'name' | 'startDate' | 'endDate' | 'range'>;

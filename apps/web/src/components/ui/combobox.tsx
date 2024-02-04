@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import type { ButtonProps } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -15,9 +16,10 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/utils/cn';
+import type { LucideIcon } from 'lucide-react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
-interface ComboboxProps<T> {
+export interface ComboboxProps<T> {
   placeholder: string;
   items: {
     value: T;
@@ -30,7 +32,17 @@ interface ComboboxProps<T> {
   onCreate?: (value: T) => void;
   className?: string;
   searchable?: boolean;
+  icon?: LucideIcon;
+  size?: ButtonProps['size'];
+  label?: string;
 }
+
+export type ExtendedComboboxProps<T> = Omit<
+  ComboboxProps<T>,
+  'items' | 'placeholder'
+> & {
+  placeholder?: string;
+};
 
 export function Combobox<T extends string>({
   placeholder,
@@ -41,6 +53,9 @@ export function Combobox<T extends string>({
   onCreate,
   className,
   searchable,
+  icon: Icon,
+  size,
+  label,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -55,11 +70,13 @@ export function Combobox<T extends string>({
       <PopoverTrigger asChild>
         {children ?? (
           <Button
+            size={size}
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className={cn('justify-between min-w-[150px]', className)}
+            className={cn('justify-between', className)}
           >
+            {Icon ? <Icon className="mr-2" size={16} /> : null}
             <span className="overflow-hidden text-ellipsis whitespace-nowrap">
               {value ? find(value)?.label ?? 'No match' : placeholder}
             </span>
@@ -67,7 +84,7 @@ export function Combobox<T extends string>({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-full min-w-0 p-0" align="start">
+      <PopoverContent className="w-full max-w-md p-0" align="start">
         <Command>
           {searchable === true && (
             <CommandInput
@@ -80,7 +97,7 @@ export function Combobox<T extends string>({
             <CommandEmpty className="p-2">
               <Button
                 onClick={() => {
-                  onCreate(search);
+                  onCreate(search as T);
                   setSearch('');
                   setOpen(false);
                 }}
@@ -99,7 +116,7 @@ export function Combobox<T extends string>({
                   value={item.value}
                   onSelect={(currentValue) => {
                     const value = find(currentValue)?.value ?? currentValue;
-                    onChange(value);
+                    onChange(value as T);
                     setOpen(false);
                   }}
                   {...(item.disabled && { disabled: true })}

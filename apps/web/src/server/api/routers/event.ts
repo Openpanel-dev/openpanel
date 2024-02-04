@@ -1,19 +1,9 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@/server/db';
+import { transformEvent } from '@/server/services/event.service';
 import { z } from 'zod';
 
-import type { Event, Profile } from '@mixan/db';
-
-function transformEvent(
-  event: Event & {
-    profile: Profile;
-  }
-) {
-  return {
-    ...event,
-    properties: event.properties as Record<string, unknown>,
-  };
-}
+import type { IDBEvent } from '@mixan/db';
+import { chQuery, createSqlBuilder } from '@mixan/db';
 
 export const eventRouter = createTRPCRouter({
   list: protectedProcedure
@@ -27,28 +17,18 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { take, skip, projectId, profileId, events } }) => {
-      return db.event
-        .findMany({
-          take,
-          skip,
-          where: {
-            project_id: projectId,
-            profile_id: profileId,
-            ...(events && events.length > 0
-              ? {
-                  name: {
-                    in: events,
-                  },
-                }
-              : {}),
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          include: {
-            profile: true,
-          },
-        })
-        .then((events) => events.map(transformEvent));
+      const { sb, getSql } = createSqlBuilder();
+
+      sb.limit = take;
+      sb.offset = skip;
+      sb.where.projectId = `project_id = '${projectId}'`;
+      if (profileId) {
+        sb.where.profileId = `profile_id = '${profileId}'`;
+      }
+      if (events?.length) {
+        sb.where.name = `name IN (${events.map((e) => `'${e}'`).join(',')})`;
+      }
+
+      return (await chQuery<IDBEvent>(getSql())).map(transformEvent);
     }),
 });

@@ -32,7 +32,7 @@ export function ReportHistogramChart({
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
 
-  const rechartData = useRechartDataModel(data);
+  const rechartData = useRechartDataModel(series);
 
   return (
     <>

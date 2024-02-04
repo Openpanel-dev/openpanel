@@ -2,14 +2,17 @@
 
 import { useAppParams } from '@/hooks/useAppParams';
 import type { IServiceRecentDashboards } from '@/server/services/dashboard.service';
+import { cn } from '@/utils/cn';
 import {
   BuildingIcon,
   CogIcon,
+  DotIcon,
   GanttChartIcon,
   KeySquareIcon,
   LayoutPanelTopIcon,
   UserIcon,
   UsersIcon,
+  WallpaperIcon,
   WarehouseIcon,
 } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
@@ -20,18 +23,32 @@ function LinkWithIcon({
   href,
   icon: Icon,
   label,
+  active: overrideActive,
 }: {
   href: string;
   icon: React.ElementType<LucideProps>;
   label: React.ReactNode;
+  active?: boolean;
 }) {
+  const pathname = usePathname();
+  const active = overrideActive || href === pathname;
   return (
     <Link
-      className="flex gap-2 items-center px-3 py-3 transition-colors hover:bg-slate-100 leading-none rounded-lg"
+      className={cn(
+        'text-slate-600 flex gap-2 items-center px-3 py-3 transition-colors hover:text-white hover:bg-blue-700 leading-none rounded-lg',
+        active && 'bg-blue-600 text-white'
+      )}
       href={href}
     >
       <Icon size={20} />
-      {label}
+      <div className="flex-1">{label}</div>
+      <DotIcon
+        size={20}
+        className={cn(
+          'transition-opacity',
+          active ? 'opacity-100' : 'opacity-0'
+        )}
+      />
     </Link>
   );
 }
@@ -54,9 +71,14 @@ export default function LayoutMenu({
   return (
     <>
       <LinkWithIcon
+        icon={WallpaperIcon}
+        label="Overview"
+        href={`/${params.organizationId}/${projectId}`}
+      />
+      <LinkWithIcon
         icon={LayoutPanelTopIcon}
         label="Dashboards"
-        href={`/${params.organizationId}/${projectId}`}
+        href={`/${params.organizationId}/${projectId}/dashboards`}
       />
       <LinkWithIcon
         icon={GanttChartIcon}

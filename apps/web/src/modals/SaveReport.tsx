@@ -10,7 +10,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useAppParams } from '@/hooks/useAppParams';
 import type { IChartInput } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 

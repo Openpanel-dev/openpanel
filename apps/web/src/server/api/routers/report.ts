@@ -53,7 +53,7 @@ export const reportRouter = createTRPCRouter({
   save: protectedProcedure
     .input(
       z.object({
-        report: zChartInput,
+        report: zChartInput.omit({ projectId: true }),
         dashboardId: z.string(),
       })
     )
@@ -74,6 +74,7 @@ export const reportRouter = createTRPCRouter({
           chart_type: report.chartType,
           line_type: report.lineType,
           range: report.range,
+          formula: report.formula,
         },
       });
     }),
@@ -81,7 +82,7 @@ export const reportRouter = createTRPCRouter({
     .input(
       z.object({
         reportId: z.string(),
-        report: zChartInput,
+        report: zChartInput.omit({ projectId: true }),
       })
     )
     .mutation(({ input: { report, reportId } }) => {
@@ -97,6 +98,7 @@ export const reportRouter = createTRPCRouter({
           chart_type: report.chartType,
           line_type: report.lineType,
           range: report.range,
+          formula: report.formula,
         },
       });
     }),

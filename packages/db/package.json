@@ -12,7 +12,10 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
-    "@prisma/client": "^5.1.1"
+    "@mixan/common": "workspace:*",
+    "@clickhouse/client": "^0.2.9",
+    "@prisma/client": "^5.1.1",
+    "ramda": "^0.29.1"
   },
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",
@@ -20,6 +23,7 @@
     "@mixan/tsconfig": "workspace:*",
     "@mixan/types": "workspace:*",
     "@types/node": "^18.16.0",
+    "@types/ramda": "^0.29.6",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "prisma": "^5.1.1",

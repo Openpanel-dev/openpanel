@@ -3,7 +3,7 @@ export const operators = {
   isNot: 'Is not',
   contains: 'Contains',
   doesNotContain: 'Not contains',
-};
+} as const;
 
 export const chartTypes = {
   linear: 'Linear',
@@ -12,7 +12,8 @@ export const chartTypes = {
   pie: 'Pie',
   metric: 'Metric',
   area: 'Area',
-};
+  map: 'Map',
+} as const;
 
 export const lineTypes = {
   monotone: 'Monotone',
@@ -30,14 +31,14 @@ export const lineTypes = {
   bumpY: 'Bump Y',
   bump: 'Bump',
   linearClosed: 'Linear closed',
-};
+} as const;
 
 export const intervals = {
-  minute: 'Minute',
-  day: 'Day',
-  hour: 'Hour',
-  month: 'Month',
-};
+  minute: 'minute',
+  day: 'day',
+  hour: 'hour',
+  month: 'month',
+} as const;
 
 export const alphabetIds = [
   'A',
@@ -65,6 +66,13 @@ export const timeRanges = {
   '1y': '1y',
 } as const;
 
+export const metrics = {
+  sum: 'sum',
+  average: 'average',
+  min: 'min',
+  max: 'max',
+} as const;
+
 export function isMinuteIntervalEnabledByRange(range: keyof typeof timeRanges) {
   return range === '30min' || range === '1h';
 }
@@ -77,7 +85,9 @@ export function isHourIntervalEnabledByRange(range: keyof typeof timeRanges) {
   );
 }
 
-export function getDefaultIntervalByRange(range: keyof typeof timeRanges) {
+export function getDefaultIntervalByRange(
+  range: keyof typeof timeRanges
+): keyof typeof intervals {
   if (range === '30min' || range === '1h') {
     return 'minute';
   } else if (range === 'today' || range === '24h') {

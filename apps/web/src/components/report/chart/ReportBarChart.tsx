@@ -9,6 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -21,7 +26,6 @@ import {
 } from '@tanstack/react-table';
 import type { SortingState } from '@tanstack/react-table';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useElementSize } from 'usehooks-ts';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
@@ -34,10 +38,11 @@ interface ReportBarChartProps {
 }
 
 export function ReportBarChart({ data }: ReportBarChartProps) {
-  const { editMode } = useChartContext();
-  const [ref, { width }] = useElementSize();
+  const { editMode, metric, unit, onClick } = useChartContext();
   const [sorting, setSorting] = useState<SortingState>([]);
-  const maxCount = Math.max(...data.series.map((serie) => serie.metrics.sum));
+  const maxCount = Math.max(
+    ...data.series.map((serie) => serie.metrics[metric])
+  );
   const number = useNumber();
   const table = useReactTable({
     data: useMemo(
@@ -53,46 +58,45 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
             return (
               <div className="flex items-center gap-2">
                 <ColorSquare>{info.row.original.event.id}</ColorSquare>
-                {info.getValue()}
+                <Tooltip delayDuration={200}>
+                  <TooltipTrigger asChild>
+                    <div className="text-ellipsis overflow-hidden">
+                      {info.getValue()}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>{info.getValue()}</TooltipContent>
+                </Tooltip>
               </div>
             );
           },
-          footer: (info) => info.column.id,
-          size: width ? width * 0.3 : undefined,
         }),
-        columnHelper.accessor((row) => row.metrics.sum, {
+        columnHelper.accessor((row) => row.metrics[metric], {
           id: 'totalCount',
           cell: (info) => (
-            <div className="text-right font-medium flex gap-2">
-              <div>{number.format(info.getValue())}</div>
+            <div className="flex gap-4 w-full">
+              <div className="relative flex-1">
+                <div
+                  className="top-0 absolute shine h-[20px] rounded-full"
+                  style={{
+                    width: (info.getValue() / maxCount) * 100 + '%',
+                    background: getChartColor(info.row.index),
+                  }}
+                />
+              </div>
+              <div className="font-bold">
+                {number.format(info.getValue())}
+                {unit}
+              </div>
               <PreviousDiffIndicator
-                {...info.row.original.metrics.previous.sum}
+                {...info.row.original.metrics.previous[metric]}
               />
             </div>
           ),
           header: () => 'Count',
-          footer: (info) => info.column.id,
-          size: width ? width * 0.1 : undefined,
           enableSorting: true,
         }),
-        columnHelper.accessor((row) => row.metrics.sum, {
-          id: 'graph',
-          cell: (info) => (
-            <div
-              className="shine h-4 rounded [.mini_&]:h-3"
-              style={{
-                width: (info.getValue() / maxCount) * 100 + '%',
-                background: getChartColor(info.row.index),
-              }}
-            />
-          ),
-          header: () => 'Graph',
-          footer: (info) => info.column.id,
-          size: width ? width * 0.6 : undefined,
-        }),
       ];
-    }, [width]),
-    columnResizeMode: 'onChange',
+    }, [maxCount, number]),
     state: {
       sorting,
     },
@@ -102,85 +106,64 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   });
 
   return (
-    <div ref={ref}>
-      <div className="overflow-x-auto">
-        <Table
-          {...{
-            className: editMode ? '' : 'mini',
-            style: {
-              width: table.getTotalSize(),
-            },
-          }}
-        >
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    {...{
-                      colSpan: header.colSpan,
-                      style: {
-                        width: header.getSize(),
-                      },
-                    }}
-                  >
-                    <div
-                      {...{
-                        className: cn(
-                          'flex items-center gap-2',
-                          header.column.getCanSort() &&
-                            'cursor-pointer select-none'
-                        ),
-                        onClick: header.column.getToggleSortingHandler(),
-                      }}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                      {{
-                        asc: <ChevronUp className="ml-auto" size={14} />,
-                        desc: <ChevronDown className="ml-auto" size={14} />,
-                      }[header.column.getIsSorted() as string] ?? null}
-                    </div>
-                    <div
-                      {...(editMode
-                        ? {
-                            onMouseDown: header.getResizeHandler(),
-                            onTouchStart: header.getResizeHandler(),
-                            className: `resizer ${
-                              header.column.getIsResizing() ? 'isResizing' : ''
-                            }`,
-                            style: {},
-                          }
-                        : {})}
-                    />
-                  </TableHead>
-                ))}
-              </TableRow>
+    <Table
+      overflow={editMode}
+      className={cn('table-fixed', editMode ? '' : 'mini')}
+    >
+      <TableHeader>
+        {table.getHeaderGroups().map((headerGroup) => (
+          <TableRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <TableHead
+                key={header.id}
+                {...{
+                  colSpan: header.colSpan,
+                }}
+              >
+                <div
+                  {...{
+                    className: cn(
+                      'flex items-center gap-2',
+                      header.column.getCanSort() && 'cursor-pointer select-none'
+                    ),
+                    onClick: header.column.getToggleSortingHandler(),
+                  }}
+                >
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                  {{
+                    asc: <ChevronUp className="ml-auto" size={14} />,
+                    desc: <ChevronDown className="ml-auto" size={14} />,
+                  }[header.column.getIsSorted() as string] ?? null}
+                </div>
+              </TableHead>
             ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell
-                    key={cell.id}
-                    {...{
-                      style: {
-                        width: cell.column.getSize(),
-                      },
-                    }}
-                  >
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
+          </TableRow>
+        ))}
+      </TableHeader>
+      <TableBody>
+        {table.getRowModel().rows.map((row) => (
+          <TableRow
+            key={row.id}
+            {...(onClick
+              ? {
+                  onClick() {
+                    onClick(row.original);
+                  },
+                  className: 'cursor-pointer',
+                }
+              : {})}
+          >
+            {row.getVisibleCells().map((cell) => (
+              <TableCell key={cell.id}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </TableCell>
             ))}
-          </TableBody>
-        </Table>
-      </div>
-    </div>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

@@ -4,20 +4,20 @@ import { getChartColor } from '@/utils/theme';
 
 export type IRechartPayloadItem = IChartSerieDataItem & { color: string };
 
-export function useRechartDataModel(data: IChartData) {
+export function useRechartDataModel(series: IChartData['series']) {
   return useMemo(() => {
     return (
-      data.series[0]?.data.map(({ date }) => {
+      series[0]?.data.map(({ date }) => {
         return {
           date,
-          ...data.series.reduce((acc, serie, idx) => {
+          ...series.reduce((acc, serie, idx) => {
             return {
               ...acc,
               ...serie.data.reduce(
                 (acc2, item) => {
                   if (item.date === date) {
                     if (item.previous) {
-                      acc2[`${idx}:prev:count`] = item.previous.count;
+                      acc2[`${idx}:prev:count`] = item.previous.value;
                     }
                     acc2[`${idx}:count`] = item.count;
                     acc2[`${idx}:payload`] = {
@@ -34,5 +34,5 @@ export function useRechartDataModel(data: IChartData) {
         };
       }) ?? []
     );
-  }, [data]);
+  }, [series]);
 }

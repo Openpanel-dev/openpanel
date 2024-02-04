@@ -7,40 +7,38 @@ import type {
 
 type MixanLogger = (...args: unknown[]) => void;
 
+// -- 1. Besök
+// -- 2. Finns profile id?
+// --   NEJ
+// --   a. skicka events som vanligt (retunera genererat ID)
+// --   b. ge möjlighet att spara
+// --   JA
+// --   a. skicka event med profile_id
+// -- Payload
+// -- - user_agent?
+// -- - ip?
+// -- - profile_id?
+// -- - referrer
+
 export interface NewMixanOptions {
   url: string;
   clientId: string;
   clientSecret?: string;
-  batchInterval?: number;
-  maxBatchSize?: number;
-  sessionTimeout?: number;
-  session?: boolean;
   verbose?: boolean;
-  trackIp?: boolean;
-  ipUrl?: string;
-  setItem: (key: string, profileId: string) => void;
-  getItem: (key: string) => string | null;
-  removeItem: (key: string) => void;
+  setItem?: (key: string, profileId: string) => void;
+  getItem?: (key: string) => string | null;
+  removeItem?: (key: string) => void;
 }
 
 export type MixanOptions = Required<NewMixanOptions>;
 
 export interface MixanState {
-  profileId: string;
-  lastEventAt: number;
+  profileId: null | string;
   properties: Record<string, unknown>;
 }
 
 function createLogger(verbose: boolean): MixanLogger {
   return verbose ? (...args) => console.log('[Mixan]', ...args) : () => {};
-}
-
-function uuid() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
 }
 
 class Fetcher {
@@ -126,72 +124,23 @@ class Fetcher {
   }
 }
 
-class Batcher {
-  queue: BatchPayload[] = [];
-  timer?: ReturnType<typeof setTimeout>;
-
-  constructor(
-    private options: MixanOptions,
-    private callback: (payload: BatchPayload[]) => void,
-    private logger: MixanLogger
-  ) {}
-
-  add(action: BatchPayload) {
-    if (this.timer) {
-      clearTimeout(this.timer);
-    }
-
-    this.logger(`Add to queue ${action.type}`);
-    this.queue.push(action);
-
-    if (this.queue.length >= this.options.maxBatchSize) {
-      this.send();
-    } else {
-      this.timer = setTimeout(this.send.bind(this), this.options.batchInterval);
-    }
-  }
-
-  send() {
-    this.logger('Send queue', this.queue.length > 0);
-    if (this.queue.length > 0) {
-      this.callback(this.queue);
-      this.queue = [];
-    }
-  }
-}
-
 export class Mixan {
   private options: MixanOptions;
   private fetch: Fetcher;
-  private batcher: Batcher;
   private logger: (...args: any[]) => void;
   private state: MixanState = {
-    profileId: '',
-    lastEventAt: 0,
+    profileId: null,
     properties: {},
   };
 
   constructor(options: NewMixanOptions) {
     this.logger = createLogger(options.verbose ?? false);
     this.options = {
-      sessionTimeout: 1000 * 60 * 30,
-      session: true,
       verbose: false,
-      batchInterval: 10000,
-      maxBatchSize: 10,
-      trackIp: false,
       clientSecret: '',
-      ipUrl: 'https://api.ipify.org',
       ...options,
     };
     this.fetch = new Fetcher(this.options, this.logger);
-    this.batcher = new Batcher(
-      this.options,
-      (queue) => {
-        this.fetch.post('/batch', queue);
-      },
-      this.logger
-    );
   }
 
   // Public
@@ -199,14 +148,9 @@ export class Mixan {
   public init(properties?: Record<string, unknown>) {
     this.logger('Init');
     this.state.properties = properties ?? {};
-    this.createProfile();
-    this.createSession();
-    this.ipLookup();
   }
 
   public setUser(payload: Omit<BatchUpdateProfilePayload, 'profileId'>) {
-    this.createSession();
-
     this.batcher.add({
       type: 'update_profile',
       payload: {
@@ -217,21 +161,7 @@ export class Mixan {
     });
   }
 
-  public setSession(properties: BatchUpdateSessionPayload['properties']) {
-    this.createSession();
-
-    this.batcher.add({
-      type: 'update_session',
-      payload: {
-        properties,
-        profileId: this.state.profileId,
-      },
-    });
-  }
-
   public increment(name: string, value: number) {
-    this.createSession();
-
     this.batcher.add({
       type: 'increment',
       payload: {
@@ -243,8 +173,6 @@ export class Mixan {
   }
 
   public decrement(name: string, value: number) {
-    this.createSession();
-
     this.batcher.add({
       type: 'decrement',
       payload: {
@@ -256,11 +184,8 @@ export class Mixan {
   }
 
   public event(name: string, properties?: Record<string, unknown>) {
-    this.createSession();
-
-    this.batcher.add({
-      type: 'event',
-      payload: {
+    this.fetch
+      .post('/event', {
         name,
         properties: {
           ...this.state.properties,
@@ -268,17 +193,15 @@ export class Mixan {
         },
         time: this.timestamp(),
         profileId: this.state.profileId,
-      },
-    });
+      })
+      .then((response) => {
+        if ('profileId' in response) {
+          this.options.setItem('@mixan:profileId', response.profileId);
+        }
+      });
   }
 
   public setGlobalProperties(properties: Record<string, unknown>) {
-    if (typeof properties !== 'object') {
-      return this.logger(
-        'Set global properties failed, properties must be an object'
-      );
-    }
-
     this.logger('Set global properties', properties);
     this.state.properties = {
       ...this.state.properties,
@@ -286,128 +209,27 @@ export class Mixan {
     };
   }
 
-  public flush() {
-    this.batcher.send();
-  }
-
   public clear() {
     this.logger('Clear / Logout');
-    this.flush();
-    this.options.removeItem('@mixan:ip');
     this.options.removeItem('@mixan:profileId');
-    this.options.removeItem('@mixan:lastEventAt');
-    this.state.profileId = '';
-    this.state.lastEventAt = 0;
-    this.createProfile();
+    this.state.profileId = null;
   }
 
   public setUserProperty(name: string, value: unknown, update = true) {
-    this.batcher.add({
-      type: 'set_profile_property',
-      payload: {
-        name,
-        value,
-        update,
-        profileId: this.state.profileId,
-      },
-    });
+    // this.batcher.add({
+    //   type: 'set_profile_property',
+    //   payload: {
+    //     name,
+    //     value,
+    //     update,
+    //     profileId: this.state.profileId,
+    //   },
+    // });
   }
 
   // Private
 
-  private timestamp(modify = 0) {
-    this.setLastEventAt();
-    return new Date(Date.now() + modify).toISOString();
-  }
-
-  private createProfile() {
-    const profileId = this.options.getItem('@mixan:profileId');
-
-    if (profileId) {
-      this.logger('Reusing existing profile');
-      this.state.profileId = profileId;
-    } else {
-      this.logger('Creating profile');
-      this.state.profileId = uuid();
-      this.options.setItem('@mixan:profileId', this.state.profileId);
-      this.batcher.add({
-        type: 'create_profile',
-        payload: {
-          profileId: this.state.profileId,
-          properties: this.state.properties,
-        },
-      });
-    }
-  }
-
-  private checkSession() {
-    if (!this.options.session) {
-      return false;
-    }
-
-    if (this.state.lastEventAt === 0) {
-      const str = this.options.getItem('@mixan:lastEventAt') ?? '0';
-      const value = parseInt(str, 10);
-      this.state.lastEventAt = isNaN(value) ? 0 : value;
-    }
-
-    return Date.now() - this.state.lastEventAt > this.options.sessionTimeout;
-  }
-
-  private createSession() {
-    if (!this.checkSession()) {
-      return;
-    }
-
-    const time = this.timestamp(-10);
-
-    this.batcher.add({
-      type: 'event',
-      payload: {
-        name: 'session_start',
-        properties: this.state.properties,
-        profileId: this.state.profileId,
-        time,
-      },
-    });
-  }
-
-  private setLastEventAt() {
-    this.state.lastEventAt = Date.now();
-    this.options.setItem(
-      '@mixan:lastEventAt',
-      this.state.lastEventAt.toString()
-    );
-  }
-
-  private async ipLookup() {
-    if (!this.options.trackIp) {
-      return null;
-    }
-
-    let ip: string | null;
-
-    const cachedIp = this.options.getItem('@mixan:ip');
-    if (cachedIp) {
-      ip = cachedIp;
-    } else {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 1000);
-      ip = await fetch(this.options.ipUrl, {
-        signal: controller.signal,
-      })
-        .then((res) => res.text())
-        .catch(() => null)
-        .finally(() => clearTimeout(timeout));
-    }
-
-    if (ip) {
-      this.options.setItem('@mixan:ip', ip);
-      this.setGlobalProperties({ ip });
-      if (!cachedIp) {
-        this.setUserProperty('ip', ip, false);
-        this.setSession({ ip });
-      }
-    }
+  private timestamp() {
+    return new Date().toISOString();
   }
 }

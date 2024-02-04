@@ -1,4 +1,4 @@
-import { toDots } from '@/utils/object';
+import { toDots } from '@mixan/common';
 
 import { Table, TableBody, TableCell, TableRow } from '../ui/table';
 

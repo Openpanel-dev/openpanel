@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@mixan/db": "workspace:*",
     "bullmq": "^5.1.1"
   },
   "devDependencies": {

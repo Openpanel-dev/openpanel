@@ -1,31 +1,46 @@
 import { createContext, memo, useContext, useMemo } from 'react';
+import type { IChartInput } from '@/types';
 
-export interface ChartContextType {
-  editMode: boolean;
-  previous?: boolean;
+export interface ChartContextType extends IChartInput {
+  editMode?: boolean;
+  hideID?: boolean;
+  onClick?: (item: any) => void;
 }
 
 type ChartProviderProps = {
   children: React.ReactNode;
 } & ChartContextType;
 
-const ChartContext = createContext<ChartContextType>({
-  editMode: false,
+const ChartContext = createContext<ChartContextType | null>({
+  events: [],
+  breakdowns: [],
+  chartType: 'linear',
+  lineType: 'monotone',
+  interval: 'day',
+  name: '',
+  range: '7d',
+  metric: 'sum',
+  previous: false,
+  projectId: '',
 });
 
 export function ChartProvider({
   children,
   editMode,
   previous,
+  hideID,
+  ...props
 }: ChartProviderProps) {
   return (
     <ChartContext.Provider
       value={useMemo(
         () => ({
-          editMode,
+          editMode: editMode ?? false,
           previous: previous ?? false,
+          hideID: hideID ?? false,
+          ...props,
         }),
-        [editMode, previous]
+        [editMode, previous, hideID, props]
       )}
     >
       {children}
@@ -52,5 +67,5 @@ export function withChartProivder<ComponentProps>(
 }
 
 export function useChartContext() {
-  return useContext(ChartContext);
+  return useContext(ChartContext)!;
 }

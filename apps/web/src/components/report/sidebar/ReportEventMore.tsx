@@ -34,7 +34,7 @@ const labels = [
 ];
 
 export interface ReportEventMoreProps {
-  onClick: (action: 'createFilter' | 'remove') => void;
+  onClick: (action: 'remove') => void;
 }
 
 export function ReportEventMore({ onClick }: ReportEventMoreProps) {
@@ -49,10 +49,6 @@ export function ReportEventMore({ onClick }: ReportEventMoreProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => onClick('createFilter')}>
-            <Filter className="mr-2 h-4 w-4" />
-            Add filter
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="text-red-600"

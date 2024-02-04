@@ -6,11 +6,9 @@ import { ListProperties } from '@/components/events/ListProperties';
 import { ExpandableListItem } from '@/components/general/ExpandableListItem';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { useAppParams } from '@/hooks/useAppParams';
-import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import { round } from '@/utils/math';
-import { Activity, BotIcon, MonitorPlay } from 'lucide-react';
 import Link from 'next/link';
 
 import { EventIcon } from './event-icon';
@@ -48,7 +46,7 @@ export function EventListItem({
 
     switch (name) {
       case 'screen_view': {
-        const route = (properties?.route || properties?.path) as string;
+        const route = (properties?.route || properties?.path)!;
         if (route) {
           bullets.push(route);
         }

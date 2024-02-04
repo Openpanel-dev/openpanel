@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { api } from '@/app/_trpc/client';
+import { useEffect } from 'react';
 import { StickyBelowHeader } from '@/app/(app)/layout-sticky-below-header';
 import { Chart } from '@/components/report/chart';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
+import { ReportRange } from '@/components/report/ReportRange';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
   changeDateRanges,
@@ -58,17 +58,12 @@ export default function ReportEditor({
         </SheetTrigger>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 col-span-4">
           <ReportChartType className="min-w-0 flex-1" />
-          <Combobox
+          <ReportRange
             className="min-w-0 flex-1"
-            placeholder="Range"
             value={report.range}
             onChange={(value) => {
               dispatch(changeDateRanges(value));
             }}
-            items={Object.values(timeRanges).map((key) => ({
-              label: key,
-              value: key,
-            }))}
           />
           <ReportInterval className="min-w-0 flex-1" />
           <ReportLineType className="min-w-0 flex-1" />

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
@@ -35,7 +35,7 @@ export function ReportLineChart({
   const { editMode, previous } = useChartContext();
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
-  const rechartData = useRechartDataModel(data);
+  const rechartData = useRechartDataModel(series);
 
   return (
     <>

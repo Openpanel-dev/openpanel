@@ -1,25 +1,31 @@
 'use client';
 
-import { useState } from 'react';
 import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartEvent } from '@/types';
-import { Filter, GanttChart, Users } from 'lucide-react';
-import { useParams } from 'next/navigation';
+import { GanttChart, Users } from 'lucide-react';
 
-import { addEvent, changeEvent, removeEvent } from '../reportSlice';
-import { ReportEventFilters } from './ReportEventFilters';
+import {
+  addEvent,
+  changeEvent,
+  changePrevious,
+  removeEvent,
+} from '../reportSlice';
+import { EventPropertiesCombobox } from './EventPropertiesCombobox';
+import { FiltersCombobox } from './filters/FiltersCombobox';
+import { FiltersList } from './filters/FiltersList';
 import { ReportEventMore } from './ReportEventMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportEvents() {
-  const [isCreating, setIsCreating] = useState(false);
+  const previous = useSelector((state) => state.report.previous);
   const selectedEvents = useSelector((state) => state.report.events);
   const dispatch = useDispatch();
   const params = useAppParams();
@@ -37,9 +43,6 @@ export function ReportEvents() {
   const handleMore = (event: IChartEvent) => {
     const callback: ReportEventMoreProps['onClick'] = (action) => {
       switch (action) {
-        case 'createFilter': {
-          return setIsCreating(true);
-        }
         case 'remove': {
           return dispatch(removeEvent(event));
         }
@@ -111,11 +114,19 @@ export function ReportEvents() {
                     },
                     {
                       value: 'user_average',
-                      label: 'Unique users (average)',
+                      label: 'Average event per user',
                     },
                     {
                       value: 'one_event_per_user',
                       label: 'One event per user',
+                    },
+                    {
+                      value: 'property_sum',
+                      label: 'Sum of property',
+                    },
+                    {
+                      value: 'property_average',
+                      label: 'Average of property',
                     },
                   ]}
                   label="Segment"
@@ -127,11 +138,19 @@ export function ReportEvents() {
                       </>
                     ) : event.segment === 'user_average' ? (
                       <>
-                        <Users size={12} /> Unique users (average)
+                        <Users size={12} /> Average event per user
                       </>
                     ) : event.segment === 'one_event_per_user' ? (
                       <>
                         <Users size={12} /> One event per user
+                      </>
+                    ) : event.segment === 'property_sum' ? (
+                      <>
+                        <Users size={12} /> Sum of property
+                      </>
+                    ) : event.segment === 'property_average' ? (
+                      <>
+                        <Users size={12} /> Average of property
                       </>
                     ) : (
                       <>
@@ -140,18 +159,17 @@ export function ReportEvents() {
                     )}
                   </button>
                 </Dropdown>
-                <button
-                  onClick={() => {
-                    handleMore(event)('createFilter');
-                  }}
-                  className="flex items-center gap-1 rounded-md border border-border p-1 px-2 font-medium leading-none text-xs"
-                >
-                  <Filter size={12} /> Filter
-                </button>
+                {/*  */}
+                <FiltersCombobox event={event} />
+
+                {(event.segment === 'property_average' ||
+                  event.segment === 'property_sum') && (
+                  <EventPropertiesCombobox event={event} />
+                )}
               </div>
 
               {/* Filters */}
-              <ReportEventFilters {...{ isCreating, setIsCreating, event }} />
+              <FiltersList event={event} />
             </div>
           );
         })}
@@ -172,6 +190,17 @@ export function ReportEvents() {
           placeholder="Select event"
         />
       </div>
+      <label
+        className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium mt-4"
+        htmlFor="previous"
+      >
+        <Checkbox
+          id="previous"
+          checked={previous}
+          onCheckedChange={(val) => dispatch(changePrevious(!!val))}
+        />
+        Show previous / Compare
+      </label>
     </div>
   );
 }

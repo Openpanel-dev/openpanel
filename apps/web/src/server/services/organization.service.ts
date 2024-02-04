@@ -23,3 +23,15 @@ export function getOrganizationById(id: string) {
     },
   });
 }
+
+export function getOrganizationByProjectId(projectId: string) {
+  return db.organization.findFirst({
+    where: {
+      projects: {
+        some: {
+          id: projectId,
+        },
+      },
+    },
+  });
+}

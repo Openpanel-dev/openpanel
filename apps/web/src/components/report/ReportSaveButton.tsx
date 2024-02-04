@@ -7,7 +7,6 @@ import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 import { SaveIcon } from 'lucide-react';
-import { useParams } from 'next/navigation';
 
 import { resetDirty } from './reportSlice';
 

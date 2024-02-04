@@ -1,9 +1,15 @@
 import type { HtmlProps } from '@/types';
 import { cn } from '@/utils/cn';
 
+import { useChartContext } from './report/chart/ChartProvider';
+
 type ColorSquareProps = HtmlProps<HTMLDivElement>;
 
 export function ColorSquare({ children, className }: ColorSquareProps) {
+  const { hideID } = useChartContext();
+  if (hideID) {
+    return null;
+  }
   return (
     <div
       className={cn(

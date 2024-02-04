@@ -1,15 +1,6 @@
-import { PrismaClient } from '@prisma/client';
-
-export * from '@prisma/client';
-
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
-};
-
-export const db =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: ['error'],
-  });
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
+export * from './src/prisma-client';
+export * from './src/prisma-types';
+export * from './src/clickhouse-client';
+export * from './src/sql-builder';
+export * from './src/services/salt';
+export * from './src/services/event.service';

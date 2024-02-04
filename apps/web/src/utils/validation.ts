@@ -4,6 +4,7 @@ import {
   chartTypes,
   intervals,
   lineTypes,
+  metrics,
   operators,
   timeRanges,
 } from './constants';
@@ -15,11 +16,21 @@ export function objectToZodEnums<K extends string>(
   return [firstKey!, ...otherKeys];
 }
 
+export const mapKeys = objectToZodEnums;
+
 export const zChartEvent = z.object({
   id: z.string(),
   name: z.string(),
   displayName: z.string().optional(),
-  segment: z.enum(['event', 'user', 'user_average', 'one_event_per_user']),
+  property: z.string().optional(),
+  segment: z.enum([
+    'event',
+    'user',
+    'user_average',
+    'one_event_per_user',
+    'property_sum',
+    'property_average',
+  ]),
   filters: z.array(
     z.object({
       id: z.string(),
@@ -43,6 +54,8 @@ export const zLineType = z.enum(objectToZodEnums(lineTypes));
 
 export const zTimeInterval = z.enum(objectToZodEnums(intervals));
 
+export const zMetric = z.enum(objectToZodEnums(metrics));
+
 export const zChartInput = z.object({
   name: z.string(),
   chartType: zChartType,
@@ -52,9 +65,11 @@ export const zChartInput = z.object({
   breakdowns: zChartBreakdowns,
   range: z.enum(objectToZodEnums(timeRanges)),
   previous: z.boolean(),
-});
-
-export const zChartInputWithDates = zChartInput.extend({
+  formula: z.string().optional(),
+  metric: zMetric,
+  unit: z.string().optional(),
+  previousIndicatorInverted: z.boolean().optional(),
+  projectId: z.string(),
   startDate: z.string().nullish(),
-  endDate: z.string().nullable(),
+  endDate: z.string().nullish(),
 });
