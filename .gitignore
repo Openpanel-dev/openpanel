@@ -1,4 +1,5 @@
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
+apps/public/public/op.js
 packages/sdk/profileId.txt
 packages/sdk/test.ts
 dump.sql

@@ -69,6 +69,7 @@ COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
 # COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modules
 
 RUN pnpm db:codegen
+RUN pnpm js:codegen
 
 WORKDIR /app/apps/public
 

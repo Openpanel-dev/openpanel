@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,6 +14,14 @@ import {
 export function JoinWaitlist() {
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      // @ts-ignore
+      window.openpanel.event('waitlist_success');
+    }
+  }, [open]);
+
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>

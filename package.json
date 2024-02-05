@@ -8,6 +8,7 @@
   "module": "index.ts",
   "scripts": {
     "db:codegen": "pnpm -r --filter db run codegen",
+    "js:codegen": "pnpm -r --filter sdk-web run build-for-openpanel",
     "migrate": "pnpm -r --filter db run migrate",
     "migrate:deploy": "pnpm -r --filter db run migrate:deploy",
     "dev": "pnpm -r dev",

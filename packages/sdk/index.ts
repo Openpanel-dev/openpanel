@@ -41,11 +41,11 @@ function createApi(_url: string, clientId: string, clientSecret?: string) {
           ...(options ?? {}),
         })
           .then(async (res) => {
-            if (res.status !== 200) {
+            if (res.status !== 200 && res.status !== 202) {
               return retry(attempt, resolve);
             }
 
-            const response = await res.json();
+            const response = await res.text();
 
             if (!response) {
               return resolve(null);

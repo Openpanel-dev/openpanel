@@ -81,6 +81,8 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
     } else {
       window.addEventListener('locationchange', () => this.screenView());
     }
+
+    this.screenView();
   }
 
   public screenView(properties?: Record<string, unknown>): void {

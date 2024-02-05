@@ -33,7 +33,8 @@ export default function Test() {
       </button>
       <button
         onClick={() => {
-          mixan.event('custom_click', {
+          // @ts-ignore
+          window.openpanel.event('custom_click', {
             custom_string: 'test',
             custom_number: 1,
           });

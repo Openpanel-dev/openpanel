@@ -4,6 +4,7 @@
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
+    "build-for-openpanel": "pnpm build && cp dist/cdn.global.js ../../apps/public/public/op.js",
     "lint": "eslint .",
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"

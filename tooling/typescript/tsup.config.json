@@ -3,7 +3,7 @@
   "format": ["cjs", "esm", "iife"],
   "dts": true,
   "splitting": false,
-  "sourcemap": true,
+  "sourcemap": false,
   "clean": true,
   "minify": true
 }
