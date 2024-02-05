@@ -87,6 +87,10 @@ export function getEvents(sql: string) {
 export async function createEvent(payload: IServiceCreateEventPayload) {
   console.log(`create event ${payload.name} for ${payload.profileId}`);
 
+  if (payload.properties.hash === '') {
+    delete payload.properties.hash;
+  }
+
   return ch.insert({
     table: 'events',
     values: [

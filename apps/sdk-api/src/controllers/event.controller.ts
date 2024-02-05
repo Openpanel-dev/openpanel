@@ -11,7 +11,7 @@ import type { JobsOptions } from '@mixan/queue';
 import { eventsQueue, findJobByPrefix } from '@mixan/queue';
 import type { PostEventPayload } from '@mixan/types';
 
-const SESSION_TIMEOUT = 1000 * 30 * 1;
+const SESSION_TIMEOUT = 1000 * 60 * 30;
 const SESSION_END_TIMEOUT = SESSION_TIMEOUT + 1000;
 
 function parseSearchParams(params: URLSearchParams): Record<string, string> {
