@@ -1,6 +1,6 @@
 export async function parseIp(ip: string) {
   try {
-    const geo = await fetch(`http://localhost:8080/${ip}`);
+    const geo = await fetch(`${process.env.GEO_IP_HOST}/${ip}`);
     const res = (await geo.json()) as {
       country: string | undefined;
       city: string | undefined;
@@ -15,6 +15,8 @@ export async function parseIp(ip: string) {
       continent: res.continent,
     };
   } catch (e) {
+    console.log('Failed to parse ip', e);
+
     return {
       country: undefined,
       city: undefined,
