@@ -1,6 +1,7 @@
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
+import type { WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 import express from 'express';
 
@@ -10,20 +11,21 @@ import { cronQueue } from '@mixan/queue/src/queues';
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
 
-const PORT = process.env.PORT || 3000;
+const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/');
 const app = express();
 
-new Worker(eventsQueue.name, eventsJob, {
+const workerOptions: WorkerOptions = {
   connection,
-});
-
-new Worker(cronQueue.name, cronJob, {
-  connection,
-});
+  concurrency: parseInt(process.env.CONCURRENCY || '1', 10),
+};
 
 async function start() {
+  new Worker(eventsQueue.name, eventsJob, workerOptions);
+
+  new Worker(cronQueue.name, cronJob, workerOptions);
+
   createBullBoard({
     queues: [new BullMQAdapter(eventsQueue), new BullMQAdapter(cronQueue)],
     serverAdapter: serverAdapter,
@@ -53,9 +55,6 @@ async function start() {
       },
     }
   );
-  // if (!repeatableJobs.find((job) => job.name === 'salt')) {
-  //   console.log('Add salt job to queue');
-  // }
 }
 
 start();
