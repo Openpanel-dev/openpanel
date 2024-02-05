@@ -131,3 +131,12 @@ export interface MixanResponse<T> {
   result: T;
   status: 'ok';
 }
+
+// NEW
+
+export interface PostEventPayload {
+  name: string;
+  timestamp: string;
+  profileId?: string;
+  properties?: Record<string, unknown>;
+}

@@ -1,6 +1,7 @@
 import { parseIp } from '@/utils/parseIp';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { omit } from 'ramda';
 import { getClientIp } from 'request-ip';
 
 import { generateProfileId, getTime, toISOString } from '@mixan/common';
@@ -8,18 +9,43 @@ import type { IServiceCreateEventPayload } from '@mixan/db';
 import { getSalts } from '@mixan/db';
 import type { JobsOptions } from '@mixan/queue';
 import { eventsQueue, findJobByPrefix } from '@mixan/queue';
-
-export interface PostEventPayload {
-  profileId?: string;
-  name: string;
-  timestamp: string;
-  properties: Record<string, unknown>;
-  referrer: string | undefined;
-  path: string;
-}
+import type { PostEventPayload } from '@mixan/types';
 
 const SESSION_TIMEOUT = 1000 * 30 * 1;
 const SESSION_END_TIMEOUT = SESSION_TIMEOUT + 1000;
+
+function parseSearchParams(params: URLSearchParams): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const [key, value] of params.entries()) {
+    result[key] = value;
+  }
+  return result;
+}
+
+function parsePath(path?: string): {
+  query?: Record<string, unknown>;
+  path: string;
+  hash?: string;
+} {
+  if (!path) {
+    return {
+      path: '',
+    };
+  }
+
+  try {
+    const url = new URL(path);
+    return {
+      query: parseSearchParams(url.searchParams),
+      path: url.pathname,
+      hash: url.hash,
+    };
+  } catch (error) {
+    return {
+      path,
+    };
+  }
+}
 
 export async function postEvent(
   request: FastifyRequest<{
@@ -30,7 +56,10 @@ export async function postEvent(
   let profileId: string | null = null;
   const projectId = request.projectId;
   const body = request.body;
-  const path = body.path;
+  const { path, hash, query } = parsePath(
+    body.properties?.path as string | undefined
+  );
+  const referrer = body.properties?.referrer as string | undefined;
   const ip = getClientIp(request)!;
   const origin = request.headers.origin!;
   const ua = request.headers['user-agent']!;
@@ -101,7 +130,10 @@ export async function postEvent(
     name: body.name,
     profileId,
     projectId,
-    properties: body.properties,
+    properties: Object.assign({}, omit(['path', 'referrer'], body.properties), {
+      hash,
+      query,
+    }),
     createdAt: body.timestamp,
     country: geo.country,
     city: geo.city,
@@ -115,12 +147,10 @@ export async function postEvent(
     brand: uaInfo.brand,
     model: uaInfo.model,
     duration: 0,
-    path,
-    referrer: body.referrer, // TODO
-    referrerName: body.referrer, // TODO
+    path: path,
+    referrer,
+    referrerName: referrer, // TODO
   };
-
-  console.log(payload);
 
   const job = findJobByPrefix(eventsJobs, `event:${projectId}:${profileId}:`);
 

@@ -11,7 +11,7 @@ declare module 'fastify' {
   }
 }
 
-const port = parseInt(process.env.API_PORT || '3030', 10);
+const port = parseInt(process.env.API_PORT || '3000', 10);
 
 const startServer = async () => {
   try {
@@ -43,7 +43,7 @@ const startServer = async () => {
       fastify.log.error(error);
     });
     fastify.get('/', (request, reply) => {
-      reply.send({ name: 'fastify-typescript' });
+      reply.send({ name: 'openpanel sdk api' });
     });
     // fastify.get('/health-check', async (request, reply) => {
     //   try {

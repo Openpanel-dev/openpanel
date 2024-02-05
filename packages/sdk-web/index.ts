@@ -1,74 +1,35 @@
-import type { NewMixanOptions } from '@mixan/sdk';
+import type { MixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
-import type { PartialBy } from '@mixan/types';
 
-import { parseQuery } from './src/parseQuery';
-import { getTimezone } from './src/utils';
+type MixanWebOptions = MixanOptions & {
+  trackOutgoingLinks?: boolean;
+  trackScreenViews?: boolean;
+  hash?: boolean;
+};
 
-export class MixanWeb extends Mixan {
-  constructor(
-    options: PartialBy<NewMixanOptions, 'setItem' | 'removeItem' | 'getItem'>
-  ) {
-    const hasStorage = typeof localStorage === 'undefined';
-    super({
-      batchInterval: options.batchInterval ?? 2000,
-      setItem: hasStorage ? () => {} : localStorage.setItem.bind(localStorage),
-      removeItem: hasStorage
-        ? () => {}
-        : localStorage.removeItem.bind(localStorage),
-      getItem: hasStorage
-        ? () => null
-        : localStorage.getItem.bind(localStorage),
-      ...options,
-    });
+export class MixanWeb extends Mixan<MixanWebOptions> {
+  constructor(options: MixanWebOptions) {
+    super(options);
+
+    if (this.options.trackOutgoingLinks) {
+      this.trackOutgoingLinks();
+    }
+
+    if (this.options.trackScreenViews) {
+      this.trackScreenViews();
+    }
   }
 
   private isServer() {
     return typeof document === 'undefined';
   }
 
-  private parseUrl(url?: string) {
-    if (!url || url === '') {
-      return {};
+  private getTimezone() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (e) {
+      return undefined;
     }
-
-    const ref = new URL(url);
-    return {
-      host: ref.host,
-      path: ref.pathname,
-      query: parseQuery(ref.search),
-      hash: ref.hash,
-    };
-  }
-
-  private properties() {
-    return {
-      ua: navigator.userAgent,
-      referrer: document.referrer || undefined,
-      language: navigator.language,
-      timezone: getTimezone(),
-      screen: {
-        width: window.screen.width,
-        height: window.screen.height,
-      },
-      title: document.title,
-      ...this.parseUrl(window.location.href),
-    };
-  }
-
-  public init(properties?: Record<string, unknown>) {
-    if (this.isServer()) {
-      return;
-    }
-
-    super.init({
-      ...this.properties(),
-      ...(properties ?? {}),
-    });
-
-    window.addEventListener('beforeunload', () => {
-      this.flush();
-    });
   }
 
   public trackOutgoingLinks() {
@@ -85,10 +46,41 @@ export class MixanWeb extends Mixan {
             href,
             text: target.innerText,
           });
-          super.flush();
         }
       }
     });
+  }
+
+  public trackScreenViews() {
+    if (this.isServer()) {
+      return;
+    }
+
+    const oldPushState = history.pushState;
+    history.pushState = function pushState(...args) {
+      const ret = oldPushState.apply(this, args);
+      window.dispatchEvent(new Event('pushstate'));
+      window.dispatchEvent(new Event('locationchange'));
+      return ret;
+    };
+
+    const oldReplaceState = history.replaceState;
+    history.replaceState = function replaceState(...args) {
+      const ret = oldReplaceState.apply(this, args);
+      window.dispatchEvent(new Event('replacestate'));
+      window.dispatchEvent(new Event('locationchange'));
+      return ret;
+    };
+
+    window.addEventListener('popstate', () =>
+      window.dispatchEvent(new Event('locationchange'))
+    );
+
+    if (this.options.hash) {
+      window.addEventListener('hashchange', () => this.screenView());
+    } else {
+      window.addEventListener('locationchange', () => this.screenView());
+    }
   }
 
   public screenView(properties?: Record<string, unknown>): void {
@@ -97,9 +89,10 @@ export class MixanWeb extends Mixan {
     }
 
     super.event('screen_view', {
-      ...properties,
-      ...this.parseUrl(window.location.href),
+      ...(properties ?? {}),
+      path: window.location.href,
       title: document.title,
+      referrer: document.referrer,
     });
   }
 }

@@ -1,4 +1,4 @@
-CREATE TABLE test.events (
+CREATE TABLE openpanel.events (
   `name` String,
   `profile_id` String,
   `project_id` String,

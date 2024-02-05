@@ -56,7 +56,10 @@ export interface IServiceCreateEventPayload {
   name: string;
   profileId: string;
   projectId: string;
-  properties: Record<string, unknown>;
+  properties: Record<string, unknown> & {
+    hash?: string;
+    query?: Record<string, unknown>;
+  };
   createdAt: string;
   country?: string | undefined;
   city?: string | undefined;
