@@ -38,7 +38,7 @@ const startServer = async () => {
         });
     });
 
-    fastify.register(eventRouter, { prefix: '/api/event' });
+    fastify.register(eventRouter, { prefix: '/event' });
     fastify.setErrorHandler((error, request, reply) => {
       fastify.log.error(error);
     });
