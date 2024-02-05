@@ -1,19 +1,15 @@
 import { randomUUID } from 'crypto';
 import { db, getId } from '@/server/db';
-import { handleError } from '@/server/exceptions';
 import { hashPassword } from '@/server/services/hash.service';
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
 
-const userName = 'Admin';
-const userPassword = 'password';
-const userEmail = 'acme@acme.com';
-const organizationName = 'Acme Inc.';
-const projectName = 'Website';
+const userName = 'demo';
+const userPassword = 'demo';
+const userEmail = 'demo@demo.com';
+const organizationName = 'Demo Org';
+const projectName = 'Demo Project';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export async function GET() {
   try {
     const counts = await db.$transaction([
       db.user.count(),
@@ -23,7 +19,7 @@ export default async function handler(
     ]);
 
     if (counts.some((count) => count > 0)) {
-      return res.json('Setup already done');
+      return NextResponse.json({ message: 'Already setup' });
     }
 
     const organization = await db.organization.create({
@@ -59,12 +55,12 @@ export default async function handler(
       },
     });
 
-    res.json({
+    return NextResponse.json({
       clientId: client.id,
       clientSecret: secret,
       user,
     });
   } catch (error) {
-    handleError(res, error);
+    return NextResponse.json({ error: 'Failed to setup' });
   }
 }
