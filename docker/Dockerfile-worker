@@ -31,6 +31,7 @@ COPY pnpm-workspace.yaml pnpm-workspace.yaml
 COPY apps/worker/package.json apps/worker/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/queue/package.json packages/queue/package.json
+COPY packages/common/package.json packages/common/package.json
 COPY packages/types/package.json packages/types/package.json
 
 # BUILD
