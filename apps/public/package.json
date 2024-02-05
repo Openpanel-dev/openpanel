@@ -41,6 +41,7 @@
     "react-in-viewport": "1.0.0-alpha.30",
     "react-responsive": "^9.0.2",
     "react-syntax-highlighter": "^15.5.0",
+    "sharp": "^0.33.2",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",
     "usehooks-ts": "^2.9.1",
