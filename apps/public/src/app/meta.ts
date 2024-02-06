@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-const title = 'Openpanel.dev | An Open-Source Analytics Library';
+const title = 'Openpanel.dev | An open-source alternative to Mixpanel';
 const description =
   'Unlock actionable insights effortlessly with Insightful, the open-source analytics library that combines the power of Mixpanel with the simplicity of Plausible. Enjoy a unified overview, predictable pricing, and a vibrant community. Join us in democratizing analytics today!';
 
