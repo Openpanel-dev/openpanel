@@ -13,6 +13,12 @@ export function Lead({ children, className }: Props) {
   );
 }
 
+export function Lead2({ children, className }: Props) {
+  return (
+    <p className={cn('text-lg md:text-xl font-light', className)}>{children}</p>
+  );
+}
+
 export function Paragraph({ children, className }: Props) {
   return <p className={cn('text-lg', className)}>{children}</p>;
 }

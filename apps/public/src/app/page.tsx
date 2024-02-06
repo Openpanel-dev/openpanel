@@ -1,17 +1,27 @@
 import { Logo } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
+import type { LucideIcon } from 'lucide-react';
 import {
   BarChart2,
+  BellIcon,
+  ClockIcon,
+  CloudIcon,
+  CompassIcon,
+  ConeIcon,
   CookieIcon,
+  DollarSignIcon,
   Globe2Icon,
+  KeyIcon,
   LayoutPanelTopIcon,
   LockIcon,
+  UserRoundSearchIcon,
   UsersIcon,
 } from 'lucide-react';
 
 import { HomeCarousel } from './carousel';
-import { Heading1, Heading2, Lead, Paragraph } from './copy';
+import { Heading1, Heading2, Lead, Lead2, Paragraph } from './copy';
 import { JoinWaitlist } from './join-waitlist';
+import { Section, Sections } from './section';
 
 const features = [
   {
@@ -71,6 +81,7 @@ export default function Page() {
           </div>
         </div>
       </div>
+      <Sections />
       <div className="bg-blue-800 p-4 py-8 md:py-16 text-center">
         <Heading2 className="text-slate-100 mb-4">
           Get a feel how it looks
