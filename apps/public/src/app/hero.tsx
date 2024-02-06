@@ -48,14 +48,14 @@ export function Hero() {
       </div>
 
       <div
-        className="flex flex-col items-center w-full text-center text-blue-950 bg-[radial-gradient(circle_at_2px_2px,#D9DEF6_2px,transparent_0)]"
+        className="flex flex-col items-center w-full text-center text-blue-950 bg-[radial-gradient(circle_at_2px_2px,#D9DEF6_2px,transparent_0)] relative"
         style={{
           backgroundSize: '70px 70px',
         }}
       >
         <div className="py-20 pt-32 p-4 flex flex-col items-center max-w-3xl bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]">
           <Heading1 className="mb-4">
-            A open-source
+            An open-source
             <br />
             alternative to Mixpanel
           </Heading1>
