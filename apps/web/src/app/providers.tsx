@@ -38,7 +38,7 @@ export default function Providers({
       transformer: superjson,
       links: [
         httpLink({
-          url: 'http://localhost:3000/api/trpc',
+          url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/api/trpc`,
         }),
       ],
     })

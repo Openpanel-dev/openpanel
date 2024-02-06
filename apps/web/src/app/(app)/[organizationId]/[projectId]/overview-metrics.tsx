@@ -215,7 +215,9 @@ export default function OverviewMetrics() {
             <DropdownMenuContent align="end">
               <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                  <Link href="http://localhost:3000/share/project/4e2798cb-e255-4e9d-960d-c9ad095aabd7">
+                  <Link
+                    href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL}/share/project/4e2798cb-e255-4e9d-960d-c9ad095aabd7`}
+                  >
                     <Eye size={16} className="mr-2" />
                     View
                   </Link>
