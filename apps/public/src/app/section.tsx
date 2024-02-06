@@ -3,14 +3,41 @@
 import { cn } from '@/utils/cn';
 import type { LucideIcon, LucideProps } from 'lucide-react';
 import {
+  ArrowUpFromDotIcon,
+  BarChart2Icon,
   BellIcon,
+  BookmarkIcon,
+  CheckCircle,
   ClockIcon,
   CloudIcon,
+  CloudLightning,
+  CloudLightningIcon,
   CompassIcon,
   ConeIcon,
+  DatabaseIcon,
   DollarSignIcon,
+  DownloadIcon,
+  FileIcon,
+  FilterIcon,
+  FolderIcon,
+  FolderOpenIcon,
+  HandCoinsIcon,
+  HandshakeIcon,
   KeyIcon,
+  PieChartIcon,
+  PointerIcon,
+  RouteIcon,
+  ServerIcon,
+  ShieldPlusIcon,
+  ShoppingCartIcon,
+  SquareUserRound,
+  StarIcon,
+  ThumbsUp,
+  ThumbsUpIcon,
+  TrendingUpIcon,
   UserRoundSearchIcon,
+  UsersIcon,
+  WebhookIcon,
 } from 'lucide-react';
 
 import {
@@ -25,6 +52,7 @@ import {
   Blob9,
 } from './blob';
 import { Heading2, Lead2 } from './copy';
+import { Widget } from './widget';
 
 interface SectionItem {
   title: string;
@@ -32,7 +60,8 @@ interface SectionItem {
   icon: LucideIcon;
   color: string;
   soon?: string;
-  blob: React.ComponentType<LucideProps>;
+  icons: LucideIcon[];
+  className: string;
 }
 
 const sections: SectionItem[] = [
@@ -42,7 +71,8 @@ const sections: SectionItem[] = [
       'Take control of your data privacy and ownership with our platform, ensuring full transparency and security.',
     icon: KeyIcon,
     color: '#2563EB',
-    blob: Blob1,
+    icons: [FolderIcon, DatabaseIcon, ShieldPlusIcon, KeyIcon],
+    className: 'bg-blue-light',
   },
   {
     title: 'Cloud or Self-Hosting',
@@ -50,7 +80,8 @@ const sections: SectionItem[] = [
       'Choose between the flexibility of cloud-based hosting or the autonomy of self-hosting to tailor your analytics infrastructure to your needs.',
     icon: CloudIcon,
     color: '#ff7557',
-    blob: Blob2,
+    icons: [CloudIcon, CheckCircle, ServerIcon, DownloadIcon],
+    className: '', // 'bg-[#ff7557]',
   },
   {
     title: 'Real-Time Events',
@@ -58,15 +89,17 @@ const sections: SectionItem[] = [
       'Stay up-to-date with real-time event tracking, enabling instant insights into user actions as they happen.',
     icon: ClockIcon,
     color: '#7fe1d8',
-    blob: Blob3,
+    icons: [CloudLightningIcon, ShoppingCartIcon, ArrowUpFromDotIcon],
+    className: '', // bg-[#7fe1d8]
   },
   {
-    title: 'Deep Dive into User Behavior',
+    title: 'Deep Dive into User Behaviors',
     description:
       "Gain profound insights into user behavior with comprehensive analytics tools, allowing you to understand your audience's actions and preferences.",
     icon: UserRoundSearchIcon,
     color: '#f8bc3c',
-    blob: Blob4,
+    icons: [UsersIcon, RouteIcon, BookmarkIcon],
+    className: 'bg-blue-dark', //'bg-[#f8bc3c]',
   },
   {
     title: 'Powerful Report Explorer',
@@ -74,7 +107,8 @@ const sections: SectionItem[] = [
       'Explore and analyze your data effortlessly with our powerful report explorer, simplifying the process of deriving meaningful insights.',
     icon: CompassIcon,
     color: '#b3596e',
-    blob: Blob5,
+    icons: [ThumbsUpIcon, TrendingUpIcon, PieChartIcon, BarChart2Icon],
+    className: 'bg-[#ff7557]',
   },
   {
     soon: 'Coming soon',
@@ -83,7 +117,8 @@ const sections: SectionItem[] = [
       'Track user conversion funnels seamlessly, providing valuable insights into user journey optimization.',
     icon: ConeIcon,
     color: '#72bef4',
-    blob: Blob6,
+    icons: [ConeIcon, FilterIcon],
+    className: '', //'bg-[#72bef4]',
   },
   {
     soon: 'Coming with our native app',
@@ -92,7 +127,8 @@ const sections: SectionItem[] = [
       'Stay informed about conversions, events, and peaks with our upcoming push notification tool, empowering you to monitor and respond to critical activities in real-time.',
     icon: BellIcon,
     color: '#ffb27a',
-    blob: Blob7,
+    icons: [WebhookIcon, BellIcon],
+    className: '', //'bg-[#ffb27a]',
   },
   {
     title: 'Cost-Effective Alternative to Mixpanel',
@@ -100,7 +136,8 @@ const sections: SectionItem[] = [
       'Enjoy the same powerful analytics capabilities as Mixpanel at a fraction of the cost, ensuring affordability without compromising on quality.',
     icon: DollarSignIcon,
     color: '#0f7ea0',
-    blob: Blob8,
+    icons: [DollarSignIcon, HandCoinsIcon, HandshakeIcon, StarIcon],
+    className: 'bg-[#3ba974]',
   },
   {
     soon: 'Something Plausible lacks',
@@ -113,61 +150,59 @@ const sections: SectionItem[] = [
       );
     }) as unknown as LucideIcon,
     color: '#3ba974',
-    blob: Blob9,
+    icons: [FolderIcon, DatabaseIcon, ShieldPlusIcon, KeyIcon],
+    className: 'bg-[#f8bc3c]',
   },
 ];
 
-interface SectionProps extends SectionItem {
-  reverse?: boolean;
-}
-export function Section({
-  title,
-  description,
-  icon: Icon,
-  blob: Blob,
-  color,
-  soon,
-  reverse,
-}: SectionProps) {
-  return (
-    <div key={title} className={'border-b border-border'}>
-      <div className="w-full max-w-6xl mx-auto px-4">
-        <div
-          className={cn(
-            'flex py-16 flex-col justify-center',
-            reverse ? 'md:flex-row' : 'md:flex-row-reverse'
-          )}
-        >
-          <div className="md:w-1/2 flex-shrink-0 justify-center items-center flex max-md:mb-8 overflow-hidden rounded-lg">
-            <div className="bg-slate-50 rounded-3xl">
-              <Blob
-                style={{ fill: color }}
-                className="w-[600px] opacity-20 transition-transform animate-[spin_60s_ease-in-out_infinite] -m-[100px]"
-              />
-            </div>
-            <Icon className="w-40 h-40 absolute" strokeWidth={2} />
-          </div>
-          <div className="justify-center flex-col flex">
-            {!!soon && (
-              <div className="rounded-full border border-border p-2 px-4 leading-none mb-4 self-start">
-                {soon}
-              </div>
-            )}
-            <Heading2 className="mb-4">{title}</Heading2>
-            <Lead2>{description}</Lead2>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+// To lazy to think now...
+function checkIndex(index: number) {
+  switch (index) {
+    case 0:
+    case 3:
+    case 4:
+    case 7:
+    case 8:
+    case 10:
+      return true;
+    default:
+      return false;
+  }
 }
 
 export function Sections() {
   return (
     <>
-      {sections.map((section, index) => (
-        <Section key={index} {...section} reverse={index % 2 === 1} />
-      ))}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 gap-y-16">
+        {sections.map((section, i) => {
+          const even = checkIndex(i);
+
+          const offsets = even
+            ? [
+                '-top-10 -left-10 rotate-12',
+                'top-10 -rotate-12',
+                '-right-5',
+                '-right-10 -top-20',
+              ]
+            : ['-top-10 -left-20 rotate-12', 'top-10 -rotate-12', '-right-5'];
+
+          const className = even
+            ? cn('text-white [&_h3]:text-white col-span-2', section.className)
+            : cn('border border-border', section.className);
+
+          return (
+            <Widget
+              key={section.title}
+              title={section.title}
+              className={className}
+              icons={section.icons}
+              offsets={offsets}
+            >
+              <p>{section.description}</p>
+            </Widget>
+          );
+        })}
+      </div>
     </>
   );
 }

@@ -34,39 +34,36 @@ const images = [
   { title: 'The classic pie chart', url: '/demo/pie-min.png' },
 ];
 
-export function HomeCarousel() {
+export function PreviewCarousel() {
   return (
-    <div className="mx-auto max-w-6xl p-4">
-      <div className="relative">
-        <div className="rounded-lg w-full max-w-6xl aspect-video dashed absolute -left-5 -top-5"></div>
-        <Carousel
-          className="w-full"
-          opts={{ loop: true }}
-          plugins={[
-            Autoplay({
-              delay: 2000,
-            }),
-          ]}
-        >
-          <CarouselContent>
-            {images.map((item) => (
-              <CarouselItem key={item.url}>
-                <div className="aspect-video rounded-md overflow-hidden">
-                  <Image
-                    className="w-full h-full object-cover"
-                    src={item.url}
-                    width={1080}
-                    height={608}
-                    alt={item.title}
-                  />
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="hidden md:visible" />
-          <CarouselNext className="hidden md:visible" />
-        </Carousel>
-      </div>
-    </div>
+    <Carousel
+      className="w-full"
+      opts={{ loop: true }}
+      plugins={[
+        Autoplay({
+          delay: 2000,
+        }),
+      ]}
+    >
+      <CarouselContent>
+        {images.map((item) => (
+          <CarouselItem key={item.url} className="flex-[0_0_80%] pl-8">
+            <div className="aspect-video">
+              <div className="p-3 bg-white/20 rounded-xl overflow-hidden">
+                <Image
+                  className="w-full h-full object-cover rounded-lg"
+                  src={item.url}
+                  width={1080}
+                  height={608}
+                  alt={item.title}
+                />
+              </div>
+            </div>
+          </CarouselItem>
+        ))}
+      </CarouselContent>
+      <CarouselPrevious className="hidden md:visible" />
+      <CarouselNext className="hidden md:visible" />
+    </Carousel>
   );
 }

@@ -1,22 +1,5 @@
-const colors = [
-  '#2563EB',
-  '#ff7557',
-  '#7fe1d8',
-  '#f8bc3c',
-  '#b3596e',
-  '#72bef4',
-  '#ffb27a',
-  '#0f7ea0',
-  '#3ba974',
-  '#febbb2',
-  '#cb80dc',
-  '#5cb7af',
-  '#7856ff',
-];
-
 /** @type {import('tailwindcss').Config} */
 const config = {
-  safelist: [...colors.map((color) => `chart-${color}`)],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -24,8 +7,16 @@ const config = {
     './src/**/*.{ts,tsx}',
   ],
   theme: {
+    container: {
+      center: true,
+      padding: '1rem',
+    },
     extend: {
       colors: {
+        ['blue-light']: '#2C97FE',
+        ['blue-dark']: '#111F46',
+        ['blue-darker']: '#051030',
+
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
@@ -59,12 +50,6 @@ const config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        ...colors.reduce((acc, color, index) => {
-          return {
-            ...acc,
-            [`chart-${index}`]: color,
-          };
-        }, {}),
       },
       borderRadius: {
         lg: 'var(--radius)',

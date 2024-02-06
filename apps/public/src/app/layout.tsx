@@ -3,6 +3,7 @@ import { cn } from '@/utils/cn';
 import '@/styles/globals.css';
 
 import type { Metadata } from 'next';
+import { Bricolage_Grotesque } from 'next/font/google';
 import Script from 'next/script';
 
 import { defaultMeta } from './meta';
@@ -14,6 +15,12 @@ export const metadata: Metadata = {
   },
 };
 
+const font = Bricolage_Grotesque({
+  display: 'swap',
+  subsets: ['latin'],
+  weights: [400, 700],
+});
+
 export default async function RootLayout({
   children,
 }: {
@@ -21,7 +28,12 @@ export default async function RootLayout({
 }) {
   return (
     <html lang="en" className="light">
-      <body className={cn('min-h-screen font-sans antialiased grainy')}>
+      <body
+        className={cn(
+          'min-h-screen antialiased grainy text-slate-600',
+          font.className
+        )}
+      >
         {children}
       </body>
       <Script

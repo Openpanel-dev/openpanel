@@ -10,8 +10,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { cn } from '@/utils/cn';
 
-export function JoinWaitlist() {
+interface JoinWaitlistProps {
+  className?: string;
+}
+
+export function JoinWaitlist({ className }: JoinWaitlistProps) {
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
 
@@ -59,7 +64,10 @@ export function JoinWaitlist() {
         <div className="relative w-full mb-8">
           <input
             placeholder="Enter your email"
-            className="border border-slate-100 rounded-md shadow-sm bg-white h-12 w-full px-4 outline-none focus:ring-1 ring-black"
+            className={cn(
+              'border border-slate-100 rounded-md shadow-sm bg-white h-12 w-full px-4 outline-none focus:ring-1 ring-black text-blue-darker',
+              className
+            )}
             value={value}
             onChange={(e) => setValue(e.target.value)}
           />

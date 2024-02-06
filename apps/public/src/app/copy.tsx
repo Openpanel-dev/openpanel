@@ -25,7 +25,9 @@ export function Paragraph({ children, className }: Props) {
 
 export function Heading1({ children, className }: Props) {
   return (
-    <h1 className={cn('text-4xl md:text-6xl font-bold', className)}>
+    <h1
+      className={cn('text-5xl md:text-6xl font-bold text-slate-800', className)}
+    >
       {children}
     </h1>
   );
@@ -33,8 +35,20 @@ export function Heading1({ children, className }: Props) {
 
 export function Heading2({ children, className }: Props) {
   return (
-    <h2 className={cn('text-2xl md:text-4xl font-bold', className)}>
+    <h2
+      className={cn('text-4xl md:text-5xl font-bold text-slate-800', className)}
+    >
       {children}
     </h2>
+  );
+}
+
+export function Heading3({ children, className }: Props) {
+  return (
+    <h3
+      className={cn('text-2xl md:text-3xl font-bold text-slate-800', className)}
+    >
+      {children}
+    </h3>
   );
 }
