@@ -132,8 +132,13 @@ export function Section({
   return (
     <div key={title} className={'border-b border-border'}>
       <div className="w-full max-w-6xl mx-auto px-4">
-        <div className={cn('flex py-16', reverse && 'flex-row-reverse')}>
-          <div className="w-1/2 flex-shrink-0 justify-center items-center flex">
+        <div
+          className={cn(
+            'flex py-16 flex-col justify-center',
+            reverse ? 'md:flex-row' : 'md:flex-row-reverse'
+          )}
+        >
+          <div className="md:w-1/2 flex-shrink-0 justify-center items-center flex max-md:mb-8 overflow-hidden rounded-lg">
             <div className="bg-slate-50 rounded-3xl">
               <Blob
                 style={{ fill: color }}
