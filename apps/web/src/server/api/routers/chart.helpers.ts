@@ -6,7 +6,7 @@ import type {
   IInterval,
 } from '@/types';
 import { alphabetIds } from '@/utils/constants';
-import { average, max, min, round, sum } from '@/utils/math';
+import { round } from '@/utils/math';
 import * as mathjs from 'mathjs';
 import { sort } from 'ramda';
 

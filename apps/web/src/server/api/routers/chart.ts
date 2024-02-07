@@ -3,12 +3,12 @@ import type { IChartEvent, IChartInput, IChartRange } from '@/types';
 import { getDaysOldDate } from '@/utils/date';
 import { average, max, min, round, sum } from '@/utils/math';
 import { zChartInput } from '@/utils/validation';
-import { flatten, map, pathOr, pipe, prop, sort, uniq } from 'ramda';
+import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
 import { chQuery } from '@mixan/db';
 
-import { getChartData, withFormula } from './chart.formula';
+import { getChartData, withFormula } from './chart.helpers';
 
 type PreviousValue = {
   value: number;
@@ -176,16 +176,6 @@ export const chartRouter = createTRPCRouter({
     const promises = [getSeriesFromEvents(input)];
 
     if (input.previous) {
-      console.log('------->P R E V I O U S');
-      console.log({
-        startDate: new Date(
-          new Date(current.startDate).getTime() - diff
-        ).toISOString(),
-        endDate: new Date(
-          new Date(current.endDate).getTime() - diff
-        ).toISOString(),
-      });
-
       promises.push(
         getSeriesFromEvents({
           ...input,
@@ -396,20 +386,21 @@ async function getSeriesFromEvents(input: IChartInput) {
 function getDatesFromRange(range: IChartRange) {
   if (range === 'today') {
     const startDate = new Date();
-    const endDate = new Date().toISOString();
-    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0);
+    endDate.setUTCHours(23, 59, 59, 999);
 
     return {
-      startDate: startDate.toISOString(),
-      endDate: endDate,
+      startDate: startDate.toUTCString(),
+      endDate: endDate.toUTCString(),
     };
   }
 
   if (range === '30min' || range === '1h') {
     const startDate = new Date(
       Date.now() - 1000 * 60 * (range === '30min' ? 30 : 60)
-    ).toISOString();
-    const endDate = new Date().toISOString();
+    ).toUTCString();
+    const endDate = new Date().toUTCString();
 
     return {
       startDate,
@@ -440,7 +431,7 @@ function getDatesFromRange(range: IChartRange) {
   const endDate = new Date();
   endDate.setUTCHours(23, 59, 59, 999);
   return {
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
+    startDate: startDate.toUTCString(),
+    endDate: endDate.toUTCString(),
   };
 }
