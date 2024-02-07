@@ -10,7 +10,7 @@ import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartEvent } from '@/types';
-import { GanttChart, Users } from 'lucide-react';
+import { GanttChart, GanttChartIcon, Users } from 'lucide-react';
 
 import {
   addEvent,
@@ -62,6 +62,7 @@ export function ReportEvents() {
               <div className="flex items-center gap-2 p-2">
                 <ColorSquare>{event.id}</ColorSquare>
                 <Combobox
+                  icon={GanttChartIcon}
                   className="flex-1"
                   searchable
                   value={event.name}
@@ -175,6 +176,7 @@ export function ReportEvents() {
         })}
 
         <Combobox
+          icon={GanttChartIcon}
           value={''}
           searchable
           onChange={(value) => {

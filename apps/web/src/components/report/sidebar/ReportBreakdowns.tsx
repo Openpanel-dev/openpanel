@@ -6,6 +6,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartBreakdown } from '@/types';
+import { SplitIcon } from 'lucide-react';
 
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
@@ -45,6 +46,7 @@ export function ReportBreakdowns() {
               <div className="flex items-center gap-2 p-2 px-4">
                 <ColorSquare>{index}</ColorSquare>
                 <Combobox
+                  icon={SplitIcon}
                   className="flex-1"
                   searchable
                   value={item.name}
@@ -67,6 +69,7 @@ export function ReportBreakdowns() {
 
         {selectedBreakdowns.length === 0 && (
           <Combobox
+            icon={SplitIcon}
             searchable
             value={''}
             onChange={(value) => {

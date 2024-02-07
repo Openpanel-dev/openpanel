@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from '@/redux';
 import { chartTypes } from '@/utils/constants';
 import { objectToZodEnums } from '@/utils/validation';
+import { LineChartIcon } from 'lucide-react';
 
 import { Combobox } from '../ui/combobox';
 import { changeChartType } from './reportSlice';
@@ -14,6 +15,7 @@ export function ReportChartType({ className }: ReportChartTypeProps) {
 
   return (
     <Combobox
+      icon={LineChartIcon}
       className={className}
       placeholder="Chart type"
       onChange={(value) => {

@@ -31,9 +31,7 @@ type IForm = z.infer<typeof validator>;
 
 export default function SaveReport({ report }: SaveReportProps) {
   const router = useRouter();
-  const params = useAppParams();
-  const organizationId = params.organizationId;
-  const projectId = params.projectId;
+  const { organizationId: organizationSlug, projectId } = useAppParams();
   const searchParams = useSearchParams();
   const dashboardId = searchParams?.get('dashboardId') ?? undefined;
 
@@ -46,7 +44,7 @@ export default function SaveReport({ report }: SaveReportProps) {
       });
       popModal();
       router.push(
-        `/${organizationId}/${projectId}/reports/${
+        `/${organizationSlug}/${projectId}/reports/${
           res.id
         }?${searchParams?.toString()}`
       );
@@ -85,7 +83,7 @@ export default function SaveReport({ report }: SaveReportProps) {
 
   return (
     <ModalContent>
-      <ModalHeader title="Edit client" />
+      <ModalHeader title="Create report" />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit(({ name, ...values }) => {
@@ -115,10 +113,12 @@ export default function SaveReport({ report }: SaveReportProps) {
                   {...field}
                   items={dashboards}
                   placeholder="Select a dashboard"
+                  searchable
                   onCreate={(value) => {
                     dashboardMutation.mutate({
                       projectId,
                       name: value,
+                      organizationSlug,
                     });
                   }}
                 />

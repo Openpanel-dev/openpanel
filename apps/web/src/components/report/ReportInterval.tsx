@@ -4,6 +4,7 @@ import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
 } from '@/utils/constants';
+import { ClockIcon } from 'lucide-react';
 
 import { Combobox } from '../ui/combobox';
 import { changeInterval } from './reportSlice';
@@ -27,6 +28,7 @@ export function ReportInterval({ className }: ReportIntervalProps) {
 
   return (
     <Combobox
+      icon={ClockIcon}
       className={className}
       placeholder="Interval"
       onChange={(value) => {
