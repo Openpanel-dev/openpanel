@@ -5,6 +5,7 @@ import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { useAppParams } from '@/hooks/useAppParams';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -13,17 +14,14 @@ import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-interface AddDashboardProps {
-  projectId: string;
-}
-
 const validator = z.object({
   name: z.string().min(1, 'Required'),
 });
 
 type IForm = z.infer<typeof validator>;
 
-export default function AddDashboard({ projectId }: AddDashboardProps) {
+export default function AddDashboard() {
+  const { projectId, organizationId: organizationSlug } = useAppParams();
   const router = useRouter();
 
   const { register, handleSubmit, formState } = useForm<IForm>({
@@ -54,6 +52,7 @@ export default function AddDashboard({ projectId }: AddDashboardProps) {
           mutation.mutate({
             name,
             projectId,
+            organizationSlug,
           });
         })}
       >

@@ -26,7 +26,7 @@ import { cn } from '@/utils/cn';
 import { Eye, FilterIcon, Globe2Icon, LockIcon, X } from 'lucide-react';
 import Link from 'next/link';
 
-import { StickyBelowHeader } from '../../layout-sticky-below-header';
+import { StickyBelowHeader } from './layout-sticky-below-header';
 
 export default function OverviewMetrics() {
   const { previous, range, setRange, interval, metric, setMetric, filters } =

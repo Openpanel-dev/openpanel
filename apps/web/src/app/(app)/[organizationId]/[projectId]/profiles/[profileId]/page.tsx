@@ -1,7 +1,8 @@
-import PageLayout from '@/app/(app)/page-layout';
+import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { ListProperties } from '@/components/events/ListProperties';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+import { getExists } from '@/server/pageExists';
 import {
   getProfileById,
   getProfilesByExternalId,
@@ -15,18 +16,23 @@ interface PageProps {
   params: {
     projectId: string;
     profileId: string;
+    organizationId: string;
   };
 }
 
 export default async function Page({
-  params: { projectId, profileId },
+  params: { projectId, profileId, organizationId },
 }: PageProps) {
-  const profile = await getProfileById(profileId);
+  const [profile] = await Promise.all([
+    getProfileById(profileId),
+    getExists(organizationId, projectId),
+  ]);
   const profiles = (
     await getProfilesByExternalId(profile.external_id, profile.project_id)
   ).filter((item) => item.id !== profile.id);
   return (
     <PageLayout
+      organizationSlug={organizationId}
       title={
         <div className="flex items-center gap-2">
           <ProfileAvatar {...profile} size="sm" className="hidden sm:block" />

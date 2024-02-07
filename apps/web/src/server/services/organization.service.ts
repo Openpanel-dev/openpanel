@@ -1,11 +1,16 @@
 import { auth, clerkClient } from '@clerk/nextjs';
-import type { Organization } from '@clerk/nextjs/dist/types/server';
+import type {
+  Organization,
+  OrganizationInvitation,
+} from '@clerk/nextjs/dist/types/server';
 
 import { db } from '../db';
 
 export type IServiceOrganization = Awaited<
-  ReturnType<typeof getOrganizations>
+  ReturnType<typeof getCurrentOrganizations>
 >[number];
+
+export type IServiceInvites = Awaited<ReturnType<typeof getInvites>>;
 
 function transformOrganization(org: Organization) {
   return {
@@ -15,28 +20,19 @@ function transformOrganization(org: Organization) {
   };
 }
 
-export async function getOrganizations() {
-  const orgs = await clerkClient.organizations.getOrganizationList();
-  return orgs.map(transformOrganization);
-}
-
-export async function getCurrentOrganization() {
+export async function getCurrentOrganizations() {
   const session = auth();
-  if (!session?.orgSlug) {
-    return null;
-  }
-
-  const organization = await clerkClient.organizations.getOrganization({
-    slug: session.orgSlug,
+  const organizations = await clerkClient.users.getOrganizationMembershipList({
+    userId: session.userId!,
   });
-
-  return transformOrganization(organization);
+  return organizations.map((item) => transformOrganization(item.organization));
 }
 
 export function getOrganizationBySlug(slug: string) {
   return clerkClient.organizations
     .getOrganization({ slug })
-    .then(transformOrganization);
+    .then(transformOrganization)
+    .catch(() => null);
 }
 
 export async function getOrganizationByProjectId(projectId: string) {
@@ -49,4 +45,23 @@ export async function getOrganizationByProjectId(projectId: string) {
   return clerkClient.organizations.getOrganization({
     slug: project.organization_slug,
   });
+}
+
+export function transformInvite(invite: OrganizationInvitation) {
+  return {
+    id: invite.id,
+    email: invite.emailAddress,
+    role: invite.role,
+    status: invite.status,
+    createdAt: invite.createdAt,
+    updatedAt: invite.updatedAt,
+  };
+}
+
+export async function getInvites(organizationId: string) {
+  return await clerkClient.organizations
+    .getOrganizationInvitationList({
+      organizationId,
+    })
+    .then((invites) => invites.map(transformInvite));
 }

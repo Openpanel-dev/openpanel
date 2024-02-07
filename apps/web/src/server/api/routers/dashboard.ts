@@ -1,5 +1,5 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@/server/db';
+import { db, getId } from '@/server/db';
 import { PrismaError } from 'prisma-error-enum';
 import { z } from 'zod';
 
@@ -61,12 +61,15 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         projectId: z.string(),
+        organizationSlug: z.string(),
       })
     )
-    .mutation(async ({ input: { projectId, name } }) => {
+    .mutation(async ({ input: { organizationSlug, projectId, name } }) => {
       return db.dashboard.create({
         data: {
+          id: await getId('dashboard', name),
           project_id: projectId,
+          organization_slug: organizationSlug,
           name,
         },
       });

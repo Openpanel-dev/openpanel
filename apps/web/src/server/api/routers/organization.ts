@@ -1,8 +1,6 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import {
-  getCurrentOrganization,
-  getOrganizationBySlug,
-} from '@/server/services/organization.service';
+import { getOrganizationBySlug } from '@/server/services/organization.service';
+import { zInviteUser } from '@/utils/validation';
 import { clerkClient } from '@clerk/nextjs';
 import { z } from 'zod';
 
@@ -10,7 +8,7 @@ export const organizationRouter = createTRPCRouter({
   list: protectedProcedure.query(() => {
     return clerkClient.organizations.getOrganizationList();
   }),
-  first: protectedProcedure.query(() => getCurrentOrganization()),
+  // first: protectedProcedure.query(() => getCurrentOrganization()),
   get: protectedProcedure
     .input(
       z.object({
@@ -30,6 +28,22 @@ export const organizationRouter = createTRPCRouter({
     .mutation(({ input }) => {
       return clerkClient.organizations.updateOrganization(input.id, {
         name: input.name,
+      });
+    }),
+  inviteUser: protectedProcedure
+    .input(zInviteUser)
+    .mutation(async ({ input, ctx }) => {
+      const organization = await getOrganizationBySlug(input.organizationSlug);
+
+      if (!organization) {
+        throw new Error('Organization not found');
+      }
+
+      return clerkClient.organizations.createOrganizationInvitation({
+        organizationId: organization.id,
+        emailAddress: input.email,
+        role: input.role,
+        inviterUserId: ctx.session.userId,
       });
     }),
 });

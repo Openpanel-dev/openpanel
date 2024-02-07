@@ -28,19 +28,4 @@ export const userRouter = createTRPCRouter({
         })
         .then(transformUser);
     }),
-  invite: protectedProcedure
-    .input(
-      z.object({
-        email: z.string().email(),
-        organizationId: z.string(),
-      })
-    )
-    .mutation(async ({ input, ctx }) => {
-      await db.invite.create({
-        data: {
-          organization_id: input.organizationId,
-          email: input.email,
-        },
-      });
-    }),
 });

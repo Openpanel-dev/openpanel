@@ -2,11 +2,19 @@
 
 import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Command, CommandGroup, CommandItem } from '@/components/ui/command';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command';
 import { useOnClickOutside } from 'usehooks-ts';
 
+import { Button } from './button';
 import { Checkbox } from './checkbox';
 import { Input } from './input';
+import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
@@ -43,7 +51,6 @@ export function ComboboxAdvanced({
     const checked = !!value.find((s) => s === item.value);
     return (
       <CommandItem
-        key={String(item.value)}
         onMouseDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -71,52 +78,40 @@ export function ComboboxAdvanced({
   };
 
   return (
-    <Command className="overflow-visible bg-white" ref={ref}>
-      <button
-        type="button"
-        className="group border border-input px-3 py-2 text-sm ring-offset-background rounded-md focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
-        onClick={() => setOpen((prev) => !prev)}
-      >
-        <div className="flex gap-1 flex-wrap">
-          {value.length === 0 && placeholder}
-          {value.slice(0, 2).map((value) => {
-            const item = items.find((item) => item.value === value) ?? {
-              value,
-              label: value,
-            };
-            return (
-              <Badge key={String(item.value)} variant="secondary">
-                {item.label}
-              </Badge>
-            );
-          })}
-          {value.length > 2 && (
-            <Badge variant="secondary">+{value.length - 2} more</Badge>
-          )}
-        </div>
-      </button>
-      {open && (
-        <div className="relative top-2">
-          <div className="max-h-80 min-w-[300px] absolute w-full z-10 top-0 rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
-            <CommandGroup className="max-h-80 overflow-auto">
-              <div className="p-1 mb-2">
-                <Input
-                  placeholder="Type to search"
-                  value={inputValue}
-                  onChange={(event) => setInputValue(event.target.value)}
-                />
-              </div>
-              {inputValue === ''
-                ? value.map(renderUnknownItem)
-                : renderItem({
-                    value: inputValue,
-                    label: `Pick "${inputValue}"`,
-                  })}
-              {selectables.map(renderItem)}
-            </CommandGroup>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant={'outline'} onClick={() => setOpen((prev) => !prev)}>
+          <div className="flex gap-1 flex-wrap">
+            {value.length === 0 && placeholder}
+            {value.slice(0, 2).map((value) => {
+              const item = items.find((item) => item.value === value) ?? {
+                value,
+                label: value,
+              };
+              return <Badge key={String(item.value)}>{item.label}</Badge>;
+            })}
+            {value.length > 2 && <Badge>+{value.length - 2} more</Badge>}
           </div>
-        </div>
-      )}
-    </Command>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-full max-w-md p-0" align="start">
+        <Command>
+          <CommandInput
+            placeholder="Search"
+            value={inputValue}
+            onValueChange={setInputValue}
+          />
+          <CommandGroup>
+            {inputValue === ''
+              ? value.map(renderUnknownItem)
+              : renderItem({
+                  value: inputValue,
+                  label: `Pick "${inputValue}"`,
+                })}
+            {selectables.map(renderItem)}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

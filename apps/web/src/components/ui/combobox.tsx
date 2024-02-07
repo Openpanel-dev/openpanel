@@ -55,7 +55,6 @@ export function Combobox<T extends string>({
   searchable,
   icon: Icon,
   size,
-  label,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');

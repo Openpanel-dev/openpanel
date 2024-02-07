@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { StickyBelowHeader } from '@/app/(app)/layout-sticky-below-header';
+import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
 import { Chart } from '@/components/report/chart';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';

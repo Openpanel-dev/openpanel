@@ -4,13 +4,9 @@ import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
 import { PlusIcon } from 'lucide-react';
 
-import { StickyBelowHeader } from '../../../layout-sticky-below-header';
+import { StickyBelowHeader } from '../layout-sticky-below-header';
 
-interface HeaderDashboardsProps {
-  projectId: string;
-}
-
-export function HeaderDashboards({ projectId }: HeaderDashboardsProps) {
+export function HeaderDashboards() {
   return (
     <StickyBelowHeader>
       <div className="p-4 flex justify-between items-center">
@@ -18,9 +14,7 @@ export function HeaderDashboards({ projectId }: HeaderDashboardsProps) {
         <Button
           icon={PlusIcon}
           onClick={() => {
-            pushModal('AddDashboard', {
-              projectId,
-            });
+            pushModal('AddDashboard');
           }}
         >
           <span className="max-sm:hidden">Create dashboard</span>

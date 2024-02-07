@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useAppParams } from '@/hooks/useAppParams';
-import type { IServiceRecentDashboards } from '@/server/services/dashboard.service';
+import type { IServiceDashboards } from '@/server/services/dashboard.service';
 import { cn } from '@/utils/cn';
+import { useUser } from '@clerk/nextjs';
 import {
   BuildingIcon,
   CogIcon,
@@ -24,49 +26,56 @@ function LinkWithIcon({
   icon: Icon,
   label,
   active: overrideActive,
+  className,
 }: {
   href: string;
   icon: React.ElementType<LucideProps>;
   label: React.ReactNode;
   active?: boolean;
+  className?: string;
 }) {
   const pathname = usePathname();
   const active = overrideActive || href === pathname;
   return (
     <Link
       className={cn(
-        'text-slate-600 flex gap-2 items-center px-3 py-3 transition-colors hover:text-white hover:bg-blue-700 leading-none rounded-lg',
-        active && 'bg-blue-600 text-white'
+        'text-slate-600 text-sm font-medium flex gap-2 items-center px-3 py-2 transition-colors hover:bg-blue-100 leading-none rounded-md transition-all',
+        active && 'bg-blue-50',
+        className
       )}
       href={href}
     >
       <Icon size={20} />
       <div className="flex-1">{label}</div>
-      <DotIcon
-        size={20}
-        className={cn(
-          'transition-opacity',
-          active ? 'opacity-100' : 'opacity-0'
-        )}
-      />
     </Link>
   );
 }
 
 interface LayoutMenuProps {
-  recentDashboards: IServiceRecentDashboards;
-  fallbackProjectId: string | null;
+  dashboards: IServiceDashboards;
 }
-export default function LayoutMenu({
-  recentDashboards,
-  fallbackProjectId,
-}: LayoutMenuProps) {
+export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
+  const { user } = useUser();
+
   const pathname = usePathname();
   const params = useAppParams();
-  const projectId =
-    !params.projectId || params.projectId === 'undefined'
-      ? fallbackProjectId
-      : params.projectId;
+  const hasProjectId =
+    params.projectId &&
+    params.projectId !== 'null' &&
+    params.projectId !== 'undefined';
+  const projectId = hasProjectId
+    ? params.projectId
+    : (user?.unsafeMetadata.projectId as string);
+
+  useEffect(() => {
+    if (hasProjectId) {
+      user?.update({
+        unsafeMetadata: {
+          projectId: params.projectId,
+        },
+      });
+    }
+  }, [params.projectId, hasProjectId]);
 
   return (
     <>
@@ -93,50 +102,51 @@ export default function LayoutMenu({
       <LinkWithIcon
         icon={CogIcon}
         label="Settings"
-        href={`/${params.organizationId}/settings/organization`}
+        href={`/${params.organizationId}/${projectId}/settings/organization`}
       />
       {pathname?.includes('/settings/') && (
-        <div className="pl-7">
+        <div className="pl-7 flex flex-col gap-1">
           <LinkWithIcon
             icon={BuildingIcon}
             label="Organization"
-            href={`/${params.organizationId}/settings/organization`}
+            href={`/${params.organizationId}/${projectId}/settings/organization`}
           />
           <LinkWithIcon
             icon={WarehouseIcon}
             label="Projects"
-            href={`/${params.organizationId}/settings/projects`}
+            href={`/${params.organizationId}/${projectId}/settings/projects`}
           />
           <LinkWithIcon
             icon={KeySquareIcon}
             label="Clients"
-            href={`/${params.organizationId}/settings/clients`}
+            href={`/${params.organizationId}/${projectId}/settings/clients`}
           />
           <LinkWithIcon
             icon={UserIcon}
             label="Profile (yours)"
-            href={`/${params.organizationId}/settings/profile`}
+            href={`/${params.organizationId}/${projectId}/settings/profile`}
           />
         </div>
       )}
-      {recentDashboards.length > 0 && (
+      {dashboards.length > 0 && (
         <div className="mt-8">
-          <div className="font-medium mb-2">Recent dashboards</div>
-          {recentDashboards.map((item) => (
-            <LinkWithIcon
-              key={item.id}
-              icon={LayoutPanelTopIcon}
-              label={
-                <div className="flex flex-col">
-                  <span>{item.dashboard.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {item.project.name}
-                  </span>
-                </div>
-              }
-              href={`/${item.organization_slug}/${item.project_id}/${item.dashboard_id}`}
-            />
-          ))}
+          <div className="font-medium mb-2 text-sm">Your dashboards</div>
+          <div className="flex flex-col gap-2">
+            {dashboards.map((item) => (
+              <LinkWithIcon
+                className="py-1"
+                key={item.id}
+                icon={LayoutPanelTopIcon}
+                label={
+                  <div className="flex flex-col gap-0.5">
+                    <span>{item.name}</span>
+                    <span className="text-xs">{item.project.name}</span>
+                  </div>
+                }
+                href={`/${item.organization_slug}/${item.project_id}/dashboards/${item.id}`}
+              />
+            ))}
+          </div>
         </div>
       )}
     </>

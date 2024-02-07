@@ -4,10 +4,7 @@ import { db } from '@mixan/db';
 
 export { db } from '@mixan/db';
 
-export async function getId(
-  tableName: 'project' | 'organization' | 'dashboard',
-  name: string
-) {
+export async function getId(tableName: 'project' | 'dashboard', name: string) {
   const newId = slug(name);
   if (!db[tableName]) {
     throw new Error('Table does not exists');

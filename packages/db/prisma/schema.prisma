@@ -19,11 +19,10 @@ model Project {
   profiles          Profile[]
   clients           Client[]
 
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @default(now()) @updatedAt
-  reports          Report[]
-  dashboards       Dashboard[]
-  RecentDashboards RecentDashboards[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @default(now()) @updatedAt
+  reports    Report[]
+  dashboards Dashboard[]
 
   @@map("projects")
 }
@@ -67,15 +66,6 @@ model Profile {
   @@map("profiles")
 }
 
-model EventFailed {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  data      Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  @@map("event_failed")
-}
-
 model Client {
   id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name              String
@@ -89,19 +79,6 @@ model Client {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("clients")
-}
-
-model RecentDashboards {
-  id                String    @id @default(dbgenerated("gen_random_uuid()"))
-  project_id        String
-  project           Project   @relation(fields: [project_id], references: [id])
-  organization_slug String
-  dashboard_id      String
-  dashboard         Dashboard @relation(fields: [dashboard_id], references: [id])
-  user_id           String
-  createdAt         DateTime  @default(now())
-
-  @@map("recent_dashboards")
 }
 
 enum Interval {
@@ -121,15 +98,15 @@ enum ChartType {
 }
 
 model Dashboard {
-  id         String   @id @default(dbgenerated("gen_random_uuid()"))
-  name       String
-  project_id String
-  project    Project  @relation(fields: [project_id], references: [id])
-  reports    Report[]
+  id                String   @id @default(dbgenerated("gen_random_uuid()"))
+  name              String
+  organization_slug String
+  project_id        String
+  project           Project  @relation(fields: [project_id], references: [id])
+  reports           Report[]
 
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @default(now()) @updatedAt
-  RecentDashboards RecentDashboards[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@map("dashboards")
 }

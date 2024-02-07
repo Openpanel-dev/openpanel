@@ -73,3 +73,9 @@ export const zChartInput = z.object({
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
 });
+
+export const zInviteUser = z.object({
+  email: z.string().email(),
+  organizationSlug: z.string(),
+  role: z.enum(['admin', 'org:member']),
+});

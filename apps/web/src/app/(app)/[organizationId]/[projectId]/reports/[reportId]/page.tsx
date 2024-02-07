@@ -1,6 +1,9 @@
-import PageLayout from '@/app/(app)/page-layout';
+import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
+import { getExists } from '@/server/pageExists';
+import { getOrganizationBySlug } from '@/server/services/organization.service';
 import { getReportById } from '@/server/services/reports.service';
 import { Pencil } from 'lucide-react';
+import { notFound } from 'next/navigation';
 
 import ReportEditor from '../report-editor';
 
@@ -8,13 +11,25 @@ interface PageProps {
   params: {
     projectId: string;
     reportId: string;
+    organizationId: string;
   };
 }
 
-export default async function Page({ params: { reportId } }: PageProps) {
-  const report = await getReportById(reportId);
+export default async function Page({
+  params: { reportId, organizationId, projectId },
+}: PageProps) {
+  const [report] = await Promise.all([
+    getReportById(reportId),
+    getExists(organizationId, projectId),
+  ]);
+
+  if (!report) {
+    return notFound();
+  }
+
   return (
     <PageLayout
+      organizationSlug={organizationId}
       title={
         <div className="flex gap-2 items-center cursor-pointer">
           {report.name}

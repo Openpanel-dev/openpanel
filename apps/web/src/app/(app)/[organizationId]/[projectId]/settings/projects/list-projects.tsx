@@ -1,6 +1,6 @@
 'use client';
 
-import { StickyBelowHeader } from '@/app/(app)/layout-sticky-below-header';
+import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
 import { DataTable } from '@/components/DataTable';
 import { columns } from '@/components/projects/table';
 import { Button } from '@/components/ui/button';

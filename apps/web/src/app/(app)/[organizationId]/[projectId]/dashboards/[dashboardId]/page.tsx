@@ -1,11 +1,8 @@
-import PageLayout from '@/app/(app)/page-layout';
-import {
-  createRecentDashboard,
-  getDashboardById,
-} from '@/server/services/dashboard.service';
+import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
+import { getExists } from '@/server/pageExists';
+import { getDashboardById } from '@/server/services/dashboard.service';
 import { getReportsByDashboardId } from '@/server/services/reports.service';
-import { auth } from '@clerk/nextjs';
-import { revalidateTag } from 'next/cache';
+import { notFound } from 'next/navigation';
 
 import { ListReports } from './list-reports';
 
@@ -20,22 +17,18 @@ interface PageProps {
 export default async function Page({
   params: { organizationId, projectId, dashboardId },
 }: PageProps) {
-  const { userId } = auth();
+  const [dashboard, reports] = await Promise.all([
+    getDashboardById(dashboardId),
+    getReportsByDashboardId(dashboardId),
+    getExists(organizationId, projectId),
+  ]);
 
-  const dashboard = await getDashboardById(dashboardId);
-  const reports = await getReportsByDashboardId(dashboardId);
-  if (userId && dashboard) {
-    await createRecentDashboard({
-      userId,
-      organizationId,
-      projectId,
-      dashboardId,
-    });
-    revalidateTag(`recentDashboards__${userId}`);
+  if (!dashboard) {
+    return notFound();
   }
 
   return (
-    <PageLayout title={dashboard.name}>
+    <PageLayout title={dashboard.name} organizationSlug={organizationId}>
       <ListReports reports={reports} />
     </PageLayout>
   );

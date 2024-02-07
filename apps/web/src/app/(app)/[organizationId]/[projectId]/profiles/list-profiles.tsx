@@ -2,9 +2,11 @@
 
 import { useMemo } from 'react';
 import { api } from '@/app/_trpc/client';
-import { StickyBelowHeader } from '@/app/(app)/layout-sticky-below-header';
+import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
+import { FullPageEmptyState } from '@/components/FullPageEmptyState';
 import { Pagination, usePagination } from '@/components/Pagination';
 import { Input } from '@/components/ui/input';
+import { UsersIcon } from 'lucide-react';
 import { useQueryState } from 'nuqs';
 
 import { ProfileListItem } from './profile-list-item';
@@ -16,7 +18,7 @@ interface ListProfilesProps {
 export function ListProfiles({ organizationId, projectId }: ListProfilesProps) {
   const [query, setQuery] = useQueryState('q');
   const pagination = usePagination();
-  const eventsQuery = api.profile.list.useQuery(
+  const profilesQuery = api.profile.list.useQuery(
     {
       projectId,
       query,
@@ -26,7 +28,7 @@ export function ListProfiles({ organizationId, projectId }: ListProfilesProps) {
       keepPreviousData: true,
     }
   );
-  const profiles = useMemo(() => eventsQuery.data ?? [], [eventsQuery]);
+  const profiles = useMemo(() => profilesQuery.data ?? [], [profilesQuery]);
 
   return (
     <>
@@ -38,14 +40,28 @@ export function ListProfiles({ organizationId, projectId }: ListProfilesProps) {
         />
       </StickyBelowHeader>
       <div className="p-4">
-        <div className="flex flex-col gap-4">
-          {profiles.map((item) => (
-            <ProfileListItem key={item.id} {...item} />
-          ))}
-        </div>
-        <div className="mt-2">
-          <Pagination {...pagination} />
-        </div>
+        {profiles.length === 0 ? (
+          <FullPageEmptyState title="No profiles" icon={UsersIcon}>
+            {query ? (
+              <p>
+                No match for <strong>"{query}"</strong>
+              </p>
+            ) : (
+              <p>We could not find any profiles on this project</p>
+            )}
+          </FullPageEmptyState>
+        ) : (
+          <>
+            <div className="flex flex-col gap-4">
+              {profiles.map((item) => (
+                <ProfileListItem key={item.id} {...item} />
+              ))}
+            </div>
+            <div className="mt-2">
+              <Pagination {...pagination} />
+            </div>
+          </>
+        )}
       </div>
     </>
   );

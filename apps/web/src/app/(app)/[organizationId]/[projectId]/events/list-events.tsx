@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from 'react';
 import { api } from '@/app/_trpc/client';
-import { StickyBelowHeader } from '@/app/(app)/layout-sticky-below-header';
+import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
+import { FullPageEmptyState } from '@/components/FullPageEmptyState';
 import { Pagination, usePagination } from '@/components/Pagination';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { GanttChartIcon } from 'lucide-react';
 
 import { EventListItem } from './event-list-item';
 
@@ -47,14 +49,26 @@ export function ListEvents({ projectId }: ListEventsProps) {
         </div>
       </StickyBelowHeader>
       <div className="p-4">
-        <div className="flex flex-col gap-4">
-          {events.map((item) => (
-            <EventListItem key={item.id} {...item} />
-          ))}
-        </div>
-        <div className="mt-2">
-          <Pagination {...pagination} />
-        </div>
+        {events.length === 0 ? (
+          <FullPageEmptyState title="No events here" icon={GanttChartIcon}>
+            {eventFilters.length ? (
+              <p>Could not find any events with your filter</p>
+            ) : (
+              <p>We have not recieved any events yet</p>
+            )}
+          </FullPageEmptyState>
+        ) : (
+          <>
+            <div className="flex flex-col gap-4">
+              {events.map((item) => (
+                <EventListItem key={item.id} {...item} />
+              ))}
+            </div>
+            <div className="mt-2">
+              <Pagination {...pagination} />
+            </div>
+          </>
+        )}
       </div>
     </>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Logo } from '@/components/Logo';
+import type { IServiceDashboards } from '@/server/services/dashboard.service';
 import type { IServiceOrganization } from '@/server/services/organization.service';
 import { cn } from '@/utils/cn';
 import { Rotate as Hamburger } from 'hamburger-react';
@@ -13,14 +14,19 @@ import LayoutOrganizationSelector from './layout-organization-selector';
 
 interface LayoutSidebarProps {
   organizations: IServiceOrganization[];
+  dashboards: IServiceDashboards;
 }
-export function LayoutSidebar({ organizations }: LayoutSidebarProps) {
+export function LayoutSidebar({
+  organizations,
+  dashboards,
+}: LayoutSidebarProps) {
   const [active, setActive] = useState(false);
-  const fallbackProjectId = null;
   const pathname = usePathname();
+
   useEffect(() => {
     setActive(false);
   }, [pathname]);
+
   return (
     <>
       <button
@@ -48,10 +54,7 @@ export function LayoutSidebar({ organizations }: LayoutSidebarProps) {
           </Link>
         </div>
         <div className="flex flex-col p-4 gap-2 flex-grow overflow-auto">
-          <LayoutMenu
-            recentDashboards={[]}
-            fallbackProjectId={fallbackProjectId}
-          />
+          <LayoutMenu dashboards={dashboards} />
           {/* Placeholder for LayoutOrganizationSelector */}
           <div className="h-16 block shrink-0"></div>
         </div>

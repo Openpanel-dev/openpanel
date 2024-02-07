@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { StickyBelowHeader } from '@/app/(app)/layout-sticky-below-header';
+import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
 import { LazyChart } from '@/components/report/chart/LazyChart';
 import { ReportRange } from '@/components/report/ReportRange';
 import { Button } from '@/components/ui/button';

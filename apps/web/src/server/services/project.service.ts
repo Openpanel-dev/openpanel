@@ -1,7 +1,4 @@
-import { unstable_cache } from 'next/cache';
-
 import { db } from '../db';
-import { getCurrentOrganization } from './organization.service';
 
 export type IServiceProject = Awaited<ReturnType<typeof getProjectById>>;
 
@@ -13,12 +10,10 @@ export function getProjectById(id: string) {
   });
 }
 
-export async function getCurrentProjects() {
-  const organization = await getCurrentOrganization();
-  if (!organization?.slug) return [];
+export async function getCurrentProjects(organizationSlug: string) {
   return await db.project.findMany({
     where: {
-      organization_slug: organization.slug,
+      organization_slug: organizationSlug,
     },
   });
 }

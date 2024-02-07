@@ -1,7 +1,8 @@
+import { getOrganizationBySlug } from '@/server/services/organization.service';
 import { getProjectWithMostEvents } from '@/server/services/project.service';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
-import PageLayout from '../page-layout';
+import PageLayout from './[projectId]/page-layout';
 
 interface PageProps {
   params: {
@@ -10,14 +11,21 @@ interface PageProps {
 }
 
 export default async function Page({ params: { organizationId } }: PageProps) {
-  const project = await getProjectWithMostEvents(organizationId);
+  const [organization, project] = await Promise.all([
+    getOrganizationBySlug(organizationId),
+    getProjectWithMostEvents(organizationId),
+  ]);
+
+  if (!organization) {
+    return notFound();
+  }
 
   if (project) {
     return redirect(`/${organizationId}/${project.id}`);
   }
 
   return (
-    <PageLayout title="Projects">
+    <PageLayout title="Projects" organizationSlug={organizationId}>
       <div className="p-4">
         <h1>Create your first project</h1>
       </div>

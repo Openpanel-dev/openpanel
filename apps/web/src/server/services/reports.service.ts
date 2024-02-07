@@ -70,12 +70,16 @@ export function getReportsByDashboardId(dashboardId: string) {
     .then((reports) => reports.map(transformReport));
 }
 
-export function getReportById(id: string) {
-  return db.report
-    .findUniqueOrThrow({
-      where: {
-        id,
-      },
-    })
-    .then(transformReport);
+export async function getReportById(id: string) {
+  const report = await db.report.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!report) {
+    return null;
+  }
+
+  return transformReport(report);
 }
