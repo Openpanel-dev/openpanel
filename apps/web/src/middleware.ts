@@ -1,24 +1,12 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { authMiddleware } from '@clerk/nextjs';
 
-export const config = { matcher: ['/api/sdk/:path*'] };
+// This example protects all routes including api/trpc routes
+// Please edit this to allow other routes to be public as needed.
+// See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your Middleware
+export default authMiddleware({
+  publicRoutes: [],
+});
 
-export const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'Content-Type, Authorization, Mixan-Client-Id, Mixan-Client-Secret',
+export const config = {
+  matcher: ['/((?!.+\\.[\\w]+$|_next).*)', '/', '/(api|trpc)(.*)'],
 };
-
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-
-  if (request.method === 'OPTIONS') {
-    return NextResponse.json({}, { headers: cors });
-  }
-
-  Object.entries(cors).forEach(([key, value]) => {
-    response.headers.append(key, value);
-  });
-  return response;
-}

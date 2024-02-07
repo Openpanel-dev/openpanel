@@ -15,7 +15,7 @@ export const projectRouter = createTRPCRouter({
 
       return db.project.findMany({
         where: {
-          organization_id: organizationId,
+          organization_slug: organizationId,
         },
       });
     }),
@@ -60,7 +60,7 @@ export const projectRouter = createTRPCRouter({
       return db.project.create({
         data: {
           id: await getId('project', input.name),
-          organization_id: input.organizationId,
+          organization_slug: input.organizationId,
           name: input.name,
         },
       });

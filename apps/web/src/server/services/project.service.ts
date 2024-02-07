@@ -1,8 +1,7 @@
 import { unstable_cache } from 'next/cache';
 
-import { chQuery } from '@mixan/db';
-
 import { db } from '../db';
+import { getCurrentOrganization } from './organization.service';
 
 export type IServiceProject = Awaited<ReturnType<typeof getProjectById>>;
 
@@ -14,44 +13,31 @@ export function getProjectById(id: string) {
   });
 }
 
-export function getProjectsByOrganizationId(organizationId: string) {
-  return db.project.findMany({
+export async function getCurrentProjects() {
+  const organization = await getCurrentOrganization();
+  if (!organization?.slug) return [];
+  return await db.project.findMany({
     where: {
-      organization_id: organizationId,
+      organization_slug: organization.slug,
     },
   });
 }
 
-export async function getProjectWithMostEvents(organizationId: string) {
+export function getProjectsByOrganizationSlug(slug: string) {
+  return db.project.findMany({
+    where: {
+      organization_slug: slug,
+    },
+  });
+}
+
+export async function getProjectWithMostEvents(slug: string) {
   return db.project.findFirst({
     where: {
-      organization_id: organizationId,
+      organization_slug: slug,
     },
     orderBy: {
       eventsCount: 'desc',
     },
   });
-}
-
-export function getFirstProjectByOrganizationId(organizationId: string) {
-  const tag = `getFirstProjectByOrganizationId_${organizationId}`;
-  return unstable_cache(
-    async (organizationId: string) => {
-      return db.project.findFirst({
-        where: {
-          organization_id: organizationId,
-        },
-        orderBy: {
-          events: {
-            _count: 'desc',
-          },
-        },
-      });
-    },
-    tag.split('_'),
-    {
-      tags: [tag],
-      revalidate: 3600 * 24,
-    }
-  )(organizationId);
 }

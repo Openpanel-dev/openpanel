@@ -2,16 +2,9 @@ import PageLayout from '@/app/(app)/page-layout';
 
 import OverviewMetrics from './overview-metrics';
 
-interface PageProps {
-  params: {
-    organizationId: string;
-    projectId: string;
-  };
-}
-
-export default function Page({ params: { organizationId } }: PageProps) {
+export default function Page() {
   return (
-    <PageLayout title="Overview" organizationId={organizationId}>
+    <PageLayout title="Overview">
       <OverviewMetrics />
     </PageLayout>
   );

@@ -7,20 +7,13 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
 import makeStore from '@/redux';
+import { ClerkProvider } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
-import type { Session } from 'next-auth';
-import { SessionProvider } from 'next-auth/react';
 import { Provider as ReduxProvider } from 'react-redux';
 import superjson from 'superjson';
 
-export default function Providers({
-  children,
-  session,
-}: {
-  children: React.ReactNode;
-  session: Session | null;
-}) {
+export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -51,7 +44,7 @@ export default function Providers({
   }
 
   return (
-    <SessionProvider session={session}>
+    <ClerkProvider>
       <ReduxProvider store={storeRef.current}>
         <api.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
@@ -63,6 +56,6 @@ export default function Providers({
           </QueryClientProvider>
         </api.Provider>
       </ReduxProvider>
-    </SessionProvider>
+    </ClerkProvider>
   );
 }

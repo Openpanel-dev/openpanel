@@ -6,18 +6,15 @@ import { ListDashboards } from './list-dashboards';
 
 interface PageProps {
   params: {
-    organizationId: string;
     projectId: string;
   };
 }
 
-export default async function Page({
-  params: { organizationId, projectId },
-}: PageProps) {
+export default async function Page({ params: { projectId } }: PageProps) {
   const dashboards = await getDashboardsByProjectId(projectId);
 
   return (
-    <PageLayout title="Dashboards" organizationId={organizationId}>
+    <PageLayout title="Dashboards">
       <HeaderDashboards projectId={projectId} />
       <ListDashboards dashboards={dashboards} />
     </PageLayout>

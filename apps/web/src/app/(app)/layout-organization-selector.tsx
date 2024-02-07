@@ -14,7 +14,7 @@ export default function LayoutOrganizationSelector({
   const params = useAppParams();
 
   const organization = organizations.find(
-    (item) => item.id === params.organizationId
+    (item) => item.slug === params.organizationId
   );
 
   if (!organization) {

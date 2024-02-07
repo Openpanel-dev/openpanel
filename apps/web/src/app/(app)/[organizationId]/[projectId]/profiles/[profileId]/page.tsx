@@ -1,7 +1,6 @@
 import PageLayout from '@/app/(app)/page-layout';
 import { ListProperties } from '@/components/events/ListProperties';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
-import { Avatar } from '@/components/ui/avatar';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
 import {
   getProfileById,
@@ -14,14 +13,13 @@ import ListProfileEvents from './list-profile-events';
 
 interface PageProps {
   params: {
-    organizationId: string;
     projectId: string;
     profileId: string;
   };
 }
 
 export default async function Page({
-  params: { organizationId, projectId, profileId },
+  params: { projectId, profileId },
 }: PageProps) {
   const profile = await getProfileById(profileId);
   const profiles = (
@@ -35,7 +33,6 @@ export default async function Page({
           {getProfileName(profile)}
         </div>
       }
-      organizationId={organizationId}
     >
       <div className="p-4">
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 mb-8">

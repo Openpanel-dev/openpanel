@@ -44,7 +44,7 @@ export const dashboardRouter = createTRPCRouter({
         return db.dashboard.findMany({
           where: {
             project: {
-              organization_id: input.organizationId,
+              organization_slug: input.organizationId,
             },
           },
           include: {

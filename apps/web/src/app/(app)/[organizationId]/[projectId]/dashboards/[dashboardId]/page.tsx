@@ -1,10 +1,10 @@
 import PageLayout from '@/app/(app)/page-layout';
-import { getSession } from '@/server/auth';
 import {
   createRecentDashboard,
   getDashboardById,
 } from '@/server/services/dashboard.service';
 import { getReportsByDashboardId } from '@/server/services/reports.service';
+import { auth } from '@clerk/nextjs';
 import { revalidateTag } from 'next/cache';
 
 import { ListReports } from './list-reports';
@@ -20,10 +20,10 @@ interface PageProps {
 export default async function Page({
   params: { organizationId, projectId, dashboardId },
 }: PageProps) {
-  const session = await getSession();
+  const { userId } = auth();
+
   const dashboard = await getDashboardById(dashboardId);
   const reports = await getReportsByDashboardId(dashboardId);
-  const userId = session?.user.id;
   if (userId && dashboard) {
     await createRecentDashboard({
       userId,
@@ -35,7 +35,7 @@ export default async function Page({
   }
 
   return (
-    <PageLayout title={dashboard.name} organizationId={organizationId}>
+    <PageLayout title={dashboard.name}>
       <ListReports reports={reports} />
     </PageLayout>
   );

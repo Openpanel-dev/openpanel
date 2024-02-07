@@ -6,15 +6,12 @@ import ReportEditor from '../report-editor';
 
 interface PageProps {
   params: {
-    organizationId: string;
     projectId: string;
     reportId: string;
   };
 }
 
-export default async function Page({
-  params: { organizationId, reportId },
-}: PageProps) {
+export default async function Page({ params: { reportId } }: PageProps) {
   const report = await getReportById(reportId);
   return (
     <PageLayout
@@ -24,7 +21,6 @@ export default async function Page({
           <Pencil size={16} />
         </div>
       }
-      organizationId={organizationId}
     >
       <ReportEditor report={report} />
     </PageLayout>

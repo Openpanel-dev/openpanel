@@ -13,7 +13,7 @@ export default async function Page({ params: { organizationId } }: PageProps) {
   const clients = await getClientsByOrganizationId(organizationId);
 
   return (
-    <PageLayout title="Clients" organizationId={organizationId}>
+    <PageLayout title="Clients">
       <ListClients clients={clients} />
     </PageLayout>
   );

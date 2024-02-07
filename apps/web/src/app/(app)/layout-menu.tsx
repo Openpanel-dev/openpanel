@@ -134,7 +134,7 @@ export default function LayoutMenu({
                   </span>
                 </div>
               }
-              href={`/${item.organization_id}/${item.project_id}/${item.dashboard_id}`}
+              href={`/${item.organization_slug}/${item.project_id}/${item.dashboard_id}`}
             />
           ))}
         </div>

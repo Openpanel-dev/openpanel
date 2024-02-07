@@ -5,7 +5,7 @@ import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
-import type { getOrganizationById } from '@/server/services/organization.service';
+import type { getOrganizationBySlug } from '@/server/services/organization.service';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -17,7 +17,7 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 interface EditOrganizationProps {
-  organization: Awaited<ReturnType<typeof getOrganizationById>>;
+  organization: Awaited<ReturnType<typeof getOrganizationBySlug>>;
 }
 export default function EditOrganization({
   organization,
@@ -64,10 +64,3 @@ export default function EditOrganization({
     </form>
   );
 }
-
-// <ContentSection
-//   title="Invite user"
-//   text="Invite users to this organization. You can invite several users with (,)"
-// >
-
-// </ContentSection>

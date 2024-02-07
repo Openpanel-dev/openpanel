@@ -12,6 +12,7 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
+    "@clerk/nextjs": "^4.29.6",
     "@clickhouse/client": "^0.2.9",
     "@hookform/resolvers": "^3.3.2",
     "@mixan/common": "workspace:^",
@@ -45,7 +46,7 @@
     "hamburger-react": "^2.5.0",
     "lodash.debounce": "^4.0.8",
     "lottie-react": "^2.4.0",
-    "lucide-react": "^0.286.0",
+    "lucide-react": "^0.323.0",
     "mathjs": "^12.3.0",
     "mitt": "^3.0.1",
     "next": "~14.0.4",

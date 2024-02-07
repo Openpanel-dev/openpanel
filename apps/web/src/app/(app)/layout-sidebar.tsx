@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Logo } from '@/components/Logo';
-import type { IServiceRecentDashboards } from '@/server/services/dashboard.service';
 import type { IServiceOrganization } from '@/server/services/organization.service';
 import { cn } from '@/utils/cn';
 import { Rotate as Hamburger } from 'hamburger-react';
@@ -13,15 +12,11 @@ import LayoutMenu from './layout-menu';
 import LayoutOrganizationSelector from './layout-organization-selector';
 
 interface LayoutSidebarProps {
-  recentDashboards: IServiceRecentDashboards;
   organizations: IServiceOrganization[];
 }
-export function LayoutSidebar({
-  organizations,
-  recentDashboards,
-}: LayoutSidebarProps) {
+export function LayoutSidebar({ organizations }: LayoutSidebarProps) {
   const [active, setActive] = useState(false);
-  const fallbackProjectId = recentDashboards[0]?.project_id ?? null;
+  const fallbackProjectId = null;
   const pathname = usePathname();
   useEffect(() => {
     setActive(false);
@@ -54,7 +49,7 @@ export function LayoutSidebar({
         </div>
         <div className="flex flex-col p-4 gap-2 flex-grow overflow-auto">
           <LayoutMenu
-            recentDashboards={recentDashboards}
+            recentDashboards={[]}
             fallbackProjectId={fallbackProjectId}
           />
           {/* Placeholder for LayoutOrganizationSelector */}

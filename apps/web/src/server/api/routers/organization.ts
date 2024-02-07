@@ -1,31 +1,16 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@/server/db';
-import { getOrganizationById } from '@/server/services/organization.service';
+import {
+  getCurrentOrganization,
+  getOrganizationBySlug,
+} from '@/server/services/organization.service';
+import { clerkClient } from '@clerk/nextjs';
 import { z } from 'zod';
 
 export const organizationRouter = createTRPCRouter({
-  list: protectedProcedure.query(({ ctx }) => {
-    return db.organization.findMany({
-      where: {
-        users: {
-          some: {
-            id: ctx.session.user.id,
-          },
-        },
-      },
-    });
+  list: protectedProcedure.query(() => {
+    return clerkClient.organizations.getOrganizationList();
   }),
-  first: protectedProcedure.query(({ ctx }) => {
-    return db.organization.findFirst({
-      where: {
-        users: {
-          some: {
-            id: ctx.session.user.id,
-          },
-        },
-      },
-    });
-  }),
+  first: protectedProcedure.query(() => getCurrentOrganization()),
   get: protectedProcedure
     .input(
       z.object({
@@ -33,7 +18,7 @@ export const organizationRouter = createTRPCRouter({
       })
     )
     .query(({ input }) => {
-      return getOrganizationById(input.id);
+      return getOrganizationBySlug(input.id);
     }),
   update: protectedProcedure
     .input(
@@ -43,13 +28,8 @@ export const organizationRouter = createTRPCRouter({
       })
     )
     .mutation(({ input }) => {
-      return db.organization.update({
-        where: {
-          id: input.id,
-        },
-        data: {
-          name: input.name,
-        },
+      return clerkClient.organizations.updateOrganization(input.id, {
+        name: input.name,
       });
     }),
 });

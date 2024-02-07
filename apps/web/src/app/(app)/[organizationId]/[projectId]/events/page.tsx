@@ -4,15 +4,12 @@ import { ListEvents } from './list-events';
 
 interface PageProps {
   params: {
-    organizationId: string;
     projectId: string;
   };
 }
-export default function Page({
-  params: { organizationId, projectId },
-}: PageProps) {
+export default function Page({ params: { projectId } }: PageProps) {
   return (
-    <PageLayout title="Events" organizationId={organizationId}>
+    <PageLayout title="Events">
       <ListEvents projectId={projectId} />
     </PageLayout>
   );

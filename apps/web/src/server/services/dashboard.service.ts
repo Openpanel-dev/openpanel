@@ -72,13 +72,13 @@ export async function createRecentDashboard({
       user_id: userId,
       project_id: projectId,
       dashboard_id: dashboardId,
-      organization_id: organizationId,
+      organization_slug: organizationId,
     },
   });
   return db.recentDashboards.create({
     data: {
       user_id: userId,
-      organization_id: organizationId,
+      organization_slug: organizationId,
       project_id: projectId,
       dashboard_id: dashboardId,
     },

@@ -10,29 +10,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Organization {
-  id       String    @id @default(dbgenerated("gen_random_uuid()"))
-  name     String
-  projects Project[]
-  users    User[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-  clients   Client[]
-  Invite    Invite[]
-
-  @@map("organizations")
-}
-
 model Project {
-  id              String       @id @default(dbgenerated("gen_random_uuid()"))
-  name            String
-  organization_id String
-  organization    Organization @relation(fields: [organization_id], references: [id])
-  events          Event[]
-  eventsCount     Int          @default(0)
-  profiles        Profile[]
-  clients         Client[]
+  id                String    @id @default(dbgenerated("gen_random_uuid()"))
+  name              String
+  organization_slug String
+  events            Event[]
+  eventsCount       Int       @default(0)
+  profiles          Profile[]
+  clients           Client[]
 
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @default(now()) @updatedAt
@@ -41,21 +26,6 @@ model Project {
   RecentDashboards RecentDashboards[]
 
   @@map("projects")
-}
-
-model User {
-  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  email           String
-  password        String
-  organization_id String
-  organization    Organization @relation(fields: [organization_id], references: [id])
-
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @default(now()) @updatedAt
-  RecentDashboards RecentDashboards[]
-
-  @@map("users")
 }
 
 model Event {
@@ -107,14 +77,13 @@ model EventFailed {
 }
 
 model Client {
-  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String
-  secret          String?
-  project_id      String
-  project         Project      @relation(fields: [project_id], references: [id])
-  organization_id String
-  organization    Organization @relation(fields: [organization_id], references: [id])
-  cors            String       @default("*")
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  secret            String?
+  project_id        String
+  project           Project @relation(fields: [project_id], references: [id])
+  organization_slug String
+  cors              String  @default("*")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -123,15 +92,14 @@ model Client {
 }
 
 model RecentDashboards {
-  id              String    @id @default(dbgenerated("gen_random_uuid()"))
-  project_id      String
-  project         Project   @relation(fields: [project_id], references: [id])
-  organization_id String
-  dashboard_id    String
-  dashboard       Dashboard @relation(fields: [dashboard_id], references: [id])
-  user_id         String    @db.Uuid
-  user            User      @relation(fields: [user_id], references: [id])
-  createdAt       DateTime  @default(now())
+  id                String    @id @default(dbgenerated("gen_random_uuid()"))
+  project_id        String
+  project           Project   @relation(fields: [project_id], references: [id])
+  organization_slug String
+  dashboard_id      String
+  dashboard         Dashboard @relation(fields: [dashboard_id], references: [id])
+  user_id           String
+  createdAt         DateTime  @default(now())
 
   @@map("recent_dashboards")
 }
@@ -196,20 +164,6 @@ model Report {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("reports")
-}
-
-model Invite {
-  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email           String
-  organization_id String
-  organization    Organization @relation(fields: [organization_id], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
-
-  accepted Boolean @default(false)
-
-  @@map("invites")
 }
 
 model Waitlist {

@@ -19,7 +19,6 @@ export default function Page({ params: { organizationId } }: PageProps) {
           <Pencil size={16} />
         </div>
       }
-      organizationId={organizationId}
     >
       <ReportEditor reportId={null} />
     </PageLayout>

@@ -12,7 +12,7 @@ export default function Page({
   params: { organizationId, projectId },
 }: PageProps) {
   return (
-    <PageLayout title="Events" organizationId={organizationId}>
+    <PageLayout title="Events">
       <ListProfiles projectId={projectId} organizationId={organizationId} />
     </PageLayout>
   );

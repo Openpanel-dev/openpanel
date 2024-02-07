@@ -1,22 +1,16 @@
 import PageLayout from '@/app/(app)/page-layout';
-import { getSession } from '@/server/auth';
 import { getUserById } from '@/server/services/user.service';
+import { auth } from '@clerk/nextjs';
 
 import EditProfile from './edit-profile';
 import { Logout } from './logout';
 
-interface PageProps {
-  params: {
-    organizationId: string;
-  };
-}
-
-export default async function Page({ params: { organizationId } }: PageProps) {
-  const session = await getSession();
-  const profile = await getUserById(session?.user.id!);
+export default async function Page() {
+  const { userId } = auth();
+  const profile = await getUserById(userId!);
 
   return (
-    <PageLayout title={profile.name} organizationId={organizationId}>
+    <PageLayout title={profile.lastName}>
       <div className="p-4 flex flex-col gap-4">
         <EditProfile profile={profile} />
         <Logout />

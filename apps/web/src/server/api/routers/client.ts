@@ -14,7 +14,7 @@ export const clientRouter = createTRPCRouter({
     .query(async ({ input: { organizationId } }) => {
       return db.client.findMany({
         where: {
-          organization_id: organizationId,
+          organization_slug: organizationId,
         },
         include: {
           project: true,
@@ -66,7 +66,7 @@ export const clientRouter = createTRPCRouter({
       const secret = randomUUID();
       const client = await db.client.create({
         data: {
-          organization_id: input.organizationId,
+          organization_slug: input.organizationId,
           project_id: input.projectId,
           name: input.name,
           secret: input.withCors ? null : await hashPassword(secret),
