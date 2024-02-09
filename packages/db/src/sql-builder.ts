@@ -12,7 +12,7 @@ export function createSqlBuilder() {
     offset: number | undefined;
   } = {
     where: {},
-    from: 'events',
+    from: 'openpanel.events',
     select: {},
     groupBy: {},
     orderBy: {},
@@ -40,8 +40,8 @@ export function createSqlBuilder() {
     getSelect,
     getGroupBy,
     getOrderBy,
-    getSql: () =>
-      [
+    getSql: () => {
+      const sql = [
         getSelect(),
         getFrom(),
         getWhere(),
@@ -51,6 +51,12 @@ export function createSqlBuilder() {
         getOffset(),
       ]
         .filter(Boolean)
-        .join(' '),
+        .join(' ');
+      console.log('---');
+      console.log(sql);
+      console.log('---');
+
+      return sql;
+    },
   };
 }

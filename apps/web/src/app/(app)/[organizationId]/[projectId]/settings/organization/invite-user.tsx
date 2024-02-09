@@ -1,13 +1,13 @@
 import { api } from '@/app/_trpc/client';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
 import { useAppParams } from '@/hooks/useAppParams';
 import { zInviteUser } from '@/utils/validation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SendIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import type { z } from 'zod';
 
 type IForm = z.infer<typeof zInviteUser>;

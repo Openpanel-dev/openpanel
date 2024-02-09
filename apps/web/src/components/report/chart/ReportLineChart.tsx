@@ -49,7 +49,7 @@ export function ReportLineChart({
           {({ width }) => (
             <LineChart
               width={width}
-              height={Math.min(Math.max(width * 0.5, 250), 400)}
+              height={Math.min(Math.max(width * 0.5625, 250), 400)}
               data={rechartData}
             >
               <CartesianGrid
@@ -80,7 +80,7 @@ export function ReportLineChart({
                       type={lineType}
                       key={serie.name}
                       name={serie.name}
-                      isAnimationActive={false}
+                      isAnimationActive={true}
                       strokeWidth={2}
                       dataKey={`${serie.index}:count`}
                       stroke={getChartColor(serie.index)}
@@ -90,7 +90,7 @@ export function ReportLineChart({
                         type={lineType}
                         key={`${serie.name}:prev`}
                         name={`${serie.name}:prev`}
-                        isAnimationActive={false}
+                        isAnimationActive={true}
                         strokeWidth={1}
                         dot={false}
                         strokeDasharray={'6 6'}

@@ -46,7 +46,7 @@ export function ReportHistogramChart({
           {({ width }) => (
             <BarChart
               width={width}
-              height={Math.min(Math.max(width * 0.5, 250), 400)}
+              height={Math.min(Math.max(width * 0.5625, 250), 400)}
               data={rechartData}
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />

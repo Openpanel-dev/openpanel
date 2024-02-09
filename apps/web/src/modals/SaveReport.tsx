@@ -6,12 +6,12 @@ import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
 import { useAppParams } from '@/hooks/useAppParams';
 import type { IChartInput } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { popModal } from '.';

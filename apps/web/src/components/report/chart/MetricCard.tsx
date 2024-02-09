@@ -25,7 +25,7 @@ export function MetricCard({
   const number = useNumber();
   return (
     <div
-      className="group relative border border-border p-4 rounded-md bg-white overflow-hidden"
+      className="group relative border border-border p-4 rounded-md bg-white overflow-hidden h-24"
       key={serie.name}
     >
       <div className="absolute -top-1 -left-1 -right-1 -bottom-1 z-0 opacity-10 transition-opacity duration-300 group-hover:opacity-50">
@@ -76,6 +76,25 @@ export function MetricCard({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+export function MetricCardEmpty() {
+  return (
+    <div className="border border-border p-4 rounded-md bg-white h-24">
+      <div className="flex items-center justify-center h-full text-slate-600">
+        No data
+      </div>
+    </div>
+  );
+}
+
+export function MetricCardLoading() {
+  return (
+    <div className="h-24 p-4 py-5 flex flex-col bg-white border border-border rounded-md">
+      <div className="bg-slate-200 rounded animate-pulse h-4 w-1/2"></div>
+      <div className="bg-slate-200 rounded animate-pulse h-6 w-1/5 mt-auto"></div>
     </div>
   );
 }

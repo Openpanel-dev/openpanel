@@ -39,19 +39,16 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
       >
         <AutoSizer disableHeight>
           {({ width }) => {
-            const height = Math.min(Math.max(width * 0.5, 250), 400);
+            const height = Math.min(Math.max(width * 0.5625, 250), 400);
             return (
-              <PieChart
-                width={width}
-                height={Math.min(Math.max(width * 0.5, 250), 400)}
-              >
+              <PieChart width={width} height={height}>
                 <Tooltip content={<ReportChartTooltip />} />
                 <Pie
                   dataKey={'count'}
                   data={pieData}
                   innerRadius={height / 4}
                   outerRadius={height / 2.5}
-                  isAnimationActive={false}
+                  isAnimationActive={true}
                   label={renderLabel}
                 >
                   {pieData.map((item) => {

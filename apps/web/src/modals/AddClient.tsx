@@ -8,12 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/use-toast';
 import { clipboard } from '@/utils/clipboard';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Copy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { popModal } from '.';

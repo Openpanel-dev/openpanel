@@ -9,6 +9,7 @@ import {
   CommandInput,
   CommandItem,
 } from '@/components/ui/command';
+import { ChevronsUpDownIcon } from 'lucide-react';
 import { useOnClickOutside } from 'usehooks-ts';
 
 import { Button } from './button';
@@ -92,6 +93,7 @@ export function ComboboxAdvanced({
             })}
             {value.length > 2 && <Badge>+{value.length - 2} more</Badge>}
           </div>
+          <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full max-w-md p-0" align="start">

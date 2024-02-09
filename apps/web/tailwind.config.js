@@ -16,7 +16,11 @@ const colors = [
 
 /** @type {import('tailwindcss').Config} */
 const config = {
-  safelist: [...colors.map((color) => `chart-${color}`)],
+  safelist: [
+    ...colors.flatMap((color) =>
+      ['text', 'bg'].map((prefix) => `${prefix}-chart-${color}`)
+    ),
+  ],
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',

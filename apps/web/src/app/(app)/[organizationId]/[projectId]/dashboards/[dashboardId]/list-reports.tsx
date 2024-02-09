@@ -109,7 +109,7 @@ export function ListReports({ reports }: ListReportsProps) {
               </Link>
               <div
                 className={cn(
-                  'p-4 pl-2',
+                  'p-4',
                   report.chartType === 'bar' && 'overflow-auto max-h-[300px]'
                 )}
               >

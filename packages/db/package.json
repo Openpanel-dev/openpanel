@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@mixan/common": "workspace:*",
+    "@mixan/redis": "workspace:*",
     "@clickhouse/client": "^0.2.9",
     "@prisma/client": "^5.1.1",
     "ramda": "^0.29.1"

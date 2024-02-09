@@ -5,13 +5,13 @@ import { Card, CardActions, CardActionsItem } from '@/components/Card';
 import { FullPageEmptyState } from '@/components/FullPageEmptyState';
 import { Button } from '@/components/ui/button';
 import { ToastAction } from '@/components/ui/toast';
-import { toast } from '@/components/ui/use-toast';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import type { IServiceDashboards } from '@/server/services/dashboard.service';
 import { LayoutPanelTopIcon, Pencil, PlusIcon, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface ListDashboardsProps {
   dashboards: IServiceDashboards;

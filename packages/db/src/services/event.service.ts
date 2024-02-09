@@ -1,6 +1,7 @@
 import { omit } from 'ramda';
 
 import { toDots } from '@mixan/common';
+import { redisPub } from '@mixan/redis';
 
 import { ch, chQuery, formatClickhouseDate } from '../clickhouse-client';
 
@@ -12,7 +13,7 @@ export interface IClickhouseEvent {
   referrer: string;
   referrer_name: string;
   duration: number;
-  properties: Record<string, string>;
+  properties: Record<string, string | number | boolean>;
   created_at: string;
   country: string;
   city: string;
@@ -91,30 +92,38 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     delete payload.properties.hash;
   }
 
-  return ch.insert({
+  const event: IClickhouseEvent = {
+    name: payload.name,
+    profile_id: payload.profileId,
+    project_id: payload.projectId,
+    properties: toDots(omit(['_path'], payload.properties)),
+    path: payload.path ?? '',
+    created_at: formatClickhouseDate(payload.createdAt),
+    country: payload.country ?? '',
+    city: payload.city ?? '',
+    region: payload.region ?? '',
+    os: payload.os ?? '',
+    os_version: payload.osVersion ?? '',
+    browser: payload.browser ?? '',
+    browser_version: payload.browserVersion ?? '',
+    device: payload.device ?? '',
+    brand: payload.brand ?? '',
+    model: payload.model ?? '',
+    duration: payload.duration,
+    referrer: payload.referrer ?? '',
+    referrer_name: payload.referrerName ?? '',
+  };
+
+  const res = await ch.insert({
     table: 'events',
-    values: [
-      {
-        name: payload.name,
-        profile_id: payload.profileId,
-        project_id: payload.projectId,
-        properties: toDots(omit(['_path'], payload.properties)),
-        path: payload.path ?? '',
-        created_at: formatClickhouseDate(payload.createdAt),
-        country: payload.country ?? '',
-        city: payload.city ?? '',
-        region: payload.region ?? '',
-        os: payload.os ?? '',
-        os_version: payload.osVersion ?? '',
-        browser: payload.browser ?? '',
-        browser_version: payload.browserVersion ?? '',
-        device: payload.device ?? '',
-        brand: payload.brand ?? '',
-        model: payload.model ?? '',
-        duration: payload.duration,
-        referrer: payload.referrer ?? '',
-      },
-    ],
+    values: [event],
     format: 'JSONEachRow',
   });
+
+  redisPub.publish('event', JSON.stringify(transformEvent(event)));
+
+  return {
+    ...res,
+    document: event,
+  };
 }

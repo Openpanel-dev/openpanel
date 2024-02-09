@@ -20,3 +20,11 @@ export function toDots(
 }
 
 export const strip = reject(anyPass([isEmpty, isNil]));
+
+export function getSafeJson<T>(str: string): T | null {
+  try {
+    return JSON.parse(str);
+  } catch (e) {
+    return null;
+  }
+}

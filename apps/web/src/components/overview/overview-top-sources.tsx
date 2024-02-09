@@ -1,7 +1,8 @@
 'use client';
 
+import { Suspense } from 'react';
 import { Chart } from '@/components/report/chart';
-import type { IChartInput } from '@/types';
+import { ChartLoading } from '@/components/report/chart/ChartLoading';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -211,33 +212,35 @@ export default function OverviewTopSources() {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Chart
-            hideID
-            {...widget.chart}
-            previous={false}
-            onClick={(item) => {
-              switch (widget.key) {
-                case 'all':
-                  setReferrer(item.name);
-                  break;
-                case 'utm_source':
-                  setUtmSource(item.name);
-                  break;
-                case 'utm_medium':
-                  setUtmMedium(item.name);
-                  break;
-                case 'utm_campaign':
-                  setUtmCampaign(item.name);
-                  break;
-                case 'utm_term':
-                  setUtmTerm(item.name);
-                  break;
-                case 'utm_content':
-                  setUtmContent(item.name);
-                  break;
-              }
-            }}
-          />
+          <Suspense fallback={<ChartLoading />}>
+            <Chart
+              hideID
+              {...widget.chart}
+              previous={false}
+              onClick={(item) => {
+                switch (widget.key) {
+                  case 'all':
+                    setReferrer(item.name);
+                    break;
+                  case 'utm_source':
+                    setUtmSource(item.name);
+                    break;
+                  case 'utm_medium':
+                    setUtmMedium(item.name);
+                    break;
+                  case 'utm_campaign':
+                    setUtmCampaign(item.name);
+                    break;
+                  case 'utm_term':
+                    setUtmTerm(item.name);
+                    break;
+                  case 'utm_content':
+                    setUtmContent(item.name);
+                    break;
+                }
+              }}
+            />
+          </Suspense>
         </WidgetBody>
       </Widget>
     </>

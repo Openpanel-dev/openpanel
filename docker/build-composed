@@ -3,7 +3,6 @@
 docker build \
   --build-arg DATABASE_URL="postgresql://local@host.docker.internal:5432/mixan?schema=public" \
   --build-arg NEXTAUTH_SECRET="secret_sauce" \
-  --build-arg NEXTAUTH_URL="http://localhost:3300" \
   --build-arg REDIS_URL="redis://127.0.0.1:6379" \
   -t mixan/composed:latest \
   -t mixan/composed:1.0 \

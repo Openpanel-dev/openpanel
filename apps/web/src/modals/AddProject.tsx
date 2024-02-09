@@ -4,10 +4,10 @@ import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { popModal } from '.';

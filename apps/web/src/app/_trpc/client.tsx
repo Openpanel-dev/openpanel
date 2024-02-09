@@ -1,9 +1,9 @@
 import type { Toast } from '@/components/ui/use-toast';
-import { toast } from '@/components/ui/use-toast';
 import type { AppRouter } from '@/server/api/root';
 import type { TRPCClientErrorBase } from '@trpc/react-query';
 import { createTRPCReact } from '@trpc/react-query';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
+import { toast } from 'sonner';
 
 export const api = createTRPCReact<AppRouter>({});
 

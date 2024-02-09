@@ -2,11 +2,11 @@
 
 import { api, handleError } from '@/app/_trpc/client';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 import { SaveIcon } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { resetDirty } from './reportSlice';
 

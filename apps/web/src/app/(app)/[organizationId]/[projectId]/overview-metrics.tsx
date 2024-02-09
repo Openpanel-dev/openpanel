@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { OverviewFilters } from '@/components/overview/overview-filters';
 import { OverviewFiltersButtons } from '@/components/overview/overview-filters-buttons';
 import OverviewTopDevices from '@/components/overview/overview-top-devices';
@@ -10,6 +11,8 @@ import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { WidgetHead } from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Chart } from '@/components/report/chart';
+import { ChartLoading } from '@/components/report/chart/ChartLoading';
+import { MetricCardLoading } from '@/components/report/chart/MetricCard';
 import { ReportRange } from '@/components/report/ReportRange';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +30,7 @@ import { Eye, FilterIcon, Globe2Icon, LockIcon, X } from 'lucide-react';
 import Link from 'next/link';
 
 import { StickyBelowHeader } from './layout-sticky-below-header';
+import { LiveCounter } from './live-counter';
 
 export default function OverviewMetrics() {
   const { previous, range, setRange, interval, metric, setMetric, filters } =
@@ -200,6 +204,7 @@ export default function OverviewMetrics() {
           onChange={(value) => setRange(value)}
         />
         <div className="flex-wrap flex gap-2">
+          <LiveCounter initialCount={0} />
           <OverviewFiltersButtons />
           <SheetTrigger asChild>
             <Button size="sm" variant="cta" icon={FilterIcon}>
@@ -240,8 +245,9 @@ export default function OverviewMetrics() {
               setMetric(index);
             }}
           >
-            <Chart hideID {...report} />
-
+            <Suspense fallback={<MetricCardLoading />}>
+              <Chart hideID {...report} />
+            </Suspense>
             {/* add active border */}
             <div
               className={cn(
@@ -256,14 +262,18 @@ export default function OverviewMetrics() {
             <div className="title">{selectedMetric.events[0]?.displayName}</div>
           </WidgetHead>
           <WidgetBody>
-            <Chart hideID {...selectedMetric} chartType="linear" />
+            <Suspense fallback={<ChartLoading />}>
+              <Chart hideID {...selectedMetric} chartType="linear" />
+            </Suspense>
           </WidgetBody>
         </Widget>
         <OverviewTopSources />
         <OverviewTopPages />
         <OverviewTopDevices />
-        <OverviewTopGeo />
         <OverviewTopEvents />
+        <div className="col-span-6">
+          <OverviewTopGeo />
+        </div>
       </div>
 
       <SheetContent className="!max-w-lg w-full" side="left">

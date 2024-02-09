@@ -1,3 +1,4 @@
+import React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
@@ -48,7 +49,7 @@ export function ReportAreaChart({
           {({ width }) => (
             <AreaChart
               width={width}
-              height={Math.min(Math.max(width * 0.5, 250), 400)}
+              height={Math.min(Math.max(width * 0.5625, 250), 400)}
               data={rechartData}
             >
               <Tooltip content={<ReportChartTooltip />} />
@@ -69,18 +70,41 @@ export function ReportAreaChart({
               />
 
               {series.map((serie) => {
+                const color = getChartColor(serie.index);
                 return (
-                  <Area
-                    key={serie.name}
-                    type={lineType}
-                    isAnimationActive={false}
-                    strokeWidth={0}
-                    dataKey={`${serie.index}:count`}
-                    stroke={getChartColor(serie.index)}
-                    fill={getChartColor(serie.index)}
-                    stackId={'1'}
-                    fillOpacity={1}
-                  />
+                  <React.Fragment key={serie.name}>
+                    <defs>
+                      <linearGradient
+                        id={`color${color}`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor={color}
+                          stopOpacity={0.8}
+                        ></stop>
+                        <stop
+                          offset="100%"
+                          stopColor={color}
+                          stopOpacity={0.1}
+                        ></stop>
+                      </linearGradient>
+                    </defs>
+                    <Area
+                      key={serie.name}
+                      type={lineType}
+                      isAnimationActive={true}
+                      strokeWidth={2}
+                      dataKey={`${serie.index}:count`}
+                      stroke={color}
+                      fill={`url(#color${color})`}
+                      stackId={'1'}
+                      fillOpacity={1}
+                    />
+                  </React.Fragment>
                 );
               })}
               <CartesianGrid

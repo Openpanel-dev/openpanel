@@ -1,6 +1,8 @@
 'use client';
 
+import { Suspense } from 'react';
 import { Chart } from '@/components/report/chart';
+import { ChartLoading } from '@/components/report/chart/ChartLoading';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -67,7 +69,9 @@ export default function OverviewTopEvents() {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Chart hideID {...widget.chart} previous={false} />
+          <Suspense fallback={<ChartLoading />}>
+            <Chart hideID {...widget.chart} previous={false} />
+          </Suspense>
         </WidgetBody>
       </Widget>
     </>

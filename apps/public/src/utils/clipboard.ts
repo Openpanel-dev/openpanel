@@ -1,4 +1,4 @@
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 export function clipboard(value: string | number) {
   navigator.clipboard.writeText(value.toString());

@@ -3,11 +3,11 @@
 import { api, handleError } from '@/app/_trpc/client';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
 import type { getOrganizationBySlug } from '@/server/services/organization.service';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 
 const validator = z.object({

@@ -4,7 +4,9 @@ import Providers from './providers';
 
 import '@/styles/globals.css';
 
-export const metadata = {};
+export const metadata = {
+  title: 'Overview - Openpanel.dev',
+};
 
 export const viewport = {
   width: 'device-width',

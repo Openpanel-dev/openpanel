@@ -1,13 +1,14 @@
+import { BoxSelectIcon } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface FullPageEmptyStateProps {
-  icon: LucideIcon;
+  icon?: LucideIcon;
   title: string;
   children: React.ReactNode;
 }
 
 export function FullPageEmptyState({
-  icon: Icon,
+  icon: Icon = BoxSelectIcon,
   title,
   children,
 }: FullPageEmptyStateProps) {

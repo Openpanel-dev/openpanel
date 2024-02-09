@@ -1,9 +1,12 @@
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
+import { FastifySSEPlugin } from 'fastify-sse-v2';
 import pino from 'pino';
 
+import { redisPub } from '@mixan/redis';
+
 import eventRouter from './routes/event.router';
-import { validateSdkRequest } from './utils/auth';
+import liveRouter from './routes/live.router';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -23,22 +26,10 @@ const startServer = async () => {
       origin: '*',
     });
 
+    fastify.register(FastifySSEPlugin);
     fastify.decorateRequest('projectId', '');
-
-    fastify.addHook('preHandler', (req, reply, done) => {
-      validateSdkRequest(req.headers)
-        .then((projectId) => {
-          req.projectId = projectId;
-          done();
-        })
-        .catch((e) => {
-          console.log(e);
-
-          reply.status(401).send();
-        });
-    });
-
     fastify.register(eventRouter, { prefix: '/event' });
+    fastify.register(liveRouter, { prefix: '/live' });
     fastify.setErrorHandler((error, request, reply) => {
       fastify.log.error(error);
     });
@@ -65,6 +56,9 @@ const startServer = async () => {
     }
 
     await fastify.listen({ host: '0.0.0.0', port });
+
+    // Notify when keys expires
+    redisPub.config('SET', 'notify-keyspace-events', 'Ex');
   } catch (e) {
     console.error(e);
   }

@@ -15,6 +15,7 @@
     "@mixan/db": "workspace:*",
     "@mixan/queue": "workspace:*",
     "@mixan/common": "workspace:*",
+    "@mixan/redis": "workspace:*",
     "bullmq": "^5.1.1",
     "express": "^4.18.2",
     "ramda": "^0.29.1"

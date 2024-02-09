@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
 import { Chart } from '@/components/report/chart';
+import { ChartLoading } from '@/components/report/chart/ChartLoading';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
@@ -16,11 +17,9 @@ import {
 } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
 import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useDispatch, useSelector } from '@/redux';
 import type { IServiceReport } from '@/server/services/reports.service';
-import { timeRanges } from '@/utils/constants';
 import { GanttChartSquareIcon } from 'lucide-react';
 
 interface ReportEditorProps {
@@ -73,7 +72,11 @@ export default function ReportEditor({
         </div>
       </StickyBelowHeader>
       <div className="flex flex-col gap-4 p-4">
-        {report.ready && <Chart {...report} editMode />}
+        {report.ready && (
+          <Suspense fallback={<ChartLoading />}>
+            <Chart {...report} editMode />
+          </Suspense>
+        )}
       </div>
       <SheetContent className="!max-w-lg w-full" side="left">
         <ReportSidebar />

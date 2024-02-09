@@ -19,7 +19,7 @@ export function ReportChartTooltip({
   active,
   payload,
 }: ReportLineChartTooltipProps) {
-  const { previous, unit } = useChartContext();
+  const { unit } = useChartContext();
   const getLabel = useMappings();
   const interval = useSelector((state) => state.report.interval);
   const formatDate = useFormatDateInterval(interval);
@@ -57,11 +57,6 @@ export function ReportChartTooltip({
             {index === 0 && data.date && (
               <div className="flex justify-between gap-8">
                 <div>{formatDate(new Date(data.date))}</div>
-                {/* {previous && data.previous?.date && (
-                  <div className="text-slate-400 italic">
-                    {formatDate(new Date(data.previous.date))}
-                  </div>
-                )} */}
               </div>
             )}
             <div className="flex gap-2">

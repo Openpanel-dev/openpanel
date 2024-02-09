@@ -411,7 +411,12 @@ function getDatesFromRange(range: IChartRange) {
   let days = 1;
 
   if (range === '24h') {
-    days = 1;
+    const startDate = getDaysOldDate(days);
+    const endDate = new Date();
+    return {
+      startDate: startDate.toUTCString(),
+      endDate: endDate.toUTCString(),
+    };
   } else if (range === '7d') {
     days = 7;
   } else if (range === '14d') {

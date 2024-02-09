@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { Suspense, useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 
 import type { ReportChartProps } from '.';
 import { Chart } from '.';
+import { ChartLoading } from './ChartLoading';
 import type { ChartContextType } from './ChartProvider';
 
 export function LazyChart(props: ReportChartProps & ChartContextType) {
@@ -22,11 +23,13 @@ export function LazyChart(props: ReportChartProps & ChartContextType) {
 
   return (
     <div ref={ref}>
-      {once.current || inViewport ? (
-        <Chart {...props} editMode={false} />
-      ) : (
-        <div className="h-64 w-full bg-gray-200 animate-pulse rounded" />
-      )}
+      <Suspense fallback={<ChartLoading />}>
+        {once.current || inViewport ? (
+          <Chart {...props} editMode={false} />
+        ) : (
+          <ChartLoading />
+        )}
+      </Suspense>
     </div>
   );
 }
