@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import { hashPassword } from '@/server/services/hash.service';
 import { z } from 'zod';
+
+import { hashPassword } from '@mixan/common';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure

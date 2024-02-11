@@ -198,22 +198,19 @@ export default function OverviewMetrics() {
   return (
     <Sheet>
       <StickyBelowHeader className="p-4 flex gap-2 justify-between">
-        <ReportRange
-          size="sm"
-          value={range}
-          onChange={(value) => setRange(value)}
-        />
-        <div className="flex-wrap flex gap-2">
-          <LiveCounter initialCount={0} />
-          <OverviewFiltersButtons />
+        <div className="flex gap-2">
+          <ReportRange value={range} onChange={(value) => setRange(value)} />
           <SheetTrigger asChild>
-            <Button size="sm" variant="cta" icon={FilterIcon}>
+            <Button variant="outline" responsive icon={FilterIcon}>
               Filters
             </Button>
           </SheetTrigger>
+        </div>
+        <div className="flex gap-2">
+          <LiveCounter initialCount={0} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" icon={Globe2Icon}>
+              <Button icon={Globe2Icon} responsive>
                 Public
               </Button>
             </DropdownMenuTrigger>
@@ -236,6 +233,10 @@ export default function OverviewMetrics() {
           </DropdownMenu>
         </div>
       </StickyBelowHeader>
+
+      <div className="p-4 flex gap-2 flex-wrap">
+        <OverviewFiltersButtons />
+      </div>
       <div className="p-4 grid gap-4 grid-cols-6">
         {reports.map((report, index) => (
           <button
@@ -276,7 +277,7 @@ export default function OverviewMetrics() {
         </div>
       </div>
 
-      <SheetContent className="!max-w-lg w-full" side="left">
+      <SheetContent className="!max-w-lg w-full" side="right">
         <OverviewFilters />
       </SheetContent>
     </Sheet>

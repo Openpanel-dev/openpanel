@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
+import { NOT_SET_VALUE } from '@/utils/constants';
 import { getChartColor } from '@/utils/theme';
 import { createColumnHelper } from '@tanstack/react-table';
 
@@ -51,10 +52,15 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
         </div>
       )}
       {series.map((serie, index) => {
+        const isClickable = serie.name !== NOT_SET_VALUE && onClick;
         return (
           <div
             key={serie.name}
-            className="py-2 flex flex-1 w-full gap-4 items-center"
+            className={cn(
+              'py-2 flex flex-1 w-full gap-4 items-center',
+              isClickable && 'cursor-pointer hover:bg-gray-100'
+            )}
+            {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >
             <div className="flex-1 break-all">{serie.name}</div>
             <div className="flex-shrink-0 flex w-1/4 gap-4 items-center justify-end">

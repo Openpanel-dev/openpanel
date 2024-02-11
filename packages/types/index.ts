@@ -138,5 +138,31 @@ export interface PostEventPayload {
   name: string;
   timestamp: string;
   profileId?: string;
-  properties?: Record<string, unknown>;
+  properties?: Record<string, unknown> & {
+    title?: string | undefined;
+    referrer?: string | undefined;
+    path?: string | undefined;
+  };
+}
+
+export interface UpdateProfilePayload {
+  profileId?: string;
+  id?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  avatar?: string;
+  properties?: MixanJson;
+}
+
+export interface IncrementProfilePayload {
+  profileId?: string;
+  property: string;
+  value: number;
+}
+
+export interface DecrementProfilePayload {
+  profileId?: string;
+  property: string;
+  value: number;
 }

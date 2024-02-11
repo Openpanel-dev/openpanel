@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "ramda": "^0.29.1"
+    "ramda": "^0.29.1",
+    "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",

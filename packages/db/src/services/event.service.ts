@@ -1,9 +1,10 @@
 import { omit } from 'ramda';
 
-import { toDots } from '@mixan/common';
-import { redisPub } from '@mixan/redis';
+import { randomSplitName, toDots } from '@mixan/common';
+import { redis, redisPub } from '@mixan/redis';
 
 import { ch, chQuery, formatClickhouseDate } from '../clickhouse-client';
+import { db } from '../prisma-client';
 
 export interface IClickhouseEvent {
   name: string;
@@ -12,6 +13,7 @@ export interface IClickhouseEvent {
   path: string;
   referrer: string;
   referrer_name: string;
+  referrer_type: string;
   duration: number;
   properties: Record<string, string | number | boolean>;
   created_at: string;
@@ -50,6 +52,7 @@ export function transformEvent(
     path: event.path,
     referrer: event.referrer,
     referrerName: event.referrer_name,
+    referrerType: event.referrer_type,
   };
 }
 
@@ -77,6 +80,7 @@ export interface IServiceCreateEventPayload {
   path: string;
   referrer: string | undefined;
   referrerName: string | undefined;
+  referrerType: string | undefined;
 }
 
 export function getEvents(sql: string) {
@@ -87,6 +91,41 @@ export function getEvents(sql: string) {
 
 export async function createEvent(payload: IServiceCreateEventPayload) {
   console.log(`create event ${payload.name} for ${payload.profileId}`);
+
+  if (payload.name === 'session_start') {
+    const profile = await db.profile.findUnique({
+      where: {
+        id: payload.profileId,
+      },
+    });
+
+    if (!profile) {
+      const { firstName, lastName } = randomSplitName();
+      await db.profile.create({
+        data: {
+          id: payload.profileId,
+          project_id: payload.projectId,
+          first_name: firstName,
+          last_name: lastName,
+          properties: {
+            country: payload.country ?? '',
+            city: payload.city ?? '',
+            region: payload.region ?? '',
+            os: payload.os ?? '',
+            os_version: payload.osVersion ?? '',
+            browser: payload.browser ?? '',
+            browser_version: payload.browserVersion ?? '',
+            device: payload.device ?? '',
+            brand: payload.brand ?? '',
+            model: payload.model ?? '',
+            referrer: payload.referrer ?? '',
+            referrer_name: payload.referrerName ?? '',
+            referrer_type: payload.referrerType ?? '',
+          },
+        },
+      });
+    }
+  }
 
   if (payload.properties.hash === '') {
     delete payload.properties.hash;
@@ -112,6 +151,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     duration: payload.duration,
     referrer: payload.referrer ?? '',
     referrer_name: payload.referrerName ?? '',
+    referrer_type: payload.referrerType ?? '',
   };
 
   const res = await ch.insert({
@@ -121,6 +161,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
   });
 
   redisPub.publish('event', JSON.stringify(transformEvent(event)));
+  redis.set(`live:event:${event.project_id}:${event.profile_id}`, '', 'EX', 10);
 
   return {
     ...res,

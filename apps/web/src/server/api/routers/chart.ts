@@ -29,19 +29,21 @@ interface Metrics {
   };
 }
 
-interface FinalChart {
-  events: IChartInput['events'];
-  series: {
-    name: string;
-    event: IChartEvent;
-    metrics: Metrics;
-    data: {
-      date: string;
-      count: number;
-      label: string | null;
-      previous: PreviousValue;
-    }[];
+export interface IChartSerie {
+  name: string;
+  event: IChartEvent;
+  metrics: Metrics;
+  data: {
+    date: string;
+    count: number;
+    label: string | null;
+    previous: PreviousValue;
   }[];
+}
+
+export interface FinalChart {
+  events: IChartInput['events'];
+  series: IChartSerie[];
   metrics: Metrics;
 }
 

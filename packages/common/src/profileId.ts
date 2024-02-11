@@ -1,4 +1,4 @@
-import { hashPassword } from './crypto';
+import { createHash } from './crypto';
 
 interface GenerateProfileIdOptions {
   salt: string;
@@ -7,11 +7,11 @@ interface GenerateProfileIdOptions {
   origin: string;
 }
 
-export async function generateProfileId({
+export function generateProfileId({
   salt,
   ua,
   ip,
   origin,
 }: GenerateProfileIdOptions) {
-  return await hashPassword(`${ua}:${ip}:${origin}`, salt, 8);
+  return createHash(`${ua}:${ip}:${origin}:${salt}`, 16);
 }

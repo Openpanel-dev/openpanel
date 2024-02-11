@@ -97,16 +97,14 @@ async function main() {
         const ua = properties.ua!;
         const uaInfo = parseUserAgent(ua);
         const salts = await getSalts();
+        const profileId = generateProfileId({
+          salt: salts.current,
+          origin,
+          ip,
+          ua,
+        });
 
-        const [profileId, geo] = await Promise.all([
-          generateProfileId({
-            salt: salts.current,
-            origin,
-            ip,
-            ua,
-          }),
-          parseIp(ip),
-        ]);
+        const geo = parseIp(ip);
 
         const isNextEventNewSession =
           nextEvent &&

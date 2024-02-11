@@ -7,8 +7,8 @@ export default function Document() {
         <script
           async
           src="/op.js"
-          data-url="https://api.openpanel.dev"
-          data-client-id="301c6dc1-424c-4bc3-9886-a8beab09b615"
+          data-url="http://localhost:3333"
+          data-client-id="0acce97f-1126-4439-b7ee-5d384e2fc94b"
           data-track-screen-views="1"
           data-track-outgoing-links="1"
         />

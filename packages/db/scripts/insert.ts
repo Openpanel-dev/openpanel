@@ -97,24 +97,23 @@ async function main() {
         const ua = event.properties.ua as string;
         const uaInfo = parseUserAgent(ua);
         const salts = await getSalts();
+        const currentProfileId = generateProfileId({
+          salt: salts.current,
+          origin,
+          ip,
+          ua,
+        });
+        const previousProfileId = generateProfileId({
+          salt: salts.previous,
+          origin,
+          ip,
+          ua,
+        });
 
-        const [currentProfileId, previousProfileId, geo, eventsJobs] =
-          await Promise.all([
-            generateProfileId({
-              salt: salts.current,
-              origin,
-              ip,
-              ua,
-            }),
-            generateProfileId({
-              salt: salts.previous,
-              origin,
-              ip,
-              ua,
-            }),
-            parseIp(ip),
-            eventsQueue.getJobs(['delayed']),
-          ]);
+        const [geo, eventsJobs] = Promise.all([
+          parseIp(ip),
+          eventsQueue.getJobs(['delayed']),
+        ]);
         const payload: IServiceCreateEventPayload = {
           name: body.name,
           profileId,

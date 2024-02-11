@@ -11,8 +11,20 @@ import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
 export default function OverviewTopDevices() {
-  const { filters, interval, range, previous, setCountry, setRegion, setCity } =
-    useOverviewOptions();
+  const {
+    filters,
+    interval,
+    range,
+    previous,
+    setBrowser,
+    setBrowserVersion,
+    browser,
+    browserVersion,
+    setOS,
+    setOSVersion,
+    os,
+    osVersion,
+  } = useOverviewOptions();
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     devices: {
       title: 'Top devices',
@@ -180,19 +192,22 @@ export default function OverviewTopDevices() {
               {...widget.chart}
               previous={false}
               onClick={(item) => {
-                // switch (widget.key) {
-                //   case 'browser':
-                //     setWidget('browser_version');
-                //     // setCountry(item.name);
-                //     break;
-                //   case 'regions':
-                //     setWidget('cities');
-                //     setRegion(item.name);
-                //     break;
-                //   case 'cities':
-                //     setCity(item.name);
-                //     break;
-                // }
+                switch (widget.key) {
+                  case 'browser':
+                    setWidget('browser_version');
+                    setBrowser(item.name);
+                    break;
+                  case 'browser_version':
+                    setBrowserVersion(item.name);
+                    break;
+                  case 'os':
+                    setWidget('os_version');
+                    setOS(item.name);
+                    break;
+                  case 'os_version':
+                    setOSVersion(item.name);
+                    break;
+                }
               }}
             />
           </Suspense>

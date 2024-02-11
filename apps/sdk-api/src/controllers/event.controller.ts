@@ -1,4 +1,5 @@
 import { parseIp } from '@/utils/parseIp';
+import { parseReferrer } from '@/utils/parseReferrer';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { omit } from 'ramda';
@@ -56,33 +57,30 @@ export async function postEvent(
   let profileId: string | null = null;
   const projectId = request.projectId;
   const body = request.body;
-  const { path, hash, query } = parsePath(
-    body.properties?.path as string | undefined
-  );
-  const referrer = body.properties?.referrer as string | undefined;
+  const { path, hash, query } = parsePath(body.properties?.path);
+  const referrer = parseReferrer(body.properties?.referrer);
   const ip = getClientIp(request)!;
   const origin = request.headers.origin!;
   const ua = request.headers['user-agent']!;
   const uaInfo = parseUserAgent(ua);
   const salts = await getSalts();
+  const currentProfileId = generateProfileId({
+    salt: salts.current,
+    origin,
+    ip,
+    ua,
+  });
+  const previousProfileId = generateProfileId({
+    salt: salts.previous,
+    origin,
+    ip,
+    ua,
+  });
 
-  const [currentProfileId, previousProfileId, geo, eventsJobs] =
-    await Promise.all([
-      generateProfileId({
-        salt: salts.current,
-        origin,
-        ip,
-        ua,
-      }),
-      generateProfileId({
-        salt: salts.previous,
-        origin,
-        ip,
-        ua,
-      }),
-      parseIp(ip),
-      eventsQueue.getJobs(['delayed']),
-    ]);
+  const [geo, eventsJobs] = await Promise.all([
+    parseIp(ip),
+    eventsQueue.getJobs(['delayed']),
+  ]);
 
   // find session_end job
   const sessionEndJobCurrentProfileId = findJobByPrefix(
@@ -148,8 +146,9 @@ export async function postEvent(
     model: uaInfo.model,
     duration: 0,
     path: path,
-    referrer,
-    referrerName: referrer, // TODO
+    referrer: referrer.url,
+    referrerName: referrer.name,
+    referrerType: referrer.type,
   };
 
   const job = findJobByPrefix(eventsJobs, `event:${projectId}:${profileId}:`);
@@ -171,7 +170,7 @@ export async function postEvent(
           duration,
         },
       });
-      job.promote();
+      await job.promote();
     }
   }
 

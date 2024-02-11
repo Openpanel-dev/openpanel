@@ -1,3 +1,5 @@
+export const NOT_SET_VALUE = '(not set)';
+
 export const operators = {
   is: 'Is',
   isNot: 'Is not',

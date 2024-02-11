@@ -53,6 +53,11 @@ function main() {
   };
 
   try {
+    savePackageJson(workspacePath('./packages/types/package.json'), {
+      ...typesPkg,
+      ...properties,
+    });
+
     for (const name of sdkPackages) {
       const pkgJson = require(workspacePath(`./packages/${name}/package.json`));
       savePackageJson(workspacePath(`./packages/${name}/package.json`), {
@@ -67,11 +72,6 @@ function main() {
         ),
       });
     }
-
-    savePackageJson(workspacePath('./packages/types/package.json'), {
-      ...typesPkg,
-      ...properties,
-    });
   } catch (error) {
     exit('Update JSON files', error);
   }
@@ -79,14 +79,15 @@ function main() {
   console.log('✅ Update JSON files');
 
   try {
+    execSync('pnpm build', {
+      cwd: workspacePath(`./packages/types`),
+    });
+
     for (const name of sdkPackages) {
       execSync('pnpm build', {
         cwd: workspacePath(`./packages/${name}`),
       });
     }
-    execSync('pnpm build', {
-      cwd: workspacePath(`./packages/types`),
-    });
   } catch (error) {
     exit('Failed build packages', error);
   }

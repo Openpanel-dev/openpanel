@@ -1,4 +1,9 @@
-import type { PostEventPayload } from '@mixan/types';
+import type {
+  DecrementProfilePayload,
+  IncrementProfilePayload,
+  PostEventPayload,
+  UpdateProfilePayload,
+} from '@mixan/types';
 
 export interface MixanOptions {
   url: string;
@@ -15,80 +20,94 @@ export interface MixanState {
   properties: Record<string, unknown>;
 }
 
-function createApi(_url: string, clientId: string, clientSecret?: string) {
-  return function post<ReqBody, ResBody>(
-    path: string,
-    data: ReqBody,
-    options?: RequestInit
-  ): Promise<ResBody | null> {
-    const url = `${_url}${path}`;
-    let timer: ReturnType<typeof setTimeout>;
-    const headers: Record<string, string> = {
-      'mixan-client-id': clientId,
-      'Content-Type': 'application/json',
-    };
-    if (clientSecret) {
-      headers['mixan-client-secret'] = clientSecret;
-    }
-    return new Promise((resolve) => {
-      const wrappedFetch = (attempt: number) => {
-        clearTimeout(timer);
-        fetch(url, {
-          headers,
-          method: 'POST',
-          body: JSON.stringify(data ?? {}),
-          keepalive: true,
-          ...(options ?? {}),
-        })
-          .then(async (res) => {
-            if (res.status !== 200 && res.status !== 202) {
-              return retry(attempt, resolve);
-            }
+function awaitProperties(
+  properties: Record<string, string | Promise<string | null>>
+): Promise<Record<string, string>> {
+  return Promise.all(
+    Object.entries(properties).map(async ([key, value]) => {
+      return [key, (await value) ?? ''];
+    })
+  ).then((entries) => Object.fromEntries(entries));
+}
 
-            const response = await res.text();
-
-            if (!response) {
-              return resolve(null);
-            }
-
-            resolve(response as ResBody);
+function createApi(_url: string) {
+  const headers: Record<string, string | Promise<string | null>> = {
+    'Content-Type': 'application/json',
+  };
+  return {
+    headers,
+    async fetch<ReqBody, ResBody>(
+      path: string,
+      data: ReqBody,
+      options?: RequestInit
+    ): Promise<ResBody | null> {
+      const url = `${_url}${path}`;
+      let timer: ReturnType<typeof setTimeout>;
+      const h = await awaitProperties(headers);
+      return new Promise((resolve) => {
+        const wrappedFetch = (attempt: number) => {
+          clearTimeout(timer);
+          fetch(url, {
+            headers: h,
+            method: 'POST',
+            body: JSON.stringify(data ?? {}),
+            keepalive: true,
+            ...(options ?? {}),
           })
-          .catch(() => {
-            return retry(attempt, resolve);
-          });
-      };
+            .then(async (res) => {
+              if (res.status !== 200 && res.status !== 202) {
+                return retry(attempt, resolve);
+              }
 
-      function retry(
-        attempt: number,
-        resolve: (value: ResBody | null) => void
-      ) {
-        if (attempt > 1) {
-          return resolve(null);
+              const response = await res.text();
+
+              if (!response) {
+                return resolve(null);
+              }
+
+              resolve(response as ResBody);
+            })
+            .catch(() => {
+              return retry(attempt, resolve);
+            });
+        };
+
+        function retry(
+          attempt: number,
+          resolve: (value: ResBody | null) => void
+        ) {
+          if (attempt > 1) {
+            return resolve(null);
+          }
+
+          timer = setTimeout(
+            () => {
+              wrappedFetch(attempt + 1);
+            },
+            Math.pow(2, attempt) * 500
+          );
         }
 
-        timer = setTimeout(
-          () => {
-            wrappedFetch(attempt + 1);
-          },
-          Math.pow(2, attempt) * 500
-        );
-      }
-
-      wrappedFetch(0);
-    });
+        wrappedFetch(0);
+      });
+    },
   };
 }
 
 export class Mixan<Options extends MixanOptions = MixanOptions> {
   public options: Options;
-  private api: ReturnType<typeof createApi>;
+  public api: ReturnType<typeof createApi>;
   private state: MixanState = {
     properties: {},
   };
 
   constructor(options: Options) {
     this.options = options;
-    this.api = createApi(options.url, options.clientId, options.clientSecret);
+    this.api = createApi(options.url);
+    this.api.headers['mixan-client-id'] = options.clientId;
+    if (this.options.clientSecret) {
+      this.api.headers['mixan-client-secret'] = this.options.clientSecret;
+    }
   }
 
   // Public
@@ -97,61 +116,49 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
     this.state.properties = properties ?? {};
   }
 
-  // public setUser(payload: Omit<BatchUpdateProfilePayload, 'profileId'>) {
-  //   this.batcher.add({
-  //     type: 'update_profile',
-  //     payload: {
-  //       ...payload,
-  //       properties: payload.properties ?? {},
-  //       profileId: this.state.profileId,
-  //     },
-  //   });
-  // }
-
-  // public increment(name: string, value: number) {
-  //   this.batcher.add({
-  //     type: 'increment',
-  //     payload: {
-  //       name,
-  //       value,
-  //       profileId: this.state.profileId,
-  //     },
-  //   });
-  // }
-
-  // public decrement(name: string, value: number) {
-  //   this.batcher.add({
-  //     type: 'decrement',
-  //     payload: {
-  //       name,
-  //       value,
-  //       profileId: this.state.profileId,
-  //     },
-  //   });
-  // }
-
-  private getProfileId() {
-    if (this.state.profileId) {
-      return this.state.profileId;
-    } else if (this.options.getProfileId) {
-      this.state.profileId = this.options.getProfileId() || undefined;
-    }
-  }
-
-  public async event(name: string, properties?: Record<string, unknown>) {
-    const profileId = await this.api<PostEventPayload, string>('/event', {
-      name,
+  public setUser(payload: Omit<UpdateProfilePayload, 'profileId'>) {
+    this.api.fetch<UpdateProfilePayload, string>('/profile', {
+      profileId: this.getProfileId(),
+      ...payload,
       properties: {
         ...this.state.properties,
-        ...(properties ?? {}),
+        ...payload.properties,
       },
-      timestamp: this.timestamp(),
+    });
+  }
+
+  public increment(property: string, value: number) {
+    this.api.fetch<IncrementProfilePayload, string>('/profile/increment', {
+      property,
+      value,
       profileId: this.getProfileId(),
     });
+  }
 
-    if (this.options.setProfileId && profileId) {
-      this.options.setProfileId(profileId);
-    }
+  public decrement(property: string, value: number) {
+    this.api.fetch<DecrementProfilePayload, string>('/profile/decrement', {
+      property,
+      value,
+      profileId: this.getProfileId(),
+    });
+  }
+
+  public event(name: string, properties?: Record<string, unknown>) {
+    this.api
+      .fetch<PostEventPayload, string>('/event', {
+        name,
+        properties: {
+          ...this.state.properties,
+          ...(properties ?? {}),
+        },
+        timestamp: this.timestamp(),
+        profileId: this.getProfileId(),
+      })
+      .then((profileId) => {
+        if (this.options.setProfileId && profileId) {
+          this.options.setProfileId(profileId);
+        }
+      });
   }
 
   public setGlobalProperties(properties: Record<string, unknown>) {
@@ -168,21 +175,17 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
     }
   }
 
-  public setUserProperty(name: string, value: unknown, update = true) {
-    // this.batcher.add({
-    //   type: 'set_profile_property',
-    //   payload: {
-    //     name,
-    //     value,
-    //     update,
-    //     profileId: this.state.profileId,
-    //   },
-    // });
-  }
-
   // Private
 
   private timestamp() {
     return new Date().toISOString();
+  }
+
+  private getProfileId() {
+    if (this.state.profileId) {
+      return this.state.profileId;
+    } else if (this.options.getProfileId) {
+      this.state.profileId = this.options.getProfileId() || undefined;
+    }
   }
 }

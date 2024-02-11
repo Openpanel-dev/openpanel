@@ -44,6 +44,7 @@ export interface ButtonProps
   asChild?: boolean;
   loading?: boolean;
   icon?: LucideIcon;
+  responsive?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -57,6 +58,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       loading,
       disabled,
       icon,
+      responsive,
       ...props
     },
     ref
@@ -71,9 +73,19 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {Icon && (
-          <Icon className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+          <Icon
+            className={cn(
+              'h-4 w-4 mr-2',
+              responsive && 'mr-0 sm:mr-2',
+              loading && 'animate-spin'
+            )}
+          />
         )}
-        {children}
+        {responsive ? (
+          <span className="hidden sm:block">{children}</span>
+        ) : (
+          children
+        )}
       </Comp>
     );
   }

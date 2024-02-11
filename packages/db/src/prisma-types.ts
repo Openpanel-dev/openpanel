@@ -1,5 +1,7 @@
 /* eslint-disable */
 
+import { Profile } from '@prisma/client';
+
 export type IDBEvent = {
   id: string;
   name: string;
@@ -9,14 +11,6 @@ export type IDBEvent = {
   created_at: string;
 };
 
-export type IDBProfile = {
-  id: string;
-  external_id?: string;
-  first_name?: string;
-  last_name?: string;
-  email?: string;
-  avatar?: string;
-  properties: Record<string, string>;
-  project_id: String;
-  created_at: string;
+export type IDBProfile = Omit<Profile, 'properties'> & {
+  properties: Record<string, unknown>;
 };

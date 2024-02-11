@@ -1,4 +1,9 @@
-import { randomBytes, scrypt, timingSafeEqual } from 'crypto';
+import {
+  createHash as cryptoCreateHash,
+  randomBytes,
+  scrypt,
+  timingSafeEqual,
+} from 'crypto';
 
 export function generateSalt() {
   return randomBytes(16).toString('hex');
@@ -11,12 +16,11 @@ export function generateSalt() {
  */
 export async function hashPassword(
   password: string,
-  _salt?: string,
   keyLength = 32
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     // generate random 16 bytes long salt - recommended by NodeJS Docs
-    const salt = _salt || generateSalt();
+    const salt = generateSalt();
     scrypt(password, salt, keyLength, (err, derivedKey) => {
       if (err) reject(err);
       // derivedKey is of type Buffer
@@ -48,4 +52,10 @@ export async function verifyPassword(
       resolve(timingSafeEqual(hashKeyBuff, derivedKey));
     });
   });
+}
+
+export function createHash(data: string, len: number) {
+  return cryptoCreateHash('shake256', { outputLength: len })
+    .update(data)
+    .digest('hex');
 }

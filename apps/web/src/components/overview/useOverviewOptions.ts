@@ -34,15 +34,12 @@ export function useOverviewOptions() {
     'referrer',
     parseAsString.withOptions(nuqsOptions)
   );
-  const [device, setDevice] = useQueryState(
-    'device',
-    parseAsString.withOptions(nuqsOptions)
-  );
   const [page, setPage] = useQueryState(
     'page',
     parseAsString.withOptions(nuqsOptions)
   );
 
+  // Sources
   const [utmSource, setUtmSource] = useQueryState(
     'utm_source',
     parseAsString.withOptions(nuqsOptions)
@@ -64,6 +61,7 @@ export function useOverviewOptions() {
     parseAsString.withOptions(nuqsOptions)
   );
 
+  // Geo
   const [country, setCountry] = useQueryState(
     'country',
     parseAsString.withOptions(nuqsOptions)
@@ -74,6 +72,28 @@ export function useOverviewOptions() {
   );
   const [city, setCity] = useQueryState(
     'city',
+    parseAsString.withOptions(nuqsOptions)
+  );
+
+  //
+  const [device, setDevice] = useQueryState(
+    'device',
+    parseAsString.withOptions(nuqsOptions)
+  );
+  const [browser, setBrowser] = useQueryState(
+    'browser',
+    parseAsString.withOptions(nuqsOptions)
+  );
+  const [browserVersion, setBrowserVersion] = useQueryState(
+    'browser_version',
+    parseAsString.withOptions(nuqsOptions)
+  );
+  const [os, setOS] = useQueryState(
+    'os',
+    parseAsString.withOptions(nuqsOptions)
+  );
+  const [osVersion, setOSVersion] = useQueryState(
+    'os_version',
     parseAsString.withOptions(nuqsOptions)
   );
 
@@ -178,6 +198,42 @@ export function useOverviewOptions() {
       });
     }
 
+    if (browser) {
+      filters.push({
+        id: 'browser',
+        operator: 'is',
+        name: 'browser',
+        value: [browser],
+      });
+    }
+
+    if (browserVersion) {
+      filters.push({
+        id: 'browser_version',
+        operator: 'is',
+        name: 'browser_version',
+        value: [browserVersion],
+      });
+    }
+
+    if (os) {
+      filters.push({
+        id: 'os',
+        operator: 'is',
+        name: 'os',
+        value: [os],
+      });
+    }
+
+    if (osVersion) {
+      filters.push({
+        id: 'os_version',
+        operator: 'is',
+        name: 'os_version',
+        value: [osVersion],
+      });
+    }
+
     return filters;
   }, [
     referrer,
@@ -191,6 +247,10 @@ export function useOverviewOptions() {
     country,
     region,
     city,
+    browser,
+    browserVersion,
+    os,
+    osVersion,
   ]);
 
   return {
@@ -202,8 +262,6 @@ export function useOverviewOptions() {
     setMetric,
     referrer,
     setReferrer,
-    device,
-    setDevice,
     page,
     setPage,
 
@@ -230,5 +288,17 @@ export function useOverviewOptions() {
     setRegion,
     city,
     setCity,
+
+    // Tech
+    device,
+    setDevice,
+    browser,
+    setBrowser,
+    browserVersion,
+    setBrowserVersion,
+    os,
+    setOS,
+    osVersion,
+    setOSVersion,
   };
 }

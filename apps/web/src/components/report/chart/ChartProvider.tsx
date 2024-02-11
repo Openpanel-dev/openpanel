@@ -1,10 +1,11 @@
 import { createContext, memo, useContext, useMemo } from 'react';
+import type { IChartSerie } from '@/server/api/routers/chart';
 import type { IChartInput } from '@/types';
 
 export interface ChartContextType extends IChartInput {
   editMode?: boolean;
   hideID?: boolean;
-  onClick?: (item: any) => void;
+  onClick?: (item: IChartSerie) => void;
 }
 
 type ChartProviderProps = {

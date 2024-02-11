@@ -1,17 +1,20 @@
 import OverviewMetrics from '@/app/(app)/[organizationId]/[projectId]/overview-metrics';
 import { Logo } from '@/components/Logo';
-import { getOrganizationByProjectId } from '@/server/services/organization.service';
+import { getOrganizationBySlug } from '@/server/services/organization.service';
 import { getProjectById } from '@/server/services/project.service';
 
 interface PageProps {
   params: {
+    organizationId: string;
     projectId: string;
   };
 }
 
-export default async function Page({ params: { projectId } }: PageProps) {
+export default async function Page({
+  params: { organizationId, projectId },
+}: PageProps) {
   const project = await getProjectById(projectId);
-  const organization = await getOrganizationByProjectId(projectId);
+  const organization = await getOrganizationBySlug(organizationId);
   return (
     <div className="p-4 md:p-16 bg-gradient-to-tl from-blue-950 to-blue-600">
       <div className="max-w-4xl mx-auto">

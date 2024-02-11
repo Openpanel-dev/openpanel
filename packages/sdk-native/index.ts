@@ -1,21 +1,46 @@
-import type { NewMixanOptions } from '@mixan/sdk';
+import { AppState, Platform } from 'react-native';
+import * as Application from 'expo-application';
+import Constants from 'expo-constants';
+import * as Network from 'expo-network';
+
+import type { MixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
 
-export class MixanNative extends Mixan {
-  constructor(options: NewMixanOptions) {
+type MixanNativeOptions = MixanOptions & {
+  ipUrl?: string;
+};
+
+export class MixanNative extends Mixan<MixanNativeOptions> {
+  constructor(options: MixanNativeOptions) {
     super(options);
+
+    this.api.headers['X-Forwarded-For'] = Network.getIpAddressAsync();
+    this.api.headers['User-Agent'] = Constants.getWebViewUserAgentAsync();
+
+    AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        this.setProperties();
+      }
+    });
+
+    this.setProperties();
   }
 
-  init(properties?: Record<string, unknown>) {
-    super.init({
-      ...(properties ?? {}),
+  private async setProperties() {
+    this.setGlobalProperties({
+      version: Application.nativeApplicationVersion,
+      buildNumber: Application.nativeBuildVersion,
+      referrer:
+        Platform.OS === 'android'
+          ? await Application.getInstallReferrerAsync()
+          : undefined,
     });
   }
 
-  screenView(route: string, properties?: Record<string, unknown>): void {
+  public screenView(route: string, properties?: Record<string, unknown>): void {
     super.event('screen_view', {
       ...properties,
-      route: route,
+      path: route,
     });
   }
 }

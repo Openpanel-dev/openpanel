@@ -7,7 +7,6 @@ if (el) {
   window.openpanel = new Openpanel({
     url: el?.getAttribute('data-url'),
     clientId: el?.getAttribute('data-client-id'),
-    clientSecret: el?.getAttribute('data-client-secret'),
     trackOutgoingLinks: !!el?.getAttribute('data-track-outgoing-links'),
     trackScreenViews: !!el?.getAttribute('data-track-screen-views'),
   });

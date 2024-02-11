@@ -13,9 +13,8 @@ import { ProfileListItem } from './profile-list-item';
 
 interface ListProfilesProps {
   projectId: string;
-  organizationId: string;
 }
-export function ListProfiles({ organizationId, projectId }: ListProfilesProps) {
+export function ListProfiles({ projectId }: ListProfilesProps) {
   const [query, setQuery] = useQueryState('q');
   const pagination = usePagination();
   const profilesQuery = api.profile.list.useQuery(

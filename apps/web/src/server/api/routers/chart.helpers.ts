@@ -5,7 +5,7 @@ import type {
   IGetChartDataInput,
   IInterval,
 } from '@/types';
-import { alphabetIds } from '@/utils/constants';
+import { alphabetIds, NOT_SET_VALUE } from '@/utils/constants';
 import { round } from '@/utils/math';
 import * as mathjs from 'mathjs';
 import { sort } from 'ramda';
@@ -207,7 +207,7 @@ export async function getChartData(payload: IGetChartDataInput) {
     (acc, item) => {
       // item.label can be null when using breakdowns on a property
       // that doesn't exist on all events
-      const label = item.label?.trim() || '(not set)';
+      const label = item.label?.trim() || NOT_SET_VALUE;
       if (label) {
         if (acc[label]) {
           acc[label]?.push(item);

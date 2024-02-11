@@ -6,7 +6,6 @@ import { api } from '@/app/_trpc/client';
 import { useAppParams } from '@/hooks/useAppParams';
 import type { IChartInput } from '@/types';
 
-import { ChartAnimation, ChartAnimationContainer } from './ChartAnimation';
 import { ChartEmpty } from './ChartEmpty';
 import { withChartProivder } from './ChartProvider';
 import { ReportAreaChart } from './ReportAreaChart';

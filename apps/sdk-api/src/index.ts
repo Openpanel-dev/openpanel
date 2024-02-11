@@ -7,6 +7,7 @@ import { redisPub } from '@mixan/redis';
 
 import eventRouter from './routes/event.router';
 import liveRouter from './routes/live.router';
+import profileRouter from './routes/profile.router';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -29,6 +30,7 @@ const startServer = async () => {
     fastify.register(FastifySSEPlugin);
     fastify.decorateRequest('projectId', '');
     fastify.register(eventRouter, { prefix: '/event' });
+    fastify.register(profileRouter, { prefix: '/profile' });
     fastify.register(liveRouter, { prefix: '/live' });
     fastify.setErrorHandler((error, request, reply) => {
       fastify.log.error(error);

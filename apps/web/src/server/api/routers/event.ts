@@ -29,6 +29,8 @@ export const eventRouter = createTRPCRouter({
         sb.where.name = `name IN (${events.map((e) => `'${e}'`).join(',')})`;
       }
 
+      sb.orderBy.created_at = 'created_at DESC';
+
       return (await chQuery<IDBEvent>(getSql())).map(transformEvent);
     }),
 });

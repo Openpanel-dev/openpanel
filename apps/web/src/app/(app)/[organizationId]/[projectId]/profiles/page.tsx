@@ -13,10 +13,9 @@ export default async function Page({
   params: { organizationId, projectId },
 }: PageProps) {
   await getExists(organizationId, projectId);
-
   return (
     <PageLayout title="Events" organizationSlug={organizationId}>
-      <ListProfiles projectId={projectId} organizationId={organizationId} />
+      <ListProfiles projectId={projectId} />
     </PageLayout>
   );
 }

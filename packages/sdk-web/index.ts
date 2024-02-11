@@ -8,6 +8,8 @@ type MixanWebOptions = MixanOptions & {
 };
 
 export class MixanWeb extends Mixan<MixanWebOptions> {
+  private lastPath = '';
+
   constructor(options: MixanWebOptions) {
     super(options);
 
@@ -22,14 +24,6 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
 
   private isServer() {
     return typeof document === 'undefined';
-  }
-
-  private getTimezone() {
-    try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone;
-    } catch (e) {
-      return undefined;
-    }
   }
 
   public trackOutgoingLinks() {
@@ -90,9 +84,16 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
       return;
     }
 
+    const path = window.location.href;
+
+    if (this.lastPath === path) {
+      return;
+    }
+
+    this.lastPath = path;
     super.event('screen_view', {
       ...(properties ?? {}),
-      path: window.location.href,
+      path,
       title: document.title,
       referrer: document.referrer,
     });
