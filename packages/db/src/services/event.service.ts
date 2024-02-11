@@ -1,9 +1,11 @@
+import type { IDBProfile } from '@/prisma-types';
 import { omit } from 'ramda';
 
 import { randomSplitName, toDots } from '@mixan/common';
 import { redis, redisPub } from '@mixan/redis';
 
 import { ch, chQuery, formatClickhouseDate } from '../clickhouse-client';
+import type { Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 
 export interface IClickhouseEvent {
@@ -27,6 +29,7 @@ export interface IClickhouseEvent {
   device: string;
   brand: string;
   model: string;
+  profile?: IDBProfile;
 }
 
 export function transformEvent(
@@ -37,7 +40,7 @@ export function transformEvent(
     profileId: event.profile_id,
     projectId: event.project_id,
     properties: event.properties,
-    createdAt: event.created_at,
+    createdAt: new Date(event.created_at),
     country: event.country,
     city: event.city,
     region: event.region,
@@ -53,6 +56,7 @@ export function transformEvent(
     referrer: event.referrer,
     referrerName: event.referrer_name,
     referrerType: event.referrer_type,
+    profile: event.profile,
   };
 }
 
@@ -64,7 +68,7 @@ export interface IServiceCreateEventPayload {
     hash?: string;
     query?: Record<string, unknown>;
   };
-  createdAt: string;
+  createdAt: Date;
   country?: string | undefined;
   city?: string | undefined;
   region?: string | undefined;
@@ -81,12 +85,33 @@ export interface IServiceCreateEventPayload {
   referrer: string | undefined;
   referrerName: string | undefined;
   referrerType: string | undefined;
+  profile?: IDBProfile;
 }
 
-export function getEvents(sql: string) {
-  return chQuery<IClickhouseEvent>(sql).then((events) =>
-    events.map(transformEvent)
-  );
+interface GetEventsOptions {
+  profile?: boolean | Prisma.ProfileSelect;
+}
+
+export async function getEvents(sql: string, options: GetEventsOptions = {}) {
+  const events = await chQuery<IClickhouseEvent>(sql);
+  if (options.profile) {
+    const profileIds = events.map((e) => e.profile_id);
+    const profiles = await db.profile.findMany({
+      where: {
+        id: {
+          in: profileIds,
+        },
+      },
+      select: options.profile === true ? undefined : options.profile,
+    });
+
+    for (const event of events) {
+      event.profile = profiles.find((p) => p.id === event.profile_id) as
+        | IDBProfile
+        | undefined;
+    }
+  }
+  return events.map(transformEvent);
 }
 
 export async function createEvent(payload: IServiceCreateEventPayload) {

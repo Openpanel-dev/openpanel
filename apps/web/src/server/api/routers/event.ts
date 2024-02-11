@@ -3,7 +3,7 @@ import { transformEvent } from '@/server/services/event.service';
 import { z } from 'zod';
 
 import type { IDBEvent } from '@mixan/db';
-import { chQuery, createSqlBuilder } from '@mixan/db';
+import { chQuery, createSqlBuilder, getEvents } from '@mixan/db';
 
 export const eventRouter = createTRPCRouter({
   list: protectedProcedure
@@ -31,6 +31,8 @@ export const eventRouter = createTRPCRouter({
 
       sb.orderBy.created_at = 'created_at DESC';
 
-      return (await chQuery<IDBEvent>(getSql())).map(transformEvent);
+      const res = await getEvents(getSql(), { profile: true });
+
+      return res;
     }),
 });

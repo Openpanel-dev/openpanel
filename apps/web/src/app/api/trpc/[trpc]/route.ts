@@ -12,6 +12,12 @@ const handler = (req: Request) =>
         session: auth(),
       };
     },
+    onError(opts) {
+      const { error, type, path, input, ctx, req } = opts;
+      console.error('---- TRPC ERROR');
+      console.error('Error:', error);
+      console.error();
+    },
   });
 
 export { handler as GET, handler as POST };

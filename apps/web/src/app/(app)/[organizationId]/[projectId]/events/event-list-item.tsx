@@ -20,6 +20,7 @@ export function EventListItem({
   createdAt,
   name,
   properties,
+  path,
 }: EventListItemProps) {
   const params = useAppParams();
 
@@ -46,16 +47,15 @@ export function EventListItem({
 
     switch (name) {
       case 'screen_view': {
-        const route = (properties?.route || properties?.path)!;
-        if (route) {
-          bullets.push(route);
+        if (path) {
+          bullets.push(path);
         }
         break;
       }
     }
 
     return bullets;
-  }, [name, createdAt, profile, properties, params]);
+  }, [name, createdAt, profile, properties, params, path]);
 
   return (
     <ExpandableListItem

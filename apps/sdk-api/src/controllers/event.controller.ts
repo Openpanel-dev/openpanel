@@ -1,5 +1,5 @@
 import { parseIp } from '@/utils/parseIp';
-import { parseReferrer } from '@/utils/parseReferrer';
+import { getReferrerWithQuery, parseReferrer } from '@/utils/parseReferrer';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { omit } from 'ramda';
@@ -15,16 +15,18 @@ import type { PostEventPayload } from '@mixan/types';
 const SESSION_TIMEOUT = 1000 * 60 * 30;
 const SESSION_END_TIMEOUT = SESSION_TIMEOUT + 1000;
 
-function parseSearchParams(params: URLSearchParams): Record<string, string> {
+function parseSearchParams(
+  params: URLSearchParams
+): Record<string, string> | undefined {
   const result: Record<string, string> = {};
   for (const [key, value] of params.entries()) {
     result[key] = value;
   }
-  return result;
+  return Object.keys(result).length ? result : undefined;
 }
 
 function parsePath(path?: string): {
-  query?: Record<string, unknown>;
+  query?: Record<string, string>;
   path: string;
   hash?: string;
 } {
@@ -39,7 +41,7 @@ function parsePath(path?: string): {
     return {
       query: parseSearchParams(url.searchParams),
       path: url.pathname,
-      hash: url.hash,
+      hash: url.hash ?? undefined,
     };
   } catch (error) {
     return {
@@ -57,8 +59,10 @@ export async function postEvent(
   let profileId: string | null = null;
   const projectId = request.projectId;
   const body = request.body;
+  const createdAt = new Date(body.timestamp);
   const { path, hash, query } = parsePath(body.properties?.path);
   const referrer = parseReferrer(body.properties?.referrer);
+  const utmReferrer = getReferrerWithQuery(query);
   const ip = getClientIp(request)!;
   const origin = request.headers.origin!;
   const ua = request.headers['user-agent']!;
@@ -132,7 +136,7 @@ export async function postEvent(
       hash,
       query,
     }),
-    createdAt: body.timestamp,
+    createdAt,
     country: geo.country,
     city: geo.city,
     region: geo.region,
@@ -147,8 +151,8 @@ export async function postEvent(
     duration: 0,
     path: path,
     referrer: referrer.url,
-    referrerName: referrer.name,
-    referrerType: referrer.type,
+    referrerName: referrer.name ?? utmReferrer?.name ?? '',
+    referrerType: referrer.type ?? utmReferrer?.type ?? '',
   };
 
   const job = findJobByPrefix(eventsJobs, `event:${projectId}:${profileId}:`);
@@ -180,6 +184,7 @@ export async function postEvent(
       payload: {
         ...payload,
         name: 'session_start',
+        // @ts-expect-error
         createdAt: toISOString(getTime(payload.createdAt) - 10),
       },
     });

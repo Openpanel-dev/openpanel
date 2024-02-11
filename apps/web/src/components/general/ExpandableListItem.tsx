@@ -27,8 +27,8 @@ export function ExpandableListItem({
         <div className="flex flex-col flex-1 gap-1 min-w-0">
           <span className="text-lg font-medium leading-none mb-1">{title}</span>
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-muted-foreground">
-            {bullets.map((bullet) => (
-              <span key={bullet}>{bullet}</span>
+            {bullets.map((bullet, index) => (
+              <span key={index}>{bullet}</span>
             ))}
           </div>
         </div>
