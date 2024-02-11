@@ -1,9 +1,12 @@
 const parse = (connectionString: string) => {
-  const url = new URL(connectionString);
+  const match = connectionString.match(/redis:\/\/(.+?):(.+?)@(.+?):(.+)/);
+  if (!match) {
+    throw new Error('Invalid connection string');
+  }
   return {
-    host: url.hostname,
-    port: Number(url.port),
-    password: url.password,
+    host: match[3]!,
+    port: Number(match[4]),
+    password: match[2]!,
   } as const;
 };
 
