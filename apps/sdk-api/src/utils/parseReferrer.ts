@@ -1,8 +1,19 @@
 import referrers from '../referrers';
 
-export function parseReferrer(url?: string) {
-  const { hostname } = new URL(url || '');
-  const match = referrers[hostname];
+function getHostname(url: string | undefined) {
+  if (!url) {
+    return '';
+  }
+
+  try {
+    return new URL(url).hostname;
+  } catch (e) {
+    return '';
+  }
+}
+
+export function parseReferrer(url: string | undefined) {
+  const match = referrers[getHostname(url)];
 
   console.log('Parsing referrer', url);
   console.log('Match', match);
