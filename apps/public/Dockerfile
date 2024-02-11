@@ -27,6 +27,7 @@ COPY pnpm-lock.yaml pnpm-lock.yaml
 COPY pnpm-workspace.yaml pnpm-workspace.yaml
 COPY apps/public/package.json apps/public/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY packages/redis/package.json packages/redis/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
 COPY packages/types/package.json packages/types/package.json
@@ -63,9 +64,11 @@ COPY --from=build /app/apps/public /app/apps/public
 COPY --from=prod /app/apps/public/node_modules /app/apps/public/node_modules
 # Packages
 COPY --from=build /app/packages/db /app/packages/db
+COPY --from=build /app/packages/redis /app/packages/redis
 # COPY --from=build /app/packages/queue /app/packages/queue
 # Packages node_modules
 COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
+COPY --from=prod /app/packages/redis/node_modules /app/packages/redis/node_modules
 # COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modules
 
 RUN pnpm db:codegen

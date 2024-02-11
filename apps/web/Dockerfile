@@ -46,6 +46,7 @@ COPY pnpm-lock.yaml pnpm-lock.yaml
 COPY pnpm-workspace.yaml pnpm-workspace.yaml
 COPY apps/web/package.json apps/web/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY packages/redis/package.json packages/redis/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
 COPY packages/types/package.json packages/types/package.json
@@ -82,11 +83,13 @@ COPY --from=build /app/apps/web /app/apps/web
 COPY --from=prod /app/apps/web/node_modules /app/apps/web/node_modules
 # Packages
 COPY --from=build /app/packages/db /app/packages/db
+COPY --from=build /app/packages/redis /app/packages/redis
 COPY --from=build /app/packages/common /app/packages/common
 COPY --from=build /app/packages/queue /app/packages/queue
 COPY --from=build /app/packages/types /app/packages/types
 # Packages node_modules
 COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
+COPY --from=prod /app/packages/redis/node_modules /app/packages/redis/node_modules
 COPY --from=prod /app/packages/common/node_modules /app/packages/common/node_modules
 COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modules
 
