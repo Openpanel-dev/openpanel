@@ -1,11 +1,10 @@
-import { parseIp } from '@/utils/parseIp';
+import { getClientIp, parseIp } from '@/utils/parseIp';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, mergeDeepRight, path } from 'ramda';
-import { getClientIp } from 'request-ip';
 
 import { generateProfileId, toDots } from '@mixan/common';
-import type { IDBProfile, Profile } from '@mixan/db';
+import type { IDBProfile } from '@mixan/db';
 import { db, getSalts } from '@mixan/db';
 import type {
   IncrementProfilePayload,

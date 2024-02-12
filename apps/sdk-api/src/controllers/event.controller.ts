@@ -1,9 +1,8 @@
-import { parseIp } from '@/utils/parseIp';
+import { getClientIp, parseIp } from '@/utils/parseIp';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parseReferrer';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { omit } from 'ramda';
-import { getClientIp } from 'request-ip';
 
 import { generateProfileId, getTime, toISOString } from '@mixan/common';
 import type { IServiceCreateEventPayload } from '@mixan/db';
@@ -85,6 +84,8 @@ export async function postEvent(
     parseIp(ip),
     eventsQueue.getJobs(['delayed']),
   ]);
+
+  console.log('----->', projectId, ip, geo);
 
   // find session_end job
   const sessionEndJobCurrentProfileId = findJobByPrefix(

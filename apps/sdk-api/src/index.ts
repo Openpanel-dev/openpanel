@@ -2,7 +2,6 @@ import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import { FastifySSEPlugin } from 'fastify-sse-v2';
 import pino from 'pino';
-import { getClientIp } from 'request-ip';
 
 import { redisPub } from '@mixan/redis';
 
@@ -28,15 +27,6 @@ const startServer = async () => {
 
     fastify.register(cors, {
       origin: '*',
-    });
-
-    fastify.addHook('preHandler', (req, reply, done) => {
-      const ip = getClientIp(req)!;
-      console.log('---------------');
-      console.log('ip', ip);
-      console.log('heacders', req.headers);
-      console.log('---------------');
-      done();
     });
 
     fastify.register(FastifySSEPlugin);

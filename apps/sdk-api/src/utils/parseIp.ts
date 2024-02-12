@@ -1,3 +1,5 @@
+import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
+
 interface RemoteIpLookupResponse {
   country: string | undefined;
   city: string | undefined;
@@ -20,6 +22,18 @@ const geo: GeoLocation = {
 };
 
 const ignore = ['127.0.0.1', '::1'];
+
+export function getClientIp(req: FastifyRequest) {
+  if (req.headers['cf-connecting-ip']) {
+    return String(req.headers['cf-connecting-ip']);
+  }
+
+  if (req.headers['x-forwarded-for']) {
+    return String(req.headers['x-forwarded-for']);
+  }
+
+  return null;
+}
 
 export async function parseIp(ip?: string): Promise<GeoLocation> {
   if (!ip || ignore.includes(ip)) {
