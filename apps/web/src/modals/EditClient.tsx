@@ -39,8 +39,7 @@ export default function EditClient({ id, name, cors }: EditClientProps) {
     onError: handleError,
     onSuccess() {
       reset();
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Client updated.',
       });
       popModal();

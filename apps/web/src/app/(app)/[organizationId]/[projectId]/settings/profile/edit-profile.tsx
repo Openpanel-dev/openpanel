@@ -35,8 +35,7 @@ export default function EditProfile({ profile }: EditProfileProps) {
 
   const mutation = api.user.update.useMutation({
     onSuccess(res) {
-      toast({
-        title: 'Profile updated',
+      toast('Profile updated', {
         description: 'Your profile has been updated.',
       });
       reset(res);

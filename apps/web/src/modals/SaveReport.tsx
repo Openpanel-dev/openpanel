@@ -38,8 +38,7 @@ export default function SaveReport({ report }: SaveReportProps) {
   const save = api.report.save.useMutation({
     onError: handleError,
     onSuccess(res) {
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Report saved.',
       });
       popModal();
@@ -65,8 +64,7 @@ export default function SaveReport({ report }: SaveReportProps) {
     onSuccess(res) {
       setValue('dashboardId', res.id);
       dashboardQuery.refetch();
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Dashboard created.',
       });
     },

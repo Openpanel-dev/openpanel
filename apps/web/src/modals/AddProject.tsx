@@ -27,8 +27,7 @@ export default function AddProject({ organizationId }: AddProjectProps) {
     onError: handleError,
     onSuccess() {
       router.refresh();
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Project created! Lets create a client for it 🤘',
       });
       popModal();

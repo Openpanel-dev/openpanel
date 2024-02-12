@@ -6,6 +6,7 @@ import type { IProject } from '@/types';
 import { clipboard } from '@/utils/clipboard';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import { Button } from '../ui/button';
 import {
@@ -16,15 +17,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { toast } from '../ui/use-toast';
 
 export function ProjectActions(project: IProject) {
   const { id } = project;
   const router = useRouter();
   const deletion = api.project.remove.useMutation({
     onSuccess() {
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Project deleted successfully.',
       });
       router.refresh();

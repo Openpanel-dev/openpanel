@@ -35,8 +35,7 @@ export default function AddDashboard() {
     onError: handleError,
     onSuccess() {
       router.refresh();
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Dashboard created.',
       });
       popModal();

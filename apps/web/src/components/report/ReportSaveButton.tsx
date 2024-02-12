@@ -19,8 +19,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
   const update = api.report.update.useMutation({
     onSuccess() {
       dispatch(resetDirty());
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Report updated.',
       });
     },

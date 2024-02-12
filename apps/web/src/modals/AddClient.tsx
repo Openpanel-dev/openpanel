@@ -40,8 +40,7 @@ export default function AddClient({ organizationId }: AddClientProps) {
   const mutation = api.client.create.useMutation({
     onError: handleError,
     onSuccess() {
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Client created!',
       });
       router.refresh();

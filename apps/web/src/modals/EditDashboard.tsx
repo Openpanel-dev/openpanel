@@ -37,8 +37,7 @@ export default function EditDashboard({ id, name }: EditDashboardProps) {
     onError: handleError,
     onSuccess() {
       reset();
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Dashboard updated.',
       });
       popModal();

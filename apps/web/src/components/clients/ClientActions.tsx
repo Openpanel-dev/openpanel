@@ -6,6 +6,7 @@ import type { IClientWithProject } from '@/types';
 import { clipboard } from '@/utils/clipboard';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import { Button } from '../ui/button';
 import {
@@ -16,15 +17,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { toast } from '../ui/use-toast';
 
 export function ClientActions(client: IClientWithProject) {
   const { id } = client;
   const router = useRouter();
   const deletion = api.client.remove.useMutation({
     onSuccess() {
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Client revoked, incoming requests will be rejected.',
       });
       router.refresh();

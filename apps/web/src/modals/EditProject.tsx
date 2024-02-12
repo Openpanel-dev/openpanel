@@ -38,8 +38,7 @@ export default function EditProject({ id, name }: EditProjectProps) {
     onSuccess() {
       reset();
       router.refresh();
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Project updated.',
       });
       popModal();

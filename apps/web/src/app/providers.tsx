@@ -2,7 +2,6 @@
 
 import React, { useRef, useState } from 'react';
 import { api } from '@/app/_trpc/client';
-import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
@@ -50,7 +49,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <QueryClientProvider client={queryClient}>
             <TooltipProvider delayDuration={200}>
               {children}
-              <Toaster />
               <ModalProvider />
             </TooltipProvider>
           </QueryClientProvider>

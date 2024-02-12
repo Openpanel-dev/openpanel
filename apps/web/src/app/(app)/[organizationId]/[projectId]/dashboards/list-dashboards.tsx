@@ -24,25 +24,20 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
   const deletion = api.dashboard.delete.useMutation({
     onError: (error, variables) => {
       return handleErrorToastOptions({
-        action: (
-          <ToastAction
-            altText="Force delete"
-            onClick={() => {
-              deletion.mutate({
-                forceDelete: true,
-                id: variables.id,
-              });
-            }}
-          >
-            Force delete
-          </ToastAction>
-        ),
+        action: {
+          label: 'Force delete',
+          onClick: () => {
+            deletion.mutate({
+              forceDelete: true,
+              id: variables.id,
+            });
+          },
+        },
       })(error);
     },
     onSuccess() {
       router.refresh();
-      toast({
-        title: 'Success',
+      toast('Success', {
         description: 'Dashboard deleted.',
       });
     },

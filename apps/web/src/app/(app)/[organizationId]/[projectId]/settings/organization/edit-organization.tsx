@@ -25,13 +25,12 @@ export default function EditOrganization({
   const router = useRouter();
 
   const { register, handleSubmit, formState, reset } = useForm<IForm>({
-    defaultValues: organization,
+    defaultValues: organization ?? undefined,
   });
 
   const mutation = api.organization.update.useMutation({
     onSuccess(res) {
-      toast({
-        title: 'Organization updated',
+      toast('Organization updated', {
         description: 'Your organization has been updated.',
       });
       reset(res);
@@ -57,7 +56,7 @@ export default function EditOrganization({
           <InputWithLabel
             label="Name"
             {...register('name')}
-            defaultValue={organization.name}
+            defaultValue={organization?.name}
           />
         </WidgetBody>
       </Widget>

@@ -27,8 +27,7 @@ export function InviteUser() {
 
   const mutation = api.organization.inviteUser.useMutation({
     onSuccess() {
-      toast({
-        title: 'User invited!',
+      toast('User invited!', {
         description: 'The user has been invited to the organization.',
       });
       reset();
