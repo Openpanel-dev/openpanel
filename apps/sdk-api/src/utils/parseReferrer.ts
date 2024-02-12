@@ -15,9 +15,6 @@ function getHostname(url: string | undefined) {
 export function parseReferrer(url: string | undefined) {
   const match = referrers[getHostname(url)];
 
-  console.log('Parsing referrer', url);
-  console.log('Match', match);
-
   return {
     name: match?.name ?? '',
     type: match?.type ?? 'unknown',

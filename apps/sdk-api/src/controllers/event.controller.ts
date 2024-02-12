@@ -49,6 +49,17 @@ function parsePath(path?: string): {
   }
 }
 
+function isSameDomain(url1: string | undefined, url2: string | undefined) {
+  if (!url1 || !url2) {
+    return false;
+  }
+  try {
+    return new URL(url1).hostname === new URL(url2).hostname;
+  } catch (e) {
+    return false;
+  }
+}
+
 export async function postEvent(
   request: FastifyRequest<{
     Body: PostEventPayload;
@@ -59,8 +70,11 @@ export async function postEvent(
   const projectId = request.projectId;
   const body = request.body;
   const createdAt = new Date(body.timestamp);
-  const { path, hash, query } = parsePath(body.properties?.path);
-  const referrer = parseReferrer(body.properties?.referrer);
+  const url = body.properties?.path;
+  const { path, hash, query } = parsePath(url);
+  const referrer = isSameDomain(body.properties?.referrer, url)
+    ? null
+    : parseReferrer(body.properties?.referrer);
   const utmReferrer = getReferrerWithQuery(query);
   const ip = getClientIp(request)!;
   const origin = request.headers.origin!;
@@ -84,8 +98,6 @@ export async function postEvent(
     parseIp(ip),
     eventsQueue.getJobs(['delayed']),
   ]);
-
-  console.log('----->', projectId, ip, geo);
 
   // find session_end job
   const sessionEndJobCurrentProfileId = findJobByPrefix(
@@ -151,9 +163,9 @@ export async function postEvent(
     model: uaInfo.model,
     duration: 0,
     path: path,
-    referrer: referrer.url,
-    referrerName: referrer.name ?? utmReferrer?.name ?? '',
-    referrerType: referrer.type ?? utmReferrer?.type ?? '',
+    referrer: referrer?.url,
+    referrerName: referrer?.name ?? utmReferrer?.name ?? '',
+    referrerType: referrer?.type ?? utmReferrer?.type ?? '',
   };
 
   const job = findJobByPrefix(eventsJobs, `event:${projectId}:${profileId}:`);
