@@ -13,12 +13,18 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
   constructor(options: MixanWebOptions) {
     super(options);
 
-    if (this.options.trackOutgoingLinks) {
-      this.trackOutgoingLinks();
-    }
+    if (!this.isServer()) {
+      this.setGlobalProperties({
+        referrer: document.referrer,
+      });
 
-    if (this.options.trackScreenViews) {
-      this.trackScreenViews();
+      if (this.options.trackOutgoingLinks) {
+        this.trackOutgoingLinks();
+      }
+
+      if (this.options.trackScreenViews) {
+        this.trackScreenViews();
+      }
     }
   }
 
@@ -33,12 +39,17 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
 
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
-      if (target.tagName === 'A') {
-        const href = target.getAttribute('href');
+      const link = target.closest('a');
+      if (link && target) {
+        const href = link.getAttribute('href');
         if (href?.startsWith('http')) {
           super.event('link_out', {
             href,
-            text: target.innerText,
+            text:
+              link.innerText ||
+              link.getAttribute('title') ||
+              target.getAttribute('alt') ||
+              target.getAttribute('title'),
           });
         }
       }
@@ -95,7 +106,6 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
       ...(properties ?? {}),
       path,
       title: document.title,
-      referrer: document.referrer,
     });
   }
 }

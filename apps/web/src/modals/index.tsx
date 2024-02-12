@@ -113,8 +113,6 @@ export function ModalProvider() {
 
   useEffect(() => {
     emitter.on('push', ({ name, props }) => {
-      console.log('hej?', name, props);
-
       setState((p) => [
         ...p,
         {

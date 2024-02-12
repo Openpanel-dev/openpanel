@@ -50,7 +50,7 @@ export async function createSessionEnd(
     },
     name: 'session_end',
     duration: sessionDuration,
-    path: lastScreenView?.path ?? '',
+    path: lastScreenView?.path ?? sessionStart.path,
     createdAt: toISOString(getTime(lastScreenView.createdAt) + 100),
   });
 }
