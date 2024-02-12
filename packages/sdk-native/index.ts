@@ -1,7 +1,6 @@
 import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
-import * as Network from 'expo-network';
 
 import type { MixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
@@ -14,7 +13,6 @@ export class MixanNative extends Mixan<MixanNativeOptions> {
   constructor(options: MixanNativeOptions) {
     super(options);
 
-    this.api.headers['X-Forwarded-For'] = Network.getIpAddressAsync();
     this.api.headers['User-Agent'] = Constants.getWebViewUserAgentAsync();
 
     AppState.addEventListener('change', (state) => {
