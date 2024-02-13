@@ -205,7 +205,12 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
         </WidgetHead>
         <WidgetBody>
           <Suspense fallback={<ChartLoading />}>
-            <Chart hideID {...selectedMetric} chartType="linear" />
+            <Chart
+              key={selectedMetric.id}
+              hideID
+              {...selectedMetric}
+              chartType="linear"
+            />
           </Suspense>
         </WidgetBody>
       </Widget>
