@@ -6,6 +6,7 @@ import { redisPub } from '@mixan/redis';
 
 import eventRouter from './routes/event.router';
 import liveRouter from './routes/live.router';
+import miscRouter from './routes/misc.router';
 import profileRouter from './routes/profile.router';
 
 declare module 'fastify' {
@@ -32,6 +33,7 @@ const startServer = async () => {
     fastify.register(eventRouter, { prefix: '/event' });
     fastify.register(profileRouter, { prefix: '/profile' });
     fastify.register(liveRouter, { prefix: '/live' });
+    fastify.register(miscRouter, { prefix: '/misc' });
     fastify.setErrorHandler((error, request, reply) => {
       fastify.log.error(error);
     });

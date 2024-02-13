@@ -47,7 +47,10 @@ export function SerieIcon({ name, ...props }: SerieIconProps) {
 
   if (name.includes('http')) {
     Icon = ((_props) => (
-      <SocialIcon network={networkFor(name)} />
+      <img
+        className="w-4 h-4 object-cover"
+        src={`${String(process.env.NEXT_PUBLIC_API_URL)}/misc/favicon?url=${encodeURIComponent(name)}`}
+      />
     )) as LucideIcon;
   }
 

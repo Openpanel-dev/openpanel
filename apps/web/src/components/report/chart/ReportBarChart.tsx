@@ -20,15 +20,15 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   const { editMode, metric, onClick } = useChartContext();
   const number = useNumber();
   const series = useMemo(
-    () => (editMode ? data.series : data.series.slice(0, 20)),
-    [data]
+    () => (editMode ? data.series : data.series.slice(0, 10)),
+    [data, editMode]
   );
   const maxCount = Math.max(...series.map((serie) => serie.metrics[metric]));
 
   return (
     <div
       className={cn(
-        'flex flex-col w-full divide-y text-xs',
+        'flex flex-col w-full text-xs -mx-2',
         editMode &&
           'text-base bg-white border border-border rounded-md p-4 pt-2'
       )}
@@ -45,8 +45,8 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           <div
             key={serie.name}
             className={cn(
-              'py-2 flex flex-1 w-full gap-4 items-center',
-              isClickable && 'cursor-pointer hover:bg-gray-100'
+              'py-2 px-2 flex flex-1 w-full gap-4 items-center even:bg-slate-50 [&_[role=progressbar]]:even:bg-white [&_[role=progressbar]]:shadow-sm rounded',
+              isClickable && 'cursor-pointer hover:!bg-slate-100'
             )}
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >

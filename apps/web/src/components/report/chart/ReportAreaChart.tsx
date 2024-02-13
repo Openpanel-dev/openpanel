@@ -41,7 +41,7 @@ export function ReportAreaChart({
     <>
       <div
         className={cn(
-          'max-sm:-mx-3 aspect-video w-full max-h-[400px] min-h-[200px]',
+          'max-sm:-mx-3 aspect-video w-full max-h-[300px] min-h-[200px]',
           editMode && 'border border-border bg-white rounded-md p-4'
         )}
       >
@@ -49,7 +49,7 @@ export function ReportAreaChart({
           {({ width }) => (
             <AreaChart
               width={width}
-              height={Math.min(Math.max(width * 0.5625, 250), 400)}
+              height={Math.min(Math.max(width * 0.5625, 250), 300)}
               data={rechartData}
             >
               <Tooltip content={<ReportChartTooltip />} />
