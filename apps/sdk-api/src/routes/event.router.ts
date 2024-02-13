@@ -1,17 +1,24 @@
+import { isBot as isGetBot } from '@/bots';
 import * as controller from '@/controllers/event.controller';
 import { validateSdkRequest } from '@/utils/auth';
 import type { FastifyPluginCallback } from 'fastify';
 
 const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.addHook('preHandler', (req, reply, done) => {
+    const isBot = req.headers['user-agent']
+      ? isGetBot(req.headers['user-agent'])
+      : false;
+    if (isBot) {
+      reply.log.warn({ ...req.headers, bot: isBot }, 'Bot detected');
+      reply.status(202).send('OK');
+    }
+
     validateSdkRequest(req.headers)
       .then((projectId) => {
         req.projectId = projectId;
         done();
       })
       .catch((e) => {
-        console.log(e);
-
         reply.status(401).send();
       });
   });
