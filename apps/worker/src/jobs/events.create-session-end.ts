@@ -27,6 +27,18 @@ export async function createSessionEnd(
   job.log(sql);
   const events = await getEvents(sql);
 
+  events.map((event, index) => {
+    job.log(
+      [
+        `Index: ${index}`,
+        `Event: ${event.name}`,
+        `Created: ${event.createdAt.toISOString()}`,
+        `Profile: ${event.profileId}`,
+        `Path: ${event.path}`,
+      ].join('\n')
+    );
+  });
+
   const sessionDuration = events.reduce((acc, event) => {
     return acc + event.duration;
   }, 0);
