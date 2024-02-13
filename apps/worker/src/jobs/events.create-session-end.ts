@@ -43,16 +43,29 @@ export async function createSessionEnd(
     return acc + event.duration;
   }, 0);
 
+  let lastScreenView = events.find((event) => event.name === 'screen_view');
   const sessionStart = events.find((event) => event.name === 'session_start');
-  const lastScreenView = events.find((event) => event.name === 'screen_view');
+  const lastEvent = events[0];
   const screenViews = events.filter((event) => event.name === 'screen_view');
 
   if (!sessionStart) {
     throw new Error('Failed to find a session_start');
   }
 
+  if (!lastScreenView && lastEvent) {
+    lastScreenView = lastEvent;
+    job.log(
+      `No screen_view found, using last event ${
+        lastEvent.name
+      } (${lastEvent.createdAt.toISOString()})`
+    );
+  }
+
   if (!lastScreenView) {
-    throw new Error('Failed to find a screen_view');
+    job.log(
+      'No screen_view found, creating session_end event with session_start path'
+    );
+    throw new Error('No screen_view found');
   }
 
   return createEvent({
