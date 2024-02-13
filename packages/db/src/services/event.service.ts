@@ -4,7 +4,12 @@ import { omit } from 'ramda';
 import { randomSplitName, toDots } from '@mixan/common';
 import { redis, redisPub } from '@mixan/redis';
 
-import { ch, chQuery, formatClickhouseDate } from '../clickhouse-client';
+import {
+  ch,
+  chQuery,
+  convertClickhouseDateToJs,
+  formatClickhouseDate,
+} from '../clickhouse-client';
 import type { Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 
@@ -40,7 +45,7 @@ export function transformEvent(
     profileId: event.profile_id,
     projectId: event.project_id,
     properties: event.properties,
-    createdAt: new Date(event.created_at),
+    createdAt: convertClickhouseDateToJs(event.created_at),
     country: event.country,
     city: event.city,
     region: event.region,
