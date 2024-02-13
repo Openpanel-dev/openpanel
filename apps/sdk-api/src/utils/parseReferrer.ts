@@ -1,3 +1,5 @@
+import { stripTrailingSlash } from '@mixan/common';
+
 import referrers from '../referrers';
 
 function getHostname(url: string | undefined) {
@@ -18,7 +20,7 @@ export function parseReferrer(url: string | undefined) {
   return {
     name: match?.name ?? '',
     type: match?.type ?? 'unknown',
-    url: url ?? '',
+    url: stripTrailingSlash(url ?? ''),
   };
 }
 

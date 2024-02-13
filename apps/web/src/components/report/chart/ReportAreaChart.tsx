@@ -41,7 +41,7 @@ export function ReportAreaChart({
     <>
       <div
         className={cn(
-          'max-sm:-mx-3',
+          'max-sm:-mx-3 aspect-video w-full max-h-[400px] min-h-[200px]',
           editMode && 'border border-border bg-white rounded-md p-4'
         )}
       >

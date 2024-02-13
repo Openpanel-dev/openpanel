@@ -1,60 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useAppParams } from '@/hooks/useAppParams';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
-import AnimatedNumbers from 'react-animated-numbers';
+import dynamic from 'next/dynamic';
+import useWebSocket from 'react-use-websocket';
 import { toast } from 'sonner';
 
-import { getSafeJson } from '@mixan/common';
-import type { IServiceCreateEventPayload } from '@mixan/db';
-
-interface LiveCounterProps {
-  initialCount: number;
+export interface LiveCounterProps {
+  data: number;
+  projectId: string;
 }
 
-export function LiveCounter({ initialCount = 0 }: LiveCounterProps) {
+const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
+  ssr: false,
+  loading: () => <div>0</div>,
+});
+
+const FIFTEEN_SECONDS = 1000 * 15;
+
+export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
+  const ws = String(process.env.NEXT_PUBLIC_API_URL)
+    .replace(/^https/, 'wss')
+    .replace(/^http/, 'ws');
   const client = useQueryClient();
-  const [counter, setCounter] = useState(initialCount);
-  const { projectId } = useAppParams();
-  const [es] = useState(
-    typeof window != 'undefined' &&
-      new EventSource(`http://localhost:3333/live/events/${projectId}`)
-  );
+  const [counter, setCounter] = useState(data);
+  const [socketUrl] = useState(`${ws}/live/visitors/${projectId}`);
+  const lastRefresh = useRef(Date.now());
 
-  useEffect(() => {
-    if (!es) {
-      return () => {};
-    }
-
-    function handler(event: MessageEvent<string>) {
-      const parsed = getSafeJson<{
-        visitors: number;
-        event: IServiceCreateEventPayload | null;
-      }>(event.data);
-
-      if (parsed) {
-        setCounter(parsed.visitors);
-        if (parsed.event) {
+  useWebSocket(socketUrl, {
+    shouldReconnect: () => true,
+    onMessage(event) {
+      const value = parseInt(event.data, 10);
+      if (!isNaN(value)) {
+        setCounter(value);
+        if (Date.now() - lastRefresh.current > FIFTEEN_SECONDS) {
+          lastRefresh.current = Date.now();
+          toast('Refreshed data');
           client.refetchQueries({
             type: 'active',
           });
-          toast('New event', {
-            description: `${parsed.event.name}`,
-            duration: 2000,
-          });
         }
       }
-    }
-    es.addEventListener('message', handler);
-    return () => es.removeEventListener('message', handler);
-  }, []);
+    },
+  });
 
   return (
     <Tooltip>
@@ -79,6 +73,9 @@ export function LiveCounter({ initialCount = 0 }: LiveCounterProps) {
             transitions={(index) => ({
               type: 'spring',
               duration: index + 0.3,
+
+              damping: 10,
+              stiffness: 200,
             })}
             animateToNumber={counter}
             locale="en"

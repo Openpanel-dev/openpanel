@@ -1,11 +1,11 @@
 import { api } from '@/app/_trpc/client';
 import { Combobox } from '@/components/ui/combobox';
-import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch } from '@/redux';
 import type { IChartEvent } from '@/types';
 import { cn } from '@/utils/cn';
-import { DatabaseIcon, FilterIcon } from 'lucide-react';
+import { DatabaseIcon } from 'lucide-react';
 
+import { useChartContext } from '../chart/ChartProvider';
 import { changeEvent } from '../reportSlice';
 
 interface EventPropertiesComboboxProps {
@@ -16,7 +16,7 @@ export function EventPropertiesCombobox({
   event,
 }: EventPropertiesComboboxProps) {
   const dispatch = useDispatch();
-  const { projectId } = useAppParams();
+  const { projectId } = useChartContext();
 
   const query = api.chart.properties.useQuery(
     {

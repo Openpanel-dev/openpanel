@@ -42,6 +42,9 @@ const modals = {
   EditReport: dynamic(() => import('./EditReport'), {
     loading: Loading,
   }),
+  ShareOverviewModal: dynamic(() => import('./ShareOverviewModal'), {
+    loading: Loading,
+  }),
 };
 
 const emitter = mitt<{

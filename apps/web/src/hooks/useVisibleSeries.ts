@@ -1,19 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+'use client';
+
+import { useMemo, useState } from 'react';
 import type { IChartData } from '@/app/_trpc/client';
 
 export type IVisibleSeries = ReturnType<typeof useVisibleSeries>['series'];
 export function useVisibleSeries(data: IChartData, limit?: number | undefined) {
   const max = limit ?? 5;
-  const [visibleSeries, setVisibleSeries] = useState<string[]>([]);
-  const ref = useRef(false);
-  useEffect(() => {
-    if (!ref.current && data) {
-      setVisibleSeries(
-        data?.series?.slice(0, max).map((serie) => serie.name) ?? []
-      );
-      // ref.current = true;
-    }
-  }, [data, max]);
+  const [visibleSeries, setVisibleSeries] = useState<string[]>(
+    data?.series?.slice(0, max).map((serie) => serie.name) ?? []
+  );
 
   return useMemo(() => {
     return {

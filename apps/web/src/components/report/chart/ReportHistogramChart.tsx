@@ -19,9 +19,16 @@ interface ReportHistogramChartProps {
   interval: IInterval;
 }
 
-function BarHover(props: any) {
+function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
   const bg = theme?.colors?.slate?.['200'] as string;
-  return <rect {...props} rx="8" fill={bg} fill-opacity={0.5} />;
+  return (
+    <rect
+      {...{ x, y, width, height, top, left, right, bottom }}
+      rx="8"
+      fill={bg}
+      fillOpacity={0.5}
+    />
+  );
 }
 
 export function ReportHistogramChart({
@@ -38,7 +45,7 @@ export function ReportHistogramChart({
     <>
       <div
         className={cn(
-          'max-sm:-mx-3',
+          'max-sm:-mx-3 aspect-video w-full max-h-[400px] min-h-[200px]',
           editMode && 'border border-border bg-white rounded-md p-4'
         )}
       >

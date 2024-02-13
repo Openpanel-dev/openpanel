@@ -8,8 +8,10 @@ import { Combobox } from '../ui/combobox';
 import { Label } from '../ui/label';
 import { useOverviewOptions } from './useOverviewOptions';
 
-export function OverviewFilters() {
-  const { projectId } = useAppParams();
+interface OverviewFiltersProps {
+  projectId: string;
+}
+export function OverviewFilters({ projectId }: OverviewFiltersProps) {
   const options = useOverviewOptions();
 
   const { data: referrers } = api.chart.values.useQuery({

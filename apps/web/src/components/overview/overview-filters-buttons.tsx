@@ -20,6 +20,28 @@ export function OverviewFiltersButtons() {
           <strong>{options.referrer}</strong>
         </Button>
       )}
+      {options.referrerName && (
+        <Button
+          size="sm"
+          variant="outline"
+          icon={X}
+          onClick={() => options.setReferrerName(null)}
+        >
+          <span className="mr-1">Referrer name is</span>
+          <strong>{options.referrerName}</strong>
+        </Button>
+      )}
+      {options.referrerType && (
+        <Button
+          size="sm"
+          variant="outline"
+          icon={X}
+          onClick={() => options.setReferrerType(null)}
+        >
+          <span className="mr-1">Referrer type is</span>
+          <strong>{options.referrerType}</strong>
+        </Button>
+      )}
       {options.device && (
         <Button
           size="sm"

@@ -1,4 +1,8 @@
-import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '@/server/api/trpc';
 import type { IChartEvent, IChartInput, IChartRange } from '@/types';
 import { getDaysOldDate } from '@/utils/date';
 import { average, max, min, round, sum } from '@/utils/math';
@@ -103,7 +107,8 @@ export const chartRouter = createTRPCRouter({
       )(properties);
     }),
 
-  values: protectedProcedure
+  // TODO: Make this private
+  values: publicProcedure
     .input(
       z.object({
         event: z.string(),
@@ -135,7 +140,8 @@ export const chartRouter = createTRPCRouter({
       };
     }),
 
-  chart: protectedProcedure.input(zChartInput).query(async ({ input }) => {
+  // TODO: Make this private
+  chart: publicProcedure.input(zChartInput).query(async ({ input }) => {
     const current = getDatesFromRange(input.range);
     let diff = 0;
 
@@ -313,6 +319,11 @@ export const chartRouter = createTRPCRouter({
       }
     });
 
+    // await new Promise((res) => {
+    //   setTimeout(() => {
+    //     res();
+    //   }, 100);
+    // });
     return final;
   }),
 });
@@ -329,8 +340,8 @@ function getPreviousMetric(
     ((current > previous
       ? current / previous
       : current < previous
-      ? previous / current
-      : 0) -
+        ? previous / current
+        : 0) -
       1) *
       100,
     1
@@ -345,8 +356,8 @@ function getPreviousMetric(
       current > previous
         ? 'positive'
         : current < previous
-        ? 'negative'
-        : 'neutral',
+          ? 'negative'
+          : 'neutral',
     value: previous,
   };
 }

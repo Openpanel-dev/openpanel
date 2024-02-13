@@ -33,7 +33,7 @@ export function WidgetButtons({
 }: WidgetHeadProps) {
   const container = useRef<HTMLDivElement>(null);
   const sizes = useRef<number[]>([]);
-  const [slice, setSlice] = useState(Children.count(children) - 1);
+  const [slice, setSlice] = useState(-1);
   const gap = 8;
 
   const handleResize = useThrottle(() => {

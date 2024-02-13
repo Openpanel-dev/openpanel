@@ -1,35 +1,23 @@
-import { useMemo, useState } from 'react';
-import type { IChartData, RouterOutputs } from '@/app/_trpc/client';
-import { ColorSquare } from '@/components/ColorSquare';
+'use client';
+
+import { useMemo } from 'react';
+import type { IChartData } from '@/app/_trpc/client';
 import { Progress } from '@/components/ui/progress';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
 import { NOT_SET_VALUE } from '@/utils/constants';
 import { getChartColor } from '@/utils/theme';
-import { createColumnHelper } from '@tanstack/react-table';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
+import { SerieIcon } from './SerieIcon';
 
 interface ReportBarChartProps {
   data: IChartData;
 }
 
 export function ReportBarChart({ data }: ReportBarChartProps) {
-  const { editMode, metric, unit, onClick } = useChartContext();
+  const { editMode, metric, onClick } = useChartContext();
   const number = useNumber();
   const series = useMemo(
     () => (editMode ? data.series : data.series.slice(0, 20)),
@@ -62,7 +50,10 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
             )}
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >
-            <div className="flex-1 break-all">{serie.name}</div>
+            <div className="flex-1 break-all flex items-center gap-2">
+              <SerieIcon name={serie.name} />
+              {serie.name}
+            </div>
             <div className="flex-shrink-0 flex w-1/4 gap-4 items-center justify-end">
               <PreviousDiffIndicator {...serie.metrics.previous[metric]} />
               <div className="font-bold">

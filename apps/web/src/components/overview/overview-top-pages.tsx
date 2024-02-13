@@ -10,14 +10,17 @@ import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
-export default function OverviewTopPages() {
+interface OverviewTopPagesProps {
+  projectId: string;
+}
+export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
   const { filters, interval, range, previous, setPage } = useOverviewOptions();
   const [widget, setWidget, widgets] = useOverviewWidget('pages', {
     top: {
       title: 'Top pages',
       btn: 'Top pages',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -45,7 +48,7 @@ export default function OverviewTopPages() {
       title: 'Entry Pages',
       btn: 'Entries',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -73,7 +76,7 @@ export default function OverviewTopPages() {
       title: 'Exit Pages',
       btn: 'Exits',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',

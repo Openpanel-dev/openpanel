@@ -1,3 +1,5 @@
+'use client';
+
 import type { IChartData } from '@/app/_trpc/client';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { cn } from '@/utils/cn';

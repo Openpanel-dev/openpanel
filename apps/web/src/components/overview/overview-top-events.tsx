@@ -10,14 +10,19 @@ import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
-export default function OverviewTopEvents() {
+interface OverviewTopEventsProps {
+  projectId: string;
+}
+export default function OverviewTopEvents({
+  projectId,
+}: OverviewTopEventsProps) {
   const { filters, interval, range, previous } = useOverviewOptions();
   const [widget, setWidget, widgets] = useOverviewWidget('ev', {
     all: {
       title: 'Top events',
       btn: 'All',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',

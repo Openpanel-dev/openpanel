@@ -1,12 +1,12 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { RouterOutputs } from '@/app/_trpc/client';
 import { api } from '@/app/_trpc/client';
-import { useAppParams } from '@/hooks/useAppParams';
 import type { IChartInput } from '@/types';
 
 import { ChartEmpty } from './ChartEmpty';
+import { ChartLoading } from './ChartLoading';
 import { withChartProivder } from './ChartProvider';
 import { ReportAreaChart } from './ReportAreaChart';
 import { ReportBarChart } from './ReportBarChart';
@@ -33,9 +33,8 @@ export const Chart = memo(
     formula,
     unit,
     metric,
-    initialData,
+    projectId,
   }: ReportChartProps) {
-    const params = useAppParams();
     const [data] = api.chart.chart.useSuspenseQuery(
       {
         // dont send lineType since it does not need to be sent
@@ -48,7 +47,7 @@ export const Chart = memo(
         range,
         startDate: null,
         endDate: null,
-        projectId: params.projectId,
+        projectId,
         previous,
         formula,
         unit,
@@ -56,7 +55,6 @@ export const Chart = memo(
       },
       {
         keepPreviousData: true,
-        initialData,
       }
     );
 

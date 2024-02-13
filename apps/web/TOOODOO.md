@@ -1,0 +1,6 @@
+- new org
+- create project
+- all trpc mutations seems to break in prod
+- top event convertions
+  - create events_meta (name, color, icon)
+  - edit event convertion

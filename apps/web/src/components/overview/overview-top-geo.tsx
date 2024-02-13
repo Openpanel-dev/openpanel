@@ -10,7 +10,10 @@ import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
-export default function OverviewTopGeo() {
+interface OverviewTopGeoProps {
+  projectId: string;
+}
+export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
   const { filters, interval, range, previous, setCountry, setRegion, setCity } =
     useOverviewOptions();
   const [widget, setWidget, widgets] = useOverviewWidget('geo', {
@@ -18,7 +21,7 @@ export default function OverviewTopGeo() {
       title: 'Map',
       btn: 'Map',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -46,7 +49,7 @@ export default function OverviewTopGeo() {
       title: 'Top countries',
       btn: 'Countries',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -74,7 +77,7 @@ export default function OverviewTopGeo() {
       title: 'Top regions',
       btn: 'Regions',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -102,7 +105,7 @@ export default function OverviewTopGeo() {
       title: 'Top cities',
       btn: 'Cities',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',

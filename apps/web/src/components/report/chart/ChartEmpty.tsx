@@ -22,7 +22,7 @@ export function ChartEmpty() {
   return (
     <div
       className={
-        'aspect-video w-full max-h-[400px] flex justify-center items-center'
+        'aspect-video w-full max-h-[400px] min-h-[200px] flex justify-center items-center'
       }
     >
       No data

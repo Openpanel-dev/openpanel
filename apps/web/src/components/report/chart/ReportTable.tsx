@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
 import { Pagination, usePagination } from '@/components/Pagination';

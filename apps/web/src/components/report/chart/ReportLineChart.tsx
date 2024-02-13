@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/AutoSizer';
@@ -41,7 +43,7 @@ export function ReportLineChart({
     <>
       <div
         className={cn(
-          'max-sm:-mx-3',
+          'max-sm:-mx-3 aspect-video w-full max-h-[400px] min-h-[200px]',
           editMode && 'border border-border bg-white rounded-md p-4'
         )}
       >

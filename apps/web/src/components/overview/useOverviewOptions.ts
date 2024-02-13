@@ -30,12 +30,22 @@ export function useOverviewOptions() {
   );
 
   // Filters
+  const [page, setPage] = useQueryState(
+    'page',
+    parseAsString.withOptions(nuqsOptions)
+  );
+
+  // Referrer
   const [referrer, setReferrer] = useQueryState(
     'referrer',
     parseAsString.withOptions(nuqsOptions)
   );
-  const [page, setPage] = useQueryState(
-    'page',
+  const [referrerName, setReferrerName] = useQueryState(
+    'referrer_name',
+    parseAsString.withOptions(nuqsOptions)
+  );
+  const [referrerType, setReferrerType] = useQueryState(
+    'referrer_type',
     parseAsString.withOptions(nuqsOptions)
   );
 
@@ -99,14 +109,6 @@ export function useOverviewOptions() {
 
   const filters = useMemo(() => {
     const filters: IChartInput['events'][number]['filters'] = [];
-    if (referrer) {
-      filters.push({
-        id: 'referrer',
-        operator: 'is',
-        name: 'referrer',
-        value: [referrer],
-      });
-    }
 
     if (page) {
       filters.push({
@@ -123,6 +125,33 @@ export function useOverviewOptions() {
         operator: 'is',
         name: 'device',
         value: [device],
+      });
+    }
+
+    if (referrer) {
+      filters.push({
+        id: 'referrer',
+        operator: 'is',
+        name: 'referrer',
+        value: [referrer],
+      });
+    }
+
+    if (referrerName) {
+      filters.push({
+        id: 'referrer_name',
+        operator: 'is',
+        name: 'referrer_name',
+        value: [referrerName],
+      });
+    }
+
+    if (referrerType) {
+      filters.push({
+        id: 'referrer_type',
+        operator: 'is',
+        name: 'referrer_type',
+        value: [referrerType],
       });
     }
 
@@ -236,9 +265,11 @@ export function useOverviewOptions() {
 
     return filters;
   }, [
-    referrer,
     page,
     device,
+    referrer,
+    referrerName,
+    referrerType,
     utmSource,
     utmMedium,
     utmCampaign,
@@ -260,14 +291,20 @@ export function useOverviewOptions() {
     setRange,
     metric,
     setMetric,
-    referrer,
-    setReferrer,
     page,
     setPage,
 
     // Computed
     interval,
     filters,
+
+    // Refs
+    referrer,
+    setReferrer,
+    referrerName,
+    setReferrerName,
+    referrerType,
+    setReferrerType,
 
     // UTM
     utmSource,

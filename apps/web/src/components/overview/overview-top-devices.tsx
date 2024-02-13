@@ -10,7 +10,12 @@ import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
-export default function OverviewTopDevices() {
+interface OverviewTopDevicesProps {
+  projectId: string;
+}
+export default function OverviewTopDevices({
+  projectId,
+}: OverviewTopDevicesProps) {
   const {
     filters,
     interval,
@@ -18,19 +23,15 @@ export default function OverviewTopDevices() {
     previous,
     setBrowser,
     setBrowserVersion,
-    browser,
-    browserVersion,
     setOS,
     setOSVersion,
-    os,
-    osVersion,
   } = useOverviewOptions();
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     devices: {
       title: 'Top devices',
       btn: 'Devices',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'user',
@@ -58,7 +59,7 @@ export default function OverviewTopDevices() {
       title: 'Top browser',
       btn: 'Browser',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'user',
@@ -86,7 +87,7 @@ export default function OverviewTopDevices() {
       title: 'Top Browser Version',
       btn: 'Browser Version',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'user',
@@ -114,7 +115,7 @@ export default function OverviewTopDevices() {
       title: 'Top OS',
       btn: 'OS',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'user',
@@ -142,7 +143,7 @@ export default function OverviewTopDevices() {
       title: 'Top OS version',
       btn: 'OS Version',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'user',

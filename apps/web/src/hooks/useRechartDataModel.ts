@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo } from 'react';
 import type { IChartData, IChartSerieDataItem } from '@/app/_trpc/client';
 import { getChartColor } from '@/utils/theme';

@@ -10,7 +10,12 @@ import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
-export default function OverviewTopSources() {
+interface OverviewTopSourcesProps {
+  projectId: string;
+}
+export default function OverviewTopSources({
+  projectId,
+}: OverviewTopSourcesProps) {
   const {
     filters,
     interval,
@@ -22,13 +27,43 @@ export default function OverviewTopSources() {
     setUtmCampaign,
     setUtmTerm,
     setUtmContent,
+    setReferrerName,
+    setReferrerType,
   } = useOverviewOptions();
   const [widget, setWidget, widgets] = useOverviewWidget('sources', {
     all: {
       title: 'Top sources',
       btn: 'All',
       chart: {
-        projectId: '',
+        projectId,
+        events: [
+          {
+            segment: 'event',
+            filters: filters,
+            id: 'A',
+            name: 'session_start',
+          },
+        ],
+        breakdowns: [
+          {
+            id: 'A',
+            name: 'referrer_name',
+          },
+        ],
+        chartType: 'bar',
+        lineType: 'monotone',
+        interval: interval,
+        name: 'Top groups',
+        range: range,
+        previous: previous,
+        metric: 'sum',
+      },
+    },
+    domain: {
+      title: 'Top urls',
+      btn: 'URLs',
+      chart: {
+        projectId,
         events: [
           {
             segment: 'event',
@@ -52,11 +87,39 @@ export default function OverviewTopSources() {
         metric: 'sum',
       },
     },
+    type: {
+      title: 'Top types',
+      btn: 'Types',
+      chart: {
+        projectId,
+        events: [
+          {
+            segment: 'event',
+            filters: filters,
+            id: 'A',
+            name: 'session_start',
+          },
+        ],
+        breakdowns: [
+          {
+            id: 'A',
+            name: 'referrer_type',
+          },
+        ],
+        chartType: 'bar',
+        lineType: 'monotone',
+        interval: interval,
+        name: 'Top types',
+        range: range,
+        previous: previous,
+        metric: 'sum',
+      },
+    },
     utm_source: {
       title: 'UTM Source',
       btn: 'Source',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -84,7 +147,7 @@ export default function OverviewTopSources() {
       title: 'UTM Medium',
       btn: 'Medium',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -112,7 +175,7 @@ export default function OverviewTopSources() {
       title: 'UTM Campaign',
       btn: 'Campaign',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -140,7 +203,7 @@ export default function OverviewTopSources() {
       title: 'UTM Term',
       btn: 'Term',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -168,7 +231,7 @@ export default function OverviewTopSources() {
       title: 'UTM Content',
       btn: 'Content',
       chart: {
-        projectId: '',
+        projectId,
         events: [
           {
             segment: 'event',
@@ -220,7 +283,15 @@ export default function OverviewTopSources() {
               onClick={(item) => {
                 switch (widget.key) {
                   case 'all':
+                    setReferrerName(item.name);
+                    setWidget('domain');
+                    break;
+                  case 'domain':
                     setReferrer(item.name);
+                    break;
+                  case 'type':
+                    setReferrerType(item.name);
+                    setWidget('domain');
                     break;
                   case 'utm_source':
                     setUtmSource(item.name);

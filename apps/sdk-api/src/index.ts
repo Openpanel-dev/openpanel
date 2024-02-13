@@ -1,6 +1,5 @@
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
-import { FastifySSEPlugin } from 'fastify-sse-v2';
 import pino from 'pino';
 
 import { redisPub } from '@mixan/redis';
@@ -29,7 +28,6 @@ const startServer = async () => {
       origin: '*',
     });
 
-    fastify.register(FastifySSEPlugin);
     fastify.decorateRequest('projectId', '');
     fastify.register(eventRouter, { prefix: '/event' });
     fastify.register(profileRouter, { prefix: '/profile' });

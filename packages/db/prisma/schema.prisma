@@ -19,10 +19,11 @@ model Project {
   profiles          Profile[]
   clients           Client[]
 
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @default(now()) @updatedAt
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @default(now()) @updatedAt
   reports    Report[]
   dashboards Dashboard[]
+  share      ShareOverview?
 
   @@map("projects")
 }
@@ -150,4 +151,17 @@ model Waitlist {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("waitlist")
+}
+
+model ShareOverview {
+  id                String   @unique
+  project_id        String   @unique
+  project           Project  @relation(fields: [project_id], references: [id])
+  organization_slug String
+  public            Boolean  @default(false)
+  password          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  @@map("shares")
 }

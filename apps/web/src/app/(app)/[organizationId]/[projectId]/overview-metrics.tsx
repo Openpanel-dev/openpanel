@@ -1,45 +1,27 @@
 'use client';
 
 import { Suspense } from 'react';
-import { OverviewFilters } from '@/components/overview/overview-filters';
-import { OverviewFiltersButtons } from '@/components/overview/overview-filters-buttons';
-import OverviewTopDevices from '@/components/overview/overview-top-devices';
-import OverviewTopEvents from '@/components/overview/overview-top-events';
-import OverviewTopGeo from '@/components/overview/overview-top-geo';
-import OverviewTopPages from '@/components/overview/overview-top-pages';
-import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { WidgetHead } from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Chart } from '@/components/report/chart';
 import { ChartLoading } from '@/components/report/chart/ChartLoading';
 import { MetricCardLoading } from '@/components/report/chart/MetricCard';
-import { ReportRange } from '@/components/report/ReportRange';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Widget, WidgetBody } from '@/components/Widget';
 import type { IChartInput } from '@/types';
 import { cn } from '@/utils/cn';
-import { Eye, FilterIcon, Globe2Icon, LockIcon, X } from 'lucide-react';
-import Link from 'next/link';
 
-import { StickyBelowHeader } from './layout-sticky-below-header';
-import { LiveCounter } from './live-counter';
+interface OverviewMetricsProps {
+  projectId: string;
+}
 
-export default function OverviewMetrics() {
-  const { previous, range, setRange, interval, metric, setMetric, filters } =
+export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
+  const { previous, range, interval, metric, setMetric, filters } =
     useOverviewOptions();
 
   const reports = [
     {
       id: 'Unique visitors',
-      projectId: '', // TODO: Remove
+      projectId,
       events: [
         {
           segment: 'user',
@@ -60,7 +42,7 @@ export default function OverviewMetrics() {
     },
     {
       id: 'Total sessions',
-      projectId: '', // TODO: Remove
+      projectId,
       events: [
         {
           segment: 'event',
@@ -81,7 +63,7 @@ export default function OverviewMetrics() {
     },
     {
       id: 'Total pageviews',
-      projectId: '', // TODO: Remove
+      projectId,
       events: [
         {
           segment: 'event',
@@ -102,7 +84,7 @@ export default function OverviewMetrics() {
     },
     {
       id: 'Views per session',
-      projectId: '', // TODO: Remove
+      projectId,
       events: [
         {
           segment: 'user_average',
@@ -123,7 +105,7 @@ export default function OverviewMetrics() {
     },
     {
       id: 'Bounce rate',
-      projectId: '', // TODO: Remove
+      projectId,
       events: [
         {
           segment: 'event',
@@ -161,7 +143,7 @@ export default function OverviewMetrics() {
     },
     {
       id: 'Visit duration',
-      projectId: '', // TODO: Remove
+      projectId,
       events: [
         {
           segment: 'property_average',
@@ -196,90 +178,37 @@ export default function OverviewMetrics() {
   const selectedMetric = reports[metric]!;
 
   return (
-    <Sheet>
-      <StickyBelowHeader className="p-4 flex gap-2 justify-between">
-        <div className="flex gap-2">
-          <ReportRange value={range} onChange={(value) => setRange(value)} />
-          <SheetTrigger asChild>
-            <Button variant="outline" responsive icon={FilterIcon}>
-              Filters
-            </Button>
-          </SheetTrigger>
-        </div>
-        <div className="flex gap-2">
-          <LiveCounter initialCount={0} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button icon={Globe2Icon} responsive>
-                Public
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuGroup>
-                <DropdownMenuItem asChild>
-                  <Link
-                    href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL}/share/project/4e2798cb-e255-4e9d-960d-c9ad095aabd7`}
-                  >
-                    <Eye size={16} className="mr-2" />
-                    View
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={(event) => {}}>
-                  <LockIcon size={16} className="mr-2" />
-                  Make private
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </StickyBelowHeader>
-
-      <div className="p-4 flex gap-2 flex-wrap">
-        <OverviewFiltersButtons />
-      </div>
-      <div className="p-4 grid gap-4 grid-cols-6">
-        {reports.map((report, index) => (
-          <button
-            key={index}
-            className="relative col-span-6 md:col-span-3 lg:col-span-2 group"
-            onClick={() => {
-              setMetric(index);
-            }}
-          >
-            <Suspense fallback={<MetricCardLoading />}>
-              <Chart hideID {...report} />
-            </Suspense>
-            {/* add active border */}
-            <div
-              className={cn(
-                'transition-opacity top-0 left-0 right-0 bottom-0 absolute rounded-md w-full h-full border ring-1 border-chart-0 ring-chart-0',
-                metric === index ? 'opacity-100' : 'opacity-0'
-              )}
-            />
-          </button>
-        ))}
-        <Widget className="col-span-6">
-          <WidgetHead>
-            <div className="title">{selectedMetric.events[0]?.displayName}</div>
-          </WidgetHead>
-          <WidgetBody>
-            <Suspense fallback={<ChartLoading />}>
-              <Chart hideID {...selectedMetric} chartType="linear" />
-            </Suspense>
-          </WidgetBody>
-        </Widget>
-        <OverviewTopSources />
-        <OverviewTopPages />
-        <OverviewTopDevices />
-        <OverviewTopEvents />
-        <div className="col-span-6">
-          <OverviewTopGeo />
-        </div>
-      </div>
-
-      <SheetContent className="!max-w-lg w-full" side="right">
-        <OverviewFilters />
-      </SheetContent>
-    </Sheet>
+    <>
+      {reports.map((report, index) => (
+        <button
+          key={index}
+          className="relative col-span-6 md:col-span-3 lg:col-span-2 group"
+          onClick={() => {
+            setMetric(index);
+          }}
+        >
+          <Suspense fallback={<MetricCardLoading />}>
+            <Chart hideID {...report} />
+          </Suspense>
+          <div
+            className={cn(
+              'transition-opacity top-0 left-0 right-0 bottom-0 absolute rounded-md w-full h-full border ring-1 border-chart-0 ring-chart-0',
+              metric === index ? 'opacity-100' : 'opacity-0'
+            )}
+          />
+          {/* add active border */}
+        </button>
+      ))}
+      <Widget className="col-span-6">
+        <WidgetHead>
+          <div className="title">{selectedMetric.events[0]?.displayName}</div>
+        </WidgetHead>
+        <WidgetBody>
+          <Suspense fallback={<ChartLoading />}>
+            <Chart hideID {...selectedMetric} chartType="linear" />
+          </Suspense>
+        </WidgetBody>
+      </Widget>
+    </>
   );
 }

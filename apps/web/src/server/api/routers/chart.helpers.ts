@@ -226,10 +226,9 @@ export async function getChartData(payload: IGetChartDataInput) {
   return Object.keys(series).map((key) => {
     // If we have breakdowns, we want to use the breakdown key as the legend
     // But only if it successfully broke it down, otherwise we use the getEventLabel
-    const serieName =
-      payload.breakdowns.length && !alphabetIds.includes(key as 'A')
-        ? key
-        : getEventLegend(payload.event);
+    const isBreakdown =
+      payload.breakdowns.length && !alphabetIds.includes(key as 'A');
+    const serieName = isBreakdown ? key : getEventLegend(payload.event);
     const data =
       payload.chartType === 'area' ||
       payload.chartType === 'linear' ||

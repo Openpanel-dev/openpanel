@@ -11,12 +11,12 @@
   },
   "dependencies": {
     "@fastify/cors": "^9.0.0",
+    "@fastify/websocket": "^8.3.1",
     "@mixan/common": "workspace:*",
     "@mixan/db": "workspace:*",
     "@mixan/queue": "workspace:*",
     "@mixan/redis": "workspace:*",
     "fastify": "^4.25.2",
-    "fastify-sse-v2": "^3.1.2",
     "pino": "^8.17.2",
     "ramda": "^0.29.1",
     "ua-parser-js": "^1.0.37"
@@ -28,6 +28,7 @@
     "@mixan/types": "workspace:*",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",
+    "@types/ws": "^8.5.10",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsup": "^7.2.0",

@@ -1,96 +1,80 @@
-import { combine } from '@/sse/combine';
-import { redisMessageIterator } from '@/sse/redis-message-iterator';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type * as WebSocket from 'ws';
 
 import { getSafeJson } from '@mixan/common';
 import type { IServiceCreateEventPayload } from '@mixan/db';
-import { chQuery, getEvents } from '@mixan/db';
+import { getEvents, getLiveVisitors } from '@mixan/db';
 import { redis, redisPub, redisSub } from '@mixan/redis';
 
-async function getLiveCount(projectId: string) {
-  const keys = await redis.keys(`live:event:${projectId}:*`);
-  return keys.length;
-}
-
-function getLiveEventInfo(key: string) {
+export function getLiveEventInfo(key: string) {
   return key.split(':').slice(2) as [string, string];
 }
 
-export async function test(request: FastifyRequest, reply: FastifyReply) {
+export async function test(
+  req: FastifyRequest<{
+    Params: {
+      projectId: string;
+    };
+  }>,
+  reply: FastifyReply
+) {
   const [event] = await getEvents(
-    `SELECT * FROM events LIMIT 1 OFFSET ${Math.floor(Math.random() * 1000)}`
+    `SELECT * FROM events WHERE project_id = '${req.params.projectId}' AND name = 'screen_view' LIMIT 1`
   );
   if (!event) {
     return reply.status(404).send('No event found');
   }
   redisPub.publish('event', JSON.stringify(event));
-  redis.set(`live:event:${event.projectId}:${event.profileId}`, '', 'EX', 10);
-  reply.status(202).send('OK');
+  redis.set(
+    `live:event:${event.projectId}:${Math.random() * 1000}`,
+    '',
+    'EX',
+    10
+  );
+  reply.status(202).send(event);
 }
 
-export function events(
-  request: FastifyRequest<{
-    Params: { projectId: string };
-  }>,
-  reply: FastifyReply
+export function wsVisitors(
+  connection: {
+    socket: WebSocket;
+  },
+  req: FastifyRequest<{
+    Params: {
+      projectId: string;
+    };
+  }>
 ) {
-  const reqProjectId = request.params.projectId;
+  const { params } = req;
 
-  // Subscribe
   redisSub.subscribe('event');
-  redisSub.psubscribe('__key*:*');
-  const listeners: ((...args: any[]) => void)[] = [];
+  redisSub.psubscribe('__key*:expired');
 
-  const incomingEvents = redisMessageIterator({
-    listenOn: 'message',
-    async transformer(message) {
+  const message = (channel: string, message: string) => {
+    if (channel === 'event') {
       const event = getSafeJson<IServiceCreateEventPayload>(message);
-      if (event && event.projectId === reqProjectId) {
-        return {
-          visitors: await getLiveCount(event.projectId),
-          event,
-        };
-      }
-      return null;
-    },
-    registerListener(fn) {
-      listeners.push(fn);
-    },
-  });
-
-  const expiredEvents = redisMessageIterator({
-    listenOn: 'pmessage',
-    async transformer(message) {
-      // message = live:event:${projectId}:${profileId}
-      const [projectId] = getLiveEventInfo(message);
-      if (projectId && projectId === reqProjectId) {
-        return {
-          visitors: await getLiveCount(projectId),
-          event: null as null | IServiceCreateEventPayload,
-        };
-      }
-      return null;
-    },
-    registerListener(fn) {
-      listeners.push(fn);
-    },
-  });
-
-  async function* consumeMessages() {
-    for await (const result of combine([incomingEvents, expiredEvents])) {
-      if (result.data) {
-        yield {
-          data: JSON.stringify(result.data),
-        };
+      if (event?.projectId === params.projectId) {
+        getLiveVisitors(params.projectId).then((count) => {
+          connection.socket.send(String(count));
+        });
       }
     }
-  }
+  };
+  const pmessage = (pattern: string, channel: string, message: string) => {
+    const [projectId] = getLiveEventInfo(message);
+    if (projectId && projectId === params.projectId) {
+      getLiveVisitors(params.projectId).then((count) => {
+        connection.socket.send(String(count));
+      });
+    }
+  };
 
-  reply.sse(consumeMessages());
+  redisSub.on('message', message);
+  redisSub.on('pmessage', pmessage);
 
-  reply.raw.on('close', () => {
+  connection.socket.on('close', () => {
     redisSub.unsubscribe('event');
     redisSub.punsubscribe('__key*:expired');
-    listeners.forEach((listener) => redisSub.off('message', listener));
+    redisSub.off('message', message);
+    redisSub.off('pmessage', pmessage);
   });
 }

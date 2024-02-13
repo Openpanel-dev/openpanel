@@ -79,3 +79,10 @@ export const zInviteUser = z.object({
   organizationSlug: z.string(),
   role: z.enum(['admin', 'org:member']),
 });
+
+export const zShareOverview = z.object({
+  organizationId: z.string(),
+  projectId: z.string(),
+  password: z.string().nullable(),
+  public: z.boolean(),
+});

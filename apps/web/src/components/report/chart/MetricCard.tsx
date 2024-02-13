@@ -1,3 +1,5 @@
+'use client';
+
 import type { IChartData } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { useNumber } from '@/hooks/useNumerFormatter';

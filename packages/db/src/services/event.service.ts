@@ -92,6 +92,11 @@ interface GetEventsOptions {
   profile?: boolean | Prisma.ProfileSelect;
 }
 
+export async function getLiveVisitors(projectId: string) {
+  const keys = await redis.keys(`live:event:${projectId}:*`);
+  return keys.length;
+}
+
 export async function getEvents(sql: string, options: GetEventsOptions = {}) {
   const events = await chQuery<IClickhouseEvent>(sql);
   if (options.profile) {
@@ -186,7 +191,12 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
   });
 
   redisPub.publish('event', JSON.stringify(transformEvent(event)));
-  redis.set(`live:event:${event.project_id}:${event.profile_id}`, '', 'EX', 10);
+  redis.set(
+    `live:event:${event.project_id}:${event.profile_id}`,
+    '',
+    'EX',
+    60 * 5
+  );
 
   return {
     ...res,
