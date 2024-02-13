@@ -6,12 +6,12 @@ import { Dropdown } from '@/components/Dropdown';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
+import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartEvent } from '@/types';
 import { GanttChart, GanttChartIcon, Users } from 'lucide-react';
 
-import { useChartContext } from '../chart/ChartProvider';
 import {
   addEvent,
   changeEvent,
@@ -28,7 +28,8 @@ export function ReportEvents() {
   const previous = useSelector((state) => state.report.previous);
   const selectedEvents = useSelector((state) => state.report.events);
   const dispatch = useDispatch();
-  const { projectId } = useChartContext();
+  const { projectId } = useAppParams();
+
   const eventsQuery = api.chart.events.useQuery({
     projectId,
   });

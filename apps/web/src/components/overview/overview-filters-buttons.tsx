@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/utils/cn';
 import { X } from 'lucide-react';
 
 import { Button } from '../ui/button';
@@ -7,8 +8,10 @@ import { useOverviewOptions } from './useOverviewOptions';
 
 export function OverviewFiltersButtons() {
   const options = useOverviewOptions();
+  const activeFilter = options.filters.length > 0;
+
   return (
-    <>
+    <div className={cn('flex flex-wrap gap-2', activeFilter && 'px-4 pb-4')}>
       {options.referrer && (
         <Button
           size="sm"
@@ -196,6 +199,6 @@ export function OverviewFiltersButtons() {
           <strong>{options.osVersion}</strong>
         </Button>
       )}
-    </>
+    </div>
   );
 }

@@ -10,7 +10,7 @@ import { zChartInput } from '@/utils/validation';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
-import { chQuery } from '@mixan/db';
+import { chQuery, createSqlBuilder } from '@mixan/db';
 
 import { getChartData, withFormula } from './chart.helpers';
 
@@ -117,16 +117,20 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { event, property, projectId } }) => {
-      const sql = property.startsWith('properties.')
-        ? `SELECT distinct mapValues(mapExtractKeyLike(properties, '${property
-            .replace(/^properties\./, '')
-            .replace(
-              '.*.',
-              '.%.'
-            )}')) as values from events where name = '${event}' AND project_id = '${projectId}';`
-        : `SELECT ${property} as values from events where name = '${event}' AND project_id = '${projectId}';`;
+      const { sb, getSql } = createSqlBuilder();
+      sb.where.project_id = `project_id = '${projectId}'`;
+      if (event !== '*') {
+        sb.where.event = `name = '${event}'`;
+      }
+      if (property.startsWith('properties.')) {
+        sb.select.values = `distinct mapValues(mapExtractKeyLike(properties, '${property
+          .replace(/^properties\./, '')
+          .replace('.*.', '.%.')}')) as values`;
+      } else {
+        sb.select.values = `${property} as values`;
+      }
 
-      const events = await chQuery<{ values: string[] }>(sql);
+      const events = await chQuery<{ values: string[] }>(getSql());
 
       const values = pipe(
         (data: typeof events) => map(prop('values'), data),

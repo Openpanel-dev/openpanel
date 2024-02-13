@@ -2,6 +2,7 @@ import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import ServerLiveCounter from '@/components/overview/live-counter';
 import { OverviewFilters } from '@/components/overview/overview-filters';
 import { OverviewFiltersButtons } from '@/components/overview/overview-filters-buttons';
+import { OverviewLiveHistogram } from '@/components/overview/overview-live-histogram';
 import { OverviewShare } from '@/components/overview/overview-share';
 import OverviewTopDevices from '@/components/overview/overview-top-devices';
 import OverviewTopEvents from '@/components/overview/overview-top-events';
@@ -42,19 +43,22 @@ export default async function Page({
   return (
     <PageLayout title="Overview" organizationSlug={organizationId}>
       <Sheet>
-        <StickyBelowHeader className="p-4 flex gap-2 justify-between">
-          <div className="flex gap-2">
-            <OverviewReportRange />
-            <OverviewFilterSheetTrigger />
+        <StickyBelowHeader>
+          <div className="p-4 flex gap-2 justify-between">
+            <div className="flex gap-2">
+              <OverviewReportRange />
+              <OverviewFilterSheetTrigger />
+            </div>
+            <div className="flex gap-2">
+              <ServerLiveCounter projectId={projectId} />
+              <OverviewShare data={share} />
+            </div>
           </div>
-          <div className="flex gap-2">
-            <ServerLiveCounter projectId={projectId} />
-            <OverviewShare data={share} />
-          </div>
+          <OverviewFiltersButtons />
         </StickyBelowHeader>
         <div className="p-4 grid gap-4 grid-cols-6">
-          <div className="col-span-6 flex flex-wrap gap-2">
-            <OverviewFiltersButtons />
+          <div className="col-span-6">
+            <OverviewLiveHistogram projectId={projectId} />
           </div>
           <OverviewMetrics projectId={projectId} />
           <OverviewTopSources projectId={projectId} />

@@ -187,9 +187,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
             setMetric(index);
           }}
         >
-          <Suspense fallback={<MetricCardLoading />}>
-            <Chart hideID {...report} />
-          </Suspense>
+          <Chart hideID {...report} />
           <div
             className={cn(
               'transition-opacity top-0 left-0 right-0 bottom-0 absolute rounded-md w-full h-full border ring-1 border-chart-0 ring-chart-0',
@@ -204,14 +202,12 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           <div className="title">{selectedMetric.events[0]?.displayName}</div>
         </WidgetHead>
         <WidgetBody>
-          <Suspense fallback={<ChartLoading />}>
-            <Chart
-              key={selectedMetric.id}
-              hideID
-              {...selectedMetric}
-              chartType="linear"
-            />
-          </Suspense>
+          <Chart
+            key={selectedMetric.id}
+            hideID
+            {...selectedMetric}
+            chartType="linear"
+          />
         </WidgetBody>
       </Widget>
     </>

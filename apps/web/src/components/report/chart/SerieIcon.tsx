@@ -60,9 +60,9 @@ export function SerieIcon({ name, ...props }: SerieIconProps) {
     )) as LucideIcon;
   }
 
-  return (
+  return Icon ? (
     <div className="w-4 h-4 flex-shrink-0 relative [&_a]:!w-4 [&_a]:!h-4 [&_svg]:!rounded">
-      {Icon ? <Icon size={16} {...props} /> : null}
+      <Icon size={16} {...props} />
     </div>
-  );
+  ) : null;
 }

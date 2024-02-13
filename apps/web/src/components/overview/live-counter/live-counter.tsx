@@ -12,6 +12,8 @@ import dynamic from 'next/dynamic';
 import useWebSocket from 'react-use-websocket';
 import { toast } from 'sonner';
 
+import { useOverviewOptions } from '../useOverviewOptions';
+
 export interface LiveCounterProps {
   data: number;
   projectId: string;
@@ -25,6 +27,7 @@ const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
 const FIFTEEN_SECONDS = 1000 * 15;
 
 export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
+  const { setLiveHistogram } = useOverviewOptions();
   const ws = String(process.env.NEXT_PUBLIC_API_URL)
     .replace(/^https/, 'wss')
     .replace(/^http/, 'ws');
@@ -52,8 +55,11 @@ export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
 
   return (
     <Tooltip>
-      <TooltipTrigger>
-        <div className="border border-border rounded h-8 px-3 leading-none flex items-center font-medium gap-2">
+      <TooltipTrigger asChild>
+        <button
+          onClick={() => setLiveHistogram((p) => !p)}
+          className="border border-border rounded h-8 px-3 leading-none flex items-center font-medium gap-2"
+        >
           <div className="relative">
             <div
               className={cn(
@@ -80,10 +86,11 @@ export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
             animateToNumber={counter}
             locale="en"
           />
-        </div>
+        </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        {counter} unique visitors last 5 minutes
+        <p>{counter} unique visitors last 5 minutes</p>
+        <p>Click to see activity for the last 30 minutes</p>
       </TooltipContent>
     </Tooltip>
   );

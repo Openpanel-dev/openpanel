@@ -120,16 +120,14 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Suspense fallback={<ChartLoading />}>
-            <Chart
-              hideID
-              {...widget.chart}
-              previous={false}
-              onClick={(item) => {
-                setPage(item.name);
-              }}
-            />
-          </Suspense>
+          <Chart
+            hideID
+            {...widget.chart}
+            previous={false}
+            onClick={(item) => {
+              setPage(item.name);
+            }}
+          />
         </WidgetBody>
       </Widget>
     </>

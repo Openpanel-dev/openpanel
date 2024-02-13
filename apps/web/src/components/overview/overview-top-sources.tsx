@@ -275,43 +275,41 @@ export default function OverviewTopSources({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Suspense fallback={<ChartLoading />}>
-            <Chart
-              hideID
-              {...widget.chart}
-              previous={false}
-              onClick={(item) => {
-                switch (widget.key) {
-                  case 'all':
-                    setReferrerName(item.name);
-                    setWidget('domain');
-                    break;
-                  case 'domain':
-                    setReferrer(item.name);
-                    break;
-                  case 'type':
-                    setReferrerType(item.name);
-                    setWidget('domain');
-                    break;
-                  case 'utm_source':
-                    setUtmSource(item.name);
-                    break;
-                  case 'utm_medium':
-                    setUtmMedium(item.name);
-                    break;
-                  case 'utm_campaign':
-                    setUtmCampaign(item.name);
-                    break;
-                  case 'utm_term':
-                    setUtmTerm(item.name);
-                    break;
-                  case 'utm_content':
-                    setUtmContent(item.name);
-                    break;
-                }
-              }}
-            />
-          </Suspense>
+          <Chart
+            hideID
+            {...widget.chart}
+            previous={false}
+            onClick={(item) => {
+              switch (widget.key) {
+                case 'all':
+                  setReferrerName(item.name);
+                  setWidget('domain');
+                  break;
+                case 'domain':
+                  setReferrer(item.name);
+                  break;
+                case 'type':
+                  setReferrerType(item.name);
+                  setWidget('domain');
+                  break;
+                case 'utm_source':
+                  setUtmSource(item.name);
+                  break;
+                case 'utm_medium':
+                  setUtmMedium(item.name);
+                  break;
+                case 'utm_campaign':
+                  setUtmCampaign(item.name);
+                  break;
+                case 'utm_term':
+                  setUtmTerm(item.name);
+                  break;
+                case 'utm_content':
+                  setUtmContent(item.name);
+                  break;
+              }
+            }}
+          />
         </WidgetBody>
       </Widget>
     </>

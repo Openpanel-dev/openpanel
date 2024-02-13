@@ -74,9 +74,7 @@ export default function OverviewTopEvents({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Suspense fallback={<ChartLoading />}>
-            <Chart hideID {...widget.chart} previous={false} />
-          </Suspense>
+          <Chart hideID {...widget.chart} previous={false} />
         </WidgetBody>
       </Widget>
     </>

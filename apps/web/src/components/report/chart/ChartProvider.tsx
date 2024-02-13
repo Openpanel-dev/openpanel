@@ -3,6 +3,7 @@
 import {
   createContext,
   memo,
+  Suspense,
   useContext,
   useEffect,
   useMemo,
@@ -12,6 +13,7 @@ import type { IChartSerie } from '@/server/api/routers/chart';
 import type { IChartInput } from '@/types';
 
 import { ChartLoading } from './ChartLoading';
+import { MetricCardLoading } from './MetricCard';
 
 export interface ChartContextType extends IChartInput {
   editMode?: boolean;
@@ -47,10 +49,10 @@ export function ChartProvider({
     <ChartContext.Provider
       value={useMemo(
         () => ({
+          ...props,
           editMode: editMode ?? false,
           previous: previous ?? false,
           hideID: hideID ?? false,
-          ...props,
         }),
         [editMode, previous, hideID, props]
       )}
@@ -64,20 +66,34 @@ export function withChartProivder<ComponentProps>(
   WrappedComponent: React.FC<ComponentProps>
 ) {
   const WithChartProvider = (props: ComponentProps & ChartContextType) => {
-    const [mounted, setMounted] = useState(props.chartType === 'metric');
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
       setMounted(true);
     }, []);
 
     if (!mounted) {
-      return <ChartLoading />;
+      return props.chartType === 'metric' ? (
+        <MetricCardLoading />
+      ) : (
+        <ChartLoading />
+      );
     }
 
     return (
-      <ChartProvider {...props}>
-        <WrappedComponent {...props} />
-      </ChartProvider>
+      <Suspense
+        fallback={
+          props.chartType === 'metric' ? (
+            <MetricCardLoading />
+          ) : (
+            <ChartLoading />
+          )
+        }
+      >
+        <ChartProvider {...props}>
+          <WrappedComponent {...props} />
+        </ChartProvider>
+      </Suspense>
     );
   };
 

@@ -107,6 +107,12 @@ export function useOverviewOptions() {
     parseAsString.withOptions(nuqsOptions)
   );
 
+  // Toggles
+  const [liveHistogram, setLiveHistogram] = useQueryState(
+    'live',
+    parseAsBoolean.withDefault(false).withOptions(nuqsOptions)
+  );
+
   const filters = useMemo(() => {
     const filters: IChartInput['events'][number]['filters'] = [];
 
@@ -337,5 +343,9 @@ export function useOverviewOptions() {
     setOS,
     osVersion,
     setOSVersion,
+
+    // Toggles
+    liveHistogram,
+    setLiveHistogram,
   };
 }

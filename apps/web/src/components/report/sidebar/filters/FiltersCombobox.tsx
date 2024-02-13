@@ -1,10 +1,10 @@
 import { api } from '@/app/_trpc/client';
 import { Combobox } from '@/components/ui/combobox';
+import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch } from '@/redux';
 import type { IChartEvent } from '@/types';
 import { FilterIcon } from 'lucide-react';
 
-import { useChartContext } from '../../chart/ChartProvider';
 import { changeEvent } from '../../reportSlice';
 
 interface FiltersComboboxProps {
@@ -13,7 +13,7 @@ interface FiltersComboboxProps {
 
 export function FiltersCombobox({ event }: FiltersComboboxProps) {
   const dispatch = useDispatch();
-  const { projectId } = useChartContext();
+  const { projectId } = useAppParams();
 
   const query = api.chart.properties.useQuery(
     {

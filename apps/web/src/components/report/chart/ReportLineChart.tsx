@@ -22,6 +22,7 @@ import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';
 import { ReportChartTooltip } from './ReportChartTooltip';
 import { ReportTable } from './ReportTable';
+import { ResponsiveContainer } from './ResponsiveContainer';
 
 interface ReportLineChartProps {
   data: IChartData;
@@ -41,72 +42,61 @@ export function ReportLineChart({
 
   return (
     <>
-      <div
-        className={cn(
-          'max-sm:-mx-3 aspect-video w-full max-h-[300px] min-h-[200px]',
-          editMode && 'border border-border bg-white rounded-md p-4'
-        )}
-      >
-        <AutoSizer disableHeight>
-          {({ width }) => (
-            <LineChart
-              width={width}
-              height={Math.min(Math.max(width * 0.5625, 250), 300)}
-              data={rechartData}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                horizontal={true}
-                vertical={false}
-              />
-              <YAxis
-                width={getYAxisWidth(data.metrics.max)}
-                fontSize={12}
-                axisLine={false}
-                tickLine={false}
-                allowDecimals={false}
-              />
-              <Tooltip content={<ReportChartTooltip />} />
-              <XAxis
-                axisLine={false}
-                fontSize={12}
-                dataKey="date"
-                tickFormatter={(m: string) => formatDate(m)}
-                tickLine={false}
-                allowDuplicatedCategory={false}
-              />
-              {series.map((serie) => {
-                return (
-                  <React.Fragment key={serie.name}>
+      <ResponsiveContainer>
+        {({ width, height }) => (
+          <LineChart width={width} height={height} data={rechartData}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={true}
+              vertical={false}
+            />
+            <YAxis
+              width={getYAxisWidth(data.metrics.max)}
+              fontSize={12}
+              axisLine={false}
+              tickLine={false}
+              allowDecimals={false}
+            />
+            <Tooltip content={<ReportChartTooltip />} />
+            <XAxis
+              axisLine={false}
+              fontSize={12}
+              dataKey="date"
+              tickFormatter={(m: string) => formatDate(m)}
+              tickLine={false}
+              allowDuplicatedCategory={false}
+            />
+            {series.map((serie) => {
+              return (
+                <React.Fragment key={serie.name}>
+                  <Line
+                    type={lineType}
+                    key={serie.name}
+                    name={serie.name}
+                    isAnimationActive={true}
+                    strokeWidth={2}
+                    dataKey={`${serie.index}:count`}
+                    stroke={getChartColor(serie.index)}
+                  />
+                  {previous && (
                     <Line
                       type={lineType}
-                      key={serie.name}
-                      name={serie.name}
+                      key={`${serie.name}:prev`}
+                      name={`${serie.name}:prev`}
                       isAnimationActive={true}
-                      strokeWidth={2}
-                      dataKey={`${serie.index}:count`}
+                      strokeWidth={1}
+                      dot={false}
+                      strokeDasharray={'6 6'}
+                      dataKey={`${serie.index}:prev:count`}
                       stroke={getChartColor(serie.index)}
                     />
-                    {previous && (
-                      <Line
-                        type={lineType}
-                        key={`${serie.name}:prev`}
-                        name={`${serie.name}:prev`}
-                        isAnimationActive={true}
-                        strokeWidth={1}
-                        dot={false}
-                        strokeDasharray={'6 6'}
-                        dataKey={`${serie.index}:prev:count`}
-                        stroke={getChartColor(serie.index)}
-                      />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </LineChart>
-          )}
-        </AutoSizer>
-      </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </LineChart>
+        )}
+      </ResponsiveContainer>
       {editMode && (
         <ReportTable
           data={data}

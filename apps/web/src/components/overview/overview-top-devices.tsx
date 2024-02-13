@@ -1,8 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
 import { Chart } from '@/components/report/chart';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -25,6 +23,7 @@ export default function OverviewTopDevices({
     setBrowserVersion,
     setOS,
     setOSVersion,
+    setDevice,
   } = useOverviewOptions();
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     devices: {
@@ -187,31 +186,32 @@ export default function OverviewTopDevices({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Suspense fallback={<ChartLoading />}>
-            <Chart
-              hideID
-              {...widget.chart}
-              previous={false}
-              onClick={(item) => {
-                switch (widget.key) {
-                  case 'browser':
-                    setWidget('browser_version');
-                    setBrowser(item.name);
-                    break;
-                  case 'browser_version':
-                    setBrowserVersion(item.name);
-                    break;
-                  case 'os':
-                    setWidget('os_version');
-                    setOS(item.name);
-                    break;
-                  case 'os_version':
-                    setOSVersion(item.name);
-                    break;
-                }
-              }}
-            />
-          </Suspense>
+          <Chart
+            hideID
+            {...widget.chart}
+            previous={false}
+            onClick={(item) => {
+              switch (widget.key) {
+                case 'devices':
+                  setDevice(item.name);
+                  break;
+                case 'browser':
+                  setWidget('browser_version');
+                  setBrowser(item.name);
+                  break;
+                case 'browser_version':
+                  setBrowserVersion(item.name);
+                  break;
+                case 'os':
+                  setWidget('os_version');
+                  setOS(item.name);
+                  break;
+                case 'os_version':
+                  setOSVersion(item.name);
+                  break;
+              }
+            }}
+          />
         </WidgetBody>
       </Widget>
     </>

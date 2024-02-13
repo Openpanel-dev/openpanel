@@ -4,6 +4,7 @@ import { Dropdown } from '@/components/Dropdown';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { RenderDots } from '@/components/ui/RenderDots';
+import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { useDispatch } from '@/redux';
 import type {
@@ -14,7 +15,6 @@ import type {
 import { operators } from '@/utils/constants';
 import { SlidersHorizontal, Trash } from 'lucide-react';
 
-import { useChartContext } from '../../chart/ChartProvider';
 import { changeEvent } from '../../reportSlice';
 
 interface FilterProps {
@@ -23,7 +23,7 @@ interface FilterProps {
 }
 
 export function FilterItem({ filter, event }: FilterProps) {
-  const { projectId } = useChartContext();
+  const { projectId } = useAppParams();
   const getLabel = useMappings();
   const dispatch = useDispatch();
   const potentialValues = api.chart.values.useQuery({

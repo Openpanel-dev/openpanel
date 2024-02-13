@@ -10,7 +10,7 @@ import { round } from '@/utils/math';
 import * as mathjs from 'mathjs';
 import { sort } from 'ramda';
 
-import { chQuery } from '@mixan/db';
+import { chQuery, convertClickhouseDateToJs } from '@mixan/db';
 
 export type GetChartDataResult = Awaited<ReturnType<typeof getChartData>>;
 export interface ResultItem {
@@ -73,7 +73,7 @@ function fillEmptySpotsInTimeline(
     const getMinute = (date: Date) => date.getUTCMinutes();
 
     const item = items.find((item) => {
-      const date = new Date(item.date);
+      const date = convertClickhouseDateToJs(item.date);
 
       if (interval === 'month') {
         return (

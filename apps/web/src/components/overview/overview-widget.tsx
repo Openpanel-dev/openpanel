@@ -1,9 +1,8 @@
 'use client';
 
-import { Children, useCallback, useEffect, useRef, useState } from 'react';
+import { Children, useEffect, useRef, useState } from 'react';
 import { useThrottle } from '@/hooks/useThrottle';
 import { cn } from '@/utils/cn';
-import throttle from 'lodash.throttle';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import { last } from 'ramda';
 

@@ -3,17 +3,17 @@
 import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Combobox } from '@/components/ui/combobox';
+import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
 import type { IChartBreakdown } from '@/types';
 import { SplitIcon } from 'lucide-react';
 
-import { useChartContext } from '../chart/ChartProvider';
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportBreakdowns() {
-  const { projectId } = useChartContext();
+  const { projectId } = useAppParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const dispatch = useDispatch();
   const propertiesQuery = api.chart.properties.useQuery({

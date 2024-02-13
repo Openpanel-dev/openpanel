@@ -23,13 +23,11 @@ export function LazyChart(props: ReportChartProps & ChartContextType) {
 
   return (
     <div ref={ref}>
-      <Suspense fallback={<ChartLoading />}>
-        {once.current || inViewport ? (
-          <Chart {...props} editMode={false} />
-        ) : (
-          <ChartLoading />
-        )}
-      </Suspense>
+      {once.current || inViewport ? (
+        <Chart {...props} editMode={false} />
+      ) : (
+        <ChartLoading />
+      )}
     </div>
   );
 }

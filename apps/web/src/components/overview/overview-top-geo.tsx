@@ -149,28 +149,26 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Suspense fallback={<ChartLoading />}>
-            <Chart
-              hideID
-              {...widget.chart}
-              previous={false}
-              onClick={(item) => {
-                switch (widget.key) {
-                  case 'countries':
-                    setWidget('regions');
-                    setCountry(item.name);
-                    break;
-                  case 'regions':
-                    setWidget('cities');
-                    setRegion(item.name);
-                    break;
-                  case 'cities':
-                    setCity(item.name);
-                    break;
-                }
-              }}
-            />
-          </Suspense>
+          <Chart
+            hideID
+            {...widget.chart}
+            previous={false}
+            onClick={(item) => {
+              switch (widget.key) {
+                case 'countries':
+                  setWidget('regions');
+                  setCountry(item.name);
+                  break;
+                case 'regions':
+                  setWidget('cities');
+                  setRegion(item.name);
+                  break;
+                case 'cities':
+                  setCity(item.name);
+                  break;
+              }
+            }}
+          />
         </WidgetBody>
       </Widget>
     </>

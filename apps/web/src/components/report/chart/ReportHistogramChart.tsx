@@ -13,6 +13,7 @@ import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';
 import { ReportChartTooltip } from './ReportChartTooltip';
 import { ReportTable } from './ReportTable';
+import { ResponsiveContainer } from './ResponsiveContainer';
 
 interface ReportHistogramChartProps {
   data: IChartData;
@@ -43,61 +44,52 @@ export function ReportHistogramChart({
 
   return (
     <>
-      <div
-        className={cn(
-          'max-sm:-mx-3 aspect-video w-full max-h-[300px] min-h-[200px]',
-          editMode && 'border border-border bg-white rounded-md p-4'
-        )}
-      >
-        <AutoSizer disableHeight>
-          {({ width }) => (
-            <BarChart
-              width={width}
-              height={Math.min(Math.max(width * 0.5625, 250), 300)}
-              data={rechartData}
-            >
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
-              <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
-              <XAxis
-                fontSize={12}
-                dataKey="date"
-                tickFormatter={formatDate}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                fontSize={12}
-                axisLine={false}
-                tickLine={false}
-                width={getYAxisWidth(data.metrics.max)}
-              />
-              {series.map((serie) => {
-                return (
-                  <React.Fragment key={serie.name}>
-                    {previous && (
-                      <Bar
-                        key={`${serie.name}:prev`}
-                        name={`${serie.name}:prev`}
-                        dataKey={`${serie.index}:prev:count`}
-                        fill={getChartColor(serie.index)}
-                        fillOpacity={0.2}
-                        radius={8}
-                      />
-                    )}
+      <ResponsiveContainer>
+        {({ width, height }) => (
+          <BarChart width={width} height={height} data={rechartData}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
+            <XAxis
+              fontSize={12}
+              dataKey="date"
+              tickFormatter={formatDate}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              fontSize={12}
+              axisLine={false}
+              tickLine={false}
+              width={getYAxisWidth(data.metrics.max)}
+              allowDecimals={false}
+              domain={[0, data.metrics.max]}
+            />
+            {series.map((serie) => {
+              return (
+                <React.Fragment key={serie.name}>
+                  {previous && (
                     <Bar
-                      key={serie.name}
-                      name={serie.name}
-                      dataKey={`${serie.index}:count`}
+                      key={`${serie.name}:prev`}
+                      name={`${serie.name}:prev`}
+                      dataKey={`${serie.index}:prev:count`}
                       fill={getChartColor(serie.index)}
+                      fillOpacity={0.2}
                       radius={8}
                     />
-                  </React.Fragment>
-                );
-              })}
-            </BarChart>
-          )}
-        </AutoSizer>
-      </div>
+                  )}
+                  <Bar
+                    key={serie.name}
+                    name={serie.name}
+                    dataKey={`${serie.index}:count`}
+                    fill={getChartColor(serie.index)}
+                    radius={8}
+                  />
+                </React.Fragment>
+              );
+            })}
+          </BarChart>
+        )}
+      </ResponsiveContainer>
       {editMode && (
         <ReportTable
           data={data}
