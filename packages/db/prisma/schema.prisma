@@ -165,3 +165,13 @@ model ShareOverview {
 
   @@map("shares")
 }
+
+model EventMeta {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  conversion Boolean
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("event_meta")
+}

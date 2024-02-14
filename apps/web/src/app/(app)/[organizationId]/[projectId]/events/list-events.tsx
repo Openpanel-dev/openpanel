@@ -7,6 +7,7 @@ import { FullPageEmptyState } from '@/components/FullPageEmptyState';
 import { Pagination, usePagination } from '@/components/Pagination';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { GanttChartIcon } from 'lucide-react';
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 
 import { EventListItem } from './event-list-item';
 
@@ -15,22 +16,21 @@ interface ListEventsProps {
 }
 export function ListEvents({ projectId }: ListEventsProps) {
   const pagination = usePagination();
-  const [eventFilters, setEventFilters] = useState<string[]>([]);
-  const eventsQuery = api.event.list.useQuery(
-    {
-      events: eventFilters,
-      projectId: projectId,
-      ...pagination,
-    },
-    {
-      keepPreviousData: true,
-    }
+  const [eventFilters, setEventFilters] = useQueryState(
+    'events',
+    parseAsArrayOf(parseAsString).withDefault([])
   );
+  const eventsQuery = api.event.list.useQuery({
+    events: eventFilters,
+    projectId: projectId,
+    ...pagination,
+  });
   const events = useMemo(() => eventsQuery.data ?? [], [eventsQuery]);
 
   const filterEventsQuery = api.chart.events.useQuery({
     projectId: projectId,
   });
+
   const filterEvents = (filterEventsQuery.data ?? []).map((item) => ({
     value: item.name,
     label: item.name,
@@ -61,7 +61,7 @@ export function ListEvents({ projectId }: ListEventsProps) {
           <>
             <div className="flex flex-col gap-4">
               {events.map((item) => (
-                <EventListItem key={item.id} {...item} />
+                <EventListItem key={item.createdAt.toString()} {...item} />
               ))}
             </div>
             <div className="mt-2">
