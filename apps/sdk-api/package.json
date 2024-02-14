@@ -17,8 +17,10 @@
     "@mixan/queue": "workspace:*",
     "@mixan/redis": "workspace:*",
     "fastify": "^4.25.2",
+    "ico-to-png": "^0.2.1",
     "pino": "^8.17.2",
     "ramda": "^0.29.1",
+    "sharp": "^0.33.2",
     "ua-parser-js": "^1.0.37"
   },
   "devDependencies": {

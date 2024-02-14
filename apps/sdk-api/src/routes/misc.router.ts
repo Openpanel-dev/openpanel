@@ -8,6 +8,12 @@ const miscRouter: FastifyPluginCallback = (fastify, opts, done) => {
     handler: controller.getFavicon,
   });
 
+  fastify.route({
+    method: 'GET',
+    url: '/favicon/clear',
+    handler: controller.clearFavicons,
+  });
+
   done();
 };
 
