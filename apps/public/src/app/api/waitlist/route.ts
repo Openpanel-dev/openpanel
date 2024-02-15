@@ -1,11 +1,9 @@
 import * as EmailValidator from 'email-validator';
-// true
-
 import { NextResponse } from 'next/server';
 
 import { db } from '@mixan/db';
 
-EmailValidator.validate('test@email.com');
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   const body = await req.json();
