@@ -19,7 +19,10 @@ import { WidgetHead as WidgetHeadBase } from '../Widget';
 export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (
     <WidgetHeadBase
-      className={cn('flex items-center justify-between', className)}
+      className={cn(
+        'flex flex-col p-0 [&_.title]:text-sm [&_.title]:px-4 [&_.title]:py-2',
+        className
+      )}
       {...props}
     />
   );
@@ -32,8 +35,8 @@ export function WidgetButtons({
 }: WidgetHeadProps) {
   const container = useRef<HTMLDivElement>(null);
   const sizes = useRef<number[]>([]);
-  const [slice, setSlice] = useState(-1);
-  const gap = 8;
+  const [slice, setSlice] = useState(3); // Show 3 buttons by default
+  const gap = 16;
 
   const handleResize = useThrottle(() => {
     if (container.current) {
@@ -82,7 +85,7 @@ export function WidgetButtons({
     <div
       ref={container}
       className={cn(
-        'flex-1 justify-end transition-opacity flex flex-wrap [&_button]:text-xs [&_button]:opacity-50 [&_button]:whitespace-nowrap [&_button.active]:opacity-100',
+        'px-4 self-stretch justify-start transition-opacity flex flex-wrap [&_button]:text-xs [&_button]:opacity-50 [&_button]:whitespace-nowrap [&_button.active]:opacity-100 [&_button.active]:border-b [&_button.active]:border-black [&_button]:py-1',
         className
       )}
       style={{ gap }}

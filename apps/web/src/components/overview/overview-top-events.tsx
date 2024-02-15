@@ -59,7 +59,7 @@ export default function OverviewTopEvents({
   return (
     <>
       <Widget className="col-span-6 md:col-span-3">
-        <WidgetHead className="flex items-center justify-between">
+        <WidgetHead>
           <div className="title">{widget.title}</div>
           <WidgetButtons>
             {widgets.map((w) => (
