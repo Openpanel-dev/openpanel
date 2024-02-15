@@ -14,6 +14,9 @@ importers:
       dotenv-cli:
         specifier: ^7.3.0
         version: 7.3.0
+      lodepng:
+        specifier: ^2.2.0
+        version: 2.2.0
       prettier:
         specifier: ^3.0.3
         version: 3.0.3
