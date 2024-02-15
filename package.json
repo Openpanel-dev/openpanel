@@ -22,7 +22,6 @@
   "dependencies": {
     "@mixan/prettier-config": "^0.1.0",
     "dotenv-cli": "^7.3.0",
-    "lodepng": "^2.2.0",
     "prettier": "^3.0.3",
     "semver": "^7.5.4",
     "typescript": "^5.2.2"
