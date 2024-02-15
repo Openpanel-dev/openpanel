@@ -21,7 +21,7 @@ const font = Bricolage_Grotesque({
   weights: [400, 700],
 });
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;

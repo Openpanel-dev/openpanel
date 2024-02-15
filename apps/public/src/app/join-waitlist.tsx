@@ -61,7 +61,7 @@ export function JoinWaitlist({ className }: JoinWaitlistProps) {
           });
         }}
       >
-        <div className="relative w-full mb-8">
+        <div className="relative w-full">
           <input
             placeholder="Enter your email"
             className={cn(

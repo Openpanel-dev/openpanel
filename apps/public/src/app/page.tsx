@@ -1,18 +1,23 @@
 import { Logo } from '@/components/Logo';
 import Image from 'next/image';
 
+import { db } from '@mixan/db';
+
 import { PreviewCarousel } from './carousel';
 import { Heading2, Lead2, Paragraph } from './copy';
 import { Hero } from './hero';
 import { JoinWaitlist } from './join-waitlist';
 import { Sections } from './section';
 
-export default function Page() {
+export default async function Page() {
+  const waitlistCount = await db.waitlist.count();
   return (
     <div>
-      <Hero />
-      <div className="bg-gradient-to-b from-blue-light to-[#FFFFFF] py-16 md:py-40 text-center">
-        <PreviewCarousel />
+      <Hero waitlistCount={waitlistCount} />
+      <div className="bg-gradient-to-b from-blue-light to-[#FFFFFF] pb-16 text-center">
+        <div className="relative -top-20">
+          <PreviewCarousel />
+        </div>
       </div>
       <div className="container">
         <div className="mb-24">
