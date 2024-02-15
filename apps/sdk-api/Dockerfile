@@ -29,11 +29,12 @@ RUN corepack enable
 ARG NODE_VERSION=20
 
 RUN apt update \
-    && apt install -y curl \
+    && apt install -y curl python3 make g++ \
     && curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o n \
     && bash n $NODE_VERSION \
     && rm n \
-    && npm install -g n
+    && npm install -g n \
+    && rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
