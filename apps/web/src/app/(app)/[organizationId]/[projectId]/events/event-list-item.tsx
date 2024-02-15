@@ -173,7 +173,6 @@ export function EventListItem({
           {profile && (
             <KeyValueSubtle
               name="Profile"
-              // icon={<ProfileAvatar size="xs" {...(profile ?? {})} />}
               value={getProfileName(profile)}
               href={`/${params.organizationId}/${params.projectId}/profiles/${profile.id}`}
             />
@@ -191,27 +190,35 @@ export function EventListItem({
       }
       image={<EventIcon name={name} />}
     >
-      {propertiesList.length > 0 && (
-        <div className="p-4 flex flex-col gap-4">
-          <div className="font-medium">Your properties</div>
-          <div className="flex flex-wrap gap-x-4 gap-y-2">
-            {propertiesList.map((item) => (
-              <KeyValue key={item.name} name={item.name} value={item.value} />
-            ))}
+      <div className="p-2">
+        <div className="bg-gradient-to-tr from-slate-100 to-white rounded-md">
+          {propertiesList.length > 0 && (
+            <div className="p-4 flex flex-col gap-4">
+              <div className="font-medium">Your properties</div>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                {propertiesList.map((item) => (
+                  <KeyValue
+                    key={item.name}
+                    name={item.name}
+                    value={item.value}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="p-4 flex flex-col gap-4">
+            <div className="font-medium">Properties</div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {keyValueList.map((item) => (
+                <KeyValue
+                  onClick={() => item.onClick?.()}
+                  key={item.name}
+                  name={item.name}
+                  value={item.value}
+                />
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-      <div className="p-4 flex flex-col gap-4">
-        <div className="font-medium">Properties</div>
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {keyValueList.map((item) => (
-            <KeyValue
-              onClick={item.onClick}
-              key={item.name}
-              name={item.name}
-              value={item.value}
-            />
-          ))}
         </div>
       </div>
     </ExpandableListItem>

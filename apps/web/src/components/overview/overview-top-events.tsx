@@ -1,8 +1,7 @@
 'use client';
 
-import { Suspense } from 'react';
 import { Chart } from '@/components/report/chart';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
+import { useEventFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -16,7 +15,8 @@ interface OverviewTopEventsProps {
 export default function OverviewTopEvents({
   projectId,
 }: OverviewTopEventsProps) {
-  const { filters, interval, range, previous } = useOverviewOptions();
+  const { interval, range, previous } = useOverviewOptions();
+  const filters = useEventFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('ev', {
     all: {
       title: 'Top events',

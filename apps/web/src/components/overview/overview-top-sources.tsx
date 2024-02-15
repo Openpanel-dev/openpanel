@@ -1,8 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
 import { Chart } from '@/components/report/chart';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
+import {
+  useEventFilters,
+  useEventQueryFilters,
+} from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -16,20 +18,18 @@ interface OverviewTopSourcesProps {
 export default function OverviewTopSources({
   projectId,
 }: OverviewTopSourcesProps) {
+  const { interval, range, previous } = useOverviewOptions();
   const {
-    filters,
-    interval,
-    range,
-    previous,
-    setReferrer,
-    setUtmSource,
-    setUtmMedium,
-    setUtmCampaign,
-    setUtmTerm,
-    setUtmContent,
-    setReferrerName,
-    setReferrerType,
-  } = useOverviewOptions();
+    referrer,
+    referrerName,
+    referrerType,
+    utmCampaign,
+    utmContent,
+    utmMedium,
+    utmSource,
+    utmTerm,
+  } = useEventQueryFilters();
+  const filters = useEventFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('sources', {
     all: {
       title: 'Top sources',
@@ -282,30 +282,30 @@ export default function OverviewTopSources({
             onClick={(item) => {
               switch (widget.key) {
                 case 'all':
-                  setReferrerName(item.name);
+                  referrerName.set(item.name);
                   setWidget('domain');
                   break;
                 case 'domain':
-                  setReferrer(item.name);
+                  referrer.set(item.name);
                   break;
                 case 'type':
-                  setReferrerType(item.name);
+                  referrerType.set(item.name);
                   setWidget('domain');
                   break;
                 case 'utm_source':
-                  setUtmSource(item.name);
+                  utmSource.set(item.name);
                   break;
                 case 'utm_medium':
-                  setUtmMedium(item.name);
+                  utmMedium.set(item.name);
                   break;
                 case 'utm_campaign':
-                  setUtmCampaign(item.name);
+                  utmCampaign.set(item.name);
                   break;
                 case 'utm_term':
-                  setUtmTerm(item.name);
+                  utmTerm.set(item.name);
                   break;
                 case 'utm_content':
-                  setUtmContent(item.name);
+                  utmContent.set(item.name);
                   break;
               }
             }}

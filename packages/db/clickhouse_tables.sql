@@ -1,4 +1,10 @@
+ALTER TABLE
+  events
+ADD
+  COLUMN id UUID;
+
 CREATE TABLE openpanel.events (
+  `id` UUID,
   `name` String,
   `profile_id` String,
   `project_id` String,

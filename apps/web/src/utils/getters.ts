@@ -1,6 +1,6 @@
-import type { Profile } from '@mixan/db';
+import type { IDBProfile } from '@mixan/db';
 
-export function getProfileName(profile: Profile | undefined | null) {
+export function getProfileName(profile: IDBProfile | undefined | null) {
   if (!profile) return 'No profile';
   return [profile.first_name, profile.last_name].filter(Boolean).join(' ');
 }

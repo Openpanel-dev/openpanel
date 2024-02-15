@@ -1,8 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
 import { Chart } from '@/components/report/chart';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
+import {
+  useEventFilters,
+  useEventQueryFilters,
+} from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -14,8 +16,9 @@ interface OverviewTopGeoProps {
   projectId: string;
 }
 export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
-  const { filters, interval, range, previous, setCountry, setRegion, setCity } =
-    useOverviewOptions();
+  const { interval, range, previous } = useOverviewOptions();
+  const filters = useEventFilters();
+  const { region, country, city } = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('geo', {
     map: {
       title: 'Map',
@@ -157,14 +160,14 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
               switch (widget.key) {
                 case 'countries':
                   setWidget('regions');
-                  setCountry(item.name);
+                  country.set(item.name);
                   break;
                 case 'regions':
                   setWidget('cities');
-                  setRegion(item.name);
+                  region.set(item.name);
                   break;
                 case 'cities':
-                  setCity(item.name);
+                  city.set(item.name);
                   break;
               }
             }}

@@ -10,7 +10,7 @@ import { JoinWaitlist } from './join-waitlist';
 import { Sections } from './section';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 60 * 60;
+export const revalidate = 3600;
 
 export default async function Page() {
   const waitlistCount = await db.waitlist.count();

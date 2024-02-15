@@ -1,8 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
 import { Chart } from '@/components/report/chart';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
+import {
+  useEventFilters,
+  useEventQueryFilters,
+} from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -14,7 +16,9 @@ interface OverviewTopPagesProps {
   projectId: string;
 }
 export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
-  const { filters, interval, range, previous, setPage } = useOverviewOptions();
+  const { interval, range, previous } = useOverviewOptions();
+  const filters = useEventFilters();
+  const { path } = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('pages', {
     top: {
       title: 'Top pages',
@@ -125,7 +129,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
             {...widget.chart}
             previous={false}
             onClick={(item) => {
-              setPage(item.name);
+              path.set(item.name);
             }}
           />
         </WidgetBody>

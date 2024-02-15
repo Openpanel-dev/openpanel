@@ -1,12 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
 import { WidgetHead } from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Chart } from '@/components/report/chart';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
-import { MetricCardLoading } from '@/components/report/chart/MetricCard';
 import { Widget, WidgetBody } from '@/components/Widget';
+import { useEventFilters } from '@/hooks/useEventQueryFilters';
 import type { IChartInput } from '@/types';
 import { cn } from '@/utils/cn';
 
@@ -15,8 +13,8 @@ interface OverviewMetricsProps {
 }
 
 export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
-  const { previous, range, interval, metric, setMetric, filters } =
-    useOverviewOptions();
+  const { previous, range, interval, metric, setMetric } = useOverviewOptions();
+  const filters = useEventFilters();
 
   const reports = [
     {

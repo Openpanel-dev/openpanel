@@ -1,5 +1,5 @@
-import type { IDBProfile } from '@/prisma-types';
 import { omit } from 'ramda';
+import { v4 as uuid } from 'uuid';
 
 import { randomSplitName, toDots } from '@mixan/common';
 import { redis, redisPub } from '@mixan/redis';
@@ -12,8 +12,11 @@ import {
 } from '../clickhouse-client';
 import type { Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
+import type { IDBProfile } from '../prisma-types';
+import { createSqlBuilder } from '../sql-builder';
 
 export interface IClickhouseEvent {
+  id: string;
   name: string;
   profile_id: string;
   project_id: string;
@@ -41,6 +44,7 @@ export function transformEvent(
   event: IClickhouseEvent
 ): IServiceCreateEventPayload {
   return {
+    id: event.id,
     name: event.name,
     profileId: event.profile_id,
     projectId: event.project_id,
@@ -66,6 +70,7 @@ export function transformEvent(
 }
 
 export interface IServiceCreateEventPayload {
+  id: string;
   name: string;
   profileId: string;
   projectId: string;
@@ -102,7 +107,10 @@ export async function getLiveVisitors(projectId: string) {
   return keys.length;
 }
 
-export async function getEvents(sql: string, options: GetEventsOptions = {}) {
+export async function getEvents(
+  sql: string,
+  options: GetEventsOptions = {}
+): Promise<IServiceCreateEventPayload[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
   if (options.profile) {
     const profileIds = events.map((e) => e.profile_id);
@@ -124,7 +132,9 @@ export async function getEvents(sql: string, options: GetEventsOptions = {}) {
   return events.map(transformEvent);
 }
 
-export async function createEvent(payload: IServiceCreateEventPayload) {
+export async function createEvent(
+  payload: Omit<IServiceCreateEventPayload, 'id'>
+) {
   console.log(`create event ${payload.name} for ${payload.profileId}`);
 
   if (payload.name === 'session_start') {
@@ -167,6 +177,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
   }
 
   const event: IClickhouseEvent = {
+    id: uuid(),
     name: payload.name,
     profile_id: payload.profileId,
     project_id: payload.projectId,
@@ -193,6 +204,9 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     table: 'events',
     values: [event],
     format: 'JSONEachRow',
+    clickhouse_settings: {
+      date_time_input_format: 'best_effort',
+    },
   });
 
   redisPub.publish('event', JSON.stringify(transformEvent(event)));
@@ -207,4 +221,36 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     ...res,
     document: event,
   };
+}
+
+interface GetEventListOptions {
+  projectId: string;
+  profileId?: string;
+  take: number;
+  cursor?: string;
+}
+
+export async function getEventList({
+  cursor,
+  take,
+  projectId,
+  profileId,
+}: GetEventListOptions) {
+  const { sb, getSql } = createSqlBuilder();
+
+  sb.limit = take;
+  sb.where.projectId = `project_id = '${projectId}'`;
+  if (profileId) {
+    sb.where.profileId = `profile_id = '${profileId}'`;
+  }
+
+  if (cursor) {
+    sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
+  }
+
+  sb.orderBy.created_at = 'created_at DESC';
+
+  const res = await getEvents(getSql(), { profile: true });
+
+  return res;
 }
