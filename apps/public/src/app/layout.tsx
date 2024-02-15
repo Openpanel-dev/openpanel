@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 const font = Bricolage_Grotesque({
   display: 'swap',
   subsets: ['latin'],
-  weights: [400, 700],
+  weight: ['400', '700'],
 });
 
 export default function RootLayout({
