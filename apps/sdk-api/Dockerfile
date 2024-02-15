@@ -51,7 +51,7 @@ COPY packages/types/package.json packages/types/package.json
 FROM base AS build
 
 WORKDIR /app/apps/sdk-api
-RUN pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile
 
 WORKDIR  /app
 COPY apps apps
@@ -66,7 +66,7 @@ RUN pnpm run build
 FROM base AS prod
 
 WORKDIR /app/apps/sdk-api
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
+RUN pnpm install --frozen-lockfile --prod
 
 # FINAL
 FROM base AS runner
