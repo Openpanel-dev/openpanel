@@ -1,16 +1,18 @@
+export interface SqlBuilderObject {
+  where: Record<string, string>;
+  select: Record<string, string>;
+  groupBy: Record<string, string>;
+  orderBy: Record<string, string>;
+  from: string;
+  limit: number | undefined;
+  offset: number | undefined;
+}
+
 export function createSqlBuilder() {
   const join = (obj: Record<string, string> | string[], joiner: string) =>
     Object.values(obj).filter(Boolean).join(joiner);
 
-  const sb: {
-    where: Record<string, string>;
-    select: Record<string, string>;
-    groupBy: Record<string, string>;
-    orderBy: Record<string, string>;
-    from: string;
-    limit: number | undefined;
-    offset: number | undefined;
-  } = {
+  const sb: SqlBuilderObject = {
     where: {},
     from: 'openpanel.events',
     select: {},

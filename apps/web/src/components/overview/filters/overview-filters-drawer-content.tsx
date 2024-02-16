@@ -5,15 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { XIcon } from 'lucide-react';
+import { Options as NuqsOptions } from 'nuqs';
 
 interface OverviewFiltersProps {
   projectId: string;
+  nuqsOptions?: NuqsOptions;
 }
 
 export function OverviewFiltersDrawerContent({
   projectId,
+  nuqsOptions,
 }: OverviewFiltersProps) {
-  const eventQueryFilters = useEventQueryFilters();
+  const eventQueryFilters = useEventQueryFilters(nuqsOptions);
 
   return (
     <div>

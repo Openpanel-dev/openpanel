@@ -1,9 +1,11 @@
-import { parseAsIsoDateTime, useQueryState } from 'nuqs';
+import { parseAsInteger, useQueryState } from 'nuqs';
 
 export function useCursor() {
   const [cursor, setCursor] = useQueryState(
     'cursor',
-    parseAsIsoDateTime.withOptions({ shallow: false })
+    parseAsInteger
+      .withOptions({ shallow: false, history: 'push' })
+      .withDefault(0)
   );
   return {
     cursor,

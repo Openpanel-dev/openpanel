@@ -14,7 +14,7 @@ interface ClickhouseJsonResponse<T> {
   meta: { name: string; type: string }[];
 }
 
-export async function chQueryAll<T extends Record<string, any>>(
+export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string
 ): Promise<ClickhouseJsonResponse<T>> {
   const res = await ch.query({
@@ -42,7 +42,7 @@ export async function chQueryAll<T extends Record<string, any>>(
 export async function chQuery<T extends Record<string, any>>(
   query: string
 ): Promise<T[]> {
-  return (await chQueryAll<T>(query)).data;
+  return (await chQueryWithMeta<T>(query)).data;
 }
 
 export function formatClickhouseDate(_date: Date | string) {

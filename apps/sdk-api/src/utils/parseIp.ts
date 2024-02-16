@@ -1,4 +1,4 @@
-import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 
 interface RemoteIpLookupResponse {
   country: string | undefined;

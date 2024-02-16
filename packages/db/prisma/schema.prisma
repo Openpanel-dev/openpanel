@@ -24,6 +24,7 @@ model Project {
   reports    Report[]
   dashboards Dashboard[]
   share      ShareOverview?
+  EventMeta  EventMeta[]
 
   @@map("projects")
 }
@@ -169,9 +170,15 @@ model ShareOverview {
 model EventMeta {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
-  conversion Boolean
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
+  conversion Boolean?
+  color      String?
+  icon       String?
+  project_id String
+  project    Project  @relation(fields: [project_id], references: [id])
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([name, project_id])
   @@map("event_meta")
 }

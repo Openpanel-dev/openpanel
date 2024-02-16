@@ -1,4 +1,4 @@
-import { omit } from 'ramda';
+import { omit, uniq } from 'ramda';
 import { v4 as uuid } from 'uuid';
 
 import { randomSplitName, toDots } from '@mixan/common';
@@ -10,10 +10,11 @@ import {
   convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../clickhouse-client';
-import type { Prisma } from '../prisma-client';
+import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import type { IDBProfile } from '../prisma-types';
 import { createSqlBuilder } from '../sql-builder';
+import { getEventFiltersWhereClause } from './chart.service';
 
 export interface IClickhouseEvent {
   id: string;
@@ -37,7 +38,10 @@ export interface IClickhouseEvent {
   device: string;
   brand: string;
   model: string;
+
+  // They do not exist here. Just make ts happy for now
   profile?: IDBProfile;
+  meta?: EventMeta;
 }
 
 export function transformEvent(
@@ -66,6 +70,7 @@ export function transformEvent(
     referrerName: event.referrer_name,
     referrerType: event.referrer_type,
     profile: event.profile,
+    meta: event.meta,
   };
 }
 
@@ -95,11 +100,13 @@ export interface IServiceCreateEventPayload {
   referrer: string | undefined;
   referrerName: string | undefined;
   referrerType: string | undefined;
-  profile?: IDBProfile;
+  profile: IDBProfile | undefined;
+  meta: EventMeta | undefined;
 }
 
 interface GetEventsOptions {
   profile?: boolean | Prisma.ProfileSelect;
+  meta?: boolean | Prisma.EventMetaSelect;
 }
 
 export async function getLiveVisitors(projectId: string) {
@@ -127,6 +134,22 @@ export async function getEvents(
       event.profile = profiles.find((p) => p.id === event.profile_id) as
         | IDBProfile
         | undefined;
+    }
+  }
+
+  if (options.meta) {
+    const names = uniq(events.map((e) => e.name));
+    const metas = await db.eventMeta.findMany({
+      where: {
+        name: {
+          in: names,
+        },
+        project_id: events[0]?.project_id,
+      },
+      select: options.meta === true ? undefined : options.meta,
+    });
+    for (const event of events) {
+      event.meta = metas.find((m) => m.name === event.name);
     }
   }
   return events.map(transformEvent);
@@ -227,7 +250,8 @@ interface GetEventListOptions {
   projectId: string;
   profileId?: string;
   take: number;
-  cursor?: string;
+  cursor?: number;
+  filters: any[];
 }
 
 export async function getEventList({
@@ -235,22 +259,44 @@ export async function getEventList({
   take,
   projectId,
   profileId,
+  filters,
 }: GetEventListOptions) {
   const { sb, getSql } = createSqlBuilder();
 
   sb.limit = take;
+  sb.offset = (cursor ?? 0) * take;
   sb.where.projectId = `project_id = '${projectId}'`;
   if (profileId) {
     sb.where.profileId = `profile_id = '${profileId}'`;
   }
 
-  if (cursor) {
-    sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
-  }
+  getEventFiltersWhereClause(sb, filters);
+
+  // if (cursor) {
+  //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
+  // }
 
   sb.orderBy.created_at = 'created_at DESC';
 
-  const res = await getEvents(getSql(), { profile: true });
+  return getEvents(getSql(), { profile: true, meta: true });
+}
 
-  return res;
+export async function getEventsCount({
+  projectId,
+  profileId,
+  filters,
+}: Omit<GetEventListOptions, 'cursor' | 'take'>) {
+  const { sb, getSql } = createSqlBuilder();
+  sb.where.projectId = `project_id = '${projectId}'`;
+  if (profileId) {
+    sb.where.profileId = `profile_id = '${profileId}'`;
+  }
+
+  getEventFiltersWhereClause(sb, filters);
+
+  const res = await chQuery<{ count: number }>(
+    getSql().replace('*', 'count(*) as count')
+  );
+
+  return res[0]?.count ?? 0;
 }

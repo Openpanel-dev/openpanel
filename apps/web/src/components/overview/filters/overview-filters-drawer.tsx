@@ -3,15 +3,18 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { FilterIcon } from 'lucide-react';
+import { Options as NuqsOptions } from 'nuqs';
 
 import { OverviewFiltersDrawerContent } from './overview-filters-drawer-content';
 
 interface OverviewFiltersDrawerProps {
   projectId: string;
+  nuqsOptions?: NuqsOptions;
 }
 
 export function OverviewFiltersDrawer({
   projectId,
+  nuqsOptions,
 }: OverviewFiltersDrawerProps) {
   return (
     <Sheet>
@@ -21,7 +24,10 @@ export function OverviewFiltersDrawer({
         </Button>
       </SheetTrigger>
       <SheetContent className="!max-w-lg w-full" side="right">
-        <OverviewFiltersDrawerContent projectId={projectId} />
+        <OverviewFiltersDrawerContent
+          projectId={projectId}
+          nuqsOptions={nuqsOptions}
+        />
       </SheetContent>
     </Sheet>
   );

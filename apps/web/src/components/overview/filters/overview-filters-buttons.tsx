@@ -1,22 +1,27 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import {
-  useEventFilters,
-  useEventQueryFilters,
-} from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 import { X } from 'lucide-react';
+import { Options as NuqsOptions } from 'nuqs';
 
-export function OverviewFiltersButtons() {
-  const eventQueryFilters = useEventQueryFilters();
+interface OverviewFiltersButtonsProps {
+  className?: string;
+  nuqsOptions?: NuqsOptions;
+}
+
+export function OverviewFiltersButtons({
+  className,
+  nuqsOptions,
+}: OverviewFiltersButtonsProps) {
+  const eventQueryFilters = useEventQueryFilters(nuqsOptions);
   const filters = Object.entries(eventQueryFilters).filter(
     ([, filter]) => filter.get !== null
   );
+  if (filters.length === 0) return null;
   return (
-    <div
-      className={cn('flex flex-wrap gap-2', filters.length > 0 && 'px-4 pb-4')}
-    >
+    <div className={cn('flex flex-wrap gap-2 px-4 pb-4', className)}>
       {filters.map(([key, filter]) => (
         <Button
           key={key}

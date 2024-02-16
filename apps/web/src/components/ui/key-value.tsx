@@ -37,13 +37,13 @@ export function KeyValueSubtle({ href, onClick, name, value }: KeyValueProps) {
   const Component = href ? (Link as any) : onClick ? 'button' : 'div';
   return (
     <Component
-      className="group flex text-xs gap-2 font-medium self-start min-w-0 max-w-full items-center"
+      className="group flex text-[10px] sm:text-xs gap-2 font-medium self-start min-w-0 max-w-full items-center"
       {...{ href, onClick }}
     >
       <div className="text-gray-400">{name}</div>
       <div
         className={cn(
-          'bg-slate-100 rounded p-1 px-2 text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis',
+          'bg-slate-100 rounded p-0.5 px-1 sm:p-1 sm:px-2 text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis',
           clickable && 'group-hover:underline'
         )}
       >

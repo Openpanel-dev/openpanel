@@ -5,3 +5,4 @@ export * from './src/sql-builder';
 export * from './src/services/salt';
 export * from './src/services/event.service';
 export * from './src/services/share.service';
+export * from './src/services/chart.service';

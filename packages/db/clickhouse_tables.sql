@@ -1,10 +1,5 @@
-ALTER TABLE
-  events
-ADD
-  COLUMN id UUID;
-
 CREATE TABLE openpanel.events (
-  `id` UUID,
+  `id` UUID DEFAULT generateUUIDv4(),
   `name` String,
   `profile_id` String,
   `project_id` String,
@@ -18,6 +13,7 @@ CREATE TABLE openpanel.events (
   `country` String,
   `city` String,
   `region` String,
+  `continent` String,
   `os` String,
   `os_version` String,
   `browser` String,
@@ -45,3 +41,13 @@ CREATE TABLE test.profiles (
 ) ENGINE = ReplacingMergeTree
 ORDER BY
   (id) SETTINGS index_granularity = 8192;
+
+ALTER TABLE
+  events
+ADD
+  COLUMN continent String
+AFTER
+  region;
+
+ALTER TABLE
+  events DROP COLUMN id;

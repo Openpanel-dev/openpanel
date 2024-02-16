@@ -11,6 +11,7 @@ interface ExpandableListItemProps {
   title: string;
   image?: React.ReactNode;
   initialOpen?: boolean;
+  className?: string;
 }
 export function ExpandableListItem({
   title,
@@ -18,14 +19,17 @@ export function ExpandableListItem({
   image,
   initialOpen = false,
   children,
+  className,
 }: ExpandableListItemProps) {
   const [open, setOpen] = useState(initialOpen ?? false);
   return (
-    <div className="bg-white shadow rounded-xl overflow-hidden">
-      <div className="p-3 sm:p-6 flex gap-4 items-center">
+    <div
+      className={cn('bg-white shadow rounded-xl overflow-hidden', className)}
+    >
+      <div className="p-2 sm:p-4 flex gap-4">
         <div className="flex gap-1">{image}</div>
         <div className="flex flex-col flex-1 gap-1 min-w-0">
-          <span className="text-lg font-medium leading-none mb-1">{title}</span>
+          <span className="text-md font-medium leading-none mb-1">{title}</span>
           {!!content && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
               {content}

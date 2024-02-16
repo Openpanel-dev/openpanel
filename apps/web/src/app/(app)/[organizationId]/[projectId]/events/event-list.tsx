@@ -1,53 +1,69 @@
 'use client';
 
+import { Suspense } from 'react';
 import { FullPageEmptyState } from '@/components/FullPageEmptyState';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCursor } from '@/hooks/useCursor';
+import { useEventFilters } from '@/hooks/useEventQueryFilters';
 import { GanttChartIcon } from 'lucide-react';
-import { last } from 'ramda';
 
-import { IServiceCreateEventPayload } from '@mixan/db';
+import type { IServiceCreateEventPayload } from '@mixan/db';
 
 import { EventListItem } from './event-list-item';
 
 interface EventListProps {
   data: IServiceCreateEventPayload[];
+  count: number;
 }
-export function EventList({ data }: EventListProps) {
+export function EventList({ data, count }: EventListProps) {
   const { cursor, setCursor } = useCursor();
+  const filters = useEventFilters();
+
   return (
-    <>
+    <Suspense>
       <div className="p-4">
         {data.length === 0 ? (
           <FullPageEmptyState title="No events here" icon={GanttChartIcon}>
-            {/* {filterEvents.length ? (
-              <p>Could not find any events with your filter</p>
+            {cursor !== 0 ? (
+              <>
+                <p>Looks like you have reached the end of the list</p>
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCursor((p) => Math.max(0, p - 1))}
+                >
+                  Go back
+                </Button>
+              </>
             ) : (
-              <p>We have not recieved any events yet</p>
-            )} */}
-            <p>We have not recieved any events yet</p>
+              <>
+                {filters.length ? (
+                  <p>Could not find any events with your filter</p>
+                ) : (
+                  <p>We have not recieved any events yet</p>
+                )}
+              </>
+            )}
           </FullPageEmptyState>
         ) : (
           <>
-            <div className="flex flex-col gap-4">
+            <Pagination
+              cursor={cursor}
+              setCursor={setCursor}
+              count={count}
+              take={50}
+            />
+            <div className="flex flex-col gap-4 my-4">
               {data.map((item) => (
-                <EventListItem
-                  key={item.createdAt.toString() + item.name + item.profileId}
-                  {...item}
-                />
+                <EventListItem key={item.id} {...item} />
               ))}
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCursor(last(data)?.createdAt ?? null)}
-            >
-              Next
-            </Button>
+            <Pagination cursor={cursor} setCursor={setCursor} />
           </>
         )}
       </div>
-    </>
+    </Suspense>
   );
 }

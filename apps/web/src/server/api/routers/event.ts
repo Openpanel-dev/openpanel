@@ -1,38 +1,29 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { transformEvent } from '@/server/services/event.service';
 import { z } from 'zod';
 
-import type { IDBEvent } from '@mixan/db';
-import { chQuery, createSqlBuilder, getEvents } from '@mixan/db';
+import { db } from '@mixan/db';
 
 export const eventRouter = createTRPCRouter({
-  list: protectedProcedure
+  updateEventMeta: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
-        take: z.number().default(100),
-        skip: z.number().default(0),
-        profileId: z.string().optional(),
-        events: z.array(z.string()).optional(),
+        name: z.string(),
+        icon: z.string().optional(),
+        color: z.string().optional(),
+        conversion: z.boolean().optional(),
       })
     )
-    .query(async ({ input: { take, skip, projectId, profileId, events } }) => {
-      const { sb, getSql } = createSqlBuilder();
-
-      sb.limit = take;
-      sb.offset = skip;
-      sb.where.projectId = `project_id = '${projectId}'`;
-      if (profileId) {
-        sb.where.profileId = `profile_id = '${profileId}'`;
-      }
-      if (events?.length) {
-        sb.where.name = `name IN (${events.map((e) => `'${e}'`).join(',')})`;
-      }
-
-      sb.orderBy.created_at = 'created_at DESC';
-
-      const res = await getEvents(getSql(), { profile: true });
-
-      return res;
+    .mutation(({ input: { projectId, name, icon, color, conversion } }) => {
+      return db.eventMeta.upsert({
+        where: {
+          name_project_id: {
+            name,
+            project_id: projectId,
+          },
+        },
+        create: { project_id: projectId, name, icon, color, conversion },
+        update: { icon, color, conversion },
+      });
     }),
 });
