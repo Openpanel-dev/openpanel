@@ -48,7 +48,7 @@
     "lodash.debounce": "^4.0.8",
     "lodash.throttle": "^4.1.1",
     "lottie-react": "^2.4.0",
-    "lucide-react": "^0.323.0",
+    "lucide-react": "^0.331.0",
     "mathjs": "^12.3.2",
     "mitt": "^3.0.1",
     "next": "~14.0.4",

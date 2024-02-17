@@ -2,13 +2,10 @@ import { useEffect, useState } from 'react';
 import { api } from '@/app/_trpc/client';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Sheet,
-  SheetClose,
   SheetContent,
-  SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
@@ -18,7 +15,7 @@ import { cn } from '@/utils/cn';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
-import { ActivityIcon, BotIcon, DotIcon, MonitorPlayIcon } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -65,9 +62,20 @@ const records: Record<
 };
 
 const icons: Record<string, LucideIcon> = {
-  BotIcon,
-  MonitorPlayIcon,
-  ActivityIcon,
+  DownloadIcon: Icons.DownloadIcon,
+  BotIcon: Icons.BotIcon,
+  BoxIcon: Icons.BoxIcon,
+  AccessibilityIcon: Icons.AccessibilityIcon,
+  ActivityIcon: Icons.ActivityIcon,
+  AirplayIcon: Icons.AirplayIcon,
+  AlarmCheckIcon: Icons.AlarmCheckIcon,
+  AlertTriangleIcon: Icons.AlertTriangleIcon,
+  BellIcon: Icons.BellIcon,
+  BoltIcon: Icons.BoltIcon,
+  CandyIcon: Icons.CandyIcon,
+  ConeIcon: Icons.ConeIcon,
+  MonitorPlayIcon: Icons.MonitorPlayIcon,
+  PizzaIcon: Icons.PizzaIcon,
 };
 
 const colors = [
@@ -133,6 +141,7 @@ export function EventIcon({
 
   const mutation = api.event.updateEventMeta.useMutation({
     onSuccess() {
+      // @ts-expect-error
       document.querySelector('#close-sheet')?.click();
       toast('Event updated');
       router.refresh();
