@@ -61,7 +61,6 @@ function fillEmptySpotsInTimeline(
     clonedStartDate.getTime() <= clonedEndDate.getTime()
   ) {
     if (prev === clonedStartDate.getTime()) {
-      console.log('GET OUT NOW!');
       break;
     }
     prev = clonedStartDate.getTime();

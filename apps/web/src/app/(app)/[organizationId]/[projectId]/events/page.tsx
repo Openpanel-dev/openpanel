@@ -109,7 +109,6 @@ export default async function Page({
     }),
     getExists(organizationId, projectId),
   ]);
-  console.log(events[0]);
 
   return (
     <PageLayout title="Events" organizationSlug={organizationId}>
