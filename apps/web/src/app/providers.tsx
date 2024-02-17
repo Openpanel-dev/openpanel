@@ -6,14 +6,15 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
 import makeStore from '@/redux';
-import { ClerkProvider } from '@clerk/nextjs';
+import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+function AllProviders({ children }: { children: React.ReactNode }) {
+  const { getToken } = useAuth();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -32,6 +33,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       links: [
         httpLink({
           url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/api/trpc`,
+          async headers() {
+            return { Authorization: `Bearer ${await getToken()}` };
+          },
         }),
       ],
     })
@@ -44,18 +48,24 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
+    <ReduxProvider store={storeRef.current}>
+      <api.Provider client={trpcClient} queryClient={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider delayDuration={200}>
+            {children}
+            <Toaster />
+            <ModalProvider />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </api.Provider>
+    </ReduxProvider>
+  );
+}
+
+export default function Providers({ children }: { children: React.ReactNode }) {
+  return (
     <ClerkProvider>
-      <ReduxProvider store={storeRef.current}>
-        <api.Provider client={trpcClient} queryClient={queryClient}>
-          <QueryClientProvider client={queryClient}>
-            <TooltipProvider delayDuration={200}>
-              {children}
-              <Toaster />
-              <ModalProvider />
-            </TooltipProvider>
-          </QueryClientProvider>
-        </api.Provider>
-      </ReduxProvider>
+      <AllProviders>{children}</AllProviders>
     </ClerkProvider>
   );
 }
