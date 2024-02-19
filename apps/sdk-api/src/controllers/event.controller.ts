@@ -141,7 +141,7 @@ export async function postEvent(
     );
   }
 
-  const payload: IServiceCreateEventPayload = {
+  const payload: Omit<IServiceCreateEventPayload, 'id'> = {
     name: body.name,
     profileId,
     projectId,
@@ -166,6 +166,8 @@ export async function postEvent(
     referrer: referrer?.url,
     referrerName: referrer?.name ?? utmReferrer?.name ?? '',
     referrerType: referrer?.type ?? utmReferrer?.type ?? '',
+    profile: undefined,
+    meta: undefined,
   };
 
   const job = findJobByPrefix(eventsJobs, `event:${projectId}:${profileId}:`);

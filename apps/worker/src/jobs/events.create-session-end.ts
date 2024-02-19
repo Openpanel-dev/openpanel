@@ -71,11 +71,12 @@ export async function createSessionEnd(
   return createEvent({
     ...sessionStart,
     properties: {
+      ...sessionStart.properties,
       _bounce: screenViews.length === 1,
     },
     name: 'session_end',
     duration: sessionDuration,
     path: lastScreenView?.path ?? sessionStart.path,
-    createdAt: toISOString(getTime(lastScreenView.createdAt) + 100),
+    createdAt: new Date(getTime(lastScreenView.createdAt) + 100),
   });
 }

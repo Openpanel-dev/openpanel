@@ -280,19 +280,19 @@ export default function OverviewTopSources({
                   setWidget('domain');
                   break;
                 case 'utm_source':
-                  setFilter('utm_source', item.name);
+                  setFilter('properties.query.utm_source', item.name);
                   break;
                 case 'utm_medium':
-                  setFilter('utm_medium', item.name);
+                  setFilter('properties.query.utm_medium', item.name);
                   break;
                 case 'utm_campaign':
-                  setFilter('utm_campaign', item.name);
+                  setFilter('properties.query.utm_campaign', item.name);
                   break;
                 case 'utm_term':
-                  setFilter('utm_term', item.name);
+                  setFilter('properties.query.utm_term', item.name);
                   break;
                 case 'utm_content':
-                  setFilter('utm_content', item.name);
+                  setFilter('properties.query.utm_content', item.name);
                   break;
               }
             }}

@@ -6,7 +6,7 @@ import { connection } from './connection';
 
 export interface EventsQueuePayloadCreateEvent {
   type: 'createEvent';
-  payload: IServiceCreateEventPayload;
+  payload: Omit<IServiceCreateEventPayload, 'id'>;
 }
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';

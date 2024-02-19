@@ -12,7 +12,7 @@ const nuqsOptions = { history: 'push' } as const;
 
 export function useOverviewOptions() {
   const [previous, setPrevious] = useQueryState(
-    'name',
+    'compare',
     parseAsBoolean.withDefault(true).withOptions(nuqsOptions)
   );
   const [range, setRange] = useQueryState(
