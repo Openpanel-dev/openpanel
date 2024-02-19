@@ -101,7 +101,6 @@ COPY --from=build /app/packages/types /app/packages/types
 COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
 COPY --from=prod /app/packages/redis/node_modules /app/packages/redis/node_modules
 COPY --from=prod /app/packages/common/node_modules /app/packages/common/node_modules
-COPY --from=prod /app/packages/constants/node_modules /app/packages/constants/node_modules
 COPY --from=prod /app/packages/validation/node_modules /app/packages/validation/node_modules
 COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modules
 
