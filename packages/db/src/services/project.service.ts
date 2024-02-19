@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db } from '../prisma-client';
 
 export type IServiceProject = Awaited<ReturnType<typeof getProjectById>>;
 
@@ -6,14 +6,6 @@ export function getProjectById(id: string) {
   return db.project.findUnique({
     where: {
       id,
-    },
-  });
-}
-
-export async function getCurrentProjects(organizationSlug: string) {
-  return await db.project.findMany({
-    where: {
-      organization_slug: organizationSlug,
     },
   });
 }

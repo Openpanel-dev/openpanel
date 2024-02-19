@@ -1,16 +1,15 @@
-import { getChartSql } from '@/server/services/chart.service';
+import { round } from '@/utils/math';
+import * as mathjs from 'mathjs';
+import { sort } from 'ramda';
+
+import { alphabetIds, NOT_SET_VALUE } from '@mixan/constants';
+import { chQuery, convertClickhouseDateToJs, getChartSql } from '@mixan/db';
 import type {
   IChartEvent,
   IChartInput,
   IGetChartDataInput,
   IInterval,
-} from '@/types';
-import { alphabetIds, NOT_SET_VALUE } from '@/utils/constants';
-import { round } from '@/utils/math';
-import * as mathjs from 'mathjs';
-import { sort } from 'ramda';
-
-import { chQuery, convertClickhouseDateToJs } from '@mixan/db';
+} from '@mixan/validation';
 
 export type GetChartDataResult = Awaited<ReturnType<typeof getChartData>>;
 export interface ResultItem {

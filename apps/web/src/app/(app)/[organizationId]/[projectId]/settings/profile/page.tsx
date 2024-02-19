@@ -1,7 +1,8 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
-import { getUserById } from '@/server/services/user.service';
 import { auth } from '@clerk/nextjs';
+
+import { getUserById } from '@mixan/db';
 
 import EditProfile from './edit-profile';
 import { Logout } from './logout';

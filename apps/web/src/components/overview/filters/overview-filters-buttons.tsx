@@ -1,10 +1,13 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import {
+  useEventQueryFilters,
+  useEventQueryNamesFilter,
+} from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 import { X } from 'lucide-react';
-import { Options as NuqsOptions } from 'nuqs';
+import type { Options as NuqsOptions } from 'nuqs';
 
 interface OverviewFiltersButtonsProps {
   className?: string;
@@ -15,25 +18,40 @@ export function OverviewFiltersButtons({
   className,
   nuqsOptions,
 }: OverviewFiltersButtonsProps) {
-  const eventQueryFilters = useEventQueryFilters(nuqsOptions);
-  const filters = Object.entries(eventQueryFilters).filter(
-    ([, filter]) => filter.get !== null
-  );
-  if (filters.length === 0) return null;
+  const [events, setEvents] = useEventQueryNamesFilter(nuqsOptions);
+  const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
+  if (filters.length === 0 && events.length === 0) return null;
   return (
     <div className={cn('flex flex-wrap gap-2 px-4 pb-4', className)}>
-      {filters.map(([key, filter]) => (
+      {events.map((event) => (
         <Button
-          key={key}
+          key={event}
           size="sm"
           variant="outline"
           icon={X}
-          onClick={() => filter.set(null)}
+          onClick={() => setEvents((p) => p.filter((e) => e !== event))}
         >
-          <span className="mr-1">{key} is</span>
-          <strong>{filter.get}</strong>
+          <strong>{event}</strong>
         </Button>
       ))}
+      {filters.map((filter) => {
+        if (!filter.value[0]) {
+          return null;
+        }
+
+        return (
+          <Button
+            key={filter.name}
+            size="sm"
+            variant="outline"
+            icon={X}
+            onClick={() => setFilter(filter.name, filter.value[0], 'is')}
+          >
+            <span className="mr-1">{filter.name} is</span>
+            <strong>{filter.value[0]}</strong>
+          </Button>
+        );
+      })}
     </div>
   );
 }

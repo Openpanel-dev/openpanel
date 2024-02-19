@@ -8,7 +8,7 @@ import { Button } from '../ui/button';
 interface ExpandableListItemProps {
   children: React.ReactNode;
   content: React.ReactNode;
-  title: string;
+  title: React.ReactNode;
   image?: React.ReactNode;
   initialOpen?: boolean;
   className?: string;
@@ -29,7 +29,7 @@ export function ExpandableListItem({
       <div className="p-2 sm:p-4 flex gap-4">
         <div className="flex gap-1">{image}</div>
         <div className="flex flex-col flex-1 gap-1 min-w-0">
-          <span className="text-md font-medium leading-none mb-1">{title}</span>
+          <div className="text-md font-medium leading-none mb-1">{title}</div>
           {!!content && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
               {content}

@@ -1,13 +1,16 @@
 'use client';
 
-import type { RouterOutputs } from '@/app/_trpc/client';
 import { ExpandableListItem } from '@/components/general/ExpandableListItem';
 import { KeyValue, KeyValueSubtle } from '@/components/ui/key-value';
 import { useAppParams } from '@/hooks/useAppParams';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import {
+  useEventQueryFilters,
+  useEventQueryNamesFilter,
+} from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import { round } from '@/utils/math';
+import { uniq } from 'ramda';
 
 import type { IServiceCreateEventPayload } from '@mixan/db';
 
@@ -40,7 +43,8 @@ export function EventListItem({
   meta,
 }: EventListItemProps) {
   const params = useAppParams();
-  const eventQueryFilters = useEventQueryFilters({ shallow: false });
+  const [, setEvents] = useEventQueryNamesFilter({ shallow: false });
+  const [, setFilter] = useEventQueryFilters({ shallow: false });
   const keyValueList = [
     {
       name: 'Duration',
@@ -50,98 +54,98 @@ export function EventListItem({
       name: 'Referrer',
       value: referrer,
       onClick() {
-        eventQueryFilters.referrer.set(referrer ?? null);
+        setFilter('referrer', referrer ?? '');
       },
     },
     {
       name: 'Referrer name',
       value: referrerName,
       onClick() {
-        eventQueryFilters.referrerName.set(referrerName ?? null);
+        setFilter('referrer_name', referrerName ?? '');
       },
     },
     {
       name: 'Referrer type',
       value: referrerType,
       onClick() {
-        eventQueryFilters.referrerType.set(referrerType ?? null);
+        setFilter('referrer_type', referrerType ?? '');
       },
     },
     {
       name: 'Brand',
       value: brand,
       onClick() {
-        eventQueryFilters.brand.set(brand ?? null);
+        setFilter('brand', brand ?? '');
       },
     },
     {
       name: 'Model',
       value: model,
       onClick() {
-        eventQueryFilters.model.set(model ?? null);
+        setFilter('model', model ?? '');
       },
     },
     {
       name: 'Browser',
       value: browser,
       onClick() {
-        eventQueryFilters.browser.set(browser ?? null);
+        setFilter('browser', browser ?? '');
       },
     },
     {
       name: 'Browser version',
       value: browserVersion,
       onClick() {
-        eventQueryFilters.browserVersion.set(browserVersion ?? null);
+        setFilter('browser_version', browserVersion ?? '');
       },
     },
     {
       name: 'OS',
       value: os,
       onClick() {
-        eventQueryFilters.os.set(os ?? null);
+        setFilter('os', os ?? '');
       },
     },
     {
       name: 'OS cersion',
       value: osVersion,
       onClick() {
-        eventQueryFilters.osVersion.set(osVersion ?? null);
+        setFilter('os_version', osVersion ?? '');
       },
     },
     {
       name: 'City',
       value: city,
       onClick() {
-        eventQueryFilters.city.set(city ?? null);
+        setFilter('city', city ?? '');
       },
     },
     {
       name: 'Region',
       value: region,
       onClick() {
-        eventQueryFilters.region.set(region ?? null);
+        setFilter('region', region ?? '');
       },
     },
     {
       name: 'Country',
       value: country,
       onClick() {
-        eventQueryFilters.country.set(country ?? null);
+        setFilter('country', country ?? '');
       },
     },
     {
       name: 'Continent',
       value: continent,
       onClick() {
-        eventQueryFilters.continent.set(continent ?? null);
+        setFilter('continent', continent ?? '');
       },
     },
     {
       name: 'Device',
       value: device,
       onClick() {
-        eventQueryFilters.device.set(device ?? null);
+        setFilter('device', device ?? '');
       },
     },
   ].filter((item) => typeof item.value === 'string' && item.value);
@@ -156,7 +160,11 @@ export function EventListItem({
   return (
     <ExpandableListItem
       className={cn(meta?.conversion && 'ring-2 ring-primary-500')}
-      title={name.split('_').join(' ')}
+      title={
+        <button onClick={() => setEvents((p) => uniq([...p, name]))}>
+          {name.split('_').join(' ')}
+        </button>
+      }
       content={
         <>
           <KeyValueSubtle name="Time" value={createdAt.toLocaleString()} />
@@ -172,7 +180,7 @@ export function EventListItem({
               name="Path"
               value={path}
               onClick={() => {
-                eventQueryFilters.path.set(path);
+                setFilter('path', path);
               }}
             />
           )}
@@ -191,6 +199,13 @@ export function EventListItem({
                     key={item.name}
                     name={item.name}
                     value={item.value}
+                    onClick={() => {
+                      setFilter(
+                        `properties.${item.name}`,
+                        item.value ? String(item.value) : '',
+                        'is'
+                      );
+                    }}
                   />
                 ))}
               </div>

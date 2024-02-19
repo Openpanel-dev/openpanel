@@ -1,6 +1,7 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
-import { getClientsByOrganizationId } from '@/server/services/clients.service';
+
+import { getClientsByOrganizationId } from '@mixan/db';
 
 import ListClients from './list-clients';
 

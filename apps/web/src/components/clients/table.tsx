@@ -1,10 +1,11 @@
-import type { IClientWithProject } from '@/types';
 import { formatDate } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 
+import type { IServiceClientWithProject } from '@mixan/db';
+
 import { ClientActions } from './ClientActions';
 
-export const columns: ColumnDef<IClientWithProject>[] = [
+export const columns: ColumnDef<IServiceClientWithProject>[] = [
   {
     accessorKey: 'name',
     header: 'Name',

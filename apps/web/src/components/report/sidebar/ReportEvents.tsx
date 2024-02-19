@@ -1,6 +1,5 @@
 'use client';
 
-import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { Dropdown } from '@/components/Dropdown';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,9 +7,11 @@ import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
+import { useEventNames } from '@/hooks/useEventNames';
 import { useDispatch, useSelector } from '@/redux';
-import type { IChartEvent } from '@/types';
 import { GanttChart, GanttChartIcon, Users } from 'lucide-react';
+
+import type { IChartEvent } from '@mixan/validation';
 
 import {
   addEvent,
@@ -29,14 +30,8 @@ export function ReportEvents() {
   const selectedEvents = useSelector((state) => state.report.events);
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
+  const eventNames = useEventNames(projectId);
 
-  const eventsQuery = api.chart.events.useQuery({
-    projectId,
-  });
-  const eventsCombobox = (eventsQuery.data ?? []).map((item) => ({
-    value: item.name,
-    label: item.name,
-  }));
   const dispatchChangeEvent = useDebounceFn((event: IChartEvent) => {
     dispatch(changeEvent(event));
   });
@@ -76,7 +71,10 @@ export function ReportEvents() {
                       })
                     );
                   }}
-                  items={eventsCombobox}
+                  items={eventNames.map((item) => ({
+                    label: item.name,
+                    value: item.name,
+                  }))}
                   placeholder="Select event"
                 />
                 <Input
@@ -189,7 +187,10 @@ export function ReportEvents() {
               })
             );
           }}
-          items={eventsCombobox}
+          items={eventNames.map((item) => ({
+            label: item.name,
+            value: item.name,
+          }))}
           placeholder="Select event"
         />
       </div>

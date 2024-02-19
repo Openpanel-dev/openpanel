@@ -5,8 +5,9 @@ import type { IChartData } from '@/app/_trpc/client';
 import { Progress } from '@/components/ui/progress';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
-import { NOT_SET_VALUE } from '@/utils/constants';
 import { getChartColor } from '@/utils/theme';
+
+import { NOT_SET_VALUE } from '@mixan/constants';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';

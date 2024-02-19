@@ -6,12 +6,13 @@ import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAppParams } from '@/hooks/useAppParams';
-import { zShareOverview } from '@/utils/validation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
+
+import { zShareOverview } from '@mixan/validation';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';

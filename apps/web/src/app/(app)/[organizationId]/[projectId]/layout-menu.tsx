@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useAppParams } from '@/hooks/useAppParams';
-import type { IServiceDashboards } from '@/server/services/dashboard.service';
 import { cn } from '@/utils/cn';
 import { useUser } from '@clerk/nextjs';
 import {
@@ -20,6 +19,8 @@ import {
 import type { LucideProps } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+import type { IServiceDashboards } from '@mixan/db';
 
 function LinkWithIcon({
   href,

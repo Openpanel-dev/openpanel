@@ -1,10 +1,7 @@
 'use client';
 
 import { Chart } from '@/components/report/chart';
-import {
-  useEventFilters,
-  useEventQueryFilters,
-} from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -17,8 +14,7 @@ interface OverviewTopPagesProps {
 }
 export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
   const { interval, range, previous } = useOverviewOptions();
-  const filters = useEventFilters();
-  const { path } = useEventQueryFilters();
+  const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('pages', {
     top: {
       title: 'Top pages',
@@ -129,7 +125,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
             {...widget.chart}
             previous={false}
             onClick={(item) => {
-              path.set(item.name);
+              setFilter('path', item.name);
             }}
           />
         </WidgetBody>

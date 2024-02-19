@@ -1,9 +1,10 @@
 'use client';
 
-import type { IChartInput } from '@/types';
 import { cn } from '@/utils/cn';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import AnimateHeight from 'react-animate-height';
+
+import type { IChartInput } from '@mixan/validation';
 
 import { Chart } from '../report/chart';
 import { Widget, WidgetBody, WidgetHead } from '../Widget';

@@ -3,14 +3,14 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '@/server/api/trpc';
-import type { IChartEvent, IChartInput, IChartRange } from '@/types';
 import { getDaysOldDate } from '@/utils/date';
 import { average, max, min, round, sum } from '@/utils/math';
-import { zChartInput } from '@/utils/validation';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
 import { chQuery, createSqlBuilder } from '@mixan/db';
+import { zChartInput } from '@mixan/validation';
+import type { IChartEvent, IChartInput, IChartRange } from '@mixan/validation';
 
 import { getChartData, withFormula } from './chart.helpers';
 

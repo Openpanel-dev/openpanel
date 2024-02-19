@@ -12,9 +12,12 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
+    "@clerk/nextjs": "^4.29.7",
     "@clickhouse/client": "^0.2.9",
     "@mixan/common": "workspace:*",
+    "@mixan/constants": "workspace:*",
     "@mixan/redis": "workspace:*",
+    "@mixan/validation": "workspace:*",
     "@prisma/client": "^5.1.1",
     "ramda": "^0.29.1",
     "uuid": "^9.0.1"

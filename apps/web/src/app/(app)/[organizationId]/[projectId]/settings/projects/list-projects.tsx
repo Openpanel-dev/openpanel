@@ -6,11 +6,12 @@ import { columns } from '@/components/projects/table';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
-import type { getProjectsByOrganizationId } from '@/server/services/project.service';
 import { PlusIcon } from 'lucide-react';
 
+import type { getProjectsByOrganizationSlug } from '@mixan/db';
+
 interface ListProjectsProps {
-  projects: Awaited<ReturnType<typeof getProjectsByOrganizationId>>;
+  projects: Awaited<ReturnType<typeof getProjectsByOrganizationSlug>>;
 }
 export default function ListProjects({ projects }: ListProjectsProps) {
   const organizationId = useAppParams().organizationId;

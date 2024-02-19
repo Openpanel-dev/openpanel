@@ -3,18 +3,20 @@
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { FilterIcon } from 'lucide-react';
-import { Options as NuqsOptions } from 'nuqs';
+import type { Options as NuqsOptions } from 'nuqs';
 
 import { OverviewFiltersDrawerContent } from './overview-filters-drawer-content';
 
 interface OverviewFiltersDrawerProps {
   projectId: string;
   nuqsOptions?: NuqsOptions;
+  enableEventsFilter?: boolean;
 }
 
 export function OverviewFiltersDrawer({
   projectId,
   nuqsOptions,
+  enableEventsFilter,
 }: OverviewFiltersDrawerProps) {
   return (
     <Sheet>
@@ -27,6 +29,7 @@ export function OverviewFiltersDrawer({
         <OverviewFiltersDrawerContent
           projectId={projectId}
           nuqsOptions={nuqsOptions}
+          enableEventsFilter={enableEventsFilter}
         />
       </SheetContent>
     </Sheet>

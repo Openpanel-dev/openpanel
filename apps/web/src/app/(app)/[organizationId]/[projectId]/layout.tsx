@@ -1,5 +1,7 @@
-import { getDashboardsByOrganization } from '@/server/services/dashboard.service';
-import { getCurrentOrganizations } from '@/server/services/organization.service';
+import {
+  getCurrentOrganizations,
+  getDashboardsByOrganization,
+} from '@mixan/db';
 
 import { LayoutSidebar } from './layout-sidebar';
 

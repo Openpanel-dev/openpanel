@@ -97,6 +97,7 @@ enum ChartType {
   pie
   metric
   area
+  map
 }
 
 model Dashboard {

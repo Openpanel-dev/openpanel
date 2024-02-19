@@ -4,9 +4,10 @@ import { WidgetHead } from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Chart } from '@/components/report/chart';
 import { Widget, WidgetBody } from '@/components/Widget';
-import { useEventFilters } from '@/hooks/useEventQueryFilters';
-import type { IChartInput } from '@/types';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
+
+import type { IChartInput } from '@mixan/validation';
 
 interface OverviewMetricsProps {
   projectId: string;
@@ -14,7 +15,7 @@ interface OverviewMetricsProps {
 
 export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
   const { previous, range, interval, metric, setMetric } = useOverviewOptions();
-  const filters = useEventFilters();
+  const [filters] = useEventQueryFilters();
 
   const reports = [
     {

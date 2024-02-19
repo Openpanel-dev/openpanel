@@ -5,7 +5,7 @@ import { FullPageEmptyState } from '@/components/FullPageEmptyState';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCursor } from '@/hooks/useCursor';
-import { useEventFilters } from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { GanttChartIcon } from 'lucide-react';
 
 import type { IServiceCreateEventPayload } from '@mixan/db';
@@ -18,8 +18,7 @@ interface EventListProps {
 }
 export function EventList({ data, count }: EventListProps) {
   const { cursor, setCursor } = useCursor();
-  const filters = useEventFilters();
-
+  const [filters] = useEventQueryFilters();
   return (
     <Suspense>
       <div className="p-4">

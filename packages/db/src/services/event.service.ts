@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 
 import { randomSplitName, toDots } from '@mixan/common';
 import { redis, redisPub } from '@mixan/redis';
+import type { IChartEventFilter } from '@mixan/validation';
 
 import {
   ch,
@@ -12,9 +13,9 @@ import {
 } from '../clickhouse-client';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
-import type { IDBProfile } from '../prisma-types';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
+import type { IServiceProfile } from './profile.service';
 
 export interface IClickhouseEvent {
   id: string;
@@ -40,7 +41,7 @@ export interface IClickhouseEvent {
   model: string;
 
   // They do not exist here. Just make ts happy for now
-  profile?: IDBProfile;
+  profile?: IServiceProfile;
   meta?: EventMeta;
 }
 
@@ -100,7 +101,7 @@ export interface IServiceCreateEventPayload {
   referrer: string | undefined;
   referrerName: string | undefined;
   referrerType: string | undefined;
-  profile: IDBProfile | undefined;
+  profile: IServiceProfile | undefined;
   meta: EventMeta | undefined;
 }
 
@@ -131,9 +132,7 @@ export async function getEvents(
     });
 
     for (const event of events) {
-      event.profile = profiles.find((p) => p.id === event.profile_id) as
-        | IDBProfile
-        | undefined;
+      event.profile = profiles.find((p) => p.id === event.profile_id);
     }
   }
 
@@ -251,7 +250,8 @@ interface GetEventListOptions {
   profileId?: string;
   take: number;
   cursor?: number;
-  filters: any[];
+  events?: string[] | null;
+  filters?: IChartEventFilter[];
 }
 
 export async function getEventList({
@@ -259,18 +259,29 @@ export async function getEventList({
   take,
   projectId,
   profileId,
+  events,
   filters,
 }: GetEventListOptions) {
-  const { sb, getSql } = createSqlBuilder();
+  const { sb, getSql, join } = createSqlBuilder();
 
   sb.limit = take;
   sb.offset = (cursor ?? 0) * take;
   sb.where.projectId = `project_id = '${projectId}'`;
+
   if (profileId) {
     sb.where.profileId = `profile_id = '${profileId}'`;
   }
 
-  getEventFiltersWhereClause(sb, filters);
+  if (events && events.length > 0) {
+    sb.where.events = `name IN (${join(
+      events.map((n) => `'${n}'`),
+      ','
+    )})`;
+  }
+
+  if (filters) {
+    getEventFiltersWhereClause(sb, filters);
+  }
 
   // if (cursor) {
   //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
@@ -284,15 +295,25 @@ export async function getEventList({
 export async function getEventsCount({
   projectId,
   profileId,
+  events,
   filters,
 }: Omit<GetEventListOptions, 'cursor' | 'take'>) {
-  const { sb, getSql } = createSqlBuilder();
+  const { sb, getSql, join } = createSqlBuilder();
   sb.where.projectId = `project_id = '${projectId}'`;
   if (profileId) {
     sb.where.profileId = `profile_id = '${profileId}'`;
   }
 
-  getEventFiltersWhereClause(sb, filters);
+  if (events && events.length > 0) {
+    sb.where.events = `name IN (${join(
+      events.map((n) => `'${n}'`),
+      ','
+    )})`;
+  }
+
+  if (filters) {
+    getEventFiltersWhereClause(sb, filters);
+  }
 
   const res = await chQuery<{ count: number }>(
     getSql().replace('*', 'count(*) as count')

@@ -1,0 +1,26 @@
+{
+  "name": "@mixan/constants",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@mixan/eslint-config": "workspace:*",
+    "@mixan/prettier-config": "workspace:*",
+    "@mixan/tsconfig": "workspace:*",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "prisma": "^5.1.1",
+    "typescript": "^5.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@mixan/eslint-config/base"
+    ]
+  },
+  "prettier": "@mixan/prettier-config"
+}

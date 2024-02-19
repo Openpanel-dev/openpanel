@@ -25,6 +25,7 @@ interface ComboboxAdvancedProps {
   onChange: React.Dispatch<React.SetStateAction<IValue[]>>;
   items: IItem[];
   placeholder: string;
+  className?: string;
 }
 
 export function ComboboxAdvanced({
@@ -32,6 +33,7 @@ export function ComboboxAdvanced({
   value,
   onChange,
   placeholder,
+  className,
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
@@ -81,8 +83,12 @@ export function ComboboxAdvanced({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant={'outline'} onClick={() => setOpen((prev) => !prev)}>
-          <div className="flex gap-1 flex-wrap">
+        <Button
+          variant={'outline'}
+          onClick={() => setOpen((prev) => !prev)}
+          className={className}
+        >
+          <div className="flex gap-1 flex-wrap w-full">
             {value.length === 0 && placeholder}
             {value.slice(0, 2).map((value) => {
               const item = items.find((item) => item.value === value) ?? {

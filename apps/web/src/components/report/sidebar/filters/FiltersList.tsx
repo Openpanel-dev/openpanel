@@ -1,4 +1,4 @@
-import type { IChartEvent } from '@/types';
+import type { IChartEvent } from '@mixan/validation';
 
 import { FilterItem } from './FilterItem';
 

@@ -1,10 +1,8 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import {
-  getInvites,
-  getOrganizationBySlug,
-} from '@/server/services/organization.service';
 import { clerkClient } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
+
+import { getInvites, getOrganizationBySlug } from '@mixan/db';
 
 import EditOrganization from './edit-organization';
 import InvitedUsers from './invited-users';

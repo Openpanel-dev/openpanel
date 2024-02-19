@@ -15,7 +15,8 @@ function getHostname(url: string | undefined) {
 }
 
 export function parseReferrer(url: string | undefined) {
-  const match = referrers[getHostname(url)];
+  const hostname = getHostname(url);
+  const match = referrers[hostname] ?? referrers[hostname.replace('www.', '')];
 
   return {
     name: match?.name ?? '',

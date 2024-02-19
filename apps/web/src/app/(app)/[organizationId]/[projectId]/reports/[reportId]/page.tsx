@@ -1,9 +1,9 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
-import { getOrganizationBySlug } from '@/server/services/organization.service';
-import { getReportById } from '@/server/services/reports.service';
 import { Pencil } from 'lucide-react';
 import { notFound } from 'next/navigation';
+
+import { getOrganizationBySlug, getReportById } from '@mixan/db';
 
 import ReportEditor from '../report-editor';
 

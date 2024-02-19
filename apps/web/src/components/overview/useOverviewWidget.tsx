@@ -1,6 +1,7 @@
-import type { IChartInput } from '@/types';
-import { mapKeys } from '@/utils/validation';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
+
+import { mapKeys } from '@mixan/validation';
+import type { IChartInput } from '@mixan/validation';
 
 export function useOverviewWidget<T extends string>(
   key: string,
@@ -15,7 +16,7 @@ export function useOverviewWidget<T extends string>(
   );
   return [
     {
-      ...widgets[widget]!,
+      ...widgets[widget],
       key: widget,
     },
     setWidget,

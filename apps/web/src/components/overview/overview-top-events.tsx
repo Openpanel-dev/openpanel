@@ -1,7 +1,7 @@
 'use client';
 
 import { Chart } from '@/components/report/chart';
-import { useEventFilters } from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -16,7 +16,7 @@ export default function OverviewTopEvents({
   projectId,
 }: OverviewTopEventsProps) {
   const { interval, range, previous } = useOverviewOptions();
-  const filters = useEventFilters();
+  const [filters] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('ev', {
     all: {
       title: 'Top events',

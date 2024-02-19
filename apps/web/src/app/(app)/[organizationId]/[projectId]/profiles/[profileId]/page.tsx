@@ -3,12 +3,10 @@ import { ListProperties } from '@/components/events/ListProperties';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
 import { getExists } from '@/server/pageExists';
-import {
-  getProfileById,
-  getProfilesByExternalId,
-} from '@/server/services/profile.service';
 import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
+
+import { getProfileById, getProfilesByExternalId } from '@mixan/db';
 
 import ListProfileEvents from './list-profile-events';
 

@@ -1,10 +1,11 @@
 import { useDispatch, useSelector } from '@/redux';
-import type { IInterval } from '@/types';
+import { ClockIcon } from 'lucide-react';
+
 import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
-} from '@/utils/constants';
-import { ClockIcon } from 'lucide-react';
+} from '@mixan/constants';
+import type { IInterval } from '@mixan/validation';
 
 import { Combobox } from '../ui/combobox';
 import { changeInterval } from './reportSlice';
@@ -32,7 +33,7 @@ export function ReportInterval({ className }: ReportIntervalProps) {
       className={className}
       placeholder="Interval"
       onChange={(value) => {
-        dispatch(changeInterval(value as IInterval));
+        dispatch(changeInterval(value));
       }}
       value={interval}
       items={[

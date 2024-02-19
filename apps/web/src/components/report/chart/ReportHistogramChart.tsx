@@ -4,10 +4,11 @@ import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
-import type { IInterval } from '@/types';
 import { cn } from '@/utils/cn';
 import { getChartColor, theme } from '@/utils/theme';
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
+
+import type { IInterval } from '@mixan/validation';
 
 import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';

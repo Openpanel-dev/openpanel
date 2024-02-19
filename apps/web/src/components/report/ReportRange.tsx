@@ -1,6 +1,7 @@
-import type { IChartRange } from '@/types';
-import { timeRanges } from '@/utils/constants';
 import { CalendarIcon } from 'lucide-react';
+
+import { timeRanges } from '@mixan/constants';
+import type { IChartRange } from '@mixan/validation';
 
 import type { ExtendedComboboxProps } from '../ui/combobox';
 import { Combobox } from '../ui/combobox';

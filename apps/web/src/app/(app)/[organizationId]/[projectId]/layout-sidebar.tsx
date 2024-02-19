@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { Logo } from '@/components/Logo';
-import type { IServiceDashboards } from '@/server/services/dashboard.service';
-import type { IServiceOrganization } from '@/server/services/organization.service';
 import { cn } from '@/utils/cn';
 import { Rotate as Hamburger } from 'hamburger-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+import type { IServiceDashboards, IServiceOrganization } from '@mixan/db';
 
 import LayoutMenu from './layout-menu';
 import LayoutOrganizationSelector from './layout-organization-selector';

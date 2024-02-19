@@ -1,12 +1,12 @@
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
-import { getDefaultIntervalByRange, timeRanges } from '@/utils/constants';
-import { mapKeys } from '@/utils/validation';
 import {
   parseAsBoolean,
   parseAsInteger,
   parseAsStringEnum,
   useQueryState,
 } from 'nuqs';
+
+import { getDefaultIntervalByRange, timeRanges } from '@mixan/constants';
+import { mapKeys } from '@mixan/validation';
 
 const nuqsOptions = { history: 'push' } as const;
 

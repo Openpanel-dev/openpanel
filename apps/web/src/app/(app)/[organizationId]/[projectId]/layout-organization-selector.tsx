@@ -2,9 +2,10 @@
 
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
-import type { IServiceOrganization } from '@/server/services/organization.service';
 import { Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+import type { IServiceOrganization } from '@mixan/db';
 
 interface LayoutOrganizationSelectorProps {
   organizations: IServiceOrganization[];

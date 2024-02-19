@@ -18,7 +18,7 @@ export default function ListProfileEvents({
   projectId,
   profileId,
 }: ListProfileEvents) {
-  const pagination = usePagination();
+  const pagination = usePagination(50);
   const [eventFilters, setEventFilters] = useQueryState(
     'events',
     parseAsJson<string[]>().withDefault([])

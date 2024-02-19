@@ -1,8 +1,8 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
-import { getDashboardById } from '@/server/services/dashboard.service';
-import { getReportsByDashboardId } from '@/server/services/reports.service';
 import { notFound } from 'next/navigation';
+
+import { getDashboardById, getReportsByDashboardId } from '@mixan/db';
 
 import { ListReports } from './list-reports';
 

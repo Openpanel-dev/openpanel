@@ -107,11 +107,6 @@ export const dashboardRouter = createTRPCRouter({
             },
           });
         }
-        await db.recentDashboards.deleteMany({
-          where: {
-            dashboard_id: id,
-          },
-        });
         await db.dashboard.delete({
           where: {
             id,

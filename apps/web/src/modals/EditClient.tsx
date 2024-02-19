@@ -4,17 +4,18 @@ import { api, handleError } from '@/app/_trpc/client';
 import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
-import type { IClientWithProject } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
+import type { IServiceClient } from '@mixan/db';
+
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-type EditClientProps = IClientWithProject;
+type EditClientProps = IServiceClient;
 
 const validator = z.object({
   id: z.string().min(1),

@@ -1,4 +1,4 @@
-import { getCurrentProjects } from '@/server/services/project.service';
+import { getProjectsByOrganizationSlug } from '@mixan/db';
 
 import LayoutProjectSelector from './layout-project-selector';
 
@@ -13,7 +13,7 @@ export default async function PageLayout({
   title,
   organizationSlug,
 }: PageLayoutProps) {
-  const projects = await getCurrentProjects(organizationSlug);
+  const projects = await getProjectsByOrganizationSlug(organizationSlug);
 
   return (
     <>

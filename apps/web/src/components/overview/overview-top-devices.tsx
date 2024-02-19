@@ -1,10 +1,7 @@
 'use client';
 
 import { Chart } from '@/components/report/chart';
-import {
-  useEventFilters,
-  useEventQueryFilters,
-} from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -19,9 +16,7 @@ export default function OverviewTopDevices({
   projectId,
 }: OverviewTopDevicesProps) {
   const { interval, range, previous } = useOverviewOptions();
-  const filters = useEventFilters();
-  const { device, browser, browserVersion, os, osVersion } =
-    useEventQueryFilters();
+  const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     devices: {
       title: 'Top devices',
@@ -190,21 +185,21 @@ export default function OverviewTopDevices({
             onClick={(item) => {
               switch (widget.key) {
                 case 'devices':
-                  device.set(item.name);
+                  setFilter('device', item.name);
                   break;
                 case 'browser':
                   setWidget('browser_version');
-                  browser.set(item.name);
+                  setFilter('browser', item.name);
                   break;
                 case 'browser_version':
-                  browserVersion.set(item.name);
+                  setFilter('browser_version', item.name);
                   break;
                 case 'os':
                   setWidget('os_version');
-                  os.set(item.name);
+                  setFilter('os', item.name);
                   break;
                 case 'os_version':
-                  osVersion.set(item.name);
+                  setFilter('os_version', item.name);
                   break;
               }
             }}

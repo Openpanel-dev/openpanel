@@ -2,11 +2,12 @@
 
 import { api } from '@/app/_trpc/client';
 import { pushModal, showConfirm } from '@/modals';
-import type { IClientWithProject } from '@/types';
 import { clipboard } from '@/utils/clipboard';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+
+import type { IServiceClientWithProject } from '@mixan/db';
 
 import { Button } from '../ui/button';
 import {
@@ -18,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 
-export function ClientActions(client: IClientWithProject) {
+export function ClientActions(client: IServiceClientWithProject) {
   const { id } = client;
   const router = useRouter();
   const deletion = api.client.remove.useMutation({

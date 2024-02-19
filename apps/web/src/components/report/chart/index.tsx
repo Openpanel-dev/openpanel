@@ -3,7 +3,8 @@
 import { memo, useEffect, useState } from 'react';
 import type { RouterOutputs } from '@/app/_trpc/client';
 import { api } from '@/app/_trpc/client';
-import type { IChartInput } from '@/types';
+
+import type { IChartInput } from '@mixan/validation';
 
 import { ChartEmpty } from './ChartEmpty';
 import { ChartLoading } from './ChartLoading';

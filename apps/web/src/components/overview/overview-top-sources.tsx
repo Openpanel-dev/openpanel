@@ -1,10 +1,7 @@
 'use client';
 
 import { Chart } from '@/components/report/chart';
-import {
-  useEventFilters,
-  useEventQueryFilters,
-} from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
@@ -19,17 +16,7 @@ export default function OverviewTopSources({
   projectId,
 }: OverviewTopSourcesProps) {
   const { interval, range, previous } = useOverviewOptions();
-  const {
-    referrer,
-    referrerName,
-    referrerType,
-    utmCampaign,
-    utmContent,
-    utmMedium,
-    utmSource,
-    utmTerm,
-  } = useEventQueryFilters();
-  const filters = useEventFilters();
+  const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('sources', {
     all: {
       title: 'Top sources',
@@ -282,30 +269,30 @@ export default function OverviewTopSources({
             onClick={(item) => {
               switch (widget.key) {
                 case 'all':
-                  referrerName.set(item.name);
+                  setFilter('referrer_name', item.name);
                   setWidget('domain');
                   break;
                 case 'domain':
-                  referrer.set(item.name);
+                  setFilter('referrer', item.name);
                   break;
                 case 'type':
-                  referrerType.set(item.name);
+                  setFilter('referrer_type', item.name);
                   setWidget('domain');
                   break;
                 case 'utm_source':
-                  utmSource.set(item.name);
+                  setFilter('utm_source', item.name);
                   break;
                 case 'utm_medium':
-                  utmMedium.set(item.name);
+                  setFilter('utm_medium', item.name);
                   break;
                 case 'utm_campaign':
-                  utmCampaign.set(item.name);
+                  setFilter('utm_campaign', item.name);
                   break;
                 case 'utm_term':
-                  utmTerm.set(item.name);
+                  setFilter('utm_term', item.name);
                   break;
                 case 'utm_content':
-                  utmContent.set(item.name);
+                  setFilter('utm_content', item.name);
                   break;
               }
             }}

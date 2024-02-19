@@ -7,13 +7,15 @@ import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { useDispatch } from '@/redux';
+import { SlidersHorizontal, Trash } from 'lucide-react';
+
+import { operators } from '@mixan/constants';
 import type {
   IChartEvent,
-  IChartEventFilter,
+  IChartEventFilterOperator,
   IChartEventFilterValue,
-} from '@/types';
-import { operators } from '@/utils/constants';
-import { SlidersHorizontal, Trash } from 'lucide-react';
+} from '@mixan/validation';
+import { mapKeys } from '@mixan/validation';
 
 import { changeEvent } from '../../reportSlice';
 
@@ -67,7 +69,7 @@ export function FilterItem({ filter, event }: FilterProps) {
     );
   };
 
-  const changeFilterOperator = (operator: IChartEventFilter['operator']) => {
+  const changeFilterOperator = (operator: IChartEventFilterOperator) => {
     dispatch(
       changeEvent({
         ...event,
@@ -104,9 +106,9 @@ export function FilterItem({ filter, event }: FilterProps) {
       <div className="flex gap-1">
         <Dropdown
           onChange={changeFilterOperator}
-          items={Object.entries(operators).map(([key, value]) => ({
-            value: key as IChartEventFilter['operator'],
-            label: value,
+          items={mapKeys(operators).map((key) => ({
+            value: key,
+            label: operators[key],
           }))}
           label="Operator"
         >

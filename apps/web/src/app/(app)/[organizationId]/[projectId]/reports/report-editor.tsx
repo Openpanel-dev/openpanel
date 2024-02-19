@@ -19,8 +19,9 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
-import type { IServiceReport } from '@/server/services/reports.service';
 import { GanttChartSquareIcon } from 'lucide-react';
+
+import type { IServiceReport } from '@mixan/db';
 
 interface ReportEditorProps {
   report: IServiceReport | null;

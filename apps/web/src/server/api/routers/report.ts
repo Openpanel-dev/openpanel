@@ -1,8 +1,9 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import { transformReport } from '@/server/services/reports.service';
-import { zChartInput } from '@/utils/validation';
 import { z } from 'zod';
+
+import { transformReport } from '@mixan/db';
+import { zChartInput } from '@mixan/validation';
 
 export const reportRouter = createTRPCRouter({
   get: protectedProcedure

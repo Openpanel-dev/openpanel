@@ -1,3 +1,4 @@
+import { alphabetIds, lineTypes, timeRanges } from '@mixan/constants';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -5,11 +6,10 @@ import type {
   IChartInput,
   IChartLineType,
   IChartRange,
-} from '@/types';
-import { alphabetIds, timeRanges } from '@/utils/constants';
+} from '@mixan/validation';
 
-import { db } from '@mixan/db';
-import type { Report as DbReport } from '@mixan/db';
+import { db } from '../prisma-client';
+import type { Report as DbReport } from '../prisma-client';
 
 export type IServiceReport = Awaited<ReturnType<typeof getReportById>>;
 
@@ -18,7 +18,7 @@ export function transformFilter(
   index: number
 ): IChartEventFilter {
   return {
-    id: filter.id ?? alphabetIds[index]!,
+    id: filter.id ?? alphabetIds[index] ?? 'A',
     name: filter.name ?? 'Unknown Filter',
     operator: filter.operator ?? 'is',
     value:
@@ -49,7 +49,7 @@ export function transformReport(
     events: (report.events as IChartEvent[]).map(transformReportEvent),
     breakdowns: report.breakdowns as IChartBreakdown[],
     chartType: report.chart_type,
-    lineType: (report.line_type ?? 'kuk') as IChartLineType,
+    lineType: (report.line_type as IChartLineType) ?? lineTypes.monotone,
     interval: report.interval,
     name: report.name || 'Untitled',
     range: (report.range as IChartRange) ?? timeRanges['1m'],

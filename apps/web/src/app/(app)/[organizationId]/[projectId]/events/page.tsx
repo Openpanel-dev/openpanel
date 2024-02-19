@@ -1,7 +1,10 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
-import { getEventFilters } from '@/hooks/useEventQueryFilters';
+import {
+  eventQueryFiltersParser,
+  eventQueryNamesFilter,
+} from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
 
 import { getEventList, getEventsCount } from '@mixan/db';
@@ -15,27 +18,9 @@ interface PageProps {
     organizationId: string;
   };
   searchParams: {
+    events?: string;
     cursor?: string;
-    path?: string;
-    device?: string;
-    referrer?: string;
-    referrerName?: string;
-    referrerType?: string;
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
-    utmContent?: string;
-    utmTerm?: string;
-    continent?: string;
-    country?: string;
-    region?: string;
-    city?: string;
-    browser?: string;
-    browserVersion?: string;
-    os?: string;
-    osVersion?: string;
-    brand?: string;
-    model?: string;
+    f?: string;
   };
 }
 
@@ -59,53 +44,13 @@ export default async function Page({
       cursor: parseQueryAsNumber(searchParams.cursor),
       projectId,
       take: 50,
-      filters: getEventFilters({
-        path: searchParams.path ?? null,
-        device: searchParams.device ?? null,
-        referrer: searchParams.referrer ?? null,
-        referrerName: searchParams.referrerName ?? null,
-        referrerType: searchParams.referrerType ?? null,
-        utmSource: searchParams.utmSource ?? null,
-        utmMedium: searchParams.utmMedium ?? null,
-        utmCampaign: searchParams.utmCampaign ?? null,
-        utmContent: searchParams.utmContent ?? null,
-        utmTerm: searchParams.utmTerm ?? null,
-        continent: searchParams.continent ?? null,
-        country: searchParams.country ?? null,
-        region: searchParams.region ?? null,
-        city: searchParams.city ?? null,
-        browser: searchParams.browser ?? null,
-        browserVersion: searchParams.browserVersion ?? null,
-        os: searchParams.os ?? null,
-        osVersion: searchParams.osVersion ?? null,
-        brand: searchParams.brand ?? null,
-        model: searchParams.model ?? null,
-      }),
+      events: eventQueryNamesFilter.parse(searchParams.events ?? ''),
+      filters: eventQueryFiltersParser.parse(searchParams.f ?? '') ?? undefined,
     }),
     getEventsCount({
       projectId,
-      filters: getEventFilters({
-        path: searchParams.path ?? null,
-        device: searchParams.device ?? null,
-        referrer: searchParams.referrer ?? null,
-        referrerName: searchParams.referrerName ?? null,
-        referrerType: searchParams.referrerType ?? null,
-        utmSource: searchParams.utmSource ?? null,
-        utmMedium: searchParams.utmMedium ?? null,
-        utmCampaign: searchParams.utmCampaign ?? null,
-        utmContent: searchParams.utmContent ?? null,
-        utmTerm: searchParams.utmTerm ?? null,
-        continent: searchParams.continent ?? null,
-        country: searchParams.country ?? null,
-        region: searchParams.region ?? null,
-        city: searchParams.city ?? null,
-        browser: searchParams.browser ?? null,
-        browserVersion: searchParams.browserVersion ?? null,
-        os: searchParams.os ?? null,
-        osVersion: searchParams.osVersion ?? null,
-        brand: searchParams.brand ?? null,
-        model: searchParams.model ?? null,
-      }),
+      events: eventQueryNamesFilter.parse(searchParams.events ?? ''),
+      filters: eventQueryFiltersParser.parse(searchParams.f ?? '') ?? undefined,
     }),
     getExists(organizationId, projectId),
   ]);
@@ -116,6 +61,7 @@ export default async function Page({
         <OverviewFiltersDrawer
           projectId={projectId}
           nuqsOptions={nuqsOptions}
+          enableEventsFilter
         />
         <OverviewFiltersButtons
           className="p-0 justify-end"

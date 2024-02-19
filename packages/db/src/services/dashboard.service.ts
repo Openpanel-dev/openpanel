@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { db } from '../prisma-client';
 
 export type IServiceDashboard = Awaited<ReturnType<typeof getDashboardById>>;
 export type IServiceDashboards = Awaited<

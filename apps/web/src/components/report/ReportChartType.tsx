@@ -1,7 +1,8 @@
 import { useDispatch, useSelector } from '@/redux';
-import { chartTypes } from '@/utils/constants';
-import { objectToZodEnums } from '@/utils/validation';
 import { LineChartIcon } from 'lucide-react';
+
+import { chartTypes } from '@mixan/constants';
+import { objectToZodEnums } from '@mixan/validation';
 
 import { Combobox } from '../ui/combobox';
 import { changeChartType } from './reportSlice';

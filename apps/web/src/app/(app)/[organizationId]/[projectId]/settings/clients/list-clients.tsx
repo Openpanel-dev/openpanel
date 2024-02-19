@@ -6,8 +6,9 @@ import { DataTable } from '@/components/DataTable';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
-import type { getClientsByOrganizationId } from '@/server/services/clients.service';
 import { PlusIcon } from 'lucide-react';
+
+import type { getClientsByOrganizationId } from '@mixan/db';
 
 interface ListClientsProps {
   clients: Awaited<ReturnType<typeof getClientsByOrganizationId>>;

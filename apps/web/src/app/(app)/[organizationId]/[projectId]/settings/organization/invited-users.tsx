@@ -9,7 +9,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
-import type { IServiceInvites } from '@/server/services/organization.service';
+
+import type { IServiceInvites } from '@mixan/db';
 
 import { InviteUser } from './invite-user';
 

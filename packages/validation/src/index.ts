@@ -7,7 +7,7 @@ import {
   metrics,
   operators,
   timeRanges,
-} from './constants';
+} from '@mixan/constants';
 
 export function objectToZodEnums<K extends string>(
   obj: Record<K, any>
@@ -72,4 +72,17 @@ export const zChartInput = z.object({
   projectId: z.string(),
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
+});
+
+export const zInviteUser = z.object({
+  email: z.string().email(),
+  organizationSlug: z.string(),
+  role: z.enum(['admin', 'org:member']),
+});
+
+export const zShareOverview = z.object({
+  organizationId: z.string(),
+  projectId: z.string(),
+  password: z.string().nullable(),
+  public: z.boolean(),
 });

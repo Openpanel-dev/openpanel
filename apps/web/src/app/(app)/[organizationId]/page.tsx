@@ -1,5 +1,5 @@
-import { getOrganizationBySlug } from '@/server/services/organization.service';
-import { getProjectWithMostEvents } from '@/server/services/project.service';
+import { getOrganizationBySlug } from '@mixan/db';
+import { getProjectWithMostEvents } from '@mixan/db';
 import { notFound, redirect } from 'next/navigation';
 
 import PageLayout from './[projectId]/page-layout';

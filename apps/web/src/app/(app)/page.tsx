@@ -1,6 +1,7 @@
-import { getCurrentOrganizations } from '@/server/services/organization.service';
 import { CreateOrganization } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
+
+import { getCurrentOrganizations } from '@mixan/db';
 
 export default async function Page() {
   const organizations = await getCurrentOrganizations();

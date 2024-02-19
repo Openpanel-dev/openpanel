@@ -1,3 +1,5 @@
+import type { IChartEventFilter, IGetChartDataInput } from '@mixan/validation';
+
 import { formatClickhouseDate } from '../clickhouse-client';
 import type { SqlBuilderObject } from '../sql-builder';
 import { createSqlBuilder } from '../sql-builder';
@@ -7,8 +9,6 @@ function log(sql: string) {
   console.log(logs.join('\n'));
   return sql;
 }
-
-type IGetChartDataInput = any;
 
 export function getChartSql({
   event,
@@ -107,7 +107,7 @@ export function getChartSql({
 
 export function getEventFiltersWhereClause(
   sb: SqlBuilderObject,
-  filters: any[]
+  filters: IChartEventFilter[]
 ) {
   filters.forEach((filter, index) => {
     const id = `f${index}`;

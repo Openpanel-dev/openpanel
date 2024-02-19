@@ -1,93 +1,131 @@
-'use client';
-
-import { api } from '@/app/_trpc/client';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useEventNames } from '@/hooks/useEventNames';
+import { useEventProperties } from '@/hooks/useEventProperties';
+import {
+  useEventQueryFilters,
+  useEventQueryNamesFilter,
+} from '@/hooks/useEventQueryFilters';
+import { useEventValues } from '@/hooks/useEventValues';
 import { XIcon } from 'lucide-react';
-import { Options as NuqsOptions } from 'nuqs';
+import type { Options as NuqsOptions } from 'nuqs';
+
+import type {
+  IChartEventFilter,
+  IChartEventFilterOperator,
+  IChartEventFilterValue,
+} from '@mixan/validation';
 
 interface OverviewFiltersProps {
   projectId: string;
   nuqsOptions?: NuqsOptions;
+  enableEventsFilter?: boolean;
 }
 
 export function OverviewFiltersDrawerContent({
   projectId,
   nuqsOptions,
+  enableEventsFilter,
 }: OverviewFiltersProps) {
-  const eventQueryFilters = useEventQueryFilters(nuqsOptions);
+  const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
+  const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
+  const eventNames = useEventNames(projectId);
+  const eventProperties = useEventProperties(projectId);
 
   return (
     <div>
-      <h2 className="text-xl font-medium mb-8">Overview filters</h2>
-      <Combobox
-        className="w-full"
-        onChange={(value) => {
-          // @ts-expect-error
-          eventQueryFilters[value].set('');
-        }}
-        value=""
-        placeholder="Filter by..."
-        label="What do you want to filter by?"
-        items={Object.entries(eventQueryFilters)
-          .filter(([, filter]) => filter.get === null)
-          .map(([name]) => ({
-            label: name,
-            value: name,
+      <SheetHeader className="mb-8">
+        <SheetTitle>Overview filters</SheetTitle>
+      </SheetHeader>
+
+      <div className="flex flex-col gap-4">
+        {enableEventsFilter && (
+          <ComboboxAdvanced
+            className="w-full"
+            value={event}
+            onChange={setEvent}
+            // First items is * which is only used for report editing
+            items={eventNames.slice(1).map((item) => ({
+              label: item.name,
+              value: item.name,
+            }))}
+            placeholder="Select event"
+          />
+        )}
+        <Combobox
+          className="w-full"
+          onChange={(value) => {
+            setFilter(value, '');
+          }}
+          value=""
+          placeholder="Filter by property"
+          label="What do you want to filter by?"
+          items={eventProperties.map((item) => ({
+            label: item,
+            value: item,
           }))}
-        searchable
-      />
+          searchable
+        />
+      </div>
 
       <div className="flex flex-col gap-4 mt-8">
-        {Object.entries(eventQueryFilters)
-          .filter(([, filter]) => filter.get !== null)
-          .map(([name, filter]) => (
-            <FilterOption
-              key={name}
-              projectId={projectId}
-              name={name}
-              {...filter}
-            />
-          ))}
+        {filters
+          .filter((filter) => filter.value[0] !== null)
+          .map((filter) => {
+            return (
+              <FilterOption
+                key={filter.name}
+                projectId={projectId}
+                setFilter={setFilter}
+                {...filter}
+              />
+            );
+          })}
       </div>
     </div>
   );
 }
 
 export function FilterOption({
-  name,
-  get,
-  set,
+  setFilter,
   projectId,
-}: {
-  name: string;
-  get: string | null;
-  set: (value: string | null) => void;
+  ...filter
+}: IChartEventFilter & {
   projectId: string;
+  setFilter: (
+    name: string,
+    value: IChartEventFilterValue,
+    operator: IChartEventFilterOperator
+  ) => void;
 }) {
-  const { data } = api.chart.values.useQuery({
+  const values = useEventValues(
     projectId,
-    event: name === 'path' ? 'screen_view' : 'session_start',
-    property: name,
-  });
+    filter.name === 'path' ? 'screen_view' : 'session_start',
+    filter.name
+  );
 
   return (
     <div className="flex gap-2 items-center">
-      <div>{name}</div>
+      <div>{filter.name}</div>
       <Combobox
         className="flex-1"
-        onChange={(value) => set(value)}
+        onChange={(value) => setFilter(filter.name, value, filter.operator)}
         placeholder={'Select a value'}
-        items={
-          data?.values.filter(Boolean).map((value) => ({
-            value,
-            label: value,
-          })) ?? []
-        }
-        value={get}
+        items={values.map((value) => ({
+          value,
+          label: value,
+        }))}
+        value={String(filter.value[0] ?? '')}
       />
-      <Button size="icon" variant="ghost" onClick={() => set(null)}>
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={() =>
+          setFilter(filter.name, filter.value[0] ?? '', filter.operator)
+        }
+      >
         <XIcon />
       </Button>
     </div>

@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 
-import { getOrganizationBySlug } from './services/organization.service';
-import { getProjectById } from './services/project.service';
+import { getOrganizationBySlug, getProjectById } from '@mixan/db';
 
 export async function getExists(organizationSlug: string, projectId?: string) {
   const promises: Promise<any>[] = [getOrganizationBySlug(organizationSlug)];

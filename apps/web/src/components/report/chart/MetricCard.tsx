@@ -3,10 +3,11 @@
 import type { IChartData } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { useNumber } from '@/hooks/useNumerFormatter';
-import type { IChartMetric } from '@/types';
 import { theme } from '@/utils/theme';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
+
+import type { IChartMetric } from '@mixan/validation';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 

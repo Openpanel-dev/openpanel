@@ -5,7 +5,6 @@ import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layo
 import { LazyChart } from '@/components/report/chart/LazyChart';
 import { ReportRange } from '@/components/report/ReportRange';
 import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,13 +13,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/useAppParams';
-import type { getReportsByDashboardId } from '@/server/services/reports.service';
-import type { IChartRange } from '@/types';
 import { cn } from '@/utils/cn';
-import { getDefaultIntervalByRange, timeRanges } from '@/utils/constants';
 import { ChevronRight, MoreHorizontal, PlusIcon, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+
+import { getDefaultIntervalByRange } from '@mixan/constants';
+import type { getReportsByDashboardId } from '@mixan/db';
+import type { IChartRange } from '@mixan/validation';
 
 interface ListReportsProps {
   reports: Awaited<ReturnType<typeof getReportsByDashboardId>>;

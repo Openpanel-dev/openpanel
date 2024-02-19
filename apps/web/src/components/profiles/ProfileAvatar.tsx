@@ -1,10 +1,11 @@
 'use client';
 
-import type { IServiceProfile } from '@/server/services/profile.service';
 import { cn } from '@/utils/cn';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
+
+import type { IServiceProfile } from '@mixan/db';
 
 import { Avatar, AvatarFallback } from '../ui/avatar';
 
@@ -41,8 +42,8 @@ export function ProfileAvatar({
           size === 'sm'
             ? 'text-xs'
             : size === 'xs'
-            ? 'text-[8px]'
-            : 'text-base',
+              ? 'text-[8px]'
+              : 'text-base',
           'bg-slate-200 text-slate-800'
         )}
       >

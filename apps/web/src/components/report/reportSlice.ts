@@ -1,3 +1,12 @@
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+
+import {
+  alphabetIds,
+  getDefaultIntervalByRange,
+  isHourIntervalEnabledByRange,
+  isMinuteIntervalEnabledByRange,
+} from '@mixan/constants';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -6,15 +15,7 @@ import type {
   IChartRange,
   IChartType,
   IInterval,
-} from '@/types';
-import {
-  alphabetIds,
-  getDefaultIntervalByRange,
-  isHourIntervalEnabledByRange,
-  isMinuteIntervalEnabledByRange,
-} from '@/utils/constants';
-import { createSlice } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
+} from '@mixan/validation';
 
 type InitialState = IChartInput & {
   dirty: boolean;

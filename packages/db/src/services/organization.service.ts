@@ -4,7 +4,7 @@ import type {
   OrganizationInvitation,
 } from '@clerk/nextjs/dist/types/server';
 
-import { db } from '../db';
+import { db } from '../prisma-client';
 
 export type IServiceOrganization = Awaited<
   ReturnType<typeof getCurrentOrganizations>

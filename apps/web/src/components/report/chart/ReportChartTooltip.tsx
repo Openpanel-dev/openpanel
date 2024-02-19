@@ -3,7 +3,6 @@ import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useMappings } from '@/hooks/useMappings';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IRechartPayloadItem } from '@/hooks/useRechartDataModel';
-import { useSelector } from '@/redux';
 import type { IToolTipProps } from '@/types';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';

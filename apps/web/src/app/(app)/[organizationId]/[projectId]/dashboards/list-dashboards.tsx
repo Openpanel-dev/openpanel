@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button';
 import { ToastAction } from '@/components/ui/toast';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
-import type { IServiceDashboards } from '@/server/services/dashboard.service';
 import { LayoutPanelTopIcon, Pencil, PlusIcon, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+
+import type { IServiceDashboards } from '@mixan/db';
 
 interface ListDashboardsProps {
   dashboards: IServiceDashboards;

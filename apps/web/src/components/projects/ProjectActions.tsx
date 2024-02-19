@@ -2,11 +2,12 @@
 
 import { api } from '@/app/_trpc/client';
 import { pushModal, showConfirm } from '@/modals';
-import type { IProject } from '@/types';
 import { clipboard } from '@/utils/clipboard';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+
+import type { IServiceProject } from '@mixan/db';
 
 import { Button } from '../ui/button';
 import {
@@ -18,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 
-export function ProjectActions(project: IProject) {
+export function ProjectActions(project: Exclude<IServiceProject, null>) {
   const { id } = project;
   const router = useRouter();
   const deletion = api.project.remove.useMutation({
