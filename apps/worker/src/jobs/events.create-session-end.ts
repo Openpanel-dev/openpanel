@@ -1,6 +1,6 @@
 import type { Job } from 'bullmq';
 
-import { getTime, toISOString } from '@mixan/common';
+import { getTime } from '@mixan/common';
 import { createEvent, getEvents } from '@mixan/db';
 import type { EventsQueuePayloadCreateSessionEnd } from '@mixan/queue/src/queues';
 
@@ -43,7 +43,6 @@ export async function createSessionEnd(
     return acc + event.duration;
   }, 0);
 
-  let lastScreenView = events.find((event) => event.name === 'screen_view');
   const sessionStart = events.find((event) => event.name === 'session_start');
   const lastEvent = events[0];
   const screenViews = events.filter((event) => event.name === 'screen_view');
@@ -52,31 +51,19 @@ export async function createSessionEnd(
     throw new Error('Failed to find a session_start');
   }
 
-  if (!lastScreenView && lastEvent) {
-    lastScreenView = lastEvent;
-    job.log(
-      `No screen_view found, using last event ${
-        lastEvent.name
-      } (${lastEvent.createdAt.toISOString()})`
-    );
-  }
-
-  if (!lastScreenView) {
-    job.log(
-      'No screen_view found, creating session_end event with session_start path'
-    );
-    throw new Error('No screen_view found');
+  if (!lastEvent) {
+    throw new Error('No last event found');
   }
 
   return createEvent({
     ...sessionStart,
     properties: {
       ...sessionStart.properties,
-      _bounce: screenViews.length === 1,
+      _bounce: screenViews.length <= 1,
     },
     name: 'session_end',
     duration: sessionDuration,
-    path: lastScreenView?.path ?? sessionStart.path,
-    createdAt: new Date(getTime(lastScreenView.createdAt) + 100),
+    path: lastEvent.path,
+    createdAt: new Date(getTime(lastEvent?.createdAt) + 100),
   });
 }
