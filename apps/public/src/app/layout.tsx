@@ -43,6 +43,11 @@ export default function RootLayout({
         data-track-screen-views="1"
         data-track-outgoing-links="1"
       />
+      <Script
+        defer
+        data-domain="openpanel.dev"
+        src="https://plausible.io/js/script.js"
+      />
     </html>
   );
 }
