@@ -5,9 +5,7 @@ import Constants from 'expo-constants';
 import type { MixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
 
-type MixanNativeOptions = MixanOptions & {
-  ipUrl?: string;
-};
+type MixanNativeOptions = MixanOptions
 
 export class MixanNative extends Mixan<MixanNativeOptions> {
   constructor(options: MixanNativeOptions) {

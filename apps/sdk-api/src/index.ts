@@ -59,7 +59,10 @@ const startServer = async () => {
       }
     }
 
-    await fastify.listen({ host: '0.0.0.0', port });
+    await fastify.listen({
+      host: process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost',
+      port,
+    });
 
     // Notify when keys expires
     redisPub.config('SET', 'notify-keyspace-events', 'Ex');

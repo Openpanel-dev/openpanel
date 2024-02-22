@@ -1,5 +1,9 @@
 import { UAParser } from 'ua-parser-js';
 
+export function isUserAgentSet(ua: string) {
+  return ua !== 'node' && ua !== 'undici' && !!ua;
+}
+
 export function parseUserAgent(ua: string) {
   const res = new UAParser(ua).getResult();
   return {

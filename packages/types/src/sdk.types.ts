@@ -137,6 +137,7 @@ export interface MixanResponse<T> {
 export interface PostEventPayload {
   name: string;
   timestamp: string;
+  deviceId?: string;
   profileId?: string;
   properties?: Record<string, unknown> & {
     title?: string | undefined;
@@ -146,17 +147,16 @@ export interface PostEventPayload {
 }
 
 export interface UpdateProfilePayload {
-  profileId?: string;
-  id?: string;
-  first_name?: string;
-  last_name?: string;
+  profileId: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   avatar?: string;
   properties?: MixanJson;
 }
 
 export interface IncrementProfilePayload {
-  profileId?: string;
+  profileId: string;
   property: string;
   value: number;
 }

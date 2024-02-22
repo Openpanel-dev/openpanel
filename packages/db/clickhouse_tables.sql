@@ -1,6 +1,7 @@
 CREATE TABLE openpanel.events (
   `id` UUID DEFAULT generateUUIDv4(),
   `name` String,
+  `device_id` String,
   `profile_id` String,
   `project_id` String,
   `path` String,
@@ -28,7 +29,17 @@ CREATE TABLE openpanel.events (
 ORDER BY
   (project_id, created_at, profile_id) SETTINGS index_granularity = 8192;
 
-CREATE TABLE test.profiles (
+CREATE TABLE openpanel.events_bots (
+  `project_id` String,
+  `name` String,
+  `type` String,
+  `path` String,
+  `created_at` DateTime64(3),
+) ENGINE MergeTree
+ORDER BY
+  (project_id, created_at) SETTINGS index_granularity = 8192;
+
+CREATE TABLE profiles (
   `id` String,
   `external_id` String,
   `first_name` String,
@@ -38,16 +49,24 @@ CREATE TABLE test.profiles (
   `properties` Map(String, String),
   `project_id` String,
   `created_at` DateTime
-) ENGINE = ReplacingMergeTree
+) ENGINE = ReplacingMergeTree(created_at)
 ORDER BY
   (id) SETTINGS index_granularity = 8192;
 
 ALTER TABLE
   events
 ADD
-  COLUMN continent String
+  COLUMN device_id String
 AFTER
-  region;
+  name;
 
 ALTER TABLE
   events DROP COLUMN id;
+
+CREATE TABLE ba (
+  `id` UUID DEFAULT generateUUIDv4(),
+  `a` String,
+  `b` String
+) ENGINE MergeTree
+ORDER BY
+  (a, b) SETTINGS index_granularity = 8192;

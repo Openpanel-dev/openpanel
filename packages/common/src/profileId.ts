@@ -1,17 +1,17 @@
 import { createHash } from './crypto';
 
-interface GenerateProfileIdOptions {
+interface GenerateDeviceIdOptions {
   salt: string;
   ua: string;
   ip: string;
   origin: string;
 }
 
-export function generateProfileId({
+export function generateDeviceId({
   salt,
   ua,
   ip,
   origin,
-}: GenerateProfileIdOptions) {
+}: GenerateDeviceIdOptions) {
   return createHash(`${ua}:${ip}:${origin}:${salt}`, 16);
 }

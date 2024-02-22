@@ -1,0 +1,6 @@
+{
+  "extends": "@mixan/tsconfig/base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  }
+}

@@ -6,6 +6,7 @@ import {
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
+import { parseAsInteger } from 'nuqs';
 
 import { getEventList, getEventsCount } from '@mixan/db';
 
@@ -28,20 +29,13 @@ const nuqsOptions = {
   shallow: false,
 };
 
-function parseQueryAsNumber(value: string | undefined) {
-  if (typeof value === 'string') {
-    return parseInt(value, 10);
-  }
-  return undefined;
-}
-
 export default async function Page({
   params: { projectId, organizationId },
   searchParams,
 }: PageProps) {
   const [events, count] = await Promise.all([
     getEventList({
-      cursor: parseQueryAsNumber(searchParams.cursor),
+      cursor: parseAsInteger.parse(searchParams.cursor ?? '') ?? undefined,
       projectId,
       take: 50,
       events: eventQueryNamesFilter.parse(searchParams.events ?? ''),
@@ -59,6 +53,7 @@ export default async function Page({
     <PageLayout title="Events" organizationSlug={organizationId}>
       <StickyBelowHeader className="p-4 flex justify-between">
         <OverviewFiltersDrawer
+          mode="events"
           projectId={projectId}
           nuqsOptions={nuqsOptions}
           enableEventsFilter

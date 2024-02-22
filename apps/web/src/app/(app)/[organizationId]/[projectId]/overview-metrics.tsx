@@ -19,7 +19,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 
   const reports = [
     {
-      id: 'Unique visitors',
+      id: 'Visitors',
       projectId,
       events: [
         {
@@ -27,20 +27,20 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           filters,
           id: 'A',
           name: 'session_start',
-          displayName: 'Unique visitors',
+          displayName: 'Visitors',
         },
       ],
       breakdowns: [],
       chartType: 'metric',
       lineType: 'monotone',
       interval,
-      name: 'Unique visitors',
+      name: 'Visitors',
       range,
       previous,
       metric: 'sum',
     },
     {
-      id: 'Total sessions',
+      id: 'Sessions',
       projectId,
       events: [
         {
@@ -48,20 +48,20 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           filters,
           id: 'A',
           name: 'session_start',
-          displayName: 'Total sessions',
+          displayName: 'Sessions',
         },
       ],
       breakdowns: [],
       chartType: 'metric',
       lineType: 'monotone',
       interval,
-      name: 'Total sessions',
+      name: 'Sessions',
       range,
       previous,
       metric: 'sum',
     },
     {
-      id: 'Total pageviews',
+      id: 'Pageviews',
       projectId,
       events: [
         {
@@ -69,14 +69,14 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           filters,
           id: 'A',
           name: 'screen_view',
-          displayName: 'Total pageviews',
+          displayName: 'Pageviews',
         },
       ],
       breakdowns: [],
       chartType: 'metric',
       lineType: 'monotone',
       interval,
-      name: 'Total pageviews',
+      name: 'Pageviews',
       range,
       previous,
       metric: 'sum',

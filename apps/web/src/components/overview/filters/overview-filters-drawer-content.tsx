@@ -9,6 +9,8 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { useEventValues } from '@/hooks/useEventValues';
+import { useProfileProperties } from '@/hooks/useProfileProperties';
+import { useProfileValues } from '@/hooks/useProfileValues';
 import { XIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
@@ -18,21 +20,25 @@ import type {
   IChartEventFilterValue,
 } from '@mixan/validation';
 
-interface OverviewFiltersProps {
+export interface OverviewFiltersDrawerContentProps {
   projectId: string;
   nuqsOptions?: NuqsOptions;
   enableEventsFilter?: boolean;
+  mode: 'profiles' | 'events';
 }
 
 export function OverviewFiltersDrawerContent({
   projectId,
   nuqsOptions,
   enableEventsFilter,
-}: OverviewFiltersProps) {
+  mode,
+}: OverviewFiltersDrawerContentProps) {
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
   const eventNames = useEventNames(projectId);
   const eventProperties = useEventProperties(projectId);
+  const profileProperties = useProfileProperties(projectId);
+  const properties = mode === 'events' ? eventProperties : profileProperties;
 
   return (
     <div>
@@ -62,7 +68,7 @@ export function OverviewFiltersDrawerContent({
           value=""
           placeholder="Filter by property"
           label="What do you want to filter by?"
-          items={eventProperties.map((item) => ({
+          items={properties.map((item) => ({
             label: item,
             value: item,
           }))}
@@ -74,8 +80,15 @@ export function OverviewFiltersDrawerContent({
         {filters
           .filter((filter) => filter.value[0] !== null)
           .map((filter) => {
-            return (
-              <FilterOption
+            return mode === 'events' ? (
+              <FilterOptionEvent
+                key={filter.name}
+                projectId={projectId}
+                setFilter={setFilter}
+                {...filter}
+              />
+            ) : (
+              <FilterOptionProfile
                 key={filter.name}
                 projectId={projectId}
                 setFilter={setFilter}
@@ -88,7 +101,7 @@ export function OverviewFiltersDrawerContent({
   );
 }
 
-export function FilterOption({
+export function FilterOptionEvent({
   setFilter,
   projectId,
   ...filter
@@ -105,6 +118,46 @@ export function FilterOption({
     filter.name === 'path' ? 'screen_view' : 'session_start',
     filter.name
   );
+
+  return (
+    <div className="flex gap-2 items-center">
+      <div>{filter.name}</div>
+      <Combobox
+        className="flex-1"
+        onChange={(value) => setFilter(filter.name, value, filter.operator)}
+        placeholder={'Select a value'}
+        items={values.map((value) => ({
+          value,
+          label: value,
+        }))}
+        value={String(filter.value[0] ?? '')}
+      />
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={() =>
+          setFilter(filter.name, filter.value[0] ?? '', filter.operator)
+        }
+      >
+        <XIcon />
+      </Button>
+    </div>
+  );
+}
+
+export function FilterOptionProfile({
+  setFilter,
+  projectId,
+  ...filter
+}: IChartEventFilter & {
+  projectId: string;
+  setFilter: (
+    name: string,
+    value: IChartEventFilterValue,
+    operator: IChartEventFilterOperator
+  ) => void;
+}) {
+  const values = useProfileValues(projectId, filter.name);
 
   return (
     <div className="flex gap-2 items-center">

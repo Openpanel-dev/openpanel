@@ -1,0 +1,36 @@
+{
+  "name": "@mixan/next",
+  "version": "0.0.1",
+  "module": "index.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "build-for-openpanel": "pnpm build && cp dist/cdn.global.js ../../apps/public/public/op.js && cp dist/cdn.global.js ../../apps/test/public/op.js",
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mixan/sdk": "workspace:*",
+    "@mixan/sdk-web": "workspace:*",
+    "@mixan/types": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": "^13.0.0"
+  },
+  "devDependencies": {
+    "@mixan/eslint-config": "workspace:*",
+    "@mixan/prettier-config": "workspace:*",
+    "@mixan/tsconfig": "workspace:*",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "tsup": "^7.2.0",
+    "typescript": "^5.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@mixan/eslint-config/base"
+    ]
+  },
+  "prettier": "@mixan/prettier-config"
+}

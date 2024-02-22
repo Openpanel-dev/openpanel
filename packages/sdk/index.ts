@@ -10,14 +10,19 @@ export interface MixanOptions {
   clientId: string;
   clientSecret?: string;
   verbose?: boolean;
-  setProfileId?: (profileId: string) => void;
-  getProfileId?: () => string | null | undefined;
-  removeProfileId?: () => void;
+  setDeviceId?: (deviceId: string) => void;
+  getDeviceId?: () => string | null | undefined;
+  removeDeviceId?: () => void;
 }
 
 export interface MixanState {
+  deviceId?: string;
   profileId?: string;
   properties: Record<string, unknown>;
+}
+
+export interface MixanEventOptions {
+  profileId?: string;
 }
 
 function awaitProperties(
@@ -55,6 +60,10 @@ function createApi(_url: string) {
             ...(options ?? {}),
           })
             .then(async (res) => {
+              if (res.status === 401) {
+                return null;
+              }
+
               if (res.status !== 200 && res.status !== 202) {
                 return retry(attempt, resolve);
               }
@@ -116,9 +125,13 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
     this.state.properties = properties ?? {};
   }
 
-  public setUser(payload: Omit<UpdateProfilePayload, 'profileId'>) {
+  public setProfileId(profileId: string) {
+    this.state.profileId = profileId;
+  }
+
+  public setProfile(payload: UpdateProfilePayload) {
+    this.setProfileId(payload.profileId);
     this.api.fetch<UpdateProfilePayload, string>('/profile', {
-      profileId: this.getProfileId(),
       ...payload,
       properties: {
         ...this.state.properties,
@@ -127,23 +140,44 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
     });
   }
 
-  public increment(property: string, value: number) {
+  public increment(
+    property: string,
+    value: number,
+    options?: MixanEventOptions
+  ) {
+    const profileId = options?.profileId ?? this.state.profileId;
+    if (!profileId) {
+      return console.log('No profile id');
+    }
     this.api.fetch<IncrementProfilePayload, string>('/profile/increment', {
+      profileId,
       property,
       value,
-      profileId: this.getProfileId(),
     });
   }
 
-  public decrement(property: string, value: number) {
+  public decrement(
+    property: string,
+    value: number,
+    options?: MixanEventOptions
+  ) {
+    const profileId = options?.profileId ?? this.state.profileId;
+    if (!profileId) {
+      return console.log('No profile id');
+    }
     this.api.fetch<DecrementProfilePayload, string>('/profile/decrement', {
+      profileId,
       property,
       value,
-      profileId: this.getProfileId(),
     });
   }
 
-  public event(name: string, properties?: Record<string, unknown>) {
+  public event(
+    name: string,
+    properties?: Record<string, unknown> & MixanEventOptions
+  ) {
+    const profileId = properties?.profileId ?? this.state.profileId;
+    delete properties?.profileId;
     this.api
       .fetch<PostEventPayload, string>('/event', {
         name,
@@ -152,11 +186,12 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
           ...(properties ?? {}),
         },
         timestamp: this.timestamp(),
-        profileId: this.getProfileId(),
+        deviceId: this.getDeviceId(),
+        profileId,
       })
-      .then((profileId) => {
-        if (this.options.setProfileId && profileId) {
-          this.options.setProfileId(profileId);
+      .then((deviceId) => {
+        if (this.options.setDeviceId && deviceId) {
+          this.options.setDeviceId(deviceId);
         }
       });
   }
@@ -169,9 +204,10 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
   }
 
   public clear() {
-    this.state.profileId = undefined;
-    if (this.options.removeProfileId) {
-      this.options.removeProfileId();
+    this.state.properties = {};
+    this.state.deviceId = undefined;
+    if (this.options.removeDeviceId) {
+      this.options.removeDeviceId();
     }
   }
 
@@ -181,11 +217,11 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
     return new Date().toISOString();
   }
 
-  private getProfileId() {
-    if (this.state.profileId) {
-      return this.state.profileId;
-    } else if (this.options.getProfileId) {
-      this.state.profileId = this.options.getProfileId() || undefined;
+  private getDeviceId() {
+    if (this.state.deviceId) {
+      return this.state.deviceId;
+    } else if (this.options.getDeviceId) {
+      this.state.deviceId = this.options.getDeviceId() || undefined;
     }
   }
 }

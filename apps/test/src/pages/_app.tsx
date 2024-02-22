@@ -1,15 +1,15 @@
-import { useEffect } from 'react';
-// import { mixan } from '@/analytics';
+import { OpenpanelProvider } from '@mixan-test/next';
 import type { AppProps } from 'next/app';
-import { useRouter } from 'next/router';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
-  const router = useRouter();
-  // useEffect(() => {
-  //   mixan.screenView();
-  //   return router.events.on('routeChangeComplete', () => {
-  //     mixan.screenView();
-  //   });
-  // }, []);
-  return <Component {...pageProps} />;
+  return (
+    <>
+      <OpenpanelProvider
+        clientId="0acce97f-1126-4439-b7ee-5d384e2fc94b"
+        url="http://localhost:3333"
+        trackScreenViews
+      />
+      <Component {...pageProps} />
+    </>
+  );
 }

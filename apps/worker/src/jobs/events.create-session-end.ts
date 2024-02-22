@@ -12,12 +12,12 @@ export async function createSessionEnd(
   const sql = `
   SELECT * FROM events 
   WHERE 
-    profile_id = '${payload.profileId}' 
+    device_id = '${payload.deviceId}' 
     AND created_at >= (
       SELECT created_at 
       FROM events
       WHERE 
-        profile_id = '${payload.profileId}' 
+        device_id = '${payload.deviceId}' 
         AND name = 'session_start'
       ORDER BY created_at DESC
       LIMIT 1
@@ -33,6 +33,7 @@ export async function createSessionEnd(
         `Index: ${index}`,
         `Event: ${event.name}`,
         `Created: ${event.createdAt.toISOString()}`,
+        `DeviceId: ${event.deviceId}`,
         `Profile: ${event.profileId}`,
         `Path: ${event.path}`,
       ].join('\n')

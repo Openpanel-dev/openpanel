@@ -1,13 +1,31 @@
-// @ts-nocheck
-
 import { MixanWeb as Openpanel } from './index';
 
-const el = document.currentScript;
-if (el) {
-  window.openpanel = new Openpanel({
-    url: el?.getAttribute('data-url'),
-    clientId: el?.getAttribute('data-client-id'),
-    trackOutgoingLinks: !!el?.getAttribute('data-track-outgoing-links'),
-    trackScreenViews: !!el?.getAttribute('data-track-screen-views'),
-  });
+declare global {
+  interface Window {
+    op: {
+      q?: [string, ...any[]];
+      (method: string, ...args: any[]): void;
+    };
+  }
 }
+
+((window) => {
+  if (window.op && 'q' in window.op) {
+    const queue = window.op.q || [];
+    const op = new Openpanel(queue.shift()[1]);
+    queue.forEach((item) => {
+      if (item[0] in op) {
+        // @ts-expect-error
+        op[item[0]](...item.slice(1));
+      }
+    });
+
+    window.op = (t, ...args) => {
+      // @ts-expect-error
+      const fn = op[t].bind(op);
+      if (typeof fn === 'function') {
+        fn(...args);
+      }
+    };
+  }
+})(window);

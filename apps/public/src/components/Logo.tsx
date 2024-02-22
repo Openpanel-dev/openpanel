@@ -1,5 +1,6 @@
 import { cn } from '@/utils/cn';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface LogoProps {
   className?: string;
@@ -7,7 +8,8 @@ interface LogoProps {
 
 export function Logo({ className }: LogoProps) {
   return (
-    <div
+    <Link
+      href="/"
       className={cn('text-xl font-medium flex gap-2 items-center', className)}
     >
       <Image
@@ -18,6 +20,6 @@ export function Logo({ className }: LogoProps) {
         height={32}
       />
       openpanel.dev
-    </div>
+    </Link>
   );
 }

@@ -1,4 +1,4 @@
-import { anyPass, isEmpty, isNil, reject } from 'ramda';
+import { anyPass, assocPath, isEmpty, isNil, reject } from 'ramda';
 
 export function toDots(
   obj: Record<string, unknown>,
@@ -17,6 +17,16 @@ export function toDots(
       [`${path}${key}`]: value,
     };
   }, {});
+}
+
+export function toObject(
+  obj: Record<string, string | undefined>
+): Record<string, unknown> {
+  let result: Record<string, unknown> = {};
+  Object.entries(obj).forEach(([key, value]) => {
+    result = assocPath(key.split('.'), value, result);
+  });
+  return result;
 }
 
 export const strip = reject(anyPass([isEmpty, isNil]));

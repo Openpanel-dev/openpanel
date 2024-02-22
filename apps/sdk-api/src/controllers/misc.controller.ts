@@ -85,8 +85,6 @@ export async function getFavicon(
 
   // TRY FAVICON.ICO
   const buffer = await getImageBuffer(`${origin}/favicon.ico`);
-  console.log('buffer', buffer?.length);
-
   if (buffer && buffer.byteLength > 0) {
     return sendBuffer(buffer, hostname);
   }

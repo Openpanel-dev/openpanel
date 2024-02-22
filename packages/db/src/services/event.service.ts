@@ -15,11 +15,13 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
+import { getProfileById, getProfiles, upsertProfile } from './profile.service';
 import type { IServiceProfile } from './profile.service';
 
 export interface IClickhouseEvent {
   id: string;
   name: string;
+  device_id: string;
   profile_id: string;
   project_id: string;
   path: string;
@@ -51,6 +53,7 @@ export function transformEvent(
   return {
     id: event.id,
     name: event.name,
+    deviceId: event.device_id,
     profileId: event.profile_id,
     projectId: event.project_id,
     properties: event.properties,
@@ -78,6 +81,7 @@ export function transformEvent(
 export interface IServiceCreateEventPayload {
   id: string;
   name: string;
+  deviceId: string;
   profileId: string;
   projectId: string;
   properties: Record<string, unknown> & {
@@ -121,15 +125,8 @@ export async function getEvents(
 ): Promise<IServiceCreateEventPayload[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
   if (options.profile) {
-    const profileIds = events.map((e) => e.profile_id);
-    const profiles = await db.profile.findMany({
-      where: {
-        id: {
-          in: profileIds,
-        },
-      },
-      select: options.profile === true ? undefined : options.profile,
-    });
+    const ids = events.map((e) => e.profile_id);
+    const profiles = await getProfiles({ ids });
 
     for (const event of events) {
       event.profile = profiles.find((p) => p.id === event.profile_id);
@@ -157,41 +154,38 @@ export async function getEvents(
 export async function createEvent(
   payload: Omit<IServiceCreateEventPayload, 'id'>
 ) {
-  console.log(`create event ${payload.name} for ${payload.profileId}`);
+  if (!payload.profileId) {
+    payload.profileId = payload.deviceId;
+  }
+  console.log(
+    `create event ${payload.name} for deviceId: ${payload.deviceId} profileId ${payload.profileId}`
+  );
 
-  if (payload.name === 'session_start') {
-    const profile = await db.profile.findUnique({
-      where: {
-        id: payload.profileId,
+  const exists = await getProfileById(payload.profileId);
+  if (!exists) {
+    const { firstName, lastName } = randomSplitName();
+    await upsertProfile({
+      id: payload.profileId,
+      projectId: payload.projectId,
+      firstName,
+      lastName,
+      properties: {
+        path: payload.path,
+        country: payload.country,
+        city: payload.city,
+        region: payload.region,
+        os: payload.os,
+        os_version: payload.osVersion,
+        browser: payload.browser,
+        browser_version: payload.browserVersion,
+        device: payload.device,
+        brand: payload.brand,
+        model: payload.model,
+        referrer: payload.referrer,
+        referrer_name: payload.referrerName,
+        referrer_type: payload.referrerType,
       },
     });
-
-    if (!profile) {
-      const { firstName, lastName } = randomSplitName();
-      await db.profile.create({
-        data: {
-          id: payload.profileId,
-          project_id: payload.projectId,
-          first_name: firstName,
-          last_name: lastName,
-          properties: {
-            country: payload.country ?? '',
-            city: payload.city ?? '',
-            region: payload.region ?? '',
-            os: payload.os ?? '',
-            os_version: payload.osVersion ?? '',
-            browser: payload.browser ?? '',
-            browser_version: payload.browserVersion ?? '',
-            device: payload.device ?? '',
-            brand: payload.brand ?? '',
-            model: payload.model ?? '',
-            referrer: payload.referrer ?? '',
-            referrer_name: payload.referrerName ?? '',
-            referrer_type: payload.referrerType ?? '',
-          },
-        },
-      });
-    }
   }
 
   if (payload.properties.hash === '') {
@@ -201,6 +195,7 @@ export async function createEvent(
   const event: IClickhouseEvent = {
     id: uuid(),
     name: payload.name,
+    device_id: payload.deviceId,
     profile_id: payload.profileId,
     project_id: payload.projectId,
     properties: toDots(omit(['_path'], payload.properties)),
@@ -245,7 +240,7 @@ export async function createEvent(
   };
 }
 
-interface GetEventListOptions {
+export interface GetEventListOptions {
   projectId: string;
   profileId?: string;
   take: number;
@@ -320,4 +315,39 @@ export async function getEventsCount({
   );
 
   return res[0]?.count ?? 0;
+}
+
+interface CreateBotEventPayload {
+  name: string;
+  type: string;
+  projectId: string;
+  createdAt: Date;
+}
+
+export function createBotEvent({
+  name,
+  type,
+  projectId,
+  createdAt,
+}: CreateBotEventPayload) {
+  return ch.insert({
+    table: 'events_bots',
+    values: [
+      {
+        name,
+        type,
+        project_id: projectId,
+        created_at: formatClickhouseDate(createdAt),
+      },
+    ],
+  });
+}
+
+export function getConversionEventNames(projectId: string) {
+  return db.eventMeta.findMany({
+    where: {
+      project_id: projectId,
+      conversion: true,
+    },
+  });
 }

@@ -1,12 +1,13 @@
+import { isBot } from '@/bots';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parseReferrer';
-import { parseUserAgent } from '@/utils/parseUserAgent';
+import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { omit } from 'ramda';
 
-import { generateProfileId, getTime, toISOString } from '@mixan/common';
+import { generateDeviceId, getTime, toISOString } from '@mixan/common';
 import type { IServiceCreateEventPayload } from '@mixan/db';
-import { getSalts } from '@mixan/db';
+import { createBotEvent, getEvents, getSalts } from '@mixan/db';
 import type { JobsOptions } from '@mixan/queue';
 import { eventsQueue, findJobByPrefix } from '@mixan/queue';
 import type { PostEventPayload } from '@mixan/types';
@@ -66,9 +67,10 @@ export async function postEvent(
   }>,
   reply: FastifyReply
 ) {
-  let profileId: string | null = null;
+  let deviceId: string | null = null;
   const projectId = request.projectId;
   const body = request.body;
+  const profileId = body.profileId ?? '';
   const createdAt = new Date(body.timestamp);
   const url = body.properties?.path;
   const { path, hash, query } = parsePath(url);
@@ -81,18 +83,67 @@ export async function postEvent(
   const ua = request.headers['user-agent']!;
   const uaInfo = parseUserAgent(ua);
   const salts = await getSalts();
-  const currentProfileId = generateProfileId({
+  const currentDeviceId = generateDeviceId({
     salt: salts.current,
     origin,
     ip,
     ua,
   });
-  const previousProfileId = generateProfileId({
+  const previousProfileId = generateDeviceId({
     salt: salts.previous,
     origin,
     ip,
     ua,
   });
+
+  const isServerEvent = !ip && !origin && !isUserAgentSet(ua);
+
+  if (isServerEvent) {
+    const [event] = await getEvents(
+      `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = '${profileId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+    );
+
+    eventsQueue.add('event', {
+      type: 'createEvent',
+      payload: {
+        name: body.name,
+        deviceId: event?.deviceId || '',
+        profileId,
+        projectId,
+        properties: body.properties ?? {},
+        createdAt,
+        country: event?.country ?? '',
+        city: event?.city ?? '',
+        region: event?.region ?? '',
+        continent: event?.continent ?? '',
+        os: event?.os ?? '',
+        osVersion: event?.osVersion ?? '',
+        browser: event?.browser ?? '',
+        browserVersion: event?.browserVersion ?? '',
+        device: event?.device ?? '',
+        brand: event?.brand ?? '',
+        model: event?.model ?? '',
+        duration: 0,
+        path: event?.path ?? '',
+        referrer: event?.referrer ?? '',
+        referrerName: event?.referrerName ?? '',
+        referrerType: event?.referrerType ?? '',
+        profile: undefined,
+        meta: undefined,
+      },
+    });
+    return reply.status(200).send('');
+  }
+
+  const bot = isBot(ua);
+  if (bot) {
+    await createBotEvent({
+      ...bot,
+      projectId,
+      createdAt: new Date(body.timestamp),
+    });
+    return reply.status(200).send('');
+  }
 
   const [geo, eventsJobs] = await Promise.all([
     parseIp(ip),
@@ -100,49 +151,50 @@ export async function postEvent(
   ]);
 
   // find session_end job
-  const sessionEndJobCurrentProfileId = findJobByPrefix(
+  const sessionEndJobCurrentDeviceId = findJobByPrefix(
     eventsJobs,
-    `sessionEnd:${projectId}:${currentProfileId}:`
+    `sessionEnd:${projectId}:${currentDeviceId}:`
   );
-  const sessionEndJobPreviousProfileId = findJobByPrefix(
+  const sessionEndJobPreviousDeviceId = findJobByPrefix(
     eventsJobs,
     `sessionEnd:${projectId}:${previousProfileId}:`
   );
 
   const createSessionStart =
-    !sessionEndJobCurrentProfileId && !sessionEndJobPreviousProfileId;
+    !sessionEndJobCurrentDeviceId && !sessionEndJobPreviousDeviceId;
 
-  if (sessionEndJobCurrentProfileId && !sessionEndJobPreviousProfileId) {
+  if (sessionEndJobCurrentDeviceId && !sessionEndJobPreviousDeviceId) {
     console.log('found session current');
-    profileId = currentProfileId;
-    const diff = Date.now() - sessionEndJobCurrentProfileId.timestamp;
-    sessionEndJobCurrentProfileId.changeDelay(diff + SESSION_END_TIMEOUT);
-  } else if (!sessionEndJobCurrentProfileId && sessionEndJobPreviousProfileId) {
+    deviceId = currentDeviceId;
+    const diff = Date.now() - sessionEndJobCurrentDeviceId.timestamp;
+    sessionEndJobCurrentDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
+  } else if (!sessionEndJobCurrentDeviceId && sessionEndJobPreviousDeviceId) {
     console.log('found session previous');
-    profileId = previousProfileId;
-    const diff = Date.now() - sessionEndJobPreviousProfileId.timestamp;
-    sessionEndJobPreviousProfileId.changeDelay(diff + SESSION_END_TIMEOUT);
+    deviceId = previousProfileId;
+    const diff = Date.now() - sessionEndJobPreviousDeviceId.timestamp;
+    sessionEndJobPreviousDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
   } else {
     console.log('new session with current');
-    profileId = currentProfileId;
+    deviceId = currentDeviceId;
     // Queue session end
     eventsQueue.add(
       'event',
       {
         type: 'createSessionEnd',
         payload: {
-          profileId,
+          deviceId,
         },
       },
       {
         delay: SESSION_END_TIMEOUT,
-        jobId: `sessionEnd:${projectId}:${profileId}:${Date.now()}`,
+        jobId: `sessionEnd:${projectId}:${deviceId}:${Date.now()}`,
       }
     );
   }
 
   const payload: Omit<IServiceCreateEventPayload, 'id'> = {
     name: body.name,
+    deviceId,
     profileId,
     projectId,
     properties: Object.assign({}, omit(['path', 'referrer'], body.properties), {
@@ -170,7 +222,7 @@ export async function postEvent(
     meta: undefined,
   };
 
-  const job = findJobByPrefix(eventsJobs, `event:${projectId}:${profileId}:`);
+  const job = findJobByPrefix(eventsJobs, `event:${projectId}:${deviceId}:`);
 
   if (job?.isDelayed && job.data.type === 'createEvent') {
     const prevEvent = job.data.payload;
@@ -208,7 +260,7 @@ export async function postEvent(
   const options: JobsOptions = {};
   if (payload.name === 'screen_view') {
     options.delay = SESSION_TIMEOUT;
-    options.jobId = `event:${projectId}:${profileId}:${Date.now()}`;
+    options.jobId = `event:${projectId}:${deviceId}:${Date.now()}`;
   }
 
   // Queue current event
@@ -221,5 +273,5 @@ export async function postEvent(
     options
   );
 
-  reply.status(202).send(profileId);
+  reply.status(202).send(deviceId);
 }

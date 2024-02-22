@@ -9,12 +9,13 @@ interface AppLayoutProps {
   children: React.ReactNode;
   params: {
     organizationId: string;
+    projectId: string;
   };
 }
 
 export default async function AppLayout({
   children,
-  params: { organizationId },
+  params: { organizationId, projectId },
 }: AppLayoutProps) {
   const [organizations, dashboards] = await Promise.all([
     getCurrentOrganizations(),
@@ -23,7 +24,9 @@ export default async function AppLayout({
 
   return (
     <div id="dashboard">
-      <LayoutSidebar {...{ organizations, dashboards }} />
+      <LayoutSidebar
+        {...{ organizationId, projectId, organizations, dashboards }}
+      />
       <div className="lg:pl-72 transition-all">{children}</div>
     </div>
   );

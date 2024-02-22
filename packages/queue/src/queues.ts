@@ -10,7 +10,7 @@ export interface EventsQueuePayloadCreateEvent {
 }
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
-  payload: Pick<IServiceCreateEventPayload, 'profileId'>;
+  payload: Pick<IServiceCreateEventPayload, 'deviceId'>;
 }
 export type EventsQueuePayload =
   | EventsQueuePayloadCreateEvent

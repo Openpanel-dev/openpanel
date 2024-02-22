@@ -6,24 +6,25 @@ import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCursor } from '@/hooks/useCursor';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
-import { GanttChartIcon } from 'lucide-react';
+import { UsersIcon } from 'lucide-react';
 
-import type { IServiceCreateEventPayload } from '@mixan/db';
+import type { IServiceProfile } from '@mixan/db';
 
-import { EventListItem } from './event-list-item';
+import { ProfileListItem } from './profile-list-item';
 
-interface EventListProps {
-  data: IServiceCreateEventPayload[];
+interface ProfileListProps {
+  data: IServiceProfile[];
   count: number;
 }
-export function EventList({ data, count }: EventListProps) {
+export function ProfileList({ data, count }: ProfileListProps) {
   const { cursor, setCursor } = useCursor();
   const [filters] = useEventQueryFilters();
+
   return (
     <Suspense>
       <div className="p-4">
         {data.length === 0 ? (
-          <FullPageEmptyState title="No events here" icon={GanttChartIcon}>
+          <FullPageEmptyState title="No profiles here" icon={UsersIcon}>
             {cursor !== 0 ? (
               <>
                 <p>Looks like you have reached the end of the list</p>
@@ -39,9 +40,9 @@ export function EventList({ data, count }: EventListProps) {
             ) : (
               <>
                 {filters.length ? (
-                  <p>Could not find any events with your filter</p>
+                  <p>Could not find any profiles with your filter</p>
                 ) : (
-                  <p>We have not recieved any events yet</p>
+                  <p>No profiles have been created yet</p>
                 )}
               </>
             )}
@@ -56,7 +57,7 @@ export function EventList({ data, count }: EventListProps) {
             />
             <div className="flex flex-col gap-4 my-4">
               {data.map((item) => (
-                <EventListItem key={item.id} {...item} />
+                <ProfileListItem key={item.id} {...item} />
               ))}
             </div>
             <Pagination

@@ -1,16 +1,103 @@
-import { db } from '../prisma-client';
+import { toDots, toObject } from '@mixan/common';
+import type { IChartEventFilter } from '@mixan/validation';
 
-export type IServiceProfile = Awaited<ReturnType<typeof getProfileById>>;
+import { ch, chQuery } from '../clickhouse-client';
+import { createSqlBuilder } from '../sql-builder';
+import { getEventFiltersWhereClause } from './chart.service';
 
-export function getProfileById(id: string) {
-  return db.profile.findUniqueOrThrow({
-    where: {
-      id,
-    },
-  });
+export async function getProfileById(id: string) {
+  const [profile] = await chQuery<IClickhouseProfile>(
+    `SELECT * FROM profiles WHERE id = '${id}' ORDER BY created_at DESC LIMIT 1`
+  );
+
+  if (!profile) {
+    return null;
+  }
+
+  return transformProfile(profile);
 }
 
-export function getProfilesByExternalId(
+interface GetProfileListOptions {
+  projectId: string;
+  take: number;
+  cursor?: number;
+  filters?: IChartEventFilter[];
+}
+
+function getProfileSelectFields() {
+  return [
+    'id',
+    'argMax(first_name, created_at) as first_name',
+    'argMax(last_name, created_at) as last_name',
+    'argMax(email, created_at) as email',
+    'argMax(avatar, created_at) as avatar',
+    'argMax(properties, created_at) as properties',
+    'argMax(project_id, created_at) as project_id',
+    'max(created_at) as max_created_at',
+  ].join(', ');
+}
+
+interface GetProfilesOptions {
+  ids: string[];
+}
+export async function getProfiles({ ids }: GetProfilesOptions) {
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const data = await chQuery<IClickhouseProfile>(
+    `SELECT 
+    ${getProfileSelectFields()}
+    FROM profiles 
+    WHERE id IN (${ids.map((id) => `'${id}'`).join(',')})
+    GROUP BY id
+    `
+  );
+
+  return data.map(transformProfile);
+}
+
+function getProfileInnerSelect(projectId: string) {
+  return `(SELECT 
+    ${getProfileSelectFields()}
+    FROM profiles 
+    GROUP BY id
+    HAVING project_id = '${projectId}')`;
+}
+
+export async function getProfileList({
+  take,
+  cursor,
+  projectId,
+  filters,
+}: GetProfileListOptions) {
+  const { sb, getSql } = createSqlBuilder();
+  sb.from = getProfileInnerSelect(projectId);
+  if (filters) {
+    getEventFiltersWhereClause(sb, filters);
+  }
+  sb.limit = take;
+  sb.offset = (cursor ?? 0) * take;
+  sb.orderBy.created_at = 'max_created_at DESC';
+  const data = await chQuery<IClickhouseProfile>(getSql());
+  return data.map(transformProfile);
+}
+
+export async function getProfileListCount({
+  projectId,
+  filters,
+}: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
+  const { sb, getSql } = createSqlBuilder();
+  sb.select.count = 'count(id) as count';
+  sb.from = getProfileInnerSelect(projectId);
+  if (filters) {
+    getEventFiltersWhereClause(sb, filters);
+  }
+  const [data] = await chQuery<{ count: number }>(getSql());
+  return data?.count ?? 0;
+}
+
+export async function getProfilesByExternalId(
   externalId: string | null,
   projectId: string
 ) {
@@ -18,18 +105,91 @@ export function getProfilesByExternalId(
     return [];
   }
 
-  return db.profile.findMany({
-    where: {
-      external_id: externalId,
-      project_id: projectId,
-    },
-  });
+  const data = await chQuery<IClickhouseProfile>(
+    `SELECT 
+    ${getProfileSelectFields()}
+    FROM profiles 
+    GROUP BY id
+    HAVING project_id = '${projectId}' AND external_id = '${externalId}'
+    `
+  );
+
+  return data.map(transformProfile);
 }
 
-export function getProfile(id: string) {
-  return db.profile.findUniqueOrThrow({
-    where: {
-      id,
+export type IServiceProfile = Omit<
+  IClickhouseProfile,
+  'max_created_at' | 'properties'
+> & {
+  createdAt: Date;
+  properties: Record<string, unknown>;
+};
+
+export interface IClickhouseProfile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  avatar: string;
+  properties: Record<string, string | undefined>;
+  project_id: string;
+  max_created_at: string;
+}
+
+export interface IServiceUpsertProfile {
+  projectId: string;
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  avatar?: string;
+  properties?: Record<string, unknown>;
+}
+
+function transformProfile({
+  max_created_at,
+  ...profile
+}: IClickhouseProfile): IServiceProfile {
+  return {
+    ...profile,
+    properties: toObject(profile.properties),
+    createdAt: new Date(max_created_at),
+  };
+}
+
+export async function upsertProfile({
+  id,
+  firstName,
+  lastName,
+  email,
+  avatar,
+  properties,
+  projectId,
+}: IServiceUpsertProfile) {
+  const [profile] = await chQuery<IClickhouseProfile>(
+    `SELECT * FROM profiles WHERE id = '${id}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+  );
+
+  await ch.insert({
+    table: 'profiles',
+    format: 'JSONEachRow',
+    clickhouse_settings: {
+      date_time_input_format: 'best_effort',
     },
+    values: [
+      {
+        id,
+        first_name: firstName ?? profile?.first_name ?? '',
+        last_name: lastName ?? profile?.last_name ?? '',
+        email: email ?? profile?.email ?? '',
+        avatar: avatar ?? profile?.avatar ?? '',
+        properties: toDots({
+          ...(profile?.properties ?? {}),
+          ...(properties ?? {}),
+        }),
+        project_id: projectId ?? profile?.project_id ?? '',
+        created_at: new Date(),
+      },
+    ],
   });
 }

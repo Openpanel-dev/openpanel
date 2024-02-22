@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { Logo } from '@/components/Logo';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import { Rotate as Hamburger } from 'hamburger-react';
+import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -15,10 +17,14 @@ import LayoutOrganizationSelector from './layout-organization-selector';
 interface LayoutSidebarProps {
   organizations: IServiceOrganization[];
   dashboards: IServiceDashboards;
+  organizationId: string;
+  projectId: string;
 }
 export function LayoutSidebar({
   organizations,
   dashboards,
+  organizationId,
+  projectId,
 }: LayoutSidebarProps) {
   const [active, setActive] = useState(false);
   const pathname = usePathname();
@@ -56,11 +62,18 @@ export function LayoutSidebar({
         <div className="flex flex-col p-4 gap-2 flex-grow overflow-auto">
           <LayoutMenu dashboards={dashboards} />
           {/* Placeholder for LayoutOrganizationSelector */}
-          <div className="h-16 block shrink-0"></div>
+          <div className="h-32 block shrink-0"></div>
         </div>
         <div className="fixed bottom-0 left-0 right-0">
           <div className="bg-gradient-to-t from-white to-white/0 h-8 w-full"></div>
-          <div className="bg-white p-4 pt-0">
+          <div className="bg-white p-4 pt-0 flex flex-col gap-2">
+            <Link
+              className={cn('flex gap-2', buttonVariants())}
+              href={`/${organizationId}/${projectId}/reports`}
+            >
+              <PlusIcon size={16} />
+              Create a report
+            </Link>
             <LayoutOrganizationSelector organizations={organizations} />
           </div>
         </div>

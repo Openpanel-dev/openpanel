@@ -1,11 +1,18 @@
 import type { MixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
 
-type MixanWebOptions = MixanOptions & {
+export type MixanWebOptions = MixanOptions & {
   trackOutgoingLinks?: boolean;
   trackScreenViews?: boolean;
+  trackAttributes?: boolean;
   hash?: boolean;
 };
+
+function toCamelCase(str: string) {
+  return str.replace(/([-_][a-z])/gi, ($1) =>
+    $1.toUpperCase().replace('-', '').replace('_', '')
+  );
+}
 
 export class MixanWeb extends Mixan<MixanWebOptions> {
   private lastPath = '';
@@ -24,6 +31,10 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
 
       if (this.options.trackScreenViews) {
         this.trackScreenViews();
+      }
+
+      if (this.options.trackAttributes) {
+        this.trackAttributes();
       }
     }
   }
@@ -87,7 +98,40 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
       window.addEventListener('locationchange', () => this.screenView());
     }
 
-    this.screenView();
+    // give time for setProfile to be called
+    setTimeout(() => {
+      this.screenView();
+    }, 50);
+  }
+
+  public trackAttributes() {
+    if (this.isServer()) {
+      return;
+    }
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      const btn = target.closest('button');
+      const achor = target.closest('button');
+      const element = btn?.getAttribute('data-event')
+        ? btn
+        : achor?.getAttribute('data-event')
+          ? achor
+          : null;
+      if (element) {
+        const properties: Record<string, unknown> = {};
+        for (const attr of element.attributes) {
+          if (attr.name.startsWith('data-') && attr.name !== 'data-event') {
+            properties[toCamelCase(attr.name.replace(/^data-/, ''))] =
+              attr.value;
+          }
+        }
+        const name = element.getAttribute('data-event');
+        if (name) {
+          super.event(name, properties);
+        }
+      }
+    });
   }
 
   public screenView(properties?: Record<string, unknown>): void {
