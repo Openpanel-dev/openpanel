@@ -4,6 +4,7 @@ CREATE TABLE openpanel.events (
   `device_id` String,
   `profile_id` String,
   `project_id` String,
+  `session_id` String,
   `path` String,
   `referrer` String,
   `referrer_name` String,
@@ -56,9 +57,9 @@ ORDER BY
 ALTER TABLE
   events
 ADD
-  COLUMN device_id String
+  COLUMN session_id String
 AFTER
-  name;
+  project_id;
 
 ALTER TABLE
   events DROP COLUMN id;

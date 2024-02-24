@@ -101,6 +101,21 @@ export default function Test() {
         Trigger event
       </button>
       <button onClick={handleLogout}>Logout</button>
+
+      <div>
+        {['a', 'b', 'c', 'd', 'f'].map((letter) => (
+          <button
+            key={letter}
+            onClick={() => {
+              trackEvent(letter, {
+                foo: 'bar',
+              });
+            }}
+          >
+            {letter.toUpperCase()}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

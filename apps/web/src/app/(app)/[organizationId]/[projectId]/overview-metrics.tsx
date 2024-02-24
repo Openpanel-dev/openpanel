@@ -2,7 +2,7 @@
 
 import { WidgetHead } from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { Chart } from '@/components/report/chart';
+import { ChartSwitch } from '@/components/report/chart';
 import { Widget, WidgetBody } from '@/components/Widget';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
@@ -186,7 +186,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
             setMetric(index);
           }}
         >
-          <Chart hideID {...report} />
+          <ChartSwitch hideID {...report} />
           <div
             className={cn(
               'transition-opacity top-0 left-0 right-0 bottom-0 absolute rounded-md w-full h-full border ring-1 border-chart-0 ring-chart-0',
@@ -201,7 +201,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           <div className="title">{selectedMetric.events[0]?.displayName}</div>
         </WidgetHead>
         <WidgetBody>
-          <Chart
+          <ChartSwitch
             key={selectedMetric.id}
             hideID
             {...selectedMetric}

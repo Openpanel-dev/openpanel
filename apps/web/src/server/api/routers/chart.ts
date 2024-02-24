@@ -5,7 +5,7 @@ import {
 } from '@/server/api/trpc';
 import { getDaysOldDate } from '@/utils/date';
 import { average, max, min, round, sum } from '@/utils/math';
-import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
+import { flatten, map, pipe, prop, repeat, reverse, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
 import { chQuery, createSqlBuilder } from '@mixan/db';
@@ -13,6 +13,116 @@ import { zChartInput } from '@mixan/validation';
 import type { IChartEvent, IChartInput, IChartRange } from '@mixan/validation';
 
 import { getChartData, withFormula } from './chart.helpers';
+
+async function getFunnelData(payload: IChartInput) {
+  if (payload.events.length === 0) {
+    return {
+      totalSessions: 0,
+      steps: [],
+    };
+  }
+  const sql = `SELECT
+      level,
+      count() AS count
+    FROM
+    (
+      SELECT
+        session_id,
+        windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${payload.events.map((event) => `name = '${event.name}'`).join(', ')}) AS level
+      FROM events
+      WHERE (created_at >= '2024-02-24') AND (created_at <= '2024-02-25')
+      GROUP BY session_id
+    )
+    GROUP BY level
+    ORDER BY level DESC;
+  `;
+
+  const [funnelRes, sessionRes] = await Promise.all([
+    chQuery<{ level: number; count: number }>(sql),
+    chQuery<{ count: number }>(
+      `SELECT count(name) as count FROM events WHERE name = 'session_start' AND (created_at >= '2024-02-24') AND (created_at <= '2024-02-25')`
+    ),
+  ]);
+
+  console.log('Funnel SQL: ', sql);
+
+  if (funnelRes[0]?.level !== payload.events.length) {
+    funnelRes.unshift({
+      level: payload.events.length,
+      count: 0,
+    });
+  }
+
+  const totalSessions = sessionRes[0]?.count ?? 0;
+  const filledFunnelRes = funnelRes.reduce(
+    (acc, item, index) => {
+      const diff =
+        index !== 0 ? (acc[acc.length - 1]?.level ?? 0) - item.level : 1;
+
+      if (diff > 1) {
+        acc.push(
+          ...reverse(
+            repeat({}, diff - 1).map((_, index) => ({
+              count: acc[acc.length - 1]?.count ?? 0,
+              level: item.level + index + 1,
+            }))
+          )
+        );
+      }
+
+      return [
+        ...acc,
+        {
+          count: item.count + (acc[acc.length - 1]?.count ?? 0),
+          level: item.level,
+        },
+      ];
+    },
+    [] as typeof funnelRes
+  );
+
+  const steps = reverse(filledFunnelRes)
+    .filter((item) => item.level !== 0)
+    .reduce(
+      (acc, item, index, list) => {
+        const prev = list[index - 1] ?? { count: totalSessions };
+        return [
+          ...acc,
+          {
+            event: payload.events[item.level - 1]!,
+            before: prev.count,
+            current: item.count,
+            dropoff: {
+              bajs: {
+                prev,
+                item,
+              },
+              count: prev.count - item.count,
+              percent: 100 - (item.count / prev.count) * 100,
+            },
+            percent: (item.count / totalSessions) * 100,
+            prevPercent: (prev.count / totalSessions) * 100,
+          },
+        ];
+      },
+      [] as {
+        event: IChartEvent;
+        before: number;
+        current: number;
+        dropoff: {
+          count: number;
+          percent: number;
+        };
+        percent: number;
+        prevPercent: number;
+      }[]
+    );
+
+  return {
+    totalSessions,
+    steps,
+  };
+}
 
 type PreviousValue = {
   value: number;
@@ -143,6 +253,10 @@ export const chartRouter = createTRPCRouter({
         values,
       };
     }),
+
+  funnel: publicProcedure.input(zChartInput).query(async ({ input }) => {
+    return getFunnelData(input);
+  }),
 
   // TODO: Make this private
   chart: publicProcedure.input(zChartInput).query(async ({ input }) => {

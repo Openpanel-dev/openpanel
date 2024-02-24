@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
+    "testing": "API_PORT=3333 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsup",
     "lint": "eslint .",
@@ -21,7 +22,8 @@
     "pino": "^8.17.2",
     "ramda": "^0.29.1",
     "sharp": "^0.33.2",
-    "ua-parser-js": "^1.0.37"
+    "ua-parser-js": "^1.0.37",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",
@@ -30,6 +32,7 @@
     "@mixan/types": "workspace:*",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",
+    "@types/uuid": "^9.0.8",
     "@types/ws": "^8.5.10",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",

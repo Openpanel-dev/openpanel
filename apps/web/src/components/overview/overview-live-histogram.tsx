@@ -6,7 +6,7 @@ import AnimateHeight from 'react-animate-height';
 
 import type { IChartInput } from '@mixan/validation';
 
-import { Chart } from '../report/chart';
+import { ChartSwitch } from '../report/chart';
 import { Widget, WidgetBody, WidgetHead } from '../Widget';
 import { useOverviewOptions } from './useOverviewOptions';
 
@@ -61,7 +61,7 @@ export function OverviewLiveHistogram({
 
       <AnimateHeight duration={500} height={liveHistogram ? 'auto' : 0}>
         <WidgetBody>
-          <Chart {...report} />
+          <ChartSwitch {...report} />
         </WidgetBody>
       </AnimateHeight>
     </Widget>

@@ -15,6 +15,7 @@ export const chartTypes = {
   metric: 'Metric',
   area: 'Area',
   map: 'Map',
+  funnel: 'Funnel',
 } as const;
 
 export const lineTypes = {

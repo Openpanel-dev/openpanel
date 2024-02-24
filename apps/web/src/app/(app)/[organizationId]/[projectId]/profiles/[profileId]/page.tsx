@@ -3,7 +3,7 @@ import { ListProperties } from '@/components/events/ListProperties';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
-import { Chart } from '@/components/report/chart';
+import { ChartSwitch } from '@/components/report/chart';
 import { GradientBackground } from '@/components/ui/gradient-background';
 import { KeyValue } from '@/components/ui/key-value';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
@@ -162,7 +162,7 @@ export default async function Page({
               <span className="title">Events per day</span>
             </WidgetHead>
             <WidgetBody className="flex gap-2">
-              <Chart {...profileChart} />
+              <ChartSwitch {...profileChart} />
             </WidgetBody>
           </Widget>
         </div>

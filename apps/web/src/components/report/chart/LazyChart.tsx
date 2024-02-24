@@ -1,10 +1,10 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 
 import type { ReportChartProps } from '.';
-import { Chart } from '.';
+import { ChartSwitch } from '.';
 import { ChartLoading } from './ChartLoading';
 import type { ChartContextType } from './ChartProvider';
 
@@ -24,7 +24,7 @@ export function LazyChart(props: ReportChartProps & ChartContextType) {
   return (
     <div ref={ref}>
       {once.current || inViewport ? (
-        <Chart {...props} editMode={false} />
+        <ChartSwitch {...props} editMode={false} />
       ) : (
         <ChartLoading />
       )}

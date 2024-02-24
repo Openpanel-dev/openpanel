@@ -1,6 +1,6 @@
 'use client';
 
-import { Chart } from '@/components/report/chart';
+import { ChartSwitch } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
@@ -74,7 +74,7 @@ export default function OverviewTopEvents({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Chart hideID {...widget.chart} previous={false} />
+          <ChartSwitch hideID {...widget.chart} previous={false} />
         </WidgetBody>
       </Widget>
     </>

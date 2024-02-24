@@ -1,6 +1,6 @@
 'use client';
 
-import { Chart } from '@/components/report/chart';
+import { ChartSwitch } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
@@ -120,7 +120,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <Chart
+          <ChartSwitch
             hideID
             {...widget.chart}
             previous={false}

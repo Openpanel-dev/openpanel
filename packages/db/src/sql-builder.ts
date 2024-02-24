@@ -14,7 +14,7 @@ export function createSqlBuilder() {
 
   const sb: SqlBuilderObject = {
     where: {},
-    from: 'openpanel.events',
+    from: 'events',
     select: {},
     groupBy: {},
     orderBy: {},

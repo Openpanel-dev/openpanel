@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "scripts": {
     "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
+    "testing": "WORKER_PORT=9999 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsup",
     "lint": "eslint .",

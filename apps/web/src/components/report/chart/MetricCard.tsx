@@ -62,7 +62,7 @@ export function MetricCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 font-medium">
             <ColorSquare>{serie.event.id}</ColorSquare>
-            {serie.name ?? serie.event.displayName ?? serie.event.name}
+            {serie.name || serie.event.displayName || serie.event.name}
           </div>
           <PreviousDiffIndicator {...serie.metrics.previous[metric]} />
         </div>

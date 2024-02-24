@@ -6,6 +6,10 @@ import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
 
 export async function getProfileById(id: string) {
+  if (id === '') {
+    return null;
+  }
+
   const [profile] = await chQuery<IClickhouseProfile>(
     `SELECT * FROM profiles WHERE id = '${id}' ORDER BY created_at DESC LIMIT 1`
   );

@@ -98,6 +98,7 @@ enum ChartType {
   metric
   area
   map
+  funnel
 }
 
 model Dashboard {

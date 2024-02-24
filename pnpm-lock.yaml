@@ -201,6 +201,9 @@ importers:
       ua-parser-js:
         specifier: ^1.0.37
         version: 1.0.37
+      uuid:
+        specifier: ^9.0.1
+        version: 9.0.1
     devDependencies:
       '@mixan/eslint-config':
         specifier: workspace:*
@@ -220,6 +223,9 @@ importers:
       '@types/ua-parser-js':
         specifier: ^0.7.39
         version: 0.7.39
+      '@types/uuid':
+        specifier: ^9.0.8
+        version: 9.0.8
       '@types/ws':
         specifier: ^8.5.10
         version: 8.5.10
@@ -407,6 +413,9 @@ importers:
       cmdk:
         specifier: ^0.2.1
         version: 0.2.1(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      embla-carousel-react:
+        specifier: 8.0.0-rc22
+        version: 8.0.0-rc22(react@18.2.0)
       hamburger-react:
         specifier: ^2.5.0
         version: 2.5.0(react@18.2.0)

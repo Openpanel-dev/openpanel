@@ -24,6 +24,7 @@ export interface IClickhouseEvent {
   device_id: string;
   profile_id: string;
   project_id: string;
+  session_id: string;
   path: string;
   referrer: string;
   referrer_name: string;
@@ -56,6 +57,7 @@ export function transformEvent(
     deviceId: event.device_id,
     profileId: event.profile_id,
     projectId: event.project_id,
+    sessionId: event.session_id,
     properties: event.properties,
     createdAt: convertClickhouseDateToJs(event.created_at),
     country: event.country,
@@ -84,6 +86,7 @@ export interface IServiceCreateEventPayload {
   deviceId: string;
   profileId: string;
   projectId: string;
+  sessionId: string;
   properties: Record<string, unknown> & {
     hash?: string;
     query?: Record<string, unknown>;
@@ -162,7 +165,7 @@ export async function createEvent(
   );
 
   const exists = await getProfileById(payload.profileId);
-  if (!exists) {
+  if (!exists && payload.profileId !== '') {
     const { firstName, lastName } = randomSplitName();
     await upsertProfile({
       id: payload.profileId,
@@ -198,6 +201,7 @@ export async function createEvent(
     device_id: payload.deviceId,
     profile_id: payload.profileId,
     project_id: payload.projectId,
+    session_id: payload.sessionId,
     properties: toDots(omit(['_path'], payload.properties)),
     path: payload.path ?? '',
     created_at: formatClickhouseDate(payload.createdAt),
