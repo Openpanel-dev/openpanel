@@ -1,10 +1,8 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { ListProperties } from '@/components/events/ListProperties';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { ChartSwitch } from '@/components/report/chart';
-import { GradientBackground } from '@/components/ui/gradient-background';
 import { KeyValue } from '@/components/ui/key-value';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
 import {
@@ -12,25 +10,21 @@ import {
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
-import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import { notFound } from 'next/navigation';
-import { parseAsInteger } from 'nuqs';
+import { parseAsInteger, parseAsString } from 'nuqs';
 
 import type { GetEventListOptions } from '@mixan/db';
 import {
   getConversionEventNames,
   getEventList,
-  getEventMeta,
   getEventsCount,
   getProfileById,
-  getProfilesByExternalId,
 } from '@mixan/db';
-import type { IChartInput } from '@mixan/validation';
+import type { IChartEvent, IChartInput } from '@mixan/validation';
 
 import { EventList } from '../../events/event-list';
 import { StickyBelowHeader } from '../../layout-sticky-below-header';
-import ListProfileEvents from './list-profile-events';
 
 interface PageProps {
   params: {
@@ -42,6 +36,8 @@ interface PageProps {
     events?: string;
     cursor?: string;
     f?: string;
+    startDate: string;
+    endDate: string;
   };
 }
 
@@ -57,6 +53,8 @@ export default async function Page({
     events: eventQueryNamesFilter.parse(searchParams.events ?? ''),
     filters: eventQueryFiltersParser.parse(searchParams.f ?? '') ?? undefined,
   };
+  const startDate = parseAsString.parse(searchParams.startDate);
+  const endDate = parseAsString.parse(searchParams.endDate);
   const [profile, events, count, conversions] = await Promise.all([
     getProfileById(profileId),
     getEventList(eventListOptions),
@@ -65,7 +63,7 @@ export default async function Page({
     getExists(organizationId, projectId),
   ]);
 
-  const chartSelectedEvents = [
+  const chartSelectedEvents: IChartEvent[] = [
     {
       segment: 'event',
       filters: [
@@ -107,6 +105,8 @@ export default async function Page({
 
   const profileChart: IChartInput = {
     projectId,
+    startDate,
+    endDate,
     chartType: 'histogram',
     events: chartSelectedEvents,
     breakdowns: [],

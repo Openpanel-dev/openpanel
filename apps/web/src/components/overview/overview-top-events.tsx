@@ -15,7 +15,8 @@ interface OverviewTopEventsProps {
 export default function OverviewTopEvents({
   projectId,
 }: OverviewTopEventsProps) {
-  const { interval, range, previous } = useOverviewOptions();
+  const { interval, range, previous, startDate, endDate } =
+    useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('ev', {
     all: {
@@ -23,6 +24,8 @@ export default function OverviewTopEvents({
       btn: 'All',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',

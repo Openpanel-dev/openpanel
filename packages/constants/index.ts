@@ -1,3 +1,5 @@
+import { isSameDay, isSameMonth } from 'date-fns';
+
 export const NOT_SET_VALUE = '(not set)';
 
 export const operators = {
@@ -99,4 +101,20 @@ export function getDefaultIntervalByRange(
     return 'day';
   }
   return 'month';
+}
+
+export function getDefaultIntervalByDates(
+  startDate: string | null,
+  endDate: string | null
+): null | keyof typeof intervals {
+  if (startDate && endDate) {
+    if (isSameDay(startDate, endDate)) {
+      return 'hour';
+    } else if (isSameMonth(startDate, endDate)) {
+      return 'day';
+    }
+    return 'month';
+  }
+
+  return null;
 }

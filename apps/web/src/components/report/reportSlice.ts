@@ -5,6 +5,7 @@ import { isSameDay, isSameMonth } from 'date-fns';
 
 import {
   alphabetIds,
+  getDefaultIntervalByDates,
   getDefaultIntervalByRange,
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
@@ -39,8 +40,8 @@ const initialState: InitialState = {
   breakdowns: [],
   events: [],
   range: '1m',
-  startDate: new Date('2024-02-24 00:00:00').toISOString(),
-  endDate: new Date('2024-02-24 23:59:59').toISOString(),
+  startDate: null,
+  endDate: null,
   previous: false,
   formula: undefined,
   unit: undefined,
@@ -205,14 +206,12 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.startDate = action.payload;
 
-      if (state.startDate && state.endDate) {
-        if (isSameDay(state.startDate, state.endDate)) {
-          state.interval = 'hour';
-        } else if (isSameMonth(state.startDate, state.endDate)) {
-          state.interval = 'day';
-        } else {
-          state.interval = 'month';
-        }
+      const interval = getDefaultIntervalByDates(
+        state.startDate,
+        state.endDate
+      );
+      if (interval) {
+        state.interval = interval;
       }
     },
 
@@ -221,14 +220,12 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.endDate = action.payload;
 
-      if (state.startDate && state.endDate) {
-        if (isSameDay(state.startDate, state.endDate)) {
-          state.interval = 'hour';
-        } else if (isSameMonth(state.startDate, state.endDate)) {
-          state.interval = 'day';
-        } else {
-          state.interval = 'month';
-        }
+      const interval = getDefaultIntervalByDates(
+        state.startDate,
+        state.endDate
+      );
+      if (interval) {
+        state.interval = interval;
       }
     },
 

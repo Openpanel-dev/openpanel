@@ -11,6 +11,7 @@
     "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
     "@mixan/tsconfig": "workspace:*",
+    "date-fns": "^3.3.1",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "prisma": "^5.1.1",

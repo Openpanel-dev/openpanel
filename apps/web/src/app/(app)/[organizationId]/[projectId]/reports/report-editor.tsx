@@ -10,6 +10,9 @@ import { ReportRange } from '@/components/report/ReportRange';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
   changeDateRanges,
+  changeDates,
+  changeEndDate,
+  changeStartDate,
   ready,
   reset,
   setReport,
@@ -19,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
+import { endOfDay, startOfDay } from 'date-fns';
 import { GanttChartSquareIcon } from 'lucide-react';
 
 import type { IServiceReport } from '@mixan/db';
@@ -61,9 +65,29 @@ export default function ReportEditor({
           <ReportChartType className="min-w-0 flex-1" />
           <ReportRange
             className="min-w-0 flex-1"
-            value={report.range}
-            onChange={(value) => {
+            range={report.range}
+            onRangeChange={(value) => {
               dispatch(changeDateRanges(value));
+            }}
+            dates={{
+              startDate: report.startDate,
+              endDate: report.endDate,
+            }}
+            onDatesChange={(val) => {
+              if (!val) return;
+
+              if (val.from && val.to) {
+                dispatch(
+                  changeDates({
+                    startDate: startOfDay(val.from).toISOString(),
+                    endDate: endOfDay(val.to).toISOString(),
+                  })
+                );
+              } else if (val.from) {
+                dispatch(changeStartDate(startOfDay(val.from).toISOString()));
+              } else if (val.to) {
+                dispatch(changeEndDate(endOfDay(val.to).toISOString()));
+              }
             }}
           />
           <ReportInterval className="min-w-0 flex-1" />

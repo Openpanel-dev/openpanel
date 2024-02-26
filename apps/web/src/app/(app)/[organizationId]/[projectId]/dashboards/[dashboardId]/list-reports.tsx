@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { LazyChart } from '@/components/report/chart/LazyChart';
-import { ReportRange } from '@/components/report/ReportRange';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -18,9 +17,13 @@ import { ChevronRight, MoreHorizontal, PlusIcon, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { getDefaultIntervalByRange } from '@mixan/constants';
+import {
+  getDefaultIntervalByDates,
+  getDefaultIntervalByRange,
+} from '@mixan/constants';
 import type { getReportsByDashboardId } from '@mixan/db';
-import type { IChartRange } from '@mixan/validation';
+
+import { OverviewReportRange } from '../../overview-sticky-header';
 
 interface ListReportsProps {
   reports: Awaited<ReturnType<typeof getReportsByDashboardId>>;
@@ -29,16 +32,12 @@ interface ListReportsProps {
 export function ListReports({ reports }: ListReportsProps) {
   const router = useRouter();
   const params = useAppParams<{ dashboardId: string }>();
-  const [range, setRange] = useState<null | IChartRange>(null);
+  const { range, startDate, endDate } = useOverviewOptions();
 
   return (
     <>
       <StickyBelowHeader className="p-4 items-center justify-between flex">
-        <ReportRange
-          placeholder="Override range"
-          value={range}
-          onChange={(value) => setRange((p) => (p === value ? null : value))}
-        />
+        <OverviewReportRange />
         <Button
           icon={PlusIcon}
           onClick={() => {
@@ -72,10 +71,20 @@ export function ListReports({ reports }: ListReportsProps) {
                   <div className="font-medium">{report.name}</div>
                   {chartRange !== null && (
                     <div className="mt-2 text-sm flex gap-2">
-                      <span className={range !== null ? 'line-through' : ''}>
+                      <span
+                        className={
+                          range !== null || (startDate && endDate)
+                            ? 'line-through'
+                            : ''
+                        }
+                      >
                         {chartRange}
                       </span>
-                      {range !== null && <span>{range}</span>}
+                      {startDate && endDate ? (
+                        <span>Custom dates</span>
+                      ) : (
+                        range !== null && <span>{range}</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -116,8 +125,11 @@ export function ListReports({ reports }: ListReportsProps) {
                 <LazyChart
                   {...report}
                   range={range ?? report.range}
+                  startDate={startDate}
+                  endDate={endDate}
                   interval={
-                    range ? getDefaultIntervalByRange(range) : report.interval
+                    getDefaultIntervalByDates(startDate, endDate) ||
+                    (range ? getDefaultIntervalByRange(range) : report.interval)
                   }
                   editMode={false}
                 />

@@ -15,7 +15,8 @@ interface OverviewTopSourcesProps {
 export default function OverviewTopSources({
   projectId,
 }: OverviewTopSourcesProps) {
-  const { interval, range, previous } = useOverviewOptions();
+  const { interval, range, previous, startDate, endDate } =
+    useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('sources', {
     all: {
@@ -23,6 +24,8 @@ export default function OverviewTopSources({
       btn: 'All',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -51,6 +54,8 @@ export default function OverviewTopSources({
       btn: 'URLs',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -79,6 +84,8 @@ export default function OverviewTopSources({
       btn: 'Types',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -107,6 +114,8 @@ export default function OverviewTopSources({
       btn: 'Source',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -135,6 +144,8 @@ export default function OverviewTopSources({
       btn: 'Medium',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -163,6 +174,8 @@ export default function OverviewTopSources({
       btn: 'Campaign',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -191,6 +204,8 @@ export default function OverviewTopSources({
       btn: 'Term',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -219,6 +234,8 @@ export default function OverviewTopSources({
       btn: 'Content',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',

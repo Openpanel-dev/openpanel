@@ -13,7 +13,8 @@ interface OverviewTopPagesProps {
   projectId: string;
 }
 export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
-  const { interval, range, previous } = useOverviewOptions();
+  const { interval, range, previous, startDate, endDate } =
+    useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('pages', {
     top: {
@@ -21,6 +22,8 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       btn: 'Top pages',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -49,6 +52,8 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       btn: 'Entries',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -77,6 +82,8 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       btn: 'Exits',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',

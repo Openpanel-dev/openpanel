@@ -13,7 +13,8 @@ interface OverviewTopGeoProps {
   projectId: string;
 }
 export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
-  const { interval, range, previous } = useOverviewOptions();
+  const { interval, range, previous, startDate, endDate } =
+    useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('geo', {
     map: {
@@ -21,6 +22,8 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       btn: 'Map',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -49,6 +52,8 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       btn: 'Countries',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -77,6 +82,8 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       btn: 'Regions',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',
@@ -105,6 +112,8 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       btn: 'Cities',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'event',

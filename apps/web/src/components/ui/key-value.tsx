@@ -1,9 +1,10 @@
+import { isValidElement } from 'react';
 import { cn } from '@/utils/cn';
 import Link from 'next/link';
 
 interface KeyValueProps {
   name: string;
-  value: string | number | undefined;
+  value: unknown;
   onClick?: () => void;
   href?: string;
 }
@@ -11,6 +12,10 @@ interface KeyValueProps {
 export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
   const clickable = href || onClick;
   const Component = href ? (Link as any) : onClick ? 'button' : 'div';
+  if (!isValidElement(value)) {
+    return null;
+  }
+
   return (
     <Component
       className={cn(
@@ -35,6 +40,10 @@ export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
 export function KeyValueSubtle({ href, onClick, name, value }: KeyValueProps) {
   const clickable = href || onClick;
   const Component = href ? (Link as any) : onClick ? 'button' : 'div';
+  if (!isValidElement(value)) {
+    return null;
+  }
+
   return (
     <Component
       className="group flex text-[10px] sm:text-xs gap-2 font-medium self-start min-w-0 max-w-full items-center"

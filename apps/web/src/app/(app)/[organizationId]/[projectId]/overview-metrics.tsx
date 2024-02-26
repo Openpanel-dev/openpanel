@@ -14,13 +14,16 @@ interface OverviewMetricsProps {
 }
 
 export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
-  const { previous, range, interval, metric, setMetric } = useOverviewOptions();
+  const { previous, range, interval, metric, setMetric, startDate, endDate } =
+    useOverviewOptions();
   const [filters] = useEventQueryFilters();
 
   const reports = [
     {
       id: 'Visitors',
       projectId,
+      startDate,
+      endDate,
       events: [
         {
           segment: 'user',
@@ -42,6 +45,8 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
     {
       id: 'Sessions',
       projectId,
+      startDate,
+      endDate,
       events: [
         {
           segment: 'event',
@@ -63,6 +68,8 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
     {
       id: 'Pageviews',
       projectId,
+      startDate,
+      endDate,
       events: [
         {
           segment: 'event',
@@ -84,6 +91,8 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
     {
       id: 'Views per session',
       projectId,
+      startDate,
+      endDate,
       events: [
         {
           segment: 'user_average',
@@ -105,6 +114,8 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
     {
       id: 'Bounce rate',
       projectId,
+      startDate,
+      endDate,
       events: [
         {
           segment: 'event',
@@ -143,6 +154,8 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
     {
       id: 'Visit duration',
       projectId,
+      startDate,
+      endDate,
       events: [
         {
           segment: 'property_average',

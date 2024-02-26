@@ -40,7 +40,7 @@ CREATE TABLE openpanel.events_bots (
 ORDER BY
   (project_id, created_at) SETTINGS index_granularity = 8192;
 
-CREATE TABLE profiles (
+CREATE TABLE openpanel.profiles (
   `id` String,
   `external_id` String,
   `first_name` String,

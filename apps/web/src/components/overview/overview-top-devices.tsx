@@ -15,7 +15,8 @@ interface OverviewTopDevicesProps {
 export default function OverviewTopDevices({
   projectId,
 }: OverviewTopDevicesProps) {
-  const { interval, range, previous } = useOverviewOptions();
+  const { interval, range, previous, startDate, endDate } =
+    useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     devices: {
@@ -23,6 +24,8 @@ export default function OverviewTopDevices({
       btn: 'Devices',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'user',
@@ -51,6 +54,8 @@ export default function OverviewTopDevices({
       btn: 'Browser',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'user',
@@ -79,6 +84,8 @@ export default function OverviewTopDevices({
       btn: 'Browser Version',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'user',
@@ -107,6 +114,8 @@ export default function OverviewTopDevices({
       btn: 'OS',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'user',
@@ -135,6 +144,8 @@ export default function OverviewTopDevices({
       btn: 'OS Version',
       chart: {
         projectId,
+        startDate,
+        endDate,
         events: [
           {
             segment: 'user',

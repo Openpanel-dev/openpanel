@@ -9,7 +9,6 @@ import OverviewTopEvents from '@/components/overview/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
-import { Dialog } from '@/components/ui/dialog';
 import { getExists } from '@/server/pageExists';
 
 import { db } from '@mixan/db';
