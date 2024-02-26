@@ -28,6 +28,8 @@ export function Chart({
   unit,
   metric,
   projectId,
+  startDate,
+  endDate,
 }: ReportChartProps) {
   const [data] = api.chart.chart.useSuspenseQuery(
     {
@@ -39,8 +41,8 @@ export function Chart({
       breakdowns,
       name,
       range,
-      startDate: null,
-      endDate: null,
+      startDate,
+      endDate,
       projectId,
       previous,
       formula,

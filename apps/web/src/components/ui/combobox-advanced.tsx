@@ -1,20 +1,17 @@
-'use client';
-
 import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from '@/components/ui/command';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import { useOnClickOutside } from 'usehooks-ts';
 
 import { Button } from './button';
 import { Checkbox } from './checkbox';
-import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 type IValue = any;
@@ -90,34 +87,33 @@ export function ComboboxAdvanced({
         >
           <div className="flex gap-1 flex-wrap w-full">
             {value.length === 0 && placeholder}
-            {value.slice(0, 2).map((value) => {
+            {value.map((value) => {
               const item = items.find((item) => item.value === value) ?? {
                 value,
                 label: value,
               };
               return <Badge key={String(item.value)}>{item.label}</Badge>;
             })}
-            {value.length > 2 && <Badge>+{value.length - 2} more</Badge>}
           </div>
           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full max-w-md p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="Search"
             value={inputValue}
             onValueChange={setInputValue}
           />
-          <CommandGroup>
-            {inputValue === ''
-              ? value.map(renderUnknownItem)
-              : renderItem({
-                  value: inputValue,
-                  label: `Pick "${inputValue}"`,
-                })}
+          <CommandList>
+            {inputValue !== '' &&
+              renderItem({
+                value: inputValue,
+                label: `Pick '${inputValue}'`,
+              })}
+            {value.map(renderUnknownItem)}
             {selectables.map(renderItem)}
-          </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>

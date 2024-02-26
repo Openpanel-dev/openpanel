@@ -9,10 +9,12 @@ import OverviewTopEvents from '@/components/overview/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
+import { Dialog } from '@/components/ui/dialog';
 import { getExists } from '@/server/pageExists';
 
 import { db } from '@mixan/db';
 
+import { CreateClient } from './create-client';
 import { StickyBelowHeader } from './layout-sticky-below-header';
 import OverviewMetrics from './overview-metrics';
 import { OverviewReportRange } from './overview-sticky-header';
@@ -38,6 +40,7 @@ export default async function Page({
 
   return (
     <PageLayout title="Overview" organizationSlug={organizationId}>
+      <CreateClient />
       <StickyBelowHeader>
         <div className="p-4 flex gap-2 justify-between">
           <div className="flex gap-2">

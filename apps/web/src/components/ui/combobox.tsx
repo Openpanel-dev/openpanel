@@ -77,8 +77,8 @@ export function Combobox<T extends string>({
             aria-expanded={open}
             className={cn('justify-between', className)}
           >
-            <div className="flex min-w-0 gap-2 items-center">
-              {Icon ? <Icon className="mr-2" size={16} /> : null}
+            <div className="flex min-w-0 items-center">
+              {Icon ? <Icon size={16} className="mr-2 shrink-0" /> : null}
               <span className="overflow-hidden text-ellipsis whitespace-nowrap">
                 {value ? find(value)?.label ?? 'No match' : placeholder}
               </span>

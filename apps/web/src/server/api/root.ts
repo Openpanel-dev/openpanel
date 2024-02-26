@@ -4,6 +4,7 @@ import { chartRouter } from './routers/chart';
 import { clientRouter } from './routers/client';
 import { dashboardRouter } from './routers/dashboard';
 import { eventRouter } from './routers/event';
+import { onboardingRouter } from './routers/onboarding';
 import { organizationRouter } from './routers/organization';
 import { profileRouter } from './routers/profile';
 import { projectRouter } from './routers/project';
@@ -29,6 +30,7 @@ export const appRouter = createTRPCRouter({
   profile: profileRouter,
   ui: uiRouter,
   share: shareRouter,
+  onboarding: onboardingRouter,
 });
 
 // export type definition of API

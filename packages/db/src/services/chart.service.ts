@@ -113,6 +113,8 @@ export function getEventFiltersWhereClause(
     const id = `f${index}`;
     const { name, value, operator } = filter;
 
+    if (value.length === 0) return;
+
     if (name.startsWith('properties.')) {
       const whereFrom = `mapValues(mapExtractKeyLike(properties, '${name
         .replace(/^properties\./, '')

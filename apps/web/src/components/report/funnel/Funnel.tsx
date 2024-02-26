@@ -12,6 +12,8 @@ import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
 import { ArrowRight, ArrowRightIcon } from 'lucide-react';
 
+import { useChartContext } from '../chart/ChartProvider';
+
 function FunnelChart({ from, to }: { from: number; to: number }) {
   const fromY = 100 - from;
   const toY = 100 - to;
@@ -82,15 +84,19 @@ export function FunnelSteps({
   steps,
   totalSessions,
 }: RouterOutputs['chart']['funnel']) {
+  const { editMode } = useChartContext();
   return (
-    <Carousel className="w-full py-4" opts={{ loop: false, dragFree: true }}>
+    <Carousel className="w-full" opts={{ loop: false, dragFree: true }}>
       <CarouselContent>
-        <CarouselItem className={'flex-[0_0_0px] pl-3'} />
+        <CarouselItem className={'flex-[0_0_0] pl-3'} />
         {steps.map((step, index, list) => {
           const finalStep = index === list.length - 1;
           return (
             <CarouselItem
-              className={'flex-[0_0_320px] max-w-full p-0 px-1'}
+              className={cn(
+                'flex-[0_0_250px] max-w-full p-0 px-1',
+                editMode && 'flex-[0_0_320px]'
+              )}
               key={step.event.id}
             >
               <div className="border border-border divide-y divide-border bg-white">

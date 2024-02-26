@@ -26,4 +26,15 @@ const Checkbox = React.forwardRef<
 ));
 Checkbox.displayName = CheckboxPrimitive.Root.displayName;
 
-export { Checkbox };
+const CheckboxInput = React.forwardRef<
+  React.ElementRef<typeof CheckboxPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
+>((props, ref) => (
+  <label className="cursor-pointer flex items-center select-none border border-border rounded-md px-3 gap-4 min-h-10">
+    <Checkbox ref={ref} {...props} />
+    <div className="text-sm font-medium">{props.children}</div>
+  </label>
+));
+CheckboxInput.displayName = 'CheckboxInput';
+
+export { Checkbox, CheckboxInput };

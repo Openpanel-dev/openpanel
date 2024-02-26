@@ -5,7 +5,17 @@ import {
 } from '@/server/api/trpc';
 import { getDaysOldDate } from '@/utils/date';
 import { average, max, min, round, sum } from '@/utils/math';
-import { flatten, map, pipe, prop, repeat, reverse, sort, uniq } from 'ramda';
+import {
+  flatten,
+  map,
+  pick,
+  pipe,
+  prop,
+  repeat,
+  reverse,
+  sort,
+  uniq,
+} from 'ramda';
 import { z } from 'zod';
 
 import { chQuery, createSqlBuilder } from '@mixan/db';
@@ -260,7 +270,10 @@ export const chartRouter = createTRPCRouter({
 
   // TODO: Make this private
   chart: publicProcedure.input(zChartInput).query(async ({ input }) => {
-    const current = getDatesFromRange(input.range);
+    const current =
+      input.startDate && input.endDate
+        ? { startDate: input.startDate, endDate: input.endDate }
+        : getDatesFromRange(input.range);
     let diff = 0;
 
     switch (input.range) {

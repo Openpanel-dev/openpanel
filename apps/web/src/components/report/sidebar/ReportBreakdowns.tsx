@@ -43,7 +43,7 @@ export function ReportBreakdowns() {
       <div className="flex flex-col gap-4">
         {selectedBreakdowns.map((item, index) => {
           return (
-            <div key={item.name} className="rounded-lg border">
+            <div key={item.name} className="rounded-lg border bg-slate-50">
               <div className="flex items-center gap-2 p-2 px-4">
                 <ColorSquare>{index}</ColorSquare>
                 <Combobox

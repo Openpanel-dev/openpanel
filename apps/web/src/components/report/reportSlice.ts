@@ -1,5 +1,7 @@
+import { start } from 'repl';
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import { isSameDay, isSameMonth } from 'date-fns';
 
 import {
   alphabetIds,
@@ -37,8 +39,8 @@ const initialState: InitialState = {
   breakdowns: [],
   events: [],
   range: '1m',
-  startDate: null,
-  endDate: null,
+  startDate: new Date('2024-02-24 00:00:00').toISOString(),
+  endDate: new Date('2024-02-24 23:59:59').toISOString(),
   previous: false,
   formula: undefined,
   unit: undefined,
@@ -66,6 +68,7 @@ export const reportSlice = createSlice({
     },
     setReport(state, action: PayloadAction<IChartInput>) {
       return {
+        ...state,
         ...action.payload,
         startDate: null,
         endDate: null,
@@ -176,21 +179,65 @@ export const reportSlice = createSlice({
       state.lineType = action.payload;
     },
 
+    // Custom start and end date
+    changeDates: (
+      state,
+      action: PayloadAction<{
+        startDate: string;
+        endDate: string;
+      }>
+    ) => {
+      state.dirty = true;
+      state.startDate = action.payload.startDate;
+      state.endDate = action.payload.endDate;
+
+      if (isSameDay(state.startDate, state.endDate)) {
+        state.interval = 'hour';
+      } else if (isSameMonth(state.startDate, state.endDate)) {
+        state.interval = 'day';
+      } else {
+        state.interval = 'month';
+      }
+    },
+
     // Date range
     changeStartDate: (state, action: PayloadAction<string>) => {
       state.dirty = true;
       state.startDate = action.payload;
+
+      if (state.startDate && state.endDate) {
+        if (isSameDay(state.startDate, state.endDate)) {
+          state.interval = 'hour';
+        } else if (isSameMonth(state.startDate, state.endDate)) {
+          state.interval = 'day';
+        } else {
+          state.interval = 'month';
+        }
+      }
     },
 
     // Date range
     changeEndDate: (state, action: PayloadAction<string>) => {
       state.dirty = true;
       state.endDate = action.payload;
+
+      if (state.startDate && state.endDate) {
+        if (isSameDay(state.startDate, state.endDate)) {
+          state.interval = 'hour';
+        } else if (isSameMonth(state.startDate, state.endDate)) {
+          state.interval = 'day';
+        } else {
+          state.interval = 'month';
+        }
+      }
     },
 
     changeDateRanges: (state, action: PayloadAction<IChartRange>) => {
       state.dirty = true;
       state.range = action.payload;
+      state.startDate = null;
+      state.endDate = null;
+
       state.interval = getDefaultIntervalByRange(action.payload);
     },
 
@@ -215,6 +262,9 @@ export const {
   removeBreakdown,
   changeBreakdown,
   changeInterval,
+  changeDates,
+  changeStartDate,
+  changeEndDate,
   changeDateRanges,
   changeChartType,
   changeLineType,

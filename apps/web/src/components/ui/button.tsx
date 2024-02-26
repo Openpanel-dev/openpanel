@@ -75,7 +75,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {Icon && (
           <Icon
             className={cn(
-              'h-4 w-4 mr-2',
+              'h-4 w-4 mr-2 flex-shrink-0',
               responsive && 'mr-0 sm:mr-2',
               loading && 'animate-spin'
             )}

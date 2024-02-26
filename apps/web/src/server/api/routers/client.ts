@@ -80,6 +80,33 @@ export const clientRouter = createTRPCRouter({
         cors: client.cors,
       };
     }),
+  create2: protectedProcedure
+    .input(
+      z.object({
+        name: z.string(),
+        projectId: z.string(),
+        organizationId: z.string(),
+        domain: z.string().nullish(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const secret = randomUUID();
+      const client = await db.client.create({
+        data: {
+          organization_slug: input.organizationId,
+          project_id: input.projectId,
+          name: input.name,
+          secret: input.domain ? undefined : await hashPassword(secret),
+          cors: input.domain || undefined,
+        },
+      });
+
+      return {
+        clientSecret: input.domain ? null : secret,
+        clientId: client.id,
+        cors: client.cors,
+      };
+    }),
   remove: protectedProcedure
     .input(
       z.object({
