@@ -47,7 +47,10 @@ export function PreviewCarousel() {
     >
       <CarouselContent>
         {images.map((item) => (
-          <CarouselItem key={item.url} className="flex-[0_0_80%] pl-8">
+          <CarouselItem
+            key={item.url}
+            className="flex-[0_0_80%] max-w-3xl pl-8"
+          >
             <div className="aspect-video">
               <div className="p-3 rounded-xl overflow-hidden bg-gradient-to-b from-blue-100/50 to-white/50">
                 <Image

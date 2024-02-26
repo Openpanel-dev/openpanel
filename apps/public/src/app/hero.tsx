@@ -8,7 +8,9 @@ import {
   Globe2Icon,
   LayoutPanelTopIcon,
   LockIcon,
+  ServerIcon,
 } from 'lucide-react';
+import Image from 'next/image';
 
 import { Heading1, Lead, Lead2 } from './copy';
 import { JoinWaitlist } from './join-waitlist';
@@ -34,38 +36,40 @@ const features = [
     title: 'No cookies',
     icon: CookieIcon,
   },
+  {
+    title: 'Self-hosted',
+    icon: ServerIcon,
+  },
 ];
 
 export function Hero({ waitlistCount }: { waitlistCount: number }) {
   return (
     <div className="flex flex-col items-center w-full text-center text-blue-950">
-      <div className="py-32 p-4 flex flex-col items-center max-w-3xl bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]">
+      <div className="pt-32 pb-56 p-4 flex flex-col items-center max-w-3xl bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]">
         <Heading1 className="mb-4">
           An open-source
           <br />
           alternative to Mixpanel
         </Heading1>
-        <p className="mb-8">
+        <p>
           Mixpanel + Plausible ={' '}
           <strong className="text-blue-600">Openpanel!</strong> A simple
           analytics tool that your wallet can afford.
         </p>
-        <JoinWaitlist />
-        <div className="mt-4 text-sm">
-          <p>Get ahead of the curve and join our waiting list{' - '}</p>
-          <p>
-            there are already{' '}
-            <strong>{waitlistCount} savvy individuals on board!</strong> 🎉
-          </p>
+        <div className="my-12 w-full flex flex-col items-center">
+          <JoinWaitlist />
+          <div className="mt-2">
+            <p>{waitlistCount} people have already signed up! 🚀</p>
+          </div>
         </div>
-        {/* <div className="flex flex-wrap gap-10 mt-8 max-w-xl justify-center">
-            {features.map(({ icon: Icon, title }) => (
-              <div className="flex gap-2 items-center justify-center">
-                <Icon className="text-blue-light  " />
-                {title}
-              </div>
-            ))}
-          </div> */}
+        <div className="flex flex-wrap gap-10 max-w-xl justify-center">
+          {features.map(({ icon: Icon, title }) => (
+            <div className="flex gap-2 items-center justify-center">
+              <Icon className="text-blue-light  " />
+              {title}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

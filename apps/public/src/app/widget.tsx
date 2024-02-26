@@ -33,7 +33,7 @@ export function Widget({
           <Icon
             key={i}
             size={120}
-            className={cn('flex-shrink-0 opacity-10 relative', offsets?.[i])}
+            className={cn('flex-shrink-0 opacity-5 relative', offsets?.[i])}
             strokeWidth={1.5}
           />
         ))}
