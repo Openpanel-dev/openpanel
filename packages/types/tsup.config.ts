@@ -1,10 +1,9 @@
 import { defineConfig } from 'tsup';
 
+import config from '@mixan/tsconfig/tsup.config.json' assert { type: 'json' };
+
 export default defineConfig({
-  entry: ['index.ts'],
-  format: ['cjs', 'esm'], // Build for commonJS and ESmodules
-  dts: true, // Generate declaration file (.d.ts)
-  splitting: false,
-  sourcemap: false,
-  clean: true,
+  ...(config as any),
+  entry: ['index.ts', 'cdn.ts'],
+  format: ['cjs', 'esm', 'iife'],
 });

@@ -11,6 +11,7 @@
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
+    "@mixan/tsconfig": "workspace:*",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsup": "^7.2.0",

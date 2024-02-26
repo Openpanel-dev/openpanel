@@ -11,8 +11,7 @@
   },
   "dependencies": {
     "@mixan/sdk": "workspace:*",
-    "@mixan/sdk-web": "workspace:*",
-    "@mixan/types": "workspace:*"
+    "@mixan/sdk-web": "workspace:*"
   },
   "peerDependencies": {
     "next": "^13.0.0"
@@ -21,6 +20,7 @@
     "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
     "@mixan/tsconfig": "workspace:*",
+    "@mixan/types": "workspace:*",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsup": "^7.2.0",

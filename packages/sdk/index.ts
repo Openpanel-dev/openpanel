@@ -121,10 +121,6 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
 
   // Public
 
-  public init(properties?: Record<string, unknown>) {
-    this.state.properties = properties ?? {};
-  }
-
   public setProfileId(profileId: string) {
     this.state.profileId = profileId;
   }
@@ -206,6 +202,7 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
   public clear() {
     this.state.properties = {};
     this.state.deviceId = undefined;
+    this.state.profileId = undefined;
     if (this.options.removeDeviceId) {
       this.options.removeDeviceId();
     }
