@@ -137,6 +137,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           filters: filters,
           id: 'B',
           name: 'session_end',
+          displayName: 'Bounce rate',
         },
       ],
       breakdowns: [],
