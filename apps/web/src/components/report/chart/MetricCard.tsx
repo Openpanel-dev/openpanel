@@ -2,14 +2,19 @@
 
 import type { IChartData } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { fancyMinutes, useNumber } from '@/hooks/useNumerFormatter';
 import { theme } from '@/utils/theme';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
 
 import type { IChartMetric } from '@mixan/validation';
 
-import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
+import {
+  getDiffIndicator,
+  PreviousDiffIndicator,
+  PreviousDiffIndicatorText,
+} from '../PreviousDiffIndicator';
+import { useChartContext } from './ChartProvider';
 
 interface MetricCardProps {
   serie: IChartData['series'][number];
@@ -24,14 +29,39 @@ export function MetricCard({
   metric,
   unit,
 }: MetricCardProps) {
+  const { previousIndicatorInverted } = useChartContext();
   const color = _color || theme?.colors['chart-0'];
   const number = useNumber();
+
+  const renderValue = (value: number, unitClassName?: string) => {
+    if (unit === 'min') {
+      return <>{fancyMinutes(value)}</>;
+    }
+
+    return (
+      <>
+        {number.short(value)}
+        {unit && <span className={unitClassName}>{unit}</span>}
+      </>
+    );
+  };
+
+  const previous = serie.metrics.previous[metric];
+
+  const graphColors = getDiffIndicator(
+    previousIndicatorInverted,
+    previous?.state,
+    'green',
+    'red',
+    'blue'
+  );
+
   return (
     <div
-      className="group relative border border-border p-4 rounded-md bg-white overflow-hidden h-24"
+      className="group relative border border-border p-2 rounded-md bg-white overflow-hidden h-24"
       key={serie.name}
     >
-      <div className="absolute -top-1 -left-1 -right-1 -bottom-1 z-0 opacity-10 transition-opacity duration-300 group-hover:opacity-50">
+      <div className="absolute -top-2 -left-2 -right-2 -bottom-2 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50 rounded-md">
         <AutoSizer>
           {({ width, height }) => (
             <AreaChart
@@ -41,17 +71,25 @@ export function MetricCard({
               style={{ marginTop: (height / 3) * 2 }}
             >
               <defs>
-                <linearGradient id="area" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={color} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={color} stopOpacity={0.1} />
+                <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={'red'} stopOpacity={0.5} />
+                  <stop offset="95%" stopColor={'red'} stopOpacity={0.2} />
+                </linearGradient>
+                <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={'green'} stopOpacity={0.5} />
+                  <stop offset="95%" stopColor={'green'} stopOpacity={0.2} />
+                </linearGradient>
+                <linearGradient id="blue" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={'blue'} stopOpacity={0.5} />
+                  <stop offset="95%" stopColor={'blue'} stopOpacity={0.2} />
                 </linearGradient>
               </defs>
               <Area
                 dataKey="count"
                 type="monotone"
-                fill="url(#area)"
+                fill={`url(#${graphColors})`}
                 fillOpacity={1}
-                stroke={color}
+                stroke={graphColors}
                 strokeWidth={2}
               />
             </AreaChart>
@@ -60,23 +98,22 @@ export function MetricCard({
       </div>
       <div className="relative">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 font-medium">
+          <div className="flex items-center gap-2 font-medium text-left min-w-0">
             <ColorSquare>{serie.event.id}</ColorSquare>
-            {serie.name || serie.event.displayName || serie.event.name}
+            <span className="text-ellipsis overflow-hidden whitespace-nowrap">
+              {serie.name || serie.event.displayName || serie.event.name}
+            </span>
           </div>
-          <PreviousDiffIndicator {...serie.metrics.previous[metric]} />
+          {/* <PreviousDiffIndicator {...serie.metrics.previous[metric]} /> */}
         </div>
         <div className="flex justify-between items-end mt-2">
-          <div className="text-2xl font-bold">
-            {number.format(serie.metrics[metric])}
-            {unit && <span className="ml-1 font-light text-xl">{unit}</span>}
+          <div className="text-2xl font-bold text-ellipsis overflow-hidden whitespace-nowrap">
+            {renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
           </div>
-          {!!serie.metrics.previous[metric] && (
-            <div>
-              {number.format(serie.metrics.previous[metric]?.value)}
-              {unit}
-            </div>
-          )}
+          <PreviousDiffIndicatorText
+            {...serie.metrics.previous[metric]}
+            className="font-medium text-xs mb-0.5"
+          />
         </div>
       </div>
     </div>

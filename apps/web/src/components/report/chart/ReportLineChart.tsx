@@ -2,11 +2,10 @@
 
 import React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
-import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
+import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
-import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import {
   CartesianGrid,
@@ -40,7 +39,7 @@ export function ReportLineChart({
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(series);
-
+  const number = useNumber();
   return (
     <>
       <ResponsiveContainer>
@@ -57,6 +56,7 @@ export function ReportLineChart({
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
+              tickFormatter={number.short}
             />
             <Tooltip content={<ReportChartTooltip />} />
             <XAxis

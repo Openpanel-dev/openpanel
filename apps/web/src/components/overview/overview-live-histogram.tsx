@@ -42,7 +42,7 @@ export function OverviewLiveHistogram({
     metric: 'sum',
     breakdowns: [],
     lineType: 'monotone',
-    previous: true,
+    previous: false,
   };
 
   return (

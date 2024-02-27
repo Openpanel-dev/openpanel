@@ -182,7 +182,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       name: 'Visit duration',
       range,
       previous,
-      formula: 'A/1000/60',
+      formula: 'A/1000',
       metric: 'average',
       unit: 'min',
     },
@@ -192,24 +192,26 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 
   return (
     <>
-      {reports.map((report, index) => (
-        <button
-          key={index}
-          className="relative col-span-6 md:col-span-3 lg:col-span-2 group"
-          onClick={() => {
-            setMetric(index);
-          }}
-        >
-          <ChartSwitch hideID {...report} />
-          <div
-            className={cn(
-              'transition-opacity top-0 left-0 right-0 bottom-0 absolute rounded-md w-full h-full border ring-1 border-chart-0 ring-chart-0',
-              metric === index ? 'opacity-100' : 'opacity-0'
-            )}
-          />
-          {/* add active border */}
-        </button>
-      ))}
+      <div className="grid grid-cols-6 col-span-6 gap-1">
+        {reports.map((report, index) => (
+          <button
+            key={index}
+            className="relative col-span-3 md:col-span-2 lg:col-span-1 group"
+            onClick={() => {
+              setMetric(index);
+            }}
+          >
+            <ChartSwitch hideID {...report} />
+            <div
+              className={cn(
+                'transition-opacity top-0 left-0 right-0 bottom-0 absolute rounded-md w-full h-full border ring-1 border-black ring-black',
+                metric === index ? 'opacity-100' : 'opacity-0'
+              )}
+            />
+            {/* add active border */}
+          </button>
+        ))}
+      </div>
       <Widget className="col-span-6">
         <WidgetHead>
           <div className="title">{selectedMetric.events[0]?.displayName}</div>

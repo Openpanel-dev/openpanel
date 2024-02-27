@@ -1,10 +1,9 @@
 import React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
-import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
+import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
-import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import {
   Area,
@@ -38,6 +37,7 @@ export function ReportAreaChart({
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const formatDate = useFormatDateInterval(interval);
   const rechartData = useRechartDataModel(series);
+  const number = useNumber();
 
   return (
     <>
@@ -59,6 +59,7 @@ export function ReportAreaChart({
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
+              tickFormatter={number.short}
             />
 
             {series.map((serie) => {

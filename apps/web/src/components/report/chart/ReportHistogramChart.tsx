@@ -1,10 +1,9 @@
 import React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
-import { AutoSizer } from '@/components/AutoSizer';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
+import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
-import { cn } from '@/utils/cn';
 import { getChartColor, theme } from '@/utils/theme';
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -40,8 +39,8 @@ export function ReportHistogramChart({
   const { editMode, previous } = useChartContext();
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
-
   const rechartData = useRechartDataModel(series);
+  const number = useNumber();
 
   return (
     <>
@@ -64,6 +63,7 @@ export function ReportHistogramChart({
               width={getYAxisWidth(data.metrics.max)}
               allowDecimals={false}
               domain={[0, data.metrics.max]}
+              tickFormatter={number.short}
             />
             {series.map((serie) => {
               return (
