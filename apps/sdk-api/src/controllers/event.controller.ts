@@ -72,7 +72,14 @@ export async function postEvent(
   const { projectId, body } = request;
   const properties = body.properties ?? {};
   const getProperty = (name: string): string | undefined => {
-    return (properties[name] as string | null | undefined) ?? undefined;
+    // replace thing is just for older sdks when we didn't have `__`
+    // remove when kiddokitchen app (24.09.02) is not used anymore
+    return (
+      ((properties[name] || properties[name.replace('__', '')]) as
+        | string
+        | null
+        | undefined) ?? undefined
+    );
   };
   const profileId = body.profileId ?? '';
   const createdAt = new Date(body.timestamp);
@@ -93,7 +100,7 @@ export async function postEvent(
     ip,
     ua,
   });
-  const previousProfileId = generateDeviceId({
+  const previousDeviceId = generateDeviceId({
     salt: salts.previous,
     origin,
     ip,
@@ -174,7 +181,7 @@ export async function postEvent(
   );
   const sessionEndJobPreviousDeviceId = findJobByPrefix(
     eventsJobs,
-    `sessionEnd:${projectId}:${previousProfileId}:`
+    `sessionEnd:${projectId}:${previousDeviceId}:`
   );
 
   const createSessionStart =
@@ -187,7 +194,7 @@ export async function postEvent(
     sessionEndJobCurrentDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
   } else if (!sessionEndJobCurrentDeviceId && sessionEndJobPreviousDeviceId) {
     console.log('found session previous');
-    deviceId = previousProfileId;
+    deviceId = previousDeviceId;
     const diff = Date.now() - sessionEndJobPreviousDeviceId.timestamp;
     sessionEndJobPreviousDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
   } else {
