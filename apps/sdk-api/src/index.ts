@@ -1,6 +1,5 @@
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
-import pino from 'pino';
 
 import { redisPub } from '@mixan/redis';
 
@@ -8,6 +7,7 @@ import eventRouter from './routes/event.router';
 import liveRouter from './routes/live.router';
 import miscRouter from './routes/misc.router';
 import profileRouter from './routes/profile.router';
+import { logger, logInfo } from './utils/logger';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -18,11 +18,10 @@ declare module 'fastify' {
 const port = parseInt(process.env.API_PORT || '3000', 10);
 
 const startServer = async () => {
+  logInfo('Starting server');
   try {
     const fastify = Fastify({
-      logger: pino({
-        level: 'info',
-      }),
+      logger: logger,
     });
 
     fastify.register(cors, {
@@ -50,12 +49,12 @@ const startServer = async () => {
     // })
     if (process.env.NODE_ENV === 'production') {
       for (const signal of ['SIGINT', 'SIGTERM']) {
-        process.on(signal, () =>
+        process.on(signal, (err) => {
+          logger.fatal(err, `uncaught exception detected ${signal}`);
           fastify.close().then((err) => {
-            console.log(`close application on ${signal}`);
             process.exit(err ? 1 : 0);
-          })
-        );
+          });
+        });
       }
     }
 
@@ -70,10 +69,5 @@ const startServer = async () => {
     console.error(e);
   }
 };
-
-process.on('unhandledRejection', (e) => {
-  console.error(e);
-  process.exit(1);
-});
 
 startServer();

@@ -1,4 +1,5 @@
 import { isBot } from '@/bots';
+import { logInfo } from '@/utils/logger';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parseReferrer';
 import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
@@ -188,17 +189,17 @@ export async function postEvent(
     !sessionEndJobCurrentDeviceId && !sessionEndJobPreviousDeviceId;
 
   if (sessionEndJobCurrentDeviceId && !sessionEndJobPreviousDeviceId) {
-    console.log('found session current');
+    logInfo('found session current');
     deviceId = currentDeviceId;
     const diff = Date.now() - sessionEndJobCurrentDeviceId.timestamp;
     sessionEndJobCurrentDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
   } else if (!sessionEndJobCurrentDeviceId && sessionEndJobPreviousDeviceId) {
-    console.log('found session previous');
+    logInfo('found session previous');
     deviceId = previousDeviceId;
     const diff = Date.now() - sessionEndJobPreviousDeviceId.timestamp;
     sessionEndJobPreviousDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
   } else {
-    console.log('new session with current');
+    logInfo('new session with current');
     deviceId = currentDeviceId;
     // Queue session end
     eventsQueue.add(
@@ -215,6 +216,20 @@ export async function postEvent(
       }
     );
   }
+
+  logInfo('incoming event', {
+    ip,
+    origin,
+    ua,
+    uaInfo,
+    referrer,
+    profileId,
+    projectId,
+    deviceId,
+    bot,
+    geo,
+    events,
+  });
 
   const payload: Omit<IServiceCreateEventPayload, 'id'> = {
     name: body.name,
@@ -260,9 +275,10 @@ export async function postEvent(
 
     if (payload.name === 'screen_view') {
       if (duration < 0) {
-        console.log('--- DURATION IS NEGATIVE ---');
-        console.log('prevEvent', JSON.stringify(prevEvent));
-        console.log('current', JSON.stringify(payload));
+        logInfo('duration is wrong', {
+          prevEvent,
+          payload,
+        });
       }
       await job.updateData({
         type: 'createEvent',
@@ -291,6 +307,7 @@ export async function postEvent(
     options.jobId = `event:${projectId}:${deviceId}:${Date.now()}`;
   }
 
+  logInfo('queue event', payload);
   // Queue current event
   eventsQueue.add(
     'event',

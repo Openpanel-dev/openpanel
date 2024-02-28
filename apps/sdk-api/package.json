@@ -13,6 +13,7 @@
   "dependencies": {
     "@fastify/cors": "^9.0.0",
     "@fastify/websocket": "^8.3.1",
+    "@logtail/pino": "^0.4.19",
     "@mixan/common": "workspace:*",
     "@mixan/db": "workspace:*",
     "@mixan/queue": "workspace:*",
@@ -20,6 +21,7 @@
     "fastify": "^4.25.2",
     "ico-to-png": "^0.2.1",
     "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1",
     "ramda": "^0.29.1",
     "sharp": "^0.33.2",
     "ua-parser-js": "^1.0.37",
@@ -28,8 +30,8 @@
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
     "@mixan/sdk": "workspace:*",
+    "@mixan/tsconfig": "workspace:*",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",
     "@types/uuid": "^9.0.8",
