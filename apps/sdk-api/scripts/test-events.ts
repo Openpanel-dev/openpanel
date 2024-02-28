@@ -184,7 +184,7 @@ async function createSessionStart(event: IServiceCreateEventPayload) {
     ...event,
     duration: 0,
     name: 'session_start',
-    createdAt: toISOString(getTime(event.createdAt) - 10),
+    createdAt: toISOString(getTime(event.createdAt) - 100),
   };
 
   await createEvent(session);

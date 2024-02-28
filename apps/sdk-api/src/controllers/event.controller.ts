@@ -276,7 +276,7 @@ export async function postEvent(
       ...payload,
       name: 'session_start',
       // @ts-expect-error
-      createdAt: toISOString(getTime(payload.createdAt) - 10),
+      createdAt: toISOString(getTime(payload.createdAt) - 100),
     });
   }
 

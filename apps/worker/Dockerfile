@@ -47,7 +47,7 @@ COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
 COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
-COPY packages/types/package.json packages/types/package.json
+COPY packages/sdk/package.json packages/sdk/package.json
 
 # BUILD
 FROM base AS build
