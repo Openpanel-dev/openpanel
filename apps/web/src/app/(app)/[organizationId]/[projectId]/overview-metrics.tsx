@@ -17,7 +17,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
   const { previous, range, interval, metric, setMetric, startDate, endDate } =
     useOverviewOptions();
   const [filters] = useEventQueryFilters();
-
+  const isPageFilter = filters.find((filter) => filter.name === 'path');
   const reports = [
     {
       id: 'Visitors',
@@ -29,7 +29,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           segment: 'user',
           filters,
           id: 'A',
-          name: 'session_start',
+          name: isPageFilter ? 'screen_view' : 'session_start',
           displayName: 'Visitors',
         },
       ],
@@ -49,10 +49,10 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       endDate,
       events: [
         {
-          segment: 'event',
+          segment: 'session',
           filters,
           id: 'A',
-          name: 'session_start',
+          name: isPageFilter ? 'screen_view' : 'session_start',
           displayName: 'Sessions',
         },
       ],
@@ -122,7 +122,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           filters: [
             {
               id: '1',
-              name: 'properties._bounce',
+              name: 'properties.__bounce',
               operator: 'is',
               value: ['true'],
             },
@@ -171,8 +171,8 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           ],
           id: 'A',
           property: 'duration',
-          name: 'screen_view',
-          displayName: 'Visit duration',
+          name: isPageFilter ? 'screen_view' : 'session_end',
+          displayName: isPageFilter ? 'Time on page' : 'Visit duration',
         },
       ],
       breakdowns: [],

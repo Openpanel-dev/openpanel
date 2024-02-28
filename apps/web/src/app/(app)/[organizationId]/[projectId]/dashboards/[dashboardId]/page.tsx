@@ -18,9 +18,9 @@ export default async function Page({
   params: { organizationId, projectId, dashboardId },
 }: PageProps) {
   const [dashboard, reports] = await Promise.all([
-    getDashboardById(dashboardId),
+    getDashboardById(dashboardId, projectId),
     getReportsByDashboardId(dashboardId),
-    getExists(organizationId, projectId),
+    getExists(organizationId),
   ]);
 
   if (!dashboard) {

@@ -29,7 +29,6 @@ export function MetricCard({
   unit,
 }: MetricCardProps) {
   const { previousIndicatorInverted } = useChartContext();
-  const color = _color || theme?.colors['chart-0'];
   const number = useNumber();
 
   const renderValue = (value: number, unitClassName?: string) => {

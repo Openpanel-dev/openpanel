@@ -76,6 +76,10 @@ export function getChartSql({
     sb.select.count = `countDistinct(profile_id) as count`;
   }
 
+  if (event.segment === 'session') {
+    sb.select.count = `countDistinct(session_id) as count`;
+  }
+
   if (event.segment === 'user_average') {
     sb.select.count = `COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count`;
   }

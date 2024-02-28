@@ -23,12 +23,10 @@ export default function LayoutProjectSelector({
         className="w-auto min-w-0 max-sm:max-w-[100px]"
         placeholder={'Select project'}
         onChange={(value) => {
-          // If we are on a page with only organizationId and projectId (as params)
-          // we know its safe to just replace the current projectId
-          // since the rest of the url is to a static page
-          // e.g. /[organizationId]/[projectId]/events
           if (organizationId && projectId) {
-            router.push(pathname.replace(projectId, value));
+            const split = pathname.replace(projectId, value).split('/');
+            // slicing here will remove everything after /{orgId}/{projectId}/dashboards [slice here] /xxx/xxx/xxx
+            router.push(split.slice(0, 4).join('/'));
           } else {
             router.push(`/${organizationId}/${value}`);
           }

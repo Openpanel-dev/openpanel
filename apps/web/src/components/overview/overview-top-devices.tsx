@@ -31,7 +31,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -61,7 +61,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -91,7 +91,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -121,7 +121,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -151,7 +151,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -189,7 +189,30 @@ export default function OverviewTopDevices({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <ChartSwitch hideID {...widget.chart} previous={false} />
+          <ChartSwitch
+            hideID
+            {...widget.chart}
+            previous={false}
+            onClick={(item) => {
+              switch (widget.key) {
+                case 'devices':
+                  setFilter('device', item.name);
+                  break;
+                case 'browser':
+                  setFilter('browser', item.name);
+                  break;
+                case 'browser_version':
+                  setFilter('browser_version', item.name);
+                  break;
+                case 'os':
+                  setFilter('os', item.name);
+                  break;
+                case 'os_version':
+                  setFilter('os_version', item.name);
+                  break;
+              }
+            }}
+          />
         </WidgetBody>
       </Widget>
     </>

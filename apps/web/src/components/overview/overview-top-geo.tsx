@@ -29,7 +29,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -59,7 +59,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -89,7 +89,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: '*',
           },
         ],
         breakdowns: [
@@ -165,7 +165,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
                   segment: 'event',
                   filters,
                   id: 'A',
-                  name: 'session_start',
+                  name: '*',
                 },
               ],
               breakdowns: [

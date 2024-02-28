@@ -5,10 +5,11 @@ export type IServiceDashboards = Awaited<
   ReturnType<typeof getDashboardsByProjectId>
 >;
 
-export async function getDashboardById(id: string) {
+export async function getDashboardById(id: string, projectId: string) {
   const dashboard = await db.dashboard.findUnique({
     where: {
       id,
+      project_id: projectId,
     },
     include: {
       project: true,

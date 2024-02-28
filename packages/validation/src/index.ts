@@ -26,6 +26,7 @@ export const zChartEvent = z.object({
   segment: z.enum([
     'event',
     'user',
+    'session',
     'user_average',
     'one_event_per_user',
     'property_sum',

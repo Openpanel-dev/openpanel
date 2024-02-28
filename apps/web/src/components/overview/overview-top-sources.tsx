@@ -18,6 +18,7 @@ export default function OverviewTopSources({
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
+  const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidget('sources', {
     all: {
       title: 'Top sources',
@@ -31,7 +32,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters: filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -61,7 +62,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters: filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -91,7 +92,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters: filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -121,7 +122,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -151,7 +152,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -181,7 +182,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -211,7 +212,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -241,7 +242,7 @@ export default function OverviewTopSources({
             segment: 'event',
             filters,
             id: 'A',
-            name: 'session_start',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [

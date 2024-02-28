@@ -113,6 +113,10 @@ export function ReportEvents() {
                       label: 'Unique users',
                     },
                     {
+                      value: 'session',
+                      label: 'Unique sessions',
+                    },
+                    {
                       value: 'user_average',
                       label: 'Average event per user',
                     },
@@ -135,6 +139,10 @@ export function ReportEvents() {
                     {event.segment === 'user' ? (
                       <>
                         <Users size={12} /> Unique users
+                      </>
+                    ) : event.segment === 'session' ? (
+                      <>
+                        <Users size={12} /> Unique sessions
                       </>
                     ) : event.segment === 'user_average' ? (
                       <>
