@@ -12,7 +12,7 @@ export function StickyBelowHeader({
   return (
     <div
       className={cn(
-        'md:sticky bg-white border-b border-border z-10 [[id=dashboard]_&]:top-16 [[id=dashboard]_&]:rounded-none rounded-lg top-0',
+        'md:sticky bg-white border-b border-border z-20 [[id=dashboard]_&]:top-16 [[id=dashboard]_&]:rounded-none rounded-lg top-0',
         className
       )}
     >

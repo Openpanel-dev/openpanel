@@ -5,7 +5,10 @@ import type { IChartInput } from '@mixan/validation';
 
 export function useOverviewWidget<T extends string>(
   key: string,
-  widgets: Record<T, { title: string; btn: string; chart: IChartInput }>
+  widgets: Record<
+    T,
+    { title: string; btn: string; chart: IChartInput; hide?: boolean }
+  >
 ) {
   const keys = Object.keys(widgets) as T[];
   const [widget, setWidget] = useQueryState<T>(

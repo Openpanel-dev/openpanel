@@ -62,6 +62,7 @@ export default function OverviewTopEvents({
     conversions: {
       title: 'Conversions',
       btn: 'Conversions',
+      hide: conversions.length === 0,
       chart: {
         projectId,
         startDate,
@@ -105,15 +106,17 @@ export default function OverviewTopEvents({
         <WidgetHead>
           <div className="title">{widget.title}</div>
           <WidgetButtons>
-            {widgets.map((w) => (
-              <button
-                key={w.key}
-                onClick={() => setWidget(w.key)}
-                className={cn(w.key === widget.key && 'active')}
-              >
-                {w.btn}
-              </button>
-            ))}
+            {widgets
+              .filter((item) => item.hide !== true)
+              .map((w) => (
+                <button
+                  key={w.key}
+                  onClick={() => setWidget(w.key)}
+                  className={cn(w.key === widget.key && 'active')}
+                >
+                  {w.btn}
+                </button>
+              ))}
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>

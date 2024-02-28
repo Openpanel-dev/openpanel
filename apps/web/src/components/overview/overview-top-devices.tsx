@@ -189,35 +189,7 @@ export default function OverviewTopDevices({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <ChartSwitch
-            hideID
-            {...{
-              projectId,
-              startDate,
-              endDate,
-              events: [
-                {
-                  segment: 'user',
-                  filters,
-                  id: 'A',
-                  name: 'session_start',
-                },
-              ],
-              breakdowns: [
-                {
-                  id: 'A',
-                  name: 'browser_version',
-                },
-              ],
-              chartType: 'bar',
-              lineType: 'monotone',
-              interval: interval,
-              name: 'Top sources',
-              range: range,
-              previous: previous,
-              metric: 'sum',
-            }}
-          />
+          <ChartSwitch hideID {...widget.chart} previous={false} />
         </WidgetBody>
       </Widget>
     </>
