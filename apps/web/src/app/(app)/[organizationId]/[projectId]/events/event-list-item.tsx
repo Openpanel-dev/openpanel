@@ -108,7 +108,7 @@ export function EventListItem(props: EventListItemProps) {
       },
     },
     {
-      name: 'OS cersion',
+      name: 'OS version',
       value: osVersion,
       onClick() {
         setFilter('os_version', osVersion ?? '');

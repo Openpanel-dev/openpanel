@@ -201,9 +201,9 @@ async function createSessionEnd(
 ) {
   const properties: Record<string, unknown> = {};
   if (options.screenViews === 1) {
-    properties._bounce = true;
+    properties.__bounce = true;
   } else {
-    properties._bounce = false;
+    properties.__bounce = false;
   }
 
   const session: IServiceCreateEventPayload = {

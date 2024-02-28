@@ -60,7 +60,7 @@ export async function createSessionEnd(
     ...sessionStart,
     properties: {
       ...sessionStart.properties,
-      _bounce: screenViews.length <= 1,
+      __bounce: screenViews.length <= 1,
     },
     name: 'session_end',
     duration: sessionDuration,

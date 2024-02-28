@@ -164,15 +164,10 @@ export async function postEvent(
     return reply.status(200).send('');
   }
 
-  const [geo, eventsJobs, events] = await Promise.all([
+  const [geo, eventsJobs] = await Promise.all([
     parseIp(ip),
     eventsQueue.getJobs(['delayed']),
-    getEvents(
-      `SELECT * FROM events WHERE name = 'session_start' AND profile_id = '${profileId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
-    ),
   ]);
-
-  const sessionStartEvent = events[0];
 
   // find session_end job
   const sessionEndJobCurrentDeviceId = findJobByPrefix(
@@ -216,6 +211,10 @@ export async function postEvent(
     );
   }
 
+  const [sessionStartEvent] = await getEvents(
+    `SELECT * FROM events WHERE name = 'session_start' AND device_id = '${deviceId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+  );
+
   request.log.info(
     {
       ip,
@@ -228,7 +227,8 @@ export async function postEvent(
       deviceId,
       bot,
       geo,
-      events,
+      sessionStartEvent,
+      path,
     },
     'incoming event'
   );
