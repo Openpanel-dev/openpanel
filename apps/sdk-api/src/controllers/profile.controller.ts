@@ -4,10 +4,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr } from 'ramda';
 
 import { getProfileById, upsertProfile } from '@mixan/db';
-import type {
-  IncrementProfilePayload,
-  UpdateProfilePayload,
-} from '@mixan/types';
+import type { IncrementProfilePayload, UpdateProfilePayload } from '@mixan/sdk';
 
 export async function updateProfile(
   request: FastifyRequest<{

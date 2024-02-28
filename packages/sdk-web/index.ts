@@ -1,6 +1,7 @@
-import type { MixanOptions } from '@mixan/sdk';
+import type { MixanOptions, PostEventPayload } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
-import type { PostEventPayload } from '@mixan/types';
+
+export * from '@mixan/sdk';
 
 export type MixanWebOptions = MixanOptions & {
   trackOutgoingLinks?: boolean;

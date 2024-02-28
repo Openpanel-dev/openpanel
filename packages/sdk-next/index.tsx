@@ -1,11 +1,11 @@
 import Script from 'next/script';
 
-import type { MixanWebOptions } from '@mixan/sdk-web';
 import type {
   MixanEventOptions,
+  MixanWebOptions,
   PostEventPayload,
   UpdateProfilePayload,
-} from '@mixan/types';
+} from '@mixan/sdk-web';
 
 const CDN_URL = 'http://localhost:3002/op.js';
 

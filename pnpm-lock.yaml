@@ -211,12 +211,12 @@ importers:
       '@mixan/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@mixan/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@types/ramda':
         specifier: ^0.29.6
         version: 0.29.10
@@ -332,9 +332,6 @@ importers:
       '@mixan/queue':
         specifier: workspace:^
         version: link:../../packages/queue
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@mixan/validation':
         specifier: workspace:^
         version: link:../../packages/validation
@@ -646,9 +643,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.21
@@ -686,9 +680,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^18.16.0
         version: 18.19.17
@@ -774,9 +765,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^18.16.0
         version: 18.19.17
@@ -817,9 +805,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^18.16.0
         version: 18.19.17
@@ -848,9 +833,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^18.16.0
         version: 18.19.17
@@ -878,9 +860,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -918,9 +897,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -955,9 +931,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -976,33 +949,6 @@ importers:
       '@mixan/sdk':
         specifier: workspace:*
         version: link:../sdk
-    devDependencies:
-      '@mixan/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@mixan/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@mixan/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
-      eslint:
-        specifier: ^8.48.0
-        version: 8.56.0
-      prettier:
-        specifier: ^3.0.3
-        version: 3.2.5
-      tsup:
-        specifier: ^7.2.0
-        version: 7.3.0(typescript@5.3.3)
-      typescript:
-        specifier: ^5.2.2
-        version: 5.3.3
-
-  packages/types:
     devDependencies:
       '@mixan/eslint-config':
         specifier: workspace:*
@@ -1044,9 +990,6 @@ importers:
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
-      '@mixan/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^18.16.0
         version: 18.19.17

@@ -11,7 +11,7 @@ import type { IServiceCreateEventPayload } from '@mixan/db';
 import { createBotEvent, createEvent, getEvents, getSalts } from '@mixan/db';
 import type { JobsOptions } from '@mixan/queue';
 import { eventsQueue, findJobByPrefix } from '@mixan/queue';
-import type { PostEventPayload } from '@mixan/types';
+import type { PostEventPayload } from '@mixan/sdk';
 
 const SESSION_TIMEOUT = 1000 * 60 * 30;
 const SESSION_END_TIMEOUT = SESSION_TIMEOUT + 1000;

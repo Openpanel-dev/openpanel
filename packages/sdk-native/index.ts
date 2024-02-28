@@ -2,9 +2,8 @@ import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
-import type { MixanOptions } from '@mixan/sdk';
+import type { MixanOptions, PostEventPayload } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
-import type { PostEventPayload } from '@mixan/types';
 
 type MixanNativeOptions = MixanOptions;
 

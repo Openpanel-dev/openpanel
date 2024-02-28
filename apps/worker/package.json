@@ -25,7 +25,6 @@
     "@mixan/eslint-config": "workspace:*",
     "@mixan/prettier-config": "workspace:*",
     "@mixan/tsconfig": "workspace:*",
-    "@mixan/types": "workspace:*",
     "@types/express": "^4.17.21",
     "@types/ramda": "^0.29.6",
     "eslint": "^8.48.0",

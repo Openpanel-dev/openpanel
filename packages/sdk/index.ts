@@ -1,10 +1,37 @@
-import type {
-  DecrementProfilePayload,
-  IncrementProfilePayload,
-  MixanEventOptions,
-  PostEventPayload,
-  UpdateProfilePayload,
-} from '@mixan/types';
+// NEW
+
+export interface MixanEventOptions {
+  profileId?: string;
+}
+
+export interface PostEventPayload {
+  name: string;
+  timestamp: string;
+  deviceId?: string;
+  profileId?: string;
+  properties?: Record<string, unknown> & MixanEventOptions;
+}
+
+export interface UpdateProfilePayload {
+  profileId: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  avatar?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IncrementProfilePayload {
+  profileId: string;
+  property: string;
+  value: number;
+}
+
+export interface DecrementProfilePayload {
+  profileId?: string;
+  property: string;
+  value: number;
+}
 
 export interface MixanOptions {
   url: string;

@@ -4,9 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import semver from 'semver';
 
-import typesPkg from '../../packages/types/package.json';
-
-const sdkPackages = ['sdk', 'sdk-native', 'sdk-web'];
+const sdkPackages = ['sdk', 'sdk-native', 'sdk-web', 'sdk-next'];
 // const sdkPackages = ['sdk'];
 
 const workspacePath = (relativePath: string) =>
@@ -53,11 +51,6 @@ function main() {
   };
 
   try {
-    savePackageJson(workspacePath('./packages/types/package.json'), {
-      ...typesPkg,
-      ...properties,
-    });
-
     for (const name of sdkPackages) {
       const pkgJson = require(workspacePath(`./packages/${name}/package.json`));
       savePackageJson(workspacePath(`./packages/${name}/package.json`), {
@@ -79,10 +72,6 @@ function main() {
   console.log('✅ Update JSON files');
 
   try {
-    execSync('pnpm build', {
-      cwd: workspacePath(`./packages/types`),
-    });
-
     for (const name of sdkPackages) {
       execSync('pnpm build', {
         cwd: workspacePath(`./packages/${name}`),
@@ -100,10 +89,6 @@ function main() {
         cwd: workspacePath(`./packages/${name}`),
       });
     }
-
-    execSync('npm publish --access=public', {
-      cwd: workspacePath('./packages/types'),
-    });
   } catch (error) {
     exit('Failed publish packages', error);
   }
