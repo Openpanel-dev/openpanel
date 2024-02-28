@@ -9,7 +9,7 @@ import { getChartColor } from '@/utils/theme';
 
 import { NOT_SET_VALUE } from '@mixan/constants';
 
-import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
+import { PreviousDiffIndicatorText } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
 import { SerieIcon } from './SerieIcon';
 
@@ -30,42 +30,41 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
     <div
       className={cn(
         'flex flex-col w-full text-xs -mx-2',
-        editMode &&
-          'text-base bg-white border border-border rounded-md p-4 pt-2'
+        editMode && 'text-base bg-white border border-border rounded-md p-4'
       )}
     >
-      {editMode && (
-        <div className="-m-4 -mb-px flex justify-between font-medium p-4 pt-5 border-b border-border font-medium text-muted-foreground">
-          <div>Event</div>
-          <div>Count</div>
-        </div>
-      )}
-      {series.map((serie, index) => {
+      {series.map((serie) => {
         const isClickable = serie.name !== NOT_SET_VALUE && onClick;
         return (
           <div
             key={serie.name}
             className={cn(
-              'py-2 px-2 flex flex-1 w-full gap-4 items-center even:bg-slate-50 [&_[role=progressbar]]:even:bg-white [&_[role=progressbar]]:shadow-sm rounded',
+              'relative py-3 px-2 flex flex-1 w-full gap-4 items-center even:bg-slate-50 [&_[role=progressbar]]:even:bg-white [&_[role=progressbar]]:shadow-sm rounded overflow-hidden',
               isClickable && 'cursor-pointer hover:!bg-slate-100'
             )}
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >
-            <div className="flex-1 break-all flex items-center gap-2">
+            <div className="flex-1 break-all flex items-center gap-2 font-medium">
               <SerieIcon name={serie.name} />
               {serie.name}
             </div>
             <div className="flex-shrink-0 flex w-1/4 gap-4 items-center justify-end">
-              <PreviousDiffIndicator {...serie.metrics.previous[metric]} />
+              <PreviousDiffIndicatorText
+                {...serie.metrics.previous[metric]}
+                className="text-xs font-medium"
+              />
+              {serie.metrics.previous[metric]?.value}
               <div className="font-bold">
                 {number.format(serie.metrics.sum)}
               </div>
-              <Progress
-                color={getChartColor(index)}
-                className={cn('w-1/2', editMode ? 'h-5' : 'h-2')}
-                value={(serie.metrics.sum / maxCount) * 100}
-              />
             </div>
+
+            <div
+              className="absolute left-0 bottom-0 h-0.5 rounded-full min-w-2 z-10 bg-blue-600"
+              style={{
+                width: `${(serie.metrics.sum / maxCount) * 100}%`,
+              }}
+            ></div>
           </div>
         );
       })}

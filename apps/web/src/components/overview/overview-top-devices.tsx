@@ -191,28 +191,31 @@ export default function OverviewTopDevices({
         <WidgetBody>
           <ChartSwitch
             hideID
-            {...widget.chart}
-            previous={false}
-            onClick={(item) => {
-              switch (widget.key) {
-                case 'devices':
-                  setFilter('device', item.name);
-                  break;
-                case 'browser':
-                  setWidget('browser_version');
-                  setFilter('browser', item.name);
-                  break;
-                case 'browser_version':
-                  setFilter('browser_version', item.name);
-                  break;
-                case 'os':
-                  setWidget('os_version');
-                  setFilter('os', item.name);
-                  break;
-                case 'os_version':
-                  setFilter('os_version', item.name);
-                  break;
-              }
+            {...{
+              projectId,
+              startDate,
+              endDate,
+              events: [
+                {
+                  segment: 'user',
+                  filters,
+                  id: 'A',
+                  name: 'session_start',
+                },
+              ],
+              breakdowns: [
+                {
+                  id: 'A',
+                  name: 'browser_version',
+                },
+              ],
+              chartType: 'bar',
+              lineType: 'monotone',
+              interval: interval,
+              name: 'Top sources',
+              range: range,
+              previous: previous,
+              metric: 'sum',
             }}
           />
         </WidgetBody>

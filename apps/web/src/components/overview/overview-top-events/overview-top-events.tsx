@@ -4,16 +4,18 @@ import { ChartSwitch } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
-import { Widget, WidgetBody } from '../Widget';
-import { WidgetButtons, WidgetHead } from './overview-widget';
-import { useOverviewOptions } from './useOverviewOptions';
-import { useOverviewWidget } from './useOverviewWidget';
+import { Widget, WidgetBody } from '../../Widget';
+import { WidgetButtons, WidgetHead } from '../overview-widget';
+import { useOverviewOptions } from '../useOverviewOptions';
+import { useOverviewWidget } from '../useOverviewWidget';
 
-interface OverviewTopEventsProps {
+export interface OverviewTopEventsProps {
   projectId: string;
+  conversions: string[];
 }
 export default function OverviewTopEvents({
   projectId,
+  conversions,
 }: OverviewTopEventsProps) {
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
@@ -36,6 +38,44 @@ export default function OverviewTopEvents({
                 name: 'name',
                 operator: 'isNot',
                 value: ['session_start', 'session_end'],
+              },
+            ],
+            id: 'A',
+            name: '*',
+          },
+        ],
+        breakdowns: [
+          {
+            id: 'A',
+            name: 'name',
+          },
+        ],
+        chartType: 'bar',
+        lineType: 'monotone',
+        interval: interval,
+        name: 'Top sources',
+        range: range,
+        previous: previous,
+        metric: 'sum',
+      },
+    },
+    conversions: {
+      title: 'Conversions',
+      btn: 'Conversions',
+      chart: {
+        projectId,
+        startDate,
+        endDate,
+        events: [
+          {
+            segment: 'event',
+            filters: [
+              ...filters,
+              {
+                id: 'conversion',
+                name: 'name',
+                operator: 'is',
+                value: conversions,
               },
             ],
             id: 'A',

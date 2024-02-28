@@ -10,6 +10,7 @@ import {
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
+import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import { notFound } from 'next/navigation';
 import { parseAsInteger, parseAsString } from 'nuqs';

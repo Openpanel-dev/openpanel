@@ -17,36 +17,6 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('geo', {
-    map: {
-      title: 'Map',
-      btn: 'Map',
-      chart: {
-        projectId,
-        startDate,
-        endDate,
-        events: [
-          {
-            segment: 'event',
-            filters,
-            id: 'A',
-            name: 'session_start',
-          },
-        ],
-        breakdowns: [
-          {
-            id: 'A',
-            name: 'country',
-          },
-        ],
-        chartType: 'map',
-        lineType: 'monotone',
-        interval: interval,
-        name: 'Top sources',
-        range: range,
-        previous: previous,
-        metric: 'sum',
-      },
-    },
     countries: {
       title: 'Top countries',
       btn: 'Countries',
@@ -175,6 +145,42 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
                   setFilter('city', item.name);
                   break;
               }
+            }}
+          />
+        </WidgetBody>
+      </Widget>
+      <Widget className="col-span-6 md:col-span-3">
+        <WidgetHead>
+          <div className="title">Map</div>
+        </WidgetHead>
+        <WidgetBody>
+          <ChartSwitch
+            hideID
+            {...{
+              projectId,
+              startDate,
+              endDate,
+              events: [
+                {
+                  segment: 'event',
+                  filters,
+                  id: 'A',
+                  name: 'session_start',
+                },
+              ],
+              breakdowns: [
+                {
+                  id: 'A',
+                  name: 'country',
+                },
+              ],
+              chartType: 'map',
+              lineType: 'monotone',
+              interval: interval,
+              name: 'Top sources',
+              range: range,
+              previous: previous,
+              metric: 'sum',
             }}
           />
         </WidgetBody>

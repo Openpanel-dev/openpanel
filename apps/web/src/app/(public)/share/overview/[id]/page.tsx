@@ -7,7 +7,7 @@ import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-fi
 import ServerLiveCounter from '@/components/overview/live-counter';
 import { OverviewLiveHistogram } from '@/components/overview/overview-live-histogram';
 import OverviewTopDevices from '@/components/overview/overview-top-devices';
-import OverviewTopEvents from '@/components/overview/overview-top-events';
+import OverviewTopEvents from '@/components/overview/overview-top-events/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';

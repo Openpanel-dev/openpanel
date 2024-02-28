@@ -268,7 +268,7 @@ export async function getEventList({
   sb.where.projectId = `project_id = '${projectId}'`;
 
   if (profileId) {
-    sb.where.profileId = `profile_id = '${profileId}'`;
+    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM openpanel.events WHERE profile_id = '${profileId}' group by did)`;
   }
 
   if (events && events.length > 0) {

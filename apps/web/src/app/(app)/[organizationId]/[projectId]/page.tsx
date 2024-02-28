@@ -62,9 +62,7 @@ export default async function Page({
         <OverviewTopPages projectId={projectId} />
         <OverviewTopDevices projectId={projectId} />
         <OverviewTopEvents projectId={projectId} />
-        <div className="col-span-6">
-          <OverviewTopGeo projectId={projectId} />
-        </div>
+        <OverviewTopGeo projectId={projectId} />
       </div>
     </PageLayout>
   );

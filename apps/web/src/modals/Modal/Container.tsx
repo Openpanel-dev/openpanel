@@ -19,13 +19,17 @@ export function ModalContent({ children }: ModalContentProps) {
 
 interface ModalHeaderProps {
   title: string | React.ReactNode;
+  text?: string | React.ReactNode;
   onClose?: (() => void) | false;
 }
 
-export function ModalHeader({ title, onClose }: ModalHeaderProps) {
+export function ModalHeader({ title, text, onClose }: ModalHeaderProps) {
   return (
-    <div className="flex items-center justify-between mb-6">
-      <div className="font-medium">{title}</div>
+    <div className="flex justify-between mb-6">
+      <div>
+        <div className="font-medium mt-0.5">{title}</div>
+        {!!text && <div className="text-sm text-muted-foreground">{text}</div>}
+      </div>
       {onClose !== false && (
         <Button
           variant="ghost"

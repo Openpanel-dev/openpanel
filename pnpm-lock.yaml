@@ -428,6 +428,9 @@ importers:
       embla-carousel-react:
         specifier: 8.0.0-rc22
         version: 8.0.0-rc22(react@18.2.0)
+      flag-icons:
+        specifier: ^7.1.0
+        version: 7.1.0
       hamburger-react:
         specifier: ^2.5.0
         version: 2.5.0(react@18.2.0)
@@ -9227,6 +9230,10 @@ packages:
     resolution: {integrity: sha512-1IMnbjt4KzsQfnhnzNd8wUEgXZ44IzZaZmnLYx7D5FZlaHt2gW20Cri8Q+E/t5tIj4+epTBub+2Zxu/vNILzqQ==}
     dependencies:
       micromatch: 4.0.5
+    dev: false
+
+  /flag-icons@7.1.0:
+    resolution: {integrity: sha512-AH4v++19bpC5P3Wh767top4wylJYJCWkFnvNiDqGHDxqSqdMZ49jpLXp8PWBHTTXaNQ+/A+QPrOwyiIGaiIhmw==}
     dev: false
 
   /flat-cache@3.2.0:

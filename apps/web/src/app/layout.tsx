@@ -3,6 +3,7 @@ import { cn } from '@/utils/cn';
 import Providers from './providers';
 
 import '@/styles/globals.css';
+import '/node_modules/flag-icons/css/flag-icons.min.css';
 
 export const metadata = {
   title: 'Overview - Openpanel.dev',

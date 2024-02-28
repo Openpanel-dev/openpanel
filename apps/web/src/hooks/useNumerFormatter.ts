@@ -30,5 +30,26 @@ export function useNumber() {
   return {
     format,
     short,
+    shortWithUnit: (value: number | null | undefined, unit?: string | null) => {
+      if (isNil(value)) {
+        return 'N/A';
+      }
+      if (unit === 'min') {
+        return fancyMinutes(value);
+      }
+      return `${short(value)}${unit ? ` ${unit}` : ''}`;
+    },
+    formatWithUnit: (
+      value: number | null | undefined,
+      unit?: string | null
+    ) => {
+      if (isNil(value)) {
+        return 'N/A';
+      }
+      if (unit === 'min') {
+        return fancyMinutes(value);
+      }
+      return `${format(value)}${unit ? ` ${unit}` : ''}`;
+    },
   };
 }

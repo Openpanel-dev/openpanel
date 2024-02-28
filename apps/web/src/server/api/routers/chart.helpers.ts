@@ -146,7 +146,7 @@ function fillEmptySpotsInTimeline(
 }
 
 export function withFormula(
-  { formula }: IChartInput,
+  { formula, events }: IChartInput,
   series: GetChartDataResult
 ) {
   if (!formula) {
@@ -162,6 +162,33 @@ export function withFormula(
   }
   if (!series[0].data) {
     return series;
+  }
+
+  if (events.length === 1) {
+    return series.map((serie) => {
+      return {
+        ...serie,
+        data: serie.data.map((item) => {
+          serie.event.id;
+          const scope = {
+            [serie.event.id]: item?.count ?? 0,
+          };
+
+          const count = mathjs
+            .parse(formula)
+            .compile()
+            .evaluate(scope) as number;
+
+          return {
+            ...item,
+            count:
+              Number.isNaN(count) || !Number.isFinite(count)
+                ? null
+                : round(count, 2),
+          };
+        }),
+      };
+    });
   }
 
   return [

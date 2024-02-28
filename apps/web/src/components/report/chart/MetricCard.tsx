@@ -11,7 +11,6 @@ import type { IChartMetric } from '@mixan/validation';
 
 import {
   getDiffIndicator,
-  PreviousDiffIndicator,
   PreviousDiffIndicatorText,
 } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';

@@ -18,30 +18,31 @@ import { EventIcon } from './event-icon';
 
 type EventListItemProps = IServiceCreateEventPayload;
 
-export function EventListItem({
-  profile,
-  createdAt,
-  name,
-  properties,
-  path,
-  duration,
-  referrer,
-  referrerName,
-  referrerType,
-  brand,
-  model,
-  browser,
-  browserVersion,
-  os,
-  osVersion,
-  city,
-  region,
-  country,
-  continent,
-  device,
-  projectId,
-  meta,
-}: EventListItemProps) {
+export function EventListItem(props: EventListItemProps) {
+  const {
+    profile,
+    createdAt,
+    name,
+    properties,
+    path,
+    duration,
+    referrer,
+    referrerName,
+    referrerType,
+    brand,
+    model,
+    browser,
+    browserVersion,
+    os,
+    osVersion,
+    city,
+    region,
+    country,
+    continent,
+    device,
+    projectId,
+    meta,
+  } = props;
   const params = useAppParams();
   const [, setEvents] = useEventQueryNamesFilter({ shallow: false });
   const [, setFilter] = useEventQueryFilters({ shallow: false });
@@ -168,6 +169,9 @@ export function EventListItem({
       content={
         <>
           <KeyValueSubtle name="Time" value={createdAt.toLocaleString()} />
+          {profile?.id === props.deviceId && (
+            <KeyValueSubtle name="Anonymous" value={'Yes'} />
+          )}
           {profile && (
             <KeyValueSubtle
               name="Profile"

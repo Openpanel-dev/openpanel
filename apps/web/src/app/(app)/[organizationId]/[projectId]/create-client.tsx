@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Checkbox, CheckboxInput } from '@/components/ui/checkbox';
+import { CheckboxInput } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,

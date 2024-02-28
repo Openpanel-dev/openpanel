@@ -67,15 +67,12 @@ export function ReportChartTooltip({
                   {getLabel(data.label)}
                 </div>
                 <div className="flex justify-between gap-8">
-                  <div>
-                    {number.format(data.count)}
-                    {unit}
-                  </div>
+                  <div>{number.formatWithUnit(data.count, unit)}</div>
 
                   <div className="flex gap-1">
                     <PreviousDiffIndicator {...data.previous}>
                       {!!data.previous &&
-                        `(${data.previous.value + (unit ? unit : '')})`}
+                        `(${number.formatWithUnit(data.previous.value, unit)})`}
                     </PreviousDiffIndicator>
                   </div>
                 </div>
