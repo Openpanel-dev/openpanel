@@ -1,5 +1,6 @@
 import type { MixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
+import type { PostEventPayload } from '@mixan/types';
 
 export type MixanWebOptions = MixanOptions & {
   trackOutgoingLinks?: boolean;
@@ -22,7 +23,7 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
 
     if (!this.isServer()) {
       this.setGlobalProperties({
-        referrer: document.referrer,
+        __referrer: document.referrer,
       });
 
       if (this.options.trackOutgoingLinks) {
@@ -134,7 +135,7 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
     });
   }
 
-  public screenView(properties?: Record<string, unknown>): void {
+  public screenView(properties?: PostEventPayload['properties']): void {
     if (this.isServer()) {
       return;
     }
@@ -148,8 +149,8 @@ export class MixanWeb extends Mixan<MixanWebOptions> {
     this.lastPath = path;
     super.event('screen_view', {
       ...(properties ?? {}),
-      path,
-      title: document.title,
+      __path: path,
+      __title: document.title,
     });
   }
 }

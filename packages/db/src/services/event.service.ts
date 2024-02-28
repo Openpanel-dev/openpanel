@@ -191,10 +191,6 @@ export async function createEvent(
     });
   }
 
-  if (payload.properties.hash === '') {
-    delete payload.properties.hash;
-  }
-
   const event: IClickhouseEvent = {
     id: uuid(),
     name: payload.name,

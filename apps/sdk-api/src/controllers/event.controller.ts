@@ -42,7 +42,7 @@ function parsePath(path?: string): {
     return {
       query: parseSearchParams(url.searchParams),
       path: url.pathname,
-      hash: url.hash ?? undefined,
+      hash: url.hash || undefined,
     };
   } catch (error) {
     return {
@@ -69,15 +69,18 @@ export async function postEvent(
   reply: FastifyReply
 ) {
   let deviceId: string | null = null;
-  const projectId = request.projectId;
-  const body = request.body;
+  const { projectId, body } = request;
+  const properties = body.properties ?? {};
+  const getProperty = (name: string): string | undefined => {
+    return (properties[name] as string | null | undefined) ?? undefined;
+  };
   const profileId = body.profileId ?? '';
   const createdAt = new Date(body.timestamp);
-  const url = body.properties?.path;
+  const url = getProperty('__path');
   const { path, hash, query } = parsePath(url);
-  const referrer = isSameDomain(body.properties?.referrer, url)
+  const referrer = isSameDomain(getProperty('__referrer'), url)
     ? null
-    : parseReferrer(body.properties?.referrer);
+    : parseReferrer(getProperty('__referrer'));
   const utmReferrer = getReferrerWithQuery(query);
   const ip = getClientIp(request)!;
   const origin = request.headers.origin!;
@@ -112,7 +115,14 @@ export async function postEvent(
         sessionId: event?.sessionId || '',
         profileId,
         projectId,
-        properties: body.properties ?? {},
+        properties: Object.assign(
+          {},
+          omit(['__path', '__referrer'], properties),
+          {
+            hash,
+            query,
+          }
+        ),
         createdAt,
         country: event?.country ?? '',
         city: event?.city ?? '',
@@ -205,7 +215,7 @@ export async function postEvent(
     profileId,
     projectId,
     sessionId: createSessionStart ? uuid() : sessionStartEvent?.sessionId ?? '',
-    properties: Object.assign({}, omit(['path', 'referrer'], body.properties), {
+    properties: Object.assign({}, omit(['__path', '__referrer'], properties), {
       hash,
       query,
     }),

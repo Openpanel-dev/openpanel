@@ -1,8 +1,11 @@
 import Script from 'next/script';
 
-import type { MixanEventOptions } from '@mixan/sdk';
 import type { MixanWebOptions } from '@mixan/sdk-web';
-import type { UpdateProfilePayload } from '@mixan/types';
+import type {
+  MixanEventOptions,
+  PostEventPayload,
+  UpdateProfilePayload,
+} from '@mixan/types';
 
 const CDN_URL = 'http://localhost:3002/op.js';
 
@@ -73,11 +76,14 @@ export function SetProfileId({ value }: SetProfileIdProps) {
   );
 }
 
-export function trackEvent(name: string, data?: Record<string, unknown>) {
+export function trackEvent(
+  name: string,
+  data?: PostEventPayload['properties']
+) {
   window.op('event', name, data);
 }
 
-export function trackScreenView(data?: Record<string, unknown>) {
+export function trackScreenView(data?: PostEventPayload['properties']) {
   trackEvent('screen_view', data);
 }
 

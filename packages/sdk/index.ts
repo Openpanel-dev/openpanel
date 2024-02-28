@@ -1,6 +1,7 @@
 import type {
   DecrementProfilePayload,
   IncrementProfilePayload,
+  MixanEventOptions,
   PostEventPayload,
   UpdateProfilePayload,
 } from '@mixan/types';
@@ -19,10 +20,6 @@ export interface MixanState {
   deviceId?: string;
   profileId?: string;
   properties: Record<string, unknown>;
-}
-
-export interface MixanEventOptions {
-  profileId?: string;
 }
 
 function awaitProperties(
@@ -168,10 +165,7 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
     });
   }
 
-  public event(
-    name: string,
-    properties?: Record<string, unknown> & MixanEventOptions
-  ) {
+  public event(name: string, properties?: PostEventPayload['properties']) {
     const profileId = properties?.profileId ?? this.state.profileId;
     delete properties?.profileId;
     this.api
@@ -200,7 +194,6 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
   }
 
   public clear() {
-    this.state.properties = {};
     this.state.deviceId = undefined;
     this.state.profileId = undefined;
     if (this.options.removeDeviceId) {

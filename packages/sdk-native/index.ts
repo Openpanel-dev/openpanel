@@ -4,6 +4,7 @@ import Constants from 'expo-constants';
 
 import type { MixanOptions } from '@mixan/sdk';
 import { Mixan } from '@mixan/sdk';
+import type { PostEventPayload } from '@mixan/types';
 
 type MixanNativeOptions = MixanOptions;
 
@@ -24,19 +25,22 @@ export class MixanNative extends Mixan<MixanNativeOptions> {
 
   private async setProperties() {
     this.setGlobalProperties({
-      version: Application.nativeApplicationVersion,
-      buildNumber: Application.nativeBuildVersion,
-      referrer:
+      __version: Application.nativeApplicationVersion,
+      __buildNumber: Application.nativeBuildVersion,
+      __referrer:
         Platform.OS === 'android'
           ? await Application.getInstallReferrerAsync()
           : undefined,
     });
   }
 
-  public screenView(route: string, properties?: Record<string, unknown>): void {
+  public screenView(
+    route: string,
+    properties?: PostEventPayload['properties']
+  ): void {
     super.event('screen_view', {
       ...properties,
-      path: route,
+      __path: route,
     });
   }
 }

@@ -134,16 +134,16 @@ export interface MixanResponse<T> {
 
 // NEW
 
+export interface MixanEventOptions {
+  profileId?: string;
+}
+
 export interface PostEventPayload {
   name: string;
   timestamp: string;
   deviceId?: string;
   profileId?: string;
-  properties?: Record<string, unknown> & {
-    title?: string | undefined;
-    referrer?: string | undefined;
-    path?: string | undefined;
-  };
+  properties?: Record<string, unknown> & MixanEventOptions;
 }
 
 export interface UpdateProfilePayload {
