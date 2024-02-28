@@ -259,6 +259,11 @@ export async function postEvent(
     }
 
     if (payload.name === 'screen_view') {
+      if (duration < 0) {
+        console.log('--- DURATION IS NEGATIVE ---');
+        console.log('prevEvent', JSON.stringify(prevEvent));
+        console.log('current', JSON.stringify(payload));
+      }
       await job.updateData({
         type: 'createEvent',
         payload: {
