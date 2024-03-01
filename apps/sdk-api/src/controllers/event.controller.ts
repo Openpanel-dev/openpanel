@@ -1,4 +1,5 @@
 import { isBot } from '@/bots';
+import { logInfo } from '@/utils/logger';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parseReferrer';
 import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
@@ -156,11 +157,16 @@ export async function postEvent(
 
   const bot = isBot(ua);
   if (bot) {
-    await createBotEvent({
-      ...bot,
-      projectId,
-      createdAt: new Date(body.timestamp),
-    });
+    request.log.info({ bot, ua }, 'bot detected 2');
+    try {
+      await createBotEvent({
+        ...bot,
+        projectId,
+        createdAt: new Date(body.timestamp),
+      });
+    } catch (e) {
+      request.log.error(e, 'bot detected 2 failed');
+    }
     return reply.status(200).send('');
   }
 
