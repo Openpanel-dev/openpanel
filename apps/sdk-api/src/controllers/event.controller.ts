@@ -1,5 +1,3 @@
-import { isBot } from '@/bots';
-import { logInfo } from '@/utils/logger';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parseReferrer';
 import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
@@ -9,7 +7,7 @@ import { v4 as uuid } from 'uuid';
 
 import { generateDeviceId, getTime, toISOString } from '@mixan/common';
 import type { IServiceCreateEventPayload } from '@mixan/db';
-import { createBotEvent, createEvent, getEvents, getSalts } from '@mixan/db';
+import { createEvent, getEvents, getSalts } from '@mixan/db';
 import type { JobsOptions } from '@mixan/queue';
 import { eventsQueue, findJobByPrefix } from '@mixan/queue';
 import type { PostEventPayload } from '@mixan/sdk';
@@ -155,21 +153,6 @@ export async function postEvent(
     return reply.status(200).send('');
   }
 
-  const bot = isBot(ua);
-  if (bot) {
-    request.log.info({ bot, ua }, 'bot detected 2');
-    try {
-      await createBotEvent({
-        ...bot,
-        projectId,
-        createdAt: new Date(body.timestamp),
-      });
-    } catch (e) {
-      request.log.error(e, 'bot detected 2 failed');
-    }
-    return reply.status(200).send('');
-  }
-
   const [geo, eventsJobs] = await Promise.all([
     parseIp(ip),
     eventsQueue.getJobs(['delayed']),
@@ -231,7 +214,6 @@ export async function postEvent(
       profileId,
       projectId,
       deviceId,
-      bot,
       geo,
       sessionStartEvent,
       path,

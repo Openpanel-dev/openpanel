@@ -1,27 +1,47 @@
-import { isBot as isGetBot } from '@/bots';
+import { isBot } from '@/bots';
 import * as controller from '@/controllers/event.controller';
 import { validateSdkRequest } from '@/utils/auth';
-import type { FastifyPluginCallback } from 'fastify';
+import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
+
+import { createBotEvent } from '@mixan/db';
+import type { PostEventPayload } from '@mixan/sdk';
 
 const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
-  fastify.addHook('preHandler', (req, reply, done) => {
-    const isBot = req.headers['user-agent']
-      ? isGetBot(req.headers['user-agent'])
-      : false;
-    if (isBot) {
-      reply.log.warn({ ...req.headers, bot: isBot }, 'Bot detected');
-      reply.status(202).send('OK');
-    }
-
-    validateSdkRequest(req.headers)
-      .then((projectId) => {
+  fastify.addHook(
+    'preHandler',
+    async (
+      req: FastifyRequest<{
+        Body: PostEventPayload;
+      }>,
+      reply
+    ) => {
+      try {
+        const projectId = await validateSdkRequest(req.headers);
         req.projectId = projectId;
-        done();
-      })
-      .catch((e) => {
+
+        const bot = req.headers['user-agent']
+          ? isBot(req.headers['user-agent'])
+          : null;
+
+        if (bot) {
+          const path = (req.body?.properties?.__path ||
+            req.body?.properties?.path) as string | undefined;
+          reply.log.warn({ ...req.headers, bot }, 'Bot detected (event)');
+          await createBotEvent({
+            ...bot,
+            projectId,
+            path: path ?? '',
+            createdAt: new Date(req.body?.timestamp),
+          });
+          reply.status(202).send('OK');
+        }
+      } catch (e) {
+        reply.log.warn(e, 'Érror');
         reply.status(401).send();
-      });
-  });
+        return;
+      }
+    }
+  );
 
   fastify.route({
     method: 'POST',
