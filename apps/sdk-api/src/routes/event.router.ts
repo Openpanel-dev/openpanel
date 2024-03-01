@@ -26,7 +26,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
         if (bot) {
           const path = (req.body?.properties?.__path ||
             req.body?.properties?.path) as string | undefined;
-          reply.log.warn({ ...req.headers, bot }, 'Bot detected (event)');
+          req.log.warn({ ...req.headers, bot }, 'Bot detected (event)');
           await createBotEvent({
             ...bot,
             projectId,
@@ -36,7 +36,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
           reply.status(202).send('OK');
         }
       } catch (e) {
-        reply.log.warn(e, 'Érror');
+        req.log.error(e, 'Failed to create bot event');
         reply.status(401).send();
         return;
       }

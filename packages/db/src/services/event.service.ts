@@ -320,6 +320,7 @@ export async function getEventsCount({
 interface CreateBotEventPayload {
   name: string;
   type: string;
+  path: string;
   projectId: string;
   createdAt: Date;
 }
@@ -329,14 +330,17 @@ export function createBotEvent({
   type,
   projectId,
   createdAt,
+  path,
 }: CreateBotEventPayload) {
   return ch.insert({
     table: 'events_bots',
+    format: 'JSONEachRow',
     values: [
       {
         name,
         type,
         project_id: projectId,
+        path,
         created_at: formatClickhouseDate(createdAt),
       },
     ],
