@@ -23,9 +23,7 @@ export function ExpandableListItem({
 }: ExpandableListItemProps) {
   const [open, setOpen] = useState(initialOpen ?? false);
   return (
-    <div
-      className={cn('bg-white shadow rounded-xl overflow-hidden', className)}
-    >
+    <div className={cn('card overflow-hidden', className)}>
       <div className="p-2 sm:p-4 flex gap-4">
         <div className="flex gap-1">{image}</div>
         <div className="flex flex-col flex-1 gap-1 min-w-0">

@@ -18,6 +18,7 @@ export default function OverviewTopDevices({
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
+  const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     devices: {
       title: 'Top devices',
@@ -31,7 +32,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -61,7 +62,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -91,7 +92,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -121,7 +122,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -151,7 +152,7 @@ export default function OverviewTopDevices({
             segment: 'user',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [

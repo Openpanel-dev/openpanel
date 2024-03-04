@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import {
   parseAsBoolean,
   parseAsInteger,
@@ -48,7 +47,7 @@ export function useOverviewOptions() {
   // Toggles
   const [liveHistogram, setLiveHistogram] = useQueryState(
     'live',
-    parseAsBoolean.withDefault(false).withOptions(nuqsOptions)
+    parseAsBoolean.withDefault(true).withOptions(nuqsOptions)
   );
 
   return {

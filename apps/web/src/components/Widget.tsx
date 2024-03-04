@@ -30,14 +30,5 @@ export interface WidgetProps {
   className?: string;
 }
 export function Widget({ children, className }: WidgetProps) {
-  return (
-    <div
-      className={cn(
-        'border border-border rounded-md bg-white self-start',
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+  return <div className={cn('card self-start', className)}>{children}</div>;
 }

@@ -31,12 +31,7 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
 
   return (
     <>
-      <div
-        className={cn(
-          'max-sm:-mx-3',
-          editMode && 'border border-border bg-white rounded-md p-4'
-        )}
-      >
+      <div className={cn('max-sm:-mx-3', editMode && 'card p-4')}>
         <AutoSizer disableHeight>
           {({ width }) => {
             const height = Math.min(Math.max(width * 0.5625, 250), 400);

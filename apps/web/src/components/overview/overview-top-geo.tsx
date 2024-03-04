@@ -16,6 +16,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
+  const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidget('geo', {
     countries: {
       title: 'Top countries',
@@ -29,7 +30,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             segment: 'event',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -59,7 +60,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             segment: 'event',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -89,7 +90,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             segment: 'event',
             filters,
             id: 'A',
-            name: '*',
+            name: isPageFilter ? 'screen_view' : 'session_start',
           },
         ],
         breakdowns: [
@@ -165,7 +166,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
                   segment: 'event',
                   filters,
                   id: 'A',
-                  name: '*',
+                  name: isPageFilter ? 'screen_view' : 'session_start',
                 },
               ],
               breakdowns: [

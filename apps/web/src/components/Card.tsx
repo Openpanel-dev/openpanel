@@ -19,8 +19,8 @@ export function Card({ children, hover, className }: CardProps) {
   return (
     <div
       className={cn(
-        'border border-border rounded relative bg-white',
-        hover && 'transition-all hover:shadow hover:border-black',
+        'card relative',
+        hover && 'transition-all hover:border-black',
         className
       )}
     >

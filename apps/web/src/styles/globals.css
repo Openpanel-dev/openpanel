@@ -118,6 +118,12 @@
       0 0;
     transition-duration: 0.5s;
   }
+
+  .card {
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    border: 0 !important;
+    @apply bg-white rounded-xl;
+  }
 }
 
 .resizer {

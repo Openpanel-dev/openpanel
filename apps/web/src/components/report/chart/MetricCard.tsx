@@ -56,7 +56,7 @@ export function MetricCard({
 
   return (
     <div
-      className="group relative border border-border p-2 rounded-md bg-white overflow-hidden h-24"
+      className="group relative card p-4 overflow-hidden h-24"
       key={serie.name}
     >
       <div className="absolute -top-2 -left-2 -right-2 -bottom-2 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50 rounded-md">
@@ -64,28 +64,14 @@ export function MetricCard({
           {({ width, height }) => (
             <AreaChart
               width={width}
-              height={height / 3}
+              height={height / 4}
               data={serie.data}
-              style={{ marginTop: (height / 3) * 2 }}
+              style={{ marginTop: (height / 4) * 3 }}
             >
-              <defs>
-                <linearGradient id="red" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={'red'} stopOpacity={0.5} />
-                  <stop offset="95%" stopColor={'red'} stopOpacity={0.2} />
-                </linearGradient>
-                <linearGradient id="green" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={'green'} stopOpacity={0.5} />
-                  <stop offset="95%" stopColor={'green'} stopOpacity={0.2} />
-                </linearGradient>
-                <linearGradient id="blue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={'blue'} stopOpacity={0.5} />
-                  <stop offset="95%" stopColor={'blue'} stopOpacity={0.2} />
-                </linearGradient>
-              </defs>
               <Area
                 dataKey="count"
                 type="monotone"
-                fill={`url(#${graphColors})`}
+                fill={`transparent`}
                 fillOpacity={1}
                 stroke={graphColors}
                 strokeWidth={2}
@@ -120,7 +106,7 @@ export function MetricCard({
 
 export function MetricCardEmpty() {
   return (
-    <div className="border border-border p-4 rounded-md bg-white h-24">
+    <div className="card p-4 h-24">
       <div className="flex items-center justify-center h-full text-slate-600">
         No data
       </div>
@@ -130,7 +116,7 @@ export function MetricCardEmpty() {
 
 export function MetricCardLoading() {
   return (
-    <div className="h-24 p-4 py-5 flex flex-col bg-white border border-border rounded-md">
+    <div className="h-24 p-4 py-5 flex flex-col card">
       <div className="bg-slate-200 rounded animate-pulse h-4 w-1/2"></div>
       <div className="bg-slate-200 rounded animate-pulse h-6 w-1/5 mt-auto"></div>
     </div>

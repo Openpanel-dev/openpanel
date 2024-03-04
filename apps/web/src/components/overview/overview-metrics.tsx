@@ -202,12 +202,6 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
             }}
           >
             <ChartSwitch hideID {...report} />
-            <div
-              className={cn(
-                'transition-opacity top-0 left-0 right-0 bottom-0 absolute rounded-md w-full h-full border ring-1 border-black ring-black',
-                metric === index ? 'opacity-100' : 'opacity-0'
-              )}
-            />
             {/* add active border */}
           </button>
         ))}

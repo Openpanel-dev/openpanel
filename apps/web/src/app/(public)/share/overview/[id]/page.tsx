@@ -1,13 +1,13 @@
 import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
-import OverviewMetrics from '@/app/(app)/[organizationId]/[projectId]/overview-metrics';
 import { OverviewReportRange } from '@/app/(app)/[organizationId]/[projectId]/overview-sticky-header';
 import { Logo } from '@/components/Logo';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import ServerLiveCounter from '@/components/overview/live-counter';
 import { OverviewLiveHistogram } from '@/components/overview/overview-live-histogram';
+import OverviewMetrics from '@/components/overview/overview-metrics';
 import OverviewTopDevices from '@/components/overview/overview-top-devices';
-import OverviewTopEvents from '@/components/overview/overview-top-events/overview-top-events';
+import OverviewTopEvents from '@/components/overview/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
@@ -43,7 +43,7 @@ export default async function Page({ params: { id } }: PageProps) {
             <Logo className="text-white" />
           </a>
         </div>
-        <div className="bg-white rounded-lg shadow ring-8 ring-blue-600/50">
+        <div className="bg-slate-100 rounded-lg shadow ring-8 ring-blue-600/50">
           <StickyBelowHeader>
             <div className="p-4 flex gap-2 justify-between">
               <div className="flex gap-2">
@@ -65,9 +65,7 @@ export default async function Page({ params: { id } }: PageProps) {
             <OverviewTopPages projectId={projectId} />
             <OverviewTopDevices projectId={projectId} />
             <OverviewTopEvents projectId={projectId} />
-            <div className="col-span-6">
-              <OverviewTopGeo projectId={projectId} />
-            </div>
+            <OverviewTopGeo projectId={projectId} />
           </div>
         </div>
       </div>

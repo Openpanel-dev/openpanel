@@ -10,7 +10,7 @@ const Table = React.forwardRef<
     overflow?: boolean;
   }
 >(({ className, wrapper, overflow = true, ...props }, ref) => (
-  <div className={cn('border border-border rounded-md bg-white', className)}>
+  <div className={cn('card', className)}>
     <div className={cn('relative w-full', overflow && 'overflow-auto')}>
       <table
         ref={ref}

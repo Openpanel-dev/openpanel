@@ -107,7 +107,7 @@ export function PreviousDiffIndicatorText({
       ])}
     >
       {renderIcon()}
-      {number.format(diff)}%
+      {number.short(diff)}%
     </div>
   );
 }

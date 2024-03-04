@@ -99,7 +99,7 @@ export function FunnelSteps({
               )}
               key={step.event.id}
             >
-              <div className="border border-border divide-y divide-border bg-white">
+              <div className="card divide-y divide-border bg-white">
                 <div className="p-4">
                   <p className="text-muted-foreground">Step {index + 1}</p>
                   <h3 className="font-bold">

@@ -30,16 +30,17 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
     <div
       className={cn(
         'flex flex-col w-full text-xs -mx-2',
-        editMode && 'text-base bg-white border border-border rounded-md p-4'
+        editMode && 'text-base card p-4'
       )}
     >
-      {series.map((serie) => {
+      {series.map((serie, index) => {
         const isClickable = serie.name !== NOT_SET_VALUE && onClick;
         return (
           <div
             key={serie.name}
             className={cn(
-              'relative py-3 px-2 flex flex-1 w-full gap-4 items-center even:bg-slate-50 [&_[role=progressbar]]:even:bg-white [&_[role=progressbar]]:shadow-sm rounded overflow-hidden',
+              'relative py-3 px-2 flex flex-1 w-full gap-4 items-center even:bg-slate-50 rounded overflow-hidden',
+              '[&_[role=progressbar]]:even:bg-white [&_[role=progressbar]]:shadow-sm',
               isClickable && 'cursor-pointer hover:!bg-slate-100'
             )}
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
@@ -57,14 +58,12 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
               <div className="font-bold">
                 {number.format(serie.metrics.sum)}
               </div>
+              <Progress
+                color={getChartColor(index)}
+                className={cn('w-1/2', editMode ? 'h-5' : 'h-2')}
+                value={(serie.metrics.sum / maxCount) * 100}
+              />
             </div>
-
-            <div
-              className="absolute left-0 bottom-0 h-0.5 rounded-full min-w-2 z-10 bg-blue-600"
-              style={{
-                width: `${(serie.metrics.sum / maxCount) * 100}%`,
-              }}
-            ></div>
           </div>
         );
       })}

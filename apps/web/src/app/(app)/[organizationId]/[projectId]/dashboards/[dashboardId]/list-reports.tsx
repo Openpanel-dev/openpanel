@@ -58,10 +58,7 @@ export function ListReports({ reports }: ListReportsProps) {
         {reports.map((report) => {
           const chartRange = report.range; // timeRanges[report.range];
           return (
-            <div
-              className="rounded-md border border-border bg-white shadow"
-              key={report.id}
-            >
+            <div className="card" key={report.id}>
               <Link
                 href={`/${params.organizationId}/${params.projectId}/reports/${report.id}`}
                 className="flex border-b border-border p-4 leading-none [&_svg]:hover:opacity-100 items-center justify-between"

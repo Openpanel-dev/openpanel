@@ -19,10 +19,7 @@ import { WidgetHead as WidgetHeadBase } from '../Widget';
 export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (
     <WidgetHeadBase
-      className={cn(
-        'flex flex-col p-0 [&_.title]:text-sm [&_.title]:px-4 [&_.title]:py-2',
-        className
-      )}
+      className={cn('flex flex-col p-0 [&_.title]:p-4', className)}
       {...props}
     />
   );

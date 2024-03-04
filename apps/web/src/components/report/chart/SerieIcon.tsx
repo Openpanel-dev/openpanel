@@ -44,6 +44,11 @@ const mapper: Record<string, LucideIcon> = {
   link_out: ExternalLinkIcon,
 
   // Websites
+  linkedin: createImageIcon(getProxyImage('https://linkedin.com')),
+  slack: createImageIcon(getProxyImage('https://slack.com')),
+  pinterest: createImageIcon(getProxyImage('https://www.pinterest.se')),
+  ecosia: createImageIcon(getProxyImage('https://ecosia.com')),
+  yandex: createImageIcon(getProxyImage('https://yandex.com')),
   google: createImageIcon(getProxyImage('https://google.com')),
   facebook: createImageIcon(getProxyImage('https://facebook.com')),
   bing: createImageIcon(getProxyImage('https://bing.com')),
