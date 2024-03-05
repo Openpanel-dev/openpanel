@@ -22,12 +22,12 @@ export function Widget({
   return (
     <div
       className={cn(
-        'p-10 rounded-xl relative overflow-hidden flex flex-col hover:scale-105 transition-all duration-300 ease-in-out bg-white hover:shadow min-h-[300px] max-md:col-span-3',
+        'p-10 rounded-xl relative overflow-hidden flex flex-col hover:scale-[101%] transition-all duration-300 ease-in-out bg-white hover:shadow min-h-[300px] max-md:col-span-3',
         className
       )}
     >
-      <Heading3 className="mb-4">{title}</Heading3>
-      {children}
+      <Heading3 className="mb-2">{title}</Heading3>
+      <div className="prose-xl">{children}</div>
       <div className="flex justify-between mt-auto">
         {icons.map((Icon, i) => (
           <Icon

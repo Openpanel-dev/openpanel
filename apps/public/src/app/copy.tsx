@@ -26,7 +26,10 @@ export function Paragraph({ children, className }: Props) {
 export function Heading1({ children, className }: Props) {
   return (
     <h1
-      className={cn('text-4xl md:text-5xl font-bold text-slate-800', className)}
+      className={cn(
+        'text-4xl md:text-5xl font-bold text-slate-800 !leading-tight',
+        className
+      )}
     >
       {children}
     </h1>

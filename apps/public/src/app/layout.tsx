@@ -2,7 +2,6 @@ import { cn } from '@/utils/cn';
 
 import '@/styles/globals.css';
 
-import { Logo } from '@/components/Logo';
 import type { Metadata } from 'next';
 import { Bricolage_Grotesque } from 'next/font/google';
 import Script from 'next/script';
@@ -36,13 +35,6 @@ export default function RootLayout({
           font.className
         )}
       >
-        <div className="absolute top-0 left-0 right-0 py-6 z-10">
-          <div className="container">
-            <div className="flex justify-between">
-              <Logo />
-            </div>
-          </div>
-        </div>
         <div
           className="w-full h-screen text-blue-950 bg-[radial-gradient(circle_at_2px_2px,#D9DEF6_2px,transparent_0)] absolute top-0 left-0 right-0 z-0"
           style={{

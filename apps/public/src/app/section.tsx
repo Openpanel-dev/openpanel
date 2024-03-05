@@ -10,29 +10,23 @@ import {
   CheckCircle,
   ClockIcon,
   CloudIcon,
-  CloudLightning,
   CloudLightningIcon,
   CompassIcon,
   ConeIcon,
   DatabaseIcon,
   DollarSignIcon,
   DownloadIcon,
-  FileIcon,
   FilterIcon,
   FolderIcon,
-  FolderOpenIcon,
   HandCoinsIcon,
   HandshakeIcon,
   KeyIcon,
   PieChartIcon,
-  PointerIcon,
   RouteIcon,
   ServerIcon,
   ShieldPlusIcon,
   ShoppingCartIcon,
-  SquareUserRound,
   StarIcon,
-  ThumbsUp,
   ThumbsUpIcon,
   TrendingUpIcon,
   UserRoundSearchIcon,
@@ -40,23 +34,11 @@ import {
   WebhookIcon,
 } from 'lucide-react';
 
-import {
-  Blob1,
-  Blob2,
-  Blob3,
-  Blob4,
-  Blob5,
-  Blob6,
-  Blob7,
-  Blob8,
-  Blob9,
-} from './blob';
-import { Heading2, Lead2 } from './copy';
 import { Widget } from './widget';
 
 interface SectionItem {
   title: string;
-  description: string;
+  description: string | React.ReactNode;
   icon: LucideIcon;
   color: string;
   soon?: string;
@@ -67,8 +49,18 @@ interface SectionItem {
 const sections: SectionItem[] = [
   {
     title: 'Own Your Own Data',
-    description:
-      'Take control of your data privacy and ownership with our platform, ensuring full transparency and security.',
+    description: (
+      <>
+        <p>
+          Take control of your data privacy and ownership with our platform,
+          ensuring full transparency and security.
+        </p>
+        <p>
+          All our serveres are hosted in EU (Stockholm) and we are fully GDPR
+          compliant.
+        </p>
+      </>
+    ),
     icon: KeyIcon,
     color: '#2563EB',
     icons: [FolderIcon, DatabaseIcon, ShieldPlusIcon, KeyIcon],
@@ -76,8 +68,12 @@ const sections: SectionItem[] = [
   },
   {
     title: 'Cloud or Self-Hosting',
-    description:
-      'Choose between the flexibility of cloud-based hosting or the autonomy of self-hosting to tailor your analytics infrastructure to your needs.',
+    description: (
+      <p>
+        Choose between the flexibility of cloud-based hosting or the autonomy of
+        self-hosting to tailor your analytics infrastructure to your needs.
+      </p>
+    ),
     icon: CloudIcon,
     color: '#ff7557',
     icons: [CloudIcon, CheckCircle, ServerIcon, DownloadIcon],
@@ -85,8 +81,12 @@ const sections: SectionItem[] = [
   },
   {
     title: 'Real-Time Events',
-    description:
-      'Stay up-to-date with real-time event tracking, enabling instant insights into user actions as they happen.',
+    description: (
+      <p>
+        Stay up-to-date with real-time event tracking, enabling instant insights
+        into user actions as they happen.
+      </p>
+    ),
     icon: ClockIcon,
     color: '#7fe1d8',
     icons: [CloudLightningIcon, ShoppingCartIcon, ArrowUpFromDotIcon],
@@ -94,8 +94,13 @@ const sections: SectionItem[] = [
   },
   {
     title: 'Deep Dive into User Behaviors',
-    description:
-      "Gain profound insights into user behavior with comprehensive analytics tools, allowing you to understand your audience's actions and preferences.",
+    description: (
+      <p>
+        Gain profound insights into user behavior with comprehensive analytics
+        tools, allowing you to understand your audience's actions and
+        preferences.
+      </p>
+    ),
     icon: UserRoundSearchIcon,
     color: '#f8bc3c',
     icons: [UsersIcon, RouteIcon, BookmarkIcon],
@@ -103,8 +108,12 @@ const sections: SectionItem[] = [
   },
   {
     title: 'Powerful Report Explorer',
-    description:
-      'Explore and analyze your data effortlessly with our powerful report explorer, simplifying the process of deriving meaningful insights.',
+    description: (
+      <p>
+        Explore and analyze your data effortlessly with our powerful report
+        explorer, simplifying the process of deriving meaningful insights.
+      </p>
+    ),
     icon: CompassIcon,
     color: '#b3596e',
     icons: [ThumbsUpIcon, TrendingUpIcon, PieChartIcon, BarChart2Icon],
@@ -113,8 +122,12 @@ const sections: SectionItem[] = [
   {
     soon: 'Coming soon',
     title: 'Funnels',
-    description:
-      'Track user conversion funnels seamlessly, providing valuable insights into user journey optimization.',
+    description: (
+      <p>
+        Track user conversion funnels seamlessly, providing valuable insights
+        into user journey optimization.
+      </p>
+    ),
     icon: ConeIcon,
     color: '#72bef4',
     icons: [ConeIcon, FilterIcon],
@@ -123,8 +136,13 @@ const sections: SectionItem[] = [
   {
     soon: 'Coming with our native app',
     title: 'Push Notifications',
-    description:
-      'Stay informed about conversions, events, and peaks with our upcoming push notification tool, empowering you to monitor and respond to critical activities in real-time.',
+    description: (
+      <p>
+        Stay informed about conversions, events, and peaks with our upcoming
+        push notification tool, empowering you to monitor and respond to
+        critical activities in real-time.
+      </p>
+    ),
     icon: BellIcon,
     color: '#ffb27a',
     icons: [WebhookIcon, BellIcon],
@@ -132,8 +150,12 @@ const sections: SectionItem[] = [
   },
   {
     title: 'Cost-Effective Alternative to Mixpanel',
-    description:
-      'Enjoy the same powerful analytics capabilities as Mixpanel at a fraction of the cost, ensuring affordability without compromising on quality.',
+    description: (
+      <p>
+        Enjoy the same powerful analytics capabilities as Mixpanel at a fraction
+        of the cost, ensuring affordability without compromising on quality.
+      </p>
+    ),
     icon: DollarSignIcon,
     color: '#0f7ea0',
     icons: [DollarSignIcon, HandCoinsIcon, HandshakeIcon, StarIcon],
@@ -142,8 +164,13 @@ const sections: SectionItem[] = [
   {
     soon: 'Something Plausible lacks',
     title: 'Great Support for React Native',
-    description:
-      'Benefit from robust support for React Native, ensuring seamless integration and compatibility for your projects, a feature notably lacking in other platforms like Plausible.',
+    description: (
+      <p>
+        Benefit from robust support for React Native, ensuring seamless
+        integration and compatibility for your projects, a feature notably
+        lacking in other platforms like Plausible.
+      </p>
+    ),
     icon: (({ className }: LucideProps) => {
       return (
         <img src="/react-native.svg" alt="React Native" className={className} />
@@ -151,7 +178,7 @@ const sections: SectionItem[] = [
     }) as unknown as LucideIcon,
     color: '#3ba974',
     icons: [FolderIcon, DatabaseIcon, ShieldPlusIcon, KeyIcon],
-    className: 'bg-[#f8bc3c]',
+    className: 'bg-[#e19900]',
   },
 ];
 
@@ -187,7 +214,7 @@ export function Sections() {
             : ['-top-10 -left-20 rotate-12', 'top-10 -rotate-12', '-right-5'];
 
           const className = even
-            ? cn('text-white [&_h3]:text-white col-span-2', section.className)
+            ? cn('[&_*]:text-white/90 col-span-2', section.className)
             : cn('border border-border', section.className);
 
           return (
@@ -198,7 +225,7 @@ export function Sections() {
               icons={section.icons}
               offsets={offsets}
             >
-              <p>{section.description}</p>
+              {section.description}
             </Widget>
           );
         })}

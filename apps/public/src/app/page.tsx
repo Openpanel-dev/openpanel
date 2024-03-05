@@ -13,13 +13,8 @@ export default async function Page() {
   return (
     <div>
       <Hero waitlistCount={waitlistCount} />
-      <div className="bg-gradient-to-b from-blue-light to-[#FFFFFF] pb-16 text-center">
-        <div className="relative -top-20">
-          <PreviewCarousel />
-        </div>
-      </div>
       <div className="container">
-        <div className="mb-24">
+        <div className="my-24">
           <Heading2 className="md:text-5xl mb-2 leading-none">
             Analytics should be easy
             <br />

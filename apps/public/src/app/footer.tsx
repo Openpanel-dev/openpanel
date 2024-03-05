@@ -20,9 +20,9 @@ export default function Footer() {
         </div>
 
         <div className="overflow-hidden rounded-xl">
-          <div className="p-3 bg-white/20">
+          <div className="p-2 bg-white/20">
             <Image
-              src="/demo/overview-min.png"
+              src="/demo-2/1.png"
               width={1080}
               height={608}
               alt="Openpanel overview page"
@@ -31,13 +31,13 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="absolute bottom-0 left-0 right-0">
+      <div className="-mt-8 relative z-10">
         <div className="h-px w-full bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]"></div>
         <div className="p-4 bg-blue-darker">
           <div className="container">
-            <div className="flex justify-between items-center text-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center text-sm">
               <Logo />
-              <div className="flex gap-4">
+              <div className="flex flex-col md:flex-row gap-4">
                 <Link className="hover:underline" href="/terms">
                   Terms and Conditions
                 </Link>
