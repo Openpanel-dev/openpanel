@@ -31,7 +31,7 @@ export default async function Page({ params: { id } }: PageProps) {
 
   return (
     <div className="p-4 md:p-16 bg-gradient-to-tl from-blue-950 to-blue-600">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-end mb-4">
           <div className="leading-none">
             <span className="text-white mb-4">{organization?.name}</span>

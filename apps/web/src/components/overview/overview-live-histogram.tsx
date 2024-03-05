@@ -146,7 +146,7 @@ function Wrapper({ open, children, count }: WrapperProps) {
           </div>
         </div>
         <div className="max-h-[150px] aspect-[5/1] flex flex-1 gap-0.5 md:gap-2 items-end w-full relative">
-          <div className="absolute top-0 right-0 text-xs text-muted-foreground">
+          <div className="absolute -top-3 right-0 text-xs text-muted-foreground">
             NOW
           </div>
           {/* <div className="md:absolute top-0 left-0 md:card md:p-4 mr-2 md:bg-white/90 z-50"> */}

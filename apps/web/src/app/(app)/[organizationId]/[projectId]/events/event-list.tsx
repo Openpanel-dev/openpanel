@@ -1,16 +1,22 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Fragment, Suspense } from 'react';
 import { FullPageEmptyState } from '@/components/FullPageEmptyState';
 import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCursor } from '@/hooks/useCursor';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { isSameDay } from 'date-fns';
 import { GanttChartIcon } from 'lucide-react';
 
 import type { IServiceCreateEventPayload } from '@mixan/db';
 
 import { EventListItem } from './event-list-item';
+
+function showDateHeader(a: Date, b?: Date) {
+  if (!b) return true;
+  return !isSameDay(a, b);
+}
 
 interface EventListProps {
   data: IServiceCreateEventPayload[];
@@ -55,8 +61,18 @@ export function EventList({ data, count }: EventListProps) {
               take={50}
             />
             <div className="flex flex-col gap-4 my-4">
-              {data.map((item) => (
-                <EventListItem key={item.id} {...item} />
+              {data.map((item, index, list) => (
+                <Fragment key={item.id}>
+                  {showDateHeader(
+                    item.createdAt,
+                    list[index - 1]?.createdAt
+                  ) && (
+                    <div className="font-medium text-xs [&:not(:first-child)]:mt-12">
+                      {item.createdAt.toLocaleDateString()}
+                    </div>
+                  )}
+                  <EventListItem {...item} />
+                </Fragment>
               ))}
             </div>
             <Pagination

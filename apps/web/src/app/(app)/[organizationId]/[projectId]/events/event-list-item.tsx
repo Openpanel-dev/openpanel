@@ -160,7 +160,7 @@ export function EventListItem(props: EventListItemProps) {
 
   return (
     <ExpandableListItem
-      className={cn(meta?.conversion && 'ring-2 ring-primary-500')}
+      className={cn(meta?.conversion && `bg-${meta.color}-50`)}
       title={
         <button onClick={() => setEvents((p) => uniq([...p, name]))}>
           {name.split('_').join(' ')}
@@ -192,41 +192,39 @@ export function EventListItem(props: EventListItemProps) {
       }
       image={<EventIcon name={name} meta={meta} projectId={projectId} />}
     >
-      <div className="p-2">
-        <div className="bg-gradient-to-tr from-slate-100 to-white rounded-md">
-          {propertiesList.length > 0 && (
-            <div className="p-4 flex flex-col gap-4">
-              <div className="font-medium">Your properties</div>
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {propertiesList.map((item) => (
-                  <KeyValue
-                    key={item.name}
-                    name={item.name}
-                    value={item.value}
-                    onClick={() => {
-                      setFilter(
-                        `properties.${item.name}`,
-                        item.value ? String(item.value) : '',
-                        'is'
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          <div className="p-4 flex flex-col gap-4">
-            <div className="font-medium">Properties</div>
+      <div className="bg-white p-4">
+        {propertiesList.length > 0 && (
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="font-medium">Your properties</div>
             <div className="flex flex-wrap gap-x-4 gap-y-2">
-              {keyValueList.map((item) => (
+              {propertiesList.map((item) => (
                 <KeyValue
-                  onClick={() => item.onClick?.()}
                   key={item.name}
                   name={item.name}
                   value={item.value}
+                  onClick={() => {
+                    setFilter(
+                      `properties.${item.name}`,
+                      item.value ? String(item.value) : '',
+                      'is'
+                    );
+                  }}
                 />
               ))}
             </div>
+          </div>
+        )}
+        <div className="flex flex-col gap-4">
+          <div className="font-medium">Properties</div>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {keyValueList.map((item) => (
+              <KeyValue
+                onClick={() => item.onClick?.()}
+                key={item.name}
+                name={item.name}
+                value={item.value}
+              />
+            ))}
           </div>
         </div>
       </div>

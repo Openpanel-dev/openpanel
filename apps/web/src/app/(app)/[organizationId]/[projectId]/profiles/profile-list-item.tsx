@@ -37,23 +37,19 @@ export function ProfileListItem(props: ProfileListItemProps) {
     >
       <>
         {properties && (
-          <div className="p-2">
-            <div className="bg-gradient-to-tr from-slate-100 to-white rounded-md">
-              <div className="p-4 flex flex-col gap-4">
-                <div className="font-medium">Properties</div>
-                <div className="flex flex-wrap gap-x-4 gap-y-2">
-                  {Object.entries(properties)
-                    .filter(([, value]) => !!value)
-                    .map(([key, value]) => (
-                      <KeyValue
-                        onClick={() => setFilter(`properties.${key}`, value)}
-                        key={key}
-                        name={key}
-                        value={value}
-                      />
-                    ))}
-                </div>
-              </div>
+          <div className="bg-white p-4 flex flex-col gap-4">
+            <div className="font-medium">Properties</div>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {Object.entries(properties)
+                .filter(([, value]) => !!value)
+                .map(([key, value]) => (
+                  <KeyValue
+                    onClick={() => setFilter(`properties.${key}`, value)}
+                    key={key}
+                    name={key}
+                    value={value}
+                  />
+                ))}
             </div>
           </div>
         )}

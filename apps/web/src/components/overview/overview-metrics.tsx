@@ -196,7 +196,10 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
         {reports.map((report, index) => (
           <button
             key={index}
-            className="relative col-span-3 md:col-span-2 lg:col-span-1 group"
+            className={cn(
+              'relative col-span-3 md:col-span-2 lg:col-span-1 group transition-all scale-95',
+              index === metric && 'shadow-md rounded-xl scale-105 z-10'
+            )}
             onClick={() => {
               setMetric(index);
             }}

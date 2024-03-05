@@ -38,6 +38,7 @@ export function ExpandableListItem({
           variant="secondary"
           size="icon"
           onClick={() => setOpen((p) => !p)}
+          className="bg-black/5 hover:bg-black/10"
         >
           <ChevronUp
             size={20}

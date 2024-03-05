@@ -21,7 +21,7 @@ export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
       )}
       {...{ href, onClick }}
     >
-      <div className="p-1 px-2 bg-slate-50">{name}</div>
+      <div className="p-1 px-2 bg-black/5">{name}</div>
       <div
         className={cn(
           'p-1 px-2 font-mono text-blue-700 bg-white whitespace-nowrap overflow-hidden text-ellipsis shadow-[inset_0_0_0_1px_#fff]',
@@ -45,7 +45,7 @@ export function KeyValueSubtle({ href, onClick, name, value }: KeyValueProps) {
       <div className="text-gray-400">{name}</div>
       <div
         className={cn(
-          'bg-slate-100 rounded p-0.5 px-1 sm:p-1 sm:px-2 text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis',
+          'bg-black/5 rounded p-0.5 px-1 sm:p-1 sm:px-2 text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis',
           clickable && 'group-hover:underline'
         )}
       >
