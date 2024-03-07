@@ -1,5 +1,7 @@
 import type { FastifyRequest } from 'fastify';
 
+import { logger } from './logger';
+
 interface RemoteIpLookupResponse {
   country: string | undefined;
   city: string | undefined;
@@ -41,7 +43,9 @@ export async function parseIp(ip?: string): Promise<GeoLocation> {
   }
 
   try {
-    const geo = await fetch(`${process.env.GEO_IP_HOST}/${ip}`);
+    const geo = await fetch(`${process.env.GEO_IP_HOST}/${ip}`, {
+      signal: AbortSignal.timeout(2000),
+    });
     const res = (await geo.json()) as RemoteIpLookupResponse;
 
     return {
@@ -51,7 +55,7 @@ export async function parseIp(ip?: string): Promise<GeoLocation> {
       continent: res.continent,
     };
   } catch (e) {
-    console.log('Failed to parse ip', e);
+    logger.error('Failed to fetch geo location for ip', e);
     return geo;
   }
 }

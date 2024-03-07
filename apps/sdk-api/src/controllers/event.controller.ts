@@ -1,3 +1,4 @@
+import { logger, logInfo } from '@/utils/logger';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parseReferrer';
 import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
@@ -61,6 +62,21 @@ function isSameDomain(url1: string | undefined, url2: string | undefined) {
   }
 }
 
+async function withTiming<T>(name: string, promise: T) {
+  try {
+    const start = Date.now();
+    const res = await promise;
+    const end = Date.now();
+    if (end - start > 1000) {
+      logInfo(`${name} took too long: ${end - start}ms`);
+    }
+    return res;
+  } catch (error) {
+    logger.error(error, `Failed to execute ${name}`);
+    throw error;
+  }
+}
+
 export async function postEvent(
   request: FastifyRequest<{
     Body: PostEventPayload;
@@ -109,8 +125,11 @@ export async function postEvent(
   const isServerEvent = !ip && !origin && !isUserAgentSet(ua);
 
   if (isServerEvent) {
-    const [event] = await getEvents(
-      `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = '${profileId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+    const [event] = await withTiming(
+      'Get last event (server-event)',
+      getEvents(
+        `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = '${profileId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+      )
     );
 
     eventsQueue.add('event', {
@@ -153,10 +172,10 @@ export async function postEvent(
     return reply.status(200).send('');
   }
 
-  const [geo, eventsJobs] = await Promise.all([
-    parseIp(ip),
-    eventsQueue.getJobs(['delayed']),
-  ]);
+  const [geo, eventsJobs] = await withTiming(
+    'Get geo and job from queue',
+    Promise.all([parseIp(ip), eventsQueue.getJobs(['delayed'])])
+  );
 
   // find session_end job
   const sessionEndJobCurrentDeviceId = findJobByPrefix(
@@ -200,8 +219,11 @@ export async function postEvent(
     );
   }
 
-  const [sessionStartEvent] = await getEvents(
-    `SELECT * FROM events WHERE name = 'session_start' AND device_id = '${deviceId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+  const [sessionStartEvent] = await withTiming(
+    'Get session start event',
+    getEvents(
+      `SELECT * FROM events WHERE name = 'session_start' AND device_id = '${deviceId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+    )
   );
 
   request.log.info(
@@ -272,26 +294,36 @@ export async function postEvent(
           },
           'duration is wrong'
         );
+      } else {
+        // Skip update duration if it's wrong
+        // Seems like request is not in right order
+        await withTiming(
+          'Update previous job with duration',
+          job.updateData({
+            type: 'createEvent',
+            payload: {
+              ...prevEvent,
+              duration,
+            },
+          })
+        );
       }
-      await job.updateData({
-        type: 'createEvent',
-        payload: {
-          ...prevEvent,
-          duration,
-        },
-      });
-      await job.promote();
+
+      await withTiming('Promote previous job', job.promote());
     }
   }
 
   if (createSessionStart) {
     // We do not need to queue session_start
-    await createEvent({
-      ...payload,
-      name: 'session_start',
-      // @ts-expect-error
-      createdAt: toISOString(getTime(payload.createdAt) - 100),
-    });
+    await withTiming(
+      'Create session start event',
+      createEvent({
+        ...payload,
+        name: 'session_start',
+        // @ts-expect-error
+        createdAt: toISOString(getTime(payload.createdAt) - 100),
+      })
+    );
   }
 
   const options: JobsOptions = {};
@@ -302,13 +334,16 @@ export async function postEvent(
 
   request.log.info(payload, 'queue event');
   // Queue current event
-  eventsQueue.add(
-    'event',
-    {
-      type: 'createEvent',
-      payload,
-    },
-    options
+  await withTiming(
+    'Add current to event queue',
+    eventsQueue.add(
+      'event',
+      {
+        type: 'createEvent',
+        payload,
+      },
+      options
+    )
   );
 
   reply.status(202).send(deviceId);
