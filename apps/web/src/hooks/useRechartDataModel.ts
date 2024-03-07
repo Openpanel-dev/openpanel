@@ -12,6 +12,7 @@ export function useRechartDataModel(series: IChartData['series']) {
       series[0]?.data.map(({ date }) => {
         return {
           date,
+          timestamp: new Date(date).getTime(),
           ...series.reduce((acc, serie, idx) => {
             return {
               ...acc,

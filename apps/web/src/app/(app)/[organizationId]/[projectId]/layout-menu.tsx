@@ -127,6 +127,11 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
             label="Profile (yours)"
             href={`/${params.organizationId}/${projectId}/settings/profile`}
           />
+          <LinkWithIcon
+            icon={UserIcon}
+            label="References"
+            href={`/${params.organizationId}/${projectId}/settings/references`}
+          />
         </div>
       )}
       {dashboards.length > 0 && (

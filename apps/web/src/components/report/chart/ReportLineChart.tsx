@@ -11,11 +11,13 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 
+import type { IServiceReference } from '@mixan/db';
 import type { IChartLineType, IInterval } from '@mixan/validation';
 
 import { getYAxisWidth } from './chart-utils';
@@ -26,6 +28,7 @@ import { ResponsiveContainer } from './ResponsiveContainer';
 
 interface ReportLineChartProps {
   data: IChartData;
+  references: IServiceReference[];
   interval: IInterval;
   lineType: IChartLineType;
 }
@@ -34,17 +37,35 @@ export function ReportLineChart({
   lineType,
   interval,
   data,
+  references,
 }: ReportLineChartProps) {
   const { editMode, previous } = useChartContext();
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(series);
   const number = useNumber();
+  console.log(references.map((ref) => ref.createdAt.getTime()));
+
   return (
     <>
       <ResponsiveContainer>
         {({ width, height }) => (
           <LineChart width={width} height={height} data={rechartData}>
+            {references.map((ref) => (
+              <ReferenceLine
+                key={ref.id}
+                x={ref.date.getTime()}
+                stroke={'#94a3b8'}
+                strokeDasharray={'3 3'}
+                label={{
+                  value: ref.title,
+                  position: 'centerTop',
+                  fill: '#334155',
+                  fontSize: 12,
+                }}
+                fontSize={10}
+              />
+            ))}
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}
@@ -62,10 +83,12 @@ export function ReportLineChart({
             <XAxis
               axisLine={false}
               fontSize={12}
-              dataKey="date"
-              tickFormatter={(m: string) => formatDate(m)}
+              dataKey="timestamp"
+              scale="utc"
+              domain={['dataMin', 'dataMax']}
+              tickFormatter={(m: string) => formatDate(new Date(m))}
+              type="number"
               tickLine={false}
-              allowDuplicatedCategory={false}
             />
             {series.map((serie) => {
               return (

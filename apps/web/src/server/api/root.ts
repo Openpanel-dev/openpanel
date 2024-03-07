@@ -8,6 +8,7 @@ import { onboardingRouter } from './routers/onboarding';
 import { organizationRouter } from './routers/organization';
 import { profileRouter } from './routers/profile';
 import { projectRouter } from './routers/project';
+import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
 import { shareRouter } from './routers/share';
 import { uiRouter } from './routers/ui';
@@ -31,6 +32,7 @@ export const appRouter = createTRPCRouter({
   ui: uiRouter,
   share: shareRouter,
   onboarding: onboardingRouter,
+  reference: referenceRouter,
 });
 
 // export type definition of API

@@ -1,3 +1,4 @@
+import { getDaysOldDate } from '@/utils/date';
 import { round } from '@/utils/math';
 import * as mathjs from 'mathjs';
 import { sort } from 'ramda';
@@ -7,6 +8,7 @@ import { chQuery, convertClickhouseDateToJs, getChartSql } from '@mixan/db';
 import type {
   IChartEvent,
   IChartInput,
+  IChartRange,
   IGetChartDataInput,
   IInterval,
 } from '@mixan/validation';
@@ -285,4 +287,70 @@ export async function getChartData(payload: IGetChartDataInput) {
       data,
     };
   });
+}
+
+export function getDatesFromRange(range: IChartRange) {
+  if (range === 'today') {
+    const startDate = new Date();
+    const endDate = new Date();
+    startDate.setUTCHours(0, 0, 0, 0);
+    endDate.setUTCHours(23, 59, 59, 999);
+
+    return {
+      startDate: startDate.toUTCString(),
+      endDate: endDate.toUTCString(),
+    };
+  }
+
+  if (range === '30min' || range === '1h') {
+    const startDate = new Date(
+      Date.now() - 1000 * 60 * (range === '30min' ? 30 : 60)
+    ).toUTCString();
+    const endDate = new Date().toUTCString();
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  let days = 1;
+
+  if (range === '24h') {
+    const startDate = getDaysOldDate(days);
+    const endDate = new Date();
+    return {
+      startDate: startDate.toUTCString(),
+      endDate: endDate.toUTCString(),
+    };
+  } else if (range === '7d') {
+    days = 7;
+  } else if (range === '14d') {
+    days = 14;
+  } else if (range === '1m') {
+    days = 30;
+  } else if (range === '3m') {
+    days = 90;
+  } else if (range === '6m') {
+    days = 180;
+  } else if (range === '1y') {
+    days = 365;
+  }
+
+  const startDate = getDaysOldDate(days);
+  startDate.setUTCHours(0, 0, 0, 0);
+  const endDate = new Date();
+  endDate.setUTCHours(23, 59, 59, 999);
+  return {
+    startDate: startDate.toUTCString(),
+    endDate: endDate.toUTCString(),
+  };
+}
+
+export function getChartStartEndDate(
+  input: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>
+) {
+  return input.startDate && input.endDate
+    ? { startDate: input.startDate, endDate: input.endDate }
+    : getDatesFromRange(input.range);
 }

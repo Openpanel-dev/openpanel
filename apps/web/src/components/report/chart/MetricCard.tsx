@@ -59,7 +59,7 @@ export function MetricCard({
       className="group relative card p-4 overflow-hidden h-24"
       key={serie.name}
     >
-      <div className="absolute -top-2 -left-2 -right-2 -bottom-2 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50 rounded-md">
+      <div className="absolute inset-0 -left-1 -right-1 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50 rounded-md">
         <AutoSizer>
           {({ width, height }) => (
             <AreaChart

@@ -45,6 +45,9 @@ const modals = {
   ShareOverviewModal: dynamic(() => import('./ShareOverviewModal'), {
     loading: Loading,
   }),
+  AddReference: dynamic(() => import('./AddReference'), {
+    loading: Loading,
+  }),
 };
 
 const emitter = mitt<{

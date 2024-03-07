@@ -57,6 +57,8 @@ export const zTimeInterval = z.enum(objectToZodEnums(intervals));
 
 export const zMetric = z.enum(objectToZodEnums(metrics));
 
+export const zRange = z.enum(objectToZodEnums(timeRanges));
+
 export const zChartInput = z.object({
   name: z.string(),
   chartType: zChartType,
@@ -64,7 +66,7 @@ export const zChartInput = z.object({
   interval: zTimeInterval,
   events: zChartEvents,
   breakdowns: zChartBreakdowns,
-  range: z.enum(objectToZodEnums(timeRanges)),
+  range: zRange,
   previous: z.boolean(),
   formula: z.string().optional(),
   metric: zMetric,
@@ -86,4 +88,11 @@ export const zShareOverview = z.object({
   projectId: z.string(),
   password: z.string().nullable(),
   public: z.boolean(),
+});
+
+export const zCreateReference = z.object({
+  title: z.string(),
+  description: z.string().nullish(),
+  projectId: z.string(),
+  datetime: z.string(),
 });

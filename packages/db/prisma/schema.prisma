@@ -25,6 +25,7 @@ model Project {
   dashboards Dashboard[]
   share      ShareOverview?
   EventMeta  EventMeta[]
+  Reference  Reference[]
 
   @@map("projects")
 }
@@ -183,4 +184,18 @@ model EventMeta {
 
   @@unique([name, project_id])
   @@map("event_meta")
+}
+
+model Reference {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String?
+  date        DateTime @default(now())
+  project_id  String
+  project     Project  @relation(fields: [project_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("references")
 }

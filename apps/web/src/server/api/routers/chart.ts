@@ -3,28 +3,23 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '@/server/api/trpc';
-import { getDaysOldDate } from '@/utils/date';
 import { average, max, min, round, sum } from '@/utils/math';
-import {
-  flatten,
-  map,
-  pick,
-  pipe,
-  prop,
-  repeat,
-  reverse,
-  sort,
-  uniq,
-} from 'ramda';
+import { flatten, map, pipe, prop, repeat, reverse, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
-import { chQuery, createSqlBuilder } from '@mixan/db';
+import { chQuery, createSqlBuilder, formatClickhouseDate } from '@mixan/db';
 import { zChartInput } from '@mixan/validation';
-import type { IChartEvent, IChartInput, IChartRange } from '@mixan/validation';
+import type { IChartEvent, IChartInput } from '@mixan/validation';
 
-import { getChartData, withFormula } from './chart.helpers';
+import {
+  getChartData,
+  getChartStartEndDate,
+  getDatesFromRange,
+  withFormula,
+} from './chart.helpers';
 
-async function getFunnelData(payload: IChartInput) {
+async function getFunnelData({ projectId, ...payload }: IChartInput) {
+  const { startDate, endDate } = getChartStartEndDate(payload);
   if (payload.events.length === 0) {
     return {
       totalSessions: 0,
@@ -40,7 +35,7 @@ async function getFunnelData(payload: IChartInput) {
         session_id,
         windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${payload.events.map((event) => `name = '${event.name}'`).join(', ')}) AS level
       FROM events
-      WHERE (created_at >= '2024-02-24') AND (created_at <= '2024-02-25')
+      WHERE (project_id = '${projectId}' AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
       GROUP BY session_id
     )
     GROUP BY level
@@ -50,7 +45,7 @@ async function getFunnelData(payload: IChartInput) {
   const [funnelRes, sessionRes] = await Promise.all([
     chQuery<{ level: number; count: number }>(sql),
     chQuery<{ count: number }>(
-      `SELECT count(name) as count FROM events WHERE name = 'session_start' AND (created_at >= '2024-02-24') AND (created_at <= '2024-02-25')`
+      `SELECT count(name) as count FROM events WHERE project_id = '${projectId}' AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
     ),
   ]);
 
@@ -270,10 +265,7 @@ export const chartRouter = createTRPCRouter({
 
   // TODO: Make this private
   chart: publicProcedure.input(zChartInput).query(async ({ input }) => {
-    const current =
-      input.startDate && input.endDate
-        ? { startDate: input.startDate, endDate: input.endDate }
-        : getDatesFromRange(input.range);
+    const { startDate, endDate } = getChartStartEndDate(input);
     let diff = 0;
 
     switch (input.range) {
@@ -320,11 +312,9 @@ export const chartRouter = createTRPCRouter({
           ...input,
           ...{
             startDate: new Date(
-              new Date(current.startDate).getTime() - diff
+              new Date(startDate).getTime() - diff
             ).toISOString(),
-            endDate: new Date(
-              new Date(current.endDate).getTime() - diff
-            ).toISOString(),
+            endDate: new Date(new Date(endDate).getTime() - diff).toISOString(),
           },
         })
       );
@@ -516,71 +506,4 @@ async function getSeriesFromEvents(input: IChartInput) {
   ).flat();
 
   return withFormula(input, series);
-  // .sort((a, b) => {
-  //   if (input.chartType === 'linear') {
-  //     const sumA = a.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
-  //     const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
-  //     return sumB - sumA;
-  //   } else {
-  //     return b.metrics.sum - a.metrics.sum;
-  //   }
-  // });
-}
-
-function getDatesFromRange(range: IChartRange) {
-  if (range === 'today') {
-    const startDate = new Date();
-    const endDate = new Date();
-    startDate.setUTCHours(0, 0, 0, 0);
-    endDate.setUTCHours(23, 59, 59, 999);
-
-    return {
-      startDate: startDate.toUTCString(),
-      endDate: endDate.toUTCString(),
-    };
-  }
-
-  if (range === '30min' || range === '1h') {
-    const startDate = new Date(
-      Date.now() - 1000 * 60 * (range === '30min' ? 30 : 60)
-    ).toUTCString();
-    const endDate = new Date().toUTCString();
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  let days = 1;
-
-  if (range === '24h') {
-    const startDate = getDaysOldDate(days);
-    const endDate = new Date();
-    return {
-      startDate: startDate.toUTCString(),
-      endDate: endDate.toUTCString(),
-    };
-  } else if (range === '7d') {
-    days = 7;
-  } else if (range === '14d') {
-    days = 14;
-  } else if (range === '1m') {
-    days = 30;
-  } else if (range === '3m') {
-    days = 90;
-  } else if (range === '6m') {
-    days = 180;
-  } else if (range === '1y') {
-    days = 365;
-  }
-
-  const startDate = getDaysOldDate(days);
-  startDate.setUTCHours(0, 0, 0, 0);
-  const endDate = new Date();
-  endDate.setUTCHours(23, 59, 59, 999);
-  return {
-    startDate: startDate.toUTCString(),
-    endDate: endDate.toUTCString(),
-  };
 }

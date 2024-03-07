@@ -31,6 +31,13 @@ export function Chart({
   startDate,
   endDate,
 }: ReportChartProps) {
+  const [references] = api.reference.getChartReferences.useSuspenseQuery({
+    projectId,
+    startDate,
+    endDate,
+    range,
+  });
+
   const [data] = api.chart.chart.useSuspenseQuery(
     {
       // dont send lineType since it does not need to be sent
@@ -80,7 +87,12 @@ export function Chart({
 
   if (chartType === 'linear') {
     return (
-      <ReportLineChart lineType={lineType} interval={interval} data={data} />
+      <ReportLineChart
+        lineType={lineType}
+        interval={interval}
+        data={data}
+        references={references}
+      />
     );
   }
 
