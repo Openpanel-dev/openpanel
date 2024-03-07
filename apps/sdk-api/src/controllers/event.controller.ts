@@ -239,7 +239,6 @@ export async function postEvent(
     const prevEvent = prevEventJob.data.payload;
     const duration = getTime(payload.createdAt) - getTime(prevEvent.createdAt);
     contextLogger.add('prevEvent', prevEvent);
-    console.log('HERE?!?!?!');
 
     // Set path from prev screen_view event if current event is not a screen_view
     if (payload.name != 'screen_view') {
