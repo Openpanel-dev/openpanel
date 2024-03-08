@@ -267,6 +267,10 @@ export async function postEvent(
 
       await withTiming('Promote previous job', prevEventJob.promote());
     }
+  } else if (payload.name !== 'screen_view') {
+    contextLogger.send('no previous job', {
+      prevEventJob,
+    });
   }
 
   if (createSessionStart) {

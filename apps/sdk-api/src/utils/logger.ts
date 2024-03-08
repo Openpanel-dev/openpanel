@@ -1,19 +1,22 @@
+import type { TransportTargetOptions } from 'pino';
 import pino from 'pino';
 
-const ENABLED = process.env.NODE_ENV === 'production';
-
-const transport = pino.transport({
-  targets: ENABLED
+const targets: TransportTargetOptions[] =
+  process.env.NODE_ENV === 'production'
     ? [
         {
           target: '@logtail/pino',
           options: { sourceToken: process.env.BETTERSTACK_TOKEN },
         },
+      ]
+    : [
         {
           target: 'pino-pretty',
         },
-      ]
-    : [],
+      ];
+
+const transport = pino.transport({
+  targets,
 });
 
 export const logger = pino(transport);
