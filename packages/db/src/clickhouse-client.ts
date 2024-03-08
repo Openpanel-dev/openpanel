@@ -5,6 +5,11 @@ export const ch = createClient({
   username: process.env.CLICKHOUSE_USER,
   password: process.env.CLICKHOUSE_PASSWORD,
   database: process.env.CLICKHOUSE_DB,
+  keep_alive: {
+    enabled: true,
+    retry_on_expired_socket: true,
+    socket_ttl: 2500,
+  },
 });
 
 interface ClickhouseJsonResponse<T> {
