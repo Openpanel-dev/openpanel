@@ -4,6 +4,7 @@ import { isNil } from 'ramda';
 export function fancyMinutes(time: number) {
   const minutes = Math.floor(time / 60);
   const seconds = round(time - minutes * 60, 0);
+  if (minutes === 0) return `${seconds}s`;
   return `${minutes}m ${seconds}s`;
 }
 

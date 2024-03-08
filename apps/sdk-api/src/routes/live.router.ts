@@ -17,6 +17,7 @@ const liveRouter: FastifyPluginCallback = (fastify, opts, done) => {
       { websocket: true },
       controller.wsVisitors
     );
+    fastify.get('/events/:projectId', { websocket: true }, controller.wsEvents);
     done();
   });
 

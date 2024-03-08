@@ -249,6 +249,7 @@ export async function postEvent(
       if (duration < 0) {
         contextLogger.send('duration is wrong', {
           payload,
+          duration,
         });
       } else {
         // Skip update duration if it's wrong
@@ -270,6 +271,7 @@ export async function postEvent(
   } else if (payload.name !== 'screen_view') {
     contextLogger.send('no previous job', {
       prevEventJob,
+      payload,
     });
   }
 

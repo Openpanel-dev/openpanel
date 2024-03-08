@@ -17,3 +17,36 @@ export const ChartSwitch = withChartProivder(function ChartSwitch(
 
   return <Chart {...props} />;
 });
+
+interface ChartSwitchShortcutProps {
+  projectId: ReportChartProps['projectId'];
+  range?: ReportChartProps['range'];
+  previous?: ReportChartProps['previous'];
+  chartType?: ReportChartProps['chartType'];
+  interval?: ReportChartProps['interval'];
+  events: ReportChartProps['events'];
+}
+
+export const ChartSwitchShortcut = ({
+  projectId,
+  range = '7d',
+  previous = false,
+  chartType = 'linear',
+  interval = 'day',
+  events,
+}: ChartSwitchShortcutProps) => {
+  return (
+    <ChartSwitch
+      projectId={projectId}
+      range={range}
+      breakdowns={[]}
+      previous={previous}
+      chartType={chartType}
+      interval={interval}
+      name="Random"
+      lineType="bump"
+      metric="sum"
+      events={events}
+    />
+  );
+};

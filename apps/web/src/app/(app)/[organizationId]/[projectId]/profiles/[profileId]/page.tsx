@@ -50,12 +50,15 @@ export default async function Page({
     projectId,
     profileId,
     take: 50,
-    cursor: parseAsInteger.parse(searchParams.cursor ?? '') ?? undefined,
-    events: eventQueryNamesFilter.parse(searchParams.events ?? ''),
-    filters: eventQueryFiltersParser.parse(searchParams.f ?? '') ?? undefined,
+    cursor:
+      parseAsInteger.parseServerSide(searchParams.cursor ?? '') ?? undefined,
+    events: eventQueryNamesFilter.parseServerSide(searchParams.events ?? ''),
+    filters:
+      eventQueryFiltersParser.parseServerSide(searchParams.f ?? '') ??
+      undefined,
   };
-  const startDate = parseAsString.parse(searchParams.startDate);
-  const endDate = parseAsString.parse(searchParams.endDate);
+  const startDate = parseAsString.parseServerSide(searchParams.startDate);
+  const endDate = parseAsString.parseServerSide(searchParams.endDate);
   const [profile, events, count, conversions] = await Promise.all([
     getProfileById(profileId),
     getEventList(eventListOptions),

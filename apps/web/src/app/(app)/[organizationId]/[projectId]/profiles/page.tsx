@@ -33,12 +33,12 @@ export default async function Page({
     getProfileList({
       projectId,
       take: 50,
-      cursor: parseAsInteger.parse(cursor ?? '') ?? undefined,
-      filters: eventQueryFiltersParser.parse(f ?? '') ?? undefined,
+      cursor: parseAsInteger.parseServerSide(cursor ?? '') ?? undefined,
+      filters: eventQueryFiltersParser.parseServerSide(f ?? '') ?? undefined,
     }),
     getProfileListCount({
       projectId,
-      filters: eventQueryFiltersParser.parse(f ?? '') ?? undefined,
+      filters: eventQueryFiltersParser.parseServerSide(f ?? '') ?? undefined,
     }),
     getExists(organizationId, projectId),
   ]);

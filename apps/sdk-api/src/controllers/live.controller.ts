@@ -78,3 +78,32 @@ export function wsVisitors(
     redisSub.off('pmessage', pmessage);
   });
 }
+
+export function wsEvents(
+  connection: {
+    socket: WebSocket;
+  },
+  req: FastifyRequest<{
+    Params: {
+      projectId: string;
+    };
+  }>
+) {
+  const { params } = req;
+
+  redisSub.subscribe('event');
+
+  const message = (channel: string, message: string) => {
+    const event = getSafeJson<IServiceCreateEventPayload>(message);
+    if (event?.projectId === params.projectId) {
+      connection.socket.send(JSON.stringify(event));
+    }
+  };
+
+  redisSub.on('message', message);
+
+  connection.socket.on('close', () => {
+    redisSub.unsubscribe('event');
+    redisSub.off('message', message);
+  });
+}

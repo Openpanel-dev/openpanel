@@ -51,6 +51,7 @@ const config = {
         return [
           `text-${color}-${variant}`,
           `bg-${color}-${variant}`,
+          `hover:bg-${color}-${variant}`,
           `border-${color}-${variant}`,
         ];
       });
