@@ -36,6 +36,7 @@ export interface ComboboxProps<T> {
   size?: ButtonProps['size'];
   label?: string;
   align?: 'start' | 'end' | 'center';
+  portal?: boolean;
 }
 
 export type ExtendedComboboxProps<T> = Omit<
@@ -57,6 +58,7 @@ export function Combobox<T extends string>({
   icon: Icon,
   size,
   align = 'start',
+  portal,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -87,7 +89,11 @@ export function Combobox<T extends string>({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-full max-w-md p-0" align={align}>
+      <PopoverContent
+        className="w-full max-w-md p-0"
+        align={align}
+        portal={portal}
+      >
         <Command>
           {searchable === true && (
             <CommandInput

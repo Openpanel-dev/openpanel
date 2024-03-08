@@ -38,7 +38,7 @@ const twColors = [
   'grey',
   'slate',
 ];
-const twColorVariants = ['50', '100', '200', '700'];
+const twColorVariants = ['50', '100', '200', '700', '800', '900'];
 
 /** @type {import('tailwindcss').Config} */
 const config = {

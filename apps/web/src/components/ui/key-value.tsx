@@ -45,7 +45,7 @@ export function KeyValueSubtle({ href, onClick, name, value }: KeyValueProps) {
       <div className="text-gray-400">{name}</div>
       <div
         className={cn(
-          'bg-black/5 rounded p-0.5 px-1 sm:p-1 sm:px-2 text-gray-600 whitespace-nowrap overflow-hidden text-ellipsis',
+          'bg-black/5 rounded p-0.5 px-1 sm:p-1 sm:px-2 text-gray-600 whitespace-nowrap text-ellipsis flex items-center gap-1',
           clickable && 'group-hover:underline'
         )}
       >

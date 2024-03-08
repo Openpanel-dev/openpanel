@@ -21,11 +21,11 @@ import { toast } from 'sonner';
 
 import type { EventMeta } from '@mixan/db';
 
-const variants = cva('flex items-center justify-center shrink-0', {
+const variants = cva('flex items-center justify-center shrink-0 rounded-full', {
   variants: {
     size: {
-      sm: 'w-6 h-6 rounded',
-      default: 'w-12 h-12 rounded-xl',
+      sm: 'w-6 h-6',
+      default: 'w-10 h-10',
     },
   },
   defaultVariants: {

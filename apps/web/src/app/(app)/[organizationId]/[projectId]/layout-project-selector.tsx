@@ -19,6 +19,7 @@ export default function LayoutProjectSelector({
   return (
     <div>
       <Combobox
+        portal
         align="end"
         className="w-auto min-w-0 max-sm:max-w-[100px]"
         placeholder={'Select project'}

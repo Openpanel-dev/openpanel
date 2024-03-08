@@ -60,14 +60,14 @@ export function EventList({ data, count }: EventListProps) {
               count={count}
               take={50}
             />
-            <div className="flex flex-col gap-4 my-4">
+            <div className="flex flex-col my-4 card p-4">
               {data.map((item, index, list) => (
                 <Fragment key={item.id}>
                   {showDateHeader(
                     item.createdAt,
                     list[index - 1]?.createdAt
                   ) && (
-                    <div className="font-medium text-xs [&:not(:first-child)]:mt-12">
+                    <div className="text-muted-foreground font-medium text-sm [&:not(:first-child)]:mt-12 text-center">
                       {item.createdAt.toLocaleDateString()}
                     </div>
                   )}

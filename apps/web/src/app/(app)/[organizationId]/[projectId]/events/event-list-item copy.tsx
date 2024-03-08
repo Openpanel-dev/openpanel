@@ -162,60 +162,10 @@ export function EventListItem(props: EventListItemProps) {
     .filter((item) => typeof item.value === 'string' && item.value);
 
   return (
-    <div className="p-4 flex flex-col gap-2 hover:bg-slate-50 rounded-lg transition-colors">
-      <div className="flex justify-between items-center">
-        <div className="flex gap-4 items-center">
-          <EventIcon name={name} meta={meta} projectId={projectId} />
-          <div className="font-semibold">{name.replace(/_/g, ' ')}</div>
-        </div>
-        <div className="text-muted-foreground">
-          {createdAt.toLocaleTimeString()}
-        </div>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {path && <KeyValueSubtle name={'Path'} value={path} />}
-        {profile && (
-          <KeyValueSubtle
-            name={'Profile'}
-            value={
-              <>
-                {profile.avatar && <ProfileAvatar size="xs" {...profile} />}
-                {getProfileName(profile)}
-              </>
-            }
-            href={`/${params.organizationId}/${params.projectId}/profiles/${profile.id}`}
-          />
-        )}
-        <KeyValueSubtle
-          name={'From'}
-          value={
-            <>
-              <SerieIcon name={country} />
-              {city}
-            </>
-          }
-        />
-        <KeyValueSubtle
-          name={'Device'}
-          value={
-            <>
-              <SerieIcon name={device} />
-              {brand}
-            </>
-          }
-        />
-        {browser !== 'WebKit' && browser !== '' && (
-          <KeyValueSubtle
-            name={'Browser'}
-            value={
-              <>
-                <SerieIcon name={browser} />
-                {browser}
-              </>
-            }
-          />
-        )}
-        {/* {!!profile && (
+    <div className="p-4 flex gap-4">
+      <EventIcon name={name} meta={meta} projectId={projectId} />
+      <div>
+        {!!profile && (
           <div className="flex gap-2 items-center mb-1">
             <ProfileAvatar size="xs" {...profile} />
             <Link
@@ -246,7 +196,7 @@ export function EventListItem(props: EventListItemProps) {
           <span className="!inline-flex items-center gap-1">
             {brand || device} <SerieIcon name={device} />
           </span>
-        </div> */}
+        </div>
       </div>
     </div>
   );

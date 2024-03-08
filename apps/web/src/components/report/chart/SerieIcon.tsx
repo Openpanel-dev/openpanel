@@ -32,7 +32,9 @@ const createImageIcon = (url: string) => {
 
 const createFlagIcon = (url: string) => {
   return function (props: LucideProps) {
-    return <span className={`rounded fi fi-${url}`}></span>;
+    return (
+      <span className={`rounded !block !leading-[1rem] fi fi-${url}`}></span>
+    );
   } as LucideIcon;
 };
 

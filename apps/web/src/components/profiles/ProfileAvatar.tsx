@@ -18,7 +18,7 @@ interface ProfileAvatarProps
 const variants = cva('', {
   variants: {
     size: {
-      default: 'h-12 w-12 rounded-xl [&>span]:rounded-xl',
+      default: 'h-12 w-12 rounded-full [&>span]:rounded-full',
       sm: 'h-6 w-6 rounded [&>span]:rounded',
       xs: 'h-4 w-4 rounded [&>span]:rounded',
     },
