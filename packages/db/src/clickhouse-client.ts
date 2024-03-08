@@ -6,9 +6,8 @@ export const ch = createClient({
   password: process.env.CLICKHOUSE_PASSWORD,
   database: process.env.CLICKHOUSE_DB,
   keep_alive: {
-    enabled: true,
+    enabled: false,
     retry_on_expired_socket: true,
-    socket_ttl: 2500,
   },
 });
 
