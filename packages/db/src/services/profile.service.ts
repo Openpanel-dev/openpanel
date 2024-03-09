@@ -78,7 +78,10 @@ export async function getProfileList({
   const { sb, getSql } = createSqlBuilder();
   sb.from = getProfileInnerSelect(projectId);
   if (filters) {
-    getEventFiltersWhereClause(sb, filters);
+    sb.where = {
+      ...sb.where,
+      ...getEventFiltersWhereClause(filters),
+    };
   }
   sb.limit = take;
   sb.offset = (cursor ?? 0) * take;
@@ -95,7 +98,10 @@ export async function getProfileListCount({
   sb.select.count = 'count(id) as count';
   sb.from = getProfileInnerSelect(projectId);
   if (filters) {
-    getEventFiltersWhereClause(sb, filters);
+    sb.where = {
+      ...sb.where,
+      ...getEventFiltersWhereClause(filters),
+    };
   }
   const [data] = await chQuery<{ count: number }>(getSql());
   return data?.count ?? 0;

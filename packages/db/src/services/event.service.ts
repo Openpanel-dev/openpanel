@@ -275,7 +275,10 @@ export async function getEventList({
   }
 
   if (filters) {
-    getEventFiltersWhereClause(sb, filters);
+    sb.where = {
+      ...sb.where,
+      ...getEventFiltersWhereClause(filters),
+    };
   }
 
   // if (cursor) {
@@ -307,7 +310,10 @@ export async function getEventsCount({
   }
 
   if (filters) {
-    getEventFiltersWhereClause(sb, filters);
+    sb.where = {
+      ...sb.where,
+      ...getEventFiltersWhereClause(filters),
+    };
   }
 
   const res = await chQuery<{ count: number }>(

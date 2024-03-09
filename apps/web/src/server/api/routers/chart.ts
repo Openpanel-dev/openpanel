@@ -7,7 +7,12 @@ import { average, max, min, round, sum } from '@/utils/math';
 import { flatten, map, pipe, prop, repeat, reverse, sort, uniq } from 'ramda';
 import { z } from 'zod';
 
-import { chQuery, createSqlBuilder, formatClickhouseDate } from '@mixan/db';
+import {
+  chQuery,
+  createSqlBuilder,
+  formatClickhouseDate,
+  getEventFiltersWhereClause,
+} from '@mixan/db';
 import { zChartInput } from '@mixan/validation';
 import type { IChartEvent, IChartInput } from '@mixan/validation';
 
@@ -20,27 +25,29 @@ import {
 
 async function getFunnelData({ projectId, ...payload }: IChartInput) {
   const { startDate, endDate } = getChartStartEndDate(payload);
+
   if (payload.events.length === 0) {
     return {
       totalSessions: 0,
       steps: [],
     };
   }
-  const sql = `SELECT
-      level,
-      count() AS count
-    FROM
-    (
-      SELECT
-        session_id,
-        windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${payload.events.map((event) => `name = '${event.name}'`).join(', ')}) AS level
-      FROM events
-      WHERE (project_id = '${projectId}' AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
-      GROUP BY session_id
-    )
-    GROUP BY level
-    ORDER BY level DESC;
-  `;
+
+  const funnels = payload.events.map((event) => {
+    const { sb, getWhere } = createSqlBuilder();
+    sb.where = getEventFiltersWhereClause(event.filters);
+    sb.where.name = `name = '${event.name}'`;
+    return getWhere().replace('WHERE ', '');
+  });
+
+  const innerSql = `SELECT
+    session_id,
+    windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+  FROM events
+  WHERE (project_id = '${projectId}' AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
+  GROUP BY session_id;`;
+
+  const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC;`;
 
   const [funnelRes, sessionRes] = await Promise.all([
     chQuery<{ level: number; count: number }>(sql),
@@ -98,10 +105,6 @@ async function getFunnelData({ projectId, ...payload }: IChartInput) {
             before: prev.count,
             current: item.count,
             dropoff: {
-              bajs: {
-                prev,
-                item,
-              },
               count: prev.count - item.count,
               percent: 100 - (item.count / prev.count) * 100,
             },

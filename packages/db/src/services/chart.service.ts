@@ -21,13 +21,12 @@ export function getChartSql({
   const { sb, join, getWhere, getFrom, getSelect, getOrderBy, getGroupBy } =
     createSqlBuilder();
 
+  sb.where = getEventFiltersWhereClause(event.filters);
   sb.where.projectId = `project_id = '${projectId}'`;
   if (event.name !== '*') {
     sb.select.label = `'${event.name}' as label`;
     sb.where.eventName = `name = '${event.name}'`;
   }
-
-  getEventFiltersWhereClause(sb, event.filters);
 
   sb.select.count = `count(*) as count`;
   switch (interval) {
@@ -109,10 +108,8 @@ export function getChartSql({
   );
 }
 
-export function getEventFiltersWhereClause(
-  sb: SqlBuilderObject,
-  filters: IChartEventFilter[]
-) {
+export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
+  const where: Record<string, string> = {};
   filters.forEach((filter, index) => {
     const id = `f${index}`;
     const { name, value, operator } = filter;
@@ -126,25 +123,25 @@ export function getEventFiltersWhereClause(
 
       switch (operator) {
         case 'is': {
-          sb.where[id] = `arrayExists(x -> ${value
+          where[id] = `arrayExists(x -> ${value
             .map((val) => `x = '${String(val).trim()}'`)
             .join(' OR ')}, ${whereFrom})`;
           break;
         }
         case 'isNot': {
-          sb.where[id] = `arrayExists(x -> ${value
+          where[id] = `arrayExists(x -> ${value
             .map((val) => `x != '${String(val).trim()}'`)
             .join(' OR ')}, ${whereFrom})`;
           break;
         }
         case 'contains': {
-          sb.where[id] = `arrayExists(x -> ${value
+          where[id] = `arrayExists(x -> ${value
             .map((val) => `x LIKE '%${String(val).trim()}%'`)
             .join(' OR ')}, ${whereFrom})`;
           break;
         }
         case 'doesNotContain': {
-          sb.where[id] = `arrayExists(x -> ${value
+          where[id] = `arrayExists(x -> ${value
             .map((val) => `x NOT LIKE '%${String(val).trim()}%'`)
             .join(' OR ')}, ${whereFrom})`;
           break;
@@ -153,25 +150,25 @@ export function getEventFiltersWhereClause(
     } else {
       switch (operator) {
         case 'is': {
-          sb.where[id] = `${name} IN (${value
+          where[id] = `${name} IN (${value
             .map((val) => `'${String(val).trim()}'`)
             .join(', ')})`;
           break;
         }
         case 'isNot': {
-          sb.where[id] = `${name} NOT IN (${value
+          where[id] = `${name} NOT IN (${value
             .map((val) => `'${String(val).trim()}'`)
             .join(', ')})`;
           break;
         }
         case 'contains': {
-          sb.where[id] = value
+          where[id] = value
             .map((val) => `${name} LIKE '%${String(val).trim()}%'`)
             .join(' OR ');
           break;
         }
         case 'doesNotContain': {
-          sb.where[id] = value
+          where[id] = value
             .map((val) => `${name} NOT LIKE '%${String(val).trim()}%'`)
             .join(' OR ');
           break;
@@ -180,5 +177,5 @@ export function getEventFiltersWhereClause(
     }
   });
 
-  return sb;
+  return where;
 }
