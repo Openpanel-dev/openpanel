@@ -8,10 +8,8 @@ export function fancyMinutes(time: number) {
   return `${minutes}m ${seconds}s`;
 }
 
-export function useNumber() {
-  const locale = 'en-gb';
-
-  const format = (value: number | null | undefined) => {
+export const formatNumber =
+  (locale: string) => (value: number | null | undefined) => {
     if (isNil(value)) {
       return 'N/A';
     }
@@ -19,7 +17,9 @@ export function useNumber() {
       maximumSignificantDigits: 20,
     }).format(value);
   };
-  const short = (value: number | null | undefined) => {
+
+export const shortNumber =
+  (locale: string) => (value: number | null | undefined) => {
     if (isNil(value)) {
       return 'N/A';
     }
@@ -28,6 +28,10 @@ export function useNumber() {
     }).format(value);
   };
 
+export function useNumber() {
+  const locale = 'en-gb';
+  const format = formatNumber(locale);
+  const short = shortNumber(locale);
   return {
     format,
     short,

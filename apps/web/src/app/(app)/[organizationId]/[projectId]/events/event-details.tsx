@@ -1,17 +1,18 @@
 'use client';
 
 import type { Dispatch, SetStateAction } from 'react';
-import { ChartSwitch, ChartSwitchShortcut } from '@/components/report/chart';
-import { Chart } from '@/components/report/chart/Chart';
+import { ChartSwitchShortcut } from '@/components/report/chart';
 import { KeyValue } from '@/components/ui/key-value';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import {
+  useEventQueryFilters,
+  useEventQueryNamesFilter,
+} from '@/hooks/useEventQueryFilters';
 import { round } from 'mathjs';
 
 import type { IServiceCreateEventPayload } from '@mixan/db';
@@ -24,6 +25,8 @@ interface Props {
 export function EventDetails({ event, open, setOpen }: Props) {
   const { name } = event;
   const [, setFilter] = useEventQueryFilters({ shallow: false });
+  const [, setEvents] = useEventQueryNamesFilter({ shallow: false });
+
   const common = [
     {
       name: 'Duration',
@@ -138,8 +141,8 @@ export function EventDetails({ event, open, setOpen }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent className="overflow-y-scroll">
-        <div className="overflow-y-scroll">
+      <SheetContent>
+        <div>
           <div className="flex flex-col gap-8">
             <SheetHeader>
               <SheetTitle>{name.replace('_', ' ')}</SheetTitle>
@@ -181,7 +184,18 @@ export function EventDetails({ event, open, setOpen }: Props) {
             </div>
 
             <div>
-              <div className="text-sm font-medium mb-2">Similar events</div>
+              <div className="flex justify-between text-sm font-medium mb-2">
+                <div>Similar events</div>
+                <button
+                  className="hover:underline text-muted-foreground"
+                  onClick={() => {
+                    setEvents([event.name]);
+                    setOpen(false);
+                  }}
+                >
+                  Show all
+                </button>
+              </div>
               <ChartSwitchShortcut
                 projectId={event.projectId}
                 chartType="histogram"

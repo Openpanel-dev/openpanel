@@ -56,7 +56,7 @@ export function EventList({ data, count }: EventListProps) {
         </FullPageEmptyState>
       ) : (
         <>
-          <div className="flex justify-between">
+          <div className="flex flex-col md:flex-row justify-between gap-2">
             <EventListener />
             <Pagination
               cursor={cursor}
@@ -65,7 +65,7 @@ export function EventList({ data, count }: EventListProps) {
               take={50}
             />
           </div>
-          <div className="flex flex-col my-4 card p-4">
+          <div className="flex flex-col my-4 card p-4 gap-0.5">
             {data.map((item, index, list) => (
               <Fragment key={item.id}>
                 {showDateHeader(item.createdAt, list[index - 1]?.createdAt) && (

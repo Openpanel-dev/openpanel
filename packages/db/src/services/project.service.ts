@@ -1,30 +1,35 @@
+import type { Project } from '../prisma-client';
 import { db } from '../prisma-client';
 
-export type IServiceProject = Awaited<ReturnType<typeof getProjectById>>;
+export type IServiceProject = ReturnType<typeof transform>;
 
-export function getProjectById(id: string) {
-  return db.project.findUnique({
+function transform({ organization_slug, ...project }: Project) {
+  return {
+    organizationSlug: organization_slug,
+    ...project,
+  };
+}
+
+export async function getProjectById(id: string) {
+  const res = await db.project.findUnique({
     where: {
       id,
     },
   });
+
+  if (!res) {
+    return null;
+  }
+
+  return transform(res);
 }
 
-export function getProjectsByOrganizationSlug(slug: string) {
-  return db.project.findMany({
+export async function getProjectsByOrganizationSlug(slug: string) {
+  const res = await db.project.findMany({
     where: {
       organization_slug: slug,
     },
   });
-}
 
-export async function getProjectWithMostEvents(slug: string) {
-  return db.project.findFirst({
-    where: {
-      organization_slug: slug,
-    },
-    orderBy: {
-      eventsCount: 'desc',
-    },
-  });
+  return res.map(transform);
 }

@@ -157,6 +157,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
 
         <SheetFooter>
           <Button
+            className="w-full"
             onClick={() =>
               mutation.mutate({
                 projectId,

@@ -1,6 +1,7 @@
 import {
   getCurrentOrganizations,
   getDashboardsByOrganization,
+  getDashboardsByProjectId,
 } from '@mixan/db';
 
 import { LayoutSidebar } from './layout-sidebar';
@@ -19,7 +20,7 @@ export default async function AppLayout({
 }: AppLayoutProps) {
   const [organizations, dashboards] = await Promise.all([
     getCurrentOrganizations(),
-    getDashboardsByOrganization(organizationId),
+    getDashboardsByProjectId(projectId),
   ]);
 
   return (

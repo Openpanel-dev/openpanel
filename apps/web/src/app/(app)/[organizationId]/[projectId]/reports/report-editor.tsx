@@ -102,7 +102,7 @@ export default function ReportEditor({
           <ChartSwitch {...report} projectId={projectId} editMode />
         )}
       </div>
-      <SheetContent className="!max-w-lg w-full" side="left">
+      <SheetContent className="!max-w-lg" side="left">
         <ReportSidebar />
       </SheetContent>
     </Sheet>

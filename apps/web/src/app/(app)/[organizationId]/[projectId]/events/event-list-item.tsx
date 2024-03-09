@@ -61,7 +61,7 @@ export function EventListItem(props: EventListItemProps) {
             </button>
             <button
               onClick={() => setIsDetailsOpen(true)}
-              className="font-semibold hover:underline"
+              className="text-left font-semibold hover:underline"
             >
               {name.replace(/_/g, ' ')}
             </button>

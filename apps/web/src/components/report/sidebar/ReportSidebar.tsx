@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { SheetClose } from '@/components/ui/sheet';
+import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { useSelector } from '@/redux';
 
 import { ReportBreakdowns } from './ReportBreakdowns';
@@ -11,15 +11,17 @@ export function ReportSidebar() {
   const showForumula = chartType !== 'funnel';
   const showBreakdown = chartType !== 'funnel';
   return (
-    <div className="flex flex-col gap-8 pb-12">
-      <ReportEvents />
-      {showForumula && <ReportForumula />}
-      {showBreakdown && <ReportBreakdowns />}
-      <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white/100 to-white/0">
+    <>
+      <div className="flex flex-col gap-8">
+        <ReportEvents />
+        {showForumula && <ReportForumula />}
+        {showBreakdown && <ReportBreakdowns />}
+      </div>
+      <SheetFooter>
         <SheetClose asChild>
           <Button className="w-full">Done</Button>
         </SheetClose>
-      </div>
-    </div>
+      </SheetFooter>
+    </>
   );
 }

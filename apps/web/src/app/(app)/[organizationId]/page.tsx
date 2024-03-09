@@ -1,7 +1,11 @@
 import { LogoSquare } from '@/components/Logo';
+import { ProjectCard } from '@/components/projects/project-card';
 import { notFound, redirect } from 'next/navigation';
 
-import { getOrganizationBySlug, getProjectWithMostEvents } from '@mixan/db';
+import {
+  getOrganizationBySlug,
+  getProjectsByOrganizationSlug,
+} from '@mixan/db';
 
 import { CreateProject } from './create-project';
 
@@ -12,9 +16,9 @@ interface PageProps {
 }
 
 export default async function Page({ params: { organizationId } }: PageProps) {
-  const [organization, project] = await Promise.all([
+  const [organization, projects] = await Promise.all([
     getOrganizationBySlug(organizationId),
-    getProjectWithMostEvents(organizationId),
+    getProjectsByOrganizationSlug(organizationId),
   ]);
 
   if (!organization) {
@@ -36,15 +40,26 @@ export default async function Page({ params: { organizationId } }: PageProps) {
     );
   }
 
-  if (project) {
-    return redirect(`/${organizationId}/${project.id}`);
+  if (projects.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="max-w-lg w-full">
+          <CreateProject />
+        </div>
+      </div>
+    );
+  }
+
+  if (projects.length === 1 && projects[0]) {
+    return redirect(`/${organizationId}/${projects[0].id}`);
   }
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="max-w-lg w-full">
-        <CreateProject />
-      </div>
+    <div className="max-w-xl w-full mx-auto flex flex-col gap-4 pt-20">
+      <h1 className="font-medium text-xl">Select project</h1>
+      {projects.map((item) => (
+        <ProjectCard key={item.id} {...item} />
+      ))}
     </div>
   );
 }
