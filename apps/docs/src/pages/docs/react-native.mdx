@@ -1,0 +1,196 @@
+import Link from 'next/link';
+import { Callout, Steps, Tabs } from 'nextra/components';
+import { DeviceIdWarning } from 'src/components/device-id-warning';
+import { PersonalDataWarning } from 'src/components/personal-data-warning';
+
+import SdkConfig from 'src/components/sdk-config.mdx';
+
+# React-Native
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+We're dependent on `expo-application` for `buildNumber`, `versionNumber` (and `referrer` on android) and `expo-constants` to get the `user-agent`.
+
+```bash
+pnpm install @openpanel/react-native
+expo install --pnpm expo-application expo-constants
+```
+
+### Initialize
+
+On native we use a clientSecret to authenticate the app.
+
+```typescript
+const op = new Openpanel({
+  url: 'https://api.openpanel.dev',
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+```
+
+#### Config
+
+- `url` - The url of the openpanel API or your self-hosted instance
+- `clientId` - The client id of your application
+- `clientSecret` - The client secret of your application
+
+### Ready!
+
+You're now ready to use the library.
+
+```typescript
+// Sends an event with payload foo: bar
+op.event('my_event', { foo: 'bar' });
+
+// Identify with profile id
+op.setProfileId('123');
+
+// or with additional data
+op.setProfile({
+  profileId: '123',
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john.doe@openpanel.dev',
+});
+
+// Increment a property
+op.increment('app_opened'); // increment by 1
+op.increment('app_opened', 5); // increment by 5
+
+// Decrement a property
+op.decrement('app_opened'); // decrement by 1
+op.decrement('app_opened', 5); // decrement by 5
+```
+
+</Steps>
+
+## Usage
+
+### Track event
+
+```typescript
+op.event('my_event', { foo: 'bar' });
+```
+
+### Navigation / Screen views
+
+<Tabs items={['expo-router', 'react-navigation (simple)']}>
+  <Tabs.Tab>
+    ```typescript
+    import { usePathname, useSegments } from 'expo-router';
+
+    function RootLayout() {
+      // ...
+      const pathname = usePathname()
+      // Segments is optional but can be nice to have if you
+      // want to group routes together
+      // pathname = /posts/123
+      // segements = ['posts', '[id]']
+      const segments = useSegments()
+
+      useEffect(() => {
+        // Simple
+        op.screenView(pathname)
+
+        // With extra data
+        op.screenView(pathname, {
+          // segments is optional but nice to have
+          segments: segments.join('/'),
+          // other optional data you want to send with the screen view
+        })
+      }, [pathname,segments])
+      // ...
+    }
+    ```
+
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```tsx
+      import { createNavigationContainerRef } from '@react-navigation/native'
+      import { Openpanel } from '@openpanel/react-native'
+
+      const op = new Openpanel({ /* ... */ })
+      const navigationRef = createNavigationContainerRef()
+
+      export function NavigationRoot() {
+        const handleNavigationStateChange = () => {
+          const current = navigationRef.getCurrentRoute()
+          if (current) {
+            op.screenView(current.name, {
+              params: current.params,
+            })
+          }
+        }
+
+        return (
+          <NavigationContainer
+            ref={navigationRef}
+            onReady={handleNavigationStateChange}
+            onStateChange={handleNavigationStateChange}
+          >
+            <Stack.Navigator />
+          </NavigationContainer>
+        )
+      }
+    ```
+
+  </Tabs.Tab>
+</Tabs>
+
+### Identify
+
+#### Set Profile Id
+
+Keep track of your users by identifying them with a unique id. This is a good features if you have things behind a login and want to track user behavior.
+
+<PersonalDataWarning />
+
+```typescript
+const profileId = '123';
+op.setProfileId(profileId);
+```
+
+#### Additional data
+
+This method does the same as `setProfileId` but also allows you to update the profile with additional data.
+
+<PersonalDataWarning />
+
+```typescript
+const profileId = '123';
+op.setProfile({
+  profileId,
+  // firstName?: string;
+  // lastName?: string;
+  // email?: string;
+  // avatar?: string;
+  // properties?: Record<string, unknown>;
+});
+```
+
+#### Increment property
+
+Increment a property on the profile.
+
+```typescript
+// Increment by 1
+op.increment('app_opened');
+
+// Increment by 5
+op.increment('app_opened', 5);
+```
+
+#### Decrement property
+
+Decrement a property on the profile.
+
+```typescript
+// Increment by 1
+op.decrement('app_opened');
+
+// Increment by 5
+op.decrement('app_opened', 5);
+```

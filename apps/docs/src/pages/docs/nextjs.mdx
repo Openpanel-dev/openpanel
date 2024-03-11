@@ -1,0 +1,172 @@
+import Link from 'next/link';
+import { Callout, Steps, Tabs } from 'nextra/components';
+import { DeviceIdWarning } from 'src/components/device-id-warning';
+import { PersonalDataWarning } from 'src/components/personal-data-warning';
+
+import SdkConfig from 'src/components/sdk-config.mdx';
+
+# Next.js
+
+Keep in mind that all tracking here happens on the client! If you want to track server-side events, you should use the <Link href="/docs/node">node SDK</Link> 👀.
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+```bash
+pnpm install @openpanel/nextjs
+```
+
+### Initialize
+
+Add `OpenpanelProvider` to your root layout component.
+
+```tsx
+import { OpenpanelProvider } from '@openpanel/nextjs';
+
+export default RootLayout({ children }) {
+  return (
+    <>
+      <OpenpanelProvider
+        url="https://api.openpanel.dev"
+        clientId="your-client-id"
+        trackScreenViews={true}
+        // trackAttributes={true}
+        // trackOutgoingLinks={true}
+      />
+      {children}
+    </>
+  )
+}
+```
+
+#### Config
+
+<SdkConfig />
+
+### Ready!
+
+You're now ready to use the library.
+
+```typescript
+import {
+  decrement,
+  increment,
+  setProfile,
+  setProfileId,
+  trackEvent,
+  trackScreenView,
+} from '@openpanel/nextjs';
+
+// Sends an event with payload foo: bar
+trackEvent('my_event', { foo: 'bar' });
+
+// Identify with profile id
+setProfileId('123');
+
+// or with additional data
+setProfile({
+  profileId: '123',
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john.doe@openpanel.dev',
+});
+
+// Increment a property
+increment('app_opened'); // increment by 1
+increment('app_opened', 5); // increment by 5
+
+// Decrement a property
+decrement('app_opened'); // decrement by 1
+decrement('app_opened', 5); // decrement by 5
+```
+
+</Steps>
+
+## Usage
+
+### Track event
+
+<Tabs items={['JS', 'window', 'HTML']}>
+  <Tabs.Tab>
+    ```typescript
+    import { trackEvent } from '@openpanel/nextjs';
+    trackEvent('my_event', { foo: 'bar' });
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    ```javascript
+    window.op('event', 'my_event', { foo: 'bar' });
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    For this to work you need to enable `trackAttributes` in the config.
+    ```html
+    <button data-event="my_event" data-foo="bar">Track event</button>
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+### Identify
+
+#### Set Profile Id
+
+Keep track of your users by identifying them with a unique id. This is a good features if you have things behind a login and want to track user behavior.
+
+<PersonalDataWarning />
+
+```typescript
+import { setProfileId } from '@openpanel/nextjs';
+
+const profileId = '123';
+setProfileId(profileId);
+```
+
+#### Additional data
+
+This method does the same as `setProfileId` but also allows you to update the profile with additional data.
+
+<PersonalDataWarning />
+
+```typescript
+import { setProfile } from '@openpanel/nextjs';
+
+const profileId = '123';
+setProfile({
+  profileId,
+  // firstName?: string;
+  // lastName?: string;
+  // email?: string;
+  // avatar?: string;
+  // properties?: Record<string, unknown>;
+});
+```
+
+#### Increment property
+
+Increment a property on the profile.
+
+```typescript
+import { increment } from '@openpanel/nextjs';
+
+// Increment by 1
+increment('app_opened');
+
+// Increment by 5
+increment('app_opened', 5);
+```
+
+#### Decrement property
+
+Decrement a property on the profile.
+
+```typescript
+import { decrement } from '@openpanel/nextjs';
+
+// Increment by 1
+decrement('app_opened');
+
+// Increment by 5
+decrement('app_opened', 5);
+```

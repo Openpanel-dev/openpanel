@@ -1,0 +1,139 @@
+import Link from 'next/link';
+import { Callout, Steps, Tabs } from 'nextra/components';
+import { DeviceIdWarning } from 'src/components/device-id-warning';
+import { PersonalDataWarning } from 'src/components/personal-data-warning';
+
+import SdkConfig from 'src/components/sdk-config.mdx';
+
+# Javascript SDK
+
+This is the base SDK for Openpanel. All other SDKs are built on top of this one.
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+```bash
+pnpm install @openpanel/sdk
+```
+
+### Initialize
+
+```tsx
+import { Openpanel } from '@openpanel/sdk';
+
+const op = new Openpanel({
+  url: 'https://api.openpanel.dev',
+  clientId: '{YOUR_CLIENT_ID}',
+  // mostly for backend and apps that can't rely on CORS
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+```
+
+#### Config
+
+- `url` - The url of the openpanel API or your self-hosted instance
+- `clientId` - The client id of your application
+- `clientSecret` - The client secret of your application (mostly for backend and apps that can't rely on CORS)
+
+### Ready!
+
+You're now ready to use the library.
+
+```typescript
+// Sends an event with payload foo: bar
+op.event('my_event', { foo: 'bar' });
+
+// Identify with profile id
+op.setProfileId('123');
+
+// or with additional data
+op.setProfile({
+  profileId: '123',
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john.doe@openpanel.dev',
+});
+
+// Increment a property
+op.increment('app_opened'); // increment by 1
+op.increment('app_opened', 5); // increment by 5
+
+// Decrement a property
+op.decrement('app_opened'); // decrement by 1
+op.decrement('app_opened', 5); // decrement by 5
+```
+
+</Steps>
+
+## Usage
+
+### Track event
+
+```typescript
+op.event('my_event', { foo: 'bar' });
+```
+
+### Identify
+
+#### Set Profile Id
+
+Keep track of your users by identifying them with a unique id. This is a good features if you have things behind a login and want to track user behavior.
+
+<PersonalDataWarning />
+
+```typescript
+import { setProfileId } from '@openpanel/nextjs';
+
+const profileId = '123';
+setProfileId(profileId);
+```
+
+#### Additional data
+
+This method does the same as `setProfileId` but also allows you to update the profile with additional data.
+
+<PersonalDataWarning />
+
+```typescript
+import { setProfile } from '@openpanel/nextjs';
+
+const profileId = '123';
+setProfile({
+  profileId,
+  // firstName?: string;
+  // lastName?: string;
+  // email?: string;
+  // avatar?: string;
+  // properties?: Record<string, unknown>;
+});
+```
+
+#### Increment property
+
+Increment a property on the profile.
+
+```typescript
+import { increment } from '@openpanel/nextjs';
+
+// Increment by 1
+increment('app_opened');
+
+// Increment by 5
+increment('app_opened', 5);
+```
+
+#### Decrement property
+
+Decrement a property on the profile.
+
+```typescript
+import { decrement } from '@openpanel/nextjs';
+
+// Increment by 1
+decrement('app_opened');
+
+// Increment by 5
+decrement('app_opened', 5);
+```

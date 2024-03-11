@@ -1,0 +1,122 @@
+import { Callout, Tabs } from 'nextra/components';
+import { PersonalDataWarning } from 'src/components/personal-data-warning';
+
+import SdkConfig from 'src/components/sdk-config.mdx';
+
+# Script tag
+
+Just insert this snippet and replace `{YOUR_CLIENT_ID}` with your client id.
+
+```html
+<script src="https://openpanel.dev/op.js"></script>
+<script>
+  window.op =
+    window.op ||
+    function (...args) {
+      (window.op.q = window.op.q || []).push(args);
+    };
+  window.op('ctor', {
+    url: 'https://api.openpanel.dev',
+    clientId: '{YOUR_CLIENT_ID}',
+    trackScreenViews: true,
+    // trackOutgoingLinks: true,
+    // trackAttributes: true,
+  });
+</script>
+```
+
+### Config
+
+<SdkConfig />
+
+## Usage
+
+You can let the library track screen views, outgoing links and attributes tracking by setting the `trackScreenViews`, `trackOutgoingLinks` and `trackAttributes` options to `true`.
+
+### Track event
+
+<Tabs items={['JS', 'HTML']}>
+  <Tabs.Tab>
+    ```javascript
+    window.op('event', 'my_event', { foo: 'bar' });
+    ```
+  </Tabs.Tab>
+  <Tabs.Tab>
+    For this to work you need to enable `trackAttributes` in the config.
+    ```html
+    <button data-event="my_event" data-foo="bar">Track event</button>
+    ```
+  </Tabs.Tab>
+</Tabs>
+
+### Identify
+
+#### Set Profile Id
+
+Keep track of your users by identifying them with a unique id. This is a good features if you have things behind a login and want to track user behavior.
+
+<PersonalDataWarning />
+
+```javascript
+const profileId = '123';
+window.op('setProfileId', profileId);
+```
+
+#### Additional data
+
+This method does the same as `setProfileId` but also allows you to update the profile with additional data.
+
+<PersonalDataWarning />
+
+```javascript
+const profileId = '123';
+window.op('setProfile', {
+  profileId,
+  // firstName?: string;
+  // lastName?: string;
+  // email?: string;
+  // avatar?: string;
+  // properties?: Record<string, unknown>;
+});
+```
+
+#### Increment property
+
+Increment a property on the profile.
+
+```javascript
+// Increment by 1
+window.op('increment', 'app_opened');
+
+// Increment by 5
+window.op('increment', 'app_opened', 5);
+```
+
+#### Decrement property
+
+Decrement a property on the profile.
+
+```javascript
+// Increment by 1
+window.op('decrement', 'app_opened');
+
+// Increment by 5
+window.op('decrement', 'app_opened', 5);
+```
+
+### Typescript
+
+Is your IDE mad at you for not using typescript? We got you covered.
+
+Add this and it will stop complain about `window.op` not being defined.
+
+```typescript
+declare global {
+  interface Window {
+    op: {
+      q?: [string, ...any[]];
+      (method: string, ...args: any[]): void;
+    };
+  }
+}
+```
