@@ -31,7 +31,7 @@ export interface DecrementProfilePayload {
   value: number;
 }
 
-export interface OpenpanelBaseOptions {
+export interface OpenpanelSdkOptions {
   url: string;
   clientId: string;
   clientSecret?: string;
@@ -125,8 +125,8 @@ function createApi(_url: string) {
   };
 }
 
-export class Openpanel<
-  Options extends OpenpanelBaseOptions = OpenpanelBaseOptions,
+export class OpenpanelSdk<
+  Options extends OpenpanelSdkOptions = OpenpanelSdkOptions,
 > {
   public options: Options;
   public api: ReturnType<typeof createApi>;

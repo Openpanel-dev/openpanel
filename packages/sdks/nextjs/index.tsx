@@ -7,6 +7,8 @@ import type {
   UpdateProfilePayload,
 } from '@openpanel/web';
 
+export * from '@openpanel/web';
+
 const CDN_URL = 'https://openpanel.dev/op.js';
 
 declare global {

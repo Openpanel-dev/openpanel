@@ -2,12 +2,13 @@ import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
-import type { OpenpanelBaseOptions, PostEventPayload } from '@openpanel/sdk';
-import { Openpanel as OpenpanelBase } from '@openpanel/sdk';
+import type { OpenpanelSdkOptions, PostEventPayload } from '@openpanel/sdk';
+import { OpenpanelSdk } from '@openpanel/sdk';
 
-export type OpenpanelOptions = OpenpanelBaseOptions;
+export * from '@openpanel/sdk';
+export type OpenpanelOptions = OpenpanelSdkOptions;
 
-export class OpenpanelRN extends OpenpanelBase<OpenpanelOptions> {
+export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
   constructor(options: OpenpanelOptions) {
     super(options);
 
