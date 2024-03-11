@@ -4,13 +4,11 @@
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "build-for-openpanel": "pnpm build && cp dist/cdn.global.js ../../apps/public/public/op.js && cp dist/cdn.global.js ../../apps/test/public/op.js",
     "lint": "eslint .",
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "workspace:*",
     "@openpanel/web": "workspace:*"
   },
   "peerDependencies": {
@@ -20,6 +18,7 @@
     "@openpanel/eslint-config": "workspace:*",
     "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
+    "@types/react": "^18.2.20",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsup": "^7.2.0",

@@ -2,12 +2,21 @@ import Script from 'next/script';
 
 import type {
   OpenpanelEventOptions,
-  OpenpanelWebOptions,
+  OpenpanelOptions,
   PostEventPayload,
   UpdateProfilePayload,
 } from '@openpanel/web';
 
-const CDN_URL = 'http://localhost:3002/op.js';
+const CDN_URL = 'https://openpanel.dev/op.js';
+
+declare global {
+  interface Window {
+    op: {
+      q?: [string, ...any[]];
+      (method: OpenpanelMethods, ...args: any[]): void;
+    };
+  }
+}
 
 type OpenpanelMethods =
   | 'ctor'
@@ -19,7 +28,7 @@ type OpenpanelMethods =
   | 'clear';
 
 declare global {
-  interface Window {
+  interface window {
     op: {
       q?: [string, ...any[]];
       (method: OpenpanelMethods, ...args: any[]): void;
@@ -27,7 +36,7 @@ declare global {
   }
 }
 
-type OpenpanelProviderProps = OpenpanelWebOptions & {
+type OpenpanelProviderProps = OpenpanelOptions & {
   profileId?: string;
   cdnUrl?: string;
 };

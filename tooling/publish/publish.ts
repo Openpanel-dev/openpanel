@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import arg from 'arg';
 import semver from 'semver';
 
 const sdkPackages = ['sdk', 'react-native', 'web', 'nextjs'];
@@ -25,13 +25,18 @@ function exit(message: string, error?: unknown) {
 }
 
 function main() {
-  const [version] = process.argv.slice(2);
+  const args = arg({
+    // Types
+    '--version': String,
+    '--test': Boolean,
+    // Aliases
+    '-v': '--version',
+  });
 
-  if (!version) {
-    return console.error('Missing version');
-  }
+  const version = args['--version'];
+  const test = args['--test'];
 
-  if (!semver.valid(version)) {
+  if (version && !semver.valid(version)) {
     return console.error('Version is not valid');
   }
 
@@ -51,8 +56,10 @@ function main() {
 
   try {
     for (const name of sdkPackages) {
-      const pkgJson = require(workspacePath(`./packages/${name}/package.json`));
-      savePackageJson(workspacePath(`./packages/${name}/package.json`), {
+      const pkgJson = require(
+        workspacePath(`./packages/sdks/${name}/package.json`)
+      );
+      savePackageJson(workspacePath(`./packages/sdks/${name}/package.json`), {
         ...pkgJson,
         ...properties,
         dependencies: Object.entries(pkgJson.dependencies).reduce(
@@ -82,14 +89,16 @@ function main() {
 
   console.log('✅ Built packages');
 
-  try {
-    for (const name of sdkPackages) {
-      execSync('npm publish --access=public', {
-        cwd: workspacePath(`./packages/${name}`),
-      });
+  if (!test) {
+    try {
+      for (const name of sdkPackages) {
+        execSync('npm publish --access=public', {
+          cwd: workspacePath(`./packages/sdks/${name}`),
+        });
+      }
+    } catch (error) {
+      exit('Failed publish packages', error);
     }
-  } catch (error) {
-    exit('Failed publish packages', error);
   }
 
   console.log('✅ All done!');
