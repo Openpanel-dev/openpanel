@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/next",
+  "name": "@mixan/web",
   "version": "0.0.1",
   "module": "index.ts",
   "scripts": {
@@ -10,11 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mixan/sdk": "workspace:*",
-    "@mixan/sdk-web": "workspace:*"
-  },
-  "peerDependencies": {
-    "next": "^13.0.0"
+    "@mixan/sdk": "workspace:*"
   },
   "devDependencies": {
     "@mixan/eslint-config": "workspace:*",

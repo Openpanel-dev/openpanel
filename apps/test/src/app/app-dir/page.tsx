@@ -1,4 +1,8 @@
-import { OpenpanelProvider, SetProfileId, trackEvent } from '@mixan-test/next';
+import {
+  OpenpanelProvider,
+  SetProfileId,
+  trackEvent,
+} from '@mixan-test/nextjs';
 import { Mixan as Openpanel } from '@mixan-test/sdk';
 
 const opServer = new Openpanel({

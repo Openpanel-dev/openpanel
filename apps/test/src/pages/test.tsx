@@ -5,7 +5,7 @@ import {
   increment,
   setProfile,
   trackEvent,
-} from '@mixan-test/next';
+} from '@mixan-test/nextjs';
 import Link from 'next/link';
 
 export default function Test() {

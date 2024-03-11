@@ -84,7 +84,7 @@ For pushing events
 ### Usage
 
 ```ts
-import { MixanWeb } from '@mixan/sdk-web';
+import { MixanWeb } from '@mixan/web';
 
 // import { MixanNative } from '@mixan/sdk-native';
 
@@ -151,7 +151,7 @@ mixan.screenView('Article', {
 mixan.clear();
 ```
 
-## @mixan/web
+## @mixan/dashboard
 
 A nextjs web app. Collects all events and your gui to analyze your data.
 

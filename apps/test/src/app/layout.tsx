@@ -1,4 +1,4 @@
-import { OpenpanelProvider } from '@mixan-test/next';
+import { OpenpanelProvider } from '@mixan-test/nextjs';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

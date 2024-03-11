@@ -31,7 +31,7 @@ WORKDIR /app
 COPY package.json package.json
 COPY pnpm-lock.yaml pnpm-lock.yaml
 COPY pnpm-workspace.yaml pnpm-workspace.yaml
-COPY apps/web/package.json apps/web/package.json
+COPY apps/dashboard/package.json apps/dashboard/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
@@ -40,7 +40,7 @@ COPY packages/sdk/package.json packages/sdk/package.json
 # BUILD
 FROM base AS build
 
-WORKDIR /app/apps/web
+WORKDIR /app/apps/dashboard
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 WORKDIR  /app
@@ -49,13 +49,13 @@ COPY packages packages
 COPY tooling tooling
 RUN pnpm db:codegen
 
-WORKDIR /app/apps/web
+WORKDIR /app/apps/dashboard
 RUN pnpm run build
 
 # PROD
 FROM base AS prod
 
-WORKDIR /app/apps/web
+WORKDIR /app/apps/dashboard
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # FINAL
@@ -64,9 +64,9 @@ FROM base AS runner
 COPY --from=build /app/package.json /app/package.json
 COPY --from=prod /app/node_modules /app/node_modules
 # Apps
-COPY --from=build /app/apps/web /app/apps/web
+COPY --from=build /app/apps/dashboard /app/apps/dashboard
 # Apps node_modules
-COPY --from=prod /app/apps/web/node_modules /app/apps/web/node_modules
+COPY --from=prod /app/apps/dashboard/node_modules /app/apps/dashboard/node_modules
 # Packages
 COPY --from=build /app/packages/db /app/packages/db
 COPY --from=build /app/packages/queue /app/packages/queue
@@ -76,7 +76,7 @@ COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modul
 
 RUN pnpm db:codegen
 
-WORKDIR /app/apps/web
+WORKDIR /app/apps/dashboard
 
 EXPOSE 3000
 

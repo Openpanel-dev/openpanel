@@ -24,213 +24,7 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
-  apps/docs:
-    dependencies:
-      next:
-        specifier: ~14.0.4
-        version: 14.0.4(react-dom@18.2.0)(react@18.2.0)
-      nextra:
-        specifier: ^2.13.4
-        version: 2.13.4(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
-      nextra-theme-docs:
-        specifier: ^2.13.4
-        version: 2.13.4(next@14.0.4)(nextra@2.13.4)(react-dom@18.2.0)(react@18.2.0)
-      react:
-        specifier: 18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: 18.2.0
-        version: 18.2.0(react@18.2.0)
-    devDependencies:
-      '@mixan/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@mixan/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@mixan/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/node':
-        specifier: ^18.16.0
-        version: 18.19.17
-      '@types/react':
-        specifier: ^18.2.20
-        version: 18.2.56
-      '@types/react-dom':
-        specifier: ^18.2.7
-        version: 18.2.19
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^6.6.0
-        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.56.0)(typescript@5.3.3)
-      '@typescript-eslint/parser':
-        specifier: ^6.6.0
-        version: 6.21.0(eslint@8.56.0)(typescript@5.3.3)
-      autoprefixer:
-        specifier: ^10.4.18
-        version: 10.4.18(postcss@8.4.35)
-      eslint:
-        specifier: ^8.48.0
-        version: 8.56.0
-      postcss:
-        specifier: ^8.4.35
-        version: 8.4.35
-      prettier:
-        specifier: ^3.0.3
-        version: 3.2.5
-      tailwindcss:
-        specifier: ^3.4.1
-        version: 3.4.1
-      typescript:
-        specifier: ^5.2.2
-        version: 5.3.3
-
-  apps/public:
-    dependencies:
-      '@mixan/db':
-        specifier: workspace:*
-        version: link:../../packages/db
-      '@radix-ui/react-alert-dialog':
-        specifier: ^1.0.5
-        version: 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-aspect-ratio':
-        specifier: ^1.0.3
-        version: 1.0.3(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-avatar':
-        specifier: ^1.0.4
-        version: 1.0.4(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-checkbox':
-        specifier: ^1.0.4
-        version: 1.0.4(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-dialog':
-        specifier: ^1.0.5
-        version: 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-dropdown-menu':
-        specifier: ^2.0.6
-        version: 2.0.6(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-label':
-        specifier: ^2.0.2
-        version: 2.0.2(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-popover':
-        specifier: ^1.0.7
-        version: 1.0.7(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-scroll-area':
-        specifier: ^1.0.5
-        version: 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-slot':
-        specifier: ^1.0.2
-        version: 1.0.2(@types/react@18.2.56)(react@18.2.0)
-      '@radix-ui/react-toast':
-        specifier: ^1.1.5
-        version: 1.1.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@radix-ui/react-tooltip':
-        specifier: ^1.0.7
-        version: 1.0.7(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
-      '@t3-oss/env-nextjs':
-        specifier: ^0.7.0
-        version: 0.7.3(typescript@5.3.3)(zod@3.22.4)
-      class-variance-authority:
-        specifier: ^0.7.0
-        version: 0.7.0
-      clsx:
-        specifier: ^2.0.0
-        version: 2.1.0
-      email-validator:
-        specifier: ^2.0.4
-        version: 2.0.4
-      embla-carousel-autoplay:
-        specifier: 8.0.0-rc22
-        version: 8.0.0-rc22(embla-carousel@8.0.0-rc22)
-      embla-carousel-react:
-        specifier: 8.0.0-rc22
-        version: 8.0.0-rc22(react@18.2.0)
-      lucide-react:
-        specifier: ^0.323.0
-        version: 0.323.0(react@18.2.0)
-      next:
-        specifier: ~14.0.4
-        version: 14.0.4(react-dom@18.2.0)(react@18.2.0)
-      nextra:
-        specifier: ^2.13.4
-        version: 2.13.4(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
-      nextra-theme-docs:
-        specifier: ^2.13.4
-        version: 2.13.4(next@14.0.4)(nextra@2.13.4)(react-dom@18.2.0)(react@18.2.0)
-      react:
-        specifier: 18.2.0
-        version: 18.2.0
-      react-animate-height:
-        specifier: ^3.2.3
-        version: 3.2.3(react-dom@18.2.0)(react@18.2.0)
-      react-dom:
-        specifier: 18.2.0
-        version: 18.2.0(react@18.2.0)
-      react-syntax-highlighter:
-        specifier: ^15.5.0
-        version: 15.5.0(react@18.2.0)
-      tailwind-merge:
-        specifier: ^1.14.0
-        version: 1.14.0
-      tailwindcss-animate:
-        specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.1)
-      zod:
-        specifier: ^3.22.4
-        version: 3.22.4
-    devDependencies:
-      '@mixan/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@mixan/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@mixan/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@tailwindcss/typography':
-        specifier: ^0.5.10
-        version: 0.5.10(tailwindcss@3.4.1)
-      '@types/node':
-        specifier: ^18.16.0
-        version: 18.19.17
-      '@types/react':
-        specifier: ^18.2.20
-        version: 18.2.56
-      '@types/react-dom':
-        specifier: ^18.2.7
-        version: 18.2.19
-      '@types/react-syntax-highlighter':
-        specifier: ^15.5.9
-        version: 15.5.11
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^6.6.0
-        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.56.0)(typescript@5.3.3)
-      '@typescript-eslint/parser':
-        specifier: ^6.6.0
-        version: 6.21.0(eslint@8.56.0)(typescript@5.3.3)
-      autoprefixer:
-        specifier: ^10.4.14
-        version: 10.4.17(postcss@8.4.35)
-      eslint:
-        specifier: ^8.48.0
-        version: 8.56.0
-      postcss:
-        specifier: ^8.4.27
-        version: 8.4.35
-      prettier:
-        specifier: ^3.0.3
-        version: 3.2.5
-      prettier-plugin-tailwindcss:
-        specifier: ^0.5.1
-        version: 0.5.11(prettier@3.2.5)
-      tailwindcss:
-        specifier: ^3.3.3
-        version: 3.4.1
-      typescript:
-        specifier: ^5.2.2
-        version: 5.3.3
-
-  apps/sdk-api:
+  apps/api:
     dependencies:
       '@fastify/cors':
         specifier: ^9.0.0
@@ -286,7 +80,7 @@ importers:
         version: link:../../tooling/prettier
       '@mixan/sdk':
         specifier: workspace:*
-        version: link:../../packages/sdk
+        version: link:../../packages/sdks/sdk
       '@mixan/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -315,74 +109,7 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
-  apps/test:
-    dependencies:
-      '@mixan-test/next':
-        specifier: workspace:@mixan/next@*
-        version: link:../../packages/sdk-next
-      '@mixan-test/sdk':
-        specifier: workspace:@mixan/sdk@*
-        version: link:../../packages/sdk
-      '@mixan-test/sdk-web':
-        specifier: workspace:@mixan/sdk-web@*
-        version: link:../../packages/sdk-web
-      next:
-        specifier: ~14.1.0
-        version: 14.1.0(react-dom@18.2.0)(react@18.2.0)
-      react:
-        specifier: 18.2.0
-        version: 18.2.0
-      react-dom:
-        specifier: 18.2.0
-        version: 18.2.0(react@18.2.0)
-    devDependencies:
-      '@mixan/eslint-config':
-        specifier: workspace:*
-        version: link:../../tooling/eslint
-      '@mixan/prettier-config':
-        specifier: workspace:*
-        version: link:../../tooling/prettier
-      '@mixan/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/typescript
-      '@types/react':
-        specifier: ^18.2.20
-        version: 18.2.56
-      '@types/react-dom':
-        specifier: ^18.2.7
-        version: 18.2.19
-      '@types/react-syntax-highlighter':
-        specifier: ^15.5.9
-        version: 15.5.11
-      '@typescript-eslint/eslint-plugin':
-        specifier: ^6.6.0
-        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.56.0)(typescript@5.3.3)
-      '@typescript-eslint/parser':
-        specifier: ^6.6.0
-        version: 6.21.0(eslint@8.56.0)(typescript@5.3.3)
-      autoprefixer:
-        specifier: ^10.4.14
-        version: 10.4.17(postcss@8.4.35)
-      eslint:
-        specifier: ^8.48.0
-        version: 8.56.0
-      postcss:
-        specifier: ^8.4.27
-        version: 8.4.35
-      prettier:
-        specifier: ^3.0.3
-        version: 3.2.5
-      prettier-plugin-tailwindcss:
-        specifier: ^0.5.1
-        version: 0.5.11(prettier@3.2.5)
-      tailwindcss:
-        specifier: ^3.3.3
-        version: 3.4.1
-      typescript:
-        specifier: ^5.2.2
-        version: 5.3.3
-
-  apps/web:
+  apps/dashboard:
     dependencies:
       '@clerk/nextjs':
         specifier: ^4.29.7
@@ -663,7 +390,7 @@ importers:
         version: 6.21.0(eslint@8.56.0)(typescript@5.3.3)
       autoprefixer:
         specifier: ^10.4.17
-        version: 10.4.17(postcss@8.4.35)
+        version: 10.4.18(postcss@8.4.35)
       eslint:
         specifier: ^8.56.0
         version: 8.56.0
@@ -681,6 +408,273 @@ importers:
         version: 3.4.1
       typescript:
         specifier: ^5.3.3
+        version: 5.3.3
+
+  apps/docs:
+    dependencies:
+      next:
+        specifier: ~14.0.4
+        version: 14.0.4(react-dom@18.2.0)(react@18.2.0)
+      nextra:
+        specifier: ^2.13.4
+        version: 2.13.4(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
+      nextra-theme-docs:
+        specifier: ^2.13.4
+        version: 2.13.4(next@14.0.4)(nextra@2.13.4)(react-dom@18.2.0)(react@18.2.0)
+      react:
+        specifier: 18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: 18.2.0
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@mixan/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@mixan/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: ^18.16.0
+        version: 18.19.17
+      '@types/react':
+        specifier: ^18.2.20
+        version: 18.2.56
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.19
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.6.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.56.0)(typescript@5.3.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.6.0
+        version: 6.21.0(eslint@8.56.0)(typescript@5.3.3)
+      autoprefixer:
+        specifier: ^10.4.18
+        version: 10.4.18(postcss@8.4.35)
+      eslint:
+        specifier: ^8.48.0
+        version: 8.56.0
+      postcss:
+        specifier: ^8.4.35
+        version: 8.4.35
+      prettier:
+        specifier: ^3.0.3
+        version: 3.2.5
+      tailwindcss:
+        specifier: ^3.4.1
+        version: 3.4.1
+      typescript:
+        specifier: ^5.2.2
+        version: 5.3.3
+
+  apps/public:
+    dependencies:
+      '@mixan/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@radix-ui/react-alert-dialog':
+        specifier: ^1.0.5
+        version: 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-aspect-ratio':
+        specifier: ^1.0.3
+        version: 1.0.3(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-avatar':
+        specifier: ^1.0.4
+        version: 1.0.4(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-checkbox':
+        specifier: ^1.0.4
+        version: 1.0.4(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-dialog':
+        specifier: ^1.0.5
+        version: 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-dropdown-menu':
+        specifier: ^2.0.6
+        version: 2.0.6(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-label':
+        specifier: ^2.0.2
+        version: 2.0.2(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-popover':
+        specifier: ^1.0.7
+        version: 1.0.7(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-scroll-area':
+        specifier: ^1.0.5
+        version: 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-slot':
+        specifier: ^1.0.2
+        version: 1.0.2(@types/react@18.2.56)(react@18.2.0)
+      '@radix-ui/react-toast':
+        specifier: ^1.1.5
+        version: 1.1.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@radix-ui/react-tooltip':
+        specifier: ^1.0.7
+        version: 1.0.7(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
+      '@t3-oss/env-nextjs':
+        specifier: ^0.7.0
+        version: 0.7.3(typescript@5.3.3)(zod@3.22.4)
+      class-variance-authority:
+        specifier: ^0.7.0
+        version: 0.7.0
+      clsx:
+        specifier: ^2.0.0
+        version: 2.1.0
+      email-validator:
+        specifier: ^2.0.4
+        version: 2.0.4
+      embla-carousel-autoplay:
+        specifier: 8.0.0-rc22
+        version: 8.0.0-rc22(embla-carousel@8.0.0-rc22)
+      embla-carousel-react:
+        specifier: 8.0.0-rc22
+        version: 8.0.0-rc22(react@18.2.0)
+      lucide-react:
+        specifier: ^0.323.0
+        version: 0.323.0(react@18.2.0)
+      next:
+        specifier: ~14.0.4
+        version: 14.0.4(react-dom@18.2.0)(react@18.2.0)
+      react:
+        specifier: 18.2.0
+        version: 18.2.0
+      react-animate-height:
+        specifier: ^3.2.3
+        version: 3.2.3(react-dom@18.2.0)(react@18.2.0)
+      react-dom:
+        specifier: 18.2.0
+        version: 18.2.0(react@18.2.0)
+      react-syntax-highlighter:
+        specifier: ^15.5.0
+        version: 15.5.0(react@18.2.0)
+      tailwind-merge:
+        specifier: ^1.14.0
+        version: 1.14.0
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@3.4.1)
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
+    devDependencies:
+      '@mixan/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@mixan/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@tailwindcss/typography':
+        specifier: ^0.5.10
+        version: 0.5.10(tailwindcss@3.4.1)
+      '@types/node':
+        specifier: ^18.16.0
+        version: 18.19.17
+      '@types/react':
+        specifier: ^18.2.20
+        version: 18.2.56
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.19
+      '@types/react-syntax-highlighter':
+        specifier: ^15.5.9
+        version: 15.5.11
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.6.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.56.0)(typescript@5.3.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.6.0
+        version: 6.21.0(eslint@8.56.0)(typescript@5.3.3)
+      autoprefixer:
+        specifier: ^10.4.14
+        version: 10.4.17(postcss@8.4.35)
+      eslint:
+        specifier: ^8.48.0
+        version: 8.56.0
+      postcss:
+        specifier: ^8.4.27
+        version: 8.4.35
+      prettier:
+        specifier: ^3.0.3
+        version: 3.2.5
+      prettier-plugin-tailwindcss:
+        specifier: ^0.5.1
+        version: 0.5.11(prettier@3.2.5)
+      tailwindcss:
+        specifier: ^3.3.3
+        version: 3.4.1
+      typescript:
+        specifier: ^5.2.2
+        version: 5.3.3
+
+  apps/test:
+    dependencies:
+      '@mixan-test/nextjs':
+        specifier: workspace:@mixan/nextjs@*
+        version: link:../../packages/sdks/nextjs
+      '@mixan-test/sdk':
+        specifier: workspace:@mixan/sdk@*
+        version: link:../../packages/sdks/sdk
+      '@mixan-test/web':
+        specifier: workspace:@mixan/web@*
+        version: link:../../packages/sdks/web
+      next:
+        specifier: ~14.1.0
+        version: 14.1.0(react-dom@18.2.0)(react@18.2.0)
+      react:
+        specifier: 18.2.0
+        version: 18.2.0
+      react-dom:
+        specifier: 18.2.0
+        version: 18.2.0(react@18.2.0)
+    devDependencies:
+      '@mixan/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@mixan/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@mixan/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/react':
+        specifier: ^18.2.20
+        version: 18.2.56
+      '@types/react-dom':
+        specifier: ^18.2.7
+        version: 18.2.19
+      '@types/react-syntax-highlighter':
+        specifier: ^15.5.9
+        version: 15.5.11
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.6.0
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.56.0)(typescript@5.3.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.6.0
+        version: 6.21.0(eslint@8.56.0)(typescript@5.3.3)
+      autoprefixer:
+        specifier: ^10.4.14
+        version: 10.4.17(postcss@8.4.35)
+      eslint:
+        specifier: ^8.48.0
+        version: 8.56.0
+      postcss:
+        specifier: ^8.4.27
+        version: 8.4.35
+      prettier:
+        specifier: ^3.0.3
+        version: 3.2.5
+      prettier-plugin-tailwindcss:
+        specifier: ^0.5.1
+        version: 0.5.11(prettier@3.2.5)
+      tailwindcss:
+        specifier: ^3.3.3
+        version: 3.4.1
+      typescript:
+        specifier: ^5.2.2
         version: 5.3.3
 
   apps/worker:
@@ -928,17 +922,27 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
-  packages/sdk:
+  packages/sdks/nextjs:
+    dependencies:
+      '@mixan/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      '@mixan/web':
+        specifier: workspace:*
+        version: link:../web
+      next:
+        specifier: ^13.0.0
+        version: 13.4.19(react-dom@18.2.0)(react@18.2.0)
     devDependencies:
       '@mixan/eslint-config':
         specifier: workspace:*
-        version: link:../../tooling/eslint
+        version: link:../../../tooling/eslint
       '@mixan/prettier-config':
         specifier: workspace:*
-        version: link:../../tooling/prettier
+        version: link:../../../tooling/prettier
       '@mixan/tsconfig':
         specifier: workspace:*
-        version: link:../../tooling/typescript
+        version: link:../../../tooling/typescript
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -952,7 +956,7 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
-  packages/sdk-native:
+  packages/sdks/react-native:
     dependencies:
       '@mixan/sdk':
         specifier: workspace:*
@@ -969,13 +973,13 @@ importers:
     devDependencies:
       '@mixan/eslint-config':
         specifier: workspace:*
-        version: link:../../tooling/eslint
+        version: link:../../../tooling/eslint
       '@mixan/prettier-config':
         specifier: workspace:*
-        version: link:../../tooling/prettier
+        version: link:../../../tooling/prettier
       '@mixan/tsconfig':
         specifier: workspace:*
-        version: link:../../tooling/typescript
+        version: link:../../../tooling/typescript
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -989,27 +993,17 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
-  packages/sdk-next:
-    dependencies:
-      '@mixan/sdk':
-        specifier: workspace:*
-        version: link:../sdk
-      '@mixan/sdk-web':
-        specifier: workspace:*
-        version: link:../sdk-web
-      next:
-        specifier: ^13.0.0
-        version: 13.4.19(react-dom@18.2.0)(react@18.2.0)
+  packages/sdks/sdk:
     devDependencies:
       '@mixan/eslint-config':
         specifier: workspace:*
-        version: link:../../tooling/eslint
+        version: link:../../../tooling/eslint
       '@mixan/prettier-config':
         specifier: workspace:*
-        version: link:../../tooling/prettier
+        version: link:../../../tooling/prettier
       '@mixan/tsconfig':
         specifier: workspace:*
-        version: link:../../tooling/typescript
+        version: link:../../../tooling/typescript
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -1023,7 +1017,7 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
-  packages/sdk-web:
+  packages/sdks/web:
     dependencies:
       '@mixan/sdk':
         specifier: workspace:*
@@ -1031,13 +1025,13 @@ importers:
     devDependencies:
       '@mixan/eslint-config':
         specifier: workspace:*
-        version: link:../../tooling/eslint
+        version: link:../../../tooling/eslint
       '@mixan/prettier-config':
         specifier: workspace:*
-        version: link:../../tooling/prettier
+        version: link:../../../tooling/prettier
       '@mixan/tsconfig':
         specifier: workspace:*
-        version: link:../../tooling/typescript
+        version: link:../../../tooling/typescript
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -13376,7 +13370,7 @@ packages:
       '@next/env': 13.4.19
       '@swc/helpers': 0.5.1
       busboy: 1.6.0
-      caniuse-lite: 1.0.30001587
+      caniuse-lite: 1.0.30001596
       postcss: 8.4.14
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)

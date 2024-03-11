@@ -5,7 +5,7 @@ import type {
   MixanWebOptions,
   PostEventPayload,
   UpdateProfilePayload,
-} from '@mixan/sdk-web';
+} from '@mixan/web';
 
 const CDN_URL = 'http://localhost:3002/op.js';
 

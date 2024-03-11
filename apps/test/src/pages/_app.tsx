@@ -1,4 +1,4 @@
-import { OpenpanelProvider } from '@mixan-test/next';
+import { OpenpanelProvider } from '@mixan-test/nextjs';
 import type { AppProps } from 'next/app';
 
 export default function MyApp({ Component, pageProps }: AppProps) {

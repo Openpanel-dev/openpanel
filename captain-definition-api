@@ -1,4 +1,4 @@
 {
   "schemaVersion": 2,
-  "dockerfilePath": "./apps/sdk-api/Dockerfile"
+  "dockerfilePath": "./apps/api/Dockerfile"
 }

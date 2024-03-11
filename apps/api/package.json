@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/sdk-api",
+  "name": "@mixan/api",
   "version": "0.0.1",
   "scripts": {
     "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",

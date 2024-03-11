@@ -1,4 +1,4 @@
-// import { MixanWeb } from '@mixan-test/sdk-web';
+// import { MixanWeb } from '@mixan-test/web';
 
 // export const mixan = new MixanWeb({
 //   verbose: true,
