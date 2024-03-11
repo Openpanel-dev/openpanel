@@ -1,4 +1,5 @@
 import { Card, Cards } from 'nextra/components';
+import { BrandLogo } from 'src/components/brand-logo';
 
 # Get started
 
@@ -7,22 +8,16 @@ Create an account on [Openpanel](https://openpanel.dev) and setup your first pro
 <Cards>
   <Card
     icon={
-      <img
-        style={{ width: 32, height: 32, objectFit: 'contain' }}
-        src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/HTML5_logo_and_wordmark.svg/240px-HTML5_logo_and_wordmark.svg.png"
-      />
+      <BrandLogo src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/HTML5_logo_and_wordmark.svg/240px-HTML5_logo_and_wordmark.svg.png" />
     }
-    title="General / Script"
-    href="/docs/general"
+    title="HTML / Script"
+    href="/docs/script"
   >
     {' '}
   </Card>
   <Card
     icon={
-      <img
-        style={{ width: 32, height: 32, objectFit: 'contain' }}
-        src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png"
-      />
+      <BrandLogo src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png" />
     }
     title="React"
     href="/docs/react"
@@ -31,10 +26,7 @@ Create an account on [Openpanel](https://openpanel.dev) and setup your first pro
   </Card>
   <Card
     icon={
-      <img
-        style={{ width: 32, height: 32, objectFit: 'contain' }}
-        src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png"
-      />
+      <BrandLogo src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png" />
     }
     title="React-Native"
     href="/docs/react-native"
@@ -43,8 +35,8 @@ Create an account on [Openpanel](https://openpanel.dev) and setup your first pro
   </Card>
   <Card
     icon={
-      <img
-        style={{ width: 32, height: 32, objectFit: 'contain' }}
+      <BrandLogo
+        isDark
         src="https://static-00.iconduck.com/assets.00/nextjs-icon-512x512-y563b8iq.png"
       />
     }
@@ -55,8 +47,8 @@ Create an account on [Openpanel](https://openpanel.dev) and setup your first pro
   </Card>
   <Card
     icon={
-      <img
-        style={{ width: 32, height: 32, objectFit: 'contain' }}
+      <BrandLogo
+        isDark
         src="https://www.datocms-assets.com/205/1642515307-square-logo.svg"
       />
     }
@@ -67,12 +59,21 @@ Create an account on [Openpanel](https://openpanel.dev) and setup your first pro
   </Card>
   <Card
     icon={
-      <img
-        style={{ width: 32, height: 32, objectFit: 'contain' }}
-        src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Vue.js_Logo_2.svg/1024px-Vue.js_Logo_2.svg.png"
-      />
+      <BrandLogo src="https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Vue.js_Logo_2.svg/1024px-Vue.js_Logo_2.svg.png" />
     }
     title="Vue"
+    href="/docs/vue"
+  >
+    {' '}
+  </Card>
+  <Card
+    icon={
+      <BrandLogo
+        isDark
+        src="https://astro.build/assets/press/astro-icon-dark.png"
+      />
+    }
+    title="Astro"
     href="/docs/vue"
   >
     {' '}

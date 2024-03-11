@@ -7,7 +7,7 @@ import SdkConfig from 'src/components/sdk-config.mdx';
 
 # Javascript SDK
 
-This is the base SDK for Openpanel. All other SDKs are built on top of this one.
+This is the base SDK for Openpanel. All other SDKs/frameworks are built on top of this one.
 
 ## Installation
 
@@ -21,9 +21,9 @@ pnpm install @openpanel/sdk
 ### Initialize
 
 ```tsx
-import { Openpanel } from '@openpanel/sdk';
+import { OpenpanelSdk } from '@openpanel/sdk';
 
-const op = new Openpanel({
+const op = new OpenpanelSdk({
   url: 'https://api.openpanel.dev',
   clientId: '{YOUR_CLIENT_ID}',
   // mostly for backend and apps that can't rely on CORS
@@ -84,10 +84,8 @@ Keep track of your users by identifying them with a unique id. This is a good fe
 <PersonalDataWarning />
 
 ```typescript
-import { setProfileId } from '@openpanel/nextjs';
-
 const profileId = '123';
-setProfileId(profileId);
+op.setProfileId(profileId);
 ```
 
 #### Additional data
@@ -97,10 +95,8 @@ This method does the same as `setProfileId` but also allows you to update the pr
 <PersonalDataWarning />
 
 ```typescript
-import { setProfile } from '@openpanel/nextjs';
-
 const profileId = '123';
-setProfile({
+op.setProfile({
   profileId,
   // firstName?: string;
   // lastName?: string;
@@ -115,13 +111,11 @@ setProfile({
 Increment a property on the profile.
 
 ```typescript
-import { increment } from '@openpanel/nextjs';
-
 // Increment by 1
-increment('app_opened');
+op.increment('app_opened');
 
 // Increment by 5
-increment('app_opened', 5);
+op.increment('app_opened', 5);
 ```
 
 #### Decrement property
@@ -129,11 +123,17 @@ increment('app_opened', 5);
 Decrement a property on the profile.
 
 ```typescript
-import { decrement } from '@openpanel/nextjs';
-
 // Increment by 1
-decrement('app_opened');
+op.decrement('app_opened');
 
 // Increment by 5
-decrement('app_opened', 5);
+op.decrement('app_opened', 5);
+```
+
+#### Clear / Logout
+
+Clear the profile id and all the data.
+
+```typescript
+op.clear();
 ```
