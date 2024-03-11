@@ -1,10 +1,6 @@
-<p align="center">
-  <img src="images/mixan.svg">
-</p>
+# openpanel
 
-# mixan
-
-Mixan is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now).
+Openpanel is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now).
 
 - Easy to use
 - Fully responsive UI
@@ -17,10 +13,23 @@ Mixan is a simple analytics tool for logging events on web and react-native. My 
 
 ### Speed/Benchmark
 
-As of today (2023-12-12) I have more then 1.2 million events in PSQL and performance is smooth as butter 🧈. Only thing that is slow (2s response time) is to get all unique events. Solved now with cache but can probably make better with `indexes` and avoid using `distinct`.
+As of today (~~2023-12-12~~ 2024-01-16) I have more then ~~1.2~~ 2.8 million events and 20 thousand profiles in postgres and performance is smooth as butter\* 🧈. Only thing that is slow (2s response time) is to get all unique events. Solved now with cache but can probably make better with `indexes` and avoid using `distinct`.
+
+\* Smooth as butter is somewhat exaggerated but I would say it still fast! It takes 1.4 sec to search through all events (3 million) with advanced where clause. I think this performance is absolutly good enough.
 
 ### GUI
 
+- [x] Fix design for report editor
+- [x] Fix profiles
+  - [x] Pagination
+  - [x] Filter by event name
+- [x] Fix [profileId]
+  - [x] Add events
+  - [x] Improve design for properties and linked profiles
+- [x] New design for events
+- [ ] Map events to convertions
+- [ ] Map ids
+- [x] Fix menu links when projectId is undefined
 - [x] Fix tables on settings
 - [x] Rename event label
 - [ ] Common web dashboard
@@ -36,14 +45,16 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 - [x] View events in a list
   - [x] Simple filters
 - [x] View profiles in a list
-- [ ] Invite users
+- [x] Invite users
 - [ ] Drag n Drop reports on dashboard
 - [x] Manage dashboards
-- [ ] Support more chart types
+- [x] Support more chart types
   - [x] Bar
   - [x] Histogram
-  - [ ] Pie
-  - [ ] Area
+  - [x] Pie
+  - [x] Area
+  - [x] Metric
+  - [x] Line
 - [ ] Support funnels
 - [ ] Support multiple breakdowns
 - [x] Aggregations (sum, average...)
@@ -56,53 +67,49 @@ As of today (2023-12-12) I have more then 1.2 million events in PSQL and perform
 - [x] Create web sdk
   - [x] Screen view function should take in title, path and parse query string (especially utm tags)
 
-## @mixan/sdk
+## @openpanel/sdk
 
 For pushing events
 
 ### Install
 
-- npm: `npm install @mixan/sdk`
-- pnpm: `pnpm add @mixan/sdk`
-- yarn: `yarn add @mixan/sdk`
+- npm: `npm install @openpanel/sdk`
+- pnpm: `pnpm add @openpanel/sdk`
+- yarn: `yarn add @openpanel/sdk`
 
 ### Usage
 
 ```ts
-import { Mixan } from '@mixan/sdk';
+import { OpenpanelWeb } from '@openpanel/web';
 
-const mixan = new Mixan({
+// import { OpenpanelNative } from '@openpanel/sdk-native';
+
+const openpanel = new OpenpanelWeb({
   clientId: 'uuid',
-  clientSecret: 'uuid',
   url: 'http://localhost:8080/api/sdk',
   batchInterval: 10000,
   verbose: false,
-  saveProfileId(id) {
-    // Web
-    localStorage.setItem('@profileId', id);
-    // // react-native-mmkv
-    // mmkv.setItem('@profileId', id)
-  },
-  removeProfileId() {
-    // Web
-    localStorage.removeItem('@profileId');
-    // // react-native-mmkv
-    // mmkv.delete('@profileId')
-  },
-  getProfileId() {
-    // Web
-    return localStorage.getItem('@profileId');
-    // // react-native-mmkv
-    // return mmkv.getString('@profileId')
-  },
+  trackIp: true,
 });
+
+// const openpanel = new OpenpanelNative({
+//   clientId: 'uuid',
+//   clientSecret: 'uuid',
+//   url: 'http://localhost:8080/api/sdk',
+//   batchInterval: 10000,
+//   verbose: false,
+//   trackIp: true,
+// });
 
 // Call this before you send any events
 // It will create a anonymous profile
 // This profile will be merged if you call `setUser` in a later stage
-mixan.init();
+openpanel.init();
 
-mixan.setUser({
+// tracks all outgoing links as a `link_out` event
+openpanel.trackOutgoingLinks();
+
+openpanel.setUser({
   id: 'id',
   first_name: 'John',
   last_name: 'Doe',
@@ -111,33 +118,36 @@ mixan.setUser({
 });
 
 // will upsert 'app_open' on user property and increment it
-mixan.increment('app_open');
+openpanel.increment('app_open');
 // will upsert 'app_open' on user property and increment it by 10
-mixan.increment('app_open', 10);
+openpanel.increment('app_open', 10);
 // will upsert 'app_open' on user property and decrement it by 2
-mixan.decrement('app_open', 2);
+openpanel.decrement('app_open', 2);
 
 // send a sign_in event
-mixan.event('sign_in');
+openpanel.event('sign_in');
 
 // send a sign_in event with properties
-mixan.event('sign_in', {
+openpanel.event('sign_in', {
   provider: 'gmail',
 });
 
-// short hand for 'screen_view', can also take any properties
-mixan.screenView('Profile', {
-  id: '123',
-  // any other properties, url, public
+// Screen view for web
+openpanel.screenView();
+
+// Screen view for native
+openpanel.screenView('Article', {
+  id: '3',
+  title: 'Nice article here',
 });
 
 // Call this when a user is logged out.
 // This will just make sure you do not send
 // the associated profile id for the next events
-mixan.clear();
+openpanel.clear();
 ```
 
-## @mixan/web
+## @openpanel/dashboard
 
 A nextjs web app. Collects all events and your gui to analyze your data.
 
@@ -149,6 +159,11 @@ We use https://cron-job.org (free) to handle our cronjobs, you can use any provi
 
 - **https://domain.com/api/cron/cache/update** Will update the memory cache
 - **https://domain.com/api/cron/events/enrich** Enrich events (adds duration etc)
+
+## Development
+
+1. Run `docker-compose up -d` to get redis and postgres running
+2. Then `pnpm dev` to boot the web and worker (queue)
 
 ## Screenshots
 

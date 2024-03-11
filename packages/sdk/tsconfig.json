@@ -1,6 +1,0 @@
-{
-  "extends": "@mixan/tsconfig/sdk.json",
-  "compilerOptions": {
-    "outDir": "dist"
-  }
-}

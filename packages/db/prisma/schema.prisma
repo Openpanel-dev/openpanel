@@ -1,0 +1,201 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Project {
+  id                String    @id @default(dbgenerated("gen_random_uuid()"))
+  name              String
+  organization_slug String
+  events            Event[]
+  eventsCount       Int       @default(0)
+  profiles          Profile[]
+  clients           Client[]
+
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @default(now()) @updatedAt
+  reports    Report[]
+  dashboards Dashboard[]
+  share      ShareOverview?
+  EventMeta  EventMeta[]
+  Reference  Reference[]
+
+  @@map("projects")
+}
+
+model Event {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  properties Json
+  project_id String
+  project    Project @relation(fields: [project_id], references: [id])
+
+  profile_id String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("events")
+}
+
+model Salt {
+  salt      String   @id
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("salts")
+}
+
+model Profile {
+  id          String   @id
+  external_id String?
+  first_name  String?
+  last_name   String?
+  email       String?
+  avatar      String?
+  properties  Json
+  project_id  String
+  project     Project  @relation(fields: [project_id], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@map("profiles")
+}
+
+model Client {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  secret            String?
+  project_id        String
+  project           Project @relation(fields: [project_id], references: [id])
+  organization_slug String
+  cors              String  @default("*")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("clients")
+}
+
+enum Interval {
+  hour
+  day
+  month
+  minute
+}
+
+enum ChartType {
+  linear
+  bar
+  histogram
+  pie
+  metric
+  area
+  map
+  funnel
+}
+
+model Dashboard {
+  id                String   @id @default(dbgenerated("gen_random_uuid()"))
+  name              String
+  organization_slug String
+  project_id        String
+  project           Project  @relation(fields: [project_id], references: [id])
+  reports           Report[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("dashboards")
+}
+
+enum Metric {
+  sum
+  average
+  min
+  max
+}
+
+model Report {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  interval   Interval
+  range      String    @default("1m")
+  chart_type ChartType
+  line_type  String    @default("monotone")
+  breakdowns Json
+  events     Json
+  formula    String?
+  unit       String?
+  metric     Metric    @default(sum)
+  project_id String
+  project    Project   @relation(fields: [project_id], references: [id])
+  previous   Boolean   @default(false)
+
+  dashboard_id String
+  dashboard    Dashboard @relation(fields: [dashboard_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("reports")
+}
+
+model Waitlist {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("waitlist")
+}
+
+model ShareOverview {
+  id                String   @unique
+  project_id        String   @unique
+  project           Project  @relation(fields: [project_id], references: [id])
+  organization_slug String
+  public            Boolean  @default(false)
+  password          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  @@map("shares")
+}
+
+model EventMeta {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  conversion Boolean?
+  color      String?
+  icon       String?
+  project_id String
+  project    Project  @relation(fields: [project_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([name, project_id])
+  @@map("event_meta")
+}
+
+model Reference {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String
+  description String?
+  date        DateTime @default(now())
+  project_id  String
+  project     Project  @relation(fields: [project_id], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("references")
+}

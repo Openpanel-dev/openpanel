@@ -8,7 +8,7 @@ const config = {
     '^(react/(.*)$)|^(react$)|^(react-native(.*)$)',
     '<THIRD_PARTY_MODULES>',
     '',
-    '^@mixan/(.*)$',
+    '^@openpanel/(.*)$',
     '',
     '^~/',
     '^[../]',
@@ -21,6 +21,6 @@ const config = {
   trailingComma: 'es5',
   printWidth: 80,
   tabWidth: 2,
-}
+};
 
-export default config
+export default config;

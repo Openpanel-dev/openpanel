@@ -4,10 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import semver from 'semver';
 
-import typesPkg from '../../packages/types/package.json';
-
-const sdkPackages = ['sdk', 'sdk-native', 'sdk-web'];
-// const sdkPackages = ['sdk'];
+const sdkPackages = ['sdk', 'react-native', 'web', 'nextjs'];
 
 const workspacePath = (relativePath: string) =>
   path.resolve(__dirname, '../../', relativePath);
@@ -61,17 +58,12 @@ function main() {
         dependencies: Object.entries(pkgJson.dependencies).reduce(
           (acc, [depName, depVersion]) => ({
             ...acc,
-            [depName]: depName.startsWith('@mixan') ? version : depVersion,
+            [depName]: depName.startsWith('@openpanel') ? version : depVersion,
           }),
           {}
         ),
       });
     }
-
-    savePackageJson(workspacePath('./packages/types/package.json'), {
-      ...typesPkg,
-      ...properties,
-    });
   } catch (error) {
     exit('Update JSON files', error);
   }
@@ -81,12 +73,9 @@ function main() {
   try {
     for (const name of sdkPackages) {
       execSync('pnpm build', {
-        cwd: workspacePath(`./packages/${name}`),
+        cwd: workspacePath(`./packages/sdks/${name}`),
       });
     }
-    execSync('pnpm build', {
-      cwd: workspacePath(`./packages/types`),
-    });
   } catch (error) {
     exit('Failed build packages', error);
   }
@@ -99,10 +88,6 @@ function main() {
         cwd: workspacePath(`./packages/${name}`),
       });
     }
-
-    execSync('npm publish --access=public', {
-      cwd: workspacePath('./packages/types'),
-    });
   } catch (error) {
     exit('Failed publish packages', error);
   }

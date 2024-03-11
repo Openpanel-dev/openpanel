@@ -1,0 +1,6 @@
+{
+  "extends": "@openpanel/tsconfig/sdk.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/eslint-config",
+  "name": "@openpanel/eslint-config",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
@@ -15,10 +15,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@next/eslint-plugin-next": "^13.4.19",
+    "@next/eslint-plugin-next": "^14.0.4",
     "@types/eslint": "^8.44.2",
     "@typescript-eslint/eslint-plugin": "^6.6.0",
     "@typescript-eslint/parser": "^6.6.0",
+    "eslint-config-next": "^14.0.4",
     "eslint-config-prettier": "^9.0.0",
     "eslint-config-turbo": "^1.10.13",
     "eslint-plugin-import": "^2.28.1",
@@ -27,8 +28,8 @@
     "eslint-plugin-react-hooks": "^4.6.0"
   },
   "devDependencies": {
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "@types/eslint": "^8.44.2",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
@@ -40,5 +41,5 @@
       "./base.js"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

@@ -1,0 +1,44 @@
+{
+  "name": "@openpanel/db",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "codegen": "pnpm with-env prisma generate",
+    "migrate": "pnpm with-env prisma migrate dev",
+    "migrate:deploy": "pnpm with-env prisma migrate deploy",
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit",
+    "with-env": "dotenv -e ../../.env -c --"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^4.29.7",
+    "@clickhouse/client": "^0.2.9",
+    "@openpanel/common": "workspace:*",
+    "@openpanel/constants": "workspace:*",
+    "@openpanel/redis": "workspace:*",
+    "@openpanel/validation": "workspace:*",
+    "@prisma/client": "^5.1.1",
+    "ramda": "^0.29.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "^18.16.0",
+    "@types/ramda": "^0.29.6",
+    "@types/uuid": "^9.0.8",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "prisma": "^5.1.1",
+    "typescript": "^5.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@openpanel/eslint-config/base"
+    ]
+  },
+  "prettier": "@openpanel/prettier-config"
+}

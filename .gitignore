@@ -2,6 +2,9 @@
 packages/sdk/profileId.txt
 packages/sdk/test.ts
 dump.sql
+dump-*
+.sql
+clickhouse
 
 # Logs
 
