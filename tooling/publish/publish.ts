@@ -24,7 +24,24 @@ function exit(message: string, error?: unknown) {
   process.exit(1);
 }
 
+function checkUncommittedChanges() {
+  try {
+    const changedFiles = execSync('git ls-files --exclude-standard --others')
+      .toString()
+      .trim();
+    if (changedFiles !== '') {
+      throw new Error('Uncommitted changes');
+    }
+    execSync('git diff HEAD --exit-code');
+    console.log('✅ No uncommitted changes');
+  } catch (error) {
+    exit('Uncommitted changes', error);
+  }
+}
+
 function main() {
+  checkUncommittedChanges();
+
   const args = arg({
     // Types
     '--version': String,
