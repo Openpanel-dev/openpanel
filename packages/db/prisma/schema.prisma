@@ -153,6 +153,7 @@ model Waitlist {
   email     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  accepted  Boolean  @default(false)
 
   @@map("waitlist")
 }
