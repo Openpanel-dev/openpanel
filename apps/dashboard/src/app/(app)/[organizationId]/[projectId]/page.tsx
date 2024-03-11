@@ -10,8 +10,7 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { getExists } from '@/server/pageExists';
-
-import { db } from '@mixan/db';
+import { db } from '@openpanel/db';
 
 import OverviewMetrics from '../../../../components/overview/overview-metrics';
 import { CreateClient } from './create-client';

@@ -40,8 +40,8 @@ async function push(event: Event) {
       'Content-Type': 'application/json',
       'User-Agent': event.properties.ua,
       'X-Forwarded-For': event.properties.ip,
-      'mixan-client-id': 'c8b4962e-bc3d-4b23-8ea4-505c8fbdf09e',
-      origin: 'https://mixan.kiddo.se',
+      'openpanel-client-id': 'c8b4962e-bc3d-4b23-8ea4-505c8fbdf09e',
+      origin: 'https://openpanel.kiddo.se',
     },
   }).catch(() => {});
 }
@@ -93,7 +93,7 @@ async function main() {
         const projectId = event.project_id;
         const path = event.properties.path as string;
         const ip = event.properties.ip as string;
-        const origin = 'https://mixan.kiddo.se';
+        const origin = 'https://openpanel.kiddo.se';
         const ua = event.properties.ua as string;
         const uaInfo = parseUserAgent(ua);
         const salts = await getSalts();

@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/dashboard",
+  "name": "@openpanel/dashboard",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,11 +16,11 @@
     "@clerk/nextjs": "^4.29.7",
     "@clickhouse/client": "^0.2.9",
     "@hookform/resolvers": "^3.3.4",
-    "@mixan/common": "workspace:^",
-    "@mixan/constants": "workspace:^",
-    "@mixan/db": "workspace:^",
-    "@mixan/queue": "workspace:^",
-    "@mixan/validation": "workspace:^",
+    "@openpanel/common": "workspace:^",
+    "@openpanel/constants": "workspace:^",
+    "@openpanel/db": "workspace:^",
+    "@openpanel/queue": "workspace:^",
+    "@openpanel/validation": "workspace:^",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-aspect-ratio": "^1.0.3",
@@ -93,9 +93,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@mixan/eslint-config": "workspace:*",
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "@types/bcrypt": "^5.0.2",
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.throttle": "^4.1.9",
@@ -121,10 +121,10 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@mixan/eslint-config/base",
-      "@mixan/eslint-config/react",
-      "@mixan/eslint-config/nextjs"
+      "@openpanel/eslint-config/base",
+      "@openpanel/eslint-config/react",
+      "@openpanel/eslint-config/nextjs"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

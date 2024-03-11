@@ -1,25 +1,18 @@
 {
-  "extends": "@mixan/tsconfig/base.json",
+  "extends": "@openpanel/tsconfig/base.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"],
     },
     "plugins": [
       {
-        "name": "next"
-      }
+        "name": "next",
+      },
     ],
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
-    "strictNullChecks": true
+    "strictNullChecks": true,
   },
-  "include": [
-    ".",
-    ".next/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": [".", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"],
 }

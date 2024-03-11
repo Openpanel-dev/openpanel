@@ -1,6 +1,6 @@
 import type { Job } from 'bullmq';
 
-import type { CronQueuePayload } from '@mixan/queue/src/queues';
+import type { CronQueuePayload } from '@openpanel/queue/src/queues';
 
 import { salt } from './cron.salt';
 

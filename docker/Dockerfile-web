@@ -2,7 +2,7 @@
 
 FROM --platform=linux/amd64 node:20-slim AS base
 
-ARG DATABASE_URL="postgresql://local@host.docker.internal:5432/mixan?schema=public"
+ARG DATABASE_URL="postgresql://local@host.docker.internal:5432/openpanel?schema=public"
 ENV DATABASE_URL=$DATABASE_URL
 
 ARG NEXTAUTH_SECRET="secret_sauce"

@@ -1,11 +1,11 @@
 import Script from 'next/script';
 
 import type {
-  MixanEventOptions,
-  MixanWebOptions,
+  OpenpanelEventOptions,
+  OpenpanelWebOptions,
   PostEventPayload,
   UpdateProfilePayload,
-} from '@mixan/web';
+} from '@openpanel/web';
 
 const CDN_URL = 'http://localhost:3002/op.js';
 
@@ -27,7 +27,7 @@ declare global {
   }
 }
 
-type OpenpanelProviderProps = MixanWebOptions & {
+type OpenpanelProviderProps = OpenpanelWebOptions & {
   profileId?: string;
   cdnUrl?: string;
 };
@@ -98,7 +98,7 @@ export function setProfileId(profileId: string) {
 export function increment(
   property: string,
   value: number,
-  options?: MixanEventOptions
+  options?: OpenpanelEventOptions
 ) {
   window.op('increment', property, value, options);
 }
@@ -106,7 +106,7 @@ export function increment(
 export function decrement(
   property: string,
   value: number,
-  options?: MixanEventOptions
+  options?: OpenpanelEventOptions
 ) {
   window.op('decrement', property, value, options);
 }

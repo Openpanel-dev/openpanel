@@ -1,7 +1,7 @@
 import * as EmailValidator from 'email-validator';
 import { NextResponse } from 'next/server';
 
-import { db } from '@mixan/db';
+import { db } from '@openpanel/db';
 
 export const dynamic = 'force-dynamic';
 

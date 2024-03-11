@@ -2,11 +2,10 @@
 
 import { api } from '@/app/_trpc/client';
 import { pushModal } from '@/modals';
+import type { ShareOverview } from '@openpanel/db';
 import { EyeIcon, Globe2Icon, LockIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
-import type { ShareOverview } from '@mixan/db';
 
 import { Button } from '../ui/button';
 import {

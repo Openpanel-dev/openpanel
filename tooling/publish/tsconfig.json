@@ -1,5 +1,5 @@
 {
-  "extends": "@mixan/tsconfig/base.json",
+  "extends": "@openpanel/tsconfig/base.json",
   "compilerOptions": {
     "module": "CommonJS",
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"

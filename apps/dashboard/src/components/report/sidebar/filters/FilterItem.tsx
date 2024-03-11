@@ -7,15 +7,14 @@ import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { useDispatch } from '@/redux';
-import { SlidersHorizontal, Trash } from 'lucide-react';
-
-import { operators } from '@mixan/constants';
+import { operators } from '@openpanel/constants';
 import type {
   IChartEvent,
   IChartEventFilterOperator,
   IChartEventFilterValue,
-} from '@mixan/validation';
-import { mapKeys } from '@mixan/validation';
+} from '@openpanel/validation';
+import { mapKeys } from '@openpanel/validation';
+import { SlidersHorizontal, Trash } from 'lucide-react';
 
 import { changeEvent } from '../../reportSlice';
 

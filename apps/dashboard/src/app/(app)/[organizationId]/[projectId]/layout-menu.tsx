@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useAppParams } from '@/hooks/useAppParams';
 import { cn } from '@/utils/cn';
 import { useUser } from '@clerk/nextjs';
+import type { IServiceDashboards } from '@openpanel/db';
 import {
   BuildingIcon,
   CogIcon,
@@ -19,8 +20,6 @@ import {
 import type { LucideProps } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
-import type { IServiceDashboards } from '@mixan/db';
 
 function LinkWithIcon({
   href,

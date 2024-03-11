@@ -1,4 +1,4 @@
-import { getLiveVisitors } from '@mixan/db';
+import { getLiveVisitors } from '@openpanel/db';
 
 import type { LiveCounterProps } from './live-counter';
 import LiveCounter from './live-counter';

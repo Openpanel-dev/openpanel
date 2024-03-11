@@ -5,9 +5,8 @@ import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { getChartColor, theme } from '@/utils/theme';
+import type { IInterval } from '@openpanel/validation';
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
-
-import type { IInterval } from '@mixan/validation';
 
 import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';

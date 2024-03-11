@@ -8,7 +8,7 @@ importers:
 
   .:
     dependencies:
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: ^0.1.0
         version: link:tooling/prettier
       dotenv-cli:
@@ -35,16 +35,16 @@ importers:
       '@logtail/pino':
         specifier: ^0.4.19
         version: 0.4.19(pino@8.19.0)
-      '@mixan/common':
+      '@openpanel/common':
         specifier: workspace:*
         version: link:../../packages/common
-      '@mixan/db':
+      '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@mixan/queue':
+      '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
-      '@mixan/redis':
+      '@openpanel/redis':
         specifier: workspace:*
         version: link:../../packages/redis
       fastify:
@@ -72,16 +72,16 @@ importers:
         specifier: ^9.0.1
         version: 9.0.1
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/sdk':
+      '@openpanel/sdk':
         specifier: workspace:*
         version: link:../../packages/sdks/sdk
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/ramda':
@@ -120,19 +120,19 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.3.4
         version: 3.3.4(react-hook-form@7.50.1)
-      '@mixan/common':
+      '@openpanel/common':
         specifier: workspace:^
         version: link:../../packages/common
-      '@mixan/constants':
+      '@openpanel/constants':
         specifier: workspace:^
         version: link:../../packages/constants
-      '@mixan/db':
+      '@openpanel/db':
         specifier: workspace:^
         version: link:../../packages/db
-      '@mixan/queue':
+      '@openpanel/queue':
         specifier: workspace:^
         version: link:../../packages/queue
-      '@mixan/validation':
+      '@openpanel/validation':
         specifier: workspace:^
         version: link:../../packages/validation
       '@radix-ui/react-accordion':
@@ -346,13 +346,13 @@ importers:
         specifier: ^3.22.4
         version: 3.22.4
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/bcrypt':
@@ -428,13 +428,13 @@ importers:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -473,7 +473,7 @@ importers:
 
   apps/public:
     dependencies:
-      '@mixan/db':
+      '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@radix-ui/react-alert-dialog':
@@ -558,13 +558,13 @@ importers:
         specifier: ^3.22.4
         version: 3.22.4
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@tailwindcss/typography':
@@ -612,14 +612,14 @@ importers:
 
   apps/test:
     dependencies:
-      '@mixan-test/nextjs':
-        specifier: workspace:@mixan/nextjs@*
+      '@openpanel-test/nextjs':
+        specifier: workspace:@openpanel/nextjs@*
         version: link:../../packages/sdks/nextjs
-      '@mixan-test/sdk':
-        specifier: workspace:@mixan/sdk@*
+      '@openpanel-test/sdk':
+        specifier: workspace:@openpanel/sdk@*
         version: link:../../packages/sdks/sdk
-      '@mixan-test/web':
-        specifier: workspace:@mixan/web@*
+      '@openpanel-test/web':
+        specifier: workspace:@openpanel/web@*
         version: link:../../packages/sdks/web
       next:
         specifier: ~14.1.0
@@ -631,13 +631,13 @@ importers:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/react':
@@ -685,16 +685,16 @@ importers:
       '@bull-board/express':
         specifier: ^5.13.0
         version: 5.14.1
-      '@mixan/common':
+      '@openpanel/common':
         specifier: workspace:*
         version: link:../../packages/common
-      '@mixan/db':
+      '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@mixan/queue':
+      '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
-      '@mixan/redis':
+      '@openpanel/redis':
         specifier: workspace:*
         version: link:../../packages/redis
       bullmq:
@@ -707,13 +707,13 @@ importers:
         specifier: ^0.29.1
         version: 0.29.1
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/express':
@@ -744,13 +744,13 @@ importers:
         specifier: ^4.7.1
         version: 4.7.1
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -774,13 +774,13 @@ importers:
 
   packages/constants:
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       date-fns:
@@ -807,16 +807,16 @@ importers:
       '@clickhouse/client':
         specifier: ^0.2.9
         version: 0.2.9
-      '@mixan/common':
+      '@openpanel/common':
         specifier: workspace:*
         version: link:../common
-      '@mixan/constants':
+      '@openpanel/constants':
         specifier: workspace:*
         version: link:../constants
-      '@mixan/redis':
+      '@openpanel/redis':
         specifier: workspace:*
         version: link:../redis
-      '@mixan/validation':
+      '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
       '@prisma/client':
@@ -829,13 +829,13 @@ importers:
         specifier: ^9.0.1
         version: 9.0.1
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -862,20 +862,20 @@ importers:
 
   packages/queue:
     dependencies:
-      '@mixan/db':
+      '@openpanel/db':
         specifier: workspace:*
         version: link:../db
       bullmq:
         specifier: ^5.1.1
         version: 5.2.0
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -897,13 +897,13 @@ importers:
         specifier: ^5.3.2
         version: 5.3.2
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -924,23 +924,23 @@ importers:
 
   packages/sdks/nextjs:
     dependencies:
-      '@mixan/sdk':
+      '@openpanel/sdk':
         specifier: workspace:*
         version: link:../sdk
-      '@mixan/web':
+      '@openpanel/web':
         specifier: workspace:*
         version: link:../web
       next:
         specifier: ^13.0.0
         version: 13.4.19(react-dom@18.2.0)(react@18.2.0)
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../../tooling/typescript
       eslint:
@@ -958,7 +958,7 @@ importers:
 
   packages/sdks/react-native:
     dependencies:
-      '@mixan/sdk':
+      '@openpanel/sdk':
         specifier: workspace:*
         version: link:../sdk
       expo-application:
@@ -971,13 +971,13 @@ importers:
         specifier: ^0.72.5
         version: 0.72.10(@babel/core@7.23.9)(@babel/preset-env@7.23.9)(react@18.2.0)
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../../tooling/typescript
       eslint:
@@ -995,13 +995,13 @@ importers:
 
   packages/sdks/sdk:
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../../tooling/typescript
       eslint:
@@ -1019,17 +1019,17 @@ importers:
 
   packages/sdks/web:
     dependencies:
-      '@mixan/sdk':
+      '@openpanel/sdk':
         specifier: workspace:*
         version: link:../sdk
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../../tooling/typescript
       eslint:
@@ -1047,20 +1047,20 @@ importers:
 
   packages/validation:
     dependencies:
-      '@mixan/constants':
+      '@openpanel/constants':
         specifier: workspace:*
         version: link:../constants
       zod:
         specifier: ^3.22.4
         version: 3.22.4
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../../tooling/eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
       '@types/node':
@@ -1115,10 +1115,10 @@ importers:
         specifier: ^4.6.0
         version: 4.6.0(eslint@8.56.0)
     devDependencies:
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../typescript
       eslint:
@@ -1137,7 +1137,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.1(prettier@3.2.5)
     devDependencies:
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../typescript
       eslint:
@@ -1156,13 +1156,13 @@ importers:
         specifier: ^7.5.4
         version: 7.6.0
     devDependencies:
-      '@mixan/eslint-config':
+      '@openpanel/eslint-config':
         specifier: workspace:*
         version: link:../eslint
-      '@mixan/prettier-config':
+      '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../prettier
-      '@mixan/tsconfig':
+      '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../typescript
       '@types/eslint':

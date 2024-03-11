@@ -1,6 +1,6 @@
 // NEW
 
-export interface MixanEventOptions {
+export interface OpenpanelEventOptions {
   profileId?: string;
 }
 
@@ -9,7 +9,7 @@ export interface PostEventPayload {
   timestamp: string;
   deviceId?: string;
   profileId?: string;
-  properties?: Record<string, unknown> & MixanEventOptions;
+  properties?: Record<string, unknown> & OpenpanelEventOptions;
 }
 
 export interface UpdateProfilePayload {
@@ -33,7 +33,7 @@ export interface DecrementProfilePayload {
   value: number;
 }
 
-export interface MixanOptions {
+export interface OpenpanelOptions {
   url: string;
   clientId: string;
   clientSecret?: string;
@@ -43,7 +43,7 @@ export interface MixanOptions {
   removeDeviceId?: () => void;
 }
 
-export interface MixanState {
+export interface OpenpanelState {
   deviceId?: string;
   profileId?: string;
   properties: Record<string, unknown>;
@@ -127,19 +127,19 @@ function createApi(_url: string) {
   };
 }
 
-export class Mixan<Options extends MixanOptions = MixanOptions> {
+export class Openpanel<Options extends OpenpanelOptions = OpenpanelOptions> {
   public options: Options;
   public api: ReturnType<typeof createApi>;
-  private state: MixanState = {
+  private state: OpenpanelState = {
     properties: {},
   };
 
   constructor(options: Options) {
     this.options = options;
     this.api = createApi(options.url);
-    this.api.headers['mixan-client-id'] = options.clientId;
+    this.api.headers['openpanel-client-id'] = options.clientId;
     if (this.options.clientSecret) {
-      this.api.headers['mixan-client-secret'] = this.options.clientSecret;
+      this.api.headers['openpanel-client-secret'] = this.options.clientSecret;
     }
   }
 
@@ -163,7 +163,7 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
   public increment(
     property: string,
     value: number,
-    options?: MixanEventOptions
+    options?: OpenpanelEventOptions
   ) {
     const profileId = options?.profileId ?? this.state.profileId;
     if (!profileId) {
@@ -179,7 +179,7 @@ export class Mixan<Options extends MixanOptions = MixanOptions> {
   public decrement(
     property: string,
     value: number,
-    options?: MixanEventOptions
+    options?: OpenpanelEventOptions
   ) {
     const profileId = options?.profileId ?? this.state.profileId;
     if (!profileId) {

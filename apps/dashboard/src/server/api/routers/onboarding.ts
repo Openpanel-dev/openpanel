@@ -1,8 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { clerkClient } from '@clerk/nextjs';
+import { db } from '@openpanel/db';
 import { z } from 'zod';
-
-import { db } from '@mixan/db';
 
 export const onboardingRouter = createTRPCRouter({
   organziation: protectedProcedure

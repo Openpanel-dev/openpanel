@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 
-import type { IServiceCreateEventPayload } from '@mixan/db';
+import type { IServiceCreateEventPayload } from '@openpanel/db';
 
 import { connection } from './connection';
 

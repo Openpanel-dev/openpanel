@@ -1,9 +1,8 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { clerkClient } from '@clerk/nextjs';
+import { getOrganizationBySlug } from '@openpanel/db';
+import { zInviteUser } from '@openpanel/validation';
 import { z } from 'zod';
-
-import { getOrganizationBySlug } from '@mixan/db';
-import { zInviteUser } from '@mixan/validation';
 
 export const organizationRouter = createTRPCRouter({
   list: protectedProcedure.query(() => {

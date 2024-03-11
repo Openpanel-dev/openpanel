@@ -1,8 +1,7 @@
 import { slug } from '@/utils/slug';
+import { db } from '@openpanel/db';
 
-import { db } from '@mixan/db';
-
-export { db } from '@mixan/db';
+export { db } from '@openpanel/db';
 
 export async function getId(tableName: 'project' | 'dashboard', name: string) {
   const newId = slug(name);

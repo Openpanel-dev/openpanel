@@ -5,6 +5,7 @@ import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { getChartColor } from '@/utils/theme';
+import type { IChartLineType, IInterval } from '@openpanel/validation';
 import {
   Area,
   AreaChart,
@@ -13,8 +14,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-
-import type { IChartLineType, IInterval } from '@mixan/validation';
 
 import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';

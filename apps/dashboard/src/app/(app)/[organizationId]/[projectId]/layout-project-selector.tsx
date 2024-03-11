@@ -2,9 +2,8 @@
 
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
+import type { getProjectsByOrganizationSlug } from '@openpanel/db';
 import { usePathname, useRouter } from 'next/navigation';
-
-import type { getProjectsByOrganizationSlug } from '@mixan/db';
 
 interface LayoutProjectSelectorProps {
   projects: Awaited<ReturnType<typeof getProjectsByOrganizationSlug>>;

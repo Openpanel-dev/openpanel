@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/public",
+  "name": "@openpanel/public",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,7 +12,7 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
-    "@mixan/db": "workspace:*",
+    "@openpanel/db": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-aspect-ratio": "^1.0.3",
     "@radix-ui/react-avatar": "^1.0.4",
@@ -42,9 +42,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@mixan/eslint-config": "workspace:*",
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "@tailwindcss/typography": "^0.5.10",
     "@types/node": "^18.16.0",
     "@types/react": "^18.2.20",
@@ -66,10 +66,10 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@mixan/eslint-config/base",
-      "@mixan/eslint-config/react",
-      "@mixan/eslint-config/nextjs"
+      "@openpanel/eslint-config/base",
+      "@openpanel/eslint-config/react",
+      "@openpanel/eslint-config/nextjs"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

@@ -1,13 +1,13 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
-import type * as WebSocket from 'ws';
+import type { FastifyReply, FastifyRequest } from "fastify";
+import type * as WebSocket from "ws";
 
-import { getSafeJson } from '@mixan/common';
-import type { IServiceCreateEventPayload } from '@mixan/db';
-import { getEvents, getLiveVisitors } from '@mixan/db';
-import { redis, redisPub, redisSub } from '@mixan/redis';
+import { getSafeJson } from "@openpanel/common";
+import type { IServiceCreateEventPayload } from "@openpanel/db";
+import { getEvents, getLiveVisitors } from "@openpanel/db";
+import { redis, redisPub, redisSub } from "@openpanel/redis";
 
 export function getLiveEventInfo(key: string) {
-  return key.split(':').slice(2) as [string, string];
+  return key.split(":").slice(2) as [string, string];
 }
 
 export async function test(
@@ -16,20 +16,20 @@ export async function test(
       projectId: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const [event] = await getEvents(
-    `SELECT * FROM events WHERE project_id = '${req.params.projectId}' AND name = 'screen_view' LIMIT 1`
+    `SELECT * FROM events WHERE project_id = '${req.params.projectId}' AND name = 'screen_view' LIMIT 1`,
   );
   if (!event) {
-    return reply.status(404).send('No event found');
+    return reply.status(404).send("No event found");
   }
-  redisPub.publish('event', JSON.stringify(event));
+  redisPub.publish("event", JSON.stringify(event));
   redis.set(
     `live:event:${event.projectId}:${Math.random() * 1000}`,
-    '',
-    'EX',
-    10
+    "",
+    "EX",
+    10,
   );
   reply.status(202).send(event);
 }
@@ -42,15 +42,15 @@ export function wsVisitors(
     Params: {
       projectId: string;
     };
-  }>
+  }>,
 ) {
   const { params } = req;
 
-  redisSub.subscribe('event');
-  redisSub.psubscribe('__key*:expired');
+  redisSub.subscribe("event");
+  redisSub.psubscribe("__key*:expired");
 
   const message = (channel: string, message: string) => {
-    if (channel === 'event') {
+    if (channel === "event") {
       const event = getSafeJson<IServiceCreateEventPayload>(message);
       if (event?.projectId === params.projectId) {
         getLiveVisitors(params.projectId).then((count) => {
@@ -68,14 +68,14 @@ export function wsVisitors(
     }
   };
 
-  redisSub.on('message', message);
-  redisSub.on('pmessage', pmessage);
+  redisSub.on("message", message);
+  redisSub.on("pmessage", pmessage);
 
-  connection.socket.on('close', () => {
-    redisSub.unsubscribe('event');
-    redisSub.punsubscribe('__key*:expired');
-    redisSub.off('message', message);
-    redisSub.off('pmessage', pmessage);
+  connection.socket.on("close", () => {
+    redisSub.unsubscribe("event");
+    redisSub.punsubscribe("__key*:expired");
+    redisSub.off("message", message);
+    redisSub.off("pmessage", pmessage);
   });
 }
 
@@ -87,11 +87,11 @@ export function wsEvents(
     Params: {
       projectId: string;
     };
-  }>
+  }>,
 ) {
   const { params } = req;
 
-  redisSub.subscribe('event');
+  redisSub.subscribe("event");
 
   const message = (channel: string, message: string) => {
     const event = getSafeJson<IServiceCreateEventPayload>(message);
@@ -100,10 +100,10 @@ export function wsEvents(
     }
   };
 
-  redisSub.on('message', message);
+  redisSub.on("message", message);
 
-  connection.socket.on('close', () => {
-    redisSub.unsubscribe('event');
-    redisSub.off('message', message);
+  connection.socket.on("close", () => {
+    redisSub.unsubscribe("event");
+    redisSub.off("message", message);
   });
 }

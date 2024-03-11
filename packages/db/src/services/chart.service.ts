@@ -1,4 +1,4 @@
-import type { IChartEventFilter, IGetChartDataInput } from '@mixan/validation';
+import type { IChartEventFilter, IGetChartDataInput } from '@openpanel/validation';
 
 import { formatClickhouseDate } from '../clickhouse-client';
 import type { SqlBuilderObject } from '../sql-builder';

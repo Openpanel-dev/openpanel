@@ -1,9 +1,9 @@
-import type { MixanOptions, PostEventPayload } from '@mixan/sdk';
-import { Mixan } from '@mixan/sdk';
+import type { OpenpanelOptions, PostEventPayload } from '@openpanel/sdk';
+import { Openpanel } from '@openpanel/sdk';
 
-export * from '@mixan/sdk';
+export * from '@openpanel/sdk';
 
-export type MixanWebOptions = MixanOptions & {
+export type OpenpanelWebOptions = OpenpanelOptions & {
   trackOutgoingLinks?: boolean;
   trackScreenViews?: boolean;
   trackAttributes?: boolean;
@@ -16,10 +16,10 @@ function toCamelCase(str: string) {
   );
 }
 
-export class MixanWeb extends Mixan<MixanWebOptions> {
+export class OpenpanelWeb extends Openpanel<OpenpanelWebOptions> {
   private lastPath = '';
 
-  constructor(options: MixanWebOptions) {
+  constructor(options: OpenpanelWebOptions) {
     super(options);
 
     if (!this.isServer()) {

@@ -1,59 +1,113 @@
-import {
-  OpenpanelProvider,
-  SetProfileId,
-  trackEvent,
-} from '@mixan-test/nextjs';
-import { Mixan as Openpanel } from '@mixan-test/sdk';
+import { getClientIp, parseIp } from "@/utils/parseIp";
+import { isUserAgentSet, parseUserAgent } from "@/utils/parseUserAgent";
+import type { FastifyReply, FastifyRequest } from "fastify";
+import { assocPath, pathOr } from "ramda";
 
-const opServer = new Openpanel({
-  clientId: '4c9a28cb-73c3-429f-beaf-4b3fe91352ea',
-  clientSecret: '2701ada9-fcbf-414a-ac94-9511949ee44d',
-  url: 'https://api.openpanel.dev',
-});
+import { getProfileById, upsertProfile } from "@openpanel/db";
+import type {
+  IncrementProfilePayload,
+  UpdateProfilePayload,
+} from "@openpanel/sdk";
 
-export default function Page() {
-  // Track event in server actions
-  async function create() {
-    'use server';
-    opServer.event('some-event', {
-      profileId: '1234',
-    });
+export async function updateProfile(
+  request: FastifyRequest<{
+    Body: UpdateProfilePayload;
+  }>,
+  reply: FastifyReply,
+) {
+  const { profileId, properties, ...rest } = request.body;
+  const projectId = request.projectId;
+  const ip = getClientIp(request)!;
+  const ua = request.headers["user-agent"]!;
+  const uaInfo = parseUserAgent(ua);
+  const geo = await parseIp(ip);
+
+  await upsertProfile({
+    id: profileId,
+    projectId,
+    properties: {
+      ...(properties ?? {}),
+      ...(ip ? geo : {}),
+      ...(isUserAgentSet(ua) ? uaInfo : {}),
+    },
+    ...rest,
+  });
+
+  reply.status(202).send(profileId);
+}
+
+export async function incrementProfileProperty(
+  request: FastifyRequest<{
+    Body: IncrementProfilePayload;
+  }>,
+  reply: FastifyReply,
+) {
+  const { profileId, property, value } = request.body;
+  const projectId = request.projectId;
+
+  const profile = await getProfileById(profileId);
+  if (!profile) {
+    return reply.status(404).send("Not found");
   }
 
-  return (
-    <div>
-      {/* In layout.tsx (app dir) or _app.tsx (pages) */}
-      <OpenpanelProvider
-        clientId="0acce97f-1126-4439-b7ee-5d384e2fc94b"
-        url="https://api.openpanel.dev"
-        trackScreenViews
-        trackAttributes
-        trackOutgoingLinks
-      />
-
-      {/* Provide user id in React Server Components */}
-      <SetProfileId value="1234" />
-
-      <button
-        onClick={() =>
-          trackEvent('some-event', {
-            bar: 'bar',
-            foo: 'foo',
-            revenue: 1000,
-          })
-        }
-      >
-        Track event with method
-      </button>
-
-      <button
-        data-event="some-event"
-        data-bar="bar"
-        data-foo="foo"
-        data-revenue="1000"
-      >
-        Track event with attributes
-      </button>
-    </div>
+  const parsed = parseInt(
+    pathOr<string>("0", property.split("."), profile.properties),
+    10,
   );
+
+  if (isNaN(parsed)) {
+    return reply.status(400).send("Not number");
+  }
+
+  profile.properties = assocPath(
+    property.split("."),
+    parsed + value,
+    profile.properties,
+  );
+
+  await upsertProfile({
+    id: profile.id,
+    projectId,
+    properties: profile.properties,
+  });
+
+  reply.status(202).send(profile.id);
+}
+
+export async function decrementProfileProperty(
+  request: FastifyRequest<{
+    Body: IncrementProfilePayload;
+  }>,
+  reply: FastifyReply,
+) {
+  const { profileId, property, value } = request.body;
+  const projectId = request.projectId;
+
+  const profile = await getProfileById(profileId);
+  if (!profile) {
+    return reply.status(404).send("Not found");
+  }
+
+  const parsed = parseInt(
+    pathOr<string>("0", property.split("."), profile.properties),
+    10,
+  );
+
+  if (isNaN(parsed)) {
+    return reply.status(400).send("Not number");
+  }
+
+  profile.properties = assocPath(
+    property.split("."),
+    parsed - value,
+    profile.properties,
+  );
+
+  await upsertProfile({
+    id: profile.id,
+    projectId,
+    properties: profile.properties,
+  });
+
+  reply.status(202).send(profile.id);
 }

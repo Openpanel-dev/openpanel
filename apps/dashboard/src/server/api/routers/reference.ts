@@ -1,8 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { db, getReferences } from '@openpanel/db';
+import { zCreateReference, zRange } from '@openpanel/validation';
 import { z } from 'zod';
-
-import { db, getReferences } from '@mixan/db';
-import { zCreateReference, zRange } from '@mixan/validation';
 
 import { getChartStartEndDate } from './chart.helpers';
 

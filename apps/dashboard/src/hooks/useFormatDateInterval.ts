@@ -1,4 +1,4 @@
-import type { IInterval } from '@mixan/validation';
+import type { IInterval } from '@openpanel/validation';
 
 export function formatDateInterval(interval: IInterval, date: Date): string {
   if (interval === 'hour' || interval === 'minute') {

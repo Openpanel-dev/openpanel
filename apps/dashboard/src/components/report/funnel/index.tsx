@@ -2,8 +2,7 @@
 
 import type { RouterOutputs } from '@/app/_trpc/client';
 import { api } from '@/app/_trpc/client';
-
-import type { IChartInput } from '@mixan/validation';
+import type { IChartInput } from '@openpanel/validation';
 
 import { ChartEmpty } from '../chart/ChartEmpty';
 import { withChartProivder } from '../chart/ChartProvider';

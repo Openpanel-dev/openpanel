@@ -1,11 +1,10 @@
 import { useDispatch, useSelector } from '@/redux';
-import { ClockIcon } from 'lucide-react';
-
 import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
-} from '@mixan/constants';
-import type { IInterval } from '@mixan/validation';
+} from '@openpanel/constants';
+import type { IInterval } from '@openpanel/validation';
+import { ClockIcon } from 'lucide-react';
 
 import { Combobox } from '../ui/combobox';
 import { changeInterval } from './reportSlice';

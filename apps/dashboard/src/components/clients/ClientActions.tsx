@@ -3,11 +3,10 @@
 import { api } from '@/app/_trpc/client';
 import { pushModal, showConfirm } from '@/modals';
 import { clipboard } from '@/utils/clipboard';
+import type { IServiceClientWithProject } from '@openpanel/db';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-
-import type { IServiceClientWithProject } from '@mixan/db';
 
 import { Button } from '../ui/button';
 import {

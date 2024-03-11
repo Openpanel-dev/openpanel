@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup';
 
-import config from '@mixan/tsconfig/tsup.config.json' assert {
+import config from '@openpanel/tsconfig/tsup.config.json' assert {
   type: 'json'
 }
 

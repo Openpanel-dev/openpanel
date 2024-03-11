@@ -1,9 +1,8 @@
 // import { CreateOrganization } from '@clerk/nextjs';
 
 import { LogoSquare } from '@/components/Logo';
+import { getCurrentOrganizations } from '@openpanel/db';
 import { redirect } from 'next/navigation';
-
-import { getCurrentOrganizations } from '@mixan/db';
 
 import { CreateOrganization } from './create-organization';
 

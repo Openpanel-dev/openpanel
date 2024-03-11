@@ -1,10 +1,6 @@
-<p align="center">
-  <img src="images/mixan.svg">
-</p>
+# openpanel
 
-# mixan
-
-Mixan is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now).
+Openpanel is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now).
 
 - Easy to use
 - Fully responsive UI
@@ -71,24 +67,24 @@ As of today (~~2023-12-12~~ 2024-01-16) I have more then ~~1.2~~ 2.8 million eve
 - [x] Create web sdk
   - [x] Screen view function should take in title, path and parse query string (especially utm tags)
 
-## @mixan/sdk
+## @openpanel/sdk
 
 For pushing events
 
 ### Install
 
-- npm: `npm install @mixan/sdk`
-- pnpm: `pnpm add @mixan/sdk`
-- yarn: `yarn add @mixan/sdk`
+- npm: `npm install @openpanel/sdk`
+- pnpm: `pnpm add @openpanel/sdk`
+- yarn: `yarn add @openpanel/sdk`
 
 ### Usage
 
 ```ts
-import { MixanWeb } from '@mixan/web';
+import { OpenpanelWeb } from '@openpanel/web';
 
-// import { MixanNative } from '@mixan/sdk-native';
+// import { OpenpanelNative } from '@openpanel/sdk-native';
 
-const mixan = new MixanWeb({
+const openpanel = new OpenpanelWeb({
   clientId: 'uuid',
   url: 'http://localhost:8080/api/sdk',
   batchInterval: 10000,
@@ -96,7 +92,7 @@ const mixan = new MixanWeb({
   trackIp: true,
 });
 
-// const mixan = new MixanNative({
+// const openpanel = new OpenpanelNative({
 //   clientId: 'uuid',
 //   clientSecret: 'uuid',
 //   url: 'http://localhost:8080/api/sdk',
@@ -108,12 +104,12 @@ const mixan = new MixanWeb({
 // Call this before you send any events
 // It will create a anonymous profile
 // This profile will be merged if you call `setUser` in a later stage
-mixan.init();
+openpanel.init();
 
 // tracks all outgoing links as a `link_out` event
-mixan.trackOutgoingLinks();
+openpanel.trackOutgoingLinks();
 
-mixan.setUser({
+openpanel.setUser({
   id: 'id',
   first_name: 'John',
   last_name: 'Doe',
@@ -122,25 +118,25 @@ mixan.setUser({
 });
 
 // will upsert 'app_open' on user property and increment it
-mixan.increment('app_open');
+openpanel.increment('app_open');
 // will upsert 'app_open' on user property and increment it by 10
-mixan.increment('app_open', 10);
+openpanel.increment('app_open', 10);
 // will upsert 'app_open' on user property and decrement it by 2
-mixan.decrement('app_open', 2);
+openpanel.decrement('app_open', 2);
 
 // send a sign_in event
-mixan.event('sign_in');
+openpanel.event('sign_in');
 
 // send a sign_in event with properties
-mixan.event('sign_in', {
+openpanel.event('sign_in', {
   provider: 'gmail',
 });
 
 // Screen view for web
-mixan.screenView();
+openpanel.screenView();
 
 // Screen view for native
-mixan.screenView('Article', {
+openpanel.screenView('Article', {
   id: '3',
   title: 'Nice article here',
 });
@@ -148,10 +144,10 @@ mixan.screenView('Article', {
 // Call this when a user is logged out.
 // This will just make sure you do not send
 // the associated profile id for the next events
-mixan.clear();
+openpanel.clear();
 ```
 
-## @mixan/dashboard
+## @openpanel/dashboard
 
 A nextjs web app. Collects all events and your gui to analyze your data.
 

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { LucideIcon, LucideProps } from 'lucide-react';
 import {
   ActivityIcon,
@@ -13,8 +14,6 @@ import {
   SmartphoneIcon,
   TabletIcon,
 } from 'lucide-react';
-
-import { NOT_SET_VALUE } from '@mixan/constants';
 
 interface SerieIconProps extends LucideProps {
   name: string;

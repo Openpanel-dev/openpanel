@@ -1,4 +1,4 @@
-import { toDots } from '@mixan/common';
+import { toDots } from '@openpanel/common';
 
 import { Table, TableBody, TableCell, TableRow } from '../ui/table';
 

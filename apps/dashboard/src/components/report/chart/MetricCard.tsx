@@ -4,10 +4,9 @@ import type { IChartData } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/ColorSquare';
 import { fancyMinutes, useNumber } from '@/hooks/useNumerFormatter';
 import { theme } from '@/utils/theme';
+import type { IChartMetric } from '@openpanel/validation';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
-
-import type { IChartMetric } from '@mixan/validation';
 
 import {
   getDiffIndicator,

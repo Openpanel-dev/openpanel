@@ -1,17 +1,16 @@
 import { getDaysOldDate } from '@/utils/date';
 import { round } from '@/utils/math';
-import * as mathjs from 'mathjs';
-import { sort } from 'ramda';
-
-import { alphabetIds, NOT_SET_VALUE } from '@mixan/constants';
-import { chQuery, convertClickhouseDateToJs, getChartSql } from '@mixan/db';
+import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
+import { chQuery, convertClickhouseDateToJs, getChartSql } from '@openpanel/db';
 import type {
   IChartEvent,
   IChartInput,
   IChartRange,
   IGetChartDataInput,
   IInterval,
-} from '@mixan/validation';
+} from '@openpanel/validation';
+import * as mathjs from 'mathjs';
+import { sort } from 'ramda';
 
 export type GetChartDataResult = Awaited<ReturnType<typeof getChartData>>;
 export interface ResultItem {

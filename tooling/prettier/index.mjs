@@ -8,7 +8,7 @@ const config = {
     '^(react/(.*)$)|^(react$)|^(react-native(.*)$)',
     '<THIRD_PARTY_MODULES>',
     '',
-    '^@mixan/(.*)$',
+    '^@openpanel/(.*)$',
     '',
     '^~/',
     '^[../]',

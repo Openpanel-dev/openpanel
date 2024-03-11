@@ -1,7 +1,6 @@
 import { formatDate, formatDateTime } from '@/utils/date';
+import type { IServiceReference } from '@openpanel/db';
 import type { ColumnDef } from '@tanstack/react-table';
-
-import type { IServiceReference } from '@mixan/db';
 
 export const columns: ColumnDef<IServiceReference>[] = [
   {

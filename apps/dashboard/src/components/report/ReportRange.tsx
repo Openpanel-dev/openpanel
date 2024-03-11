@@ -9,12 +9,11 @@ import {
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { useDispatch, useSelector } from '@/redux';
 import { cn } from '@/utils/cn';
+import { timeRanges } from '@openpanel/constants';
+import type { IChartRange } from '@openpanel/validation';
 import { endOfDay, format, startOfDay } from 'date-fns';
 import { CalendarIcon, ChevronsUpDownIcon } from 'lucide-react';
 import type { SelectRangeEventHandler } from 'react-day-picker';
-
-import { timeRanges } from '@mixan/constants';
-import type { IChartRange } from '@mixan/validation';
 
 import type { ExtendedComboboxProps } from '../ui/combobox';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';

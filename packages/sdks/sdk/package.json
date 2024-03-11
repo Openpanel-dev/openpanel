@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/sdk",
+  "name": "@openpanel/sdk",
   "version": "0.0.1",
   "module": "index.ts",
   "scripts": {
@@ -10,9 +10,9 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@mixan/eslint-config": "workspace:*",
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsup": "^7.2.0",
@@ -21,8 +21,8 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@mixan/eslint-config/base"
+      "@openpanel/eslint-config/base"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

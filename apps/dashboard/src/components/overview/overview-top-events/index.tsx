@@ -1,4 +1,4 @@
-import { getConversionEventNames } from '@mixan/db';
+import { getConversionEventNames } from '@openpanel/db';
 
 import type { OverviewTopEventsProps } from './overview-top-events';
 import OverviewTopEvents from './overview-top-events';

@@ -7,12 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAppParams } from '@/hooks/useAppParams';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { zShareOverview } from '@openpanel/validation';
 import { useRouter } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-
-import { zShareOverview } from '@mixan/validation';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';

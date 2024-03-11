@@ -1,4 +1,4 @@
-import { getProjectsByOrganizationSlug } from '@mixan/db';
+import { getProjectsByOrganizationSlug } from '@openpanel/db';
 
 import LayoutProjectSelector from './layout-project-selector';
 

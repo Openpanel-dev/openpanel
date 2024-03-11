@@ -5,12 +5,11 @@ import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { getUserById } from '@openpanel/db';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-import type { getUserById } from '@mixan/db';
 
 const validator = z.object({
   firstName: z.string().min(2),

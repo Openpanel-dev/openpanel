@@ -5,12 +5,11 @@ import { ButtonContainer } from '@/components/ButtonContainer';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { IServiceClient } from '@openpanel/db';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-import type { IServiceClient } from '@mixan/db';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';

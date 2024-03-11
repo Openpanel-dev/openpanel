@@ -1,10 +1,10 @@
 #!/bin/bash
 
 docker build \
-  --build-arg DATABASE_URL="postgresql://local@host.docker.internal:5432/mixan?schema=public" \
+  --build-arg DATABASE_URL="postgresql://local@host.docker.internal:5432/openpanel?schema=public" \
   --build-arg NEXTAUTH_SECRET="secret_sauce" \
   --build-arg REDIS_URL="redis://127.0.0.1:6379" \
-  -t mixan/composed:latest \
-  -t mixan/composed:1.0 \
+  -t openpanel/composed:latest \
+  -t openpanel/composed:1.0 \
   -f docker/Dockerfile-composed \
   .

@@ -11,14 +11,13 @@ import {
 import { useEventValues } from '@/hooks/useEventValues';
 import { useProfileProperties } from '@/hooks/useProfileProperties';
 import { useProfileValues } from '@/hooks/useProfileValues';
-import { XIcon } from 'lucide-react';
-import type { Options as NuqsOptions } from 'nuqs';
-
 import type {
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
-} from '@mixan/validation';
+} from '@openpanel/validation';
+import { XIcon } from 'lucide-react';
+import type { Options as NuqsOptions } from 'nuqs';
 
 export interface OverviewFiltersDrawerContentProps {
   projectId: string;

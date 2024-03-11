@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/docs",
+  "name": "@openpanel/docs",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -19,9 +19,9 @@
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@mixan/eslint-config": "workspace:*",
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "@types/node": "^18.16.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
@@ -37,10 +37,10 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@mixan/eslint-config/base",
-      "@mixan/eslint-config/react",
-      "@mixan/eslint-config/nextjs"
+      "@openpanel/eslint-config/base",
+      "@openpanel/eslint-config/react",
+      "@openpanel/eslint-config/nextjs"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/db",
+  "name": "@openpanel/db",
   "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
@@ -14,18 +14,18 @@
   "dependencies": {
     "@clerk/nextjs": "^4.29.7",
     "@clickhouse/client": "^0.2.9",
-    "@mixan/common": "workspace:*",
-    "@mixan/constants": "workspace:*",
-    "@mixan/redis": "workspace:*",
-    "@mixan/validation": "workspace:*",
+    "@openpanel/common": "workspace:*",
+    "@openpanel/constants": "workspace:*",
+    "@openpanel/redis": "workspace:*",
+    "@openpanel/validation": "workspace:*",
     "@prisma/client": "^5.1.1",
     "ramda": "^0.29.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@mixan/eslint-config": "workspace:*",
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "@types/node": "^18.16.0",
     "@types/ramda": "^0.29.6",
     "@types/uuid": "^9.0.8",
@@ -37,8 +37,8 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@mixan/eslint-config/base"
+      "@openpanel/eslint-config/base"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

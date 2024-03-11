@@ -12,10 +12,9 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { cn } from '@/utils/cn';
+import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-
-import type { IServiceCreateEventPayload } from '@mixan/db';
 
 import {
   EventIconColors,

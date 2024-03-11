@@ -1,8 +1,8 @@
 import type { Job } from 'bullmq';
 
-import { getTime } from '@mixan/common';
-import { createEvent, getEvents } from '@mixan/db';
-import type { EventsQueuePayloadCreateSessionEnd } from '@mixan/queue/src/queues';
+import { getTime } from '@openpanel/common';
+import { createEvent, getEvents } from '@openpanel/db';
+import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue/src/queues';
 
 export async function createSessionEnd(
   job: Job<EventsQueuePayloadCreateSessionEnd>

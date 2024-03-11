@@ -1,4 +1,4 @@
-import type { IChartEvent } from '@mixan/validation';
+import type { IChartEvent } from '@openpanel/validation';
 
 import { FilterItem } from './FilterItem';
 

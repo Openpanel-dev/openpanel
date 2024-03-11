@@ -1,7 +1,6 @@
 import { formatDate } from '@/utils/date';
+import type { IServiceClientWithProject } from '@openpanel/db';
 import type { ColumnDef } from '@tanstack/react-table';
-
-import type { IServiceClientWithProject } from '@mixan/db';
 
 import { ClientActions } from './ClientActions';
 

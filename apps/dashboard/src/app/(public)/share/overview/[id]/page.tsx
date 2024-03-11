@@ -11,9 +11,8 @@ import OverviewTopEvents from '@/components/overview/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
+import { getOrganizationBySlug, getShareOverviewById } from '@openpanel/db';
 import { notFound } from 'next/navigation';
-
-import { getOrganizationBySlug, getShareOverviewById } from '@mixan/db';
 
 interface PageProps {
   params: {

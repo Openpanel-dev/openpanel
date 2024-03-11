@@ -4,7 +4,7 @@ import type { Options } from 'tsup';
 const options: Options = {
   clean: true,
   entry: ['src/index.ts'],
-  noExternal: [/^@mixan\/.*$/u, /^@\/.*$/u],
+  noExternal: [/^@openpanel\/.*$/u, /^@\/.*$/u],
   sourcemap: true,
   splitting: false,
 };

@@ -1,8 +1,8 @@
 import { shortNumber } from '@/hooks/useNumerFormatter';
 import Link from 'next/link';
 
-import type { IServiceProject } from '@mixan/db';
-import { chQuery } from '@mixan/db';
+import type { IServiceProject } from '@openpanel/db';
+import { chQuery } from '@openpanel/db';
 
 import { ChartSSR } from '../chart-ssr';
 

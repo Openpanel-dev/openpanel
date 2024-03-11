@@ -6,9 +6,8 @@ import {
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
+import { getEventList, getEventsCount } from '@openpanel/db';
 import { parseAsInteger } from 'nuqs';
-
-import { getEventList, getEventsCount } from '@mixan/db';
 
 import { StickyBelowHeader } from '../layout-sticky-below-header';
 import { EventChart } from './event-chart';

@@ -6,7 +6,7 @@
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: false,
-  transpilePackages: ['@mixan/sdk', '@mixan/web', '@mixan/nextjs'],
+  transpilePackages: ['@openpanel/sdk', '@openpanel/web', '@openpanel/nextjs'],
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
   /**

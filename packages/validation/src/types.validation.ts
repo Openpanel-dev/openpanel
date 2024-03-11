@@ -1,6 +1,6 @@
 import type { z } from 'zod';
 
-import type { timeRanges } from '@mixan/constants';
+import type { timeRanges } from '@openpanel/constants';
 
 import type {
   zChartBreakdown,

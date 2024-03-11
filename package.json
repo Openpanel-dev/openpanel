@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/root",
+  "name": "@openpanel/root",
   "version": "1.0.0",
   "private": true,
   "license": "MIT",
@@ -20,11 +20,11 @@
     "typecheck": "pnpm -r typecheck"
   },
   "dependencies": {
-    "@mixan/prettier-config": "^0.1.0",
+    "@openpanel/prettier-config": "^0.1.0",
     "dotenv-cli": "^7.3.0",
     "prettier": "^3.0.3",
     "semver": "^7.5.4",
     "typescript": "^5.2.2"
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

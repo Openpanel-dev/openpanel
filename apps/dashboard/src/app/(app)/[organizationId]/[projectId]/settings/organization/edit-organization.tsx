@@ -4,12 +4,11 @@ import { api, handleError } from '@/app/_trpc/client';
 import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+import type { getOrganizationBySlug } from '@openpanel/db';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-import type { getOrganizationBySlug } from '@mixan/db';
 
 const validator = z.object({
   id: z.string().min(2),

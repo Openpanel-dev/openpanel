@@ -1,6 +1,6 @@
 'use client';
 
-import type { IChartInput } from '@mixan/validation';
+import type { IChartInput } from '@openpanel/validation';
 
 import { Funnel } from '../funnel';
 import { Chart } from './Chart';

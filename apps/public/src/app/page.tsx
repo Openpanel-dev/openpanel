@@ -1,4 +1,4 @@
-import { db } from '@mixan/db';
+import { db } from '@openpanel/db';
 
 import { PreviewCarousel } from './carousel';
 import { Heading2, Lead2, Paragraph } from './copy';

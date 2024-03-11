@@ -1,13 +1,13 @@
 import type { RawRequestDefaultExpression } from 'fastify';
 
-import { verifyPassword } from '@mixan/common';
-import { db } from '@mixan/db';
+import { verifyPassword } from '@openpanel/common';
+import { db } from '@openpanel/db';
 
 export async function validateSdkRequest(
   headers: RawRequestDefaultExpression['headers']
 ): Promise<string> {
-  const clientId = headers['mixan-client-id'] as string;
-  const clientSecret = headers['mixan-client-secret'] as string;
+  const clientId = headers['openpanel-client-id'] as string;
+  const clientSecret = headers['openpanel-client-secret'] as string;
   const origin = headers.origin;
   if (!clientId) {
     throw new Error('Misisng client id');

@@ -1,5 +1,5 @@
 {
-  "extends": "@mixan/tsconfig/sdk.json",
+  "extends": "@openpanel/tsconfig/sdk.json",
   "compilerOptions": {
     "outDir": "dist"
   }

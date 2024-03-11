@@ -2,13 +2,13 @@ import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
-import type { MixanOptions, PostEventPayload } from '@mixan/sdk';
-import { Mixan } from '@mixan/sdk';
+import type { OpenpanelOptions, PostEventPayload } from '@openpanel/sdk';
+import { Openpanel } from '@openpanel/sdk';
 
-type MixanNativeOptions = MixanOptions;
+type OpenpanelNativeOptions = OpenpanelOptions;
 
-export class MixanNative extends Mixan<MixanNativeOptions> {
-  constructor(options: MixanNativeOptions) {
+export class OpenpanelNative extends Openpanel<OpenpanelNativeOptions> {
+  constructor(options: OpenpanelNativeOptions) {
     super(options);
 
     this.api.headers['User-Agent'] = Constants.getWebViewUserAgentAsync();

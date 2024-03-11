@@ -6,8 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-
-import { NOT_SET_VALUE } from '@mixan/constants';
+import { NOT_SET_VALUE } from '@openpanel/constants';
 
 import { PreviousDiffIndicatorText } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';

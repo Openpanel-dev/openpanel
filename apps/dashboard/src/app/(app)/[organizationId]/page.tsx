@@ -1,11 +1,10 @@
 import { LogoSquare } from '@/components/Logo';
 import { ProjectCard } from '@/components/projects/project-card';
-import { notFound, redirect } from 'next/navigation';
-
 import {
   getOrganizationBySlug,
   getProjectsByOrganizationSlug,
-} from '@mixan/db';
+} from '@openpanel/db';
+import { notFound, redirect } from 'next/navigation';
 
 import { CreateProject } from './create-project';
 

@@ -1,4 +1,4 @@
-import { MixanWeb as Openpanel } from './index';
+import { OpenpanelWeb as Openpanel } from './index';
 
 declare global {
   interface Window {

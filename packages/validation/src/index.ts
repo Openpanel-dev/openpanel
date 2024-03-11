@@ -7,7 +7,7 @@ import {
   metrics,
   operators,
   timeRanges,
-} from '@mixan/constants';
+} from '@openpanel/constants';
 
 export function objectToZodEnums<K extends string>(
   obj: Record<K, any>

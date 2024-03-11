@@ -1,7 +1,6 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
-
-import { getDashboardsByProjectId } from '@mixan/db';
+import { getDashboardsByProjectId } from '@openpanel/db';
 
 import { HeaderDashboards } from './header-dashboards';
 import { ListDashboards } from './list-dashboards';

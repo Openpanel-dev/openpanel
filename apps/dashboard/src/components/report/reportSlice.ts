@@ -1,15 +1,11 @@
 import { start } from 'repl';
-import { createSlice } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
-import { isSameDay, isSameMonth } from 'date-fns';
-
 import {
   alphabetIds,
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
-} from '@mixan/constants';
+} from '@openpanel/constants';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -18,7 +14,10 @@ import type {
   IChartRange,
   IChartType,
   IInterval,
-} from '@mixan/validation';
+} from '@openpanel/validation';
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { isSameDay, isSameMonth } from 'date-fns';
 
 type InitialState = IChartInput & {
   dirty: boolean;

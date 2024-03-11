@@ -1,5 +1,5 @@
-import { generateSalt } from '@mixan/common';
-import { db, getCurrentSalt } from '@mixan/db';
+import { generateSalt } from '@openpanel/common';
+import { db, getCurrentSalt } from '@openpanel/db';
 
 export async function salt() {
   const oldSalt = await getCurrentSalt();

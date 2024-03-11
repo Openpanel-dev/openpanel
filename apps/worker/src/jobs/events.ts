@@ -1,10 +1,10 @@
 import type { Job } from 'bullmq';
 
-import { createEvent } from '@mixan/db';
+import { createEvent } from '@openpanel/db';
 import type {
   EventsQueuePayload,
   EventsQueuePayloadCreateSessionEnd,
-} from '@mixan/queue/src/queues';
+} from '@openpanel/queue/src/queues';
 
 import { createSessionEnd } from './events.create-session-end';
 

@@ -2,7 +2,7 @@ import {
   getCurrentOrganizations,
   getDashboardsByOrganization,
   getDashboardsByProjectId,
-} from '@mixan/db';
+} from '@openpanel/db';
 
 import { LayoutSidebar } from './layout-sidebar';
 

@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/api",
+  "name": "@openpanel/api",
   "version": "0.0.1",
   "scripts": {
     "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
@@ -14,10 +14,10 @@
     "@fastify/cors": "^9.0.0",
     "@fastify/websocket": "^8.3.1",
     "@logtail/pino": "^0.4.19",
-    "@mixan/common": "workspace:*",
-    "@mixan/db": "workspace:*",
-    "@mixan/queue": "workspace:*",
-    "@mixan/redis": "workspace:*",
+    "@openpanel/common": "workspace:*",
+    "@openpanel/db": "workspace:*",
+    "@openpanel/queue": "workspace:*",
+    "@openpanel/redis": "workspace:*",
     "fastify": "^4.25.2",
     "ico-to-png": "^0.2.1",
     "pino": "^8.17.2",
@@ -28,10 +28,10 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@mixan/eslint-config": "workspace:*",
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/sdk": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/sdk": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",
     "@types/uuid": "^9.0.8",
@@ -44,8 +44,8 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@mixan/eslint-config/base"
+      "@openpanel/eslint-config/base"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

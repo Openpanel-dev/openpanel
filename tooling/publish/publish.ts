@@ -4,8 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import semver from 'semver';
 
-const sdkPackages = ['sdk', 'sdk-native', 'sdk-web', 'sdk-next'];
-// const sdkPackages = ['sdk'];
+const sdkPackages = ['sdk', 'react-native', 'web', 'nextjs'];
 
 const workspacePath = (relativePath: string) =>
   path.resolve(__dirname, '../../', relativePath);
@@ -59,7 +58,7 @@ function main() {
         dependencies: Object.entries(pkgJson.dependencies).reduce(
           (acc, [depName, depVersion]) => ({
             ...acc,
-            [depName]: depName.startsWith('@mixan') ? version : depVersion,
+            [depName]: depName.startsWith('@openpanel') ? version : depVersion,
           }),
           {}
         ),
@@ -74,7 +73,7 @@ function main() {
   try {
     for (const name of sdkPackages) {
       execSync('pnpm build', {
-        cwd: workspacePath(`./packages/${name}`),
+        cwd: workspacePath(`./packages/sdks/${name}`),
       });
     }
   } catch (error) {

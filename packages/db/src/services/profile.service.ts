@@ -1,17 +1,17 @@
-import { toDots, toObject } from '@mixan/common';
-import type { IChartEventFilter } from '@mixan/validation';
+import { toDots, toObject } from "@openpanel/common";
+import type { IChartEventFilter } from "@openpanel/validation";
 
-import { ch, chQuery } from '../clickhouse-client';
-import { createSqlBuilder } from '../sql-builder';
-import { getEventFiltersWhereClause } from './chart.service';
+import { ch, chQuery } from "../clickhouse-client";
+import { createSqlBuilder } from "../sql-builder";
+import { getEventFiltersWhereClause } from "./chart.service";
 
 export async function getProfileById(id: string) {
-  if (id === '') {
+  if (id === "") {
     return null;
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM profiles WHERE id = '${id}' ORDER BY created_at DESC LIMIT 1`
+    `SELECT * FROM profiles WHERE id = '${id}' ORDER BY created_at DESC LIMIT 1`,
   );
 
   if (!profile) {
@@ -30,15 +30,15 @@ interface GetProfileListOptions {
 
 function getProfileSelectFields() {
   return [
-    'id',
-    'argMax(first_name, created_at) as first_name',
-    'argMax(last_name, created_at) as last_name',
-    'argMax(email, created_at) as email',
-    'argMax(avatar, created_at) as avatar',
-    'argMax(properties, created_at) as properties',
-    'argMax(project_id, created_at) as project_id',
-    'max(created_at) as max_created_at',
-  ].join(', ');
+    "id",
+    "argMax(first_name, created_at) as first_name",
+    "argMax(last_name, created_at) as last_name",
+    "argMax(email, created_at) as email",
+    "argMax(avatar, created_at) as avatar",
+    "argMax(properties, created_at) as properties",
+    "argMax(project_id, created_at) as project_id",
+    "max(created_at) as max_created_at",
+  ].join(", ");
 }
 
 interface GetProfilesOptions {
@@ -53,9 +53,9 @@ export async function getProfiles({ ids }: GetProfilesOptions) {
     `SELECT 
     ${getProfileSelectFields()}
     FROM profiles 
-    WHERE id IN (${ids.map((id) => `'${id}'`).join(',')})
+    WHERE id IN (${ids.map((id) => `'${id}'`).join(",")})
     GROUP BY id
-    `
+    `,
   );
 
   return data.map(transformProfile);
@@ -85,7 +85,7 @@ export async function getProfileList({
   }
   sb.limit = take;
   sb.offset = (cursor ?? 0) * take;
-  sb.orderBy.created_at = 'max_created_at DESC';
+  sb.orderBy.created_at = "max_created_at DESC";
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
 }
@@ -93,9 +93,9 @@ export async function getProfileList({
 export async function getProfileListCount({
   projectId,
   filters,
-}: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
+}: Omit<GetProfileListOptions, "cursor" | "take">) {
   const { sb, getSql } = createSqlBuilder();
-  sb.select.count = 'count(id) as count';
+  sb.select.count = "count(id) as count";
   sb.from = getProfileInnerSelect(projectId);
   if (filters) {
     sb.where = {
@@ -109,7 +109,7 @@ export async function getProfileListCount({
 
 export async function getProfilesByExternalId(
   externalId: string | null,
-  projectId: string
+  projectId: string,
 ) {
   if (externalId === null) {
     return [];
@@ -121,7 +121,7 @@ export async function getProfilesByExternalId(
     FROM profiles 
     GROUP BY id
     HAVING project_id = '${projectId}' AND external_id = '${externalId}'
-    `
+    `,
   );
 
   return data.map(transformProfile);
@@ -129,7 +129,7 @@ export async function getProfilesByExternalId(
 
 export type IServiceProfile = Omit<
   IClickhouseProfile,
-  'max_created_at' | 'properties'
+  "max_created_at" | "properties"
 > & {
   createdAt: Date;
   properties: Record<string, unknown>;
@@ -177,27 +177,27 @@ export async function upsertProfile({
   projectId,
 }: IServiceUpsertProfile) {
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM profiles WHERE id = '${id}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+    `SELECT * FROM profiles WHERE id = '${id}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`,
   );
 
   await ch.insert({
-    table: 'profiles',
-    format: 'JSONEachRow',
+    table: "profiles",
+    format: "JSONEachRow",
     clickhouse_settings: {
-      date_time_input_format: 'best_effort',
+      date_time_input_format: "best_effort",
     },
     values: [
       {
         id,
-        first_name: firstName ?? profile?.first_name ?? '',
-        last_name: lastName ?? profile?.last_name ?? '',
-        email: email ?? profile?.email ?? '',
-        avatar: avatar ?? profile?.avatar ?? '',
+        first_name: firstName ?? profile?.first_name ?? "",
+        last_name: lastName ?? profile?.last_name ?? "",
+        email: email ?? profile?.email ?? "",
+        avatar: avatar ?? profile?.avatar ?? "",
         properties: toDots({
           ...(profile?.properties ?? {}),
           ...(properties ?? {}),
         }),
-        project_id: projectId ?? profile?.project_id ?? '',
+        project_id: projectId ?? profile?.project_id ?? "",
         created_at: new Date(),
       },
     ],

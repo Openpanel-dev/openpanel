@@ -9,9 +9,8 @@ import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
 import { useEventNames } from '@/hooks/useEventNames';
 import { useDispatch, useSelector } from '@/redux';
+import type { IChartEvent } from '@openpanel/validation';
 import { GanttChart, GanttChartIcon, Users } from 'lucide-react';
-
-import type { IChartEvent } from '@mixan/validation';
 
 import {
   addEvent,

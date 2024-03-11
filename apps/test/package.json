@@ -1,5 +1,5 @@
 {
-  "name": "@mixan/test",
+  "name": "@openpanel/test",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,17 +12,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mixan-test/nextjs": "workspace:@mixan/nextjs@*",
-    "@mixan-test/sdk": "workspace:@mixan/sdk@*",
-    "@mixan-test/web": "workspace:@mixan/web@*",
+    "@openpanel-test/nextjs": "workspace:@openpanel/nextjs@*",
+    "@openpanel-test/sdk": "workspace:@openpanel/sdk@*",
+    "@openpanel-test/web": "workspace:@openpanel/web@*",
     "next": "~14.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@mixan/eslint-config": "workspace:*",
-    "@mixan/prettier-config": "workspace:*",
-    "@mixan/tsconfig": "workspace:*",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@types/react-syntax-highlighter": "^15.5.9",
@@ -42,10 +42,10 @@
   "eslintConfig": {
     "root": true,
     "extends": [
-      "@mixan/eslint-config/base",
-      "@mixan/eslint-config/nextjs",
-      "@mixan/eslint-config/react"
+      "@openpanel/eslint-config/base",
+      "@openpanel/eslint-config/nextjs",
+      "@openpanel/eslint-config/react"
     ]
   },
-  "prettier": "@mixan/prettier-config"
+  "prettier": "@openpanel/prettier-config"
 }

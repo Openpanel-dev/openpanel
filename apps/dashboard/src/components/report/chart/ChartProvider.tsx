@@ -10,8 +10,7 @@ import {
   useState,
 } from 'react';
 import type { IChartSerie } from '@/server/api/routers/chart';
-
-import type { IChartInput } from '@mixan/validation';
+import type { IChartInput } from '@openpanel/validation';
 
 import { ChartLoading } from './ChartLoading';
 import { MetricCardLoading } from './MetricCard';

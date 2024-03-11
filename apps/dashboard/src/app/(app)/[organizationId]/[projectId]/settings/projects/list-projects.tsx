@@ -6,9 +6,8 @@ import { columns } from '@/components/projects/table';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
+import type { getProjectsByOrganizationSlug } from '@openpanel/db';
 import { PlusIcon } from 'lucide-react';
-
-import type { getProjectsByOrganizationSlug } from '@mixan/db';
 
 interface ListProjectsProps {
   projects: Awaited<ReturnType<typeof getProjectsByOrganizationSlug>>;

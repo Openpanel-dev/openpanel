@@ -1,44 +1,44 @@
-import { omit, prop, uniqBy } from 'ramda';
+import { omit, prop, uniqBy } from "ramda";
 
-import { generateProfileId, getTime, toISOString } from '@mixan/common';
-import type { Event, IServiceCreateEventPayload } from '@mixan/db';
+import { generateProfileId, getTime, toISOString } from "@openpanel/common";
+import type { Event, IServiceCreateEventPayload } from "@openpanel/db";
 import {
   createEvent as createClickhouseEvent,
   db,
   formatClickhouseDate,
   getSalts,
-} from '@mixan/db';
+} from "@openpanel/db";
 
-import { parseIp } from '../src/utils/parseIp';
-import { parseUserAgent } from '../src/utils/parseUserAgent';
+import { parseIp } from "../src/utils/parseIp";
+import { parseUserAgent } from "../src/utils/parseUserAgent";
 
 const clean = omit([
-  'ip',
-  'os',
-  'ua',
-  'url',
-  'hash',
-  'host',
-  'path',
-  'device',
-  'screen',
-  'hostname',
-  'language',
-  'referrer',
-  'timezone',
+  "ip",
+  "os",
+  "ua",
+  "url",
+  "hash",
+  "host",
+  "path",
+  "device",
+  "screen",
+  "hostname",
+  "language",
+  "referrer",
+  "timezone",
 ]);
 async function main() {
   const events = await db.event.findMany({
     where: {
-      project_id: '4e2798cb-e255-4e9d-960d-c9ad095aabd7',
-      name: 'screen_view',
+      project_id: "4e2798cb-e255-4e9d-960d-c9ad095aabd7",
+      name: "screen_view",
       createdAt: {
-        gte: new Date('2024-01-01'),
-        lt: new Date('2024-02-04'),
+        gte: new Date("2024-01-01"),
+        lt: new Date("2024-02-04"),
       },
     },
     orderBy: {
-      createdAt: 'asc',
+      createdAt: "asc",
     },
   });
 
@@ -50,7 +50,7 @@ async function main() {
 
     const properties = event.properties as Record<string, any>;
 
-    if (properties.ua?.includes('bot')) {
+    if (properties.ua?.includes("bot")) {
       // console.log('IGNORE', event.id);
       continue;
     }
@@ -67,20 +67,20 @@ async function main() {
     }
   }
 
-  console.log('Total users', Object.keys(grouped).length);
+  console.log("Total users", Object.keys(grouped).length);
 
   let uidx = -1;
   for (const profile_id of Object.keys(grouped)) {
     uidx++;
     console.log(`User index ${uidx}`);
 
-    const events = uniqBy(prop('createdAt'), grouped[profile_id] || []);
+    const events = uniqBy(prop("createdAt"), grouped[profile_id] || []);
 
     if (events) {
       let lastSessionStart = null;
       let screenViews = 0;
       let totalDuration = 0;
-      console.log('new user...');
+      console.log("new user...");
       let eidx = -1;
       for (const event of events) {
         eidx++;
@@ -93,7 +93,7 @@ async function main() {
         const projectId = event.project_id;
         const path = properties.path!;
         const ip = properties.ip!;
-        const origin = 'https://mixan.kiddo.se';
+        const origin = "https://openpanel.kiddo.se";
         const ua = properties.ua!;
         const uaInfo = parseUserAgent(ua);
         const salts = await getSalts();
@@ -133,8 +133,8 @@ async function main() {
               ? nextEvent.createdAt.getTime() - event.createdAt.getTime()
               : 0,
           path,
-          referrer: properties?.referrer?.host ?? '', // TODO
-          referrerName: properties?.referrer?.host ?? '', // TODO
+          referrer: properties?.referrer?.host ?? "", // TODO
+          referrerName: properties?.referrer?.host ?? "", // TODO
         };
 
         if (!prevEventAt) {
@@ -173,8 +173,8 @@ async function main() {
 async function createEvent(event: IServiceCreateEventPayload) {
   console.log(
     `Create ${event.name} - ${event.path} - ${formatClickhouseDate(
-      event.createdAt
-    )} - ${event.duration / 1000} sec`
+      event.createdAt,
+    )} - ${event.duration / 1000} sec`,
   );
   await createClickhouseEvent(event);
 }
@@ -183,7 +183,7 @@ async function createSessionStart(event: IServiceCreateEventPayload) {
   const session: IServiceCreateEventPayload = {
     ...event,
     duration: 0,
-    name: 'session_start',
+    name: "session_start",
     createdAt: toISOString(getTime(event.createdAt) - 100),
   };
 
@@ -197,7 +197,7 @@ async function createSessionEnd(
   options: {
     screenViews: number;
     totalDuration: number;
-  }
+  },
 ) {
   const properties: Record<string, unknown> = {};
   if (options.screenViews === 1) {
@@ -213,7 +213,7 @@ async function createSessionEnd(
       ...sessionStart.properties,
     },
     duration: options.totalDuration,
-    name: 'session_end',
+    name: "session_end",
     createdAt: toISOString(prevEventAt.getTime() + 10),
   };
 
