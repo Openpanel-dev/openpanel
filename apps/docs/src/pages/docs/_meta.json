@@ -1,14 +1,21 @@
 {
   "index": "Get Started",
-  "-- Implementation": {
+  "-- Frameworks": {
     "type": "separator",
-    "title": "Implementation"
+    "title": "Frameworks"
   },
   "script": "Script",
-  "javascript": "Javascript SDK",
   "nextjs": "Next.js",
   "react": "React",
   "react-native": "React-Native",
   "remix": "Remix",
-  "vue": "Vue"
+  "vue": "Vue",
+  "astro": "Astro",
+  "node": "Node (backend)",
+  "-- Others": {
+    "type": "separator",
+    "title": "Others"
+  },
+  "javascript": "Javascript SDK",
+  "web": "Web SDK"
 }

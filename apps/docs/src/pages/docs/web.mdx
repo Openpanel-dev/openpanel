@@ -5,37 +5,36 @@ import { PersonalDataWarning } from 'src/components/personal-data-warning';
 
 import SdkConfig from 'src/components/sdk-config.mdx';
 
-# React-Native
+# Web SDK
+
+This is a wrapper of <Link href="/docs/javascript">Javascript SDK</Link>. It's a simple way to use the Openpanel SDK in your web application.
 
 ## Installation
 
 <Steps>
 ### Install dependencies
 
-We're dependent on `expo-application` for `buildNumber`, `versionNumber` (and `referrer` on android) and `expo-constants` to get the `user-agent`.
-
 ```bash
-pnpm install @openpanel/react-native
-expo install --pnpm expo-application expo-constants
+pnpm install @openpanel/web
 ```
 
 ### Initialize
 
-On native we use a clientSecret to authenticate the app.
+```tsx
+import { Openpanel } from '@openpanel/web';
 
-```typescript
 const op = new Openpanel({
   url: 'https://api.openpanel.dev',
   clientId: '{YOUR_CLIENT_ID}',
-  clientSecret: '{YOUR_CLIENT_SECRET}',
+  trackScreenViews: true,
+  // trackAttributes: true,
+  // trackOutgoingLinks: true,
 });
 ```
 
 #### Config
 
-- `url` - The url of the openpanel API or your self-hosted instance
-- `clientId` - The client id of your application
-- `clientSecret` - The client secret of your application
+<SdkConfig />
 
 ### Ready!
 
@@ -74,71 +73,6 @@ op.decrement('app_opened', 5); // decrement by 5
 ```typescript
 op.event('my_event', { foo: 'bar' });
 ```
-
-### Navigation / Screen views
-
-<Tabs items={['expo-router', 'react-navigation (simple)']}>
-  <Tabs.Tab>
-    ```typescript
-    import { usePathname, useSegments } from 'expo-router';
-
-    function RootLayout() {
-      // ...
-      const pathname = usePathname()
-      // Segments is optional but can be nice to have if you
-      // want to group routes together
-      // pathname = /posts/123
-      // segements = ['posts', '[id]']
-      const segments = useSegments()
-
-      useEffect(() => {
-        // Simple
-        op.screenView(pathname)
-
-        // With extra data
-        op.screenView(pathname, {
-          // segments is optional but nice to have
-          segments: segments.join('/'),
-          // other optional data you want to send with the screen view
-        })
-      }, [pathname,segments])
-      // ...
-    }
-    ```
-
-  </Tabs.Tab>
-  <Tabs.Tab>
-    ```tsx
-      import { createNavigationContainerRef } from '@react-navigation/native'
-      import { Openpanel } from '@openpanel/react-native'
-
-      const op = new Openpanel({ /* ... */ })
-      const navigationRef = createNavigationContainerRef()
-
-      export function NavigationRoot() {
-        const handleNavigationStateChange = () => {
-          const current = navigationRef.getCurrentRoute()
-          if (current) {
-            op.screenView(current.name, {
-              params: current.params,
-            })
-          }
-        }
-
-        return (
-          <NavigationContainer
-            ref={navigationRef}
-            onReady={handleNavigationStateChange}
-            onStateChange={handleNavigationStateChange}
-          >
-            <Stack.Navigator />
-          </NavigationContainer>
-        )
-      }
-    ```
-
-  </Tabs.Tab>
-</Tabs>
 
 ### Identify
 

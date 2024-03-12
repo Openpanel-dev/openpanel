@@ -924,9 +924,6 @@ importers:
 
   packages/sdks/nextjs:
     dependencies:
-      '@openpanel/sdk':
-        specifier: workspace:*
-        version: link:../sdk
       '@openpanel/web':
         specifier: workspace:*
         version: link:../web
@@ -943,6 +940,9 @@ importers:
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../../tooling/typescript
+      '@types/react':
+        specifier: ^18.2.20
+        version: 18.2.56
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -1152,6 +1152,9 @@ importers:
 
   tooling/publish:
     dependencies:
+      arg:
+        specifier: ^5.0.2
+        version: 5.0.2
       semver:
         specifier: ^7.5.4
         version: 7.6.0

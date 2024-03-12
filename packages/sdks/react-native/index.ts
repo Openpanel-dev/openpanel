@@ -2,13 +2,14 @@ import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
-import type { OpenpanelOptions, PostEventPayload } from '@openpanel/sdk';
-import { Openpanel } from '@openpanel/sdk';
+import type { OpenpanelSdkOptions, PostEventPayload } from '@openpanel/sdk';
+import { OpenpanelSdk } from '@openpanel/sdk';
 
-type OpenpanelNativeOptions = OpenpanelOptions;
+export * from '@openpanel/sdk';
+export type OpenpanelOptions = OpenpanelSdkOptions;
 
-export class OpenpanelNative extends Openpanel<OpenpanelNativeOptions> {
-  constructor(options: OpenpanelNativeOptions) {
+export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
+  constructor(options: OpenpanelOptions) {
     super(options);
 
     this.api.headers['User-Agent'] = Constants.getWebViewUserAgentAsync();

@@ -7,7 +7,9 @@ import SdkConfig from 'src/components/sdk-config.mdx';
 
 # Next.js
 
-Keep in mind that all tracking here happens on the client! If you want to track server-side events, you should use the <Link href="/docs/node">node SDK</Link> 👀.
+Keep in mind that all tracking here happens on the client!
+
+Read more about server side tracking in the [Server Side Tracking](#track-server-events) section.
 
 ## Installation
 
@@ -169,4 +171,33 @@ decrement('app_opened');
 
 // Increment by 5
 decrement('app_opened', 5);
+```
+
+#### Clear / Logout
+
+Clear the profile id and all the data.
+
+```typescript
+import { clear } from '@openpanel/nextjs';
+
+clear();
+```
+
+### Track server events
+
+If you want to track server-side events, you should create an instance of our Javascript SDK. It's exported from `@openpanel/nextjs`
+
+```typescript
+import { OpenpanelSdk } from '@openpanel/nextjs';
+
+const opServer = new OpenpanelSdk({
+  url: 'https://api.openpanel.dev',
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+
+opServer.event('my_server_event', { ok: '✅' });
+
+// Pass `profileId` to track events for a specific user
+opServer.event('my_server_event', { profileId: '123', ok: '✅' });
 ```

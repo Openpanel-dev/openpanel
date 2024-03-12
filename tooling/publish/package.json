@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "arg": "^5.0.2",
     "semver": "^7.5.4"
   },
   "devDependencies": {

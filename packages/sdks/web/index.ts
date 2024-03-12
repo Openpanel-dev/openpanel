@@ -1,9 +1,9 @@
-import type { OpenpanelOptions, PostEventPayload } from '@openpanel/sdk';
-import { Openpanel } from '@openpanel/sdk';
+import type { OpenpanelSdkOptions, PostEventPayload } from '@openpanel/sdk';
+import { OpenpanelSdk } from '@openpanel/sdk';
 
 export * from '@openpanel/sdk';
 
-export type OpenpanelWebOptions = OpenpanelOptions & {
+export type OpenpanelOptions = OpenpanelSdkOptions & {
   trackOutgoingLinks?: boolean;
   trackScreenViews?: boolean;
   trackAttributes?: boolean;
@@ -16,10 +16,10 @@ function toCamelCase(str: string) {
   );
 }
 
-export class OpenpanelWeb extends Openpanel<OpenpanelWebOptions> {
+export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
   private lastPath = '';
 
-  constructor(options: OpenpanelWebOptions) {
+  constructor(options: OpenpanelOptions) {
     super(options);
 
     if (!this.isServer()) {

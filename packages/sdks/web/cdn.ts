@@ -1,4 +1,4 @@
-import { OpenpanelWeb as Openpanel } from './index';
+import { Openpanel } from './index';
 
 declare global {
   interface Window {
