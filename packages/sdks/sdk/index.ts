@@ -32,7 +32,7 @@ export interface DecrementProfilePayload {
 }
 
 export interface OpenpanelSdkOptions {
-  url: string;
+  url?: string;
   clientId: string;
   clientSecret?: string;
   verbose?: boolean;
@@ -136,7 +136,7 @@ export class OpenpanelSdk<
 
   constructor(options: Options) {
     this.options = options;
-    this.api = createApi(options.url);
+    this.api = createApi(options.url ?? 'https://api.openpanel.dev');
     this.api.headers['openpanel-client-id'] = options.clientId;
     if (this.options.clientSecret) {
       this.api.headers['openpanel-client-secret'] = this.options.clientSecret;
