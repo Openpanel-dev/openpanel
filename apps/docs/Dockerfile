@@ -25,7 +25,7 @@ COPY apps/docs/package.json apps/docs/package.json
 # BUILD
 FROM base AS build
 
-WORKDIR /app/apps/public
+WORKDIR /app/apps/docs
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 WORKDIR  /app
@@ -33,13 +33,13 @@ COPY apps apps
 RUN mkdir packages
 COPY tooling tooling
 
-WORKDIR /app/apps/public
+WORKDIR /app/apps/docs
 RUN pnpm run build
 
 # PROD
 FROM base AS prod
 
-WORKDIR /app/apps/public
+WORKDIR /app/apps/docs
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # FINAL
