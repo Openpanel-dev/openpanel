@@ -57,7 +57,7 @@ COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
 COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
-COPY packages/sdk/package.json packages/sdk/package.json
+COPY packages/sdks/sdk/package.json packages/sdks/sdk/package.json
 
 # BUILD
 FROM base AS build
@@ -96,7 +96,7 @@ COPY --from=build /app/packages/common /app/packages/common
 COPY --from=build /app/packages/queue /app/packages/queue
 COPY --from=build /app/packages/constants /app/packages/constants
 COPY --from=build /app/packages/validation /app/packages/validation
-COPY --from=build /app/packages/sdk /app/packages/sdk
+COPY --from=build /app/packages/sdks/sdk /app/packages/sdks/sdk
 # Packages node_modules
 COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
 COPY --from=prod /app/packages/redis/node_modules /app/packages/redis/node_modules
