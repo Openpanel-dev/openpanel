@@ -14,12 +14,11 @@ export default {
       <strong style={{ marginLeft: '8px' }}>openpanel</strong>
     </>
   ),
-  head: (props) => {
+  head: () => {
     const router = useRouter();
     const config = useConfig();
     const title = config.title;
-    const description =
-      config.description || 'An open-source alternative to Mixpanel';
+    const description = 'An open-source alternative to Mixpanel';
     const domain = 'https://docs.openpanel.dev';
     const canonicalUrl =
       `${domain}${router.asPath === '/' ? '' : router.asPath}`.split('?')[0];
@@ -39,7 +38,10 @@ export default {
         <meta name="og:url" content={canonicalUrl} />
         <meta name="og:title" content={`${title} - Openpanel Docs`} />
         <meta property="og:description" content={description} />
-        <meta name="og:image" content={'https://openpanel.dev/ogimage.png'} />
+        <meta
+          name="og:image"
+          content={'https://docs.openpanel.dev/ogimage.png'}
+        />
         <meta name="title" content={title} />
         <meta name="description" content={description} />
       </>
@@ -53,11 +55,6 @@ export default {
   },
   docsRepositoryBase:
     'https://github.com/openpanel-dev/openpanel/blob/main/apps/docs',
-  useNextSeoProps() {
-    return {
-      titleTemplate: '%s - Openpanel',
-    };
-  },
   footer: {
     text: (
       <span>
