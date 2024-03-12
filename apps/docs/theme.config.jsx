@@ -47,6 +47,11 @@ export default {
       </>
     );
   },
+  useNextSeoProps() {
+    return {
+      titleTemplate: '%s - Openpanel Docs',
+    };
+  },
   search: {
     placeholder: 'Search',
   },
