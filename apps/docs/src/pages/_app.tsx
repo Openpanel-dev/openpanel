@@ -27,7 +27,6 @@ export default function App({ Component, pageProps }: AppProps) {
               (window.op.q = window.op.q || []).push(args);
             };
           window.op('ctor', {
-            url: 'https://api.openpanel.dev',
             clientId: 'e884ef1b-52d7-430a-b2c5-69c432faeba4',
             trackScreenViews: true,
             trackOutgoingLinks: true,
