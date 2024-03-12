@@ -6,8 +6,13 @@ import { db } from '@openpanel/db';
 export async function validateSdkRequest(
   headers: RawRequestDefaultExpression['headers']
 ): Promise<string> {
-  const clientId = headers['openpanel-client-id'] as string;
-  const clientSecret = headers['openpanel-client-secret'] as string;
+  const clientIdNew = headers['openpanel-client-id'] as string;
+  const clientIdOld = headers['mixan-client-id'] as string;
+  const clientSecretNew = headers['openpanel-client-secret'] as string;
+  const clientSecretOld = headers['mixan-client-secret'] as string;
+  const clientId = clientIdNew || clientIdOld;
+  const clientSecret = clientSecretNew || clientSecretOld;
+
   const origin = headers.origin;
   if (!clientId) {
     throw new Error('Misisng client id');
