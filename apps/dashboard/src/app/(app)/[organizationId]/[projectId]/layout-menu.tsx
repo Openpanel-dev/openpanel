@@ -4,11 +4,10 @@ import { useEffect } from 'react';
 import { useAppParams } from '@/hooks/useAppParams';
 import { cn } from '@/utils/cn';
 import { useUser } from '@clerk/nextjs';
-import type { IServiceDashboards } from '@openpanel/db';
 import {
+  BookmarkIcon,
   BuildingIcon,
   CogIcon,
-  DotIcon,
   GanttChartIcon,
   KeySquareIcon,
   LayoutPanelTopIcon,
@@ -20,6 +19,8 @@ import {
 import type { LucideProps } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+import type { IServiceDashboards } from '@openpanel/db';
 
 function LinkWithIcon({
   href,
@@ -127,7 +128,7 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
             href={`/${params.organizationId}/${projectId}/settings/profile`}
           />
           <LinkWithIcon
-            icon={UserIcon}
+            icon={BookmarkIcon}
             label="References"
             href={`/${params.organizationId}/${projectId}/settings/references`}
           />

@@ -1,14 +1,18 @@
+import { randomUUID } from 'crypto';
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { clerkClient } from '@clerk/nextjs';
-import { db } from '@openpanel/db';
 import { z } from 'zod';
+
+import { hashPassword } from '@openpanel/common';
+import { db } from '@openpanel/db';
 
 export const onboardingRouter = createTRPCRouter({
   organziation: protectedProcedure
     .input(
       z.object({
         organization: z.string(),
-        project: z.string().optional(),
+        project: z.string(),
+        cors: z.string().nullable(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -17,7 +21,7 @@ export const onboardingRouter = createTRPCRouter({
         createdBy: ctx.session.userId,
       });
 
-      if (org.slug && input.project) {
+      if (org.slug) {
         const project = await db.project.create({
           data: {
             name: input.project,
@@ -25,13 +29,29 @@ export const onboardingRouter = createTRPCRouter({
           },
         });
 
+        const secret = randomUUID();
+        const client = await db.client.create({
+          data: {
+            name: `${project.name} Client`,
+            organization_slug: org.slug,
+            project_id: project.id,
+            cors: input.cors ?? '*',
+            secret: input.cors ? null : await hashPassword(secret),
+          },
+        });
+
         return {
+          client: {
+            ...client,
+            secret,
+          },
           project,
           organization: org,
         };
       }
 
       return {
+        client: null,
         project: null,
         organization: org,
       };

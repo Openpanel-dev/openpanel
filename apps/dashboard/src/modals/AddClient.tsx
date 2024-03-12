@@ -1,38 +1,42 @@
 'use client';
 
-import { useEffect } from 'react';
 import { api, handleError } from '@/app/_trpc/client';
-import { Button } from '@/components/ui/button';
-import { CheckboxInput } from '@/components/ui/checkbox';
+import { CreateClientSuccess } from '@/components/clients/create-client-success';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
-import {
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppParams } from '@/hooks/useAppParams';
-import { clipboard } from '@/utils/clipboard';
+import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Copy, SaveIcon } from 'lucide-react';
+import { SaveIcon, WallpaperIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { SubmitHandler } from 'react-hook-form';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-const validation = z.object({
-  name: z.string().min(1),
-  domain: z.string().optional(),
-  withSecret: z.boolean().optional(),
-  projectId: z.string(),
-});
+const validation = z
+  .object({
+    name: z.string().min(1),
+    cors: z.string().nullable(),
+    tab: z.string(),
+    projectId: z.string(),
+  })
+  .refine(
+    (data) =>
+      data.tab === 'other' || (data.tab === 'website' && data.cors !== ''),
+    {
+      message: 'Cors is required',
+      path: ['cors'],
+    }
+  );
 
 type IForm = z.infer<typeof validation>;
 
@@ -42,13 +46,13 @@ export default function AddClient() {
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
     defaultValues: {
-      withSecret: false,
       name: '',
-      domain: '',
+      cors: '',
+      tab: 'website',
       projectId,
     },
   });
-  const mutation = api.client.create2.useMutation({
+  const mutation = api.client.create.useMutation({
     onError: handleError,
     onSuccess() {
       toast.success('Client created');
@@ -61,81 +65,30 @@ export default function AddClient() {
   const onSubmit: SubmitHandler<IForm> = (values) => {
     mutation.mutate({
       name: values.name,
-      domain: values.withSecret ? undefined : values.domain,
+      cors: values.tab === 'website' ? values.cors : null,
       projectId: values.projectId,
       organizationId,
     });
   };
 
-  const watch = useWatch({
-    control: form.control,
-    name: 'withSecret',
-  });
-
   return (
     <ModalContent>
       {mutation.isSuccess ? (
         <>
-          <ModalHeader
-            title="Success"
-            text={
-              <>
-                {mutation.data.clientSecret
-                  ? 'Use your client id and secret with our SDK to send events to us. '
-                  : 'Use your client id with our SDK to send events to us. '}
-                See our{' '}
-                <Link href="https//openpanel.dev/docs" className="underline">
-                  documentation
-                </Link>
-              </>
-            }
-          />
-          <div className="grid gap-4">
-            <button
-              className="mt-4 text-left"
-              onClick={() => clipboard(mutation.data.clientId)}
+          <ModalHeader title="Success" text={'Your client is created'} />
+          <CreateClientSuccess {...mutation.data} />
+          <div className="flex gap-4 mt-4">
+            <a
+              className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}
+              href="https://docs.openpanel.dev/docs"
+              target="_blank"
             >
-              <Label>Client ID</Label>
-              <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
-                {mutation.data.clientId}
-                <Copy size={16} />
-              </div>
-            </button>
-            {mutation.data.clientSecret ? (
-              <button
-                className="mt-4 text-left"
-                onClick={() => clipboard(mutation.data.clientId)}
-              >
-                <Label>Secret</Label>
-                <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
-                  {mutation.data.clientSecret}
-                  <Copy size={16} />
-                </div>
-              </button>
-            ) : (
-              <div className="mt-4 text-left">
-                <Label>Cors settings</Label>
-                <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
-                  {mutation.data.cors}
-                </div>
-                <div className="text-sm italic mt-1">
-                  You can update cors settings{' '}
-                  <Link className="underline" href="/qwe/qwe/">
-                    here
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant={'secondary'}
-              onClick={() => popModal()}
-            >
+              Read docs
+            </a>
+            <Button className="flex-1" onClick={() => popModal()}>
               Close
             </Button>
-          </DialogFooter>
+          </div>
         </>
       ) : (
         <>
@@ -144,37 +97,6 @@ export default function AddClient() {
             className="flex flex-col gap-4"
             onSubmit={form.handleSubmit(onSubmit)}
           >
-            <div>
-              <Label>Client name</Label>
-              <Input
-                placeholder="Eg. My App Client"
-                error={form.formState.errors.name?.message}
-                {...form.register('name')}
-              />
-            </div>
-            <Controller
-              name="withSecret"
-              control={form.control}
-              render={({ field }) => (
-                <CheckboxInput
-                  defaultChecked={!field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(!checked);
-                  }}
-                >
-                  This is a website
-                </CheckboxInput>
-              )}
-            />
-            <div>
-              <Label>Your domain name</Label>
-              <Input
-                placeholder="https://...."
-                error={form.formState.errors.domain?.message}
-                {...form.register('domain')}
-                disabled={watch}
-              />
-            </div>
             <div>
               <Controller
                 control={form.control}
@@ -202,6 +124,37 @@ export default function AddClient() {
                 }}
               />
             </div>
+            <div>
+              <Label>Client name</Label>
+              <Input
+                placeholder="Eg. My App Client"
+                error={form.formState.errors.name?.message}
+                {...form.register('name')}
+              />
+            </div>
+            <Tabs
+              defaultValue="website"
+              onValueChange={(val) => form.setValue('tab', val)}
+              className="h-28"
+            >
+              <TabsList className="bg-slate-200">
+                <TabsTrigger value="website">Website</TabsTrigger>
+                <TabsTrigger value="other">Other</TabsTrigger>
+              </TabsList>
+              <TabsContent value="website">
+                <Label>Cors</Label>
+                <Input
+                  placeholder="https://example.com"
+                  error={form.formState.errors.cors?.message}
+                  {...form.register('cors')}
+                />
+              </TabsContent>
+              <TabsContent value="other">
+                <div className="p-2 px-3 bg-white rounded text-sm">
+                  🔑 You will get a secret to use for your API requests.
+                </div>
+              </TabsContent>
+            </Tabs>
             <DialogFooter>
               <Button
                 type="button"

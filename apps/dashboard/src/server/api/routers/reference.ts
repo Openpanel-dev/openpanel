@@ -1,7 +1,12 @@
-import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '@/server/api/trpc';
+import { z } from 'zod';
+
 import { db, getReferences } from '@openpanel/db';
 import { zCreateReference, zRange } from '@openpanel/validation';
-import { z } from 'zod';
 
 import { getChartStartEndDate } from './chart.helpers';
 
@@ -29,7 +34,7 @@ export const referenceRouter = createTRPCRouter({
         },
       });
     }),
-  getChartReferences: protectedProcedure
+  getChartReferences: publicProcedure
     .input(
       z.object({
         projectId: z.string(),

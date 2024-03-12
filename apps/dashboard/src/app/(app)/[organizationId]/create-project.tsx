@@ -2,7 +2,6 @@
 
 import { LogoSquare } from '@/components/Logo';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/useAppParams';
@@ -79,35 +78,3 @@ export function CreateProject() {
     </>
   );
 }
-
-// <div>
-//   <div className="text-lg">
-//     Select your framework and we'll generate a client for you.
-//   </div>
-//   <div className="flex flex-wrap gap-2 mt-8">
-//     <FeatureButton
-//       name="React"
-//       logo="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png"
-//     />
-//     <FeatureButton
-//       name="React Native"
-//       logo="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png"
-//     />
-//     <FeatureButton
-//       name="Next.js"
-//       logo="https://static-00.iconduck.com/assets.00/nextjs-icon-512x512-y563b8iq.png"
-//     />
-//     <FeatureButton
-//       name="Remix"
-//       logo="https://www.datocms-assets.com/205/1642515307-square-logo.svg"
-//     />
-//     <FeatureButton
-//       name="Vue"
-//       logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0UhQnp6TUPCwAr3ruTEwBDiTN5HLAWaoUD3AJIgtepQ&s"
-//     />
-//     <FeatureButton
-//       name="HTML"
-//       logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/HTML5_logo_and_wordmark.svg/240px-HTML5_logo_and_wordmark.svg.png"
-//     />
-//   </div>
-// </div>

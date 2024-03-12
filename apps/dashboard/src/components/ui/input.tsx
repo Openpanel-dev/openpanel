@@ -29,6 +29,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, error, type, size, ...props }, ref) => {
     return (
       <input
+        autoComplete="off"
+        autoCorrect="off"
         type={type}
         className={cn(
           inputVariant({ size, className }),

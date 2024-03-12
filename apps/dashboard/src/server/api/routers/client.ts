@@ -1,8 +1,9 @@
 import { randomUUID } from 'crypto';
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import { hashPassword } from '@openpanel/common';
 import { z } from 'zod';
+
+import { hashPassword } from '@openpanel/common';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure
@@ -59,7 +60,7 @@ export const clientRouter = createTRPCRouter({
         name: z.string(),
         projectId: z.string(),
         organizationId: z.string(),
-        withCors: z.boolean().default(true),
+        cors: z.string().nullable(),
       })
     )
     .mutation(async ({ input }) => {
@@ -69,41 +70,14 @@ export const clientRouter = createTRPCRouter({
           organization_slug: input.organizationId,
           project_id: input.projectId,
           name: input.name,
-          secret: input.withCors ? null : await hashPassword(secret),
+          secret: input.cors ? null : await hashPassword(secret),
+          cors: input.cors || undefined,
         },
       });
 
       return {
-        clientSecret: input.withCors ? null : secret,
-        clientId: client.id,
-        cors: client.cors,
-      };
-    }),
-  create2: protectedProcedure
-    .input(
-      z.object({
-        name: z.string(),
-        projectId: z.string(),
-        organizationId: z.string(),
-        domain: z.string().nullish(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      const secret = randomUUID();
-      const client = await db.client.create({
-        data: {
-          organization_slug: input.organizationId,
-          project_id: input.projectId,
-          name: input.name,
-          secret: input.domain ? undefined : await hashPassword(secret),
-          cors: input.domain || undefined,
-        },
-      });
-
-      return {
-        clientSecret: input.domain ? null : secret,
-        clientId: client.id,
-        cors: client.cors,
+        ...client,
+        secret: input.cors ? null : secret,
       };
     }),
   remove: protectedProcedure
