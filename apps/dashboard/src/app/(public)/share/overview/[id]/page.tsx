@@ -2,7 +2,6 @@ import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layo
 import { OverviewReportRange } from '@/app/(app)/[organizationId]/[projectId]/overview-sticky-header';
 import { Logo } from '@/components/Logo';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import ServerLiveCounter from '@/components/overview/live-counter';
 import { OverviewLiveHistogram } from '@/components/overview/overview-live-histogram';
 import OverviewMetrics from '@/components/overview/overview-metrics';
@@ -24,6 +23,9 @@ interface PageProps {
 export default async function Page({ params: { id } }: PageProps) {
   const share = await getShareOverviewById(id);
   if (!share) {
+    return notFound();
+  }
+  if (!share.public) {
     return notFound();
   }
   const projectId = share.project_id;
