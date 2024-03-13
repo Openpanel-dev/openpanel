@@ -16,7 +16,12 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
       reply
     ) => {
       try {
-        const projectId = await validateSdkRequest(req.headers);
+        const projectId = await validateSdkRequest(req.headers).catch(
+          () => null
+        );
+        if (!projectId) {
+          return reply.status(401).send();
+        }
         req.projectId = projectId;
 
         const bot = req.headers['user-agent']
