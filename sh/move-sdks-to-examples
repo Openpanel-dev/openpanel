@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# nextjs-13-pages
+rm -rf ../openpanel-examples/nextjs-13-pages/node_modules/@openpanel/nextjs && cp -R packages/sdks/nextjs ../openpanel-examples/nextjs-13-pages/node_modules/@openpanel/nextjs
+rm -rf ../openpanel-examples/nextjs-13-pages/node_modules/@openpanel/web && cp -R packages/sdks/nextjs ../openpanel-examples/nextjs-13-pages/node_modules/@openpanel/web
+# nextjs-app-dir
+rm -rf ../openpanel-examples/nextjs-app-dir/node_modules/@openpanel/nextjs && cp -R packages/sdks/nextjs ../openpanel-examples/nextjs-app-dir/node_modules/@openpanel/nextjs
+rm -rf ../openpanel-examples/nextjs-app-dir/node_modules/@openpanel/web && cp -R packages/sdks/nextjs ../openpanel-examples/nextjs-app-dir/node_modules/@openpanel/web
+# expo-app
+rm -rf ../openpanel-examples/expo-app/node_modules/@openpanel/react-native && cp -R packages/sdks/react-native ../openpanel-examples/expo-app/node_modules/@openpanel/react-native
+rm -rf ../openpanel-examples/expo-app/node_modules/@openpanel/sdk && cp -R packages/sdks/sdk ../openpanel-examples/expo-app/node_modules/@openpanel/sdk

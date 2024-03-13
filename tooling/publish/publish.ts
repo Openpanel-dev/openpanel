@@ -40,15 +40,18 @@ function checkUncommittedChanges() {
 }
 
 function main() {
-  checkUncommittedChanges();
-
   const args = arg({
     // Types
     '--version': String,
     '--test': Boolean,
+    '--skip-git': Boolean,
     // Aliases
     '-v': '--version',
   });
+
+  if (!args['--skip-git']) {
+    checkUncommittedChanges();
+  }
 
   const version = args['--version'];
   const test = args['--test'];
@@ -57,22 +60,27 @@ function main() {
     return console.error('Version is not valid');
   }
 
-  const properties = {
-    private: false,
-    version,
-    type: 'module',
-    main: './dist/index.js',
-    module: './dist/index.mjs',
-    types: './dist/index.d.ts',
-    files: ['dist'],
-    exports: {
-      import: './dist/index.js',
-      require: './dist/index.cjs',
-    },
-  };
-
   try {
     for (const name of sdkPackages) {
+      const properties: Record<string, unknown> = {
+        private: false,
+        version,
+        type: 'module',
+        main: './dist/index.js',
+        module: './dist/index.mjs',
+        types: './dist/index.d.ts',
+        files: ['dist'],
+        exports: {
+          import: './dist/index.js',
+          require: './dist/index.cjs',
+        },
+      };
+
+      // Not sure if I even should have type: module for any sdk
+      if (name === 'nextjs') {
+        delete properties.type;
+      }
+
       const pkgJson = require(
         workspacePath(`./packages/sdks/${name}/package.json`)
       );
