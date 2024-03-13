@@ -6,7 +6,10 @@ import { db } from '@openpanel/db';
 import { logger } from './logger';
 
 const cleanDomain = (domain: string) =>
-  domain.replace('www.', '').replace(/https?:\/\//, '');
+  domain
+    .replace('www.', '')
+    .replace(/https?:\/\//, '')
+    .replace(/\/$/, '');
 
 export async function validateSdkRequest(
   headers: RawRequestDefaultExpression['headers']
