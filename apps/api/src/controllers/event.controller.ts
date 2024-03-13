@@ -97,7 +97,7 @@ export async function postEvent(
     ua,
   });
 
-  const isServerEvent = isUserAgentSet(ua);
+  const isServerEvent = !isUserAgentSet(ua);
 
   if (isServerEvent) {
     const [event] = await withTiming(
