@@ -57,22 +57,27 @@ function main() {
     return console.error('Version is not valid');
   }
 
-  const properties = {
-    private: false,
-    version,
-    type: 'module',
-    main: './dist/index.js',
-    module: './dist/index.mjs',
-    types: './dist/index.d.ts',
-    files: ['dist'],
-    exports: {
-      import: './dist/index.js',
-      require: './dist/index.cjs',
-    },
-  };
-
   try {
     for (const name of sdkPackages) {
+      const properties = {
+        private: false,
+        version,
+        type: 'module',
+        main: './dist/index.js',
+        module: './dist/index.mjs',
+        types: './dist/index.d.ts',
+        files: ['dist'],
+        exports: {
+          import: './dist/index.js',
+          require: './dist/index.cjs',
+        },
+      };
+      if (name === 'nextjs') {
+        // @ts-expect-error
+        delete properties.type;
+        // @ts-expect-error
+        delete properties.module;
+      }
       const pkgJson = require(
         workspacePath(`./packages/sdks/${name}/package.json`)
       );
