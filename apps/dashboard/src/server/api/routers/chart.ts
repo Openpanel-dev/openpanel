@@ -45,9 +45,9 @@ async function getFunnelData({ projectId, ...payload }: IChartInput) {
     windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM events
   WHERE (project_id = '${projectId}' AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
-  GROUP BY session_id;`;
+  GROUP BY session_id`;
 
-  const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC;`;
+  const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC`;
 
   const [funnelRes, sessionRes] = await Promise.all([
     chQuery<{ level: number; count: number }>(sql),
@@ -55,8 +55,6 @@ async function getFunnelData({ projectId, ...payload }: IChartInput) {
       `SELECT count(name) as count FROM events WHERE project_id = '${projectId}' AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
     ),
   ]);
-
-  console.log('Funnel SQL: ', sql);
 
   if (funnelRes[0]?.level !== payload.events.length) {
     funnelRes.unshift({
