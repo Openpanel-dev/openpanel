@@ -3,6 +3,11 @@ import type { RawRequestDefaultExpression } from 'fastify';
 import { verifyPassword } from '@openpanel/common';
 import { db } from '@openpanel/db';
 
+import { logger } from './logger';
+
+const cleanDomain = (domain: string) =>
+  domain.replace('www.', '').replace(/https?:\/\//, '');
+
 export async function validateSdkRequest(
   headers: RawRequestDefaultExpression['headers']
 ): Promise<string> {
@@ -15,7 +20,16 @@ export async function validateSdkRequest(
 
   const origin = headers.origin;
   if (!clientId) {
-    throw new Error('Misisng client id');
+    logger.error(
+      {
+        clientId,
+        clientSecret,
+        origin,
+        headers,
+      },
+      'validateSdkRequest: Missing client id'
+    );
+    throw new Error('Missing client id');
   }
 
   const client = await db.client.findUnique({
@@ -25,21 +39,49 @@ export async function validateSdkRequest(
   });
 
   if (!client) {
+    logger.error(
+      {
+        clientId,
+        clientSecret,
+        origin,
+        headers,
+      },
+      'validateSdkRequest: Invalid client id'
+    );
     throw new Error('Invalid client id');
   }
 
   if (client.secret) {
     if (!(await verifyPassword(clientSecret || '', client.secret))) {
+      logger.error(
+        {
+          clientId,
+          clientSecret,
+          origin,
+          headers,
+        },
+        'validateSdkRequest: Invalid client secret'
+      );
       throw new Error('Invalid client secret');
     }
   } else if (client.cors !== '*') {
     const domainAllowed = client.cors.split(',').find((domain) => {
-      if (domain === origin) {
+      if (cleanDomain(domain) === cleanDomain(origin || '')) {
         return true;
       }
     });
 
     if (!domainAllowed) {
+      logger.error(
+        {
+          clientId,
+          clientSecret,
+          client,
+          origin,
+          headers,
+        },
+        'validateSdkRequest: Invalid cors settings'
+      );
       throw new Error('Invalid cors settings');
     }
   }
