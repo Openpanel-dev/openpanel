@@ -97,7 +97,7 @@ export async function postEvent(
     ua,
   });
 
-  const isServerEvent = !ip && !origin && !isUserAgentSet(ua);
+  const isServerEvent = isUserAgentSet(ua);
 
   if (isServerEvent) {
     const [event] = await withTiming(
@@ -107,42 +107,58 @@ export async function postEvent(
       ),
     );
 
+    const payload: Omit<IServiceCreateEventPayload, "id"> = {
+      name: body.name,
+      deviceId: event?.deviceId || "",
+      sessionId: event?.sessionId || "",
+      profileId,
+      projectId,
+      properties: Object.assign(
+        {},
+        omit(["__path", "__referrer"], properties),
+        {
+          hash,
+          query,
+        },
+      ),
+      createdAt,
+      country: event?.country ?? "",
+      city: event?.city ?? "",
+      region: event?.region ?? "",
+      continent: event?.continent ?? "",
+      os: event?.os ?? "",
+      osVersion: event?.osVersion ?? "",
+      browser: event?.browser ?? "",
+      browserVersion: event?.browserVersion ?? "",
+      device: event?.device ?? "",
+      brand: event?.brand ?? "",
+      model: event?.model ?? "",
+      duration: 0,
+      path: event?.path ?? "",
+      referrer: event?.referrer ?? "",
+      referrerName: event?.referrerName ?? "",
+      referrerType: event?.referrerType ?? "",
+      profile: undefined,
+      meta: undefined,
+    }
+
+    contextLogger.send("server event is queued", {
+      ip,
+      origin,
+      ua,
+      uaInfo,
+      referrer,
+      profileId,
+      projectId,
+      deviceId,
+      path,
+      payload,
+      prevEvent: event,
+    });
+
     eventsQueue.add("event", {
       type: "createEvent",
-      payload: {
-        name: body.name,
-        deviceId: event?.deviceId || "",
-        sessionId: event?.sessionId || "",
-        profileId,
-        projectId,
-        properties: Object.assign(
-          {},
-          omit(["__path", "__referrer"], properties),
-          {
-            hash,
-            query,
-          },
-        ),
-        createdAt,
-        country: event?.country ?? "",
-        city: event?.city ?? "",
-        region: event?.region ?? "",
-        continent: event?.continent ?? "",
-        os: event?.os ?? "",
-        osVersion: event?.osVersion ?? "",
-        browser: event?.browser ?? "",
-        browserVersion: event?.browserVersion ?? "",
-        device: event?.device ?? "",
-        brand: event?.brand ?? "",
-        model: event?.model ?? "",
-        duration: 0,
-        path: event?.path ?? "",
-        referrer: event?.referrer ?? "",
-        referrerName: event?.referrerName ?? "",
-        referrerType: event?.referrerType ?? "",
-        profile: undefined,
-        meta: undefined,
-      },
+      payload,
     });
     return reply.status(200).send("");
   }
