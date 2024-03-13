@@ -25,14 +25,14 @@ export function JoinWaitlistHero({ className }: JoinWaitlistProps) {
   useEffect(() => {
     if (open) {
       // @ts-ignore
-      window.openpanel.event('waitlist_open');
+      window.op('event', 'waitlist_open');
     }
   }, [open]);
 
   useEffect(() => {
     if (success) {
       // @ts-ignore
-      window.openpanel.event('waitlist_success', {
+      window.op('event', 'waitlist_success', {
         email: value,
       });
     }
