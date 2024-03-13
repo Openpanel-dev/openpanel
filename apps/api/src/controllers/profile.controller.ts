@@ -1,24 +1,24 @@
-import { getClientIp, parseIp } from "@/utils/parseIp";
-import { isUserAgentSet, parseUserAgent } from "@/utils/parseUserAgent";
-import type { FastifyReply, FastifyRequest } from "fastify";
-import { assocPath, pathOr } from "ramda";
+import { getClientIp, parseIp } from '@/utils/parseIp';
+import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { assocPath, pathOr } from 'ramda';
 
-import { getProfileById, upsertProfile } from "@openpanel/db";
+import { getProfileById, upsertProfile } from '@openpanel/db';
 import type {
   IncrementProfilePayload,
   UpdateProfilePayload,
-} from "@openpanel/sdk";
+} from '@openpanel/sdk';
 
 export async function updateProfile(
   request: FastifyRequest<{
     Body: UpdateProfilePayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { profileId, properties, ...rest } = request.body;
   const projectId = request.projectId;
   const ip = getClientIp(request)!;
-  const ua = request.headers["user-agent"]!;
+  const ua = request.headers['user-agent']!;
   const uaInfo = parseUserAgent(ua);
   const geo = await parseIp(ip);
 
@@ -40,29 +40,29 @@ export async function incrementProfileProperty(
   request: FastifyRequest<{
     Body: IncrementProfilePayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { profileId, property, value } = request.body;
   const projectId = request.projectId;
 
   const profile = await getProfileById(profileId);
   if (!profile) {
-    return reply.status(404).send("Not found");
+    return reply.status(404).send('Not found');
   }
 
   const parsed = parseInt(
-    pathOr<string>("0", property.split("."), profile.properties),
-    10,
+    pathOr<string>('0', property.split('.'), profile.properties),
+    10
   );
 
   if (isNaN(parsed)) {
-    return reply.status(400).send("Not number");
+    return reply.status(400).send('Not number');
   }
 
   profile.properties = assocPath(
-    property.split("."),
+    property.split('.'),
     parsed + value,
-    profile.properties,
+    profile.properties
   );
 
   await upsertProfile({
@@ -78,29 +78,29 @@ export async function decrementProfileProperty(
   request: FastifyRequest<{
     Body: IncrementProfilePayload;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   const { profileId, property, value } = request.body;
   const projectId = request.projectId;
 
   const profile = await getProfileById(profileId);
   if (!profile) {
-    return reply.status(404).send("Not found");
+    return reply.status(404).send('Not found');
   }
 
   const parsed = parseInt(
-    pathOr<string>("0", property.split("."), profile.properties),
-    10,
+    pathOr<string>('0', property.split('.'), profile.properties),
+    10
   );
 
   if (isNaN(parsed)) {
-    return reply.status(400).send("Not number");
+    return reply.status(400).send('Not number');
   }
 
   profile.properties = assocPath(
-    property.split("."),
+    property.split('.'),
     parsed - value,
-    profile.properties,
+    profile.properties
   );
 
   await upsertProfile({

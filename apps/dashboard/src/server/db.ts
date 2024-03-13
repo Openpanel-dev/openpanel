@@ -1,4 +1,5 @@
 import { slug } from '@/utils/slug';
+
 import { db } from '@openpanel/db';
 
 export { db } from '@openpanel/db';

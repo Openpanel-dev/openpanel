@@ -1,7 +1,8 @@
 import { useDispatch, useSelector } from '@/redux';
+import { Tv2Icon } from 'lucide-react';
+
 import { lineTypes } from '@openpanel/constants';
 import { objectToZodEnums } from '@openpanel/validation';
-import { Tv2Icon } from 'lucide-react';
 
 import { Combobox } from '../ui/combobox';
 import { changeLineType } from './reportSlice';

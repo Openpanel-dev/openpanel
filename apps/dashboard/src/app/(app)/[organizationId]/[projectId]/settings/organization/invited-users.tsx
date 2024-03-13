@@ -9,6 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+
 import type { IServiceInvites } from '@openpanel/db';
 
 import { InviteUser } from './invite-user';

@@ -12,6 +12,9 @@ import {
 import { getExists } from '@/server/pageExists';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
+import { notFound } from 'next/navigation';
+import { parseAsInteger, parseAsString } from 'nuqs';
+
 import type { GetEventListOptions } from '@openpanel/db';
 import {
   getConversionEventNames,
@@ -20,8 +23,6 @@ import {
   getProfileById,
 } from '@openpanel/db';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
-import { notFound } from 'next/navigation';
-import { parseAsInteger, parseAsString } from 'nuqs';
 
 import { EventList } from '../../events/event-list';
 import { StickyBelowHeader } from '../../layout-sticky-below-header';

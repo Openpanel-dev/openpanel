@@ -1,9 +1,9 @@
-import type { FastifyReply, FastifyRequest } from "fastify";
-import icoToPng from "ico-to-png";
-import sharp from "sharp";
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import icoToPng from 'ico-to-png';
+import sharp from 'sharp';
 
-import { createHash } from "@openpanel/common";
-import { redis } from "@openpanel/redis";
+import { createHash } from '@openpanel/common';
+import { redis } from '@openpanel/redis';
 
 interface GetFaviconParams {
   url: string;
@@ -12,9 +12,9 @@ interface GetFaviconParams {
 async function getImageBuffer(url: string) {
   try {
     const res = await fetch(url);
-    const contentType = res.headers.get("content-type");
+    const contentType = res.headers.get('content-type');
 
-    if (!contentType?.includes("image")) {
+    if (!contentType?.includes('image')) {
       return null;
     }
 
@@ -22,7 +22,7 @@ async function getImageBuffer(url: string) {
       return null;
     }
 
-    if (contentType === "image/x-icon" || url.endsWith(".ico")) {
+    if (contentType === 'image/x-icon' || url.endsWith('.ico')) {
       const arrayBuffer = await res.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       return await icoToPng(buffer, 30);
@@ -30,36 +30,36 @@ async function getImageBuffer(url: string) {
 
     return await sharp(await res.arrayBuffer())
       .resize(30, 30, {
-        fit: "cover",
+        fit: 'cover',
       })
       .png()
       .toBuffer();
   } catch (e) {
-    console.log("Failed to get image from url", url);
+    console.log('Failed to get image from url', url);
     console.log(e);
   }
 }
 
-const imageExtensions = ["svg", "png", "jpg", "jpeg", "gif", "webp", "ico"];
+const imageExtensions = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'];
 
 export async function getFavicon(
   request: FastifyRequest<{
     Querystring: GetFaviconParams;
   }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
   function sendBuffer(buffer: Buffer, cacheKey?: string) {
     if (cacheKey) {
-      redis.set(`favicon:${cacheKey}`, buffer.toString("base64"));
+      redis.set(`favicon:${cacheKey}`, buffer.toString('base64'));
     }
-    reply.type("image/png");
-    console.log("buffer", buffer.byteLength);
+    reply.type('image/png');
+    console.log('buffer', buffer.byteLength);
 
     return reply.send(buffer);
   }
 
   if (!request.query.url) {
-    return reply.status(404).send("Not found");
+    return reply.status(404).send('Not found');
   }
 
   const url = decodeURIComponent(request.query.url);
@@ -69,7 +69,7 @@ export async function getFavicon(
     const cacheKey = createHash(url, 32);
     const cache = await redis.get(`favicon:${cacheKey}`);
     if (cache) {
-      return sendBuffer(Buffer.from(cache, "base64"));
+      return sendBuffer(Buffer.from(cache, 'base64'));
     }
     const buffer = await getImageBuffer(url);
     if (buffer && buffer.byteLength > 0) {
@@ -80,7 +80,7 @@ export async function getFavicon(
   const { hostname, origin } = new URL(url);
   const cache = await redis.get(`favicon:${hostname}`);
   if (cache) {
-    return sendBuffer(Buffer.from(cache, "base64"));
+    return sendBuffer(Buffer.from(cache, 'base64'));
   }
 
   // TRY FAVICON.ICO
@@ -94,7 +94,7 @@ export async function getFavicon(
 
   function findFavicon(res: string) {
     const match = res.match(
-      /(\<link(.+?)image\/x-icon(.+?)\>|\<link(.+?)shortcut\sicon(.+?)\>)/,
+      /(\<link(.+?)image\/x-icon(.+?)\>|\<link(.+?)shortcut\sicon(.+?)\>)/
     );
     if (!match) {
       return null;
@@ -112,16 +112,16 @@ export async function getFavicon(
     }
   }
 
-  return reply.status(404).send("Not found");
+  return reply.status(404).send('Not found');
 }
 
 export async function clearFavicons(
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ) {
-  const keys = await redis.keys("favicon:*");
+  const keys = await redis.keys('favicon:*');
   for (const key of keys) {
     await redis.del(key);
   }
-  return reply.status(404).send("OK");
+  return reply.status(404).send('OK');
 }

@@ -1,7 +1,8 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { clerkClient } from '@clerk/nextjs';
-import { getInvites, getOrganizationBySlug } from '@openpanel/db';
 import { notFound } from 'next/navigation';
+
+import { getInvites, getOrganizationBySlug } from '@openpanel/db';
 
 import EditOrganization from './edit-organization';
 import InvitedUsers from './invited-users';

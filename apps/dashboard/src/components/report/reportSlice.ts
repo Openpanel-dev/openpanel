@@ -1,4 +1,8 @@
 import { start } from 'repl';
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { isSameDay, isSameMonth } from 'date-fns';
+
 import {
   alphabetIds,
   getDefaultIntervalByDates,
@@ -15,9 +19,6 @@ import type {
   IChartType,
   IInterval,
 } from '@openpanel/validation';
-import { createSlice } from '@reduxjs/toolkit';
-import type { PayloadAction } from '@reduxjs/toolkit';
-import { isSameDay, isSameMonth } from 'date-fns';
 
 type InitialState = IChartInput & {
   dirty: boolean;

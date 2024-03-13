@@ -1,7 +1,8 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
-import { zShareOverview } from '@openpanel/validation';
 import ShortUniqueId from 'short-unique-id';
+
+import { zShareOverview } from '@openpanel/validation';
 
 const uid = new ShortUniqueId({ length: 6 });
 

@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useCursor } from '@/hooks/useCursor';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
-import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { isSameDay } from 'date-fns';
 import { GanttChartIcon } from 'lucide-react';
+
+import type { IServiceCreateEventPayload } from '@openpanel/db';
 
 import { EventListItem } from './event-list-item';
 import EventListener from './event-listener';

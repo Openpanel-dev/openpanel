@@ -1,8 +1,9 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
-import { getOrganizationBySlug } from '@openpanel/db';
 import { Pencil } from 'lucide-react';
 import { notFound } from 'next/navigation';
+
+import { getOrganizationBySlug } from '@openpanel/db';
 
 import ReportEditor from './report-editor';
 

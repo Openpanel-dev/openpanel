@@ -9,6 +9,7 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
+
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 
 import { EventDetails } from './event-details';

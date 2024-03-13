@@ -6,8 +6,9 @@ import { Pagination } from '@/components/Pagination';
 import { Button } from '@/components/ui/button';
 import { useCursor } from '@/hooks/useCursor';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
-import type { IServiceProfile } from '@openpanel/db';
 import { UsersIcon } from 'lucide-react';
+
+import type { IServiceProfile } from '@openpanel/db';
 
 import { ProfileListItem } from './profile-list-item';
 

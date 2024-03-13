@@ -6,6 +6,7 @@ import { KeyValue, KeyValueSubtle } from '@/components/ui/key-value';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { getProfileName } from '@/utils/getters';
+
 import type { IServiceProfile } from '@openpanel/db';
 
 type ProfileListItemProps = IServiceProfile;

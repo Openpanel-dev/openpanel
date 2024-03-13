@@ -12,13 +12,14 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/utils/cn';
-import type { EventMeta } from '@openpanel/db';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+
+import type { EventMeta } from '@openpanel/db';
 
 const variants = cva('flex items-center justify-center shrink-0 rounded-full', {
   variants: {

@@ -8,11 +8,12 @@ import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/useAppParams';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IChartInput } from '@openpanel/validation';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
+
+import type { IChartInput } from '@openpanel/validation';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';

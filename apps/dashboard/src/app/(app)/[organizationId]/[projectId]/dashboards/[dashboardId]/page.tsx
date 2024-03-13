@@ -1,7 +1,8 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
-import { getDashboardById, getReportsByDashboardId } from '@openpanel/db';
 import { notFound } from 'next/navigation';
+
+import { getDashboardById, getReportsByDashboardId } from '@openpanel/db';
 
 import { ListReports } from './list-reports';
 

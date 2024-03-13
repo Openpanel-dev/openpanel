@@ -5,8 +5,9 @@ import { ColorSquare } from '@/components/ColorSquare';
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
-import type { IChartBreakdown } from '@openpanel/validation';
 import { SplitIcon } from 'lucide-react';
+
+import type { IChartBreakdown } from '@openpanel/validation';
 
 import { addBreakdown, changeBreakdown, removeBreakdown } from '../reportSlice';
 import { ReportBreakdownMore } from './ReportBreakdownMore';

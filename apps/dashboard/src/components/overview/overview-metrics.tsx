@@ -6,6 +6,7 @@ import { ChartSwitch } from '@/components/report/chart';
 import { Widget, WidgetBody } from '@/components/Widget';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
+
 import type { IChartInput } from '@openpanel/validation';
 
 interface OverviewMetricsProps {

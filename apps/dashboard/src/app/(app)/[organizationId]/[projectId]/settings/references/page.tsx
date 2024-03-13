@@ -1,5 +1,6 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { getExists } from '@/server/pageExists';
+
 import { getReferences } from '@openpanel/db';
 
 import ListReferences from './list-references';

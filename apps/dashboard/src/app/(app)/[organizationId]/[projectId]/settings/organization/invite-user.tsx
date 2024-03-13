@@ -3,12 +3,13 @@ import { InputWithLabel } from '@/components/forms/InputWithLabel';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zInviteUser } from '@openpanel/validation';
 import { SendIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
+
+import { zInviteUser } from '@openpanel/validation';
 
 type IForm = z.infer<typeof zInviteUser>;
 

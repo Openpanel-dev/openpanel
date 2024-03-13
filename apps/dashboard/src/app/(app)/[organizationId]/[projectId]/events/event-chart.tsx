@@ -1,4 +1,5 @@
 import { ChartSwitchShortcut } from '@/components/report/chart';
+
 import type { IChartEvent } from '@openpanel/validation';
 
 interface Props {

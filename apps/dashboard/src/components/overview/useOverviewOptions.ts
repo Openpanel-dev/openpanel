@@ -1,16 +1,17 @@
 import {
-  getDefaultIntervalByDates,
-  getDefaultIntervalByRange,
-  timeRanges,
-} from '@openpanel/constants';
-import { mapKeys } from '@openpanel/validation';
-import {
   parseAsBoolean,
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
   useQueryState,
 } from 'nuqs';
+
+import {
+  getDefaultIntervalByDates,
+  getDefaultIntervalByRange,
+  timeRanges,
+} from '@openpanel/constants';
+import { mapKeys } from '@openpanel/validation';
 
 const nuqsOptions = { history: 'push' } as const;
 

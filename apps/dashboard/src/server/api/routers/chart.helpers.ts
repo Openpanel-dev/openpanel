@@ -1,5 +1,8 @@
 import { getDaysOldDate } from '@/utils/date';
 import { round } from '@/utils/math';
+import * as mathjs from 'mathjs';
+import { sort } from 'ramda';
+
 import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
 import { chQuery, convertClickhouseDateToJs, getChartSql } from '@openpanel/db';
 import type {
@@ -9,8 +12,6 @@ import type {
   IGetChartDataInput,
   IInterval,
 } from '@openpanel/validation';
-import * as mathjs from 'mathjs';
-import { sort } from 'ramda';
 
 export type GetChartDataResult = Awaited<ReturnType<typeof getChartData>>;
 export interface ResultItem {

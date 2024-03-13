@@ -8,12 +8,13 @@ import {
 } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
 import { cn } from '@/utils/cn';
-import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import useWebSocket from 'react-use-websocket';
 import { toast } from 'sonner';
+
+import type { IServiceCreateEventPayload } from '@openpanel/db';
 
 const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
   ssr: false,

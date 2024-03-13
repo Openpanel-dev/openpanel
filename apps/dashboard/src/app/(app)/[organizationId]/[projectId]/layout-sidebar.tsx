@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { Logo } from '@/components/Logo';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
-import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
 import { Rotate as Hamburger } from 'hamburger-react';
 import { PlusIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
+import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
 
 import LayoutMenu from './layout-menu';
 import LayoutOrganizationSelector from './layout-organization-selector';

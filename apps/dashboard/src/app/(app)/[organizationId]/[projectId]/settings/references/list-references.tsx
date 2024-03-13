@@ -5,8 +5,9 @@ import { DataTable } from '@/components/DataTable';
 import { columns } from '@/components/references/table';
 import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
-import type { IServiceReference } from '@openpanel/db';
 import { PlusIcon } from 'lucide-react';
+
+import type { IServiceReference } from '@openpanel/db';
 
 interface ListProjectsProps {
   data: IServiceReference[];

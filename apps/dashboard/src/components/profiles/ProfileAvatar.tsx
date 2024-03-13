@@ -1,10 +1,11 @@
 'use client';
 
 import { cn } from '@/utils/cn';
-import type { IServiceProfile } from '@openpanel/db';
 import { AvatarImage } from '@radix-ui/react-avatar';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
+
+import type { IServiceProfile } from '@openpanel/db';
 
 import { Avatar, AvatarFallback } from '../ui/avatar';
 

@@ -1,6 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@openpanel/db';
 import { z } from 'zod';
+
+import { db } from '@openpanel/db';
 
 export const eventRouter = createTRPCRouter({
   updateEventMeta: protectedProcedure

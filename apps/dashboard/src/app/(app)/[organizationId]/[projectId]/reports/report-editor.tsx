@@ -22,9 +22,10 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
-import type { IServiceReport } from '@openpanel/db';
 import { endOfDay, startOfDay } from 'date-fns';
 import { GanttChartSquareIcon } from 'lucide-react';
+
+import type { IServiceReport } from '@openpanel/db';
 
 interface ReportEditorProps {
   report: IServiceReport | null;

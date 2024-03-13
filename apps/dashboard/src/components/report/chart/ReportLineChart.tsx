@@ -7,8 +7,6 @@ import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { getChartColor } from '@/utils/theme';
-import type { IServiceReference } from '@openpanel/db';
-import type { IChartLineType, IInterval } from '@openpanel/validation';
 import {
   CartesianGrid,
   Line,
@@ -18,6 +16,9 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+
+import type { IServiceReference } from '@openpanel/db';
+import type { IChartLineType, IInterval } from '@openpanel/validation';
 
 import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';

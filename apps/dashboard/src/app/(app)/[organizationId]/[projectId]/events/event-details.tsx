@@ -13,8 +13,9 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
-import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { round } from 'mathjs';
+
+import type { IServiceCreateEventPayload } from '@openpanel/db';
 
 interface Props {
   event: IServiceCreateEventPayload;

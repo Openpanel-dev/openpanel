@@ -1,6 +1,7 @@
+import { parseAsStringEnum, useQueryState } from 'nuqs';
+
 import { mapKeys } from '@openpanel/validation';
 import type { IChartInput } from '@openpanel/validation';
-import { parseAsStringEnum, useQueryState } from 'nuqs';
 
 export function useOverviewWidget<T extends string>(
   key: string,

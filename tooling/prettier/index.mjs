@@ -14,7 +14,12 @@ const config = {
     '^[../]',
     '^[./]',
   ],
-  importOrderParserPlugins: ['typescript', 'jsx', 'decorators-legacy'],
+  importOrderParserPlugins: [
+    'typescript',
+    'jsx',
+    'decorators-legacy',
+    'importAssertions',
+  ],
   importOrderTypeScriptVersion: '4.4.0',
   singleQuote: true,
   semi: true,

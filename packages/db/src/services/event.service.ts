@@ -1,22 +1,22 @@
-import { omit, uniq } from "ramda";
-import { v4 as uuid } from "uuid";
+import { omit, uniq } from 'ramda';
+import { v4 as uuid } from 'uuid';
 
-import { randomSplitName, toDots } from "@openpanel/common";
-import { redis, redisPub } from "@openpanel/redis";
-import type { IChartEventFilter } from "@openpanel/validation";
+import { randomSplitName, toDots } from '@openpanel/common';
+import { redis, redisPub } from '@openpanel/redis';
+import type { IChartEventFilter } from '@openpanel/validation';
 
 import {
   ch,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
-} from "../clickhouse-client";
-import type { EventMeta, Prisma } from "../prisma-client";
-import { db } from "../prisma-client";
-import { createSqlBuilder } from "../sql-builder";
-import { getEventFiltersWhereClause } from "./chart.service";
-import { getProfileById, getProfiles, upsertProfile } from "./profile.service";
-import type { IServiceProfile } from "./profile.service";
+} from '../clickhouse-client';
+import type { EventMeta, Prisma } from '../prisma-client';
+import { db } from '../prisma-client';
+import { createSqlBuilder } from '../sql-builder';
+import { getEventFiltersWhereClause } from './chart.service';
+import { getProfileById, getProfiles, upsertProfile } from './profile.service';
+import type { IServiceProfile } from './profile.service';
 
 export interface IClickhouseEvent {
   id: string;
@@ -49,7 +49,7 @@ export interface IClickhouseEvent {
 }
 
 export function transformEvent(
-  event: IClickhouseEvent,
+  event: IClickhouseEvent
 ): IServiceCreateEventPayload {
   return {
     id: event.id,
@@ -124,7 +124,7 @@ export async function getLiveVisitors(projectId: string) {
 
 export async function getEvents(
   sql: string,
-  options: GetEventsOptions = {},
+  options: GetEventsOptions = {}
 ): Promise<IServiceCreateEventPayload[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
   if (options.profile) {
@@ -155,17 +155,17 @@ export async function getEvents(
 }
 
 export async function createEvent(
-  payload: Omit<IServiceCreateEventPayload, "id">,
+  payload: Omit<IServiceCreateEventPayload, 'id'>
 ) {
   if (!payload.profileId) {
     payload.profileId = payload.deviceId;
   }
   console.log(
-    `create event ${payload.name} for deviceId: ${payload.deviceId} profileId ${payload.profileId}`,
+    `create event ${payload.name} for deviceId: ${payload.deviceId} profileId ${payload.profileId}`
   );
 
   const exists = await getProfileById(payload.profileId);
-  if (!exists && payload.profileId !== "") {
+  if (!exists && payload.profileId !== '') {
     const { firstName, lastName } = randomSplitName();
     await upsertProfile({
       id: payload.profileId,
@@ -198,40 +198,40 @@ export async function createEvent(
     profile_id: payload.profileId,
     project_id: payload.projectId,
     session_id: payload.sessionId,
-    properties: toDots(omit(["_path"], payload.properties)),
-    path: payload.path ?? "",
+    properties: toDots(omit(['_path'], payload.properties)),
+    path: payload.path ?? '',
     created_at: formatClickhouseDate(payload.createdAt),
-    country: payload.country ?? "",
-    city: payload.city ?? "",
-    region: payload.region ?? "",
-    os: payload.os ?? "",
-    os_version: payload.osVersion ?? "",
-    browser: payload.browser ?? "",
-    browser_version: payload.browserVersion ?? "",
-    device: payload.device ?? "",
-    brand: payload.brand ?? "",
-    model: payload.model ?? "",
+    country: payload.country ?? '',
+    city: payload.city ?? '',
+    region: payload.region ?? '',
+    os: payload.os ?? '',
+    os_version: payload.osVersion ?? '',
+    browser: payload.browser ?? '',
+    browser_version: payload.browserVersion ?? '',
+    device: payload.device ?? '',
+    brand: payload.brand ?? '',
+    model: payload.model ?? '',
     duration: payload.duration,
-    referrer: payload.referrer ?? "",
-    referrer_name: payload.referrerName ?? "",
-    referrer_type: payload.referrerType ?? "",
+    referrer: payload.referrer ?? '',
+    referrer_name: payload.referrerName ?? '',
+    referrer_type: payload.referrerType ?? '',
   };
 
   const res = await ch.insert({
-    table: "events",
+    table: 'events',
     values: [event],
-    format: "JSONEachRow",
+    format: 'JSONEachRow',
     clickhouse_settings: {
-      date_time_input_format: "best_effort",
+      date_time_input_format: 'best_effort',
     },
   });
 
-  redisPub.publish("event", JSON.stringify(transformEvent(event)));
+  redisPub.publish('event', JSON.stringify(transformEvent(event)));
   redis.set(
     `live:event:${event.project_id}:${event.profile_id}`,
-    "",
-    "EX",
-    60 * 5,
+    '',
+    'EX',
+    60 * 5
   );
 
   return {
@@ -270,7 +270,7 @@ export async function getEventList({
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((n) => `'${n}'`),
-      ",",
+      ','
     )})`;
   }
 
@@ -285,7 +285,7 @@ export async function getEventList({
   //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
   // }
 
-  sb.orderBy.created_at = "created_at DESC";
+  sb.orderBy.created_at = 'created_at DESC';
 
   return getEvents(getSql(), { profile: true, meta: true });
 }
@@ -295,7 +295,7 @@ export async function getEventsCount({
   profileId,
   events,
   filters,
-}: Omit<GetEventListOptions, "cursor" | "take">) {
+}: Omit<GetEventListOptions, 'cursor' | 'take'>) {
   const { sb, getSql, join } = createSqlBuilder();
   sb.where.projectId = `project_id = '${projectId}'`;
   if (profileId) {
@@ -305,7 +305,7 @@ export async function getEventsCount({
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((n) => `'${n}'`),
-      ",",
+      ','
     )})`;
   }
 
@@ -317,7 +317,7 @@ export async function getEventsCount({
   }
 
   const res = await chQuery<{ count: number }>(
-    getSql().replace("*", "count(*) as count"),
+    getSql().replace('*', 'count(*) as count')
   );
 
   return res[0]?.count ?? 0;
@@ -339,8 +339,8 @@ export function createBotEvent({
   path,
 }: CreateBotEventPayload) {
   return ch.insert({
-    table: "events_bots",
-    format: "JSONEachRow",
+    table: 'events_bots',
+    format: 'JSONEachRow',
     values: [
       {
         name,

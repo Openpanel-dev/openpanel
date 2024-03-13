@@ -2,9 +2,10 @@
 
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
-import type { IServiceOrganization } from '@openpanel/db';
 import { Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+import type { IServiceOrganization } from '@openpanel/db';
 
 interface LayoutOrganizationSelectorProps {
   organizations: IServiceOrganization[];

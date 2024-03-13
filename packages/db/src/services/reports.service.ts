@@ -1,4 +1,4 @@
-import { alphabetIds, lineTypes, timeRanges } from "@openpanel/constants";
+import { alphabetIds, lineTypes, timeRanges } from '@openpanel/constants';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -6,42 +6,42 @@ import type {
   IChartInput,
   IChartLineType,
   IChartRange,
-} from "@openpanel/validation";
+} from '@openpanel/validation';
 
-import { db } from "../prisma-client";
-import type { Report as DbReport } from "../prisma-client";
+import { db } from '../prisma-client';
+import type { Report as DbReport } from '../prisma-client';
 
 export type IServiceReport = Awaited<ReturnType<typeof getReportById>>;
 
 export function transformFilter(
   filter: Partial<IChartEventFilter>,
-  index: number,
+  index: number
 ): IChartEventFilter {
   return {
-    id: filter.id ?? alphabetIds[index] ?? "A",
-    name: filter.name ?? "Unknown Filter",
-    operator: filter.operator ?? "is",
+    id: filter.id ?? alphabetIds[index] ?? 'A',
+    name: filter.name ?? 'Unknown Filter',
+    operator: filter.operator ?? 'is',
     value:
-      typeof filter.value === "string" ? [filter.value] : filter.value ?? [],
+      typeof filter.value === 'string' ? [filter.value] : filter.value ?? [],
   };
 }
 
 export function transformReportEvent(
   event: Partial<IChartEvent>,
-  index: number,
+  index: number
 ): IChartEvent {
   return {
-    segment: event.segment ?? "event",
+    segment: event.segment ?? 'event',
     filters: (event.filters ?? []).map(transformFilter),
     id: event.id ?? alphabetIds[index]!,
-    name: event.name || "unknown_event",
+    name: event.name || 'unknown_event',
     displayName: event.displayName,
     property: event.property,
   };
 }
 
 export function transformReport(
-  report: DbReport,
+  report: DbReport
 ): IChartInput & { id: string } {
   return {
     id: report.id,
@@ -51,11 +51,11 @@ export function transformReport(
     chartType: report.chart_type,
     lineType: (report.line_type as IChartLineType) ?? lineTypes.monotone,
     interval: report.interval,
-    name: report.name || "Untitled",
-    range: (report.range as IChartRange) ?? timeRanges["1m"],
+    name: report.name || 'Untitled',
+    range: (report.range as IChartRange) ?? timeRanges['1m'],
     previous: report.previous ?? false,
     formula: report.formula ?? undefined,
-    metric: report.metric ?? "sum",
+    metric: report.metric ?? 'sum',
     unit: report.unit ?? undefined,
   };
 }

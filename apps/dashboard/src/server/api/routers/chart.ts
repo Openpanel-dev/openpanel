@@ -4,6 +4,9 @@ import {
   publicProcedure,
 } from '@/server/api/trpc';
 import { average, max, min, round, sum } from '@/utils/math';
+import { flatten, map, pipe, prop, repeat, reverse, sort, uniq } from 'ramda';
+import { z } from 'zod';
+
 import {
   chQuery,
   createSqlBuilder,
@@ -12,8 +15,6 @@ import {
 } from '@openpanel/db';
 import { zChartInput } from '@openpanel/validation';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
-import { flatten, map, pipe, prop, repeat, reverse, sort, uniq } from 'ramda';
-import { z } from 'zod';
 
 import {
   getChartData,

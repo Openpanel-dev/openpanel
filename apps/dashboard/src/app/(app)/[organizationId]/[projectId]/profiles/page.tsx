@@ -3,8 +3,9 @@ import { OverviewFiltersButtons } from '@/components/overview/filters/overview-f
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { eventQueryFiltersParser } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
-import { getProfileList, getProfileListCount } from '@openpanel/db';
 import { parseAsInteger } from 'nuqs';
+
+import { getProfileList, getProfileListCount } from '@openpanel/db';
 
 import { StickyBelowHeader } from '../layout-sticky-below-header';
 import { ProfileList } from './profile-list';
