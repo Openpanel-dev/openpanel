@@ -60,7 +60,6 @@ import {
   setProfile,
   setProfileId,
   trackEvent,
-  trackScreenView,
 } from '@openpanel/nextjs';
 
 // Sends an event with payload foo: bar
@@ -188,6 +187,13 @@ clear();
 ### Track server events
 
 If you want to track server-side events, you should create an instance of our Javascript SDK. It's exported from `@openpanel/nextjs`
+
+<Callout>
+When using server events it's important to create a new client (with a secret). Since it's backend we cannot authorize the request with cors headers.
+
+`Openpanel Dashboard -> Setting -> Clients -> Create client`
+
+</Callout>
 
 ```typescript
 import { OpenpanelSdk } from '@openpanel/nextjs';

@@ -3,7 +3,7 @@ import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { db } from '@/server/db';
 import { z } from 'zod';
 
-import { hashPassword } from '@openpanel/common';
+import { hashPassword, stripTrailingSlash } from '@openpanel/common';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure
@@ -71,7 +71,7 @@ export const clientRouter = createTRPCRouter({
           project_id: input.projectId,
           name: input.name,
           secret: input.cors ? null : await hashPassword(secret),
-          cors: input.cors || undefined,
+          cors: input.cors ? stripTrailingSlash(input.cors) : '*',
         },
       });
 

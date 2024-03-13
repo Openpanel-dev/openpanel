@@ -3,7 +3,7 @@ import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { clerkClient } from '@clerk/nextjs';
 import { z } from 'zod';
 
-import { hashPassword } from '@openpanel/common';
+import { hashPassword, stripTrailingSlash } from '@openpanel/common';
 import { db } from '@openpanel/db';
 
 export const onboardingRouter = createTRPCRouter({
@@ -35,7 +35,7 @@ export const onboardingRouter = createTRPCRouter({
             name: `${project.name} Client`,
             organization_slug: org.slug,
             project_id: project.id,
-            cors: input.cors ?? '*',
+            cors: input.cors ? stripTrailingSlash(input.cors) : '*',
             secret: input.cors ? null : await hashPassword(secret),
           },
         });
@@ -43,7 +43,7 @@ export const onboardingRouter = createTRPCRouter({
         return {
           client: {
             ...client,
-            secret,
+            secret: input.cors ? null : secret,
           },
           project,
           organization: org,
