@@ -6,5 +6,4 @@ export default defineConfig({
   ...(config as any),
   entry: ['index.tsx'],
   format: ['cjs', 'esm'],
-  external: ['next', 'react', 'react-dom'],
 });
