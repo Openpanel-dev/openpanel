@@ -25,14 +25,14 @@ export function JoinWaitlistHero({ className }: JoinWaitlistProps) {
   useEffect(() => {
     if (open) {
       // @ts-ignore
-      window.op('event', 'waitlist_open');
+      window.op?.('event', 'waitlist_open');
     }
   }, [open]);
 
   useEffect(() => {
     if (success) {
       // @ts-ignore
-      window.op('event', 'waitlist_success', {
+      window.op?.('event', 'waitlist_success', {
         email: value,
       });
     }
@@ -113,15 +113,23 @@ export function JoinWaitlistHero({ className }: JoinWaitlistProps) {
         >
           Join waitlist now
         </Button>
-        <Link
-          href="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
-          target="_blank"
-          rel="nofollow"
-        >
-          <Button size="lg" variant="outline" className="text-lg h-12">
-            Demo
-          </Button>
-        </Link>
+
+        <div className="relative">
+          <Link
+            href="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
+            target="_blank"
+            rel="nofollow"
+          >
+            <Button size="lg" variant="outline" className="text-lg h-12">
+              Demo
+            </Button>
+          </Link>
+          <img
+            src="/clickable-demo.png"
+            className="w-44 shrink-0 absolute left-full -top-8 translate-x-10 max-w-none"
+            alt="Clickable demo button"
+          />
+        </div>
       </div>
     </>
   );

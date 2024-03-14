@@ -1,18 +1,18 @@
 import { db } from '@openpanel/db';
 
-import { PreviewCarousel } from './carousel';
 import { Heading2, Lead2, Paragraph } from './copy';
 import { Hero } from './hero';
+import { Navbar } from './navbar';
 import { Sections } from './section';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
-export default async function Page() {
-  const waitlistCount = await db.waitlist.count();
+export default function Page() {
   return (
     <div>
-      <Hero waitlistCount={waitlistCount} />
+      <Navbar darkText={false} className="[&_img]:hidden" />
+      <Hero />
       <div className="container">
         <div className="my-24">
           <Heading2 className="md:text-5xl mb-2 leading-none">

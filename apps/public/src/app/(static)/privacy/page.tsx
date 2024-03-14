@@ -1,4 +1,4 @@
-import { Heading1 } from '../copy';
+import { Heading1 } from '../../copy';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;

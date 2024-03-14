@@ -1,8 +1,12 @@
+import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
+import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import Image from 'next/image';
 
 import { PreviewCarousel } from './carousel';
 import { Heading1, Lead2 } from './copy';
 import { JoinWaitlistHero } from './join-waitlist-hero';
+import { SocialProofServer } from './social-proof';
+import { SocialProof } from './social-proof/social-proof';
 
 const avatars = [
   'https://api.dicebear.com/7.x/adventurer/svg?seed=Chester&backgroundColor=b6e3f4',
@@ -10,7 +14,7 @@ const avatars = [
   'https://api.dicebear.com/7.x/adventurer/svg?seed=Boo&backgroundColor=ffdfbf',
 ];
 
-export function Hero({ waitlistCount }: { waitlistCount: number }) {
+export function Hero() {
   return (
     <div className="flex py-32 flex-col items-center w-full text-center bg-[#1F54FF] relative overflow-hidden">
       {/* <div className="inset-0 absolute h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0)_100%)]"></div> */}
@@ -37,16 +41,12 @@ export function Hero({ waitlistCount }: { waitlistCount: number }) {
           alternative to Mixpanel
         </Heading1>
         <Lead2 className="text-white/70 font-light">
-          Mixpanel + Plausible = <span className="text-white">Openpanel!</span>{' '}
-          <br />A simple analytics tool that your wallet can afford.
+          The power of Mixpanel, the ease of Plausible <br />
+          and nothing from Google Analytics 😉
         </Lead2>
         <div className="my-12 w-full flex flex-col items-center">
           <JoinWaitlistHero />
-          <div className="mt-6 flex justify-center items-center">
-            <p className="text-white">
-              {waitlistCount} people have already signed up! 🚀
-            </p>
-          </div>
+          <SocialProofServer className="mt-6" />
         </div>
       </div>
 

@@ -35,39 +35,10 @@ export default function RootLayout({
           font.className
         )}
       >
-        <div
-          className="w-full h-screen text-blue-950 bg-[radial-gradient(circle_at_2px_2px,#D9DEF6_2px,transparent_0)] absolute top-0 left-0 right-0 z-0"
-          style={{
-            backgroundSize: '70px 70px',
-          }}
-        />
-        <div className="relative">{children}</div>
+        {children}
         <Footer />
       </body>
-      <Script
-        src="https://openpanel.dev/op.js"
-        async
-        defer
-        strategy="afterInteractive"
-      />
-      <Script
-        id="openpanel"
-        dangerouslySetInnerHTML={{
-          __html: `
-          window.op =
-            window.op ||
-            function (...args) {
-              (window.op.q = window.op.q || []).push(args);
-            };
-          window.op('ctor', {
-            clientId: '301c6dc1-424c-4bc3-9886-a8beab09b615',
-            trackScreenViews: true,
-            trackOutgoingLinks: true,
-            trackAttributes: true,
-          });
-        `,
-        }}
-      />
+      {/* 301c6dc1-424c-4bc3-9886-a8beab09b615 */}
     </html>
   );
 }
