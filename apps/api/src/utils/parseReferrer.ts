@@ -34,17 +34,25 @@ export function getReferrerWithQuery(
 
   const source = query.utm_source ?? query.ref ?? query.utm_referrer ?? '';
 
-  const match = Object.values(referrers).find(
-    (referrer) => referrer.name.toLowerCase() === source?.toLowerCase()
-  );
-
-  if (!match) {
+  if (source === '') {
     return null;
   }
 
+  const match = Object.values(referrers).find(
+    (referrer) => referrer.name.toLowerCase() === source.toLowerCase()
+  );
+
+  if (match) {
+    return {
+      name: match.name,
+      type: match.type,
+      url: '',
+    };
+  }
+
   return {
-    name: match.name,
-    type: match.type,
+    name: source,
+    type: 'unknown',
     url: '',
   };
 }

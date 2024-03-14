@@ -243,8 +243,8 @@ export async function postEvent(
     duration: 0,
     path: path,
     referrer: referrer?.url,
-    referrerName: referrer?.name ?? utmReferrer?.name ?? '',
-    referrerType: referrer?.type ?? utmReferrer?.type ?? '',
+    referrerName: referrer?.name || utmReferrer?.name || '',
+    referrerType: referrer?.type || utmReferrer?.type || '',
     profile: undefined,
     meta: undefined,
   };
