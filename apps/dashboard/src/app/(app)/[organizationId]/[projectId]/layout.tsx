@@ -1,7 +1,9 @@
+import { notFound } from 'next/navigation';
+
 import {
   getCurrentOrganizations,
-  getDashboardsByOrganization,
   getDashboardsByProjectId,
+  getProjectsByOrganizationSlug,
 } from '@openpanel/db';
 
 import { LayoutSidebar } from './layout-sidebar';
@@ -18,10 +20,19 @@ export default async function AppLayout({
   children,
   params: { organizationId, projectId },
 }: AppLayoutProps) {
-  const [organizations, dashboards] = await Promise.all([
+  const [organizations, projects, dashboards] = await Promise.all([
     getCurrentOrganizations(),
+    getProjectsByOrganizationSlug(organizationId),
     getDashboardsByProjectId(projectId),
   ]);
+
+  if (!organizations.find((item) => item.slug === organizationId)) {
+    return notFound();
+  }
+
+  if (!projects.find((item) => item.id === projectId)) {
+    return notFound();
+  }
 
   return (
     <div id="dashboard">
