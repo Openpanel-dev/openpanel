@@ -1,8 +1,6 @@
-import { slug } from '@/utils/slug';
-
 import { db } from '@openpanel/db';
 
-export { db } from '@openpanel/db';
+import { slug } from './slug';
 
 export async function getId(tableName: 'project' | 'dashboard', name: string) {
   const newId = slug(name);
@@ -15,7 +13,7 @@ export async function getId(tableName: 'project' | 'dashboard', name: string) {
   }
 
   // @ts-expect-error
-  const existingProject = await db[tableName]!.findUnique({
+  const existingProject = await db[tableName].findUnique({
     where: {
       id: newId,
     },

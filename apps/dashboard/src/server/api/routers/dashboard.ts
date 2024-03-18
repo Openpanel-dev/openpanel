@@ -1,60 +1,20 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db, getId } from '@/server/db';
+import { getId } from '@/utils/getDbId';
 import { PrismaError } from 'prisma-error-enum';
 import { z } from 'zod';
 
+import { db, getDashboardsByProjectId } from '@openpanel/db';
 import type { Prisma } from '@openpanel/db';
 
 export const dashboardRouter = createTRPCRouter({
-  get: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return db.dashboard.findUnique({
-        where: {
-          id: input.id,
-        },
-      });
-    }),
   list: protectedProcedure
     .input(
-      z
-        .object({
-          projectId: z.string(),
-        })
-        .or(
-          z.object({
-            organizationId: z.string(),
-          })
-        )
+      z.object({
+        projectId: z.string(),
+      })
     )
     .query(async ({ input }) => {
-      if ('projectId' in input) {
-        return db.dashboard.findMany({
-          where: {
-            project_id: input.projectId,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          include: {
-            project: true,
-          },
-        });
-      } else {
-        return db.dashboard.findMany({
-          where: {
-            project: {
-              organization_slug: input.organizationId,
-            },
-          },
-          include: {
-            project: true,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        });
-      }
+      return getDashboardsByProjectId(input.projectId);
     }),
   create: protectedProcedure
     .input(

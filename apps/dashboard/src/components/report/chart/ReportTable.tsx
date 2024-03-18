@@ -1,6 +1,6 @@
 import * as React from 'react';
 import type { IChartData } from '@/app/_trpc/client';
-import { Pagination, usePagination } from '@/components/Pagination';
+import { Pagination, usePagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -30,12 +30,14 @@ interface ReportTableProps {
   setVisibleSeries: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
+const ROWS_LIMIT = 50;
+
 export function ReportTable({
   data,
   visibleSeries,
   setVisibleSeries,
 }: ReportTableProps) {
-  const { setPage, paginate, page } = usePagination(50);
+  const { setPage, paginate, page } = usePagination(ROWS_LIMIT);
   const number = useNumber();
   const interval = useSelector((state) => state.report.interval);
   const formatDate = useFormatDateInterval(interval);
@@ -162,7 +164,12 @@ export function ReportTable({
           <Badge>Min: {number.format(data.metrics.min)}</Badge>
           <Badge>Max: {number.format(data.metrics.max)}</Badge>
         </div>
-        <Pagination cursor={page} setCursor={setPage} />
+        <Pagination
+          cursor={page}
+          setCursor={setPage}
+          take={ROWS_LIMIT}
+          count={data.series.length}
+        />
       </div>
     </>
   );

@@ -9,7 +9,6 @@ export const organizationRouter = createTRPCRouter({
   list: protectedProcedure.query(() => {
     return clerkClient.organizations.getOrganizationList();
   }),
-  // first: protectedProcedure.query(() => getCurrentOrganization()),
   get: protectedProcedure
     .input(
       z.object({

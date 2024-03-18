@@ -1,11 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { InputWithLabel } from '@/components/forms/InputWithLabel';
-import { Logo } from '@/components/Logo';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Logo } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { Widget, WidgetBody } from '@/components/Widget';
+import { Widget, WidgetBody } from '@/components/widget';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { KeySquareIcon } from 'lucide-react';
 import { signIn } from 'next-auth/react';

@@ -3,7 +3,7 @@
 import { WidgetHead } from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { ChartSwitch } from '@/components/report/chart';
-import { Widget, WidgetBody } from '@/components/Widget';
+import { Widget, WidgetBody } from '@/components/widget';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 

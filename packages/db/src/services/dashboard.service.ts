@@ -23,22 +23,6 @@ export async function getDashboardById(id: string, projectId: string) {
   return dashboard;
 }
 
-export async function getDashboardsByOrganization(organizationSlug: string) {
-  return db.dashboard.findMany({
-    where: {
-      organization_slug: organizationSlug,
-    },
-    include: {
-      project: true,
-    },
-    orderBy: {
-      reports: {
-        _count: 'desc',
-      },
-    },
-  });
-}
-
 export function getDashboardsByProjectId(projectId: string) {
   return db.dashboard.findMany({
     where: {

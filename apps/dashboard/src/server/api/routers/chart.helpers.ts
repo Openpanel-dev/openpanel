@@ -1,10 +1,17 @@
-import { getDaysOldDate } from '@/utils/date';
 import { round } from '@/utils/math';
+import { subDays } from 'date-fns';
 import * as mathjs from 'mathjs';
-import { sort } from 'ramda';
+import { repeat, reverse, sort } from 'ramda';
 
 import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
-import { chQuery, convertClickhouseDateToJs, getChartSql } from '@openpanel/db';
+import {
+  chQuery,
+  convertClickhouseDateToJs,
+  createSqlBuilder,
+  formatClickhouseDate,
+  getChartSql,
+  getEventFiltersWhereClause,
+} from '@openpanel/db';
 import type {
   IChartEvent,
   IChartInput,
@@ -317,7 +324,7 @@ export function getDatesFromRange(range: IChartRange) {
   let days = 1;
 
   if (range === '24h') {
-    const startDate = getDaysOldDate(days);
+    const startDate = subDays(new Date(), days);
     const endDate = new Date();
     return {
       startDate: startDate.toUTCString(),
@@ -337,7 +344,7 @@ export function getDatesFromRange(range: IChartRange) {
     days = 365;
   }
 
-  const startDate = getDaysOldDate(days);
+  const startDate = subDays(new Date(), days);
   startDate.setUTCHours(0, 0, 0, 0);
   const endDate = new Date();
   endDate.setUTCHours(23, 59, 59, 999);
@@ -347,10 +354,197 @@ export function getDatesFromRange(range: IChartRange) {
   };
 }
 
-export function getChartStartEndDate(
-  input: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>
-) {
-  return input.startDate && input.endDate
-    ? { startDate: input.startDate, endDate: input.endDate }
-    : getDatesFromRange(input.range);
+export function getChartStartEndDate({
+  startDate,
+  endDate,
+  range,
+}: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>) {
+  return startDate && endDate
+    ? { startDate: startDate, endDate: endDate }
+    : getDatesFromRange(range);
+}
+
+export function getChartPrevStartEndDate({
+  startDate,
+  endDate,
+  range,
+}: {
+  startDate: string;
+  endDate: string;
+  range: IChartRange;
+}) {
+  let diff = 0;
+
+  switch (range) {
+    case '30min': {
+      diff = 1000 * 60 * 30;
+      break;
+    }
+    case '1h': {
+      diff = 1000 * 60 * 60;
+      break;
+    }
+    case '24h':
+    case 'today': {
+      diff = 1000 * 60 * 60 * 24;
+      break;
+    }
+    case '7d': {
+      diff = 1000 * 60 * 60 * 24 * 7;
+      break;
+    }
+    case '14d': {
+      diff = 1000 * 60 * 60 * 24 * 14;
+      break;
+    }
+    case '1m': {
+      diff = 1000 * 60 * 60 * 24 * 30;
+      break;
+    }
+    case '3m': {
+      diff = 1000 * 60 * 60 * 24 * 90;
+      break;
+    }
+    case '6m': {
+      diff = 1000 * 60 * 60 * 24 * 180;
+      break;
+    }
+  }
+
+  return {
+    startDate: new Date(new Date(startDate).getTime() - diff).toISOString(),
+    endDate: new Date(new Date(endDate).getTime() - diff).toISOString(),
+  };
+}
+
+export async function getFunnelData({ projectId, ...payload }: IChartInput) {
+  const { startDate, endDate } = getChartStartEndDate(payload);
+
+  if (payload.events.length === 0) {
+    return {
+      totalSessions: 0,
+      steps: [],
+    };
+  }
+
+  const funnels = payload.events.map((event) => {
+    const { sb, getWhere } = createSqlBuilder();
+    sb.where = getEventFiltersWhereClause(event.filters);
+    sb.where.name = `name = '${event.name}'`;
+    return getWhere().replace('WHERE ', '');
+  });
+
+  const innerSql = `SELECT
+    session_id,
+    windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+  FROM events
+  WHERE (project_id = '${projectId}' AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
+  GROUP BY session_id`;
+
+  const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC`;
+
+  const [funnelRes, sessionRes] = await Promise.all([
+    chQuery<{ level: number; count: number }>(sql),
+    chQuery<{ count: number }>(
+      `SELECT count(name) as count FROM events WHERE project_id = '${projectId}' AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
+    ),
+  ]);
+
+  if (funnelRes[0]?.level !== payload.events.length) {
+    funnelRes.unshift({
+      level: payload.events.length,
+      count: 0,
+    });
+  }
+
+  const totalSessions = sessionRes[0]?.count ?? 0;
+  const filledFunnelRes = funnelRes.reduce(
+    (acc, item, index) => {
+      const diff =
+        index !== 0 ? (acc[acc.length - 1]?.level ?? 0) - item.level : 1;
+
+      if (diff > 1) {
+        acc.push(
+          ...reverse(
+            repeat({}, diff - 1).map((_, index) => ({
+              count: acc[acc.length - 1]?.count ?? 0,
+              level: item.level + index + 1,
+            }))
+          )
+        );
+      }
+
+      return [
+        ...acc,
+        {
+          count: item.count + (acc[acc.length - 1]?.count ?? 0),
+          level: item.level,
+        },
+      ];
+    },
+    [] as typeof funnelRes
+  );
+
+  const steps = reverse(filledFunnelRes)
+    .filter((item) => item.level !== 0)
+    .reduce(
+      (acc, item, index, list) => {
+        const prev = list[index - 1] ?? { count: totalSessions };
+        return [
+          ...acc,
+          {
+            event: payload.events[item.level - 1]!,
+            before: prev.count,
+            current: item.count,
+            dropoff: {
+              count: prev.count - item.count,
+              percent: 100 - (item.count / prev.count) * 100,
+            },
+            percent: (item.count / totalSessions) * 100,
+            prevPercent: (prev.count / totalSessions) * 100,
+          },
+        ];
+      },
+      [] as {
+        event: IChartEvent;
+        before: number;
+        current: number;
+        dropoff: {
+          count: number;
+          percent: number;
+        };
+        percent: number;
+        prevPercent: number;
+      }[]
+    );
+
+  return {
+    totalSessions,
+    steps,
+  };
+}
+
+export async function getSeriesFromEvents(input: IChartInput) {
+  const { startDate, endDate } =
+    input.startDate && input.endDate
+      ? {
+          startDate: input.startDate,
+          endDate: input.endDate,
+        }
+      : getDatesFromRange(input.range);
+
+  const series = (
+    await Promise.all(
+      input.events.map(async (event) =>
+        getChartData({
+          ...input,
+          startDate,
+          endDate,
+          event,
+        })
+      )
+    )
+  ).flat();
+
+  return withFormula(input, series);
 }

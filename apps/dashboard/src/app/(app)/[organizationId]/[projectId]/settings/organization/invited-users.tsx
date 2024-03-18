@@ -8,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 
 import type { IServiceInvites } from '@openpanel/db';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { ButtonContainer } from '@/components/ButtonContainer';
+import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
 
 import { popModal } from '.';

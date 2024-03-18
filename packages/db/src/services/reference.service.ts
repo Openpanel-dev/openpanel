@@ -1,13 +1,11 @@
 import type { Prisma, Reference } from '../prisma-client';
 import { db } from '../prisma-client';
 
-// import type { Report as DbReport } from '../prisma-client';
-
 export type IServiceReference = Omit<Reference, 'project_id'> & {
   projectId: string;
 };
 
-export function transform({
+export function transformReference({
   project_id,
   ...item
 }: Reference): IServiceReference {
@@ -28,7 +26,7 @@ export async function getReferenceById(id: string) {
     return null;
   }
 
-  return transform(reference);
+  return transformReference(reference);
 }
 
 export async function getReferences({
@@ -46,5 +44,5 @@ export async function getReferences({
     skip,
   });
 
-  return references.map(transform);
+  return references.map(transformReference);
 }

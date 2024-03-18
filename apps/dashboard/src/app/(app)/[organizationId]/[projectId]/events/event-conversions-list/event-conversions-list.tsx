@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
-import { Widget, WidgetHead } from '@/components/Widget';
+import { Widget, WidgetHead } from '@/components/widget';
 import { isSameDay } from 'date-fns';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';

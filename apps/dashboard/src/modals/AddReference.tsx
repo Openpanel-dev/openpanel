@@ -1,8 +1,8 @@
 'use client';
 
 import { api, handleError } from '@/app/_trpc/client';
-import { ButtonContainer } from '@/components/ButtonContainer';
-import { InputWithLabel } from '@/components/forms/InputWithLabel';
+import { ButtonContainer } from '@/components/button-container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { useAppParams } from '@/hooks/useAppParams';

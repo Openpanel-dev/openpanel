@@ -6,7 +6,7 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 import { BarChartIcon, LineChart, LineChartIcon } from 'lucide-react';
 
-import { Widget, WidgetBody } from '../../Widget';
+import { Widget, WidgetBody } from '../../widget';
 import { OverviewChartToggle } from '../overview-chart-toggle';
 import { WidgetButtons, WidgetHead } from '../overview-widget';
 import { useOverviewOptions } from '../useOverviewOptions';

@@ -1,4 +1,4 @@
-import { LogoSquare } from '@/components/Logo';
+import { LogoSquare } from '@/components/logo';
 import { ProjectCard } from '@/components/projects/project-card';
 import { notFound, redirect } from 'next/navigation';
 

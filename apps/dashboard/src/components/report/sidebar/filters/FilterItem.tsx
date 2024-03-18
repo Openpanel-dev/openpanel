@@ -1,8 +1,8 @@
 import { api } from '@/app/_trpc/client';
-import { ColorSquare } from '@/components/ColorSquare';
-import { Dropdown } from '@/components/Dropdown';
+import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
@@ -104,7 +104,7 @@ export function FilterItem({ filter, event }: FilterProps) {
         </Button>
       </div>
       <div className="flex gap-1">
-        <Dropdown
+        <DropdownMenuComposed
           onChange={changeFilterOperator}
           items={mapKeys(operators).map((key) => ({
             value: key,
@@ -115,7 +115,7 @@ export function FilterItem({ filter, event }: FilterProps) {
           <Button variant={'ghost'} className="whitespace-nowrap">
             {operators[filter.operator]}
           </Button>
-        </Dropdown>
+        </DropdownMenuComposed>
         <ComboboxAdvanced
           items={valuesCombobox}
           value={filter.value}

@@ -1,16 +1,15 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
-import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
+import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { ChartSwitch } from '@/components/report/chart';
 import { SerieIcon } from '@/components/report/chart/SerieIcon';
-import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import {
   eventQueryFiltersParser,
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
-import { getProfileName } from '@/utils/getters';
 import { notFound } from 'next/navigation';
 import { parseAsInteger, parseAsString } from 'nuqs';
 
@@ -20,6 +19,7 @@ import {
   getEventList,
   getEventsCount,
   getProfileById,
+  getProfileName,
 } from '@openpanel/db';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 

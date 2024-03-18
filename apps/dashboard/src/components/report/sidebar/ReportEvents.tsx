@@ -1,9 +1,9 @@
 'use client';
 
-import { ColorSquare } from '@/components/ColorSquare';
-import { Dropdown } from '@/components/Dropdown';
+import { ColorSquare } from '@/components/color-square';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
+import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
@@ -94,7 +94,7 @@ export function ReportEvents() {
 
               {/* Segment and Filter buttons */}
               <div className="flex gap-2 p-2 pt-0 text-sm">
-                <Dropdown
+                <DropdownMenuComposed
                   onChange={(segment) => {
                     dispatch(
                       changeEvent({
@@ -166,7 +166,7 @@ export function ReportEvents() {
                       </>
                     )}
                   </button>
-                </Dropdown>
+                </DropdownMenuComposed>
                 {/*  */}
                 <FiltersCombobox event={event} />
 

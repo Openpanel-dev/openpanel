@@ -1,4 +1,4 @@
-import { Widget } from '@/components/Widget';
+import { Widget } from '@/components/widget';
 
 import { db, getEvents } from '@openpanel/db';
 

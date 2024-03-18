@@ -4,7 +4,12 @@ import { clerkClient } from '@clerk/nextjs';
 import { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
-import { db } from '@openpanel/db';
+import {
+  db,
+  transformClient,
+  transformOrganization,
+  transformProject,
+} from '@openpanel/db';
 
 export const onboardingRouter = createTRPCRouter({
   organziation: protectedProcedure
@@ -41,12 +46,12 @@ export const onboardingRouter = createTRPCRouter({
         });
 
         return {
-          client: {
+          client: transformClient({
             ...client,
             secret: input.cors ? null : secret,
-          },
-          project,
-          organization: org,
+          }),
+          project: transformProject(project),
+          organization: transformOrganization(org),
         };
       }
 

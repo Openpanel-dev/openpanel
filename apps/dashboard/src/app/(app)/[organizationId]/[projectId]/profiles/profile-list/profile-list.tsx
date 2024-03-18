@@ -1,18 +1,19 @@
 'use client';
 
-import { ListPropertiesIcon } from '@/components/events/ListPropertiesIcon';
-import { FullPageEmptyState } from '@/components/FullPageEmptyState';
-import { Pagination } from '@/components/Pagination';
-import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
+import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { Pagination } from '@/components/pagination';
+import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltiper } from '@/components/ui/tooltip';
-import { Widget, WidgetHead } from '@/components/Widget';
+import { Widget, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useCursor } from '@/hooks/useCursor';
 import { UsersIcon } from 'lucide-react';
 import Link from 'next/link';
 
+import { getProfileName } from '@openpanel/db';
 import type { IServiceProfile } from '@openpanel/db';
 
 interface ProfileListProps {
@@ -49,7 +50,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
                       className="flex gap-2 items-center font-medium"
                     >
                       <ProfileAvatar size="sm" {...profile} />
-                      {profile.firstName} {profile.lastName}
+                      {getProfileName(profile)}
                     </Link>
                   );
                 },

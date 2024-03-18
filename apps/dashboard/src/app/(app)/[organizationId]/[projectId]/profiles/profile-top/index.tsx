@@ -1,10 +1,10 @@
-import { ListPropertiesIcon } from '@/components/events/ListPropertiesIcon';
-import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
-import { Widget, WidgetHead } from '@/components/Widget';
+import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
+import { ProfileAvatar } from '@/components/profiles/profile-avatar';
+import { Widget, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import Link from 'next/link';
 
-import { chQuery, getProfiles } from '@openpanel/db';
+import { chQuery, getProfileName, getProfiles } from '@openpanel/db';
 
 interface Props {
   projectId: string;
@@ -24,7 +24,7 @@ export default async function ProfileTopServer({
   const list = res.map((item) => {
     return {
       count: item.count,
-      ...(profiles.find((p) => p.id === item.profile_id) ?? {}),
+      ...(profiles.find((p) => p.id === item.profile_id)! ?? {}),
     };
   });
 
@@ -35,7 +35,7 @@ export default async function ProfileTopServer({
       </WidgetHead>
       <WidgetTable
         data={list.filter((item) => !!item.id)}
-        keyExtractor={(item) => item.id!}
+        keyExtractor={(item) => item.id}
         columns={[
           {
             name: 'Name',
@@ -46,7 +46,7 @@ export default async function ProfileTopServer({
                   className="flex gap-2 items-center font-medium"
                 >
                   <ProfileAvatar size="sm" {...profile} />
-                  {profile.firstName} {profile.lastName}
+                  {getProfileName(profile)}
                 </Link>
               );
             },

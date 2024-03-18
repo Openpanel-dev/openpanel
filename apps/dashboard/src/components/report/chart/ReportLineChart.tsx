@@ -44,7 +44,6 @@ export function ReportLineChart({
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(series);
   const number = useNumber();
-  console.log(references.map((ref) => ref.createdAt.getTime()));
 
   return (
     <>

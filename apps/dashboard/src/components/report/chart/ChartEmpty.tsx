@@ -1,4 +1,4 @@
-import { FullPageEmptyState } from '@/components/FullPageEmptyState';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { cn } from '@/utils/cn';
 
 import { useChartContext } from './ChartProvider';

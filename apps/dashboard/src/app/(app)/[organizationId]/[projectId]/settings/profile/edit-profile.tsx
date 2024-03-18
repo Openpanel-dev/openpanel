@@ -1,9 +1,9 @@
 'use client';
 
 import { api, handleError } from '@/app/_trpc/client';
-import { InputWithLabel } from '@/components/forms/InputWithLabel';
+import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
-import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';

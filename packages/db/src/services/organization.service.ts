@@ -12,7 +12,7 @@ export type IServiceOrganization = Awaited<
 
 export type IServiceInvites = Awaited<ReturnType<typeof getInvites>>;
 
-function transformOrganization(org: Organization) {
+export function transformOrganization(org: Organization) {
   return {
     id: org.id,
     name: org.name,

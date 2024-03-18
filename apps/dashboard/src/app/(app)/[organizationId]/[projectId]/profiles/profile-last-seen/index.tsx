@@ -3,7 +3,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { cn } from '@/utils/cn';
 
 import { chQuery } from '@openpanel/db';

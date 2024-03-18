@@ -1,7 +1,7 @@
 'use client';
 
 import type { IChartData } from '@/app/_trpc/client';
-import { ColorSquare } from '@/components/ColorSquare';
+import { ColorSquare } from '@/components/color-square';
 import { fancyMinutes, useNumber } from '@/hooks/useNumerFormatter';
 import { theme } from '@/utils/theme';
 import AutoSizer from 'react-virtualized-auto-sizer';

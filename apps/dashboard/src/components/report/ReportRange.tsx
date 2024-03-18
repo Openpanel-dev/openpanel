@@ -7,9 +7,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
-import { useDispatch, useSelector } from '@/redux';
 import { cn } from '@/utils/cn';
-import { endOfDay, format, startOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { CalendarIcon, ChevronsUpDownIcon } from 'lucide-react';
 import type { SelectRangeEventHandler } from 'react-day-picker';
 
@@ -18,7 +17,6 @@ import type { IChartRange } from '@openpanel/validation';
 
 import type { ExtendedComboboxProps } from '../ui/combobox';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
-import { changeDates, changeEndDate, changeStartDate } from './reportSlice';
 
 export function ReportRange({
   range,

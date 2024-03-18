@@ -1,57 +1,11 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@/server/db';
 import { z } from 'zod';
 
-import { transformReport } from '@openpanel/db';
+import { db } from '@openpanel/db';
 import { zChartInput } from '@openpanel/validation';
 
 export const reportRouter = createTRPCRouter({
-  get: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .query(({ input: { id } }) => {
-      return db.report
-        .findUniqueOrThrow({
-          where: {
-            id,
-          },
-        })
-        .then(transformReport);
-    }),
-  list: protectedProcedure
-    .input(
-      z.object({
-        projectId: z.string(),
-        dashboardId: z.string(),
-      })
-    )
-    .query(async ({ input: { projectId, dashboardId } }) => {
-      const [dashboard, reports] = await db.$transaction([
-        db.dashboard.findUniqueOrThrow({
-          where: {
-            id: dashboardId,
-          },
-        }),
-        db.report.findMany({
-          where: {
-            project_id: projectId,
-            dashboard_id: dashboardId,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        }),
-      ]);
-
-      return {
-        reports: reports.map(transformReport),
-        dashboard,
-      };
-    }),
-  save: protectedProcedure
+  create: protectedProcedure
     .input(
       z.object({
         report: zChartInput.omit({ projectId: true }),

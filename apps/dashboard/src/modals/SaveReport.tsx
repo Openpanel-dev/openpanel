@@ -1,8 +1,8 @@
 'use client';
 
 import { api, handleError } from '@/app/_trpc/client';
-import { ButtonContainer } from '@/components/ButtonContainer';
-import { InputWithLabel } from '@/components/forms/InputWithLabel';
+import { ButtonContainer } from '@/components/button-container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
@@ -36,7 +36,7 @@ export default function SaveReport({ report }: SaveReportProps) {
   const searchParams = useSearchParams();
   const dashboardId = searchParams?.get('dashboardId') ?? undefined;
 
-  const save = api.report.save.useMutation({
+  const save = api.report.create.useMutation({
     onError: handleError,
     onSuccess(res) {
       toast('Success', {

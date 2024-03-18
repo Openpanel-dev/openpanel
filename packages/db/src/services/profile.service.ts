@@ -129,7 +129,7 @@ export async function getProfilesByExternalId(
 
 export type IServiceProfile = Omit<
   IClickhouseProfile,
-  'max_created_at' | 'properties'
+  'max_created_at' | 'properties' | 'first_name' | 'last_name'
 > & {
   firstName: string;
   lastName: string;
@@ -169,12 +169,14 @@ export interface IServiceUpsertProfile {
 
 function transformProfile({
   max_created_at,
+  first_name,
+  last_name,
   ...profile
 }: IClickhouseProfile): IServiceProfile {
   return {
     ...profile,
-    firstName: profile.first_name,
-    lastName: profile.last_name,
+    firstName: first_name,
+    lastName: last_name,
     properties: toObject(profile.properties),
     createdAt: new Date(max_created_at),
   };
@@ -215,4 +217,9 @@ export async function upsertProfile({
       },
     ],
   });
+}
+
+export function getProfileName(profile: IServiceProfile | undefined | null) {
+  if (!profile) return 'No name';
+  return [profile.firstName, profile.lastName].filter(Boolean).join(' ');
 }

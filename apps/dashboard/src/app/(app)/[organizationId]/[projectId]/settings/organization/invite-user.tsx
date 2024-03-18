@@ -1,5 +1,5 @@
 import { api } from '@/app/_trpc/client';
-import { InputWithLabel } from '@/components/forms/InputWithLabel';
+import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { zodResolver } from '@hookform/resolvers/zod';

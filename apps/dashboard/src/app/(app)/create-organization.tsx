@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
-import { LogoSquare } from '@/components/Logo';
+import { LogoSquare } from '@/components/logo';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SaveIcon, WallpaperIcon } from 'lucide-react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { SubmitHandler } from 'react-hook-form';
 import { useForm } from 'react-hook-form';

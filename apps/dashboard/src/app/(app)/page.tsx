@@ -1,6 +1,6 @@
 // import { CreateOrganization } from '@clerk/nextjs';
 
-import { LogoSquare } from '@/components/Logo';
+import { LogoSquare } from '@/components/logo';
 import { redirect } from 'next/navigation';
 
 import { getCurrentOrganizations, isWaitlistUserAccepted } from '@openpanel/db';

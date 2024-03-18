@@ -1,8 +1,8 @@
 'use client';
 
 import { Fragment, Suspense } from 'react';
-import { FullPageEmptyState } from '@/components/FullPageEmptyState';
-import { Pagination } from '@/components/Pagination';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { Pagination } from '@/components/pagination';
 import { ChartSwitch, ChartSwitchShortcut } from '@/components/report/chart';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';

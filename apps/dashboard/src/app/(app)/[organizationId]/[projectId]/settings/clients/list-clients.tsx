@@ -2,9 +2,8 @@
 
 import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
 import { columns } from '@/components/clients/table';
-import { DataTable } from '@/components/DataTable';
+import { DataTable } from '@/components/data-table';
 import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import { PlusIcon } from 'lucide-react';
 
@@ -14,17 +13,12 @@ interface ListClientsProps {
   clients: Awaited<ReturnType<typeof getClientsByOrganizationId>>;
 }
 export default function ListClients({ clients }: ListClientsProps) {
-  const organizationId = useAppParams().organizationId;
-
   return (
     <>
       <StickyBelowHeader>
         <div className="p-4 flex items-center justify-between">
           <div />
-          <Button
-            icon={PlusIcon}
-            onClick={() => pushModal('AddClient', { organizationId })}
-          >
+          <Button icon={PlusIcon} onClick={() => pushModal('AddClient')}>
             <span className="max-sm:hidden">Create client</span>
             <span className="sm:hidden">Client</span>
           </Button>

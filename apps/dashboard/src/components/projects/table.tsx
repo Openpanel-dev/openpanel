@@ -1,13 +1,12 @@
 import { formatDate } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 
-import { IServiceProject } from '@openpanel/db';
-import type { Project as IProject } from '@openpanel/db';
+import type { IServiceProject } from '@openpanel/db';
 
-import { ProjectActions } from './ProjectActions';
+import { ProjectActions } from './project-actions';
 
-export type Project = IProject;
-export const columns: ColumnDef<Project>[] = [
+export type Project = IServiceProject;
+export const columns: ColumnDef<IServiceProject>[] = [
   {
     accessorKey: 'name',
     header: 'Name',

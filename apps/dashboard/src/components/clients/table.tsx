@@ -3,7 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 import type { IServiceClientWithProject } from '@openpanel/db';
 
-import { ClientActions } from './ClientActions';
+import { ClientActions } from './client-actions';
 
 export const columns: ColumnDef<IServiceClientWithProject>[] = [
   {

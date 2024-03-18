@@ -1,7 +1,8 @@
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db, getId } from '@/server/db';
-import { slug } from '@/utils/slug';
+import { getId } from '@/utils/getDbId';
 import { z } from 'zod';
+
+import { db, getProjectsByOrganizationSlug } from '@openpanel/db';
 
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure
@@ -12,26 +13,9 @@ export const projectRouter = createTRPCRouter({
     )
     .query(async ({ input: { organizationId } }) => {
       if (organizationId === null) return [];
+      return getProjectsByOrganizationSlug(organizationId);
+    }),
 
-      return db.project.findMany({
-        where: {
-          organization_slug: organizationId,
-        },
-      });
-    }),
-  get: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .query(({ input: { id } }) => {
-      return db.project.findUniqueOrThrow({
-        where: {
-          id,
-        },
-      });
-    }),
   update: protectedProcedure
     .input(
       z.object({

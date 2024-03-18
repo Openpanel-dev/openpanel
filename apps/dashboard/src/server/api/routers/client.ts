@@ -1,9 +1,9 @@
 import { randomUUID } from 'crypto';
 import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
-import { db } from '@/server/db';
 import { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
+import { db, transformClient } from '@openpanel/db';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure
@@ -76,7 +76,7 @@ export const clientRouter = createTRPCRouter({
       });
 
       return {
-        ...client,
+        ...transformClient(client),
         secret: input.cors ? null : secret,
       };
     }),

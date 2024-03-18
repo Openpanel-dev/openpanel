@@ -1,5 +1,5 @@
 import type { IChartData } from '@/app/_trpc/client';
-import { AutoSizer } from '@/components/AutoSizer';
+import { AutoSizer } from '@/components/react-virtualized-auto-sizer';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';

@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/app/_trpc/client';
-import { ColorSquare } from '@/components/ColorSquare';
+import { ColorSquare } from '@/components/color-square';
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';

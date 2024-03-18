@@ -180,6 +180,50 @@ const DropdownMenuShortcut = ({
 };
 DropdownMenuShortcut.displayName = 'DropdownMenuShortcut';
 
+interface DropdownProps<Value> {
+  children: React.ReactNode;
+  label?: string;
+  items: {
+    label: string;
+    value: Value;
+  }[];
+  onChange?: (value: Value) => void;
+}
+
+export function DropdownMenuComposed<Value extends string>({
+  children,
+  label,
+  items,
+  onChange,
+}: DropdownProps<Value>) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="start">
+        {label && (
+          <>
+            <DropdownMenuLabel>{label}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        <DropdownMenuGroup>
+          {items.map((item) => (
+            <DropdownMenuItem
+              className="cursor-pointer"
+              key={item.value}
+              onClick={() => {
+                onChange?.(item.value);
+              }}
+            >
+              {item.label}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,

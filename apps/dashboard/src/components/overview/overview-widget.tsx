@@ -13,8 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import type { WidgetHeadProps } from '../Widget';
-import { WidgetHead as WidgetHeadBase } from '../Widget';
+import type { WidgetHeadProps } from '../widget';
+import { WidgetHead as WidgetHeadBase } from '../widget';
 
 export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (

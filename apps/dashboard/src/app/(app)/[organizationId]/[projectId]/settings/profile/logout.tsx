@@ -1,7 +1,7 @@
 'use client';
 
 import { buttonVariants } from '@/components/ui/button';
-import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { SignOutButton } from '@clerk/nextjs';
 
 export function Logout() {

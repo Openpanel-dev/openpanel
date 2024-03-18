@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Logo } from '@/components/Logo';
+import { Logo } from '@/components/logo';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import { Rotate as Hamburger } from 'hamburger-react';

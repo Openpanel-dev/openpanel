@@ -1,9 +1,9 @@
 import type { Project } from '../prisma-client';
 import { db } from '../prisma-client';
 
-export type IServiceProject = ReturnType<typeof transform>;
+export type IServiceProject = ReturnType<typeof transformProject>;
 
-function transform({ organization_slug, ...project }: Project) {
+export function transformProject({ organization_slug, ...project }: Project) {
   return {
     organizationSlug: organization_slug,
     ...project,
@@ -21,7 +21,7 @@ export async function getProjectById(id: string) {
     return null;
   }
 
-  return transform(res);
+  return transformProject(res);
 }
 
 export async function getProjectsByOrganizationSlug(slug: string) {
@@ -31,5 +31,5 @@ export async function getProjectsByOrganizationSlug(slug: string) {
     },
   });
 
-  return res.map(transform);
+  return res.map(transformProject);
 }
