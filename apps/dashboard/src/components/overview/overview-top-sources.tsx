@@ -5,6 +5,7 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
+import { OverviewChartToggle } from './overview-chart-toggle';
 import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
@@ -15,7 +16,7 @@ interface OverviewTopSourcesProps {
 export default function OverviewTopSources({
   projectId,
 }: OverviewTopSourcesProps) {
-  const { interval, range, previous, startDate, endDate } =
+  const { interval, range, previous, startDate, endDate, chartType } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const isPageFilter = filters.find((filter) => filter.name === 'path');
@@ -41,7 +42,7 @@ export default function OverviewTopSources({
             name: 'referrer_name',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top groups',
@@ -71,7 +72,7 @@ export default function OverviewTopSources({
             name: 'referrer',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -101,7 +102,7 @@ export default function OverviewTopSources({
             name: 'referrer_type',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top types',
@@ -131,7 +132,7 @@ export default function OverviewTopSources({
             name: 'properties.query.utm_source',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -161,7 +162,7 @@ export default function OverviewTopSources({
             name: 'properties.query.utm_medium',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -191,7 +192,7 @@ export default function OverviewTopSources({
             name: 'properties.query.utm_campaign',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -221,7 +222,7 @@ export default function OverviewTopSources({
             name: 'properties.query.utm_term',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -251,7 +252,7 @@ export default function OverviewTopSources({
             name: 'properties.query.utm_content',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -266,7 +267,11 @@ export default function OverviewTopSources({
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
-          <div className="title">{widget.title}</div>
+          <div className="title">
+            {widget.title}
+            <OverviewChartToggle />
+          </div>
+
           <WidgetButtons>
             {widgets.map((w) => (
               <button

@@ -11,7 +11,7 @@ export async function getProfileById(id: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM profiles WHERE id = '${id}' ORDER BY created_at DESC LIMIT 1`
+    `SELECT *, created_at as max_created_at FROM profiles WHERE id = '${id}' ORDER BY created_at DESC LIMIT 1`
   );
 
   if (!profile) {
@@ -131,8 +131,19 @@ export type IServiceProfile = Omit<
   IClickhouseProfile,
   'max_created_at' | 'properties'
 > & {
+  firstName: string;
+  lastName: string;
   createdAt: Date;
-  properties: Record<string, unknown>;
+  properties: Record<string, unknown> & {
+    country?: string;
+    city?: string;
+    os?: string;
+    os_version?: string;
+    browser?: string;
+    browser_version?: string;
+    referrer_name?: string;
+    referrer_type?: string;
+  };
 };
 
 export interface IClickhouseProfile {
@@ -162,6 +173,8 @@ function transformProfile({
 }: IClickhouseProfile): IServiceProfile {
   return {
     ...profile,
+    firstName: profile.first_name,
+    lastName: profile.last_name,
     properties: toObject(profile.properties),
     createdAt: new Date(max_created_at),
   };

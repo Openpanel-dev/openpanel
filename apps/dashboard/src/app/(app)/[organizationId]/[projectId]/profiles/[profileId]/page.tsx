@@ -3,14 +3,13 @@ import { OverviewFiltersButtons } from '@/components/overview/filters/overview-f
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { ChartSwitch } from '@/components/report/chart';
-import { KeyValue } from '@/components/ui/key-value';
+import { SerieIcon } from '@/components/report/chart/SerieIcon';
 import { Widget, WidgetBody, WidgetHead } from '@/components/Widget';
 import {
   eventQueryFiltersParser,
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
-import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import { notFound } from 'next/navigation';
 import { parseAsInteger, parseAsString } from 'nuqs';
@@ -117,7 +116,7 @@ export default async function Page({
     lineType: 'monotone',
     interval: 'day',
     name: 'Events',
-    range: '7d',
+    range: '1m',
     previous: false,
     metric: 'sum',
   };
@@ -149,29 +148,71 @@ export default async function Page({
       </StickyBelowHeader>
       <div className="p-4">
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 mb-8">
-          <Widget>
-            <WidgetHead>
-              <span className="title">Properties</span>
-            </WidgetHead>
-            <WidgetBody className="flex gap-2 flex-wrap">
-              {Object.entries(profile.properties)
-                .filter(([, value]) => !!value)
-                .map(([key, value]) => (
-                  <KeyValue key={key} name={key} value={value} />
-                ))}
-            </WidgetBody>
-          </Widget>
-          <Widget>
-            <WidgetHead>
-              <span className="title">Events per day</span>
-            </WidgetHead>
-            <WidgetBody className="flex gap-2">
-              <ChartSwitch {...profileChart} />
-            </WidgetBody>
-          </Widget>
+          <div>
+            <EventList data={events} count={count} />
+          </div>
+          <div className="flex flex-col gap-4">
+            <Widget className="w-full">
+              <WidgetHead>
+                <span className="title">Events per day</span>
+              </WidgetHead>
+              <WidgetBody className="flex gap-2">
+                <ChartSwitch {...profileChart} />
+              </WidgetBody>
+            </Widget>
+            <Widget className="w-full">
+              <WidgetHead className="flex justify-between items-center">
+                <span className="title">Profile</span>
+                <ProfileAvatar {...profile} />
+              </WidgetHead>
+              <div className="grid grid-cols-1 text-sm">
+                <ValueRow name={'ID'} value={profile.id} />
+                <ValueRow name={'First name'} value={profile.firstName} />
+                <ValueRow name={'Last name'} value={profile.lastName} />
+                <ValueRow name={'Mail'} value={profile.email} />
+                <ValueRow
+                  name={'Last seen'}
+                  value={profile.createdAt.toLocaleString()}
+                />
+              </div>
+            </Widget>
+            <Widget className="w-full">
+              <WidgetHead>
+                <span className="title">Properties</span>
+              </WidgetHead>
+              <div className="grid grid-cols-1 text-sm">
+                {Object.entries(profile.properties)
+                  .filter(([, value]) => !!value)
+                  .map(([key, value]) => (
+                    <ValueRow key={key} name={key} value={value} />
+                  ))}
+              </div>
+            </Widget>
+          </div>
         </div>
-        <EventList data={events} count={count} />
       </div>
     </PageLayout>
+  );
+}
+
+function ValueRow({ name, value }: { name: string; value?: unknown }) {
+  if (!value) {
+    return null;
+  }
+  return (
+    <div className="flex flex-row justify-between p-2 px-4">
+      <div className="font-medium text-muted-foreground capitalize">
+        {name.replace('_', ' ')}
+      </div>
+      <div className="flex gap-2 items-center text-right">
+        {typeof value === 'string' ? (
+          <>
+            <SerieIcon name={value} /> {value}
+          </>
+        ) : (
+          <>{value}</>
+        )}
+      </div>
+    </div>
   );
 }

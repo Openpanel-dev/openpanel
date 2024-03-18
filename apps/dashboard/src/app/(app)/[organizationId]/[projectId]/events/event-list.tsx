@@ -9,7 +9,11 @@ import { useAppParams } from '@/hooks/useAppParams';
 import { useCursor } from '@/hooks/useCursor';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { isSameDay } from 'date-fns';
-import { GanttChartIcon } from 'lucide-react';
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  GanttChartIcon,
+} from 'lucide-react';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 
@@ -56,21 +60,26 @@ export function EventList({ data, count }: EventListProps) {
         </FullPageEmptyState>
       ) : (
         <>
-          <div className="flex flex-col md:flex-row justify-between gap-2">
-            <EventListener />
-            <Pagination
-              cursor={cursor}
-              setCursor={setCursor}
-              count={count}
-              take={50}
-            />
-          </div>
-          <div className="flex flex-col my-4 card p-4 gap-0.5">
+          <div className="flex flex-col gap-2">
             {data.map((item, index, list) => (
               <Fragment key={item.id}>
                 {showDateHeader(item.createdAt, list[index - 1]?.createdAt) && (
-                  <div className="text-muted-foreground font-medium text-sm [&:not(:first-child)]:mt-12 text-center">
-                    {item.createdAt.toLocaleDateString()}
+                  <div className="flex flex-row justify-between gap-2 [&:not(:first-child)]:mt-12">
+                    {index === 0 ? <EventListener /> : <div />}
+                    <div className="flex gap-2">
+                      <div className="bg-slate-100 border border-slate-300 rounded h-8 px-3 leading-none flex items-center text-sm font-medium gap-2">
+                        {item.createdAt.toLocaleDateString()}
+                      </div>
+                      {index === 0 && (
+                        <Pagination
+                          size="sm"
+                          cursor={cursor}
+                          setCursor={setCursor}
+                          count={count}
+                          take={50}
+                        />
+                      )}
+                    </div>
                   </div>
                 )}
                 <EventListItem {...item} />
@@ -78,6 +87,7 @@ export function EventList({ data, count }: EventListProps) {
             ))}
           </div>
           <Pagination
+            className="mt-2"
             cursor={cursor}
             setCursor={setCursor}
             count={count}

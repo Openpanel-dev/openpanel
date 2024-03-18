@@ -11,7 +11,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
 import { cn } from '@/utils/cn';
+import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
@@ -155,7 +157,7 @@ export function EventIcon({ className, name, size, meta }: EventIconProps) {
 
   return (
     <div className={cn(`bg-${color}-200`, variants({ size }), className)}>
-      <Icon size={20} className={`text-${color}-700`} />
+      <Icon size={size === 'sm' ? 14 : 20} className={`text-${color}-700`} />
     </div>
   );
 }

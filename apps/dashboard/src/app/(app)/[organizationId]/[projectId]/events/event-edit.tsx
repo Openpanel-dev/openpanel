@@ -66,8 +66,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
 
   const mutation = api.event.updateEventMeta.useMutation({
     onSuccess() {
-      // @ts-expect-error
-      document.querySelector('#close-sheet')?.click();
+      setOpen(false);
       toast('Event updated');
       router.refresh();
     },

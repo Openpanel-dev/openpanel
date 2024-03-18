@@ -11,14 +11,14 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 
 interface ProfileAvatarProps
   extends VariantProps<typeof variants>,
-    Partial<Pick<IServiceProfile, 'avatar' | 'first_name'>> {
+    Partial<Pick<IServiceProfile, 'avatar' | 'firstName'>> {
   className?: string;
 }
 
 const variants = cva('', {
   variants: {
     size: {
-      default: 'h-12 w-12 rounded-full [&>span]:rounded-full',
+      default: 'h-8 w-8 rounded [&>span]:rounded',
       sm: 'h-6 w-6 rounded [&>span]:rounded',
       xs: 'h-4 w-4 rounded [&>span]:rounded',
     },
@@ -30,7 +30,7 @@ const variants = cva('', {
 
 export function ProfileAvatar({
   avatar,
-  first_name,
+  firstName,
   className,
   size,
 }: ProfileAvatarProps) {
@@ -47,7 +47,7 @@ export function ProfileAvatar({
           'bg-slate-200 text-slate-800'
         )}
       >
-        {first_name?.at(0) ?? '🫣'}
+        {firstName?.at(0) ?? '🫣'}
       </AvatarFallback>
     </Avatar>
   );

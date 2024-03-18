@@ -5,6 +5,7 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
+import { OverviewChartToggle } from './overview-chart-toggle';
 import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
@@ -13,7 +14,7 @@ interface OverviewTopPagesProps {
   projectId: string;
 }
 export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
-  const { interval, range, previous, startDate, endDate } =
+  const { interval, range, previous, startDate, endDate, chartType } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidget('pages', {
@@ -38,7 +39,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
             name: 'path',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval,
         name: 'Top sources',
@@ -68,7 +69,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
             name: 'path',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval,
         name: 'Top sources',
@@ -98,7 +99,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
             name: 'path',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval,
         name: 'Top sources',
@@ -113,7 +114,10 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
-          <div className="title">{widget.title}</div>
+          <div className="title">
+            {widget.title}
+            <OverviewChartToggle />
+          </div>
           <WidgetButtons>
             {widgets.map((w) => (
               <button

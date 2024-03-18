@@ -1,44 +1,49 @@
 'use client';
 
 import { useState } from 'react';
-import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
-import { SerieIcon } from '@/components/report/chart/SerieIcon';
-import { KeyValueSubtle } from '@/components/ui/key-value';
+import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
-import { getProfileName } from '@/utils/getters';
+import Link from 'next/link';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 
 import { EventDetails } from './event-details';
-import { EventEdit } from './event-edit';
 import { EventIcon } from './event-icon';
 
 type EventListItemProps = IServiceCreateEventPayload;
 
 export function EventListItem(props: EventListItemProps) {
-  const {
-    profile,
-    createdAt,
-    name,
-    path,
-    duration,
-    brand,
-    browser,
-    city,
-    country,
-    device,
-    os,
-    projectId,
-    meta,
-  } = props;
-  const params = useAppParams();
-  const [, setFilter] = useEventQueryFilters({ shallow: false });
+  const { organizationId, projectId } = useAppParams();
+  const { createdAt, name, path, duration, meta, profile } = props;
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isEditOpen, setIsEditOpen] = useState(false);
+
   const number = useNumber();
+
+  const renderName = () => {
+    if (name === 'screen_view') {
+      if (path.includes('/')) {
+        return path;
+      }
+
+      return `Route: ${path}`;
+    }
+
+    return name.replace(/_/g, ' ');
+  };
+
+  const renderDuration = () => {
+    if (name === 'screen_view') {
+      return (
+        <span className="text-muted-foreground">
+          {number.shortWithUnit(duration / 1000, 'min')}
+        </span>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <>
@@ -47,87 +52,44 @@ export function EventListItem(props: EventListItemProps) {
         open={isDetailsOpen}
         setOpen={setIsDetailsOpen}
       />
-      <EventEdit event={props} open={isEditOpen} setOpen={setIsEditOpen} />
-      <div
+      <button
+        onClick={() => setIsDetailsOpen(true)}
         className={cn(
-          'p-4 flex flex-col gap-2 hover:bg-slate-50 rounded-lg transition-colors',
+          'w-full card p-4 flex hover:bg-slate-50 rounded-lg transition-colors justify-between items-center',
           meta?.conversion && `bg-${meta.color}-50 hover:bg-${meta.color}-100`
         )}
       >
-        <div className="flex justify-between items-center">
-          <div className="flex gap-4 items-center">
-            <button onClick={() => setIsEditOpen(true)}>
-              <EventIcon name={name} meta={meta} projectId={projectId} />
-            </button>
-            <button
-              onClick={() => setIsDetailsOpen(true)}
-              className="text-left font-semibold hover:underline"
+        <div className="flex gap-4 items-center text-left text-sm">
+          <EventIcon size="sm" name={name} meta={meta} projectId={projectId} />
+          <span>
+            <span className="font-medium">{renderName()}</span>
+            {'  '}
+            {renderDuration()}
+          </span>
+        </div>
+        <div className="flex gap-4">
+          <Tooltiper
+            asChild
+            content={`${profile?.firstName} ${profile?.lastName}`}
+          >
+            <Link
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              href={`/${organizationId}/${projectId}/profiles/${profile?.id}`}
+              className="text-muted-foreground text-sm hover:underline whitespace-nowrap max-w-[80px] overflow-hidden text-ellipsis"
             >
-              {name.replace(/_/g, ' ')}
-            </button>
-          </div>
-          <div className="text-muted-foreground text-sm">
-            {createdAt.toLocaleTimeString()}
-          </div>
+              {profile?.firstName} {profile?.lastName}
+            </Link>
+          </Tooltiper>
+
+          <Tooltiper asChild content={createdAt.toLocaleString()}>
+            <div className="text-muted-foreground text-sm">
+              {createdAt.toLocaleTimeString()}
+            </div>
+          </Tooltiper>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {path && (
-            <KeyValueSubtle
-              name={'Path'}
-              value={
-                path +
-                (duration
-                  ? ` (${number.shortWithUnit(duration / 1000, 'min')})`
-                  : '')
-              }
-            />
-          )}
-          {profile && (
-            <KeyValueSubtle
-              name={'Profile'}
-              value={
-                <>
-                  {profile.avatar && <ProfileAvatar size="xs" {...profile} />}
-                  {getProfileName(profile)}
-                </>
-              }
-              href={`/${params.organizationId}/${params.projectId}/profiles/${profile.id}`}
-            />
-          )}
-          <KeyValueSubtle
-            name={'From'}
-            onClick={() => setFilter('city', city)}
-            value={
-              <>
-                {country && <SerieIcon name={country} />}
-                {city}
-              </>
-            }
-          />
-          <KeyValueSubtle
-            name={'Device'}
-            onClick={() => setFilter('device', device)}
-            value={
-              <>
-                {device && <SerieIcon name={device} />}
-                {brand || os}
-              </>
-            }
-          />
-          {browser !== 'WebKit' && browser !== '' && (
-            <KeyValueSubtle
-              name={'Browser'}
-              onClick={() => setFilter('browser', browser)}
-              value={
-                <>
-                  {browser && <SerieIcon name={browser} />}
-                  {browser}
-                </>
-              }
-            />
-          )}
-        </div>
-      </div>
+      </button>
     </>
   );
 }

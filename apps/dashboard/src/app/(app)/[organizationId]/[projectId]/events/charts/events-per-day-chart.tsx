@@ -8,7 +8,7 @@ interface Props {
   filters?: any[];
 }
 
-export function EventChart({ projectId, filters, events }: Props) {
+export function EventsPerDayChart({ projectId, filters, events }: Props) {
   const fallback: IChartEvent[] = [
     {
       id: 'A',

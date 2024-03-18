@@ -1,11 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ChartSwitchShortcut } from '@/components/report/chart';
+import { Button } from '@/components/ui/button';
 import { KeyValue } from '@/components/ui/key-value';
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
@@ -17,6 +20,8 @@ import { round } from 'mathjs';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 
+import { EventEdit } from './event-edit';
+
 interface Props {
   event: IServiceCreateEventPayload;
   open: boolean;
@@ -24,6 +29,7 @@ interface Props {
 }
 export function EventDetails({ event, open, setOpen }: Props) {
   const { name } = event;
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [, setFilter] = useEventQueryFilters({ shallow: false });
   const [, setEvents] = useEventQueryNamesFilter({ shallow: false });
 
@@ -140,79 +146,91 @@ export function EventDetails({ event, open, setOpen }: Props) {
     .filter((item) => typeof item.value === 'string' && item.value);
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent>
-        <div>
-          <div className="flex flex-col gap-8">
-            <SheetHeader>
-              <SheetTitle>{name.replace('_', ' ')}</SheetTitle>
-            </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent>
+          <div>
+            <div className="flex flex-col gap-8">
+              <SheetHeader>
+                <SheetTitle>{name.replace('_', ' ')}</SheetTitle>
+              </SheetHeader>
 
-            {properties.length > 0 && (
+              {properties.length > 0 && (
+                <div>
+                  <div className="text-sm font-medium mb-2">Params</div>
+                  <div className="flex gap-2 flex-wrap">
+                    {properties.map((item) => (
+                      <KeyValue
+                        key={item.name}
+                        name={item.name}
+                        value={item.value}
+                        onClick={() => {
+                          setFilter(
+                            `properties.${item.name}`,
+                            item.value ? String(item.value) : '',
+                            'is'
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
-                <div className="text-sm font-medium mb-2">Params</div>
+                <div className="text-sm font-medium mb-2">Common</div>
                 <div className="flex gap-2 flex-wrap">
-                  {properties.map((item) => (
+                  {common.map((item) => (
                     <KeyValue
                       key={item.name}
                       name={item.name}
                       value={item.value}
-                      onClick={() => {
-                        setFilter(
-                          `properties.${item.name}`,
-                          item.value ? String(item.value) : '',
-                          'is'
-                        );
-                      }}
+                      onClick={item.onClick}
                     />
                   ))}
                 </div>
               </div>
-            )}
-            <div>
-              <div className="text-sm font-medium mb-2">Common</div>
-              <div className="flex gap-2 flex-wrap">
-                {common.map((item) => (
-                  <KeyValue
-                    key={item.name}
-                    name={item.name}
-                    value={item.value}
-                    onClick={item.onClick}
-                  />
-                ))}
-              </div>
-            </div>
 
-            <div>
-              <div className="flex justify-between text-sm font-medium mb-2">
-                <div>Similar events</div>
-                <button
-                  className="hover:underline text-muted-foreground"
-                  onClick={() => {
-                    setEvents([event.name]);
-                    setOpen(false);
-                  }}
-                >
-                  Show all
-                </button>
+              <div>
+                <div className="flex justify-between text-sm font-medium mb-2">
+                  <div>Similar events</div>
+                  <button
+                    className="hover:underline text-muted-foreground"
+                    onClick={() => {
+                      setEvents([event.name]);
+                      setOpen(false);
+                    }}
+                  >
+                    Show all
+                  </button>
+                </div>
+                <ChartSwitchShortcut
+                  projectId={event.projectId}
+                  chartType="histogram"
+                  events={[
+                    {
+                      id: 'A',
+                      name: event.name,
+                      displayName: 'Similar events',
+                      segment: 'event',
+                      filters: [],
+                    },
+                  ]}
+                />
               </div>
-              <ChartSwitchShortcut
-                projectId={event.projectId}
-                chartType="histogram"
-                events={[
-                  {
-                    id: 'A',
-                    name: event.name,
-                    displayName: 'Similar events',
-                    segment: 'event',
-                    filters: [],
-                  },
-                ]}
-              />
             </div>
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+          <SheetFooter>
+            <Button
+              variant={'secondary'}
+              className="w-full"
+              onClick={() => setIsEditOpen(true)}
+            >
+              Customize "{name}"
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+      <EventEdit event={event} open={isEditOpen} setOpen={setIsEditOpen} />
+    </>
   );
 }

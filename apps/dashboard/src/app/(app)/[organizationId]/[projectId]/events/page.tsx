@@ -11,7 +11,8 @@ import { parseAsInteger } from 'nuqs';
 import { getEventList, getEventsCount } from '@openpanel/db';
 
 import { StickyBelowHeader } from '../layout-sticky-below-header';
-import { EventChart } from './event-chart';
+import { EventsPerDayChart } from './charts/events-per-day-chart';
+import EventConversionsListServer from './event-conversions-list';
 import { EventList } from './event-list';
 
 interface PageProps {
@@ -70,13 +71,18 @@ export default async function Page({
           nuqsOptions={nuqsOptions}
         />
       </StickyBelowHeader>
-      <div className="p-4">
-        <EventChart
-          projectId={projectId}
-          events={eventsFilter}
-          filters={filters}
-        />
-        <EventList data={events} count={count} />
+      <div className="grid md:grid-cols-2 p-4 gap-4">
+        <div>
+          <EventList data={events} count={count} />
+        </div>
+        <div>
+          <EventsPerDayChart
+            projectId={projectId}
+            events={eventsFilter}
+            filters={filters}
+          />
+          <EventConversionsListServer projectId={projectId} />
+        </div>
       </div>
     </PageLayout>
   );

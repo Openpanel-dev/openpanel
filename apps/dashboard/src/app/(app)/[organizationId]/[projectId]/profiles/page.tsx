@@ -5,10 +5,10 @@ import { eventQueryFiltersParser } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
 import { parseAsInteger } from 'nuqs';
 
-import { getProfileList, getProfileListCount } from '@openpanel/db';
-
 import { StickyBelowHeader } from '../layout-sticky-below-header';
-import { ProfileList } from './profile-list';
+import ProfileLastSeenServer from './profile-last-seen';
+import ProfileListServer from './profile-list';
+import ProfileTopServer from './profile-top';
 
 interface PageProps {
   params: {
@@ -29,19 +29,7 @@ export default async function Page({
   params: { organizationId, projectId },
   searchParams: { cursor, f },
 }: PageProps) {
-  const [profiles, count] = await Promise.all([
-    getProfileList({
-      projectId,
-      take: 50,
-      cursor: parseAsInteger.parseServerSide(cursor ?? '') ?? undefined,
-      filters: eventQueryFiltersParser.parseServerSide(f ?? '') ?? undefined,
-    }),
-    getProfileListCount({
-      projectId,
-      filters: eventQueryFiltersParser.parseServerSide(f ?? '') ?? undefined,
-    }),
-    getExists(organizationId, projectId),
-  ]);
+  await getExists(organizationId, projectId);
 
   return (
     <PageLayout title="Profiles" organizationSlug={organizationId}>
@@ -56,7 +44,22 @@ export default async function Page({
           nuqsOptions={nuqsOptions}
         />
       </StickyBelowHeader>
-      <ProfileList data={profiles} count={count} />
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <ProfileListServer
+          projectId={projectId}
+          cursor={parseAsInteger.parseServerSide(cursor ?? '') ?? undefined}
+          filters={
+            eventQueryFiltersParser.parseServerSide(f ?? '') ?? undefined
+          }
+        />
+        <div className="flex flex-col gap-4">
+          <ProfileLastSeenServer projectId={projectId} />
+          <ProfileTopServer
+            projectId={projectId}
+            organizationId={organizationId}
+          />
+        </div>
+      </div>
     </PageLayout>
   );
 }

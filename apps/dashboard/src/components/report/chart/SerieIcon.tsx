@@ -17,7 +17,7 @@ import {
 import { NOT_SET_VALUE } from '@openpanel/constants';
 
 interface SerieIconProps extends LucideProps {
-  name: string;
+  name?: string;
 }
 
 function getProxyImage(url: string) {
@@ -26,14 +26,16 @@ function getProxyImage(url: string) {
 
 const createImageIcon = (url: string) => {
   return function (props: LucideProps) {
-    return <img className="w-4 h-4 object-cover rounded" src={url} />;
+    return <img className="h-4 object-contain rounded-[2px]" src={url} />;
   } as LucideIcon;
 };
 
 const createFlagIcon = (url: string) => {
   return function (props: LucideProps) {
     return (
-      <span className={`rounded !block !leading-[1rem] fi fi-${url}`}></span>
+      <span
+        className={`rounded-[2px] overflow-hidden !block !leading-[1rem] fi fi-${url}`}
+      ></span>
     );
   } as LucideIcon;
 };
@@ -91,6 +93,20 @@ const mapper: Record<string, LucideIcon> = {
     )
   ),
   snapchat: createImageIcon(getProxyImage('https://snapchat.com')),
+
+  // OS
+  'mac os': createImageIcon(
+    'https://upload.wikimedia.org/wikipedia/commons/c/c9/Finder_Icon_macOS_Big_Sur.png'
+  ),
+  windows: createImageIcon(
+    'https://upload.wikimedia.org/wikipedia/commons/c/c7/Windows_logo_-_2012.png'
+  ),
+  ios: createImageIcon(
+    'https://upload.wikimedia.org/wikipedia/commons/9/96/IOS_17_logo.png'
+  ),
+  android: createImageIcon(
+    'https://image.similarpng.com/very-thumbnail/2020/08/Android-icon-on-transparent--background-PNG.png'
+  ),
 
   // Misc
   mobile: SmartphoneIcon,
@@ -220,6 +236,10 @@ const mapper: Record<string, LucideIcon> = {
 
 export function SerieIcon({ name, ...props }: SerieIconProps) {
   const Icon = useMemo(() => {
+    if (!name) {
+      return null;
+    }
+
     const mapped = mapper[name.toLowerCase()] ?? null;
 
     if (mapped) {
@@ -234,7 +254,7 @@ export function SerieIcon({ name, ...props }: SerieIconProps) {
   }, [name]);
 
   return Icon ? (
-    <div className="w-4 h-4 flex-shrink-0 relative [&_a]:!w-4 [&_a]:!h-4 [&_svg]:!rounded">
+    <div className="h-4 flex-shrink-0 relative [&_a]:![&_a]:!h-4 [&_svg]:!rounded-[2px]">
       <Icon size={16} {...props} />
     </div>
   ) : null;

@@ -5,6 +5,7 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../Widget';
+import { OverviewChartToggle } from './overview-chart-toggle';
 import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
@@ -13,7 +14,7 @@ interface OverviewTopGeoProps {
   projectId: string;
 }
 export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
-  const { interval, range, previous, startDate, endDate } =
+  const { interval, range, previous, startDate, endDate, chartType } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const isPageFilter = filters.find((filter) => filter.name === 'path');
@@ -39,7 +40,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             name: 'country',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -69,7 +70,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             name: 'region',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -99,7 +100,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             name: 'city',
           },
         ],
-        chartType: 'bar',
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -114,7 +115,10 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
-          <div className="title">{widget.title}</div>
+          <div className="title">
+            {widget.title}
+            <OverviewChartToggle />
+          </div>
           <WidgetButtons>
             {widgets.map((w) => (
               <button
