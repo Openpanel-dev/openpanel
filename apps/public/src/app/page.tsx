@@ -1,9 +1,11 @@
-import { db } from '@openpanel/db';
+import { ALink } from '@/components/ui/button';
+import { ExternalLinkIcon } from 'lucide-react';
 
 import { Heading2, Lead2, Paragraph } from './copy';
+import { Features } from './features';
 import { Hero } from './hero';
-import { Navbar } from './navbar';
-import { Sections } from './section';
+import { Pricing } from './pricing';
+import { PunchLines } from './punch-lines';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
@@ -11,22 +13,36 @@ export const revalidate = 3600;
 export default function Page() {
   return (
     <div>
-      <Navbar darkText={false} className="[&_img]:hidden" />
       <Hero />
-      <div className="container">
-        <div className="my-24">
-          <Heading2 className="md:text-5xl mb-2 leading-none">
+      <div className="py-24 bg-gradient-to-bl from-blue-600 to-blue-800">
+        <div className="container">
+          <Heading2 className="md:text-5xl mb-2 leading-none text-white">
             Analytics should be easy
             <br />
             and powerful
           </Heading2>
-          <Lead2>
+          <Lead2 className="text-white/80">
             The power of Mixpanel, the ease of Plausible and nothing from Google
-            Analytics 😉
+            Analytics 😉 Curious how it looks?
           </Lead2>
+          <ALink
+            href="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
+            target="_blank"
+            className="mt-8"
+            variant={'outline'}
+          >
+            Check out the demo
+            <ExternalLinkIcon className="w-4 h-4 ml-2" />
+          </ALink>
         </div>
-        <Sections />
       </div>
+
+      <Features />
+
+      <PunchLines />
+
+      <Pricing />
+
       <div className="container mt-40">
         <div className="flex flex-col md:flex-row gap-8">
           <div className="mb-4 md:w-1/2 flex-shrink-0 relative">

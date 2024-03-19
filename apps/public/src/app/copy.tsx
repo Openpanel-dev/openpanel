@@ -27,7 +27,7 @@ export function Heading1({ children, className }: Props) {
   return (
     <h1
       className={cn(
-        'text-4xl md:text-5xl font-bold text-slate-800 !leading-tight',
+        'text-4xl md:text-5xl font-bold text-slate-900 !leading-tight font-serif',
         className
       )}
     >
@@ -39,7 +39,10 @@ export function Heading1({ children, className }: Props) {
 export function Heading2({ children, className }: Props) {
   return (
     <h2
-      className={cn('text-4xl md:text-5xl font-bold text-slate-800', className)}
+      className={cn(
+        'text-4xl md:text-5xl font-bold text-slate-900 font-serif',
+        className
+      )}
     >
       {children}
     </h2>
@@ -49,7 +52,23 @@ export function Heading2({ children, className }: Props) {
 export function Heading3({ children, className }: Props) {
   return (
     <h3
-      className={cn('text-2xl md:text-3xl font-bold text-slate-800', className)}
+      className={cn(
+        'text-2xl md:text-3xl font-bold text-slate-900 font-serif',
+        className
+      )}
+    >
+      {children}
+    </h3>
+  );
+}
+
+export function Heading4({ children, className }: Props) {
+  return (
+    <h3
+      className={cn(
+        'text-xl md:text-2xl font-bold text-slate-900 font-serif',
+        className
+      )}
     >
       {children}
     </h3>

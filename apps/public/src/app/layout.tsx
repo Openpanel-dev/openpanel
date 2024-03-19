@@ -1,6 +1,6 @@
 import { cn } from '@/utils/cn';
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque } from 'next/font/google';
+import { Bricolage_Grotesque, Inter } from 'next/font/google';
 
 import { OpenpanelProvider } from '@openpanel/nextjs';
 
@@ -9,6 +9,8 @@ import { defaultMeta } from './meta';
 
 import '@/styles/globals.css';
 
+import { Navbar } from './navbar';
+
 export const metadata: Metadata = {
   ...defaultMeta,
   alternates: {
@@ -16,10 +18,17 @@ export const metadata: Metadata = {
   },
 };
 
-const font = Bricolage_Grotesque({
+const head = Bricolage_Grotesque({
   display: 'swap',
   subsets: ['latin'],
   weight: ['400', '700'],
+  variable: '--font-serif',
+});
+const body = Inter({
+  display: 'swap',
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-sans',
 });
 
 export default function RootLayout({
@@ -31,10 +40,12 @@ export default function RootLayout({
     <html lang="en" className="light">
       <body
         className={cn(
-          'min-h-screen antialiased grainy text-slate-600',
-          font.className
+          'min-h-screen antialiased grainy text-slate-900 font-sans',
+          head.variable,
+          body.variable
         )}
       >
+        <Navbar darkText />
         {children}
         <Footer />
       </body>

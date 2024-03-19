@@ -9,6 +9,8 @@ export const defaultMeta: Metadata = {
   description,
   openGraph: {
     title,
+    url: 'https://openpanel.dev',
+    type: 'website',
     images: [
       {
         url: 'https://openpanel.dev/ogimage.png',

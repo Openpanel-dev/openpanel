@@ -19,7 +19,7 @@ export function Logo({ className }: LogoProps) {
         width={32}
         height={32}
       />
-      openpanel.dev
+      <span>openpanel.dev</span>
     </Link>
   );
 }

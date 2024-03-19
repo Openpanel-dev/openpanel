@@ -11,7 +11,7 @@ export async function SocialProofServer(props: Props) {
   const waitlistCount = await db.waitlist.count();
   return (
     <TooltipProvider>
-      <SocialProof count={waitlistCount} {...props} />;
+      <SocialProof count={waitlistCount} {...props} />
     </TooltipProvider>
   );
 }

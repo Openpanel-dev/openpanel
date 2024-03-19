@@ -11,7 +11,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/utils/cn';
-import Link from 'next/link';
 
 interface JoinWaitlistProps {
   className?: string;
@@ -20,51 +19,33 @@ interface JoinWaitlistProps {
 export function JoinWaitlistHero({ className }: JoinWaitlistProps) {
   const [value, setValue] = useState('');
   const [open, setOpen] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     if (open) {
       // @ts-ignore
-      window.op?.('event', 'waitlist_open');
+      window.op('event', 'waitlist_success');
     }
   }, [open]);
 
-  useEffect(() => {
-    if (success) {
-      // @ts-ignore
-      window.op?.('event', 'waitlist_success', {
-        email: value,
-      });
-    }
-  }, [success]);
+  return (
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Thanks so much!</DialogTitle>
+            <DialogDescription>
+              You're now on the waiting list. We'll let you know when we're
+              ready. Should be within a month or two 🚀
+            </DialogDescription>
+          </DialogHeader>
 
-  const renderSuccess = () => (
-    <DialogContent className="sm:max-w-[425px]">
-      <DialogHeader>
-        <DialogTitle>Thanks so much!</DialogTitle>
-        <DialogDescription>
-          You're now on the waiting list. We'll let you know when we're ready.
-          Should be within a month or two 🚀
-        </DialogDescription>
-      </DialogHeader>
-
-      <DialogFooter>
-        <Button onClick={() => setOpen(false)}>Got it!</Button>
-      </DialogFooter>
-    </DialogContent>
-  );
-
-  const renderForm = () => (
-    <DialogContent className="sm:max-w-[425px]">
-      <DialogHeader>
-        <DialogTitle>Almost there!</DialogTitle>
-        <DialogDescription>
-          Enter your email to join the waiting list. We'll let you know when
-          we're ready.
-        </DialogDescription>
-      </DialogHeader>
-
+          <DialogFooter>
+            <Button onClick={() => setOpen(false)}>Got it!</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <form
+        className="w-full max-w-md"
         onSubmit={(e) => {
           e.preventDefault();
           fetch('/api/waitlist', {
@@ -75,7 +56,7 @@ export function JoinWaitlistHero({ className }: JoinWaitlistProps) {
             },
           }).then((res) => {
             if (res.ok) {
-              setSuccess(true);
+              setOpen(true);
             }
           });
         }}
@@ -95,42 +76,6 @@ export function JoinWaitlistHero({ className }: JoinWaitlistProps) {
           </Button>
         </div>
       </form>
-    </DialogContent>
-  );
-
-  return (
-    <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        {success ? renderSuccess() : renderForm()}
-      </Dialog>
-      <div className="flex gap-4">
-        <Button
-          size="lg"
-          className="text-lg h-12"
-          onClick={() => {
-            setOpen(true);
-          }}
-        >
-          Join waitlist now
-        </Button>
-
-        <div className="relative">
-          <Link
-            href="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
-            target="_blank"
-            rel="nofollow"
-          >
-            <Button size="lg" variant="outline" className="text-lg h-12">
-              Demo
-            </Button>
-          </Link>
-          <img
-            src="/clickable-demo.png"
-            className="w-44 shrink-0 absolute left-full -top-8 translate-x-10 max-w-none"
-            alt="Clickable demo button"
-          />
-        </div>
-      </div>
     </>
   );
 }

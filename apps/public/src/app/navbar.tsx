@@ -18,7 +18,7 @@ export function Navbar({ darkText = false, className }: Props) {
       className={cn('absolute top-0 left-0 right-0 z-10', textColor, className)}
     >
       <div className="container flex justify-between items-center py-4">
-        <Logo />
+        <Logo className="max-sm:[&_span]:hidden" />
         <nav className="flex gap-4">
           {pathname !== '/' && <Link href="/">Home</Link>}
           <a href="https://docs.openpanel.dev" target="_blank">

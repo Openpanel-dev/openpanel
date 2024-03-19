@@ -5,7 +5,7 @@ export const revalidate = 3600;
 
 export default function Page() {
   return (
-    <div className="container mt-[150px]">
+    <div className="container mt-[150px] max-w-2xl">
       <article className="prose">
         <Heading1>Privacy Policy</Heading1>
         <p>Last updated: February 22, 2024</p>

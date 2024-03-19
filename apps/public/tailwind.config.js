@@ -7,6 +7,10 @@ const config = {
     './src/**/*.{ts,tsx}',
   ],
   theme: {
+    fontFamily: {
+      sans: ['var(--font-sans)'],
+      serif: ['var(--font-serif)'],
+    },
     container: {
       center: true,
       padding: '1rem',

@@ -1,56 +1,36 @@
-import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
-import { TooltipTrigger } from '@radix-ui/react-tooltip';
-import Image from 'next/image';
-
-import { PreviewCarousel } from './carousel';
 import { Heading1, Lead2 } from './copy';
 import { JoinWaitlistHero } from './join-waitlist-hero';
 import { SocialProofServer } from './social-proof';
-import { SocialProof } from './social-proof/social-proof';
-
-const avatars = [
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Chester&backgroundColor=b6e3f4',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Casper&backgroundColor=c0aede',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Boo&backgroundColor=ffdfbf',
-];
 
 export function Hero() {
   return (
-    <div className="flex py-32 flex-col items-center w-full text-center bg-[#1F54FF] relative overflow-hidden">
-      {/* <div className="inset-0 absolute h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0)_100%)]"></div> */}
-      <div className="inset-0 absolute h-full w-full flex items-center justify-center">
-        <div className="w-[600px] h-[600px] ring-1 ring-white/05 rounded-full shrink-0"></div>
-      </div>
-      <div className="inset-0 absolute h-full w-full flex items-center justify-center">
-        <div className="w-[900px] h-[900px] ring-1 ring-white/10 rounded-full shrink-0"></div>
-      </div>
-      <div className="inset-0 absolute h-full w-full flex items-center justify-center">
-        <div className="w-[1200px] h-[1200px] ring-1 ring-white/20 rounded-full shrink-0"></div>
-      </div>
-      <div className="relative flex flex-col items-center max-w-3xl">
-        <Image
-          width={64}
-          height={64}
-          src="/logo-white.png"
-          alt="Openpanel Logo"
-          className="w-16 h-16 mb-8"
-        />
-        <Heading1 className="mb-4 text-white">
-          An open-source
-          <br />
-          alternative to Mixpanel
-        </Heading1>
-        <Lead2 className="text-white/70 font-light">
-          The power of Mixpanel, the ease of Plausible <br />
-          and nothing from Google Analytics 😉
-        </Lead2>
-        <div className="my-12 w-full flex flex-col items-center">
+    <div className="relative overflow-hidden">
+      {/* <div className="bg-blue-50 w-2/5 h-full absolute top-0 right-0"></div> */}
+      <div className="container md:h-screen min-h-[700px] flex flex-col md:flex-row items-center relative max-md:pt-32 gap-4 md:gap-8">
+        <div className="flex-1 lg:min-w-[400px] sm:min-w-[350px] max-md:text-center">
+          <Heading1 className="mb-4 text-slate-950">
+            An open-source
+            <br />
+            alternative to Mixpanel
+          </Heading1>
+          <Lead2 className="mb-12">
+            The power of Mixpanel, the ease of Plausible and nothing from Google
+            Analytics 😉
+          </Lead2>
           <JoinWaitlistHero />
           <SocialProofServer className="mt-6" />
         </div>
+        <div className="mt-16 md:pt-8 w-full">
+          <div className="bg-black/5 md:p-2 rounded-2xl h-[max(90vh,650px)] flex">
+            <iframe
+              src="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
+              className="w-full h-full rounded-xl h-[max(90vh,650px)]"
+              title="Openpanel Dashboard"
+              scrolling="no"
+            />
+          </div>
+        </div>
       </div>
-
-      <PreviewCarousel />
     </div>
   );
 }
