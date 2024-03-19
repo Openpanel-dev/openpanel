@@ -47,6 +47,9 @@ RUN apt update \
 
 WORKDIR /app
 
+ARG CACHE_BUST
+RUN echo "CACHE BUSTER: $CACHE_BUST"
+
 COPY package.json package.json
 COPY pnpm-lock.yaml pnpm-lock.yaml
 COPY pnpm-workspace.yaml pnpm-workspace.yaml
