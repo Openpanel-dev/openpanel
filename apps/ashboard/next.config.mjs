@@ -7,12 +7,19 @@ await import('./src/env.mjs');
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
-  transpilePackages: ['@openpanel/queue'],
+  transpilePackages: [
+    '@openpanel/queue',
+    '@openpanel/db',
+    '@openpanel/common',
+    '@openpanel/constants',
+    '@openpanel/redis',
+    '@openpanel/validation',
+  ],
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
   experimental: {
     // Avoid "Critical dependency: the request of a dependency is an expression"
-    serverComponentsExternalPackages: ['bullmq'],
+    serverComponentsExternalPackages: ['bullmq', 'ioredis'],
   },
   /**
    * If you are using `appDir` then you must comment the below `i18n` config out.
