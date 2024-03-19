@@ -20,7 +20,7 @@ export function Hero() {
           <JoinWaitlistHero />
           <SocialProofServer className="mt-6" />
         </div>
-        <div className="mt-16 md:pt-8 w-full">
+        <div className="mt-16 md:pt-16 w-full">
           <div className="bg-black/5 md:p-2 rounded-2xl h-[max(90vh,650px)] flex">
             <iframe
               src="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
