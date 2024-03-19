@@ -218,8 +218,3 @@ export async function upsertProfile({
     ],
   });
 }
-
-export function getProfileName(profile: IServiceProfile | undefined | null) {
-  if (!profile) return 'No name';
-  return [profile.firstName, profile.lastName].filter(Boolean).join(' ');
-}

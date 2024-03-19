@@ -10,6 +10,7 @@ import {
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
 import { getExists } from '@/server/pageExists';
+import { getProfileName } from '@/utils/getters';
 import { notFound } from 'next/navigation';
 import { parseAsInteger, parseAsString } from 'nuqs';
 
@@ -19,7 +20,6 @@ import {
   getEventList,
   getEventsCount,
   getProfileById,
-  getProfileName,
 } from '@openpanel/db';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 

@@ -10,10 +10,10 @@ import { Widget, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useCursor } from '@/hooks/useCursor';
+import { getProfileName } from '@/utils/getters';
 import { UsersIcon } from 'lucide-react';
 import Link from 'next/link';
 
-import { getProfileName } from '@openpanel/db';
 import type { IServiceProfile } from '@openpanel/db';
 
 interface ProfileListProps {

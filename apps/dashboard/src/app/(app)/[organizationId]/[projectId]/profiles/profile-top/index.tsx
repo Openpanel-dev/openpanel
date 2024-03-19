@@ -2,9 +2,10 @@ import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { Widget, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
+import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
 
-import { chQuery, getProfileName, getProfiles } from '@openpanel/db';
+import { chQuery, getProfiles } from '@openpanel/db';
 
 interface Props {
   projectId: string;
