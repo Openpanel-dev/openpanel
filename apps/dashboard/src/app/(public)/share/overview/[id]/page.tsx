@@ -42,10 +42,10 @@ export default async function Page({ params: { id } }: PageProps) {
             </h1>
           </div>
           <a href="https://openpanel.dev?utm_source=openpanel.dev&utm_medium=share">
-            <Logo className="text-white" />
+            <Logo className="text-white max-sm:[&_span]:hidden" />
           </a>
         </div>
-        <div className="bg-slate-100 rounded-lg shadow ring-8 ring-blue-600/50">
+        <div className="max-sm:-mx-3 bg-slate-100 rounded-lg shadow ring-8 ring-blue-600/50">
           <StickyBelowHeader>
             <div className="p-4 flex gap-2 justify-between">
               <div className="flex gap-2">

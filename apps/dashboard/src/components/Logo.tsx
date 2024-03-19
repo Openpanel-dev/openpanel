@@ -20,7 +20,7 @@ export function Logo({ className }: LogoProps) {
       className={cn('text-xl font-medium flex gap-2 items-center', className)}
     >
       <LogoSquare className="max-h-8" />
-      openpanel.dev
+      <span>openpanel.dev</span>
     </div>
   );
 }
