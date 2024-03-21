@@ -16,12 +16,6 @@ import { mapKeys } from '@openpanel/validation';
 const nuqsOptions = { history: 'push' } as const;
 
 export function useOverviewOptions() {
-  const [chartType, setChartType] = useQueryState(
-    'ct',
-    parseAsStringEnum(['bar', 'linear'])
-      .withDefault('bar')
-      .withOptions(nuqsOptions)
-  );
   const [previous, setPrevious] = useQueryState(
     'compare',
     parseAsBoolean.withDefault(true).withOptions(nuqsOptions)
@@ -74,9 +68,5 @@ export function useOverviewOptions() {
     // Toggles
     liveHistogram,
     setLiveHistogram,
-
-    // Other
-    chartType,
-    setChartType,
   };
 }

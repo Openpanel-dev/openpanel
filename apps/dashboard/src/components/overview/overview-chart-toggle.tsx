@@ -1,10 +1,15 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { BarChartIcon, LineChartIcon } from 'lucide-react';
 
-import { Button } from '../ui/button';
-import { useOverviewOptions } from './useOverviewOptions';
+import type { IChartType } from '@openpanel/validation';
 
-export function OverviewChartToggle() {
-  const { chartType, setChartType } = useOverviewOptions();
+import { Button } from '../ui/button';
+
+interface Props {
+  chartType: IChartType;
+  setChartType: Dispatch<SetStateAction<IChartType>>;
+}
+export function OverviewChartToggle({ chartType, setChartType }: Props) {
   return (
     <Button
       size={'icon'}

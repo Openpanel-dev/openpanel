@@ -1,10 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { ChartSwitch } from '@/components/report/chart';
 import { Button } from '@/components/ui/button';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 import { BarChartIcon, LineChart, LineChartIcon } from 'lucide-react';
+
+import type { IChartType } from '@openpanel/validation';
 
 import { Widget, WidgetBody } from '../../widget';
 import { OverviewChartToggle } from '../overview-chart-toggle';
@@ -20,16 +23,10 @@ export default function OverviewTopEvents({
   projectId,
   conversions,
 }: OverviewTopEventsProps) {
-  const {
-    interval,
-    range,
-    previous,
-    startDate,
-    endDate,
-    chartType,
-    setChartType,
-  } = useOverviewOptions();
+  const { interval, range, previous, startDate, endDate } =
+    useOverviewOptions();
   const [filters] = useEventQueryFilters();
+  const [chartType, setChartType] = useState<IChartType>('bar');
   const [widget, setWidget, widgets] = useOverviewWidget('ev', {
     all: {
       title: 'Top events',
@@ -60,7 +57,7 @@ export default function OverviewTopEvents({
             name: 'name',
           },
         ],
-        chartType: chartType,
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -99,7 +96,7 @@ export default function OverviewTopEvents({
             name: 'name',
           },
         ],
-        chartType: chartType,
+        chartType,
         lineType: 'monotone',
         interval: interval,
         name: 'Top sources',
@@ -116,7 +113,7 @@ export default function OverviewTopEvents({
         <WidgetHead>
           <div className="title">
             {widget.title}
-            <OverviewChartToggle />
+            <OverviewChartToggle {...{ chartType, setChartType }} />
           </div>
           <WidgetButtons>
             {widgets

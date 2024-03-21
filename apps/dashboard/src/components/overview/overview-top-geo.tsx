@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { ChartSwitch } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
+
+import type { IChartType } from '@openpanel/validation';
 
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
@@ -14,8 +17,9 @@ interface OverviewTopGeoProps {
   projectId: string;
 }
 export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
-  const { interval, range, previous, startDate, endDate, chartType } =
+  const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
+  const [chartType, setChartType] = useState<IChartType>('bar');
   const [filters, setFilter] = useEventQueryFilters();
   const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidget('geo', {
@@ -117,7 +121,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
         <WidgetHead>
           <div className="title">
             {widget.title}
-            <OverviewChartToggle />
+            <OverviewChartToggle {...{ chartType, setChartType }} />
           </div>
           <WidgetButtons>
             {widgets.map((w) => (

@@ -3,12 +3,10 @@
 import { Fragment } from 'react';
 import { api } from '@/app/_trpc/client';
 import { cn } from '@/utils/cn';
-import { ChevronsUpDownIcon } from 'lucide-react';
 import AnimateHeight from 'react-animate-height';
 
 import type { IChartInput } from '@openpanel/validation';
 
-import { redisSub } from '../../../../../packages/redis';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { useOverviewOptions } from './useOverviewOptions';
 
