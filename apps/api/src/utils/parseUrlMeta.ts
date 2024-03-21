@@ -7,6 +7,7 @@ function findBestFavicon(favicons: UrlMetaData['favicons']) {
       favicon.rel === 'icon' ||
       favicon.rel === 'apple-touch-icon'
   );
+
   if (match) {
     return match.href;
   }
@@ -15,8 +16,11 @@ function findBestFavicon(favicons: UrlMetaData['favicons']) {
 
 function transform(data: UrlMetaData, url: string) {
   const favicon = findBestFavicon(data.favicons);
+
   return {
-    favicon: favicon ? new URL(favicon, url).toString() : null,
+    favicon: favicon
+      ? new URL(favicon, url).toString()
+      : `https://www.google.com/s2/favicons?domain=${url}&sz=256`,
   };
 }
 
