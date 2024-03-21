@@ -1,5 +1,4 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { getExists } from '@/server/pageExists';
 
 import { getProjectsByOrganizationSlug } from '@openpanel/db';
 
@@ -12,7 +11,6 @@ interface PageProps {
 }
 
 export default async function Page({ params: { organizationId } }: PageProps) {
-  await getExists(organizationId);
   const projects = await getProjectsByOrganizationSlug(organizationId);
 
   return (

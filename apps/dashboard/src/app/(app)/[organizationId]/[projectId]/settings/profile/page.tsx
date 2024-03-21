@@ -1,5 +1,4 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { getExists } from '@/server/pageExists';
 import { auth } from '@clerk/nextjs';
 
 import { getUserById } from '@openpanel/db';
@@ -14,7 +13,6 @@ interface PageProps {
 }
 export default async function Page({ params: { organizationId } }: PageProps) {
   const { userId } = auth();
-  await getExists(organizationId);
   const profile = await getUserById(userId!);
 
   return (

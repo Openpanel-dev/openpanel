@@ -9,7 +9,6 @@ import OverviewTopEvents from '@/components/overview/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
-import { getExists } from '@/server/pageExists';
 
 import { db } from '@openpanel/db';
 
@@ -27,14 +26,11 @@ interface PageProps {
 export default async function Page({
   params: { organizationId, projectId },
 }: PageProps) {
-  const [share] = await Promise.all([
-    db.shareOverview.findUnique({
-      where: {
-        project_id: projectId,
-      },
-    }),
-    getExists(organizationId, projectId),
-  ]);
+  const share = await db.shareOverview.findUnique({
+    where: {
+      project_id: projectId,
+    },
+  });
 
   return (
     <PageLayout title="Overview" organizationSlug={organizationId}>

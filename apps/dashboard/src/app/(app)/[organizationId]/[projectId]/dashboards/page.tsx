@@ -1,5 +1,4 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { getExists } from '@/server/pageExists';
 
 import { getDashboardsByProjectId } from '@openpanel/db';
 
@@ -16,10 +15,7 @@ interface PageProps {
 export default async function Page({
   params: { projectId, organizationId },
 }: PageProps) {
-  const [dashboards] = await Promise.all([
-    getDashboardsByProjectId(projectId),
-    await getExists(organizationId, projectId),
-  ]);
+  const dashboards = await getDashboardsByProjectId(projectId);
 
   return (
     <PageLayout title="Dashboards" organizationSlug={organizationId}>

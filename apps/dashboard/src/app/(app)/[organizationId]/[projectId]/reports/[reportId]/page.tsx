@@ -1,9 +1,8 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { getExists } from '@/server/pageExists';
 import { Pencil } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
-import { getOrganizationBySlug, getReportById } from '@openpanel/db';
+import { getReportById } from '@openpanel/db';
 
 import ReportEditor from '../report-editor';
 
@@ -16,12 +15,9 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { reportId, organizationId, projectId },
+  params: { reportId, organizationId },
 }: PageProps) {
-  const [report] = await Promise.all([
-    getReportById(reportId),
-    getExists(organizationId, projectId),
-  ]);
+  const report = await getReportById(reportId);
 
   if (!report) {
     return notFound();

@@ -1,5 +1,4 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { getExists } from '@/server/pageExists';
 
 import { getReferences } from '@openpanel/db';
 
@@ -15,7 +14,6 @@ interface PageProps {
 export default async function Page({
   params: { organizationId, projectId },
 }: PageProps) {
-  await getExists(organizationId, projectId);
   const references = await getReferences({
     where: {
       project_id: projectId,

@@ -1,9 +1,5 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { getExists } from '@/server/pageExists';
 import { Pencil } from 'lucide-react';
-import { notFound } from 'next/navigation';
-
-import { getOrganizationBySlug } from '@openpanel/db';
 
 import ReportEditor from './report-editor';
 
@@ -14,11 +10,7 @@ interface PageProps {
   };
 }
 
-export default async function Page({
-  params: { organizationId, projectId },
-}: PageProps) {
-  await getExists(organizationId, projectId);
-
+export default function Page({ params: { organizationId } }: PageProps) {
   return (
     <PageLayout
       organizationSlug={organizationId}

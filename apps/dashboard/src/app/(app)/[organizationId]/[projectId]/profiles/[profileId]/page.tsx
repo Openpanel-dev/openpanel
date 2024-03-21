@@ -9,7 +9,6 @@ import {
   eventQueryFiltersParser,
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
-import { getExists } from '@/server/pageExists';
 import { getProfileName } from '@/utils/getters';
 import { notFound } from 'next/navigation';
 import { parseAsInteger, parseAsString } from 'nuqs';
@@ -63,7 +62,6 @@ export default async function Page({
     getEventList(eventListOptions),
     getEventsCount(eventListOptions),
     getConversionEventNames(projectId),
-    getExists(organizationId, projectId),
   ]);
 
   const chartSelectedEvents: IChartEvent[] = [

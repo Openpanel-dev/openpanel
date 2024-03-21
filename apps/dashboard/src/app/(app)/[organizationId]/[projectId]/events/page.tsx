@@ -5,7 +5,6 @@ import {
   eventQueryFiltersParser,
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
-import { getExists } from '@/server/pageExists';
 import { parseAsInteger } from 'nuqs';
 
 import { getEventList, getEventsCount } from '@openpanel/db';
@@ -54,7 +53,6 @@ export default async function Page({
       events: eventsFilter,
       filters,
     }),
-    getExists(organizationId, projectId),
   ]);
 
   return (

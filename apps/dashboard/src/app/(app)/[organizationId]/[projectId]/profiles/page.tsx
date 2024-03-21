@@ -2,7 +2,6 @@ import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { eventQueryFiltersParser } from '@/hooks/useEventQueryFilters';
-import { getExists } from '@/server/pageExists';
 import { parseAsInteger } from 'nuqs';
 
 import { StickyBelowHeader } from '../layout-sticky-below-header';
@@ -25,12 +24,10 @@ const nuqsOptions = {
   shallow: false,
 };
 
-export default async function Page({
+export default function Page({
   params: { organizationId, projectId },
   searchParams: { cursor, f },
 }: PageProps) {
-  await getExists(organizationId, projectId);
-
   return (
     <PageLayout title="Profiles" organizationSlug={organizationId}>
       <StickyBelowHeader className="p-4 flex justify-between">
