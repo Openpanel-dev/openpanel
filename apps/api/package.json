@@ -25,6 +25,7 @@
     "ramda": "^0.29.1",
     "sharp": "^0.33.2",
     "ua-parser-js": "^1.0.37",
+    "url-metadata": "^4.1.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

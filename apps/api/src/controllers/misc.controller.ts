@@ -1,3 +1,5 @@
+import { logger } from '@/utils/logger';
+import { parseUrlMeta } from '@/utils/parseUrlMeta';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
@@ -35,8 +37,7 @@ async function getImageBuffer(url: string) {
       .png()
       .toBuffer();
   } catch (e) {
-    console.log('Failed to get image from url', url);
-    console.log(e);
+    logger.error(e, `Failed to get image from url ${url}`);
   }
 }
 
@@ -53,8 +54,6 @@ export async function getFavicon(
       redis.set(`favicon:${cacheKey}`, buffer.toString('base64'));
     }
     reply.type('image/png');
-    console.log('buffer', buffer.byteLength);
-
     return reply.send(buffer);
   }
 
@@ -64,7 +63,6 @@ export async function getFavicon(
 
   const url = decodeURIComponent(request.query.url);
 
-  // DIRECT IMAGE
   if (imageExtensions.find((ext) => url.endsWith(ext))) {
     const cacheKey = createHash(url, 32);
     const cache = await redis.get(`favicon:${cacheKey}`);
@@ -77,39 +75,26 @@ export async function getFavicon(
     }
   }
 
-  const { hostname, origin } = new URL(url);
+  const { hostname } = new URL(url);
   const cache = await redis.get(`favicon:${hostname}`);
+
   if (cache) {
     return sendBuffer(Buffer.from(cache, 'base64'));
   }
 
-  // TRY FAVICON.ICO
-  const buffer = await getImageBuffer(`${origin}/favicon.ico`);
-  if (buffer && buffer.byteLength > 0) {
-    return sendBuffer(buffer, hostname);
-  }
-
-  // PARSE HTML
-  const res = await fetch(url).then((res) => res.text());
-
-  function findFavicon(res: string) {
-    const match = res.match(
-      /(\<link(.+?)image\/x-icon(.+?)\>|\<link(.+?)shortcut\sicon(.+?)\>)/
-    );
-    if (!match) {
-      return null;
-    }
-
-    return match[0].match(/href="(.+?)"/)?.[1] ?? null;
-  }
-
-  const favicon = findFavicon(res);
-  if (favicon) {
-    const buffer = await getImageBuffer(favicon);
-
+  const meta = await parseUrlMeta(url);
+  if (meta?.favicon) {
+    const buffer = await getImageBuffer(meta.favicon);
     if (buffer && buffer.byteLength > 0) {
       return sendBuffer(buffer, hostname);
     }
+  }
+
+  const buffer = await getImageBuffer(
+    'https://www.iconsdb.com/icons/download/orange/warning-128.png'
+  );
+  if (buffer && buffer.byteLength > 0) {
+    return sendBuffer(buffer, hostname);
   }
 
   return reply.status(404).send('Not found');
