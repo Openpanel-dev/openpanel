@@ -60,7 +60,14 @@ const mapper: Record<string, LucideIcon> = {
   duckduckgo: createImageIcon(getProxyImage('https://duckduckgo.com')),
   'yahoo!': createImageIcon(getProxyImage('https://yahoo.com')),
   instagram: createImageIcon(getProxyImage('https://instagram.com')),
-  gmail: createImageIcon(getProxyImage('https://mail.google.com/')),
+  gmail: createImageIcon(getProxyImage('https://mail.google.com')),
+  microlaunch: createImageIcon(getProxyImage('https://microlaunch.net')),
+  producthunt: createImageIcon(getProxyImage('https://www.producthunt.com')),
+  youtube: createImageIcon(getProxyImage('https://youtube.com')),
+  taaft: createImageIcon(getProxyImage('https://theresanaiforthat.com')),
+  'openpanel.dev': createImageIcon(getProxyImage('https://openpanel.dev')),
+  github: createImageIcon(getProxyImage('https://github.com')),
+  'vstat.info': createImageIcon(getProxyImage('https://vstat.info')),
 
   'mobile safari': createImageIcon(
     getProxyImage(
