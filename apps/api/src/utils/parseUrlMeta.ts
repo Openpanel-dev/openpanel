@@ -1,5 +1,9 @@
 import urlMetadata from 'url-metadata';
 
+function fallbackFavicon(url: string) {
+  return `https://www.google.com/s2/favicons?domain=${url}&sz=256`;
+}
+
 function findBestFavicon(favicons: UrlMetaData['favicons']) {
   const match = favicons.find(
     (favicon) =>
@@ -18,9 +22,7 @@ function transform(data: UrlMetaData, url: string) {
   const favicon = findBestFavicon(data.favicons);
 
   return {
-    favicon: favicon
-      ? new URL(favicon, url).toString()
-      : `https://www.google.com/s2/favicons?domain=${url}&sz=256`,
+    favicon: favicon ? new URL(favicon, url).toString() : fallbackFavicon(url),
   };
 }
 
@@ -35,8 +37,11 @@ interface UrlMetaData {
 export async function parseUrlMeta(url: string) {
   try {
     const metadata = (await urlMetadata(url)) as UrlMetaData;
-    return transform(metadata, url);
+    const data = transform(metadata, url);
+    return data;
   } catch (err) {
-    return null;
+    return {
+      favicon: fallbackFavicon(url),
+    };
   }
 }
