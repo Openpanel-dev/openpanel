@@ -22,9 +22,17 @@ export function ChartSSR({
     .x((d) => xScale(d.date))
     .y((d) => yScale(d.value));
 
-  const d = line(data);
+  const area = d3
+    .area<(typeof data)[number]>()
+    .curve(d3.curveMonotoneX)
+    .x((d) => xScale(d.date))
+    .y0(yScale(0))
+    .y1((d) => yScale(d.value));
 
-  if (!d) {
+  const pathLine = line(data);
+  const pathArea = area(data);
+
+  if (!pathLine) {
     return null;
   }
 
@@ -37,9 +45,31 @@ export function ChartSSR({
           className="overflow-visible"
           preserveAspectRatio="none"
         >
+          <defs>
+            <linearGradient
+              id={`gradient`}
+              x1="0"
+              y1="0"
+              x2="0"
+              y2="100%"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stopColor={'blue'} stopOpacity={0.2}></stop>
+              <stop offset="50%" stopColor={'blue'} stopOpacity={0.05}></stop>
+              <stop offset="100%" stopColor={'blue'} stopOpacity={0}></stop>
+            </linearGradient>
+          </defs>
+          {/* Gradient area */}
+          {pathArea && (
+            <path
+              d={pathArea}
+              fill={`url(#gradient)`}
+              vectorEffect="non-scaling-stroke"
+            />
+          )}
           {/* Line */}
           <path
-            d={d}
+            d={pathLine}
             fill="none"
             className="text-blue-600"
             stroke="currentColor"
