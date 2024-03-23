@@ -6,9 +6,6 @@ export const env = createEnv({
    * Specify your server-side environment variables schema here. This way you can ensure the app
    * isn't built with invalid env vars.
    */
-  shared: {
-    NEXT_PUBLIC_SENTRY_DSN: z.string().url(),
-  },
   server: {
     DATABASE_URL: z
       .string()
@@ -28,7 +25,7 @@ export const env = createEnv({
    * `NEXT_PUBLIC_`.
    */
   client: {
-    // NEXT_PUBLIC_CLIENTVAR: z.string(),
+    NEXT_PUBLIC_SENTRY_DSN: z.string().url(),
   },
 
   /**
