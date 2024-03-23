@@ -7,6 +7,10 @@ export function ChartSSR({
   dots?: boolean;
   data: { value: number; date: Date }[];
 }) {
+  if (data.length === 0) {
+    return null;
+  }
+
   const xScale = d3
     .scaleTime()
     .domain([data[0]!.date, data[data.length - 1]!.date])
