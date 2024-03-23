@@ -53,7 +53,7 @@ const mapper: Record<string, LucideIcon> = {
   ...Object.entries(iconsWithUrls).reduce(
     (acc, [key, value]) => ({
       ...acc,
-      [key]: createImageIcon(value),
+      [key]: createImageIcon(getProxyImage(value)),
     }),
     {}
   ),
