@@ -43,8 +43,8 @@ const features: FeatureItem[] = [
           be accessible.
         </p>
         <p>
-          Mark events as conversions to highlight and soon notifications with
-          out iOS/Android app.
+          Mark events as conversions to highlight and get notifications with our
+          iOS/Android app (app coming soon!)
         </p>
       </>
     ),

@@ -7,23 +7,37 @@ import {
   DollarSignIcon,
   HandshakeIcon,
   KeyIcon,
+  ShieldIcon,
+  WebhookIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 
-import { Heading2, Heading3, Heading4 } from './copy';
+import { Heading2, Heading4 } from './copy';
 
 const items = [
   {
     title: 'Own Your Own Data',
     description: (
       <p>
-        All our serveres are hosted in EU (Stockholm) and we are fully GDPR
-        compliant.
+        We believe that you should own your own data. That's why we don't sell
+        your data to third parties. <strong>Ever. Period.</strong>
       </p>
     ),
     icon: KeyIcon,
     color: '#2563EB',
     className: 'bg-blue-light',
+  },
+  {
+    title: 'GDPR Compliant',
+    description: (
+      <p>
+        All our serveres are hosted in EU (Stockholm) and we are fully GDPR
+        compliant.
+      </p>
+    ),
+    icon: ShieldIcon,
+    color: '#b051d3',
+    className: 'bg-[#b051d3]',
   },
   {
     title: 'Cloud or Self-Hosting',
@@ -103,37 +117,47 @@ const items = [
     color: '#3ba974',
     className: 'bg-[#e19900]',
   },
+  {
+    title: 'Powerful Export API',
+    description: <p>Use our powerful export API to access your data.</p>,
+    icon: WebhookIcon,
+    color: '#3ba974',
+    className: 'bg-[#e93838]',
+  },
 ];
 
 export function PunchLines() {
   return (
-    <div className="bg-slate-700 py-32">
-      <Heading2 className="text-white text-center mb-16">
-        Not convinced?
-      </Heading2>
-      <div className="container">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {items.map((item) => {
-            const Icon = item.icon;
-            return (
-              <div
-                className="border border-border p-6 rounded-xl bg-white"
-                key={item.title}
-              >
+    <div className="bg-blue-darker py-32 relative">
+      <div className="inset-0 absolute h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
+      <div className="relative">
+        <Heading2 className="text-white text-center mb-16">
+          Not convinced?
+        </Heading2>
+        <div className="container">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {items.map((item) => {
+              const Icon = item.icon;
+              return (
                 <div
-                  className={cn(
-                    'h-14 w-14 rounded-full flex items-center justify-center mb-4',
-                    item.color
-                  )}
-                  style={{ background: item.color }}
+                  className="border border-border p-6 rounded-xl bg-white"
+                  key={item.title}
                 >
-                  <Icon color="#fff" />
+                  <div
+                    className={cn(
+                      'h-14 w-14 rounded-full flex items-center justify-center mb-4',
+                      item.color
+                    )}
+                    style={{ background: item.color }}
+                  >
+                    <Icon color="#fff" />
+                  </div>
+                  <Heading4>{item.title}</Heading4>
+                  <div className="prose">{item.description}</div>
                 </div>
-                <Heading4>{item.title}</Heading4>
-                <div className="prose">{item.description}</div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

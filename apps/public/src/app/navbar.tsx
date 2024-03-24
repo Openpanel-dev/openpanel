@@ -21,6 +21,9 @@ export function Navbar({ darkText = false, className }: Props) {
         <Logo className="max-sm:[&_span]:hidden" />
         <nav className="flex gap-4">
           {pathname !== '/' && <Link href="/">Home</Link>}
+          <Link href="/#pricing" data-event="click_pricing">
+            Pricing
+          </Link>
           <a href="https://docs.openpanel.dev" target="_blank">
             Docs
           </a>
