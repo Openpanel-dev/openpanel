@@ -114,11 +114,11 @@ export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
       const btn = target.closest('button');
-      const achor = target.closest('button');
+      const anchor = target.closest('a');
       const element = btn?.getAttribute('data-event')
         ? btn
-        : achor?.getAttribute('data-event')
-          ? achor
+        : anchor?.getAttribute('data-event')
+          ? anchor
           : null;
       if (element) {
         const properties: Record<string, unknown> = {};
