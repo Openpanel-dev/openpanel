@@ -1,12 +1,12 @@
-import { CheckIcon } from 'lucide-react';
+import { CheckIcon, StarIcon } from 'lucide-react';
 
 import { Heading2, Lead2 } from './copy';
 
 const pricing = [
-  { price: 'Free', events: 3000 },
+  { price: 'Free', events: 3000, hint: 'Try it' },
   { price: '$5', events: 10_000 },
   { price: '$10', events: 20_000 },
-  { price: '$20', events: 100_000 },
+  { price: '$20', events: 100_000, hint: 'Great value' },
   { price: '$30', events: 200_000 },
   { price: '$50', events: 400_000 },
   { price: '$70', events: 600_000 },
@@ -49,8 +49,14 @@ export function Pricing() {
             {pricing.map((item) => (
               <div
                 key={item.price}
-                className="bg-white rounded-lg border border-blue-dark p-6 flex flex-col gap-1"
+                className="relative bg-white rounded-lg border border-blue-dark p-6 flex flex-col gap-1"
               >
+                {item.hint && (
+                  <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded flex gap-2 items-center">
+                    <StarIcon size={12} />
+                    {item.hint}
+                  </div>
+                )}
                 <div className="text-3xl font-bold">{item.price}</div>
                 <div className="text-lg flex justify-between">
                   <span>
