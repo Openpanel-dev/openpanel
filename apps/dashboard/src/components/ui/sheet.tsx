@@ -133,6 +133,14 @@ const SheetDescription = React.forwardRef<
 ));
 SheetDescription.displayName = SheetPrimitive.Description.displayName;
 
+export function closeSheet() {
+  if (typeof document === 'undefined') return;
+  const element = document.querySelector('#close-sheet');
+  if (element instanceof HTMLElement) {
+    element.click();
+  }
+}
+
 export {
   Sheet,
   SheetPortal,

@@ -3,6 +3,7 @@ import { ProjectCard } from '@/components/projects/project-card';
 import { notFound, redirect } from 'next/navigation';
 
 import {
+  getCurrentProjects,
   getOrganizationBySlug,
   getProjectsByOrganizationSlug,
   isWaitlistUserAccepted,
@@ -19,7 +20,7 @@ interface PageProps {
 export default async function Page({ params: { organizationId } }: PageProps) {
   const [organization, projects] = await Promise.all([
     getOrganizationBySlug(organizationId),
-    getProjectsByOrganizationSlug(organizationId),
+    getCurrentProjects(organizationId),
   ]);
 
   if (!organization) {

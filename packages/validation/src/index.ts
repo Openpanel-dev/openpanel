@@ -80,7 +80,8 @@ export const zChartInput = z.object({
 export const zInviteUser = z.object({
   email: z.string().email(),
   organizationSlug: z.string(),
-  role: z.enum(['admin', 'org:member']),
+  role: z.enum(['org:admin', 'org:member']),
+  access: z.array(z.string()),
 });
 
 export const zShareOverview = z.object({

@@ -120,11 +120,7 @@ export function FilterItem({ filter, event }: FilterProps) {
           items={valuesCombobox}
           value={filter.value}
           className="flex-1"
-          onChange={(setFn) => {
-            changeFilterValue(
-              typeof setFn === 'function' ? setFn(filter.value) : setFn
-            );
-          }}
+          onChange={changeFilterValue}
           placeholder="Select..."
         />
       </div>

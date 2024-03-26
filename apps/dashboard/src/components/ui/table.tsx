@@ -6,18 +6,14 @@ import { cn } from '@/utils/cn';
 const Table = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement> & {
-    wrapper?: boolean;
     overflow?: boolean;
   }
->(({ className, wrapper, overflow = true, ...props }, ref) => (
+>(({ className, overflow = true, ...props }, ref) => (
   <div className={cn('card', className)}>
     <div className={cn('relative w-full', overflow && 'overflow-auto')}>
       <table
         ref={ref}
-        className={cn(
-          'w-full caption-bottom text-sm [&.mini]:text-xs',
-          className
-        )}
+        className={cn('w-full caption-bottom text-sm', className)}
         {...props}
       />
     </div>
@@ -79,7 +75,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'p-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 shadow-[0_0_0_0.5px] shadow-border [.mini_&]:p-2',
+      'px-4 h-10 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 shadow-[0_0_0_0.5px] shadow-border',
       className
     )}
     {...props}
@@ -94,7 +90,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      'p-4 align-middle [&:has([role=checkbox])]:pr-0 shadow-[0_0_0_0.5px] shadow-border [.mini_&]:p-2 whitespace-nowrap',
+      'px-4 h-12 align-middle [&:has([role=checkbox])]:pr-0 shadow-[0_0_0_0.5px] shadow-border whitespace-nowrap',
       className
     )}
     {...props}

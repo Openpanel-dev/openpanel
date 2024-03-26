@@ -2,7 +2,7 @@ import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
 import { clerkClient } from '@clerk/nextjs';
 import { z } from 'zod';
 
-import { getOrganizationBySlug } from '@openpanel/db';
+import { db, getOrganizationBySlug } from '@openpanel/db';
 import { zInviteUser } from '@openpanel/validation';
 
 export const organizationRouter = createTRPCRouter({
@@ -30,6 +30,7 @@ export const organizationRouter = createTRPCRouter({
         name: input.name,
       });
     }),
+
   inviteUser: protectedProcedure
     .input(zInviteUser)
     .mutation(async ({ input, ctx }) => {
@@ -44,6 +45,50 @@ export const organizationRouter = createTRPCRouter({
         emailAddress: input.email,
         role: input.role,
         inviterUserId: ctx.session.userId,
+        publicMetadata: {
+          access: input.access,
+        },
       });
+    }),
+  revokeInvite: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.string(),
+        invitationId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      return clerkClient.organizations.revokeOrganizationInvitation({
+        organizationId: input.organizationId,
+        invitationId: input.invitationId,
+        requestingUserId: ctx.session.userId,
+      });
+    }),
+
+  updateMemberAccess: protectedProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        organizationSlug: z.string(),
+        access: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ input }) => {
+      return db.$transaction([
+        db.projectAccess.deleteMany({
+          where: {
+            user_id: input.userId,
+            organization_slug: input.organizationSlug,
+          },
+        }),
+        db.projectAccess.createMany({
+          data: input.access.map((projectId) => ({
+            user_id: input.userId,
+            organization_slug: input.organizationSlug,
+            project_id: projectId,
+            level: 'read',
+          })),
+        }),
+      ]);
     }),
 });

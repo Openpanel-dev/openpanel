@@ -1,4 +1,7 @@
-import { getProjectsByOrganizationSlug } from '@openpanel/db';
+import {
+  getCurrentProjects,
+  getProjectsByOrganizationSlug,
+} from '@openpanel/db';
 
 import LayoutProjectSelector from './layout-project-selector';
 
@@ -13,7 +16,7 @@ export default async function PageLayout({
   title,
   organizationSlug,
 }: PageLayoutProps) {
-  const projects = await getProjectsByOrganizationSlug(organizationSlug);
+  const projects = await getCurrentProjects(organizationSlug);
 
   return (
     <>

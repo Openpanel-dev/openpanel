@@ -1,11 +1,11 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
-import { clerkClient } from '@clerk/nextjs';
 import { notFound } from 'next/navigation';
 
 import { getInvites, getOrganizationBySlug } from '@openpanel/db';
 
 import EditOrganization from './edit-organization';
-import InvitedUsers from './invited-users';
+import InvitesServer from './invites';
+import MembersServer from './members';
 
 interface PageProps {
   params: {
@@ -13,8 +13,10 @@ interface PageProps {
   };
 }
 
-export default async function Page({ params: { organizationId } }: PageProps) {
-  const organization = await getOrganizationBySlug(organizationId);
+export default async function Page({
+  params: { organizationId: organizationSlug },
+}: PageProps) {
+  const organization = await getOrganizationBySlug(organizationSlug);
 
   if (!organization) {
     return notFound();
@@ -23,10 +25,11 @@ export default async function Page({ params: { organizationId } }: PageProps) {
   const invites = await getInvites(organization.id);
 
   return (
-    <PageLayout title={organization.name} organizationSlug={organizationId}>
-      <div className="p-4 grid grid-cols-1 gap-4">
+    <PageLayout title={organization.name} organizationSlug={organizationSlug}>
+      <div className="p-4 grid grid-cols-1 gap-8">
         <EditOrganization organization={organization} />
-        <InvitedUsers invites={invites} />
+        <MembersServer organizationSlug={organizationSlug} />
+        <InvitesServer organizationSlug={organizationSlug} />
       </div>
     </PageLayout>
   );

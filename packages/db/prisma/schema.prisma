@@ -27,7 +27,28 @@ model Project {
   EventMeta  EventMeta[]
   Reference  Reference[]
 
+  access ProjectAccess[]
+
   @@map("projects")
+}
+
+enum AccessLevel {
+  read
+  write
+  admin
+}
+
+model ProjectAccess {
+  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id        String
+  project           Project     @relation(fields: [project_id], references: [id])
+  organization_slug String
+  user_id           String
+  level             AccessLevel
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @default(now()) @updatedAt
+
+  @@map("project_access")
 }
 
 model Event {

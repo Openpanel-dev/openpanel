@@ -19,7 +19,7 @@ type IItem = Record<'value' | 'label', IValue>;
 
 interface ComboboxAdvancedProps {
   value: IValue[];
-  onChange: React.Dispatch<React.SetStateAction<IValue[]>>;
+  onChange: (value: IValue[]) => void;
   items: IItem[];
   placeholder: string;
   className?: string;
@@ -57,12 +57,11 @@ export function ComboboxAdvanced({
         }}
         onSelect={() => {
           setInputValue('');
-          onChange((prev) => {
-            if (prev.includes(item.value)) {
-              return prev.filter((s) => s !== item.value);
-            }
-            return [...prev, item.value];
-          });
+          onChange(
+            value.includes(item.value)
+              ? value.filter((s) => s !== item.value)
+              : [...value, item.value]
+          );
         }}
         className={'cursor-pointer flex items-center gap-2'}
       >
