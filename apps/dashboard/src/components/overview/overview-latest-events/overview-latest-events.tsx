@@ -1,6 +1,6 @@
 'use client';
 
-import { ChartSwitch } from '@/components/report/chart';
+import { LazyChart } from '@/components/report/chart/LazyChart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
@@ -120,7 +120,7 @@ export default function OverviewLatestEvents({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <ChartSwitch hideID {...widget.chart} previous={false} />
+          <LazyChart hideID {...widget.chart} previous={false} />
         </WidgetBody>
       </Widget>
     </>

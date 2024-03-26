@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ChartSwitch } from '@/components/report/chart';
+import { LazyChart } from '@/components/report/chart/LazyChart';
 import { Button } from '@/components/ui/button';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
@@ -130,7 +131,7 @@ export default function OverviewTopEvents({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <ChartSwitch hideID {...widget.chart} previous={false} />
+          <LazyChart hideID {...widget.chart} previous={false} />
         </WidgetBody>
       </Widget>
     </>

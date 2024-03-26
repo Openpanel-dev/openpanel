@@ -31,12 +31,17 @@ export function Chart({
   startDate,
   endDate,
 }: ReportChartProps) {
-  const [references] = api.reference.getChartReferences.useSuspenseQuery({
-    projectId,
-    startDate,
-    endDate,
-    range,
-  });
+  const [references] = api.reference.getChartReferences.useSuspenseQuery(
+    {
+      projectId,
+      startDate,
+      endDate,
+      range,
+    },
+    {
+      staleTime: 1000 * 60 * 5,
+    }
+  );
 
   const [data] = api.chart.chart.useSuspenseQuery(
     {

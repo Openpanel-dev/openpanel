@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ChartSwitch } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import type { IChartType } from '@openpanel/validation';
 
+import { LazyChart } from '../report/chart/LazyChart';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
 import { WidgetButtons, WidgetHead } from './overview-widget';
@@ -198,7 +198,7 @@ export default function OverviewTopDevices({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <ChartSwitch
+          <LazyChart
             hideID
             {...widget.chart}
             previous={false}
