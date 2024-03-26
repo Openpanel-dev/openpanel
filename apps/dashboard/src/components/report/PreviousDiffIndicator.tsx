@@ -95,7 +95,7 @@ export function PreviousDiffIndicatorText({
   return (
     <div
       className={cn([
-        'flex gap-0.5 items-center',
+        'flex items-center gap-0.5',
         getDiffIndicator(
           previousIndicatorInverted,
           state,

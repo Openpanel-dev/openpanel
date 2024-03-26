@@ -94,7 +94,7 @@ export function FunnelSteps({
           return (
             <CarouselItem
               className={cn(
-                'flex-[0_0_250px] max-w-full p-0 px-1',
+                'max-w-full flex-[0_0_250px] p-0 px-1',
                 editMode && 'flex-[0_0_320px]'
               )}
               key={step.event.id}
@@ -106,13 +106,13 @@ export function FunnelSteps({
                     {step.event.displayName || step.event.name}
                   </h3>
                 </div>
-                <div className="aspect-square relative">
+                <div className="relative aspect-square">
                   <FunnelChart from={step.prevPercent} to={step.percent} />
-                  <div className="absolute top-0 left-0 right-0 p-4 flex flex-col bg-white/40">
-                    <div className="uppercase font-medium text-muted-foreground">
+                  <div className="absolute left-0 right-0 top-0 flex flex-col bg-white/40 p-4">
+                    <div className="font-medium uppercase text-muted-foreground">
                       Sessions
                     </div>
-                    <div className="uppercase text-3xl font-bold flex items-center">
+                    <div className="flex items-center text-3xl font-bold uppercase">
                       <span className="text-muted-foreground">
                         {step.before}
                       </span>
@@ -130,34 +130,34 @@ export function FunnelSteps({
                   </div>
                 </div>
                 {finalStep ? (
-                  <div className={cn('p-4 flex flex-col items-center')}>
-                    <div className="uppercase text-xs font-medium">
+                  <div className={cn('flex flex-col items-center p-4')}>
+                    <div className="text-xs font-medium uppercase">
                       Conversion
                     </div>
                     <div
                       className={cn(
-                        'uppercase text-3xl font-bold',
+                        'text-3xl font-bold uppercase',
                         getDropoffColor(step.dropoff.percent)
                       )}
                     >
                       {round(step.percent, 1)}%
                     </div>
-                    <div className="uppercase text-sm mt-0 font-medium text-muted-foreground">
+                    <div className="mt-0 text-sm font-medium uppercase text-muted-foreground">
                       Converted {step.current} of {totalSessions} sessions
                     </div>
                   </div>
                 ) : (
-                  <div className={cn('p-4 flex flex-col items-center')}>
-                    <div className="uppercase text-xs font-medium">Dropoff</div>
+                  <div className={cn('flex flex-col items-center p-4')}>
+                    <div className="text-xs font-medium uppercase">Dropoff</div>
                     <div
                       className={cn(
-                        'uppercase text-3xl font-bold',
+                        'text-3xl font-bold uppercase',
                         getDropoffColor(step.dropoff.percent)
                       )}
                     >
                       {round(step.dropoff.percent, 1)}%
                     </div>
-                    <div className="uppercase text-sm mt-0 font-medium text-muted-foreground">
+                    <div className="mt-0 text-sm font-medium uppercase text-muted-foreground">
                       Lost {step.dropoff.count} sessions
                     </div>
                   </div>

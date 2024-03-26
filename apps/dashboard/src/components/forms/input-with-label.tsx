@@ -13,12 +13,12 @@ export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
   ({ label, className, ...props }, ref) => {
     return (
       <div className={className}>
-        <div className="block mb-2 flex justify-between">
+        <div className="mb-2 block flex justify-between">
           <Label className="mb-0" htmlFor={label}>
             {label}
           </Label>
           {props.error && (
-            <span className="text-sm text-destructive leading-none">
+            <span className="text-sm leading-none text-destructive">
               {props.error}
             </span>
           )}

@@ -51,7 +51,7 @@ export function EventPropertiesCombobox({
     >
       <button
         className={cn(
-          'flex items-center gap-1 rounded-md border border-border p-1 px-2 font-medium leading-none text-xs',
+          'flex items-center gap-1 rounded-md border border-border p-1 px-2 text-xs font-medium leading-none',
           !event.property && 'border-destructive text-destructive'
         )}
       >

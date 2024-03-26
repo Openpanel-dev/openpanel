@@ -135,7 +135,7 @@ export function ReportEvents() {
                   ]}
                   label="Segment"
                 >
-                  <button className="flex items-center gap-1 rounded-md border border-border p-1 px-2 font-medium leading-none text-xs bg-white">
+                  <button className="flex items-center gap-1 rounded-md border border-border bg-white p-1 px-2 text-xs font-medium leading-none">
                     {event.segment === 'user' ? (
                       <>
                         <Users size={12} /> Unique users
@@ -203,7 +203,7 @@ export function ReportEvents() {
         />
       </div>
       <label
-        className="flex items-center gap-2 cursor-pointer select-none text-sm font-medium mt-4"
+        className="mt-4 flex cursor-pointer select-none items-center gap-2 text-sm font-medium"
         htmlFor="previous"
       >
         <Checkbox

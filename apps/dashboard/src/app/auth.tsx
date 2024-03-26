@@ -28,8 +28,8 @@ export default function Auth() {
   const pathname = usePathname();
   const [state, setState] = useState<string | null>(null);
   return (
-    <div className="flex items-center justify-center flex-col h-screen p-4">
-      <Widget className="max-w-md w-full mb-4">
+    <div className="flex h-screen flex-col items-center justify-center p-4">
+      <Widget className="mb-4 w-full max-w-md">
         <WidgetBody>
           <div className="flex justify-center py-8">
             <Logo />

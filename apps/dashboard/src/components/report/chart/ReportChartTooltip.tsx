@@ -39,7 +39,7 @@ export function ReportChartTooltip({
   const hidden = sorted.slice(limit);
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl border bg-white p-3 text-sm shadow-xl min-w-[180px]">
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-white p-3 text-sm shadow-xl">
       {visible.map((item, index) => {
         // If we have a <Cell /> component, payload can be nested
         const payload = item.payload.payload ?? item.payload;
@@ -62,7 +62,7 @@ export function ReportChartTooltip({
                 className="w-[3px] rounded-full"
                 style={{ background: data.color }}
               />
-              <div className="flex flex-col flex-1">
+              <div className="flex flex-1 flex-col">
                 <div className="min-w-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap font-medium">
                   {getLabel(data.label)}
                 </div>

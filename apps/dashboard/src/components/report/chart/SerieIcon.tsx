@@ -29,7 +29,7 @@ function getProxyImage(url: string) {
 
 const createImageIcon = (url: string) => {
   return function (_props: LucideProps) {
-    return <img className="h-4 object-contain rounded-[2px]" src={url} />;
+    return <img className="h-4 rounded-[2px] object-contain" src={url} />;
   } as LucideIcon;
 };
 
@@ -81,7 +81,7 @@ export function SerieIcon({ name, ...props }: SerieIconProps) {
   }, [name]);
 
   return Icon ? (
-    <div className="h-4 flex-shrink-0 relative [&_a]:![&_a]:!h-4 [&_svg]:!rounded-[2px]">
+    <div className="[&_a]:![&_a]:!h-4 relative h-4 flex-shrink-0 [&_svg]:!rounded-[2px]">
       <Icon size={16} {...props} />
     </div>
   ) : null;

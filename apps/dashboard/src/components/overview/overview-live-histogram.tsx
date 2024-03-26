@@ -85,7 +85,7 @@ export function OverviewLiveHistogram({
         {staticArray.map((percent, i) => (
           <div
             key={i}
-            className="flex-1 rounded-md bg-slate-200 animate-pulse"
+            className="flex-1 animate-pulse rounded-md bg-slate-200"
             style={{ height: `${percent}%` }}
           />
         ))}
@@ -105,7 +105,7 @@ export function OverviewLiveHistogram({
             <TooltipTrigger asChild>
               <div
                 className={cn(
-                  'flex-1 rounded-md hover:scale-110 transition-all ease-in-out',
+                  'flex-1 rounded-md transition-all ease-in-out hover:scale-110',
                   minute.count === 0 ? 'bg-slate-200' : 'bg-blue-600'
                 )}
                 style={{
@@ -136,14 +136,14 @@ interface WrapperProps {
 function Wrapper({ open, children, count }: WrapperProps) {
   return (
     <AnimateHeight duration={500} height={open ? 'auto' : 0}>
-      <div className="flex items-end flex-col md:flex-row">
-        <div className="md:mr-2 flex md:flex-col max-md:justify-between items-end max-md:w-full max-md:mb-2 md:card md:p-4">
+      <div className="flex flex-col items-end md:flex-row">
+        <div className="md:card flex items-end max-md:mb-2 max-md:w-full max-md:justify-between md:mr-2 md:flex-col md:p-4">
           <div className="text-sm max-md:mb-1">Last 30 minutes</div>
-          <div className="text-2xl font-bold text-ellipsis overflow-hidden whitespace-nowrap">
+          <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">
             {count}
           </div>
         </div>
-        <div className="max-h-[150px] aspect-[5/1] flex flex-1 gap-0.5 md:gap-2 items-end w-full relative">
+        <div className="relative flex aspect-[5/1] max-h-[150px] w-full flex-1 items-end gap-0.5 md:gap-2">
           <div className="absolute -top-3 right-0 text-xs text-muted-foreground">
             NOW
           </div>

@@ -73,7 +73,7 @@ function Item({
           {new Date(createdAt).toLocaleDateString()}
         </TooltipComplete>
       </TableCell>
-      <TableCell className="capitalize flex items-center gap-2">
+      <TableCell className="flex items-center gap-2 capitalize">
         <Dot
           className={cn(
             status === 'accepted' && 'bg-emerald-600',

@@ -20,7 +20,7 @@ export function EventsPerDayChart({ projectId, filters, events }: Props) {
   ];
 
   return (
-    <div className="card p-4 mb-8">
+    <div className="card mb-8 p-4">
       <ChartSwitchShortcut
         projectId={projectId}
         range="1m"

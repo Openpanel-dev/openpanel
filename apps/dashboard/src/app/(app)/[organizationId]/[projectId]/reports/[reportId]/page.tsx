@@ -27,7 +27,7 @@ export default async function Page({
     <PageLayout
       organizationSlug={organizationId}
       title={
-        <div className="flex gap-2 items-center cursor-pointer">
+        <div className="flex cursor-pointer items-center gap-2">
           {report.name}
           <Pencil size={16} />
         </div>

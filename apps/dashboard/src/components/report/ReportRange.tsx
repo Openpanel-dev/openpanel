@@ -62,7 +62,7 @@ export function ReportRange({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
-          <div className="p-4 border-b border-border">
+          <div className="border-b border-border p-4">
             <ToggleGroup
               value={range}
               onValueChange={(value) => {

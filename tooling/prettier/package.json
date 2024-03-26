@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "main": "index.mjs",
+  "type": "module",
   "scripts": {
     "clean": "rm -rf .turbo node_modules"
   },
   "dependencies": {
-    "@ianvs/prettier-plugin-sort-imports": "^4.1.0"
+    "@ianvs/prettier-plugin-sort-imports": "^4.1.0",
+    "prettier-plugin-tailwindcss": "^0.5.11"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",

@@ -60,13 +60,13 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
 
   return (
     <>
-      <div className="grid sm:grid-cols-2 gap-4 p-4">
+      <div className="grid gap-4 p-4 sm:grid-cols-2">
         {dashboards.map((item) => (
           <Card key={item.id} hover>
             <div>
               <Link
                 href={`/${organizationId}/${projectId}/dashboards/${item.id}`}
-                className="block p-4 flex flex-col"
+                className="block flex flex-col p-4"
               >
                 <span className="font-medium">{item.name}</span>
               </Link>
@@ -83,7 +83,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                   Edit
                 </button>
               </CardActionsItem>
-              <CardActionsItem className="text-destructive w-full" asChild>
+              <CardActionsItem className="w-full text-destructive" asChild>
                 <button
                   onClick={() => {
                     deletion.mutate({

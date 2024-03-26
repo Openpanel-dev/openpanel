@@ -36,7 +36,7 @@ export function ListReports({ reports }: ListReportsProps) {
 
   return (
     <>
-      <StickyBelowHeader className="p-4 items-center justify-between flex">
+      <StickyBelowHeader className="flex items-center justify-between p-4">
         <OverviewReportRange />
         <Button
           icon={PlusIcon}
@@ -54,20 +54,20 @@ export function ListReports({ reports }: ListReportsProps) {
           <span className="sm:hidden">Report</span>
         </Button>
       </StickyBelowHeader>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
+      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
         {reports.map((report) => {
           const chartRange = report.range; // timeRanges[report.range];
           return (
             <div className="card" key={report.id}>
               <Link
                 href={`/${params.organizationId}/${params.projectId}/reports/${report.id}`}
-                className="flex border-b border-border p-4 leading-none [&_svg]:hover:opacity-100 items-center justify-between"
+                className="flex items-center justify-between border-b border-border p-4 leading-none [&_svg]:hover:opacity-100"
                 shallow
               >
                 <div>
                   <div className="font-medium">{report.name}</div>
                   {chartRange !== null && (
-                    <div className="mt-2 text-sm flex gap-2">
+                    <div className="mt-2 flex gap-2 text-sm">
                       <span
                         className={
                           range !== null || (startDate && endDate)
@@ -87,7 +87,7 @@ export function ListReports({ reports }: ListReportsProps) {
                 </div>
                 <div className="flex items-center gap-4">
                   <DropdownMenu>
-                    <DropdownMenuTrigger className="h-8 w-8 hover:border rounded justify-center items-center flex">
+                    <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded hover:border">
                       <MoreHorizontal size={16} />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-[200px]">
@@ -116,7 +116,7 @@ export function ListReports({ reports }: ListReportsProps) {
               <div
                 className={cn(
                   'p-4',
-                  report.chartType === 'bar' && 'overflow-auto max-h-[300px]'
+                  report.chartType === 'bar' && 'max-h-[300px] overflow-auto'
                 )}
               >
                 <LazyChart

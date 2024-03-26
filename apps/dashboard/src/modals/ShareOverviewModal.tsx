@@ -63,7 +63,7 @@ export default function ShareOverviewModal() {
           render={({ field }) => (
             <label
               htmlFor="public"
-              className="flex items-center gap-2 text-sm font-medium leading-none mb-4"
+              className="mb-4 flex items-center gap-2 text-sm font-medium leading-none"
             >
               <Checkbox
                 id="public"

@@ -6,6 +6,6 @@ export function ButtonContainer({
   ...props
 }: HtmlProps<HTMLDivElement>) {
   return (
-    <div className={cn('flex justify-between mt-6', className)} {...props} />
+    <div className={cn('mt-6 flex justify-between', className)} {...props} />
   );
 }

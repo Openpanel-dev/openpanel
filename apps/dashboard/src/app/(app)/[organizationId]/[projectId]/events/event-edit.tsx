@@ -80,10 +80,10 @@ export function EventEdit({ event, open, setOpen }: Props) {
         <SheetHeader>
           <SheetTitle>Edit "{name}"</SheetTitle>
         </SheetHeader>
-        <div className="flex flex-col gap-8 my-8">
+        <div className="my-8 flex flex-col gap-8">
           <div>
             <Label className="mb-4 block">Conversion</Label>
-            <label className="cursor-pointer flex items-center select-none border border-border rounded-md p-4 gap-4">
+            <label className="flex cursor-pointer select-none items-center gap-4 rounded-md border border-border p-4">
               <Checkbox
                 checked={conversion}
                 onCheckedChange={(checked) => {
@@ -106,7 +106,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
                     setIcon(name);
                   }}
                   className={cn(
-                    'flex-shrink-0 rounded-md w-8 h-8 cursor-pointer inline-flex transition-all bg-slate-100 flex items-center justify-center',
+                    'flex inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-slate-100 transition-all',
                     name === selectedIcon
                       ? 'scale-110 ring-1 ring-black'
                       : '[&_svg]:opacity-50'
@@ -127,7 +127,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
                     setColor(color);
                   }}
                   className={cn(
-                    'flex-shrink-0 rounded-md w-8 h-8 cursor-pointer transition-all flex justify-center items-center',
+                    'flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md transition-all',
                     color === selectedColor ? 'ring-1 ring-black' : '',
                     getBg(color)
                   )}

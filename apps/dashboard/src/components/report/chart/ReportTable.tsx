@@ -55,8 +55,8 @@ export function ReportTable({
 
   return (
     <>
-      <div className="grid grid-cols-[200px_1fr] border border-border rounded-md overflow-hidden">
-        <Table className="rounded-none border-t-0 border-l-0 border-b-0">
+      <div className="grid grid-cols-[200px_1fr] overflow-hidden rounded-md border border-border">
+        <Table className="rounded-none border-b-0 border-l-0 border-t-0">
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
@@ -88,7 +88,7 @@ export function ReportTable({
                       />
                       <Tooltip delayDuration={200}>
                         <TooltipTrigger asChild>
-                          <div className="min-w-0 overflow-hidden whitespace-nowrap text-ellipsis">
+                          <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
                             {getLabel(serie.name)}
                           </div>
                         </TooltipTrigger>
@@ -157,8 +157,8 @@ export function ReportTable({
           </Table>
         </div>
       </div>
-      <div className="flex flex-col-reverse gap-4 md:flex-row md:justify-between md:items-center">
-        <div className="flex gap-1 flex-wrap">
+      <div className="flex flex-col-reverse gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-wrap gap-1">
           <Badge>Total: {number.format(data.metrics.sum)}</Badge>
           <Badge>Average: {number.format(data.metrics.average)}</Badge>
           <Badge>Min: {number.format(data.metrics.min)}</Badge>

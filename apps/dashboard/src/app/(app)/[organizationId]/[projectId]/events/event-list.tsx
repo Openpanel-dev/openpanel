@@ -67,7 +67,7 @@ export function EventList({ data, count }: EventListProps) {
                   <div className="flex flex-row justify-between gap-2 [&:not(:first-child)]:mt-12">
                     {index === 0 ? <EventListener /> : <div />}
                     <div className="flex gap-2">
-                      <div className="bg-slate-100 border border-slate-300 rounded h-8 px-3 leading-none flex items-center text-sm font-medium gap-2">
+                      <div className="flex h-8 items-center gap-2 rounded border border-slate-300 bg-slate-100 px-3 text-sm font-medium leading-none">
                         {item.createdAt.toLocaleDateString()}
                       </div>
                       {index === 0 && (

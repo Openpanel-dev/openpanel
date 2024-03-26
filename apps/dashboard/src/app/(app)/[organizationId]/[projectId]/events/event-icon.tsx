@@ -23,11 +23,11 @@ import { toast } from 'sonner';
 
 import type { EventMeta } from '@openpanel/db';
 
-const variants = cva('flex items-center justify-center shrink-0 rounded-full', {
+const variants = cva('flex shrink-0 items-center justify-center rounded-full', {
   variants: {
     size: {
-      sm: 'w-6 h-6',
-      default: 'w-10 h-10',
+      sm: 'h-6 w-6',
+      default: 'h-10 w-10',
     },
   },
   defaultVariants: {

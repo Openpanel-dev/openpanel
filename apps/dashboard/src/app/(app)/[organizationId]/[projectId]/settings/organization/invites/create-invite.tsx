@@ -123,7 +123,7 @@ export default function CreateInvite({ projects }: Props) {
                     value: item.id,
                   }))}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Leave empty to give access to all projects
                 </p>
               </div>

@@ -9,7 +9,7 @@ import { StickyBelowHeader } from '../layout-sticky-below-header';
 export function HeaderDashboards() {
   return (
     <StickyBelowHeader>
-      <div className="p-4 flex justify-between items-center">
+      <div className="flex items-center justify-between p-4">
         <div />
         <Button
           icon={PlusIcon}

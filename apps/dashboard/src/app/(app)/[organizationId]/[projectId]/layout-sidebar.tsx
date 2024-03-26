@@ -38,35 +38,35 @@ export function LayoutSidebar({
       <button
         onClick={() => setActive(false)}
         className={cn(
-          'fixed top-0 left-0 right-0 bottom-0 backdrop-blur-sm z-30 transition-opacity',
+          'fixed bottom-0 left-0 right-0 top-0 z-30 backdrop-blur-sm transition-opacity',
           active
-            ? 'opacity-100 pointer-events-auto'
-            : 'opacity-0 pointer-events-none'
+            ? 'pointer-events-auto opacity-100'
+            : 'pointer-events-none opacity-0'
         )}
       />
       <div
         className={cn(
-          'fixed top-0 left-0 h-screen border-r border-border w-72 bg-white flex flex-col z-30 transition-transform',
+          'fixed left-0 top-0 z-30 flex h-screen w-72 flex-col border-r border-border bg-white transition-transform',
           '-translate-x-72 lg:-translate-x-0', // responsive
           active && 'translate-x-0' // force active on mobile
         )}
       >
-        <div className="absolute -right-12 h-16 flex items-center lg:hidden">
+        <div className="absolute -right-12 flex h-16 items-center lg:hidden">
           <Hamburger toggled={active} onToggle={setActive} size={20} />
         </div>
-        <div className="h-16 border-b border-border px-4 shrink-0 flex items-center">
+        <div className="flex h-16 shrink-0 items-center border-b border-border px-4">
           <Link href="/">
             <Logo />
           </Link>
         </div>
-        <div className="flex flex-col p-4 gap-2 flex-grow overflow-auto">
+        <div className="flex flex-grow flex-col gap-2 overflow-auto p-4">
           <LayoutMenu dashboards={dashboards} />
           {/* Placeholder for LayoutOrganizationSelector */}
-          <div className="h-32 block shrink-0"></div>
+          <div className="block h-32 shrink-0"></div>
         </div>
         <div className="fixed bottom-0 left-0 right-0">
-          <div className="bg-gradient-to-t from-white to-white/0 h-8 w-full"></div>
-          <div className="bg-white p-4 pt-0 flex flex-col gap-2">
+          <div className="h-8 w-full bg-gradient-to-t from-white to-white/0"></div>
+          <div className="flex flex-col gap-2 bg-white p-4 pt-0">
             <Link
               className={cn('flex gap-2', buttonVariants())}
               href={`/${organizationId}/${projectId}/reports`}

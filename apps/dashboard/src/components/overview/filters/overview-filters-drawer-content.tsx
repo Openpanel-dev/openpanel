@@ -76,7 +76,7 @@ export function OverviewFiltersDrawerContent({
         />
       </div>
 
-      <div className="flex flex-col gap-4 mt-8">
+      <div className="mt-8 flex flex-col gap-4">
         {filters
           .filter((filter) => filter.value[0] !== null)
           .map((filter) => {
@@ -120,7 +120,7 @@ export function FilterOptionEvent({
   );
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex items-center gap-2">
       <div>{filter.name}</div>
       <Combobox
         className="flex-1"
@@ -160,7 +160,7 @@ export function FilterOptionProfile({
   const values = useProfileValues(projectId, filter.name);
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex items-center gap-2">
       <div>{filter.name}</div>
       <Combobox
         className="flex-1"

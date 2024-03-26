@@ -1,9 +1,19 @@
-/** @typedef  {import("prettier").Config} PrettierConfig */
-/** @typedef  {import("@ianvs/prettier-plugin-sort-imports").PluginConfig} SortImportsConfig */
+import { fileURLToPath } from 'url';
 
-/** @type { PrettierConfig | SortImportsConfig } */
+/** @typedef {import("prettier").Config} PrettierConfig */
+/** @typedef {import("prettier-plugin-tailwindcss").PluginOptions} TailwindConfig */
+/** @typedef {import("@ianvs/prettier-plugin-sort-imports").PluginConfig} SortImportsConfig */
+
+/** @type { PrettierConfig | SortImportsConfig | TailwindConfig } */
 const config = {
-  plugins: ['@ianvs/prettier-plugin-sort-imports'],
+  plugins: [
+    '@ianvs/prettier-plugin-sort-imports',
+    'prettier-plugin-tailwindcss',
+  ],
+  tailwindConfig: fileURLToPath(
+    new URL('../../apps/dashboard/tailwind.config.js', import.meta.url)
+  ),
+  tailwindFunctions: ['cn', 'cva'],
   importOrder: [
     '^(react/(.*)$)|^(react$)|^(react-native(.*)$)',
     '<THIRD_PARTY_MODULES>',

@@ -55,11 +55,11 @@ export function EventListItem(props: EventListItemProps) {
       <button
         onClick={() => setIsDetailsOpen(true)}
         className={cn(
-          'w-full card p-4 flex hover:bg-slate-50 rounded-lg transition-colors justify-between items-center',
+          'card flex w-full items-center justify-between rounded-lg p-4 transition-colors hover:bg-slate-50',
           meta?.conversion && `bg-${meta.color}-50 hover:bg-${meta.color}-100`
         )}
       >
-        <div className="flex gap-4 items-center text-left text-sm">
+        <div className="flex items-center gap-4 text-left text-sm">
           <EventIcon size="sm" name={name} meta={meta} projectId={projectId} />
           <span>
             <span className="font-medium">{renderName()}</span>
@@ -77,14 +77,14 @@ export function EventListItem(props: EventListItemProps) {
                 e.stopPropagation();
               }}
               href={`/${organizationId}/${projectId}/profiles/${profile?.id}`}
-              className="text-muted-foreground text-sm hover:underline whitespace-nowrap max-w-[80px] overflow-hidden text-ellipsis"
+              className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted-foreground hover:underline"
             >
               {profile?.firstName} {profile?.lastName}
             </Link>
           </Tooltiper>
 
           <Tooltiper asChild content={createdAt.toLocaleString()}>
-            <div className="text-muted-foreground text-sm">
+            <div className="text-sm text-muted-foreground">
               {createdAt.toLocaleTimeString()}
             </div>
           </Tooltiper>

@@ -8,7 +8,7 @@ export function WidgetHead({ children, className }: WidgetHeadProps) {
   return (
     <div
       className={cn(
-        'p-4 border-b border-border [&_.title]:font-medium [&_.title]:whitespace-nowrap',
+        'border-b border-border p-4 [&_.title]:whitespace-nowrap [&_.title]:font-medium',
         className
       )}
     >

@@ -7,20 +7,20 @@ import { JoinWaitlist } from './join-waitlist';
 
 export default function Footer() {
   return (
-    <footer className="bg-blue-darker text-white relative mt-40 relative">
-      <div className="inset-0 absolute h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
-      <div className="relative container flex flex-col items-center text-center">
+    <footer className="bg-blue-darker relative relative mt-40 text-white">
+      <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
+      <div className="container relative flex flex-col items-center text-center">
         <div className="my-24">
-          <Heading2 className="text-white mb-2">Get early access</Heading2>
+          <Heading2 className="mb-2 text-white">Get early access</Heading2>
           <Lead2>Ready to set your analytics free? Get on our waitlist.</Lead2>
 
           <div className="mt-8">
-            <JoinWaitlist className="text-white bg-white/20 border-white/30 focus:ring-white" />
+            <JoinWaitlist className="border-white/30 bg-white/20 text-white focus:ring-white" />
           </div>
         </div>
 
         <div className="overflow-hidden rounded-xl">
-          <div className="p-2 bg-white/20">
+          <div className="bg-white/20 p-2">
             <Image
               src="/demo-2/1.png"
               width={1080}
@@ -31,13 +31,13 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <div className="-mt-8 relative z-10">
+      <div className="relative z-10 -mt-8">
         <div className="h-px w-full bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]"></div>
-        <div className="p-4 bg-blue-darker">
+        <div className="bg-blue-darker p-4">
           <div className="container">
-            <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center text-sm">
+            <div className="flex flex-col gap-4 text-sm md:flex-row md:items-center md:justify-between">
               <Logo />
-              <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex flex-col gap-4 md:flex-row">
                 <Link className="hover:underline" href="/terms">
                   Terms and Conditions
                 </Link>

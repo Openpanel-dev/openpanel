@@ -29,11 +29,11 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
   const renderItem = (item: Row) => (
     <div
       key={item.days}
-      className="flex-1 shrink-0 h-full flex flex-col items-center"
+      className="flex h-full flex-1 shrink-0 flex-col items-center"
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="w-full flex-1 bg-slate-200 rounded flex flex-col justify-end">
+          <div className="flex w-full flex-1 flex-col justify-end rounded bg-slate-200">
             <div
               className={cn(
                 'w-full rounded',
@@ -50,7 +50,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
           {item.days === 0 ? 'today' : `${item.days} days ago`}
         </TooltipContent>
       </Tooltip>
-      <div className="text-xs mt-1">{item.days}</div>
+      <div className="mt-1 text-xs">{item.days}</div>
     </div>
   );
   return (
@@ -59,7 +59,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
         <div className="title">Last seen</div>
       </WidgetHead>
       <WidgetBody>
-        <div className="flex aspect-[3/1] w-full gap-1 items-end">
+        <div className="flex aspect-[3/1] w-full items-end gap-1">
           {res.length >= 18 ? (
             <>
               {res.slice(0, split).map(renderItem)}

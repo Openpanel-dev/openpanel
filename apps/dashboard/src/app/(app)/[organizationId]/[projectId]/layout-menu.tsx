@@ -40,7 +40,7 @@ function LinkWithIcon({
   return (
     <Link
       className={cn(
-        'text-slate-800 text-sm font-medium flex gap-2 items-center px-3 py-2 transition-colors hover:bg-blue-100 leading-none rounded-md transition-all',
+        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium leading-none text-slate-800 transition-all transition-colors hover:bg-blue-100',
         active && 'bg-blue-50',
         className
       )}
@@ -106,7 +106,7 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
         href={`/${params.organizationId}/${projectId}/settings/organization`}
       />
       {pathname?.includes('/settings/') && (
-        <div className="pl-7 flex flex-col gap-1">
+        <div className="flex flex-col gap-1 pl-7">
           <LinkWithIcon
             icon={BuildingIcon}
             label="Organization"
@@ -136,14 +136,14 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
       )}
       {dashboards.length > 0 && (
         <div className="mt-8">
-          <div className="font-medium mb-2 text-sm">Your dashboards</div>
+          <div className="mb-2 text-sm font-medium">Your dashboards</div>
           <div className="flex flex-col gap-2">
             {dashboards.map((item) => (
               <LinkWithIcon
                 key={item.id}
                 icon={LayoutPanelTopIcon}
                 label={
-                  <div className="flex justify-between gap-0.5 items-center">
+                  <div className="flex items-center justify-between gap-0.5">
                     <span>{item.name}</span>
                     <span className="text-xs text-muted-foreground">
                       {item.project.name}

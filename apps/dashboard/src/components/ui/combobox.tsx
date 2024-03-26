@@ -117,7 +117,7 @@ export function Combobox<T extends string>({
           ) : (
             <CommandEmpty>Nothing selected</CommandEmpty>
           )}
-          <div className="max-h-[300px] overflow-y-auto over-x-hidden">
+          <div className="over-x-hidden max-h-[300px] overflow-y-auto">
             <CommandGroup>
               {items.map((item) => (
                 <CommandItem

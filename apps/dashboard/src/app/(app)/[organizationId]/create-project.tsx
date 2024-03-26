@@ -44,8 +44,8 @@ export function CreateProject() {
   return (
     <>
       <div>
-        <LogoSquare className="w-20 md:w-28 mb-8" />
-        <h1 className="font-medium text-3xl">Create your first project</h1>
+        <LogoSquare className="mb-8 w-20 md:w-28" />
+        <h1 className="text-3xl font-medium">Create your first project</h1>
         <div className="text-lg">
           A project is just a container for your events. You can create as many
           as you want.

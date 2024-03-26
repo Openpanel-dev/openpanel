@@ -18,7 +18,7 @@ export default function ListProjects({ projects }: ListProjectsProps) {
   return (
     <>
       <StickyBelowHeader>
-        <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center justify-between p-4">
           <div />
           <Button
             icon={PlusIcon}

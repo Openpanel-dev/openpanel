@@ -26,7 +26,7 @@ export default async function Page({
 
   return (
     <PageLayout title={organization.name} organizationSlug={organizationSlug}>
-      <div className="p-4 grid grid-cols-1 gap-8">
+      <div className="grid grid-cols-1 gap-8 p-4">
         <EditOrganization organization={organization} />
         <MembersServer organizationSlug={organizationSlug} />
         <InvitesServer organizationSlug={organizationSlug} />

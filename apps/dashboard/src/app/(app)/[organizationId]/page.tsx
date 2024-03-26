@@ -31,10 +31,10 @@ export default async function Page({ params: { organizationId } }: PageProps) {
     const isAccepted = await isWaitlistUserAccepted();
     if (!isAccepted) {
       return (
-        <div className="p-4 flex items-center justify-center h-screen">
-          <div className="max-w-lg w-full">
-            <LogoSquare className="w-20 md:w-28 mb-8" />
-            <h1 className="font-medium text-3xl">Not quite there yet</h1>
+        <div className="flex h-screen items-center justify-center p-4">
+          <div className="w-full max-w-lg">
+            <LogoSquare className="mb-8 w-20 md:w-28" />
+            <h1 className="text-3xl font-medium">Not quite there yet</h1>
             <div className="text-lg">
               We're still working on Openpanel, but we're not quite there yet.
               We'll let you know when we're ready to go!
@@ -47,8 +47,8 @@ export default async function Page({ params: { organizationId } }: PageProps) {
 
   if (projects.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen p-4 ">
-        <div className="max-w-lg w-full">
+      <div className="flex h-screen items-center justify-center p-4 ">
+        <div className="w-full max-w-lg">
           <CreateProject />
         </div>
       </div>
@@ -60,8 +60,8 @@ export default async function Page({ params: { organizationId } }: PageProps) {
   }
 
   return (
-    <div className="max-w-xl w-full mx-auto flex flex-col gap-4 pt-20 p-4 ">
-      <h1 className="font-medium text-xl">Select project</h1>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 pt-20 ">
+      <h1 className="text-xl font-medium">Select project</h1>
       {projects.map((item) => (
         <ProjectCard key={item.id} {...item} />
       ))}

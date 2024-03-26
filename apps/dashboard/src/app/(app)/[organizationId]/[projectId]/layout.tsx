@@ -55,7 +55,7 @@ export default async function AppLayout({
       <LayoutSidebar
         {...{ organizationId, projectId, organizations, dashboards }}
       />
-      <div className="lg:pl-72 transition-all">{children}</div>
+      <div className="transition-all lg:pl-72">{children}</div>
     </div>
   );
 }

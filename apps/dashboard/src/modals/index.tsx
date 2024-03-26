@@ -9,7 +9,7 @@ import { useOnClickOutside } from 'usehooks-ts';
 import type { ConfirmProps } from './Confirm';
 
 const Loading = () => (
-  <div className="fixed left-0 top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto bg-backdrop">
+  <div className="bg-backdrop fixed left-0 top-0 z-50 flex h-screen w-screen items-center justify-center overflow-auto">
     <Loader className="mb-8 animate-spin" size={40} />
   </div>
 );
@@ -162,7 +162,7 @@ export function ModalProvider() {
   return (
     <>
       {!!state.length && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 bg-[rgba(0,0,0,0.2)] z-50"></div>
+        <div className="fixed bottom-0 left-0 right-0 top-0 z-50 bg-[rgba(0,0,0,0.2)]"></div>
       )}
       {state.map((item, index) => {
         const Modal = modals[item.name];

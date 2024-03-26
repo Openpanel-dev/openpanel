@@ -57,7 +57,7 @@ export default async function Page({
 
   return (
     <PageLayout title="Events" organizationSlug={organizationId}>
-      <StickyBelowHeader className="p-4 flex justify-between">
+      <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           mode="events"
           projectId={projectId}
@@ -65,11 +65,11 @@ export default async function Page({
           enableEventsFilter
         />
         <OverviewFiltersButtons
-          className="p-0 justify-end"
+          className="justify-end p-0"
           nuqsOptions={nuqsOptions}
         />
       </StickyBelowHeader>
-      <div className="grid md:grid-cols-2 p-4 gap-4">
+      <div className="grid gap-4 p-4 md:grid-cols-2">
         <div>
           <EventList data={events} count={count} />
         </div>

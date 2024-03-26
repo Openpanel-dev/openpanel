@@ -49,17 +49,17 @@ export default function EventListener() {
             setCounter(0);
             router.refresh();
           }}
-          className="bg-white border border-border rounded h-8 px-3 leading-none flex items-center text-sm font-medium gap-2"
+          className="flex h-8 items-center gap-2 rounded border border-border bg-white px-3 text-sm font-medium leading-none"
         >
           <div className="relative">
             <div
               className={cn(
-                'bg-emerald-500 h-3 w-3 rounded-full animate-ping opacity-100 transition-all'
+                'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all'
               )}
             ></div>
             <div
               className={cn(
-                'bg-emerald-500 h-3 w-3 rounded-full absolute top-0 left-0 transition-all'
+                'absolute left-0 top-0 h-3 w-3 rounded-full bg-emerald-500 transition-all'
               )}
             ></div>
           </div>

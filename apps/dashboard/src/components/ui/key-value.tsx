@@ -15,15 +15,15 @@ export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
   return (
     <Component
       className={cn(
-        'group overflow-hidden flex border border-border rounded-md text-xs divide-x font-medium self-start min-w-0 max-w-full transition-transform',
+        'group flex min-w-0 max-w-full divide-x self-start overflow-hidden rounded-md border border-border text-xs font-medium transition-transform',
         clickable && 'hover:-translate-y-0.5'
       )}
       {...{ href, onClick }}
     >
-      <div className="p-1 px-2 bg-black/5">{name}</div>
+      <div className="bg-black/5 p-1 px-2">{name}</div>
       <div
         className={cn(
-          'p-1 px-2 font-mono text-blue-700 bg-white whitespace-nowrap overflow-hidden text-ellipsis shadow-[inset_0_0_0_1px_#fff]',
+          'overflow-hidden text-ellipsis whitespace-nowrap bg-white p-1 px-2 font-mono text-blue-700 shadow-[inset_0_0_0_1px_#fff]',
           clickable && 'group-hover:underline'
         )}
       >

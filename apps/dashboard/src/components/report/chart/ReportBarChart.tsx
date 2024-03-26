@@ -29,8 +29,8 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   return (
     <div
       className={cn(
-        'flex flex-col w-full text-xs -mx-2',
-        editMode && 'text-base card p-4'
+        '-mx-2 flex w-full flex-col text-xs',
+        editMode && 'card p-4 text-base'
       )}
     >
       {series.map((serie, index) => {
@@ -39,17 +39,17 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           <div
             key={serie.name}
             className={cn(
-              'relative py-3 px-2 flex flex-1 w-full gap-4 items-center even:bg-slate-50 rounded overflow-hidden',
-              '[&_[role=progressbar]]:even:bg-white [&_[role=progressbar]]:shadow-sm',
+              'relative flex w-full flex-1 items-center gap-4 overflow-hidden rounded px-2 py-3 even:bg-slate-50',
+              '[&_[role=progressbar]]:shadow-sm [&_[role=progressbar]]:even:bg-white',
               isClickable && 'cursor-pointer hover:!bg-slate-100'
             )}
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >
-            <div className="flex-1 break-all flex items-center gap-2 font-medium">
+            <div className="flex flex-1 items-center gap-2 break-all font-medium">
               <SerieIcon name={serie.name} />
               {serie.name}
             </div>
-            <div className="flex-shrink-0 flex w-1/4 gap-4 items-center justify-end">
+            <div className="flex w-1/4 flex-shrink-0 items-center justify-end gap-4">
               <PreviousDiffIndicatorText
                 {...serie.metrics.previous[metric]}
                 className="text-xs font-medium"

@@ -56,10 +56,10 @@ export function MetricCard({
 
   return (
     <div
-      className="group relative card p-4 overflow-hidden h-24"
+      className="card group relative h-24 overflow-hidden p-4"
       key={serie.name}
     >
-      <div className="absolute inset-0 -left-1 -right-1 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50 rounded-md">
+      <div className="absolute inset-0 -left-1 -right-1 z-0 rounded-md opacity-20 transition-opacity duration-300 group-hover:opacity-50">
         <AutoSizer>
           {({ width, height }) => (
             <AreaChart
@@ -82,21 +82,21 @@ export function MetricCard({
       </div>
       <div className="relative">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 font-medium text-left min-w-0">
+          <div className="flex min-w-0 items-center gap-2 text-left font-medium">
             <ColorSquare>{serie.event.id}</ColorSquare>
-            <span className="text-ellipsis overflow-hidden whitespace-nowrap">
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap">
               {serie.name || serie.event.displayName || serie.event.name}
             </span>
           </div>
           {/* <PreviousDiffIndicator {...serie.metrics.previous[metric]} /> */}
         </div>
-        <div className="flex justify-between items-end mt-2">
-          <div className="text-2xl font-bold text-ellipsis overflow-hidden whitespace-nowrap">
+        <div className="mt-2 flex items-end justify-between">
+          <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">
             {renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
           </div>
           <PreviousDiffIndicatorText
             {...serie.metrics.previous[metric]}
-            className="font-medium text-xs mb-0.5"
+            className="mb-0.5 text-xs font-medium"
           />
         </div>
       </div>
@@ -106,8 +106,8 @@ export function MetricCard({
 
 export function MetricCardEmpty() {
   return (
-    <div className="card p-4 h-24">
-      <div className="flex items-center justify-center h-full text-slate-600">
+    <div className="card h-24 p-4">
+      <div className="flex h-full items-center justify-center text-slate-600">
         No data
       </div>
     </div>
@@ -116,9 +116,9 @@ export function MetricCardEmpty() {
 
 export function MetricCardLoading() {
   return (
-    <div className="h-24 p-4 py-5 flex flex-col card">
-      <div className="bg-slate-200 rounded animate-pulse h-4 w-1/2"></div>
-      <div className="bg-slate-200 rounded animate-pulse h-6 w-1/5 mt-auto"></div>
+    <div className="card flex h-24 flex-col p-4 py-5">
+      <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200"></div>
+      <div className="mt-auto h-6 w-1/5 animate-pulse rounded bg-slate-200"></div>
     </div>
   );
 }

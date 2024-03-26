@@ -34,9 +34,9 @@ interface CardActionsProps {
 }
 export function CardActions({ children }: CardActionsProps) {
   return (
-    <div className="absolute top-2 right-2 z-10">
+    <div className="absolute right-2 top-2 z-10">
       <DropdownMenu>
-        <DropdownMenuTrigger className="h-8 w-8 hover:border rounded justify-center items-center flex">
+        <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded hover:border">
           <MoreHorizontal size={16} />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[200px]">

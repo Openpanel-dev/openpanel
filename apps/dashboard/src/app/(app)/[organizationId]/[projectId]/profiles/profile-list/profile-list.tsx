@@ -25,7 +25,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
   const { cursor, setCursor } = useCursor();
   return (
     <Widget>
-      <WidgetHead className="flex justify-between items-center">
+      <WidgetHead className="flex items-center justify-between">
         <div className="title">Profiles</div>
         <Pagination
           size="sm"
@@ -47,7 +47,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
                   return (
                     <Link
                       href={`/${organizationId}/${projectId}/profiles/${profile.id}`}
-                      className="flex gap-2 items-center font-medium"
+                      className="flex items-center gap-2 font-medium"
                     >
                       <ProfileAvatar size="sm" {...profile} />
                       {getProfileName(profile)}
@@ -69,7 +69,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
                       asChild
                       content={profile.createdAt.toLocaleString()}
                     >
-                      <div className="text-muted-foreground text-sm">
+                      <div className="text-sm text-muted-foreground">
                         {profile.createdAt.toLocaleTimeString()}
                       </div>
                     </Tooltiper>
@@ -78,7 +78,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
               },
             ]}
           />
-          <div className="p-4 border-t border-border">
+          <div className="border-t border-border p-4">
             <Pagination
               cursor={cursor}
               setCursor={setCursor}

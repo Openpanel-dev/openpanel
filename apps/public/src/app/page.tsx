@@ -14,9 +14,9 @@ export default function Page() {
   return (
     <div>
       <Hero />
-      <div className="py-24 bg-gradient-to-bl from-blue-600 to-blue-800">
+      <div className="bg-gradient-to-bl from-blue-600 to-blue-800 py-24">
         <div className="container">
-          <Heading2 className="md:text-5xl mb-2 leading-none text-white">
+          <Heading2 className="mb-2 leading-none text-white md:text-5xl">
             Analytics should be easy
             <br />
             and powerful
@@ -32,7 +32,7 @@ export default function Page() {
             variant={'outline'}
           >
             Check out the demo
-            <ExternalLinkIcon className="w-4 h-4 ml-2" />
+            <ExternalLinkIcon className="ml-2 h-4 w-4" />
           </ALink>
         </div>
       </div>
@@ -44,8 +44,8 @@ export default function Page() {
       <Pricing />
 
       <div className="container mt-40">
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="mb-4 md:w-1/2 flex-shrink-0 relative">
+        <div className="flex flex-col gap-8 md:flex-row">
+          <div className="relative mb-4 flex-shrink-0 md:w-1/2">
             <Heading2>Another analytic tool? Really?</Heading2>
             {/* <SirenIcon
               strokeWidth={0.5}
@@ -53,8 +53,8 @@ export default function Page() {
               className="opacity-10 absolute -rotate-12 -left-20 -top-10"
             /> */}
           </div>
-          <div className="flex flex-col gap-4 max-w-3xl">
-            <h3 className="text-lg font-bold text-blue-dark">TL;DR</h3>
+          <div className="flex max-w-3xl flex-col gap-4">
+            <h3 className="text-blue-dark text-lg font-bold">TL;DR</h3>
             <Paragraph>
               Our open-source analytic library fills a crucial gap by combining
               the strengths of Mixpanel's powerful features with Plausible's
@@ -67,7 +67,7 @@ export default function Page() {
               and transparency for users of all project sizes.
             </Paragraph>
 
-            <h3 className="text-lg font-bold text-blue-dark mt-12">The why</h3>
+            <h3 className="text-blue-dark mt-12 text-lg font-bold">The why</h3>
             <Paragraph>
               Our open-source analytic library emerged from a clear need within
               the analytics community. While platforms like Mixpanel offer

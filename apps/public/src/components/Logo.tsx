@@ -10,7 +10,7 @@ export function Logo({ className }: LogoProps) {
   return (
     <Link
       href="/"
-      className={cn('text-xl font-medium flex gap-2 items-center', className)}
+      className={cn('flex items-center gap-2 text-xl font-medium', className)}
     >
       <Image
         src="/logo.svg"

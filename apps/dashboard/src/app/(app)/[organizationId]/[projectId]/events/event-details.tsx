@@ -157,8 +157,8 @@ export function EventDetails({ event, open, setOpen }: Props) {
 
               {properties.length > 0 && (
                 <div>
-                  <div className="text-sm font-medium mb-2">Params</div>
-                  <div className="flex gap-2 flex-wrap">
+                  <div className="mb-2 text-sm font-medium">Params</div>
+                  <div className="flex flex-wrap gap-2">
                     {properties.map((item) => (
                       <KeyValue
                         key={item.name}
@@ -177,8 +177,8 @@ export function EventDetails({ event, open, setOpen }: Props) {
                 </div>
               )}
               <div>
-                <div className="text-sm font-medium mb-2">Common</div>
-                <div className="flex gap-2 flex-wrap">
+                <div className="mb-2 text-sm font-medium">Common</div>
+                <div className="flex flex-wrap gap-2">
                   {common.map((item) => (
                     <KeyValue
                       key={item.name}
@@ -191,10 +191,10 @@ export function EventDetails({ event, open, setOpen }: Props) {
               </div>
 
               <div>
-                <div className="flex justify-between text-sm font-medium mb-2">
+                <div className="mb-2 flex justify-between text-sm font-medium">
                   <div>Similar events</div>
                   <button
-                    className="hover:underline text-muted-foreground"
+                    className="text-muted-foreground hover:underline"
                     onClick={() => {
                       setEvents([event.name]);
                       setOpen(false);

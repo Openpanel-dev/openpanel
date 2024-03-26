@@ -30,7 +30,7 @@ const CheckboxInput = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>
 >((props, ref) => (
-  <label className="cursor-pointer flex items-center select-none border border-border rounded-md px-3 gap-4 min-h-10">
+  <label className="flex min-h-10 cursor-pointer select-none items-center gap-4 rounded-md border border-border px-3">
     <Checkbox ref={ref} {...props} />
     <div className="text-sm font-medium">{props.children}</div>
   </label>

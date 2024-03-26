@@ -15,7 +15,7 @@ export default function Page({ params: { organizationId } }: PageProps) {
     <PageLayout
       organizationSlug={organizationId}
       title={
-        <div className="flex gap-2 items-center cursor-pointer">
+        <div className="flex cursor-pointer items-center gap-2">
           Unnamed report
           <Pencil size={16} />
         </div>

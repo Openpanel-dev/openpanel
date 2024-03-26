@@ -34,30 +34,30 @@ export async function ProjectCard({
   return (
     <Link
       href={`/${organizationSlug}/${id}`}
-      className="card p-4 inline-flex flex-col gap-2 hover:-translate-y-1 transition-transform"
+      className="card inline-flex flex-col gap-2 p-4 transition-transform hover:-translate-y-1"
     >
       <div className="font-medium">{name}</div>
-      <div className="aspect-[15/1] -mx-4">
+      <div className="-mx-4 aspect-[15/1]">
         <ChartSSR data={chart.map((d) => ({ ...d, date: new Date(d.date) }))} />
       </div>
-      <div className="flex gap-4 justify-between text-muted-foreground text-sm">
+      <div className="flex justify-between gap-4 text-sm text-muted-foreground">
         <div className="font-medium">Visitors</div>
         <div className="flex gap-4">
-          <div className="flex flex-col md:flex-row gap-2">
+          <div className="flex flex-col gap-2 md:flex-row">
             <div>Total</div>
-            <span className="text-black font-medium">
+            <span className="font-medium text-black">
               {shortNumber('en')(data?.total)}
             </span>
           </div>
-          <div className="flex flex-col md:flex-row gap-2">
+          <div className="flex flex-col gap-2 md:flex-row">
             <div>Month</div>
-            <span className="text-black font-medium">
+            <span className="font-medium text-black">
               {shortNumber('en')(data?.month)}
             </span>
           </div>
-          <div className="flex flex-col md:flex-row gap-2">
+          <div className="flex flex-col gap-2 md:flex-row">
             <div>24h</div>
-            <span className="text-black font-medium">
+            <span className="font-medium text-black">
               {shortNumber('en')(data?.day)}
             </span>
           </div>

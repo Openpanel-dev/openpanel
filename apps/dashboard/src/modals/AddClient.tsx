@@ -77,7 +77,7 @@ export default function AddClient() {
         <>
           <ModalHeader title="Success" text={'Your client is created'} />
           <CreateClientSuccess {...mutation.data} />
-          <div className="flex gap-4 mt-4">
+          <div className="mt-4 flex gap-4">
             <a
               className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}
               href="https://docs.openpanel.dev/docs"
@@ -150,7 +150,7 @@ export default function AddClient() {
                 />
               </TabsContent>
               <TabsContent value="other">
-                <div className="p-2 px-3 bg-white rounded text-sm">
+                <div className="rounded bg-white p-2 px-3 text-sm">
                   🔑 You will get a secret to use for your API requests.
                 </div>
               </TabsContent>

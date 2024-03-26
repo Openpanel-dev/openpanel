@@ -9,7 +9,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 const buttonVariants = cva(
-  'flex-shrink-0 inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -71,7 +71,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {Icon && (
-          <Icon className={cn('h-4 w-4 mr-2', loading && 'animate-spin')} />
+          <Icon className={cn('mr-2 h-4 w-4', loading && 'animate-spin')} />
         )}
         {children}
       </Comp>

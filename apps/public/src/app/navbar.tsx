@@ -15,9 +15,9 @@ export function Navbar({ darkText = false, className }: Props) {
   const textColor = darkText ? 'text-blue-dark' : 'text-white';
   return (
     <div
-      className={cn('absolute top-0 left-0 right-0 z-10', textColor, className)}
+      className={cn('absolute left-0 right-0 top-0 z-10', textColor, className)}
     >
-      <div className="container flex justify-between items-center py-4">
+      <div className="container flex items-center justify-between py-4">
         <Logo className="max-sm:[&_span]:hidden" />
         <nav className="flex gap-4">
           {pathname !== '/' && <Link href="/">Home</Link>}

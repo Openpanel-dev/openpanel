@@ -17,7 +17,7 @@ export function ResponsiveContainer({ children }: ResponsiveContainerProps) {
         maxHeight,
         minHeight,
       }}
-      className={cn('max-sm:-mx-3 aspect-video w-full', editMode && 'card p-4')}
+      className={cn('aspect-video w-full max-sm:-mx-3', editMode && 'card p-4')}
     >
       <AutoSizer disableHeight>
         {({ width }) =>

@@ -58,14 +58,14 @@ export function CreateOrganization() {
   if (mutation.isSuccess && mutation.data.client) {
     return (
       <div className="card p-4 md:p-8">
-        <LogoSquare className="w-20 mb-4" />
-        <h1 className="font-medium text-3xl">Nice job!</h1>
+        <LogoSquare className="mb-4 w-20" />
+        <h1 className="text-3xl font-medium">Nice job!</h1>
         <div className="mb-4">
           You're ready to start using our SDK. Save the client ID and secret (if
           you have any)
         </div>
         <CreateClientSuccess {...mutation.data.client} />
-        <div className="flex gap-4 mt-4">
+        <div className="mt-4 flex gap-4">
           <a
             className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}
             href="https://docs.openpanel.dev/docs"
@@ -87,8 +87,8 @@ export function CreateOrganization() {
 
   return (
     <div className="card p-4 md:p-8">
-      <LogoSquare className="w-20 mb-4" />
-      <h1 className="font-medium text-3xl">Welcome to Openpanel</h1>
+      <LogoSquare className="mb-4 w-20" />
+      <h1 className="text-3xl font-medium">Welcome to Openpanel</h1>
       <div className="text-lg">
         Create your organization below (can be personal or a company) and your
         first project.
@@ -132,7 +132,7 @@ export function CreateOrganization() {
             />
           </TabsContent>
           <TabsContent value="other">
-            <div className="p-2 px-3 bg-white rounded text-sm">
+            <div className="rounded bg-white p-2 px-3 text-sm">
               🔑 You will get a secret to use for your API requests.
             </div>
           </TabsContent>

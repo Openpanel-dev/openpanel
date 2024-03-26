@@ -63,7 +63,7 @@ export function ComboboxAdvanced({
               : [...value, item.value]
           );
         }}
-        className={'cursor-pointer flex items-center gap-2'}
+        className={'flex cursor-pointer items-center gap-2'}
       >
         <Checkbox checked={checked} className="pointer-events-none" />
         {item?.label ?? item?.value}
@@ -84,7 +84,7 @@ export function ComboboxAdvanced({
           onClick={() => setOpen((prev) => !prev)}
           className={className}
         >
-          <div className="flex gap-1 flex-wrap w-full">
+          <div className="flex w-full flex-wrap gap-1">
             {value.length === 0 && placeholder}
             {value.map((value) => {
               const item = items.find((item) => item.value === value) ?? {

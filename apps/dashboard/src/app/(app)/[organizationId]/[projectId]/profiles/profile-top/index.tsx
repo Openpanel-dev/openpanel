@@ -44,7 +44,7 @@ export default async function ProfileTopServer({
               return (
                 <Link
                   href={`/${organizationId}/${projectId}/profiles/${profile.id}`}
-                  className="flex gap-2 items-center font-medium"
+                  className="flex items-center gap-2 font-medium"
                 >
                   <ProfileAvatar size="sm" {...profile} />
                   {getProfileName(profile)}

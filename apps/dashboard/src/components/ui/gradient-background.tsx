@@ -13,12 +13,12 @@ export function GradientBackground({
   return (
     <div
       className={cn(
-        'bg-gradient-to-tr from-slate-100 to-white rounded-md',
+        'rounded-md bg-gradient-to-tr from-slate-100 to-white',
         className
       )}
       {...props}
     >
-      <div className="p-4 flex flex-col gap-4">{children}</div>
+      <div className="flex flex-col gap-4 p-4">{children}</div>
     </div>
   );
 }

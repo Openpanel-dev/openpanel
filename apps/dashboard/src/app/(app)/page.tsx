@@ -13,10 +13,10 @@ export default async function Page() {
     const isAccepted = await isWaitlistUserAccepted();
     if (!isAccepted) {
       return (
-        <div className="flex items-center justify-center h-screen">
-          <div className="max-w-lg w-full">
-            <LogoSquare className="w-20 md:w-28 mb-8" />
-            <h1 className="font-medium text-3xl">Not quite there yet</h1>
+        <div className="flex h-screen items-center justify-center">
+          <div className="w-full max-w-lg">
+            <LogoSquare className="mb-8 w-20 md:w-28" />
+            <h1 className="text-3xl font-medium">Not quite there yet</h1>
             <div className="text-lg">
               We're still working on Openpanel, but we're not quite there yet.
               We'll let you know when we're ready to go!
@@ -32,8 +32,8 @@ export default async function Page() {
   }
 
   return (
-    <div className="flex items-center justify-center h-screen">
-      <div className="max-w-lg w-full">
+    <div className="flex h-screen items-center justify-center">
+      <div className="w-full max-w-lg">
         <CreateOrganization />
       </div>
     </div>

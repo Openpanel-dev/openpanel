@@ -25,9 +25,9 @@ interface ModalHeaderProps {
 
 export function ModalHeader({ title, text, onClose }: ModalHeaderProps) {
   return (
-    <div className="flex justify-between mb-6">
+    <div className="mb-6 flex justify-between">
       <div>
-        <div className="font-medium mt-0.5">{title}</div>
+        <div className="mt-0.5 font-medium">{title}</div>
         {!!text && <div className="text-sm text-muted-foreground">{text}</div>}
       </div>
       {onClose !== false && (

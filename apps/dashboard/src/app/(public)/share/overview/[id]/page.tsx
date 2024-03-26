@@ -32,12 +32,12 @@ export default async function Page({ params: { id } }: PageProps) {
   const organization = await getOrganizationBySlug(share.organization_slug);
 
   return (
-    <div className="p-4 md:p-16 bg-gradient-to-tl from-blue-950 to-blue-600">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-end mb-4">
+    <div className="bg-gradient-to-tl from-blue-950 to-blue-600 p-4 md:p-16">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-4 flex items-end justify-between">
           <div className="leading-none">
-            <span className="text-white mb-4">{organization?.name}</span>
-            <h1 className="text-white text-xl font-medium">
+            <span className="mb-4 text-white">{organization?.name}</span>
+            <h1 className="text-xl font-medium text-white">
               {share.project?.name}
             </h1>
           </div>
@@ -45,9 +45,9 @@ export default async function Page({ params: { id } }: PageProps) {
             <Logo className="text-white max-sm:[&_span]:hidden" />
           </a>
         </div>
-        <div className="max-sm:-mx-3 bg-slate-100 rounded-lg shadow ring-8 ring-blue-600/50">
+        <div className="rounded-lg bg-slate-100 shadow ring-8 ring-blue-600/50 max-sm:-mx-3">
           <StickyBelowHeader>
-            <div className="p-4 flex gap-2 justify-between">
+            <div className="flex justify-between gap-2 p-4">
               <div className="flex gap-2">
                 <OverviewReportRange />
                 {/* <OverviewFiltersDrawer projectId={projectId} mode="events" /> */}
@@ -58,7 +58,7 @@ export default async function Page({ params: { id } }: PageProps) {
             </div>
             <OverviewFiltersButtons />
           </StickyBelowHeader>
-          <div className="p-4 grid gap-4 grid-cols-6">
+          <div className="grid grid-cols-6 gap-4 p-4">
             <div className="col-span-6">
               <OverviewLiveHistogram projectId={projectId} />
             </div>

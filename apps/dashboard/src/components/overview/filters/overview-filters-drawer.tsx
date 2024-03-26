@@ -17,7 +17,7 @@ export function OverviewFiltersDrawer(
           Filters
         </Button>
       </SheetTrigger>
-      <SheetContent className="!max-w-lg w-full" side="right">
+      <SheetContent className="w-full !max-w-lg" side="right">
         <OverviewFiltersDrawerContent {...props} />
       </SheetContent>
     </Sheet>

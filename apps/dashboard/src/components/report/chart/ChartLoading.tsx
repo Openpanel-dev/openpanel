@@ -7,7 +7,7 @@ export function ChartLoading({ className }: ChartLoadingProps) {
   return (
     <div
       className={cn(
-        'aspect-video w-full bg-slate-200 animate-pulse rounded max-h-[300px] min-h-[200px]',
+        'aspect-video max-h-[300px] min-h-[200px] w-full animate-pulse rounded bg-slate-200',
         className
       )}
     />

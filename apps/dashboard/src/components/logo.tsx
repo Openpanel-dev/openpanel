@@ -17,7 +17,7 @@ export function LogoSquare({ className }: LogoProps) {
 export function Logo({ className }: LogoProps) {
   return (
     <div
-      className={cn('text-xl font-medium flex gap-2 items-center', className)}
+      className={cn('flex items-center gap-2 text-xl font-medium', className)}
     >
       <LogoSquare className="max-h-8" />
       <span>openpanel.dev</span>

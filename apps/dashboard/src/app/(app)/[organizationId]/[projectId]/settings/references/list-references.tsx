@@ -17,7 +17,7 @@ export default function ListReferences({ data }: ListProjectsProps) {
   return (
     <>
       <StickyBelowHeader>
-        <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center justify-between p-4">
           <div />
           <Button icon={PlusIcon} onClick={() => pushModal('AddReference')}>
             <span className="max-sm:hidden">Create reference</span>

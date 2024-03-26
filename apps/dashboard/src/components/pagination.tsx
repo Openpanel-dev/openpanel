@@ -48,9 +48,9 @@ export function Pagination({
     >
       {size === 'base' && (
         <>
-          <div className="font-medium text-xs">Page: {cursor + 1}</div>
+          <div className="text-xs font-medium">Page: {cursor + 1}</div>
           {typeof count === 'number' && (
-            <div className="font-medium text-xs">Total rows: {count}</div>
+            <div className="text-xs font-medium">Total rows: {count}</div>
           )}
         </>
       )}

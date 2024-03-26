@@ -17,7 +17,7 @@ export default async function Page({ params: { organizationId } }: PageProps) {
 
   return (
     <PageLayout title={profile.lastName} organizationSlug={organizationId}>
-      <div className="p-4 flex flex-col gap-4">
+      <div className="flex flex-col gap-4 p-4">
         <EditProfile profile={profile} />
         <Logout />
       </div>

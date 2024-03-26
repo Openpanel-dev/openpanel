@@ -16,13 +16,13 @@ export function FullPageEmptyState({
   className,
 }: FullPageEmptyStateProps) {
   return (
-    <div className={cn('p-4 flex items-center justify-center', className)}>
-      <div className="p-8 w-full max-w-xl flex flex-col items-center justify-center">
-        <div className="w-24 h-24 bg-white shadow-sm rounded-full flex justify-center items-center mb-6">
+    <div className={cn('flex items-center justify-center p-4', className)}>
+      <div className="flex w-full max-w-xl flex-col items-center justify-center p-8">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-sm">
           <Icon size={60} strokeWidth={1} />
         </div>
 
-        <h1 className="text-xl font-medium mb-1">{title}</h1>
+        <h1 className="mb-1 text-xl font-medium">{title}</h1>
 
         {children}
       </div>

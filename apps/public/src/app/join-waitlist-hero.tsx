@@ -65,7 +65,7 @@ export function JoinWaitlistHero({ className }: JoinWaitlistProps) {
           <input
             placeholder="Enter your email"
             className={cn(
-              'border border-slate-100 rounded-md shadow-sm bg-white h-12 w-full px-4 outline-none focus:ring-1 ring-black text-blue-darker',
+              'text-blue-darker h-12 w-full rounded-md border border-slate-100 bg-white px-4 shadow-sm outline-none ring-black focus:ring-1',
               className
             )}
             value={value}

@@ -40,7 +40,7 @@ export default function RootLayout({
     <html lang="en" className="light">
       <body
         className={cn(
-          'min-h-screen antialiased grainy text-slate-900 font-sans',
+          'grainy min-h-screen font-sans text-slate-900 antialiased',
           head.variable,
           body.variable
         )}

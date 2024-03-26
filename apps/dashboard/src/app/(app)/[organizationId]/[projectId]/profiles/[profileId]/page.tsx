@@ -133,7 +133,7 @@ export default async function Page({
         </div>
       }
     >
-      <StickyBelowHeader className="p-4 flex justify-between">
+      <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           projectId={projectId}
           mode="events"
@@ -141,11 +141,11 @@ export default async function Page({
         />
         <OverviewFiltersButtons
           nuqsOptions={{ shallow: false }}
-          className="p-0 justify-end"
+          className="justify-end p-0"
         />
       </StickyBelowHeader>
       <div className="p-4">
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
             <EventList data={events} count={count} />
           </div>
@@ -159,7 +159,7 @@ export default async function Page({
               </WidgetBody>
             </Widget>
             <Widget className="w-full">
-              <WidgetHead className="flex justify-between items-center">
+              <WidgetHead className="flex items-center justify-between">
                 <span className="title">Profile</span>
                 <ProfileAvatar {...profile} />
               </WidgetHead>
@@ -199,10 +199,10 @@ function ValueRow({ name, value }: { name: string; value?: unknown }) {
   }
   return (
     <div className="flex flex-row justify-between p-2 px-4">
-      <div className="font-medium text-muted-foreground capitalize">
+      <div className="font-medium capitalize text-muted-foreground">
         {name.replace('_', ' ')}
       </div>
-      <div className="flex gap-2 items-center text-right">
+      <div className="flex items-center gap-2 text-right">
         {typeof value === 'string' ? (
           <>
             <SerieIcon name={value} /> {value}

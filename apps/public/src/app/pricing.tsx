@@ -16,7 +16,7 @@ const pricing = [
 export function Pricing() {
   return (
     <div className="bg-slate-100 py-32" id="pricing">
-      <div className="sm:max-w-xl md:max-w-3xl mx-auto px-4">
+      <div className="mx-auto px-4 sm:max-w-xl md:max-w-3xl">
         <section className="flex flex-col gap-6">
           <div className="flex w-full flex-col gap-4 md:max-w-[58rem]">
             <Heading2>Simple, transparent pricing</Heading2>
@@ -45,20 +45,20 @@ export function Pricing() {
               <CheckIcon className="mr-2 h-4 w-4" /> Yes, its that simple
             </li>
           </ul>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid gap-6 md:grid-cols-2">
             {pricing.map((item) => (
               <div
                 key={item.price}
-                className="relative bg-white rounded-lg border border-blue-dark p-6 flex flex-col gap-1"
+                className="border-blue-dark relative flex flex-col gap-1 rounded-lg border bg-white p-6"
               >
                 {item.hint && (
-                  <div className="absolute top-2 right-2 bg-blue-600 text-white text-xs px-2 py-1 rounded flex gap-2 items-center">
+                  <div className="absolute right-2 top-2 flex items-center gap-2 rounded bg-blue-600 px-2 py-1 text-xs text-white">
                     <StarIcon size={12} />
                     {item.hint}
                   </div>
                 )}
                 <div className="text-3xl font-bold">{item.price}</div>
-                <div className="text-lg flex justify-between">
+                <div className="flex justify-between text-lg">
                   <span>
                     {new Intl.NumberFormat('en').format(item.events)} events
                   </span>

@@ -30,18 +30,18 @@ export default function Page({
 }: PageProps) {
   return (
     <PageLayout title="Profiles" organizationSlug={organizationId}>
-      <StickyBelowHeader className="p-4 flex justify-between">
+      <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           projectId={projectId}
           nuqsOptions={nuqsOptions}
           mode="events"
         />
         <OverviewFiltersButtons
-          className="p-0 justify-end"
+          className="justify-end p-0"
           nuqsOptions={nuqsOptions}
         />
       </StickyBelowHeader>
-      <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
         <ProfileListServer
           projectId={projectId}
           cursor={parseAsInteger.parseServerSide(cursor ?? '') ?? undefined}

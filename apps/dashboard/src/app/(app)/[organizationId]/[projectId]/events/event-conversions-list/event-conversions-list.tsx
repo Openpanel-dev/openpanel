@@ -22,13 +22,13 @@ export function EventConversionsList({ data }: EventListProps) {
       <WidgetHead>
         <div className="title">Conversions</div>
       </WidgetHead>
-      <div className="flex flex-col gap-2 overflow-y-auto max-h-80 p-4">
+      <div className="flex max-h-80 flex-col gap-2 overflow-y-auto p-4">
         {data.map((item, index, list) => (
           <Fragment key={item.id}>
             {showDateHeader(item.createdAt, list[index - 1]?.createdAt) && (
               <div className="flex flex-row justify-between gap-2 [&:not(:first-child)]:mt-12">
                 <div className="flex gap-2">
-                  <div className="bg-slate-100 border border-slate-300 rounded h-8 px-3 leading-none flex items-center text-sm font-medium gap-2">
+                  <div className="flex h-8 items-center gap-2 rounded border border-slate-300 bg-slate-100 px-3 text-sm font-medium leading-none">
                     {item.createdAt.toLocaleDateString()}
                   </div>
                 </div>

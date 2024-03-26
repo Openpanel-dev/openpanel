@@ -20,7 +20,7 @@ export default async function PageLayout({
 
   return (
     <>
-      <div className="h-16 border-b border-border flex-shrink-0 sticky top-0 bg-white px-4 flex items-center justify-between z-20 pl-12 lg:pl-4">
+      <div className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-white px-4 pl-12 lg:pl-4">
         <div className="text-xl font-medium">{title}</div>
         {projects.length > 0 && <LayoutProjectSelector projects={projects} />}
       </div>

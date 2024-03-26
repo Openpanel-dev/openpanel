@@ -6,8 +6,8 @@ export function Hero() {
   return (
     <div className="relative overflow-hidden">
       {/* <div className="bg-blue-50 w-2/5 h-full absolute top-0 right-0"></div> */}
-      <div className="container md:h-screen min-h-[700px] flex flex-col md:flex-row items-center relative max-md:pt-32 gap-4 md:gap-8">
-        <div className="flex-1 lg:min-w-[400px] sm:min-w-[350px] max-md:text-center">
+      <div className="container relative flex min-h-[700px] flex-col items-center gap-4 max-md:pt-32 md:h-screen md:flex-row md:gap-8">
+        <div className="flex-1 max-md:text-center sm:min-w-[350px] lg:min-w-[400px]">
           <Heading1 className="mb-4 text-slate-950">
             An open-source
             <br />
@@ -20,11 +20,11 @@ export function Hero() {
           <JoinWaitlistHero />
           <SocialProofServer className="mt-6" />
         </div>
-        <div className="mt-16 md:pt-16 w-full">
-          <div className="bg-black/5 md:p-2 rounded-2xl h-[max(90vh,650px)] flex">
+        <div className="mt-16 w-full md:pt-16">
+          <div className="flex h-[max(90vh,650px)] rounded-2xl bg-black/5 md:p-2">
             <iframe
               src="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
-              className="w-full h-full rounded-xl h-[max(90vh,650px)]"
+              className="h-[max(90vh,650px)] h-full w-full rounded-xl"
               title="Openpanel Dashboard"
               scrolling="no"
             />

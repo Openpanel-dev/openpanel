@@ -53,7 +53,7 @@ export default function ReportEditor({
 
   return (
     <Sheet>
-      <StickyBelowHeader className="p-4 grid grid-cols-2 gap-2 md:grid-cols-6">
+      <StickyBelowHeader className="grid grid-cols-2 gap-2 p-4 md:grid-cols-6">
         <SheetTrigger asChild>
           <div>
             <Button icon={GanttChartSquareIcon} variant="cta">
@@ -61,7 +61,7 @@ export default function ReportEditor({
             </Button>
           </div>
         </SheetTrigger>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 col-span-4">
+        <div className="col-span-4 grid grid-cols-2 gap-2 md:grid-cols-4">
           <ReportChartType className="min-w-0 flex-1" />
           <ReportRange
             className="min-w-0 flex-1"
@@ -93,7 +93,7 @@ export default function ReportEditor({
           <ReportInterval className="min-w-0 flex-1" />
           <ReportLineType className="min-w-0 flex-1" />
         </div>
-        <div className="col-start-2 md:col-start-6 row-start-1 text-right">
+        <div className="col-start-2 row-start-1 text-right md:col-start-6">
           <ReportSaveButton />
         </div>
       </StickyBelowHeader>

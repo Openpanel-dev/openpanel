@@ -35,7 +35,7 @@ export default async function Page({
   return (
     <PageLayout title="Overview" organizationSlug={organizationId}>
       <StickyBelowHeader>
-        <div className="p-4 flex gap-2 justify-between">
+        <div className="flex justify-between gap-2 p-4">
           <div className="flex gap-2">
             <OverviewReportRange />
             <OverviewFiltersDrawer projectId={projectId} mode="events" />
@@ -47,7 +47,7 @@ export default async function Page({
         </div>
         <OverviewFiltersButtons />
       </StickyBelowHeader>
-      <div className="p-4 grid gap-4 grid-cols-6">
+      <div className="grid grid-cols-6 gap-4 p-4">
         <div className="col-span-6">
           <OverviewLiveHistogram projectId={projectId} />
         </div>

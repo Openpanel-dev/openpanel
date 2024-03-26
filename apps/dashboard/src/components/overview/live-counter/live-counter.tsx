@@ -58,18 +58,18 @@ export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
       <TooltipTrigger asChild>
         <button
           onClick={() => setLiveHistogram((p) => !p)}
-          className="border border-border rounded h-8 px-3 leading-none flex items-center font-medium gap-2"
+          className="flex h-8 items-center gap-2 rounded border border-border px-3 font-medium leading-none"
         >
           <div className="relative">
             <div
               className={cn(
-                'bg-emerald-500 h-3 w-3 rounded-full animate-ping opacity-100 transition-all',
+                'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all',
                 counter === 0 && 'bg-destructive opacity-0'
               )}
             ></div>
             <div
               className={cn(
-                'bg-emerald-500 h-3 w-3 rounded-full absolute top-0 left-0 transition-all',
+                'absolute left-0 top-0 h-3 w-3 rounded-full bg-emerald-500 transition-all',
                 counter === 0 && 'bg-destructive'
               )}
             ></div>

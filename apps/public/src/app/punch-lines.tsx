@@ -128,24 +128,24 @@ const items = [
 
 export function PunchLines() {
   return (
-    <div className="bg-blue-darker py-32 relative">
-      <div className="inset-0 absolute h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
+    <div className="bg-blue-darker relative py-32">
+      <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
       <div className="relative">
-        <Heading2 className="text-white text-center mb-16">
+        <Heading2 className="mb-16 text-center text-white">
           Not convinced?
         </Heading2>
         <div className="container">
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => {
               const Icon = item.icon;
               return (
                 <div
-                  className="border border-border p-6 rounded-xl bg-white"
+                  className="rounded-xl border border-border bg-white p-6"
                   key={item.title}
                 >
                   <div
                     className={cn(
-                      'h-14 w-14 rounded-full flex items-center justify-center mb-4',
+                      'mb-4 flex h-14 w-14 items-center justify-center rounded-full',
                       item.color
                     )}
                     style={{ background: item.color }}

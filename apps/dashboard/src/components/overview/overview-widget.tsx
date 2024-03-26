@@ -20,7 +20,7 @@ export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (
     <WidgetHeadBase
       className={cn(
-        'flex flex-col p-0 [&_.title]:p-4 [&_.title]:flex [&_.title]:justify-between [&_.title]:items-center',
+        'flex flex-col p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:justify-between [&_.title]:p-4',
         className
       )}
       {...props}
@@ -85,7 +85,7 @@ export function WidgetButtons({
     <div
       ref={container}
       className={cn(
-        'px-4 self-stretch justify-start transition-opacity flex flex-wrap [&_button]:text-xs [&_button]:opacity-50 [&_button]:whitespace-nowrap [&_button.active]:opacity-100 [&_button.active]:border-b [&_button.active]:border-black [&_button]:py-1',
+        'flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b [&_button.active]:border-black [&_button.active]:opacity-100 [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-xs [&_button]:opacity-50',
         className
       )}
       style={{ gap }}
@@ -102,7 +102,7 @@ export function WidgetButtons({
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              'flex items-center gap-1 select-none',
+              'flex select-none items-center gap-1',
               sizes.current.length - 1 === slice ? hidden : 'opacity-50'
             )}
           >

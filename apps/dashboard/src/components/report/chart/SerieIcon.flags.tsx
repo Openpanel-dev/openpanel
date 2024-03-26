@@ -4,7 +4,7 @@ const createFlagIcon = (url: string) => {
   return function (_props: LucideProps) {
     return (
       <span
-        className={`rounded-[2px] overflow-hidden !block !leading-[1rem] fi fi-${url}`}
+        className={`fi !block overflow-hidden rounded-[2px] !leading-[1rem] fi-${url}`}
       ></span>
     );
   } as LucideIcon;

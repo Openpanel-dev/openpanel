@@ -59,21 +59,21 @@ const features: FeatureItem[] = [
           Create beautiful charts and graphs to visualize your data and share
           them with your team.
         </p>
-        <div className="flex gap-2 flex-wrap">
-          <div className="border border-border px-3 py-1 rounded">
+        <div className="flex flex-wrap gap-2">
+          <div className="rounded border border-border px-3 py-1">
             ✅ Linear
           </div>
-          <div className="border border-border px-3 py-1 rounded">✅ Area</div>
-          <div className="border border-border px-3 py-1 rounded">✅ Bar</div>
-          <div className="border border-border px-3 py-1 rounded">✅ Map</div>
-          <div className="border border-border px-3 py-1 rounded">✅ Pie</div>
-          <div className="border border-border px-3 py-1 rounded">
+          <div className="rounded border border-border px-3 py-1">✅ Area</div>
+          <div className="rounded border border-border px-3 py-1">✅ Bar</div>
+          <div className="rounded border border-border px-3 py-1">✅ Map</div>
+          <div className="rounded border border-border px-3 py-1">✅ Pie</div>
+          <div className="rounded border border-border px-3 py-1">
             ✅ Funnels
           </div>
-          <div className="border border-border px-3 py-1 rounded">
+          <div className="rounded border border-border px-3 py-1">
             ✅ Histogram
           </div>
-          <div className="border border-border px-3 py-1 rounded">
+          <div className="rounded border border-border px-3 py-1">
             ✅ Metrics
           </div>
         </div>
@@ -119,14 +119,14 @@ export function Feature({
   even,
 }: FeatureItem & { even: boolean; children: React.ReactNode }) {
   return (
-    <section className={cn('py-16 group', className)}>
+    <section className={cn('group py-16', className)}>
       <div
         className={cn(
-          'container flex min-h-[300px] items-center gap-16 justify-between max-md:flex-col-reverse',
+          'container flex min-h-[300px] items-center justify-between gap-16 max-md:flex-col-reverse',
           !even && 'md:flex-row-reverse'
         )}
       >
-        <div className="flex flex-col w-full">
+        <div className="flex w-full flex-col">
           <Heading3 className="mb-2">{title}</Heading3>
           <div className="prose-xl">{children}</div>
         </div>
@@ -136,7 +136,7 @@ export function Feature({
             alt={title}
             width={600}
             height={400}
-            className="border-8 border-black/5 rounded-xl w-full max-w-xl group-hover:rotate-1 group-hover:scale-[101%] transition-transform duration-500"
+            className="w-full max-w-xl rounded-xl border-8 border-black/5 transition-transform duration-500 group-hover:rotate-1 group-hover:scale-[101%]"
           />
         </div>
       </div>
