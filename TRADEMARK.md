@@ -32,7 +32,7 @@ If you are developing an open-source project related to Openpanel, feel free to 
 
 ## Contact Us
 
-If you have any questions or need further clarification on the use of Openpanel trademarks, please contact us at [hey@openpanel.dev].
+If you have any questions or need further clarification on the use of Openpanel trademarks, please contact us at [hello@openpanel.dev].
 
 ---
 
