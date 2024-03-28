@@ -1,0 +1,32 @@
+import Link from 'next/link';
+import { Steps, Tabs } from 'nextra/components';
+
+# API
+
+We'll add more SDKs in the future but you can always use our REST API to send events.
+
+## Authentication
+
+To authenticate with the API, you need to use your `clientId` and `clientSecret` (you can find your clients under Settings -> Clients, create a new client if you don't have one with a `clientSecret`).
+
+We expect you to send `openpanel-client-id` and `openpanel-client-secret` headers with your requests.
+
+### Example
+
+This request will create an event with the name `my_event` and the property `foo` set to `bar` and the timestamp set to `2024-03-28T08:42:54.319Z`.
+
+```bash
+curl 'https://api.openpanel.dev/event' \
+  -H 'content-type: application/json' \
+  -H 'openpanel-client-id: CLIENT_ID' \
+  -H 'openpanel-client-secret: CLIENT_SECRET' \
+  --data-raw '{"name":"my_event","properties":{"foo":"bar"},"timestamp":"2024-03-28T08:42:54.319Z"}'
+```
+
+### Payload
+
+The payload should be a JSON object with the following fields:
+
+- `name` (string): The name of the event.
+- `properties` (object): The properties of the event.
+- `timestamp` (string): The timestamp of the event in ISO 8601 format.
