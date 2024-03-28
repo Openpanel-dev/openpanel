@@ -8,7 +8,8 @@ const config = {
   rules: {
     'react/prop-types': 'off',
     'react/no-unknown-property': 'off',
-    'jsx-a11y/click-events-have-key-events': 'off'
+    'jsx-a11y/click-events-have-key-events': 'off',
+    'jsx-a11y/label-has-associated-control': 'off',
   },
   globals: {
     React: 'writable',

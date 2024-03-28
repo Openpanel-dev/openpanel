@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
 import ShortUniqueId from 'short-unique-id';
 
 import { db } from '@openpanel/db';

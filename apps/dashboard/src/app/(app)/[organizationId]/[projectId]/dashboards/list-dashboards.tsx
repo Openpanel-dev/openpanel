@@ -1,11 +1,11 @@
 'use client';
 
-import { api, handleErrorToastOptions } from '@/app/_trpc/client';
 import { Card, CardActions, CardActionsItem } from '@/components/card';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
+import { api, handleErrorToastOptions } from '@/trpc/client';
 import { LayoutPanelTopIcon, Pencil, PlusIcon, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';

@@ -47,6 +47,7 @@ const config = {
     '**/*.config.cjs',
     '.next',
     'dist',
+    'public',
     'pnpm-lock.yaml',
   ],
   reportUnusedDisableDirectives: true,

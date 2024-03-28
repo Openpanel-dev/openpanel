@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { api } from '@/app/_trpc/client';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import {
   Table,
@@ -12,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Widget, WidgetHead } from '@/components/widget';
+import { api } from '@/trpc/client';
 
 import type { IServiceMember, IServiceProject } from '@openpanel/db';
 

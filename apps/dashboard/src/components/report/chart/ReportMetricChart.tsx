@@ -1,7 +1,7 @@
 'use client';
 
-import type { IChartData } from '@/app/_trpc/client';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 
 import { useChartContext } from './ChartProvider';

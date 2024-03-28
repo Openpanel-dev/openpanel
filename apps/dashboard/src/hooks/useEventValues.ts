@@ -1,4 +1,4 @@
-import { api } from '@/app/_trpc/client';
+import { api } from '@/trpc/client';
 
 export function useEventValues(
   projectId: string,

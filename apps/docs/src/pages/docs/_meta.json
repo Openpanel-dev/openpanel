@@ -17,5 +17,6 @@
     "title": "Others"
   },
   "javascript": "Javascript SDK",
-  "web": "Web SDK"
+  "web": "Web SDK",
+  "api": "API"
 }

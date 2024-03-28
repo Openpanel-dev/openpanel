@@ -57,14 +57,15 @@ export default function Page() {
             <h3 className="text-blue-dark text-lg font-bold">TL;DR</h3>
             <Paragraph>
               Our open-source analytic library fills a crucial gap by combining
-              the strengths of Mixpanel's powerful features with Plausible's
-              clear overview page. Motivated by the lack of an open-source
-              alternative to Mixpanel and inspired by Plausible's simplicity, we
-              aim to create an intuitive platform with predictable pricing. With
-              a single-tier pricing model and limits only on monthly event
-              counts, our goal is to democratize analytics, offering
-              unrestricted access to all features while ensuring affordability
-              and transparency for users of all project sizes.
+              the strengths of Mixpanel&apos;s powerful features with
+              Plausible&apos;s clear overview page. Motivated by the lack of an
+              open-source alternative to Mixpanel and inspired by
+              Plausible&apos;s simplicity, we aim to create an intuitive
+              platform with predictable pricing. With a single-tier pricing
+              model and limits only on monthly event counts, our goal is to
+              democratize analytics, offering unrestricted access to all
+              features while ensuring affordability and transparency for users
+              of all project sizes.
             </Paragraph>
 
             <h3 className="text-blue-dark mt-12 text-lg font-bold">The why</h3>
@@ -72,10 +73,10 @@ export default function Page() {
               Our open-source analytic library emerged from a clear need within
               the analytics community. While platforms like Mixpanel offer
               powerful and user-friendly features, they lack a comprehensive
-              overview page akin to Plausible's, which succinctly summarizes
-              essential metrics. Recognizing this gap, we saw an opportunity to
-              combine the strengths of both platforms while addressing their
-              respective shortcomings.
+              overview page akin to Plausible&apos;s, which succinctly
+              summarizes essential metrics. Recognizing this gap, we saw an
+              opportunity to combine the strengths of both platforms while
+              addressing their respective shortcomings.
             </Paragraph>
 
             <Paragraph>
@@ -87,7 +88,7 @@ export default function Page() {
             </Paragraph>
 
             <Paragraph>
-              Inspired by Plausible's exemplary approach to simplicity and
+              Inspired by Plausible&apos;s exemplary approach to simplicity and
               clarity, we aim to build upon their foundation and further refine
               the user experience. By harnessing the best practices demonstrated
               by Plausible, we aspire to create an intuitive and streamlined
@@ -108,12 +109,13 @@ export default function Page() {
             <Paragraph>
               In line with our commitment to fairness and accessibility, our
               pricing model will only impose limits on the number of events
-              users can send each month. This approach, akin to Plausible's,
-              ensures that users have the freedom to explore and utilize our
-              platform to its fullest potential without arbitrary restrictions
-              on reports or user counts. Ultimately, our goal is to democratize
-              analytics by offering a reliable, transparent, and cost-effective
-              solution for projects of all sizes.
+              users can send each month. This approach, akin to
+              Plausible&apos;s, ensures that users have the freedom to explore
+              and utilize our platform to its fullest potential without
+              arbitrary restrictions on reports or user counts. Ultimately, our
+              goal is to democratize analytics by offering a reliable,
+              transparent, and cost-effective solution for projects of all
+              sizes.
             </Paragraph>
           </div>
         </div>

@@ -1,4 +1,3 @@
-import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
@@ -7,6 +6,7 @@ import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { useDispatch } from '@/redux';
+import { api } from '@/trpc/client';
 import { SlidersHorizontal, Trash } from 'lucide-react';
 
 import { operators } from '@openpanel/constants';

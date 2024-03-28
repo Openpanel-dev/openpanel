@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { api } from '@/app/_trpc/client';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -12,6 +11,7 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
+import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import type { VariantProps } from 'class-variance-authority';

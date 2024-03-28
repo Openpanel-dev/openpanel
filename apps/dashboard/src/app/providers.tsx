@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { api } from '@/app/_trpc/client';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
 import makeStore from '@/redux';
+import { api } from '@/trpc/client';
 import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';

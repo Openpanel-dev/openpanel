@@ -19,8 +19,9 @@ const items = [
     title: 'Own Your Own Data',
     description: (
       <p>
-        We believe that you should own your own data. That's why we don't sell
-        your data to third parties. <strong>Ever. Period.</strong>
+        We believe that you should own your own data. That&apos;s why we
+        don&apos;t sell your data to third parties.{' '}
+        <strong>Ever. Period.</strong>
       </p>
     ),
     icon: KeyIcon,

@@ -1,6 +1,5 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { useEffect, useState } from 'react';
-import { api } from '@/app/_trpc/client';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -11,6 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -78,7 +78,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Edit "{name}"</SheetTitle>
+          <SheetTitle>Edit &quot;{name}&quot;</SheetTitle>
         </SheetHeader>
         <div className="my-8 flex flex-col gap-8">
           <div>

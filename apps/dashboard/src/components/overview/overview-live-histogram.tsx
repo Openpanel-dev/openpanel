@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
-import { api } from '@/app/_trpc/client';
+import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import AnimateHeight from 'react-animate-height';
 
@@ -118,7 +118,7 @@ export function OverviewLiveHistogram({
             </TooltipTrigger>
             <TooltipContent side="top">
               <div>{minute.count} active users</div>
-              <div>@ {new Date(minute.date).toLocaleTimeString()}</div>
+              <div>@ {new Date(minute.date).toLocaleTimeString()}</div>
             </TooltipContent>
           </Tooltip>
         );

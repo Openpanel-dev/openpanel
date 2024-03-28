@@ -81,6 +81,7 @@ function main() {
         delete properties.type;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const pkgJson = require(
         workspacePath(`./packages/sdks/${name}/package.json`)
       );

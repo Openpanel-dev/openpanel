@@ -184,7 +184,7 @@ export function EventDetails({ event, open, setOpen }: Props) {
                       key={item.name}
                       name={item.name}
                       value={item.value}
-                      onClick={item.onClick}
+                      onClick={() => item.onClick?.()}
                     />
                   ))}
                 </div>
@@ -225,7 +225,7 @@ export function EventDetails({ event, open, setOpen }: Props) {
               className="w-full"
               onClick={() => setIsEditOpen(true)}
             >
-              Customize "{name}"
+              Customize &quot;{name}&quot;
             </Button>
           </SheetFooter>
         </SheetContent>

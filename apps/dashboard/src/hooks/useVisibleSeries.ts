@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { IChartData } from '@/app/_trpc/client';
+import type { IChartData } from '@/trpc/client';
 
 export type IVisibleSeries = ReturnType<typeof useVisibleSeries>['series'];
 export function useVisibleSeries(data: IChartData, limit?: number | undefined) {

@@ -1,6 +1,5 @@
 'use client';
 
-import { api, handleError } from '@/app/_trpc/client';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -9,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAppParams } from '@/hooks/useAppParams';
+import { api, handleError } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SaveIcon, WallpaperIcon } from 'lucide-react';

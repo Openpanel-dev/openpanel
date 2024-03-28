@@ -1,4 +1,4 @@
-import { appRouter } from '@/server/api/root';
+import { appRouter } from '@/trpc/api/root';
 import { getAuth } from '@clerk/nextjs/server';
 import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 
@@ -7,7 +7,7 @@ const handler = (req: Request) =>
     endpoint: '/api/trpc',
     req,
     router: appRouter,
-    async createContext({ req }) {
+    createContext({ req }) {
       const session = getAuth(req as any);
       return {
         session,

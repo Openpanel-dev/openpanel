@@ -1,10 +1,10 @@
 'use client';
 
-import { api } from '@/app/_trpc/client';
 import { ColorSquare } from '@/components/color-square';
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
+import { api } from '@/trpc/client';
 import { SplitIcon } from 'lucide-react';
 
 import type { IChartBreakdown } from '@openpanel/validation';

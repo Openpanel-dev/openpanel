@@ -36,7 +36,7 @@ export default function LayoutOrganizationSelector({
           .filter((item) => item.slug)
           .map((item) => ({
             label: item.name,
-            value: item.slug!,
+            value: item.slug,
           })) ?? []
       }
       onChange={(value) => {

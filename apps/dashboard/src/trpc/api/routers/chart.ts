@@ -2,7 +2,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
-} from '@/server/api/trpc';
+} from '@/trpc/api/trpc';
 import { average, max, min, round, sum } from '@/utils/math';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { z } from 'zod';

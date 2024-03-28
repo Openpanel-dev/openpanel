@@ -1,7 +1,7 @@
-import { api } from '@/app/_trpc/client';
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch } from '@/redux';
+import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { DatabaseIcon } from 'lucide-react';
 

@@ -6,6 +6,7 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { api, handleError } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SaveIcon, WallpaperIcon } from 'lucide-react';
@@ -13,8 +14,6 @@ import { useRouter } from 'next/navigation';
 import type { SubmitHandler } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-
-import { api, handleError } from '../_trpc/client';
 
 const validation = z
   .object({
@@ -61,8 +60,8 @@ export function CreateOrganization() {
         <LogoSquare className="mb-4 w-20" />
         <h1 className="text-3xl font-medium">Nice job!</h1>
         <div className="mb-4">
-          You're ready to start using our SDK. Save the client ID and secret (if
-          you have any)
+          You&apos;re ready to start using our SDK. Save the client ID and
+          secret (if you have any)
         </div>
         <CreateClientSuccess {...mutation.data.client} />
         <div className="mt-4 flex gap-4">

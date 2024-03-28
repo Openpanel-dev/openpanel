@@ -18,7 +18,7 @@ import type { PostEventPayload } from '@openpanel/sdk';
 const SESSION_TIMEOUT = 1000 * 60 * 30;
 const SESSION_END_TIMEOUT = SESSION_TIMEOUT + 1000;
 
-async function withTiming<T>(name: string, promise: T) {
+async function withTiming<T>(name: string, promise: Promise<T>) {
   try {
     const start = Date.now();
     const res = await promise;

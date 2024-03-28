@@ -1,4 +1,4 @@
-import { createTRPCRouter } from '@/server/api/trpc';
+import { createTRPCRouter } from '@/trpc/api/trpc';
 
 import { chartRouter } from './routers/chart';
 import { clientRouter } from './routers/client';

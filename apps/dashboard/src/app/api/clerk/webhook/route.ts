@@ -32,6 +32,6 @@ export async function POST(request: Request) {
   return Response.json({ message: 'Webhook received!' });
 }
 
-export async function GET() {
+export function GET() {
   return Response.json({ message: 'Hello World!' });
 }

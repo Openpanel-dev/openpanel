@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { IChartData } from '@/app/_trpc/client';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import type { IChartData } from '@/trpc/client';
 import { theme } from '@/utils/theme';
 import WorldMap from 'react-svg-worldmap';
 import AutoSizer from 'react-virtualized-auto-sizer';

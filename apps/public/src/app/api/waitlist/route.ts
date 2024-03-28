@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
   await db.waitlist.create({
     data: {
-      email: body.email.toLowerCase(),
+      email: String(body.email).toLowerCase(),
     },
   });
 

@@ -1,6 +1,6 @@
-import type { IChartData } from '@/app/_trpc/client';
 import { AutoSizer } from '@/components/react-virtualized-auto-sizer';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
 import { getChartColor } from '@/utils/theme';

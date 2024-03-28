@@ -1,6 +1,6 @@
 'use client';
 
-import { api } from '@/app/_trpc/client';
+import { api } from '@/trpc/client';
 
 import type { IChartInput } from '@openpanel/validation';
 

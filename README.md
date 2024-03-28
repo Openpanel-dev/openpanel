@@ -1,4 +1,4 @@
-# openpanel
+# Openpanel
 
 Openpanel is a simple analytics tool for logging events on web and react-native. My goal is to make a minimal mixpanel copy with the most basic features (for now).
 

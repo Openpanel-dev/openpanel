@@ -2,7 +2,7 @@ import {
   createTRPCRouter,
   protectedProcedure,
   publicProcedure,
-} from '@/server/api/trpc';
+} from '@/trpc/api/trpc';
 import { z } from 'zod';
 
 import { db, getReferences } from '@openpanel/db';

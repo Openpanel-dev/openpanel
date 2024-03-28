@@ -1,7 +1,7 @@
 'use client';
 
-import type { RouterOutputs } from '@/app/_trpc/client';
-import { api } from '@/app/_trpc/client';
+import type { RouterOutputs } from '@/trpc/client';
+import { api } from '@/trpc/client';
 
 import type { IChartInput } from '@openpanel/validation';
 

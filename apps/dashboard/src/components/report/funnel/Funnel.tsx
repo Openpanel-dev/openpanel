@@ -1,6 +1,5 @@
 'use client';
 
-import type { RouterOutputs } from '@/app/_trpc/client';
 import {
   Carousel,
   CarouselContent,
@@ -8,6 +7,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
 import { ArrowRight, ArrowRightIcon } from 'lucide-react';

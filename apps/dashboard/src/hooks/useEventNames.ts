@@ -1,4 +1,4 @@
-import { api } from '@/app/_trpc/client';
+import { api } from '@/trpc/client';
 
 export function useEventNames(projectId: string) {
   const query = api.chart.events.useQuery({

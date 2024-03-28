@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { IChartData } from '@/app/_trpc/client';
 import { Progress } from '@/components/ui/progress';
 import { useNumber } from '@/hooks/useNumerFormatter';
+import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 

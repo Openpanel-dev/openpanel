@@ -1,9 +1,9 @@
 import React from 'react';
-import type { IChartData } from '@/app/_trpc/client';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 import {
   Area,

@@ -89,11 +89,16 @@ export interface ALinkProps
   extends React.AnchorHTMLAttributes<HTMLAnchorElement>,
     VariantProps<typeof buttonVariants> {}
 
-export const ALink = ({ variant, size, className, ...props }: ALinkProps) => {
+export const ALink = ({
+  variant,
+  size,
+  className,
+  children,
+  ...props
+}: ALinkProps) => {
   return (
-    <a
-      {...props}
-      className={cn(buttonVariants({ variant, size, className }))}
-    />
+    <a {...props} className={cn(buttonVariants({ variant, size, className }))}>
+      {children}
+    </a>
   );
 };

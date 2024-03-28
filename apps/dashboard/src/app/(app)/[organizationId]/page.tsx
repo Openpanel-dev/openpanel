@@ -5,7 +5,6 @@ import { notFound, redirect } from 'next/navigation';
 import {
   getCurrentProjects,
   getOrganizationBySlug,
-  getProjectsByOrganizationSlug,
   isWaitlistUserAccepted,
 } from '@openpanel/db';
 
@@ -36,8 +35,8 @@ export default async function Page({ params: { organizationId } }: PageProps) {
             <LogoSquare className="mb-8 w-20 md:w-28" />
             <h1 className="text-3xl font-medium">Not quite there yet</h1>
             <div className="text-lg">
-              We're still working on Openpanel, but we're not quite there yet.
-              We'll let you know when we're ready to go!
+              We&apos;re still working on Openpanel, but we&apos;re not quite
+              there yet. We&apos;ll let you know when we&apos;re ready to go!
             </div>
           </div>
         </div>

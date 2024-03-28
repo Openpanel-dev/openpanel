@@ -1,5 +1,4 @@
 import * as React from 'react';
-import type { IChartData } from '@/app/_trpc/client';
 import { Pagination, usePagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,6 +19,7 @@ import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useMappings } from '@/hooks/useMappings';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { useSelector } from '@/redux';
+import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';

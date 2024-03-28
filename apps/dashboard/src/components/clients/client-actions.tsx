@@ -1,7 +1,7 @@
 'use client';
 
-import { api } from '@/app/_trpc/client';
 import { pushModal, showConfirm } from '@/modals';
+import { api } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
 import { MoreHorizontal } from 'lucide-react';
 import { useRouter } from 'next/navigation';

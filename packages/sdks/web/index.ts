@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/unbound-method */
+
 import type { OpenpanelSdkOptions, PostEventPayload } from '@openpanel/sdk';
 import { OpenpanelSdk } from '@openpanel/sdk';
 

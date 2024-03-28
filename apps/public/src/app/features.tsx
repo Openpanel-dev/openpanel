@@ -87,8 +87,8 @@ const features: FeatureItem[] = [
     description: (
       <>
         <p>
-          Deep dive into your user's behavior and understand how they interact
-          with your app/website.
+          Deep dive into your user&apos;s behavior and understand how they
+          interact with your app/website.
         </p>
       </>
     ),

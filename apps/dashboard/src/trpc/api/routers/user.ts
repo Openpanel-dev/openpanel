@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from '@/server/api/trpc';
+import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
 import { clerkClient } from '@clerk/nextjs';
 import { z } from 'zod';
 

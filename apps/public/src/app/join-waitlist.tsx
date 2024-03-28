@@ -34,8 +34,8 @@ export function JoinWaitlist({ className }: JoinWaitlistProps) {
           <DialogHeader>
             <DialogTitle>Thanks so much!</DialogTitle>
             <DialogDescription>
-              You're now on the waiting list. We'll let you know when we're
-              ready. Should be within a month or two 🚀
+              You&apos;re now on the waiting list. We&apos;ll let you know when
+              we&apos;re ready. Should be within a month or two 🚀
             </DialogDescription>
           </DialogHeader>
 

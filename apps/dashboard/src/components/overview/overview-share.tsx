@@ -1,7 +1,7 @@
 'use client';
 
-import { api } from '@/app/_trpc/client';
 import { pushModal } from '@/modals';
+import { api } from '@/trpc/client';
 import { EyeIcon, Globe2Icon, LockIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
