@@ -14,8 +14,8 @@ export const defaultMeta: Metadata = {
     images: [
       {
         url: 'https://openpanel.dev/ogimage.png',
-        width: 1200,
-        height: 630,
+        width: 2011,
+        height: 1339,
         alt: title,
       },
     ],

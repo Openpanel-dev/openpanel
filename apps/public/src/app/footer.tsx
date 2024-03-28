@@ -1,4 +1,5 @@
 import { Logo } from '@/components/Logo';
+import { ALink } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -12,10 +13,18 @@ export default function Footer() {
       <div className="container relative flex flex-col items-center text-center">
         <div className="my-24">
           <Heading2 className="mb-2 text-white">Get early access</Heading2>
-          <Lead2>Ready to set your analytics free? Get on our waitlist.</Lead2>
+          <Lead2>
+            Ready to set your analytics free? Create your account today!
+          </Lead2>
 
           <div className="mt-8">
-            <JoinWaitlist className="border-white/30 bg-white/20 text-white focus:ring-white" />
+            <ALink
+              className="font-semibold"
+              size="lg"
+              href="https://dashboard.openpanel.dev"
+            >
+              Create your account
+            </ALink>
           </div>
         </div>
 

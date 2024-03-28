@@ -1,4 +1,4 @@
-![hero](github.png)
+![hero](apps/public/public/ogimage.png)
 
 <p align="center">
 	<h1 align="center"><b>Openpanel</b></h1>

@@ -2,6 +2,7 @@
 
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
 import { LogoSquare } from '@/components/logo';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -92,6 +93,20 @@ export function CreateOrganization() {
         Create your organization below (can be personal or a company) and your
         first project.
       </div>
+      <Alert className="mt-8">
+        <AlertTitle>Free during beta</AlertTitle>
+        <AlertDescription>
+          Openpanel is free during beta. Check our{' '}
+          <a
+            href="https://openpanel.dev/#pricing"
+            target="_blank"
+            className="text-blue-600 underline"
+          >
+            pricing
+          </a>{' '}
+          if you&apos;re curious. We&apos;ll also have a free tier.
+        </AlertDescription>
+      </Alert>
       <form
         className="mt-8 flex flex-col gap-4"
         onSubmit={form.handleSubmit(onSubmit)}
