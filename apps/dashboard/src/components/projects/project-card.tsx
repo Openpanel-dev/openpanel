@@ -1,5 +1,6 @@
 import { shortNumber } from '@/hooks/useNumerFormatter';
 import Link from 'next/link';
+import { escape } from 'sqlstring';
 
 import type { IServiceProject } from '@openpanel/db';
 import { chQuery } from '@openpanel/db';
@@ -13,19 +14,19 @@ export async function ProjectCard({
 }: IServiceProject) {
   const [chart, [data]] = await Promise.all([
     chQuery<{ value: number; date: string }>(
-      `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM events WHERE project_id = '${id}' AND name = 'session_start' AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`
+      `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM events WHERE project_id = ${escape(id)} AND name = 'session_start' AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`
     ),
     chQuery<{ total: number; month: number; day: number }>(
       `
         SELECT 
         (
-          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = '${id}'
+          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)}
         ) as total, 
         (
-          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = '${id}' AND created_at >= now() - interval '1 month'
+          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 month'
         ) as month,
         (
-          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = '${id}' AND created_at >= now() - interval '1 day'
+          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 day'
         ) as day
       `
     ),

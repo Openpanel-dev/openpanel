@@ -4,6 +4,7 @@ import {
   publicProcedure,
 } from '@/trpc/api/trpc';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
+import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import { chQuery, createSqlBuilder } from '@openpanel/db';
@@ -13,7 +14,7 @@ export const profileRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId } }) => {
       const events = await chQuery<{ keys: string[] }>(
-        `SELECT distinct mapKeys(properties) as keys from profiles where project_id = '${projectId}';`
+        `SELECT distinct mapKeys(properties) as keys from profiles where project_id = ${escape(projectId)};`
       );
 
       const properties = events
@@ -40,11 +41,11 @@ export const profileRouter = createTRPCRouter({
     .query(async ({ input: { property, projectId } }) => {
       const { sb, getSql } = createSqlBuilder();
       sb.from = 'profiles';
-      sb.where.project_id = `project_id = '${projectId}'`;
+      sb.where.project_id = `project_id = ${escape(projectId)}`;
       if (property.startsWith('properties.')) {
-        sb.select.values = `distinct mapValues(mapExtractKeyLike(properties, '${property
-          .replace(/^properties\./, '')
-          .replace('.*.', '.%.')}')) as values`;
+        sb.select.values = `distinct mapValues(mapExtractKeyLike(properties, ${escape(
+          property.replace(/^properties\./, '').replace('.*.', '.%.')
+        )})) as values`;
       } else {
         sb.select.values = `${property} as values`;
       }

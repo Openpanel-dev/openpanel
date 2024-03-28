@@ -24,6 +24,7 @@
     "pino-pretty": "^10.3.1",
     "ramda": "^0.29.1",
     "sharp": "^0.33.2",
+    "sqlstring": "^2.3.3",
     "ua-parser-js": "^1.0.37",
     "url-metadata": "^4.1.0",
     "uuid": "^9.0.1"
@@ -34,6 +35,7 @@
     "@openpanel/sdk": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/ramda": "^0.29.6",
+    "@types/sqlstring": "^2.3.2",
     "@types/ua-parser-js": "^0.7.39",
     "@types/uuid": "^9.0.8",
     "@types/ws": "^8.5.10",

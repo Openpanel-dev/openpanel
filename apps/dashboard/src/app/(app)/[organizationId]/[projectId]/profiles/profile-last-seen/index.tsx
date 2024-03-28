@@ -5,6 +5,7 @@ import {
 } from '@/components/ui/tooltip';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { cn } from '@/utils/cn';
+import { escape } from 'sqlstring';
 
 import { chQuery } from '@openpanel/db';
 
@@ -20,7 +21,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
   // Days since last event from users
   // group by days
   const res = await chQuery<Row>(
-    `SELECT age('days',created_at, now()) as days, count(distinct profile_id) as count FROM events where project_id = '${projectId}' group by days order by days ASC`
+    `SELECT age('days',created_at, now()) as days, count(distinct profile_id) as count FROM events where project_id = ${escape(projectId)} group by days order by days ASC`
   );
 
   const take = 18;

@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { escape } from 'sqlstring';
 import type * as WebSocket from 'ws';
 
 import { getSafeJson } from '@openpanel/common';
@@ -19,7 +20,7 @@ export async function test(
   reply: FastifyReply
 ) {
   const [event] = await getEvents(
-    `SELECT * FROM events WHERE project_id = '${req.params.projectId}' AND name = 'screen_view' LIMIT 1`
+    `SELECT * FROM events WHERE project_id = ${escape(req.params.projectId)} AND name = 'screen_view' LIMIT 1`
   );
   if (!event) {
     return reply.status(404).send('No event found');

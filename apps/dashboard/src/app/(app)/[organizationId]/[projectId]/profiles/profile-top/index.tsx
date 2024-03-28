@@ -4,6 +4,7 @@ import { Widget, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
+import { escape } from 'sqlstring';
 
 import { chQuery, getProfiles } from '@openpanel/db';
 
@@ -19,7 +20,7 @@ export default async function ProfileTopServer({
   // Days since last event from users
   // group by days
   const res = await chQuery<{ profile_id: string; count: number }>(
-    `SELECT profile_id, count(*) as count from events where profile_id != '' and project_id = '${projectId}' group by profile_id order by count() DESC LIMIT 10`
+    `SELECT profile_id, count(*) as count from events where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT 10`
   );
   const profiles = await getProfiles({ ids: res.map((r) => r.profile_id) });
   const list = res.map((item) => {

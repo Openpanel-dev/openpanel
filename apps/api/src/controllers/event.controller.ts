@@ -5,6 +5,7 @@ import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
 import { isSameDomain, parsePath } from '@/utils/url';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { omit } from 'ramda';
+import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { generateDeviceId, getTime, toISOString } from '@openpanel/common';
@@ -103,7 +104,7 @@ export async function postEvent(
     const [event] = await withTiming(
       'Get last event (server-event)',
       getEvents(
-        `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = '${profileId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+        `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
       )
     );
 
@@ -212,7 +213,7 @@ export async function postEvent(
     'Get session start event',
     Promise.all([
       getEvents(
-        `SELECT * FROM events WHERE name = 'session_start' AND device_id = '${deviceId}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+        `SELECT * FROM events WHERE name = 'session_start' AND device_id = ${escape(deviceId)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
       ),
       findJobByPrefix(eventsQueue, `event:${projectId}:${deviceId}:`),
     ])

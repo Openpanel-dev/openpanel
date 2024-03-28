@@ -2,6 +2,7 @@ import { round } from '@/utils/math';
 import { subDays } from 'date-fns';
 import * as mathjs from 'mathjs';
 import { repeat, reverse, sort } from 'ramda';
+import { escape } from 'sqlstring';
 
 import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
 import {
@@ -430,7 +431,7 @@ export async function getFunnelData({ projectId, ...payload }: IChartInput) {
   const funnels = payload.events.map((event) => {
     const { sb, getWhere } = createSqlBuilder();
     sb.where = getEventFiltersWhereClause(event.filters);
-    sb.where.name = `name = '${event.name}'`;
+    sb.where.name = `name = ${escape(event.name)}`;
     return getWhere().replace('WHERE ', '');
   });
 
@@ -438,7 +439,7 @@ export async function getFunnelData({ projectId, ...payload }: IChartInput) {
     session_id,
     windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM events
-  WHERE (project_id = '${projectId}' AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
+  WHERE (project_id = ${escape(projectId)} AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
   GROUP BY session_id`;
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC`;
@@ -446,7 +447,7 @@ export async function getFunnelData({ projectId, ...payload }: IChartInput) {
   const [funnelRes, sessionRes] = await Promise.all([
     chQuery<{ level: number; count: number }>(sql),
     chQuery<{ count: number }>(
-      `SELECT count(name) as count FROM events WHERE project_id = '${projectId}' AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
+      `SELECT count(name) as count FROM events WHERE project_id = ${escape(projectId)} AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
     ),
   ]);
 

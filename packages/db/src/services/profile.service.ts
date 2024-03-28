@@ -1,3 +1,5 @@
+import { escape } from 'sqlstring';
+
 import { toDots, toObject } from '@openpanel/common';
 import type { IChartEventFilter } from '@openpanel/validation';
 
@@ -11,7 +13,7 @@ export async function getProfileById(id: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT *, created_at as max_created_at FROM profiles WHERE id = '${id}' ORDER BY created_at DESC LIMIT 1`
+    `SELECT *, created_at as max_created_at FROM profiles WHERE id = ${escape(id)} ORDER BY created_at DESC LIMIT 1`
   );
 
   if (!profile) {
@@ -53,7 +55,7 @@ export async function getProfiles({ ids }: GetProfilesOptions) {
     `SELECT 
     ${getProfileSelectFields()}
     FROM profiles 
-    WHERE id IN (${ids.map((id) => `'${id}'`).join(',')})
+    WHERE id IN (${ids.map((id) => escape(id)).join(',')})
     GROUP BY id
     `
   );
@@ -66,7 +68,7 @@ function getProfileInnerSelect(projectId: string) {
     ${getProfileSelectFields()}
     FROM profiles 
     GROUP BY id
-    HAVING project_id = '${projectId}')`;
+    HAVING project_id = ${escape(projectId)})`;
 }
 
 export async function getProfileList({
@@ -120,7 +122,7 @@ export async function getProfilesByExternalId(
     ${getProfileSelectFields()}
     FROM profiles 
     GROUP BY id
-    HAVING project_id = '${projectId}' AND external_id = '${externalId}'
+    HAVING project_id = ${escape(projectId)} AND external_id = ${escape(externalId)}
     `
   );
 
@@ -192,7 +194,7 @@ export async function upsertProfile({
   projectId,
 }: IServiceUpsertProfile) {
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM profiles WHERE id = '${id}' AND project_id = '${projectId}' ORDER BY created_at DESC LIMIT 1`
+    `SELECT * FROM profiles WHERE id = ${escape(id)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
   );
 
   await ch.insert({

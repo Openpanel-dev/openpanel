@@ -1,4 +1,5 @@
 import { omit, uniq } from 'ramda';
+import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { randomSplitName, toDots } from '@openpanel/common';
@@ -261,15 +262,15 @@ export async function getEventList({
 
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
-  sb.where.projectId = `project_id = '${projectId}'`;
+  sb.where.projectId = `project_id = ${escape(projectId)}`;
 
   if (profileId) {
-    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM openpanel.events WHERE profile_id = '${profileId}' group by did)`;
+    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM openpanel.events WHERE profile_id = ${escape(profileId)} group by did)`;
   }
 
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
-      events.map((n) => `'${n}'`),
+      events.map((event) => escape(event)),
       ','
     )})`;
   }
@@ -297,14 +298,14 @@ export async function getEventsCount({
   filters,
 }: Omit<GetEventListOptions, 'cursor' | 'take'>) {
   const { sb, getSql, join } = createSqlBuilder();
-  sb.where.projectId = `project_id = '${projectId}'`;
+  sb.where.projectId = `project_id = ${escape(projectId)}`;
   if (profileId) {
-    sb.where.profileId = `profile_id = '${profileId}'`;
+    sb.where.profileId = `profile_id = ${escape(profileId)}`;
   }
 
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
-      events.map((n) => `'${n}'`),
+      events.map((event) => escape(event)),
       ','
     )})`;
   }

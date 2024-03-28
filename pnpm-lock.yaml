@@ -65,6 +65,9 @@ importers:
       sharp:
         specifier: ^0.33.2
         version: 0.33.2
+      sqlstring:
+        specifier: ^2.3.3
+        version: 2.3.3
       ua-parser-js:
         specifier: ^1.0.37
         version: 1.0.37
@@ -90,6 +93,9 @@ importers:
       '@types/ramda':
         specifier: ^0.29.6
         version: 0.29.10
+      '@types/sqlstring':
+        specifier: ^2.3.2
+        version: 2.3.2
       '@types/ua-parser-js':
         specifier: ^0.7.39
         version: 0.7.39
@@ -345,6 +351,9 @@ importers:
       sonner:
         specifier: ^1.4.0
         version: 1.4.0(react-dom@18.2.0)(react@18.2.0)
+      sqlstring:
+        specifier: ^2.3.3
+        version: 2.3.3
       superjson:
         specifier: ^1.13.3
         version: 1.13.3
@@ -397,6 +406,9 @@ importers:
       '@types/request-ip':
         specifier: ^0.0.41
         version: 0.0.41
+      '@types/sqlstring':
+        specifier: ^2.3.2
+        version: 2.3.2
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.21.0
         version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.56.0)(typescript@5.3.3)
@@ -776,6 +788,9 @@ importers:
       ramda:
         specifier: ^0.29.1
         version: 0.29.1
+      sqlstring:
+        specifier: ^2.3.3
+        version: 2.3.3
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
@@ -795,6 +810,9 @@ importers:
       '@types/ramda':
         specifier: ^0.29.6
         version: 0.29.10
+      '@types/sqlstring':
+        specifier: ^2.3.2
+        version: 2.3.2
       '@types/uuid':
         specifier: ^9.0.8
         version: 9.0.8
@@ -7011,6 +7029,10 @@ packages:
       '@types/http-errors': 2.0.4
       '@types/mime': 3.0.4
       '@types/node': 18.19.17
+
+  /@types/sqlstring@2.3.2:
+    resolution: {integrity: sha512-lVRe4Iz9UNgiHelKVo8QlC8fb5nfY8+p+jNQNE+UVsuuVlQnWhyWmQ/wF5pE8Ys6TdjfVpqTG9O9i2vi6E0+Sg==}
+    dev: true
 
   /@types/stack-trace@0.0.29:
     resolution: {integrity: sha512-TgfOX+mGY/NyNxJLIbDWrO9DjGoVSW9+aB8H2yy1fy32jsvxijhmyJI9fDFgvz3YP4lvJaq9DzdR/M1bOgVc9g==}
@@ -15956,6 +15978,11 @@ packages:
 
   /sprintf-js@1.0.3:
     resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
+    dev: false
+
+  /sqlstring@2.3.3:
+    resolution: {integrity: sha512-qC9iz2FlN7DQl3+wjwn3802RTyjCx7sDvfQEXchwa6CWOx07/WVfh91gBmQ9fahw8snwGEWU3xGzOt4tFyHLxg==}
+    engines: {node: '>= 0.6'}
     dev: false
 
   /ssri@8.0.1:

@@ -5,6 +5,7 @@ import {
 } from '@/trpc/api/trpc';
 import { average, max, min, round, sum } from '@/utils/math';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
+import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import { chQuery, createSqlBuilder } from '@openpanel/db';
@@ -60,7 +61,7 @@ export const chartRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId } }) => {
       const events = await chQuery<{ name: string }>(
-        `SELECT DISTINCT name FROM events WHERE project_id = '${projectId}'`
+        `SELECT DISTINCT name FROM events WHERE project_id = ${escape(projectId)}`
       );
 
       return [
@@ -76,8 +77,8 @@ export const chartRouter = createTRPCRouter({
     .query(async ({ input: { projectId, event } }) => {
       const events = await chQuery<{ keys: string[] }>(
         `SELECT distinct mapKeys(properties) as keys from events where ${
-          event && event !== '*' ? `name = '${event}' AND ` : ''
-        } project_id = '${projectId}';`
+          event && event !== '*' ? `name = ${escape(event)} AND ` : ''
+        } project_id = ${escape(projectId)};`
       );
 
       const properties = events
@@ -122,14 +123,14 @@ export const chartRouter = createTRPCRouter({
     )
     .query(async ({ input: { event, property, projectId } }) => {
       const { sb, getSql } = createSqlBuilder();
-      sb.where.project_id = `project_id = '${projectId}'`;
+      sb.where.project_id = `project_id = ${escape(projectId)}`;
       if (event !== '*') {
-        sb.where.event = `name = '${event}'`;
+        sb.where.event = `name = ${escape(event)}`;
       }
       if (property.startsWith('properties.')) {
-        sb.select.values = `distinct mapValues(mapExtractKeyLike(properties, '${property
-          .replace(/^properties\./, '')
-          .replace('.*.', '.%.')}')) as values`;
+        sb.select.values = `distinct mapValues(mapExtractKeyLike(properties, ${escape(
+          property.replace(/^properties\./, '').replace('.*.', '.%.')
+        )})) as values`;
       } else {
         sb.select.values = `distinct ${property} as values`;
       }

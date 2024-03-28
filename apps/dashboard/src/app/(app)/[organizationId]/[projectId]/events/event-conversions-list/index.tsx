@@ -1,4 +1,5 @@
 import { Widget } from '@/components/widget';
+import { escape } from 'sqlstring';
 
 import { db, getEvents } from '@openpanel/db';
 
@@ -21,7 +22,7 @@ export default async function EventConversionsListServer({ projectId }: Props) {
   }
 
   const events = await getEvents(
-    `SELECT * FROM events WHERE project_id = '${projectId}' AND name IN (${conversions.map((c) => `'${c.name}'`).join(', ')}) ORDER BY created_at DESC LIMIT 20;`,
+    `SELECT * FROM events WHERE project_id = ${escape(projectId)} AND name IN (${conversions.map((c) => escape(c.name)).join(', ')}) ORDER BY created_at DESC LIMIT 20;`,
     {
       profile: true,
       meta: true,

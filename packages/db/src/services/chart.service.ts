@@ -1,10 +1,11 @@
+import { escape } from 'sqlstring';
+
 import type {
   IChartEventFilter,
   IGetChartDataInput,
 } from '@openpanel/validation';
 
 import { formatClickhouseDate } from '../clickhouse-client';
-import type { SqlBuilderObject } from '../sql-builder';
 import { createSqlBuilder } from '../sql-builder';
 
 function log(sql: string) {
@@ -25,10 +26,10 @@ export function getChartSql({
     createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
-  sb.where.projectId = `project_id = '${projectId}'`;
+  sb.where.projectId = `project_id = ${escape(projectId)}`;
   if (event.name !== '*') {
-    sb.select.label = `'${event.name}' as label`;
-    sb.where.eventName = `name = '${event.name}'`;
+    sb.select.label = `${escape(event.name)} as label`;
+    sb.where.eventName = `name = ${escape(event.name)}`;
   }
 
   sb.select.count = `count(*) as count`;
@@ -64,10 +65,10 @@ export function getChartSql({
   const breakdown = breakdowns[0]!;
   if (breakdown) {
     const value = breakdown.name.startsWith('properties.')
-      ? `mapValues(mapExtractKeyLike(properties, '${breakdown.name
-          .replace(/^properties\./, '')
-          .replace('.*.', '.%.')}'))`
-      : breakdown.name;
+      ? `mapValues(mapExtractKeyLike(properties, ${escape(
+          breakdown.name.replace(/^properties\./, '').replace('.*.', '.%.')
+        )}))`
+      : escape(breakdown.name);
     sb.select.label = breakdown.name.startsWith('properties.')
       ? `arrayElement(${value}, 1) as label`
       : `${breakdown.name} as label`;
@@ -120,32 +121,32 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
     if (value.length === 0) return;
 
     if (name.startsWith('properties.')) {
-      const whereFrom = `mapValues(mapExtractKeyLike(properties, '${name
-        .replace(/^properties\./, '')
-        .replace('.*.', '.%.')}'))`;
+      const whereFrom = `mapValues(mapExtractKeyLike(properties, ${escape(
+        name.replace(/^properties\./, '').replace('.*.', '.%.')
+      )}))`;
 
       switch (operator) {
         case 'is': {
           where[id] = `arrayExists(x -> ${value
-            .map((val) => `x = '${String(val).trim()}'`)
+            .map((val) => `x = ${escape(String(val).trim())}`)
             .join(' OR ')}, ${whereFrom})`;
           break;
         }
         case 'isNot': {
           where[id] = `arrayExists(x -> ${value
-            .map((val) => `x != '${String(val).trim()}'`)
+            .map((val) => `x != ${escape(String(val).trim())}`)
             .join(' OR ')}, ${whereFrom})`;
           break;
         }
         case 'contains': {
           where[id] = `arrayExists(x -> ${value
-            .map((val) => `x LIKE '%${String(val).trim()}%'`)
+            .map((val) => `x LIKE ${escape(`%${String(val).trim()}%`)}`)
             .join(' OR ')}, ${whereFrom})`;
           break;
         }
         case 'doesNotContain': {
           where[id] = `arrayExists(x -> ${value
-            .map((val) => `x NOT LIKE '%${String(val).trim()}%'`)
+            .map((val) => `x NOT LIKE ${escape(`%${String(val).trim()}%`)}`)
             .join(' OR ')}, ${whereFrom})`;
           break;
         }
@@ -154,25 +155,27 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
       switch (operator) {
         case 'is': {
           where[id] = `${name} IN (${value
-            .map((val) => `'${String(val).trim()}'`)
+            .map((val) => escape(String(val).trim()))
             .join(', ')})`;
           break;
         }
         case 'isNot': {
           where[id] = `${name} NOT IN (${value
-            .map((val) => `'${String(val).trim()}'`)
+            .map((val) => escape(String(val).trim()))
             .join(', ')})`;
           break;
         }
         case 'contains': {
           where[id] = value
-            .map((val) => `${name} LIKE '%${String(val).trim()}%'`)
+            .map((val) => `${name} LIKE ${escape(`%${String(val).trim()}%`)}`)
             .join(' OR ');
           break;
         }
         case 'doesNotContain': {
           where[id] = value
-            .map((val) => `${name} NOT LIKE '%${String(val).trim()}%'`)
+            .map(
+              (val) => `${name} NOT LIKE ${escape(`%${String(val).trim()}%`)}`
+            )
             .join(' OR ');
           break;
         }
