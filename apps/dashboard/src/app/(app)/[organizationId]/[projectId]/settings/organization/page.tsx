@@ -22,14 +22,16 @@ export default async function Page({
     return notFound();
   }
 
-  const invites = await getInvites(organization.id);
-
   return (
     <PageLayout title={organization.name} organizationSlug={organizationSlug}>
-      <div className="grid grid-cols-1 gap-8 p-4">
+      <div className="grid gap-8 p-4 lg:grid-cols-2">
         <EditOrganization organization={organization} />
-        <MembersServer organizationSlug={organizationSlug} />
-        <InvitesServer organizationSlug={organizationSlug} />
+        <div className="col-span-2">
+          <MembersServer organizationSlug={organizationSlug} />
+        </div>
+        <div className="col-span-2">
+          <InvitesServer organizationSlug={organizationSlug} />
+        </div>
       </div>
     </PageLayout>
   );

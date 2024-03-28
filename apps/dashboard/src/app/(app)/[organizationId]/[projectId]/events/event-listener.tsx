@@ -49,7 +49,7 @@ export default function EventListener() {
             setCounter(0);
             router.refresh();
           }}
-          className="flex h-8 items-center gap-2 rounded border border-border bg-white px-3 text-sm font-medium leading-none"
+          className="flex h-8 items-center gap-2 rounded border border-border bg-background px-3 text-sm font-medium leading-none"
         >
           <div className="relative">
             <div

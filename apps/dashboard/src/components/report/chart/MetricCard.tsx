@@ -84,7 +84,10 @@ export function MetricCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2 text-left font-medium">
             <ColorSquare>{serie.event.id}</ColorSquare>
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap">
+            <span
+              role="heading"
+              className="overflow-hidden text-ellipsis whitespace-nowrap"
+            >
               {serie.name || serie.event.displayName || serie.event.name}
             </span>
           </div>

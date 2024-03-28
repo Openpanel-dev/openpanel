@@ -106,7 +106,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
                     setIcon(name);
                   }}
                   className={cn(
-                    'flex inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-slate-100 transition-all',
+                    'inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-slate-100 transition-all',
                     name === selectedIcon
                       ? 'scale-110 ring-1 ring-black'
                       : '[&_svg]:opacity-50'
@@ -133,7 +133,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
                   )}
                 >
                   {SelectedIcon ? (
-                    <SelectedIcon size={16} />
+                    <SelectedIcon size={16} className={getText(color)} />
                   ) : (
                     <svg
                       className={`${getText(color)} opacity-70`}

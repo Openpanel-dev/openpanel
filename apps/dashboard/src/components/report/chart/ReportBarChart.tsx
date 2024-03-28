@@ -39,9 +39,10 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
           <div
             key={serie.name}
             className={cn(
-              'relative flex w-full flex-1 items-center gap-4 overflow-hidden rounded px-2 py-3 even:bg-slate-50',
-              '[&_[role=progressbar]]:shadow-sm [&_[role=progressbar]]:even:bg-white',
-              isClickable && 'cursor-pointer hover:!bg-slate-100'
+              'relative flex w-full flex-1 items-center gap-4 overflow-hidden rounded px-2 py-3 even:bg-slate-50 dark:even:bg-slate-100',
+              '[&_[role=progressbar]]:shadow-sm [&_[role=progressbar]]:even:bg-background',
+              isClickable &&
+                'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-50'
             )}
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >

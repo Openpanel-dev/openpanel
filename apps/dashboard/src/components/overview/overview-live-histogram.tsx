@@ -85,7 +85,7 @@ export function OverviewLiveHistogram({
         {staticArray.map((percent, i) => (
           <div
             key={i}
-            className="flex-1 animate-pulse rounded-md bg-slate-200"
+            className="flex-1 animate-pulse rounded-md bg-slate-200 dark:bg-slate-800"
             style={{ height: `${percent}%` }}
           />
         ))}
@@ -147,7 +147,7 @@ function Wrapper({ open, children, count }: WrapperProps) {
           <div className="absolute -top-3 right-0 text-xs text-muted-foreground">
             NOW
           </div>
-          {/* <div className="md:absolute top-0 left-0 md:card md:p-4 mr-2 md:bg-white/90 z-50"> */}
+          {/* <div className="md:absolute top-0 left-0 md:card md:p-4 mr-2 md:bg-background/90 z-50"> */}
           {children}
         </div>
       </div>

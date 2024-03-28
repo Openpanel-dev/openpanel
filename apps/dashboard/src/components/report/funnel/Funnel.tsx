@@ -99,7 +99,7 @@ export function FunnelSteps({
               )}
               key={step.event.id}
             >
-              <div className="card divide-y divide-border bg-white">
+              <div className="card divide-y divide-border bg-background">
                 <div className="p-4">
                   <p className="text-muted-foreground">Step {index + 1}</p>
                   <h3 className="font-bold">
@@ -108,7 +108,7 @@ export function FunnelSteps({
                 </div>
                 <div className="relative aspect-square">
                   <FunnelChart from={step.prevPercent} to={step.percent} />
-                  <div className="absolute left-0 right-0 top-0 flex flex-col bg-white/40 p-4">
+                  <div className="absolute left-0 right-0 top-0 flex flex-col bg-background/40 p-4">
                     <div className="font-medium uppercase text-muted-foreground">
                       Sessions
                     </div>

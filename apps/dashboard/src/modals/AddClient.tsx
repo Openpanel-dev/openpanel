@@ -150,7 +150,7 @@ export default function AddClient() {
                 />
               </TabsContent>
               <TabsContent value="other">
-                <div className="rounded bg-white p-2 px-3 text-sm">
+                <div className="rounded bg-background p-2 px-3 text-sm">
                   🔑 You will get a secret to use for your API requests.
                 </div>
               </TabsContent>

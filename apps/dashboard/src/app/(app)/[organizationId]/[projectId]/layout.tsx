@@ -1,11 +1,9 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { notFound } from 'next/navigation';
 
 import {
   getCurrentOrganizations,
   getCurrentProjects,
   getDashboardsByProjectId,
-  getProjectsByOrganizationSlug,
 } from '@openpanel/db';
 
 import { LayoutSidebar } from './layout-sidebar';

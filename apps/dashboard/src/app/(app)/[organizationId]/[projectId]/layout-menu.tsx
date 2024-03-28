@@ -40,8 +40,8 @@ function LinkWithIcon({
   return (
     <Link
       className={cn(
-        'flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium leading-none text-slate-800 transition-all transition-colors hover:bg-blue-100',
-        active && 'bg-blue-50',
+        'text-text flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium leading-none transition-all transition-colors hover:bg-slate-100',
+        active && 'bg-slate-100',
         className
       )}
       href={href}

@@ -192,13 +192,13 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 
   return (
     <>
-      <div className="col-span-6 grid grid-cols-6 gap-1">
+      <div className="col-span-6 flex flex-wrap gap-4">
         {reports.map((report, index) => (
           <button
             key={index}
             className={cn(
-              'group relative col-span-3 scale-95 transition-all md:col-span-2 lg:col-span-1',
-              index === metric && 'z-10 scale-105 rounded-xl shadow-md'
+              'group relative col-span-3 min-w-[170px] transition-all max-md:flex-1 md:col-span-2 lg:col-span-1 [&_[role="heading"]]:text-sm',
+              index === metric && 'z-10 scale-[101%] rounded-xl shadow-md'
             )}
             onClick={() => {
               setMetric(index);

@@ -7,6 +7,18 @@
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
+    --slate-50: 210 40% 98%;
+    --slate-100: 210 40% 96.1%;
+    --slate-200: 210 40% 91.4%;
+    --slate-300: 210 40% 83.9%;
+    --slate-400: 210 40% 65.1%;
+    --slate-500: 210 40% 46.9%;
+    --slate-600: 210 40% 30.6%;
+    --slate-700: 210 40% 17.5%;
+    --slate-800: 210 40% 11.2%;
+    --slate-900: 210 40% 8.2%;
+    --slate-950: 210 40% 7.2%;
+
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
 
@@ -36,8 +48,20 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222.86 32.05% 12.02%;
     --foreground: 210 40% 98%;
+
+    --slate-950: 210 40% 98%;
+    --slate-900: 210 40% 96.1%;
+    --slate-800: 210 40% 91.4%;
+    --slate-700: 210 40% 83.9%;
+    --slate-600: 210 40% 65.1%;
+    --slate-500: 210 40% 46.9%;
+    --slate-400: 210 40% 30.6%;
+    --slate-300: 210 40% 17.5%;
+    --slate-200: 210 40% 11.2%;
+    --slate-100: 210 40% 8.2%;
+    --slate-50: 210 40% 7.2%;
 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
@@ -120,9 +144,9 @@
   }
 
   .card {
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 2px 0.5px rgba(0, 0, 0, 0.08);
     border: 0 !important;
-    @apply bg-white rounded-xl;
+    @apply rounded-xl bg-background;
   }
 }
 

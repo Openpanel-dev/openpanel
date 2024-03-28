@@ -135,7 +135,7 @@ export function ReportEvents() {
                   ]}
                   label="Segment"
                 >
-                  <button className="flex items-center gap-1 rounded-md border border-border bg-white p-1 px-2 text-xs font-medium leading-none">
+                  <button className="flex items-center gap-1 rounded-md border border-border bg-background p-1 px-2 text-xs font-medium leading-none">
                     {event.segment === 'user' ? (
                       <>
                         <Users size={12} /> Unique users

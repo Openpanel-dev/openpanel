@@ -46,7 +46,7 @@ export function LayoutSidebar({
       />
       <div
         className={cn(
-          'fixed left-0 top-0 z-30 flex h-screen w-72 flex-col border-r border-border bg-white transition-transform',
+          'fixed left-0 top-0 z-30 flex h-screen w-72 flex-col border-r border-border bg-background transition-transform',
           '-translate-x-72 lg:-translate-x-0', // responsive
           active && 'translate-x-0' // force active on mobile
         )}
@@ -65,8 +65,8 @@ export function LayoutSidebar({
           <div className="block h-32 shrink-0"></div>
         </div>
         <div className="fixed bottom-0 left-0 right-0">
-          <div className="h-8 w-full bg-gradient-to-t from-white to-white/0"></div>
-          <div className="flex flex-col gap-2 bg-white p-4 pt-0">
+          <div className="h-8 w-full bg-gradient-to-t from-background to-background/0"></div>
+          <div className="flex flex-col gap-2 bg-background p-4 pt-0">
             <Link
               className={cn('flex gap-2', buttonVariants())}
               href={`/${organizationId}/${projectId}/reports`}

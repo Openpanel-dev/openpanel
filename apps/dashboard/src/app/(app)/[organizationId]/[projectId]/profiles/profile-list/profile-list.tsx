@@ -96,7 +96,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
                 className="mt-4"
                 variant="outline"
                 size="sm"
-                onClick={() => setCursor(count / 10 - 1)}
+                onClick={() => setCursor(Math.max(0, count / 10 - 1))}
               >
                 Go back
               </Button>

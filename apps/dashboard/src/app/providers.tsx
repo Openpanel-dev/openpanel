@@ -9,6 +9,7 @@ import makeStore from '@/redux';
 import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
+import { ThemeProvider } from 'next-themes';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
@@ -48,17 +49,24 @@ function AllProviders({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ReduxProvider store={storeRef.current}>
-      <api.Provider client={trpcClient} queryClient={queryClient}>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider delayDuration={200}>
-            {children}
-            <Toaster />
-            <ModalProvider />
-          </TooltipProvider>
-        </QueryClientProvider>
-      </api.Provider>
-    </ReduxProvider>
+    <ThemeProvider
+      enableSystem
+      attribute="class"
+      defaultTheme="system"
+      disableTransitionOnChange
+    >
+      <ReduxProvider store={storeRef.current}>
+        <api.Provider client={trpcClient} queryClient={queryClient}>
+          <QueryClientProvider client={queryClient}>
+            <TooltipProvider delayDuration={200}>
+              {children}
+              <Toaster />
+              <ModalProvider />
+            </TooltipProvider>
+          </QueryClientProvider>
+        </api.Provider>
+      </ReduxProvider>
+    </ThemeProvider>
   );
 }
 

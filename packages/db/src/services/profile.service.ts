@@ -84,7 +84,7 @@ export async function getProfileList({
     };
   }
   sb.limit = take;
-  sb.offset = (cursor ?? 0) * take;
+  sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'max_created_at DESC';
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);

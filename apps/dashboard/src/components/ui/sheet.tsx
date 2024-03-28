@@ -101,7 +101,7 @@ const SheetFooter = ({
   <div
     className={cn(
       'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
-      'sticky bottom-0 left-0 right-0 mt-auto bg-white',
+      'sticky bottom-0 left-0 right-0 mt-auto bg-background',
       className
     )}
     {...props}

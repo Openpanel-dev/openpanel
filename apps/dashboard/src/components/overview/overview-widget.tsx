@@ -20,7 +20,7 @@ export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (
     <WidgetHeadBase
       className={cn(
-        'flex flex-col p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:justify-between [&_.title]:p-4',
+        'flex flex-col rounded-t-xl p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:justify-between [&_.title]:p-4',
         className
       )}
       {...props}
@@ -85,7 +85,7 @@ export function WidgetButtons({
     <div
       ref={container}
       className={cn(
-        'flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b [&_button.active]:border-black [&_button.active]:opacity-100 [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-xs [&_button]:opacity-50',
+        '-mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-xs [&_button]:opacity-50',
         className
       )}
       style={{ gap }}

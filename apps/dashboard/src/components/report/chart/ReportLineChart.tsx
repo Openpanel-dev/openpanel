@@ -50,6 +50,11 @@ export function ReportLineChart({
       <ResponsiveContainer>
         {({ width, height }) => (
           <LineChart width={width} height={height} data={rechartData}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={true}
+              vertical={false}
+            />
             {references.map((ref) => (
               <ReferenceLine
                 key={ref.id}
@@ -65,11 +70,6 @@ export function ReportLineChart({
                 fontSize={10}
               />
             ))}
-            <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={true}
-              vertical={false}
-            />
             <YAxis
               width={getYAxisWidth(data.metrics.max)}
               fontSize={12}

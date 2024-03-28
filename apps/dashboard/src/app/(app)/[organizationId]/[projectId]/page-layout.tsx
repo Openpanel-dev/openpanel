@@ -1,3 +1,5 @@
+import DarkModeToggle from '@/components/dark-mode-toggle';
+
 import {
   getCurrentProjects,
   getProjectsByOrganizationSlug,
@@ -20,9 +22,14 @@ export default async function PageLayout({
 
   return (
     <>
-      <div className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-white px-4 pl-12 lg:pl-4">
+      <div className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-background px-4 pl-12 lg:pl-4">
         <div className="text-xl font-medium">{title}</div>
-        {projects.length > 0 && <LayoutProjectSelector projects={projects} />}
+        <div className="flex gap-2">
+          <div>
+            <DarkModeToggle className="hidden sm:flex" />
+          </div>
+          {projects.length > 0 && <LayoutProjectSelector projects={projects} />}
+        </div>
       </div>
       <div>{children}</div>
     </>

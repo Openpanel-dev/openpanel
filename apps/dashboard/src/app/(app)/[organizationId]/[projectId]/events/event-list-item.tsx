@@ -55,8 +55,9 @@ export function EventListItem(props: EventListItemProps) {
       <button
         onClick={() => setIsDetailsOpen(true)}
         className={cn(
-          'card flex w-full items-center justify-between rounded-lg p-4 transition-colors hover:bg-slate-50',
-          meta?.conversion && `bg-${meta.color}-50 hover:bg-${meta.color}-100`
+          'card hover:bg-light-background flex w-full items-center justify-between rounded-lg p-4 transition-colors',
+          meta?.conversion &&
+            `bg-${meta.color}-50 dark:bg-${meta.color}-900 hover:bg-${meta.color}-100 dark:hover:bg-${meta.color}-700`
         )}
       >
         <div className="flex items-center gap-4 text-left text-sm">

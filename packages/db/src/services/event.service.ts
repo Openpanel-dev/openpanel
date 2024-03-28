@@ -260,7 +260,7 @@ export async function getEventList({
   const { sb, getSql, join } = createSqlBuilder();
 
   sb.limit = take;
-  sb.offset = (cursor ?? 0) * take;
+  sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.where.projectId = `project_id = '${projectId}'`;
 
   if (profileId) {

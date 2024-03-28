@@ -23,7 +23,7 @@ export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
       <div className="bg-black/5 p-1 px-2">{name}</div>
       <div
         className={cn(
-          'overflow-hidden text-ellipsis whitespace-nowrap bg-white p-1 px-2 font-mono text-blue-700 shadow-[inset_0_0_0_1px_#fff]',
+          'overflow-hidden text-ellipsis whitespace-nowrap bg-background p-1 px-2 font-mono text-blue-700',
           clickable && 'group-hover:underline'
         )}
       >
