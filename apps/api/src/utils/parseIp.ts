@@ -1,4 +1,5 @@
 import type { FastifyRequest } from 'fastify';
+import requestIp from 'request-ip';
 
 import { logger } from './logger';
 
@@ -26,15 +27,7 @@ const geo: GeoLocation = {
 const ignore = ['127.0.0.1', '::1'];
 
 export function getClientIp(req: FastifyRequest) {
-  if (req.headers['cf-connecting-ip']) {
-    return String(req.headers['cf-connecting-ip']);
-  }
-
-  if (req.headers['x-forwarded-for']) {
-    return String(req.headers['x-forwarded-for']);
-  }
-
-  return null;
+  return requestIp.getClientIp(req);
 }
 
 export async function parseIp(ip?: string): Promise<GeoLocation> {

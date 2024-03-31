@@ -121,7 +121,7 @@ export async function postEvent(
       country: event?.country || geo.country || '',
       city: event?.city || geo.city || '',
       region: event?.region || geo.region || '',
-      continent: event?.continent ?? '',
+      continent: event?.continent || geo.continent || '',
       os: event?.os ?? '',
       osVersion: event?.osVersion ?? '',
       browser: event?.browser ?? '',
