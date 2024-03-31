@@ -4,7 +4,7 @@ import path from 'node:path';
 import arg from 'arg';
 import semver from 'semver';
 
-const sdkPackages = ['sdk', 'react-native', 'web', 'nextjs'];
+const sdkPackages = ['sdk', 'react-native', 'web', 'nextjs', 'express'];
 
 const workspacePath = (relativePath: string) =>
   path.resolve(__dirname, '../../', relativePath);
