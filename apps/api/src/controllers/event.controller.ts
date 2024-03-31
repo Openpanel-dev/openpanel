@@ -52,6 +52,8 @@ function createContextLogger(request: FastifyRequest) {
   };
 }
 
+const GLOBAL_PROPERTIES = ['__path', '__referrer'];
+
 export async function postEvent(
   request: FastifyRequest<{
     Body: PostEventPayload;
@@ -84,7 +86,7 @@ export async function postEvent(
   const origin = request.headers.origin!;
   const ua = request.headers['user-agent']!;
   const uaInfo = parseUserAgent(ua);
-  const salts = await getSalts();
+  const [geo, salts] = await Promise.all([parseIp(ip), getSalts()]);
   const currentDeviceId = generateDeviceId({
     salt: salts.current,
     origin,
@@ -114,18 +116,11 @@ export async function postEvent(
       sessionId: event?.sessionId || '',
       profileId,
       projectId,
-      properties: Object.assign(
-        {},
-        omit(['__path', '__referrer'], properties),
-        {
-          hash,
-          query,
-        }
-      ),
+      properties: Object.assign({}, omit(GLOBAL_PROPERTIES, properties)),
       createdAt,
-      country: event?.country ?? '',
-      city: event?.city ?? '',
-      region: event?.region ?? '',
+      country: event?.country || geo.country || '',
+      city: event?.city || geo.city || '',
+      region: event?.region || geo.region || '',
       continent: event?.continent ?? '',
       os: event?.os ?? '',
       osVersion: event?.osVersion ?? '',
@@ -164,11 +159,10 @@ export async function postEvent(
     return reply.status(200).send('');
   }
 
-  const [geo, sessionEndJobCurrentDeviceId, sessionEndJobPreviousDeviceId] =
+  const [sessionEndJobCurrentDeviceId, sessionEndJobPreviousDeviceId] =
     await withTiming(
       'Get geo and jobs from queue',
       Promise.all([
-        parseIp(ip),
         findJobByPrefix(
           eventsQueue,
           `sessionEnd:${projectId}:${currentDeviceId}:`
@@ -225,9 +219,9 @@ export async function postEvent(
     profileId,
     projectId,
     sessionId: createSessionStart ? uuid() : sessionStartEvent?.sessionId ?? '',
-    properties: Object.assign({}, omit(['__path', '__referrer'], properties), {
-      hash,
-      query,
+    properties: Object.assign({}, omit(GLOBAL_PROPERTIES, properties), {
+      __hash: hash,
+      __query: query,
     }),
     createdAt,
     country: geo.country,

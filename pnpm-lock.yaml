@@ -891,6 +891,46 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
+  packages/sdks/express:
+    dependencies:
+      '@openpanel/sdk':
+        specifier: workspace:*
+        version: link:../sdk
+      express:
+        specifier: ^3.0.0 || ^4.0.0
+        version: 4.18.2
+      request-ip:
+        specifier: ^3.3.0
+        version: 3.3.0
+    devDependencies:
+      '@openpanel/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint
+      '@openpanel/prettier-config':
+        specifier: workspace:*
+        version: link:../../../tooling/prettier
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../../tooling/typescript
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.21
+      '@types/request-ip':
+        specifier: ^0.0.41
+        version: 0.0.41
+      eslint:
+        specifier: ^8.48.0
+        version: 8.56.0
+      prettier:
+        specifier: ^3.0.3
+        version: 3.2.5
+      tsup:
+        specifier: ^7.2.0
+        version: 7.3.0(typescript@5.3.3)
+      typescript:
+        specifier: ^5.2.2
+        version: 5.3.3
+
   packages/sdks/nextjs:
     dependencies:
       '@openpanel/web':
