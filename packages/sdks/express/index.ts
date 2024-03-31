@@ -25,7 +25,7 @@ export default function createMiddleware(options: OpenpanelOptions) {
     const sdk = new OpenpanelSdk(options);
     const ip = getClientIp(req);
     if (ip) {
-      sdk.api.headers['x-forwarded-for'] = ip;
+      sdk.api.headers['x-client-ip'] = ip;
     }
 
     if (options.getProfileId) {
