@@ -50,9 +50,8 @@ function AllProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider
-      enableSystem
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="light"
       disableTransitionOnChange
     >
       <ReduxProvider store={storeRef.current}>
