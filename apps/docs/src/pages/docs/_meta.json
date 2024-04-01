@@ -12,6 +12,7 @@
   "vue": "Vue",
   "astro": "Astro",
   "node": "Node (backend)",
+  "express": "Express (backend)",
   "-- Others": {
     "type": "separator",
     "title": "Others"
