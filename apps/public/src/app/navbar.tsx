@@ -31,7 +31,7 @@ export function Navbar({ darkText = false, className }: Props) {
           <a href="https://docs.openpanel.dev" target="_blank">
             Docs
           </a>
-          <a href="https://github.com/Openpanel-dev/openpanel" target="_blank">
+          <a href="https://git.new/openpanel" target="_blank">
             Github
           </a>
           <a href="https://dashboard.openpanel.dev" target="_blank">
