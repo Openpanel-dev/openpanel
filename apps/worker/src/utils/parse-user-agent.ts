@@ -1,54 +1,23 @@
-export function getOS(ua?: string) {
-  if (!ua) {
-    return null;
-  }
-  if (/iPad/i.test(ua)) {
-    return 'iPad';
-  }
-  if (/iPhone/i.test(ua)) {
-    return 'iPhone';
-  }
-  if (/iPod/i.test(ua)) {
-    return 'iPod';
-  }
-  if (/Macintosh/i.test(ua)) {
-    return 'macOS';
-  }
-  if (/IEMobile|Windows/i.test(ua)) {
-    return 'Windows';
-  }
-  if (/Android/i.test(ua)) {
-    return 'Android';
-  }
-  if (/BlackBerry/i.test(ua)) {
-    return 'BlackBerry';
-  }
-  if (/EF500/i.test(ua)) {
-    return 'Bluebird';
-  }
-  if (/CrOS/i.test(ua)) {
-    return 'Chrome OS';
-  }
-  if (/DL-AXIS/i.test(ua)) {
-    return 'Datalogic';
-  }
-  if (/CT50/i.test(ua)) {
-    return 'Honeywell';
-  }
-  if (/TC70|TC55/i.test(ua)) {
-    return 'Zebra';
-  }
-  if (/Linux/i.test(ua)) {
-    return 'Generic Linux';
-  }
-  return 'Unknown';
+import { UAParser } from 'ua-parser-js';
+
+export function isUserAgentSet(ua: string) {
+  return ua !== 'node' && ua !== 'undici' && !!ua;
 }
 
-export function getDevice(ua?: string) {
-  if (!ua) {
-    return null;
-  }
+export function parseUserAgent(ua: string) {
+  const res = new UAParser(ua).getResult();
+  return {
+    os: res.os.name,
+    osVersion: res.os.version,
+    browser: res.browser.name,
+    browserVersion: res.browser.version,
+    device: res.device.type ?? getDevice(ua),
+    brand: res.device.vendor,
+    model: res.device.model,
+  };
+}
 
+export function getDevice(ua: string) {
   const t1 =
     /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(
       ua

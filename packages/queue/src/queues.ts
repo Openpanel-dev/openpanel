@@ -1,9 +1,29 @@
 import { Queue } from 'bullmq';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { PostEventPayload } from '@openpanel/sdk';
 
 import { connection } from './connection';
 
+export interface EventsQueuePayloadIncomingEvent {
+  type: 'incomingEvent';
+  payload: {
+    projectId: string;
+    event: PostEventPayload;
+    geo: {
+      country: string | undefined;
+      city: string | undefined;
+      region: string | undefined;
+      continent: string | undefined;
+    };
+    headers: {
+      origin: string | undefined;
+      ua: string | undefined;
+    };
+    currentDeviceId: string;
+    previousDeviceId: string;
+  };
+}
 export interface EventsQueuePayloadCreateEvent {
   type: 'createEvent';
   payload: Omit<IServiceCreateEventPayload, 'id'>;
@@ -14,7 +34,8 @@ export interface EventsQueuePayloadCreateSessionEnd {
 }
 export type EventsQueuePayload =
   | EventsQueuePayloadCreateEvent
-  | EventsQueuePayloadCreateSessionEnd;
+  | EventsQueuePayloadCreateSessionEnd
+  | EventsQueuePayloadIncomingEvent;
 
 export interface CronQueuePayload {
   type: 'salt';

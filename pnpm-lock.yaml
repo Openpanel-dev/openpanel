@@ -672,6 +672,15 @@ importers:
       ramda:
         specifier: ^0.29.1
         version: 0.29.1
+      sqlstring:
+        specifier: ^2.3.3
+        version: 2.3.3
+      ua-parser-js:
+        specifier: ^1.0.37
+        version: 1.0.37
+      uuid:
+        specifier: ^9.0.1
+        version: 9.0.1
     devDependencies:
       '@openpanel/eslint-config':
         specifier: workspace:*
@@ -688,6 +697,15 @@ importers:
       '@types/ramda':
         specifier: ^0.29.6
         version: 0.29.10
+      '@types/sqlstring':
+        specifier: ^2.3.2
+        version: 2.3.2
+      '@types/ua-parser-js':
+        specifier: ^0.7.39
+        version: 0.7.39
+      '@types/uuid':
+        specifier: ^9.0.8
+        version: 9.0.8
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -847,6 +865,9 @@ importers:
       '@openpanel/prettier-config':
         specifier: workspace:*
         version: link:../../tooling/prettier
+      '@openpanel/sdk':
+        specifier: workspace:*
+        version: link:../sdks/sdk
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript

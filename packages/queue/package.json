@@ -12,6 +12,7 @@
     "bullmq": "^5.1.1"
   },
   "devDependencies": {
+    "@openpanel/sdk": "workspace:*",
     "@openpanel/eslint-config": "workspace:*",
     "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
