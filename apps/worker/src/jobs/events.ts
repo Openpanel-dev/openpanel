@@ -42,7 +42,7 @@ export async function eventsJob(job: Job<EventsQueuePayload>) {
 
 async function updateEventsCount(projectId: string) {
   const res = await chQuery<{ count: number }>(
-    `SELECT * FROM events WHERE project_id = ${escape(projectId)}`
+    `SELECT count(*) as count FROM events WHERE project_id = ${escape(projectId)}`
   );
   const count = res[0]?.count;
   if (count) {
