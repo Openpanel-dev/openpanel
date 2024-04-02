@@ -118,11 +118,6 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
             href={`/${params.organizationId}/${projectId}/settings/projects`}
           />
           <LinkWithIcon
-            icon={KeySquareIcon}
-            label="Clients"
-            href={`/${params.organizationId}/${projectId}/settings/clients`}
-          />
-          <LinkWithIcon
             icon={UserIcon}
             label="Profile (yours)"
             href={`/${params.organizationId}/${projectId}/settings/profile`}

@@ -40,7 +40,10 @@ const validation = z
 
 type IForm = z.infer<typeof validation>;
 
-export default function AddClient() {
+interface Props {
+  projectId: string;
+}
+export default function AddClient(props: Props) {
   const { organizationId, projectId } = useAppParams();
   const router = useRouter();
   const form = useForm<IForm>({
@@ -49,7 +52,7 @@ export default function AddClient() {
       name: '',
       cors: '',
       tab: 'website',
-      projectId,
+      projectId: props.projectId ?? projectId,
     },
   });
   const mutation = api.client.create.useMutation({

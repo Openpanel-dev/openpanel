@@ -33,14 +33,22 @@ TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
 
 interface TooltiperProps {
-  asChild: boolean;
+  asChild?: boolean;
   content: string;
   children: React.ReactNode;
+  className?: string;
 }
-export function Tooltiper({ asChild, content, children }: TooltiperProps) {
+export function Tooltiper({
+  asChild,
+  content,
+  children,
+  className,
+}: TooltiperProps) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild={asChild}>{children}</TooltipTrigger>
+      <TooltipTrigger asChild={asChild} className={className}>
+        {children}
+      </TooltipTrigger>
       <TooltipContent>{content}</TooltipContent>
     </Tooltip>
   );

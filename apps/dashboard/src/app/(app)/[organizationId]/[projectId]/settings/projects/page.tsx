@@ -1,6 +1,9 @@
 import PageLayout from '@/app/(app)/[organizationId]/[projectId]/page-layout';
 
-import { getProjectsByOrganizationSlug } from '@openpanel/db';
+import {
+  getClientsByOrganizationId,
+  getProjectsByOrganizationSlug,
+} from '@openpanel/db';
 
 import ListProjects from './list-projects';
 
@@ -11,11 +14,14 @@ interface PageProps {
 }
 
 export default async function Page({ params: { organizationId } }: PageProps) {
-  const projects = await getProjectsByOrganizationSlug(organizationId);
+  const [projects, clients] = await Promise.all([
+    getProjectsByOrganizationSlug(organizationId),
+    getClientsByOrganizationId(organizationId),
+  ]);
 
   return (
     <PageLayout title="Projects" organizationSlug={organizationId}>
-      <ListProjects projects={projects} />
+      <ListProjects projects={projects} clients={clients} />
     </PageLayout>
   );
 }

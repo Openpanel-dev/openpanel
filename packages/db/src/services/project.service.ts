@@ -32,6 +32,9 @@ export async function getProjectsByOrganizationSlug(slug: string) {
     where: {
       organization_slug: slug,
     },
+    orderBy: {
+      createdAt: 'desc',
+    },
   });
 
   return res.map(transformProject);
