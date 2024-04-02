@@ -12,6 +12,8 @@ const createFlagIcon = (url: string) => {
 
 const data = {
   se: createFlagIcon('se'),
+  jp: createFlagIcon('jp'),
+  hk: createFlagIcon('hk'),
   us: createFlagIcon('us'),
   gb: createFlagIcon('gb'),
   ua: createFlagIcon('ua'),
