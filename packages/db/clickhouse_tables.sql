@@ -31,6 +31,7 @@ ORDER BY
   (project_id, created_at, profile_id) SETTINGS index_granularity = 8192;
 
 CREATE TABLE openpanel.events_bots (
+  `id` UUID DEFAULT generateUUIDv4(),
   `project_id` String,
   `name` String,
   `type` String,
@@ -71,3 +72,8 @@ CREATE TABLE ba (
 ) ENGINE MergeTree
 ORDER BY
   (a, b) SETTINGS index_granularity = 8192;
+
+ALTER TABLE
+  test.events_bots
+ADD
+  COLUMN id UUID DEFAULT generateUUIDv4() FIRST;

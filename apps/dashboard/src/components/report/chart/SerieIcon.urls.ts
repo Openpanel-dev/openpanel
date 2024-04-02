@@ -24,6 +24,7 @@ const data = {
   linkedin: 'https://linkedin.com',
   linux: 'https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg',
   microlaunch: 'https://microlaunch.net',
+  openalternative: 'https://openalternative.co',
   opera: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Opera_2015_icon.svg/1920px-Opera_2015_icon.svg.png',
   pinterest: 'https://www.pinterest.se',
   producthunt: 'https://www.producthunt.com',

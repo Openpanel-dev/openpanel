@@ -9,6 +9,7 @@ import type { IChartType } from '@openpanel/validation';
 import { LazyChart } from '../report/chart/LazyChart';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
+import OverviewTopBots from './overview-top-bots';
 import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
@@ -112,6 +113,10 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
         metric: 'sum',
       },
     },
+    bot: {
+      title: 'Bots',
+      btn: 'Bots',
+    },
   });
 
   return (
@@ -135,14 +140,18 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <LazyChart
-            hideID
-            {...widget.chart}
-            previous={false}
-            onClick={(item) => {
-              setFilter('path', item.name);
-            }}
-          />
+          {widget.key === 'bot' ? (
+            <OverviewTopBots projectId={projectId} />
+          ) : (
+            <LazyChart
+              hideID
+              {...widget.chart}
+              previous={false}
+              onClick={(item) => {
+                setFilter('path', item.name);
+              }}
+            />
+          )}
         </WidgetBody>
       </Widget>
     </>

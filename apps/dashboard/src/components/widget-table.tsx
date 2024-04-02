@@ -1,3 +1,5 @@
+import { cn } from '@/utils/cn';
+
 interface Props<T> {
   columns: {
     name: string;
@@ -5,11 +7,17 @@ interface Props<T> {
   }[];
   keyExtractor: (item: T) => string;
   data: T[];
+  className?: string;
 }
 
-export function WidgetTable<T>({ columns, data, keyExtractor }: Props<T>) {
+export function WidgetTable<T>({
+  className,
+  columns,
+  data,
+  keyExtractor,
+}: Props<T>) {
   return (
-    <table className="w-full">
+    <table className={cn('w-full', className)}>
       <thead className="border-b border-border bg-slate-50 text-sm text-slate-500 [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium">
         <tr>
           {columns.map((column) => (
