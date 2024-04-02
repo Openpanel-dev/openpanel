@@ -116,6 +116,8 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
     bot: {
       title: 'Bots',
       btn: 'Bots',
+      // @ts-expect-error
+      chart: null,
     },
   });
 
