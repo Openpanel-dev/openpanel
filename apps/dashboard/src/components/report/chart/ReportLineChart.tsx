@@ -54,6 +54,7 @@ export function ReportLineChart({
               strokeDasharray="3 3"
               horizontal={true}
               vertical={false}
+              className="stroke-slate-300"
             />
             {references.map((ref) => (
               <ReferenceLine
@@ -93,6 +94,7 @@ export function ReportLineChart({
               return (
                 <React.Fragment key={serie.name}>
                   <Line
+                    dot={false}
                     type={lineType}
                     key={serie.name}
                     name={serie.name}

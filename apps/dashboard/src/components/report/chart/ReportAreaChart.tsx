@@ -104,6 +104,7 @@ export function ReportAreaChart({
               strokeDasharray="3 3"
               horizontal={true}
               vertical={false}
+              className="stroke-slate-300"
             />
           </AreaChart>
         )}

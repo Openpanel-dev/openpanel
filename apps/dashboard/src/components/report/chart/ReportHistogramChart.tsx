@@ -47,7 +47,11 @@ export function ReportHistogramChart({
       <ResponsiveContainer>
         {({ width, height }) => (
           <BarChart width={width} height={height} data={rechartData}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              className="stroke-slate-300"
+            />
             <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
             <XAxis
               fontSize={12}
