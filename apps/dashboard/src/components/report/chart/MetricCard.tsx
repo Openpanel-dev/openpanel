@@ -3,7 +3,7 @@
 import { ColorSquare } from '@/components/color-square';
 import { fancyMinutes, useNumber } from '@/hooks/useNumerFormatter';
 import type { IChartData } from '@/trpc/client';
-import { theme } from '@/utils/theme';
+import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
 
@@ -56,17 +56,25 @@ export function MetricCard({
 
   return (
     <div
-      className="card group relative h-24 overflow-hidden p-4"
+      className={cn(
+        'group relative h-[70px] overflow-hidden',
+        '[#report-editor_&&]:card [#report-editor_&&]:px-4 [#report-editor_&&]:py-2'
+      )}
       key={serie.name}
     >
-      <div className="absolute inset-0 -left-1 -right-1 z-0 rounded-md opacity-20 transition-opacity duration-300 group-hover:opacity-50">
+      <div
+        className={cn(
+          'absolute -right-1 bottom-2 top-0 z-0 rounded-md opacity-20 transition-opacity duration-300 group-hover:opacity-50',
+          previous ? 'left-[80px]' : '-left-1'
+        )}
+      >
         <AutoSizer>
           {({ width, height }) => (
             <AreaChart
               width={width}
-              height={height / 4}
+              height={height / 3}
               data={serie.data}
-              style={{ marginTop: (height / 4) * 3 }}
+              style={{ marginTop: (height / 3) * 2 }}
             >
               <Area
                 dataKey="count"
@@ -93,15 +101,15 @@ export function MetricCard({
           </div>
           {/* <PreviousDiffIndicator {...serie.metrics.previous[metric]} /> */}
         </div>
-        <div className="mt-2 flex items-end justify-between">
+        <div className="flex items-end justify-between">
           <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">
             {renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
           </div>
-          <PreviousDiffIndicatorText
-            {...serie.metrics.previous[metric]}
-            className="mb-0.5 text-xs font-medium"
-          />
         </div>
+        <PreviousDiffIndicatorText
+          {...previous}
+          className="mb-0.5 text-xs font-medium"
+        />
       </div>
     </div>
   );
@@ -119,9 +127,10 @@ export function MetricCardEmpty() {
 
 export function MetricCardLoading() {
   return (
-    <div className="card flex h-24 flex-col p-4 py-5">
+    <div className="flex h-[70px] flex-col justify-between">
       <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200"></div>
-      <div className="mt-auto h-6 w-1/5 animate-pulse rounded bg-slate-200"></div>
+      <div className="h-8 w-1/3 animate-pulse rounded bg-slate-200"></div>
+      <div className="h-3 w-1/5 animate-pulse rounded bg-slate-200"></div>
     </div>
   );
 }

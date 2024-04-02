@@ -85,7 +85,7 @@ export function WidgetButtons({
     <div
       ref={container}
       className={cn(
-        '-mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-xs [&_button]:opacity-50',
+        '-mb-px -mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-xs [&_button]:opacity-50',
         className
       )}
       style={{ gap }}

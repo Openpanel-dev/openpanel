@@ -191,14 +191,14 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
   const selectedMetric = reports[metric]!;
 
   return (
-    <>
-      <div className="col-span-6 flex flex-wrap gap-4">
+    <div className="card col-span-6 p-4">
+      <div className="mb-2 grid grid-cols-6 gap-2">
         {reports.map((report, index) => (
           <button
             key={index}
             className={cn(
-              'group relative col-span-3 min-w-[170px] transition-all max-md:flex-1 md:col-span-2 lg:col-span-1 [&_[role="heading"]]:text-sm',
-              index === metric && 'z-10 scale-[101%] rounded-xl shadow-md'
+              'col-span-3 rounded p-2 transition-all max-md:flex-1 md:col-span-2 lg:col-span-1 [&_[role="heading"]]:text-sm',
+              index === metric && 'border-l-4 border-blue-600 bg-slate-50'
             )}
             onClick={() => {
               setMetric(index);
@@ -209,19 +209,12 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           </button>
         ))}
       </div>
-      <Widget className="col-span-6">
-        <WidgetHead>
-          <div className="title">{selectedMetric.events[0]?.displayName}</div>
-        </WidgetHead>
-        <WidgetBody>
-          <ChartSwitch
-            key={selectedMetric.id}
-            hideID
-            {...selectedMetric}
-            chartType="linear"
-          />
-        </WidgetBody>
-      </Widget>
-    </>
+      <ChartSwitch
+        key={selectedMetric.id}
+        hideID
+        {...selectedMetric}
+        chartType="linear"
+      />
+    </div>
   );
 }

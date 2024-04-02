@@ -97,7 +97,7 @@ export default function ReportEditor({
           <ReportSaveButton />
         </div>
       </StickyBelowHeader>
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-4 p-4" id="report-editor">
         {report.ready && (
           <ChartSwitch {...report} projectId={projectId} editMode />
         )}
