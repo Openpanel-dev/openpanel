@@ -144,6 +144,9 @@ importers:
       '@openpanel/db':
         specifier: workspace:^
         version: link:../../packages/db
+      '@openpanel/nextjs':
+        specifier: 0.0.8-beta
+        version: 0.0.8-beta(next@14.0.4)(react-dom@18.2.0)(react@18.2.0)
       '@openpanel/queue':
         specifier: workspace:^
         version: link:../../packages/queue
@@ -4451,14 +4454,37 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
+  /@openpanel/nextjs@0.0.8-beta(next@14.0.4)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-rSPTKtBOEJ6ewYcJuLdAlGv9YO7FfY6dR8kfJ9k9mMtIJjmwRbtGqXMHRhrGhviQ7p2sRPADG/BaNwEoZKi3Cw==}
+    peerDependencies:
+      next: ^12.0.0 || ^13.0.0 || ^14.0.0
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@openpanel/web': 0.0.8-beta
+      next: 14.0.4(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
   /@openpanel/sdk@0.0.6-beta:
     resolution: {integrity: sha512-siUvMTgaHb7ZT9BVIBPIhEhPz5PaBQLCik9SuibwufsO6QWBz7nYqkMMPtqcuAjGFq6V7LcHWBl+Wq7NGZ8obA==}
+    dev: false
+
+  /@openpanel/sdk@0.0.8-beta:
+    resolution: {integrity: sha512-Cs23tPoQqZLiG3A9C3CTPzyhurX+Q/mScaaK79/Kuvcv4vZjqUztLtLqxRx/zxeXYVbanzwR3blJCeTmABexKQ==}
     dev: false
 
   /@openpanel/web@0.0.6-beta:
     resolution: {integrity: sha512-7FwtbBWb8XqIUZ4DjdzMFsEWZo85RDhKkfgC/m6bV71QlQ3iMr+c/XuH6dO3bL7O+q0uFodD9IPksyF/u+P+KA==}
     dependencies:
       '@openpanel/sdk': 0.0.6-beta
+    dev: false
+
+  /@openpanel/web@0.0.8-beta:
+    resolution: {integrity: sha512-7xwG4QhXBan4r6SH+q7MrVZPS87r6UvUGHsu7dCIWDhTex+lW3CeA0NEHRvUSfH6Z+oeQ7xstVczEb0h/VikdA==}
+    dependencies:
+      '@openpanel/sdk': 0.0.8-beta
     dev: false
 
   /@panva/hkdf@1.1.1:

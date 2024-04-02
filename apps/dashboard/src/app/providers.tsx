@@ -14,8 +14,10 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
 
+import { OpenpanelProvider } from '@openpanel/nextjs';
+
 function AllProviders({ children }: { children: React.ReactNode }) {
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -54,6 +56,12 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       defaultTheme="light"
       disableTransitionOnChange
     >
+      <OpenpanelProvider
+        clientId="7f1a992c-12bf-4def-b636-4aee3139e85d"
+        profileId={userId || undefined}
+        trackScreenViews
+        trackOutgoingLinks
+      />
       <ReduxProvider store={storeRef.current}>
         <api.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
