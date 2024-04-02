@@ -30,7 +30,7 @@ export default function Page({
 }: PageProps) {
   return (
     <PageLayout title="Profiles" organizationSlug={organizationId}>
-      <StickyBelowHeader className="flex justify-between p-4">
+      {/* <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           projectId={projectId}
           nuqsOptions={nuqsOptions}
@@ -40,7 +40,7 @@ export default function Page({
           className="justify-end p-0"
           nuqsOptions={nuqsOptions}
         />
-      </StickyBelowHeader>
+      </StickyBelowHeader> */}
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
         <ProfileListServer
           projectId={projectId}

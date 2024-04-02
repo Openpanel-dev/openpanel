@@ -133,7 +133,7 @@ export default async function Page({
         </div>
       }
     >
-      <StickyBelowHeader className="flex justify-between p-4">
+      {/* <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           projectId={projectId}
           mode="events"
@@ -143,7 +143,7 @@ export default async function Page({
           nuqsOptions={{ shallow: false }}
           className="justify-end p-0"
         />
-      </StickyBelowHeader>
+      </StickyBelowHeader> */}
       <div className="p-4">
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
