@@ -3,14 +3,15 @@ import { CheckIcon, StarIcon } from 'lucide-react';
 import { Heading2, Lead2 } from './copy';
 
 const pricing = [
-  { price: 'Free', events: 3000, hint: 'Try it' },
+  { price: 'Free', events: 5000, hint: 'Try it' },
   { price: '$5', events: 10_000 },
-  { price: '$10', events: 20_000 },
-  { price: '$20', events: 100_000, hint: 'Great value' },
-  { price: '$30', events: 200_000 },
-  { price: '$50', events: 400_000 },
-  { price: '$70', events: 600_000 },
-  { price: '$90', events: 1_000_000 },
+  { price: '$10', events: 100_000 },
+  { price: '$20', events: 200_000, hint: 'Great value' },
+  { price: '$40', events: 500_000 },
+  { price: '$60', events: 1_000_000 },
+  { price: '$80', events: 2_000_000 },
+  { price: '$120', events: 5_000_000 },
+  { price: '$150', events: 10_000_000 },
 ];
 
 export function Pricing() {
