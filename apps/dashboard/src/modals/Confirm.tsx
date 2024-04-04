@@ -1,17 +1,15 @@
-'use client';
-
 import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-export interface ConfirmProps {
+export type ConfirmProps = {
   title: string;
   text: string;
   onConfirm: () => void;
   onCancel?: () => void;
-}
+};
 
 export default function Confirm({
   title,

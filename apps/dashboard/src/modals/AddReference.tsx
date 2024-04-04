@@ -1,5 +1,3 @@
-'use client';
-
 import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';

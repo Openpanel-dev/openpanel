@@ -1,5 +1,3 @@
-'use client';
-
 import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
@@ -17,10 +15,10 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-interface EditReportProps {
+type EditReportProps = {
   form: IForm;
   onSubmit: SubmitHandler<IForm>;
-}
+};
 
 export default function EditReport({ form, onSubmit }: EditReportProps) {
   const { register, handleSubmit, reset, formState } = useForm<IForm>({

@@ -1,5 +1,3 @@
-'use client';
-
 import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
@@ -18,10 +16,10 @@ import type { IChartInput } from '@openpanel/validation';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
-interface SaveReportProps {
+type SaveReportProps = {
   report: IChartInput;
   reportId?: string;
-}
+};
 
 const validator = z.object({
   name: z.string().min(1, 'Required'),
@@ -74,7 +72,6 @@ export default function SaveReport({ report }: SaveReportProps) {
   const dashboardQuery = api.dashboard.list.useQuery({
     projectId,
   });
-
   const dashboards = (dashboardQuery.data ?? []).map((item) => ({
     value: item.id,
     label: item.name,

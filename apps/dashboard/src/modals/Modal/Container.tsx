@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { DialogContent } from '@/components/ui/dialog';
 import { X } from 'lucide-react';
 
 import { popModal } from '..';
@@ -10,11 +11,7 @@ interface ModalContentProps {
 }
 
 export function ModalContent({ children }: ModalContentProps) {
-  return (
-    <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] border bg-background p-6 shadow-lg duration-200  sm:rounded-lg md:w-full">
-      {children}
-    </div>
-  );
+  return <DialogContent>{children}</DialogContent>;
 }
 
 interface ModalHeaderProps {
