@@ -71,7 +71,7 @@
     "next-themes": "^0.2.1",
     "nuqs": "^1.16.1",
     "prisma-error-enum": "^0.1.3",
-    "pushmodal": "^0.0.7",
+    "pushmodal": "^0.0.8",
     "ramda": "^0.29.1",
     "random-animal-name": "^0.1.1",
     "react": "18.2.0",
