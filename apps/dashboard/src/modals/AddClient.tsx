@@ -43,7 +43,7 @@ interface Props {
   projectId: string;
 }
 export default function AddClient(props: Props) {
-  const { organizationId, projectId } = useAppParams();
+  const { organizationSlug, projectId } = useAppParams();
   const router = useRouter();
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
@@ -62,14 +62,14 @@ export default function AddClient(props: Props) {
     },
   });
   const query = api.project.list.useQuery({
-    organizationId,
+    organizationSlug,
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
     mutation.mutate({
       name: values.name,
       cors: values.tab === 'website' ? values.cors : null,
       projectId: values.projectId,
-      organizationId,
+      organizationSlug,
     });
   };
 

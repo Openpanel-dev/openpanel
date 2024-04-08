@@ -31,7 +31,7 @@ const nuqsOptions = {
 };
 
 export default async function Page({
-  params: { projectId, organizationId },
+  params: { projectId, organizationId: organizationSlug },
   searchParams,
 }: PageProps) {
   const filters =
@@ -56,7 +56,7 @@ export default async function Page({
   ]);
 
   return (
-    <PageLayout title="Events" organizationSlug={organizationId}>
+    <PageLayout title="Events" organizationSlug={organizationSlug}>
       <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           mode="events"

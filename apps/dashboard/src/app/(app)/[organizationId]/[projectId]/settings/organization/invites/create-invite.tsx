@@ -33,7 +33,7 @@ interface Props {
 
 export default function CreateInvite({ projects }: Props) {
   const router = useRouter();
-  const { organizationId: organizationSlug } = useAppParams();
+  const { organizationSlug } = useAppParams();
 
   const { register, handleSubmit, formState, reset, control } = useForm<IForm>({
     resolver: zodResolver(zInviteUser),

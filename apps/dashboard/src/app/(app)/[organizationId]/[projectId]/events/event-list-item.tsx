@@ -15,7 +15,7 @@ import { EventIcon } from './event-icon';
 type EventListItemProps = IServiceCreateEventPayload;
 
 export function EventListItem(props: EventListItemProps) {
-  const { organizationId, projectId } = useAppParams();
+  const { organizationSlug, projectId } = useAppParams();
   const { createdAt, name, path, duration, meta, profile } = props;
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -77,7 +77,7 @@ export function EventListItem(props: EventListItemProps) {
               onClick={(e) => {
                 e.stopPropagation();
               }}
-              href={`/${organizationId}/${projectId}/profiles/${profile?.id}`}
+              href={`/${organizationSlug}/${projectId}/profiles/${profile?.id}`}
               className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted-foreground hover:underline"
             >
               {profile?.firstName} {profile?.lastName}

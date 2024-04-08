@@ -10,11 +10,11 @@ import { chQuery, getProfiles } from '@openpanel/db';
 
 interface Props {
   projectId: string;
-  organizationId: string;
+  organizationSlug: string;
 }
 
 export default async function ProfileTopServer({
-  organizationId,
+  organizationSlug,
   projectId,
 }: Props) {
   // Days since last event from users
@@ -44,7 +44,7 @@ export default async function ProfileTopServer({
             render(profile) {
               return (
                 <Link
-                  href={`/${organizationId}/${projectId}/profiles/${profile.id}`}
+                  href={`/${organizationSlug}/${projectId}/profiles/${profile.id}`}
                   className="flex items-center gap-2 font-medium"
                 >
                   <ProfileAvatar size="sm" {...profile} />

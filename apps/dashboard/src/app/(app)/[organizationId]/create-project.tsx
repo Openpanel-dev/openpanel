@@ -36,7 +36,7 @@ export function CreateProject() {
   const onSubmit: SubmitHandler<IForm> = (values) => {
     mutation.mutate({
       name: values.name,
-      organizationId: params.organizationId,
+      organizationSlug: params.organizationSlug,
     });
   };
 

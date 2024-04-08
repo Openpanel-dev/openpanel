@@ -20,7 +20,7 @@ interface ListDashboardsProps {
 export function ListDashboards({ dashboards }: ListDashboardsProps) {
   const router = useRouter();
   const params = useAppParams();
-  const { organizationId, projectId } = params;
+  const { organizationSlug, projectId } = params;
   const deletion = api.dashboard.delete.useMutation({
     onError: (error, variables) => {
       return handleErrorToastOptions({
@@ -65,8 +65,8 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
           <Card key={item.id} hover>
             <div>
               <Link
-                href={`/${organizationId}/${projectId}/dashboards/${item.id}`}
-                className="block flex flex-col p-4"
+                href={`/${organizationSlug}/${projectId}/dashboards/${item.id}`}
+                className="flex flex-col p-4"
               >
                 <span className="font-medium">{item.name}</span>
               </Link>

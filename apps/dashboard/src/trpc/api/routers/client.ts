@@ -6,35 +6,6 @@ import { hashPassword, stripTrailingSlash } from '@openpanel/common';
 import { db } from '@openpanel/db';
 
 export const clientRouter = createTRPCRouter({
-  list: protectedProcedure
-    .input(
-      z.object({
-        organizationId: z.string(),
-      })
-    )
-    .query(async ({ input: { organizationId } }) => {
-      return db.client.findMany({
-        where: {
-          organizationSlug: organizationId,
-        },
-        include: {
-          project: true,
-        },
-      });
-    }),
-  get: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .query(({ input }) => {
-      return db.client.findUniqueOrThrow({
-        where: {
-          id: input.id,
-        },
-      });
-    }),
   update: protectedProcedure
     .input(
       z.object({
@@ -59,7 +30,7 @@ export const clientRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         projectId: z.string(),
-        organizationId: z.string(),
+        organizationSlug: z.string(),
         cors: z.string().nullable(),
       })
     )
@@ -67,7 +38,7 @@ export const clientRouter = createTRPCRouter({
       const secret = randomUUID();
       const client = await db.client.create({
         data: {
-          organizationSlug: input.organizationId,
+          organizationSlug: input.organizationSlug,
           projectId: input.projectId,
           name: input.name,
           secret: input.cors ? null : await hashPassword(secret),

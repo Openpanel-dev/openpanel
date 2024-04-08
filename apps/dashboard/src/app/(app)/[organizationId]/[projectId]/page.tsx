@@ -24,12 +24,12 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { organizationId, projectId },
+  params: { organizationId: organizationSlug, projectId },
 }: PageProps) {
   const share = await getShareByProjectId(projectId);
 
   return (
-    <PageLayout title="Overview" organizationSlug={organizationId}>
+    <PageLayout title="Overview" organizationSlug={organizationSlug}>
       <StickyBelowHeader>
         <div className="flex justify-between gap-2 p-4">
           <div className="flex gap-2">

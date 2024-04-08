@@ -21,7 +21,7 @@ interface ProfileListProps {
   count: number;
 }
 export function ProfileList({ data, count }: ProfileListProps) {
-  const { organizationId, projectId } = useAppParams();
+  const { organizationSlug, projectId } = useAppParams();
   const { cursor, setCursor } = useCursor();
   return (
     <Widget>
@@ -46,7 +46,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
                 render(profile) {
                   return (
                     <Link
-                      href={`/${organizationId}/${projectId}/profiles/${profile.id}`}
+                      href={`/${organizationSlug}/${projectId}/profiles/${profile.id}`}
                       className="flex items-center gap-2 font-medium"
                     >
                       <ProfileAvatar size="sm" {...profile} />

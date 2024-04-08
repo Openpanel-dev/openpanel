@@ -41,7 +41,7 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { projectId, profileId, organizationId },
+  params: { projectId, profileId, organizationId: organizationSlug },
   searchParams,
 }: PageProps) {
   const eventListOptions: GetEventListOptions = {
@@ -125,7 +125,7 @@ export default async function Page({
 
   return (
     <PageLayout
-      organizationSlug={organizationId}
+      organizationSlug={organizationSlug}
       title={
         <div className="flex items-center gap-2">
           <ProfileAvatar {...profile} size="sm" className="hidden sm:block" />

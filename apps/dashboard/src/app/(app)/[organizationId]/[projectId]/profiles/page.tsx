@@ -25,11 +25,11 @@ const nuqsOptions = {
 };
 
 export default function Page({
-  params: { organizationId, projectId },
+  params: { organizationId: organizationSlug, projectId },
   searchParams: { cursor, f },
 }: PageProps) {
   return (
-    <PageLayout title="Profiles" organizationSlug={organizationId}>
+    <PageLayout title="Profiles" organizationSlug={organizationSlug}>
       {/* <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           projectId={projectId}
@@ -53,7 +53,7 @@ export default function Page({
           <ProfileLastSeenServer projectId={projectId} />
           <ProfileTopServer
             projectId={projectId}
-            organizationId={organizationId}
+            organizationSlug={organizationSlug}
           />
         </div>
       </div>

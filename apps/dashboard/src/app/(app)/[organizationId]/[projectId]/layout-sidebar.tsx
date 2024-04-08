@@ -17,13 +17,13 @@ import LayoutOrganizationSelector from './layout-organization-selector';
 interface LayoutSidebarProps {
   organizations: IServiceOrganization[];
   dashboards: IServiceDashboards;
-  organizationId: string;
+  organizationSlug: string;
   projectId: string;
 }
 export function LayoutSidebar({
   organizations,
   dashboards,
-  organizationId,
+  organizationSlug,
   projectId,
 }: LayoutSidebarProps) {
   const [active, setActive] = useState(false);
@@ -69,7 +69,7 @@ export function LayoutSidebar({
           <div className="flex flex-col gap-2 bg-background p-4 pt-0">
             <Link
               className={cn('flex gap-2', buttonVariants())}
-              href={`/${organizationId}/${projectId}/reports`}
+              href={`/${organizationSlug}/${projectId}/reports`}
             >
               <PlusIcon size={16} />
               Create a report

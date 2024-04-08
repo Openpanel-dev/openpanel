@@ -18,15 +18,15 @@ interface AppLayoutProps {
 
 export default async function AppLayout({
   children,
-  params: { organizationId, projectId },
+  params: { organizationId: organizationSlug, projectId },
 }: AppLayoutProps) {
   const [organizations, projects, dashboards] = await Promise.all([
     getCurrentOrganizations(),
-    getCurrentProjects(organizationId),
+    getCurrentProjects(organizationSlug),
     getDashboardsByProjectId(projectId),
   ]);
 
-  if (!organizations.find((item) => item.slug === organizationId)) {
+  if (!organizations.find((item) => item.slug === organizationSlug)) {
     return (
       <FullPageEmptyState
         title="Could not find organization"
@@ -51,7 +51,7 @@ export default async function AppLayout({
   return (
     <div id="dashboard">
       <LayoutSidebar
-        {...{ organizationId, projectId, organizations, dashboards }}
+        {...{ organizationSlug, projectId, organizations, dashboards }}
       />
       <div className="transition-all lg:pl-72">{children}</div>
     </div>

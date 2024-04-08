@@ -85,7 +85,7 @@ export const zInviteUser = z.object({
 });
 
 export const zShareOverview = z.object({
-  organizationId: z.string(),
+  organizationSlug: z.string(),
   projectId: z.string(),
   password: z.string().nullable(),
   public: z.boolean(),

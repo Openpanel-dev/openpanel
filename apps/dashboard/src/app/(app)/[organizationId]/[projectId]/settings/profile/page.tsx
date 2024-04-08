@@ -11,12 +11,14 @@ interface PageProps {
     organizationId: string;
   };
 }
-export default async function Page({ params: { organizationId } }: PageProps) {
+export default async function Page({
+  params: { organizationId: organizationSlug },
+}: PageProps) {
   const { userId } = auth();
   const profile = await getUserById(userId!);
 
   return (
-    <PageLayout title={profile.lastName} organizationSlug={organizationId}>
+    <PageLayout title={profile.lastName} organizationSlug={organizationSlug}>
       <div className="flex flex-col gap-4 p-4">
         <EditProfile profile={profile} />
         <Logout />

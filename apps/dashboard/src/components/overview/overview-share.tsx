@@ -58,9 +58,8 @@ export function OverviewShare({ data }: OverviewShareProps) {
             <DropdownMenuItem
               onClick={() => {
                 mutation.mutate({
+                  ...data,
                   public: false,
-                  projectId: data?.projectId,
-                  organizationId: data?.organizationSlug,
                   password: null,
                 });
               }}

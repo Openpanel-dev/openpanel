@@ -1,16 +1,19 @@
 import { useParams } from 'next/navigation';
 
-// eslint-disable-next-line
-type AppParams = {
+type AppParamsIn = {
   organizationId: string;
+  projectId: string;
+};
+type AppParamsOut = {
+  organizationSlug: string;
   projectId: string;
 };
 
 export function useAppParams<T>() {
-  const params = useParams<T & AppParams>();
+  const params = useParams<T & AppParamsIn>();
   return {
     ...(params ?? {}),
-    organizationId: params?.organizationId,
+    organizationSlug: params?.organizationId,
     projectId: params?.projectId,
-  } as T & AppParams;
+  } as T & AppParamsOut;
 }

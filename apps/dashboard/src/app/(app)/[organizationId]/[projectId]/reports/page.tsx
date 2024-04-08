@@ -10,10 +10,12 @@ interface PageProps {
   };
 }
 
-export default function Page({ params: { organizationId } }: PageProps) {
+export default function Page({
+  params: { organizationId: organizationSlug },
+}: PageProps) {
   return (
     <PageLayout
-      organizationSlug={organizationId}
+      organizationSlug={organizationSlug}
       title={
         <div className="flex cursor-pointer items-center gap-2">
           Unnamed report

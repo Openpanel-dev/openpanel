@@ -83,49 +83,49 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
       <LinkWithIcon
         icon={WallpaperIcon}
         label="Overview"
-        href={`/${params.organizationId}/${projectId}`}
+        href={`/${params.organizationSlug}/${projectId}`}
       />
       <LinkWithIcon
         icon={LayoutPanelTopIcon}
         label="Dashboards"
-        href={`/${params.organizationId}/${projectId}/dashboards`}
+        href={`/${params.organizationSlug}/${projectId}/dashboards`}
       />
       <LinkWithIcon
         icon={GanttChartIcon}
         label="Events"
-        href={`/${params.organizationId}/${projectId}/events`}
+        href={`/${params.organizationSlug}/${projectId}/events`}
       />
       <LinkWithIcon
         icon={UsersIcon}
         label="Profiles"
-        href={`/${params.organizationId}/${projectId}/profiles`}
+        href={`/${params.organizationSlug}/${projectId}/profiles`}
       />
       <LinkWithIcon
         icon={CogIcon}
         label="Settings"
-        href={`/${params.organizationId}/${projectId}/settings/organization`}
+        href={`/${params.organizationSlug}/${projectId}/settings/organization`}
       />
       {pathname?.includes('/settings/') && (
         <div className="flex flex-col gap-1 pl-7">
           <LinkWithIcon
             icon={BuildingIcon}
             label="Organization"
-            href={`/${params.organizationId}/${projectId}/settings/organization`}
+            href={`/${params.organizationSlug}/${projectId}/settings/organization`}
           />
           <LinkWithIcon
             icon={WarehouseIcon}
             label="Projects"
-            href={`/${params.organizationId}/${projectId}/settings/projects`}
+            href={`/${params.organizationSlug}/${projectId}/settings/projects`}
           />
           <LinkWithIcon
             icon={UserIcon}
             label="Profile (yours)"
-            href={`/${params.organizationId}/${projectId}/settings/profile`}
+            href={`/${params.organizationSlug}/${projectId}/settings/profile`}
           />
           <LinkWithIcon
             icon={BookmarkIcon}
             label="References"
-            href={`/${params.organizationId}/${projectId}/settings/references`}
+            href={`/${params.organizationSlug}/${projectId}/settings/references`}
           />
         </div>
       )}

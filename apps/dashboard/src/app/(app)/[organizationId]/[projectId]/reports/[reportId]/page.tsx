@@ -15,7 +15,7 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { reportId, organizationId },
+  params: { reportId, organizationId: organizationSlug },
 }: PageProps) {
   const report = await getReportById(reportId);
 
@@ -25,7 +25,7 @@ export default async function Page({
 
   return (
     <PageLayout
-      organizationSlug={organizationId}
+      organizationSlug={organizationSlug}
       title={
         <div className="flex cursor-pointer items-center gap-2">
           {report.name}

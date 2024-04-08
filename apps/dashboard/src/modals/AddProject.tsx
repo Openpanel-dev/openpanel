@@ -17,9 +17,9 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 interface AddProjectProps {
-  organizationId: string;
+  organizationSlug: string;
 }
-export default function AddProject({ organizationId }: AddProjectProps) {
+export default function AddProject({ organizationSlug }: AddProjectProps) {
   const router = useRouter();
   const mutation = api.project.create.useMutation({
     onError: handleError,
@@ -45,7 +45,7 @@ export default function AddProject({ organizationId }: AddProjectProps) {
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            organizationId,
+            organizationSlug,
           });
         })}
       >

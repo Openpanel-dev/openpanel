@@ -20,16 +20,16 @@ const validator = zShareOverview;
 type IForm = z.infer<typeof validator>;
 
 export default function ShareOverviewModal() {
-  const { projectId, organizationId: organizationSlug } = useAppParams();
+  const { projectId, organizationSlug } = useAppParams();
   const router = useRouter();
 
-  const { register, handleSubmit, formState, control } = useForm<IForm>({
+  const { register, handleSubmit, control } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
       public: true,
       password: '',
       projectId,
-      organizationId: organizationSlug,
+      organizationSlug,
     },
   });
 

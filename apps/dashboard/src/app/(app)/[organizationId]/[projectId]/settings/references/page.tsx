@@ -12,7 +12,7 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { organizationId, projectId },
+  params: { organizationId: organizationSlug, projectId },
 }: PageProps) {
   const references = await getReferences({
     where: {
@@ -23,7 +23,7 @@ export default async function Page({
   });
 
   return (
-    <PageLayout title="References" organizationSlug={organizationId}>
+    <PageLayout title="References" organizationSlug={organizationSlug}>
       <ListReferences data={references} />
     </PageLayout>
   );

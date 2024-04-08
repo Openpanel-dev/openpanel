@@ -16,10 +16,12 @@ interface PageProps {
   };
 }
 
-export default async function Page({ params: { organizationId } }: PageProps) {
+export default async function Page({
+  params: { organizationId: organizationSlug },
+}: PageProps) {
   const [organization, projects] = await Promise.all([
-    getOrganizationBySlug(organizationId),
-    getCurrentProjects(organizationId),
+    getOrganizationBySlug(organizationSlug),
+    getCurrentProjects(organizationSlug),
   ]);
 
   if (!organization) {
@@ -55,7 +57,7 @@ export default async function Page({ params: { organizationId } }: PageProps) {
   }
 
   if (projects.length === 1 && projects[0]) {
-    return redirect(`/${organizationId}/${projects[0].id}`);
+    return redirect(`/${organizationSlug}/${projects[0].id}`);
   }
 
   return (

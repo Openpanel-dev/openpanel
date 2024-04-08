@@ -13,7 +13,7 @@ export default function LayoutProjectSelector({
   projects,
 }: LayoutProjectSelectorProps) {
   const router = useRouter();
-  const { organizationId, projectId } = useAppParams();
+  const { organizationSlug, projectId } = useAppParams();
   const pathname = usePathname() || '';
 
   return (
@@ -24,12 +24,12 @@ export default function LayoutProjectSelector({
         className="w-auto min-w-0 max-sm:max-w-[100px]"
         placeholder={'Select project'}
         onChange={(value) => {
-          if (organizationId && projectId) {
+          if (organizationSlug && projectId) {
             const split = pathname.replace(projectId, value).split('/');
             // slicing here will remove everything after /{orgId}/{projectId}/dashboards [slice here] /xxx/xxx/xxx
             router.push(split.slice(0, 4).join('/'));
           } else {
-            router.push(`/${organizationId}/${value}`);
+            router.push(`/${organizationSlug}/${value}`);
           }
         }}
         value={projectId}

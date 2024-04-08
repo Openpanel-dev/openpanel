@@ -14,7 +14,7 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { organizationId, projectId, dashboardId },
+  params: { organizationId: organizationSlug, projectId, dashboardId },
 }: PageProps) {
   const [dashboard, reports] = await Promise.all([
     getDashboardById(dashboardId, projectId),
@@ -26,7 +26,7 @@ export default async function Page({
   }
 
   return (
-    <PageLayout title={dashboard.name} organizationSlug={organizationId}>
+    <PageLayout title={dashboard.name} organizationSlug={organizationSlug}>
       <ListReports reports={reports} />
     </PageLayout>
   );

@@ -13,12 +13,12 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { projectId, organizationId },
+  params: { projectId, organizationId: organizationSlug },
 }: PageProps) {
   const dashboards = await getDashboardsByProjectId(projectId);
 
   return (
-    <PageLayout title="Dashboards" organizationSlug={organizationId}>
+    <PageLayout title="Dashboards" organizationSlug={organizationSlug}>
       {dashboards.length > 0 && <HeaderDashboards />}
       <ListDashboards dashboards={dashboards} />
     </PageLayout>

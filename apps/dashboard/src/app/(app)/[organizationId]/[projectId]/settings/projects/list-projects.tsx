@@ -24,7 +24,7 @@ interface ListProjectsProps {
   clients: IServiceClientWithProject[];
 }
 export default function ListProjects({ projects, clients }: ListProjectsProps) {
-  const organizationId = useAppParams().organizationId;
+  const { organizationSlug } = useAppParams();
   return (
     <>
       <StickyBelowHeader>
@@ -34,7 +34,7 @@ export default function ListProjects({ projects, clients }: ListProjectsProps) {
             icon={PlusIcon}
             onClick={() =>
               pushModal('AddProject', {
-                organizationId,
+                organizationSlug,
               })
             }
           >
