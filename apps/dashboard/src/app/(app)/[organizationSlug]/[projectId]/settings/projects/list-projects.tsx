@@ -3,7 +3,6 @@
 import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
 import { ClientActions } from '@/components/clients/client-actions';
 import { ProjectActions } from '@/components/projects/project-actions';
-// import { columns } from '@/components/projects/table';
 import {
   Accordion,
   AccordionContent,
@@ -13,7 +12,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Tooltiper } from '@/components/ui/tooltip';
-import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import { InfoIcon, PlusIcon, PlusSquareIcon } from 'lucide-react';
 
@@ -24,20 +22,12 @@ interface ListProjectsProps {
   clients: IServiceClientWithProject[];
 }
 export default function ListProjects({ projects, clients }: ListProjectsProps) {
-  const { organizationSlug } = useAppParams();
   return (
     <>
       <StickyBelowHeader>
         <div className="flex items-center justify-between p-4">
           <div />
-          <Button
-            icon={PlusIcon}
-            onClick={() =>
-              pushModal('AddProject', {
-                organizationSlug,
-              })
-            }
-          >
+          <Button icon={PlusIcon} onClick={() => pushModal('AddProject')}>
             <span className="max-sm:hidden">Create project</span>
             <span className="sm:hidden">Project</span>
           </Button>

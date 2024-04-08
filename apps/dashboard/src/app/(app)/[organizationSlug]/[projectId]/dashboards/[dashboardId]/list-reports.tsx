@@ -12,10 +12,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/useAppParams';
+import { api, handleError } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { ChevronRight, MoreHorizontal, PlusIcon, Trash } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import {
   getDefaultIntervalByDates,
@@ -33,7 +35,13 @@ export function ListReports({ reports }: ListReportsProps) {
   const router = useRouter();
   const params = useAppParams<{ dashboardId: string }>();
   const { range, startDate, endDate } = useOverviewOptions();
-
+  const deletion = api.report.delete.useMutation({
+    onError: handleError,
+    onSuccess() {
+      router.refresh();
+      toast('Report deleted');
+    },
+  });
   return (
     <>
       <StickyBelowHeader className="flex items-center justify-between p-4">
@@ -95,10 +103,10 @@ export function ListReports({ reports }: ListReportsProps) {
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={(event) => {
-                            // event.stopPropagation();
-                            // deletion.mutate({
-                            //   reportId: report.id,
-                            // });
+                            event.stopPropagation();
+                            deletion.mutate({
+                              reportId: report.id,
+                            });
                           }}
                         >
                           <Trash size={16} className="mr-2" />
