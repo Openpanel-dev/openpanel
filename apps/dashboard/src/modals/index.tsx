@@ -5,8 +5,13 @@ import dynamic from 'next/dynamic';
 import { createPushModal } from 'pushmodal';
 
 import type { ConfirmProps } from './Confirm';
+import { ModalContent } from './Modal/Container';
 
-const Loading = () => <Loader className="mb-8 animate-spin" size={40} />;
+const Loading = () => (
+  <ModalContent className="flex items-center justify-center p-16">
+    <Loader className="animate-spin" size={40} />
+  </ModalContent>
+);
 
 const modals = {
   EditProject: dynamic(() => import('./EditProject'), {
