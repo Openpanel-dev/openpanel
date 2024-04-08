@@ -1,19 +1,15 @@
 import { useParams } from 'next/navigation';
 
-type AppParamsIn = {
-  organizationId: string;
-  projectId: string;
-};
-type AppParamsOut = {
+type AppParams = {
   organizationSlug: string;
   projectId: string;
 };
 
 export function useAppParams<T>() {
-  const params = useParams<T & AppParamsIn>();
+  const params = useParams<T & AppParams>();
   return {
     ...(params ?? {}),
-    organizationSlug: params?.organizationId,
+    organizationSlug: params?.organizationSlug,
     projectId: params?.projectId,
-  } as T & AppParamsOut;
+  } as T & AppParams;
 }
