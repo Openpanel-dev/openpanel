@@ -1,5 +1,5 @@
-import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
-import { OverviewReportRange } from '@/app/(app)/[organizationId]/[projectId]/overview-sticky-header';
+import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
+import { OverviewReportRange } from '@/app/(app)/[organizationSlug]/[projectId]/overview-sticky-header';
 import { Logo } from '@/components/logo';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import ServerLiveCounter from '@/components/overview/live-counter';
