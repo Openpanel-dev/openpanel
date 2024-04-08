@@ -11,22 +11,13 @@ import { db } from '../prisma-client';
 export type IServiceOrganization = ReturnType<typeof transformOrganization>;
 export type IServiceInvite = ReturnType<typeof transformInvite>;
 export type IServiceMember = ReturnType<typeof transformMember>;
-export type IServiceProjectAccess = ReturnType<typeof transformAccess>;
+export type IServiceProjectAccess = ProjectAccess;
 
 export function transformOrganization(org: Organization) {
   return {
     id: org.id,
     name: org.name,
     slug: org.slug!,
-  };
-}
-
-export function transformAccess(access: ProjectAccess) {
-  return {
-    projectId: access.project_id,
-    userId: access.user_id,
-    level: access.level,
-    organizationSlug: access.organization_slug,
   };
 }
 
@@ -53,7 +44,7 @@ export async function getOrganizationByProjectId(projectId: string) {
   });
 
   return clerkClient.organizations.getOrganization({
-    slug: project.organization_slug,
+    slug: project.organizationSlug,
   });
 }
 
@@ -110,7 +101,7 @@ export async function getMembers(organizationSlug: string) {
     }),
     db.projectAccess.findMany({
       where: {
-        organization_slug: organizationSlug,
+        organizationSlug,
       },
     }),
   ]);
@@ -118,11 +109,11 @@ export async function getMembers(organizationSlug: string) {
   return members
     .map((member) => {
       const projectAccess = access.filter(
-        (item) => item.user_id === member.publicUserData?.userId
+        (item) => item.userId === member.publicUserData?.userId
       );
       return {
         ...member,
-        access: projectAccess.map(transformAccess),
+        access: projectAccess,
       };
     })
     .map(transformMember);

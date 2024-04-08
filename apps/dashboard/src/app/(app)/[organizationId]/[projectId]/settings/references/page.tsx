@@ -16,7 +16,7 @@ export default async function Page({
 }: PageProps) {
   const references = await getReferences({
     where: {
-      project_id: projectId,
+      projectId,
     },
     take: 50,
     skip: 0,

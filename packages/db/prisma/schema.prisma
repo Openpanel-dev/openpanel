@@ -11,23 +11,23 @@ datasource db {
 }
 
 model Project {
-  id                String    @id @default(dbgenerated("gen_random_uuid()"))
-  name              String
-  organization_slug String
-  events            Event[]
-  eventsCount       Int       @default(0)
-  profiles          Profile[]
-  clients           Client[]
+  id               String @id @default(dbgenerated("gen_random_uuid()"))
+  name             String
+  organizationSlug String
+  eventsCount      Int    @default(0)
 
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @default(now()) @updatedAt
+  events     Event[]
+  profiles   Profile[]
+  clients    Client[]
   reports    Report[]
   dashboards Dashboard[]
   share      ShareOverview?
-  EventMeta  EventMeta[]
-  Reference  Reference[]
+  meta       EventMeta[]
+  references Reference[]
+  access     ProjectAccess[]
 
-  access ProjectAccess[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@map("projects")
 }
@@ -39,14 +39,14 @@ enum AccessLevel {
 }
 
 model ProjectAccess {
-  id                String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_id        String
-  project           Project     @relation(fields: [project_id], references: [id])
-  organization_slug String
-  user_id           String
-  level             AccessLevel
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @default(now()) @updatedAt
+  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId        String
+  project          Project     @relation(fields: [projectId], references: [id])
+  organizationSlug String
+  userId           String
+  level            AccessLevel
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @default(now()) @updatedAt
 
   @@map("project_access")
 }
@@ -55,10 +55,10 @@ model Event {
   id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
   properties Json
-  project_id String
-  project    Project @relation(fields: [project_id], references: [id])
+  projectId  String
+  project    Project @relation(fields: [projectId], references: [id])
 
-  profile_id String?
+  profileId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -75,29 +75,29 @@ model Salt {
 }
 
 model Profile {
-  id          String   @id
-  external_id String?
-  first_name  String?
-  last_name   String?
-  email       String?
-  avatar      String?
-  properties  Json
-  project_id  String
-  project     Project  @relation(fields: [project_id], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
+  id         String   @id
+  externalId String?
+  firstName  String?
+  lastName   String?
+  email      String?
+  avatar     String?
+  properties Json
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("profiles")
 }
 
 model Client {
-  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name              String
-  secret            String?
-  project_id        String
-  project           Project @relation(fields: [project_id], references: [id])
-  organization_slug String
-  cors              String  @default("*")
+  id               String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String
+  secret           String?
+  projectId        String
+  project          Project @relation(fields: [projectId], references: [id])
+  organizationSlug String
+  cors             String  @default("*")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -124,12 +124,12 @@ enum ChartType {
 }
 
 model Dashboard {
-  id                String   @id @default(dbgenerated("gen_random_uuid()"))
-  name              String
-  organization_slug String
-  project_id        String
-  project           Project  @relation(fields: [project_id], references: [id])
-  reports           Report[]
+  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  name             String
+  organizationSlug String
+  projectId        String
+  project          Project  @relation(fields: [projectId], references: [id])
+  reports          Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -149,19 +149,19 @@ model Report {
   name       String
   interval   Interval
   range      String    @default("1m")
-  chart_type ChartType
-  line_type  String    @default("monotone")
+  chartType  ChartType
+  lineType   String    @default("monotone")
   breakdowns Json
   events     Json
   formula    String?
   unit       String?
   metric     Metric    @default(sum)
-  project_id String
-  project    Project   @relation(fields: [project_id], references: [id])
+  projectId  String
+  project    Project   @relation(fields: [projectId], references: [id])
   previous   Boolean   @default(false)
 
-  dashboard_id String
-  dashboard    Dashboard @relation(fields: [dashboard_id], references: [id])
+  dashboardId String
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -180,14 +180,14 @@ model Waitlist {
 }
 
 model ShareOverview {
-  id                String   @unique
-  project_id        String   @unique
-  project           Project  @relation(fields: [project_id], references: [id])
-  organization_slug String
-  public            Boolean  @default(false)
-  password          String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @default(now()) @updatedAt
+  id               String   @unique
+  projectId        String   @unique
+  project          Project  @relation(fields: [projectId], references: [id])
+  organizationSlug String
+  public           Boolean  @default(false)
+  password         String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @default(now()) @updatedAt
 
   @@map("shares")
 }
@@ -198,13 +198,13 @@ model EventMeta {
   conversion Boolean?
   color      String?
   icon       String?
-  project_id String
-  project    Project  @relation(fields: [project_id], references: [id])
+  projectId  String
+  project    Project  @relation(fields: [projectId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  @@unique([name, project_id])
+  @@unique([name, projectId])
   @@map("event_meta")
 }
 
@@ -213,8 +213,8 @@ model Reference {
   title       String
   description String?
   date        DateTime @default(now())
-  project_id  String
-  project     Project  @relation(fields: [project_id], references: [id])
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

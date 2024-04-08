@@ -145,7 +145,7 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
                     </span>
                   </div>
                 }
-                href={`/${item.organization_slug}/${item.project_id}/dashboards/${item.id}`}
+                href={`/${item.organizationSlug}/${item.projectId}/dashboards/${item.id}`}
               />
             ))}
           </div>

@@ -45,11 +45,11 @@ export function transformReport(
 ): IChartInput & { id: string } {
   return {
     id: report.id,
-    projectId: report.project_id,
+    projectId: report.projectId,
     events: (report.events as IChartEvent[]).map(transformReportEvent),
     breakdowns: report.breakdowns as IChartBreakdown[],
-    chartType: report.chart_type,
-    lineType: (report.line_type as IChartLineType) ?? lineTypes.monotone,
+    chartType: report.chartType,
+    lineType: (report.lineType as IChartLineType) ?? lineTypes.monotone,
     interval: report.interval,
     name: report.name || 'Untitled',
     range: (report.range as IChartRange) ?? timeRanges['1m'],
@@ -64,7 +64,7 @@ export function getReportsByDashboardId(dashboardId: string) {
   return db.report
     .findMany({
       where: {
-        dashboard_id: dashboardId,
+        dashboardId,
       },
     })
     .then((reports) => reports.map(transformReport));

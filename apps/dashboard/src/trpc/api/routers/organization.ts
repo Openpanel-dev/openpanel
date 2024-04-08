@@ -77,15 +77,15 @@ export const organizationRouter = createTRPCRouter({
       return db.$transaction([
         db.projectAccess.deleteMany({
           where: {
-            user_id: input.userId,
-            organization_slug: input.organizationSlug,
+            userId: input.userId,
+            organizationSlug: input.organizationSlug,
           },
         }),
         db.projectAccess.createMany({
           data: input.access.map((projectId) => ({
-            user_id: input.userId,
-            organization_slug: input.organizationSlug,
-            project_id: projectId,
+            userId: input.userId,
+            organizationSlug: input.organizationSlug,
+            projectId: projectId,
             level: 'read',
           })),
         }),

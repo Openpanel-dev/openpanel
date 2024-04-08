@@ -1,4 +1,3 @@
-import { Widget } from '@/components/widget';
 import { escape } from 'sqlstring';
 
 import { db, getEvents } from '@openpanel/db';
@@ -12,7 +11,7 @@ interface Props {
 export default async function EventConversionsListServer({ projectId }: Props) {
   const conversions = await db.eventMeta.findMany({
     where: {
-      project_id: projectId,
+      projectId,
       conversion: true,
     },
   });

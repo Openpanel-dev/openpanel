@@ -1,19 +1,7 @@
 import type { Prisma, Reference } from '../prisma-client';
 import { db } from '../prisma-client';
 
-export type IServiceReference = Omit<Reference, 'project_id'> & {
-  projectId: string;
-};
-
-export function transformReference({
-  project_id,
-  ...item
-}: Reference): IServiceReference {
-  return {
-    ...item,
-    projectId: project_id,
-  };
-}
+export type IServiceReference = Reference;
 
 export async function getReferenceById(id: string) {
   const reference = await db.reference.findUnique({
@@ -26,7 +14,7 @@ export async function getReferenceById(id: string) {
     return null;
   }
 
-  return transformReference(reference);
+  return reference;
 }
 
 export async function getReferences({
@@ -38,11 +26,9 @@ export async function getReferences({
   take?: number;
   skip?: number;
 }) {
-  const references = await db.reference.findMany({
+  return db.reference.findMany({
     where,
     take: take ?? 50,
     skip,
   });
-
-  return references.map(transformReference);
 }

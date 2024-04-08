@@ -3,7 +3,7 @@ import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
 import { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
-import { db, transformClient } from '@openpanel/db';
+import { db } from '@openpanel/db';
 
 export const clientRouter = createTRPCRouter({
   list: protectedProcedure
@@ -15,7 +15,7 @@ export const clientRouter = createTRPCRouter({
     .query(async ({ input: { organizationId } }) => {
       return db.client.findMany({
         where: {
-          organization_slug: organizationId,
+          organizationSlug: organizationId,
         },
         include: {
           project: true,
@@ -67,8 +67,8 @@ export const clientRouter = createTRPCRouter({
       const secret = randomUUID();
       const client = await db.client.create({
         data: {
-          organization_slug: input.organizationId,
-          project_id: input.projectId,
+          organizationSlug: input.organizationId,
+          projectId: input.projectId,
           name: input.name,
           secret: input.cors ? null : await hashPassword(secret),
           cors: input.cors ? stripTrailingSlash(input.cors) : '*',
@@ -76,7 +76,7 @@ export const clientRouter = createTRPCRouter({
       });
 
       return {
-        ...transformClient(client),
+        ...client,
         secret: input.cors ? null : secret,
       };
     }),

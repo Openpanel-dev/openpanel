@@ -19,7 +19,7 @@ export const referenceRouter = createTRPCRouter({
           data: {
             title,
             description,
-            project_id: projectId,
+            projectId,
             date: new Date(datetime),
           },
         });
@@ -47,7 +47,7 @@ export const referenceRouter = createTRPCRouter({
       const { startDate, endDate } = getChartStartEndDate(input);
       return getReferences({
         where: {
-          project_id: projectId,
+          projectId,
           date: {
             gte: new Date(startDate),
             lte: new Date(endDate),

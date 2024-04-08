@@ -10,7 +10,7 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 
-import { db } from '@openpanel/db';
+import { getShareByProjectId } from '@openpanel/db';
 
 import OverviewMetrics from '../../../../components/overview/overview-metrics';
 import { StickyBelowHeader } from './layout-sticky-below-header';
@@ -26,11 +26,7 @@ interface PageProps {
 export default async function Page({
   params: { organizationId, projectId },
 }: PageProps) {
-  const share = await db.shareOverview.findUnique({
-    where: {
-      project_id: projectId,
-    },
-  });
+  const share = await getShareByProjectId(projectId);
 
   return (
     <PageLayout title="Overview" organizationSlug={organizationId}>

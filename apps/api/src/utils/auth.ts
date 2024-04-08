@@ -89,5 +89,5 @@ export async function validateSdkRequest(
     }
   }
 
-  return client.project_id;
+  return client.projectId;
 }

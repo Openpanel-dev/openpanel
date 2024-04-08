@@ -44,7 +44,7 @@ export const projectRouter = createTRPCRouter({
       return db.project.create({
         data: {
           id: await getId('project', input.name),
-          organization_slug: input.organizationId,
+          organizationSlug: input.organizationId,
           name: input.name,
         },
       });

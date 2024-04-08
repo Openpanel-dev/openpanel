@@ -57,7 +57,7 @@ export default function ListProjects({ projects, clients }: ListProjectsProps) {
           <Accordion type="single" collapsible className="-mx-4">
             {projects.map((project) => {
               const pClients = clients.filter(
-                (client) => client.project_id === project.id
+                (client) => client.projectId === project.id
               );
               return (
                 <AccordionItem

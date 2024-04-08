@@ -12,9 +12,9 @@ export async function POST(request: Request) {
         data: access
           .filter((a): a is string => typeof a === 'string')
           .map((projectId) => ({
-            organization_slug: payload.data.organization.slug!,
-            project_id: projectId,
-            user_id: payload.data.public_user_data.user_id,
+            organizationSlug: payload.data.organization.slug!,
+            projectId: projectId,
+            userId: payload.data.public_user_data.user_id,
             level: AccessLevel.read,
           })),
       });
@@ -23,8 +23,8 @@ export async function POST(request: Request) {
   if (payload.type === 'organizationMembership.deleted') {
     await db.projectAccess.deleteMany({
       where: {
-        organization_slug: payload.data.organization.slug!,
-        user_id: payload.data.public_user_data.user_id,
+        organizationSlug: payload.data.organization.slug!,
+        userId: payload.data.public_user_data.user_id,
       },
     });
   }

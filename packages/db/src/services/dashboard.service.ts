@@ -1,15 +1,18 @@
+import type { Dashboard, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 
-export type IServiceDashboard = Awaited<ReturnType<typeof getDashboardById>>;
-export type IServiceDashboards = Awaited<
-  ReturnType<typeof getDashboardsByProjectId>
->;
+export type IServiceDashboard = Dashboard;
+export type IServiceDashboards = Prisma.DashboardGetPayload<{
+  include: {
+    project: true;
+  };
+}>[];
 
 export async function getDashboardById(id: string, projectId: string) {
   const dashboard = await db.dashboard.findUnique({
     where: {
       id,
-      project_id: projectId,
+      projectId,
     },
     include: {
       project: true,
@@ -26,7 +29,7 @@ export async function getDashboardById(id: string, projectId: string) {
 export function getDashboardsByProjectId(projectId: string) {
   return db.dashboard.findMany({
     where: {
-      project_id: projectId,
+      projectId,
     },
     include: {
       project: true,

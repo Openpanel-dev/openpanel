@@ -22,12 +22,12 @@ export const eventRouter = createTRPCRouter({
     .mutation(({ input: { projectId, name, icon, color, conversion } }) => {
       return db.eventMeta.upsert({
         where: {
-          name_project_id: {
+          name_projectId: {
             name,
-            project_id: projectId,
+            projectId,
           },
         },
-        create: { project_id: projectId, name, icon, color, conversion },
+        create: { projectId, name, icon, color, conversion },
         update: { icon, color, conversion },
       });
     }),

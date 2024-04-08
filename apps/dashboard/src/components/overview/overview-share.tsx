@@ -59,8 +59,8 @@ export function OverviewShare({ data }: OverviewShareProps) {
               onClick={() => {
                 mutation.mutate({
                   public: false,
-                  projectId: data?.project_id,
-                  organizationId: data?.organization_slug,
+                  projectId: data?.projectId,
+                  organizationId: data?.organizationSlug,
                   password: null,
                 });
               }}
