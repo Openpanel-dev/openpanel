@@ -21,7 +21,7 @@ type EditReportProps = {
 };
 
 export default function EditReport({ form, onSubmit }: EditReportProps) {
-  const { register, handleSubmit, reset, formState } = useForm<IForm>({
+  const { register, handleSubmit, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: form,
   });

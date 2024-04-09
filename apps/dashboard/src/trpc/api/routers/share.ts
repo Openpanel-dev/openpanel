@@ -12,12 +12,12 @@ export const shareRouter = createTRPCRouter({
     .mutation(({ input }) => {
       return db.shareOverview.upsert({
         where: {
-          project_id: input.projectId,
+          projectId: input.projectId,
         },
         create: {
           id: uid.rnd(),
-          organization_slug: input.organizationId,
-          project_id: input.projectId,
+          organizationSlug: input.organizationSlug,
+          projectId: input.projectId,
           public: input.public,
           password: input.password || null,
         },

@@ -8,12 +8,12 @@ export const projectRouter = createTRPCRouter({
   list: protectedProcedure
     .input(
       z.object({
-        organizationId: z.string().nullable(),
+        organizationSlug: z.string().nullable(),
       })
     )
-    .query(async ({ input: { organizationId } }) => {
-      if (organizationId === null) return [];
-      return getProjectsByOrganizationSlug(organizationId);
+    .query(async ({ input: { organizationSlug } }) => {
+      if (organizationSlug === null) return [];
+      return getProjectsByOrganizationSlug(organizationSlug);
     }),
 
   update: protectedProcedure
@@ -37,15 +37,15 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         name: z.string().min(1),
-        organizationId: z.string(),
+        organizationSlug: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input: { name, organizationSlug } }) => {
       return db.project.create({
         data: {
-          id: await getId('project', input.name),
-          organization_slug: input.organizationId,
-          name: input.name,
+          id: await getId('project', name),
+          organizationSlug: organizationSlug,
+          name: name,
         },
       });
     }),

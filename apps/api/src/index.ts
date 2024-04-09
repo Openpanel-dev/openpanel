@@ -33,10 +33,10 @@ const startServer = async () => {
     fastify.register(profileRouter, { prefix: '/profile' });
     fastify.register(liveRouter, { prefix: '/live' });
     fastify.register(miscRouter, { prefix: '/misc' });
-    fastify.setErrorHandler((error, request, reply) => {
+    fastify.setErrorHandler((error) => {
       fastify.log.error(error);
     });
-    fastify.get('/', (request, reply) => {
+    fastify.get('/', (_request, reply) => {
       reply.send({ name: 'openpanel sdk api' });
     });
     // fastify.get('/health-check', async (request, reply) => {

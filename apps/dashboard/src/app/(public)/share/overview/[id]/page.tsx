@@ -1,5 +1,5 @@
-import { StickyBelowHeader } from '@/app/(app)/[organizationId]/[projectId]/layout-sticky-below-header';
-import { OverviewReportRange } from '@/app/(app)/[organizationId]/[projectId]/overview-sticky-header';
+import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
+import { OverviewReportRange } from '@/app/(app)/[organizationSlug]/[projectId]/overview-sticky-header';
 import { Logo } from '@/components/logo';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import ServerLiveCounter from '@/components/overview/live-counter';
@@ -28,8 +28,8 @@ export default async function Page({ params: { id } }: PageProps) {
   if (!share.public) {
     return notFound();
   }
-  const projectId = share.project_id;
-  const organization = await getOrganizationBySlug(share.organization_slug);
+  const projectId = share.projectId;
+  const organization = await getOrganizationBySlug(share.organizationSlug);
 
   return (
     <div className="bg-gradient-to-tl from-blue-950 to-blue-600 p-4 md:p-16">

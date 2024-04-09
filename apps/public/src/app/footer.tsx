@@ -4,11 +4,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 import { Heading2, Lead2 } from './copy';
-import { JoinWaitlist } from './join-waitlist';
 
 export default function Footer() {
   return (
-    <footer className="bg-blue-darker relative relative mt-40 text-white">
+    <footer className="bg-blue-darker relative mt-40 text-white">
       <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
       <div className="container relative flex flex-col items-center text-center">
         <div className="my-24">

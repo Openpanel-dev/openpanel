@@ -8,10 +8,11 @@ import { popModal } from '..';
 
 interface ModalContentProps {
   children: React.ReactNode;
+  className?: string;
 }
 
-export function ModalContent({ children }: ModalContentProps) {
-  return <DialogContent>{children}</DialogContent>;
+export function ModalContent({ children, className }: ModalContentProps) {
+  return <DialogContent className={className}>{children}</DialogContent>;
 }
 
 interface ModalHeaderProps {

@@ -1,38 +1,20 @@
-import type { Client } from '../prisma-client';
+import type { Client, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
-import { transformProject } from './project.service';
-import type { IServiceProject } from './project.service';
 
-export type IServiceClient = ReturnType<typeof transformClient>;
-export type IServiceClientWithProject = IServiceClient & {
-  project: Exclude<IServiceProject, null>;
-};
-
-export function transformClient({ organization_slug, ...client }: Client) {
-  return {
-    ...client,
-    organizationSlug: organization_slug,
+export type IServiceClient = Client;
+export type IServiceClientWithProject = Prisma.ClientGetPayload<{
+  include: {
+    project: true;
   };
-}
+}>;
 
-export async function getClientsByOrganizationId(organizationId: string) {
-  const clients = await db.client.findMany({
+export async function getClientsByOrganizationSlug(organizationSlug: string) {
+  return db.client.findMany({
     where: {
-      organization_slug: organizationId,
+      organizationSlug,
     },
     include: {
       project: true,
     },
   });
-
-  return clients
-    .map((client) => {
-      return {
-        ...transformClient(client),
-        project: transformProject(client.project),
-      };
-    })
-    .filter(
-      (client): client is IServiceClientWithProject => client.project !== null
-    );
 }

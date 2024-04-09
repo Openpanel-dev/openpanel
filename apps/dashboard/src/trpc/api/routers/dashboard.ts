@@ -28,8 +28,8 @@ export const dashboardRouter = createTRPCRouter({
       return db.dashboard.create({
         data: {
           id: await getId('dashboard', name),
-          project_id: projectId,
-          organization_slug: organizationSlug,
+          projectId: projectId,
+          organizationSlug: organizationSlug,
           name,
         },
       });
@@ -63,7 +63,7 @@ export const dashboardRouter = createTRPCRouter({
         if (forceDelete) {
           await db.report.deleteMany({
             where: {
-              dashboard_id: id,
+              dashboardId: id,
             },
           });
         }

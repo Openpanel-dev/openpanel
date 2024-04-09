@@ -10,3 +10,11 @@ export function getShareOverviewById(id: string) {
     },
   });
 }
+
+export function getShareByProjectId(projectId: string) {
+  return db.shareOverview.findUnique({
+    where: {
+      projectId,
+    },
+  });
+}

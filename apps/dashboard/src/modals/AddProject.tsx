@@ -1,6 +1,7 @@
 import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
+import { useAppParams } from '@/hooks/useAppParams';
 import { api, handleError } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -16,10 +17,9 @@ const validator = z.object({
 });
 
 type IForm = z.infer<typeof validator>;
-interface AddProjectProps {
-  organizationId: string;
-}
-export default function AddProject({ organizationId }: AddProjectProps) {
+
+export default function AddProject() {
+  const { organizationSlug } = useAppParams();
   const router = useRouter();
   const mutation = api.project.create.useMutation({
     onError: handleError,
@@ -45,7 +45,7 @@ export default function AddProject({ organizationId }: AddProjectProps) {
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            organizationId,
+            organizationSlug,
           });
         })}
       >

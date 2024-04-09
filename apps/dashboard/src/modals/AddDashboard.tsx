@@ -19,7 +19,7 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function AddDashboard() {
-  const { projectId, organizationId: organizationSlug } = useAppParams();
+  const { projectId, organizationSlug } = useAppParams();
   const router = useRouter();
 
   const { register, handleSubmit, formState } = useForm<IForm>({

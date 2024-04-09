@@ -144,7 +144,7 @@ export async function getEvents(
         name: {
           in: names,
         },
-        project_id: events[0]?.project_id,
+        projectId: events[0]?.project_id,
       },
       select: options.meta === true ? undefined : options.meta,
     });
@@ -265,7 +265,7 @@ export async function getEventList({
   sb.where.projectId = `project_id = ${escape(projectId)}`;
 
   if (profileId) {
-    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM openpanel.events WHERE profile_id = ${escape(profileId)} group by did)`;
+    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM events WHERE profile_id = ${escape(profileId)} group by did)`;
   }
 
   if (events && events.length > 0) {
@@ -357,7 +357,7 @@ export function createBotEvent({
 export function getConversionEventNames(projectId: string) {
   return db.eventMeta.findMany({
     where: {
-      project_id: projectId,
+      projectId,
       conversion: true,
     },
   });

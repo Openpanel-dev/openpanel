@@ -4,12 +4,7 @@ import { clerkClient } from '@clerk/nextjs';
 import { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
-import {
-  db,
-  transformClient,
-  transformOrganization,
-  transformProject,
-} from '@openpanel/db';
+import { db, transformOrganization } from '@openpanel/db';
 
 export const onboardingRouter = createTRPCRouter({
   organziation: protectedProcedure
@@ -30,7 +25,7 @@ export const onboardingRouter = createTRPCRouter({
         const project = await db.project.create({
           data: {
             name: input.project,
-            organization_slug: org.slug,
+            organizationSlug: org.slug,
           },
         });
 
@@ -38,19 +33,19 @@ export const onboardingRouter = createTRPCRouter({
         const client = await db.client.create({
           data: {
             name: `${project.name} Client`,
-            organization_slug: org.slug,
-            project_id: project.id,
+            organizationSlug: org.slug,
+            projectId: project.id,
             cors: input.cors ? stripTrailingSlash(input.cors) : '*',
             secret: input.cors ? null : await hashPassword(secret),
           },
         });
 
         return {
-          client: transformClient({
+          client: {
             ...client,
             secret: input.cors ? null : secret,
-          }),
-          project: transformProject(project),
+          },
+          project,
           organization: transformOrganization(org),
         };
       }
