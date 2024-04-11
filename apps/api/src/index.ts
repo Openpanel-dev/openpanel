@@ -1,9 +1,11 @@
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
 
+import type { IServiceClient } from '@openpanel/db';
 import { redisPub } from '@openpanel/redis';
 
 import eventRouter from './routes/event.router';
+import exportRouter from './routes/export.router';
 import liveRouter from './routes/live.router';
 import miscRouter from './routes/misc.router';
 import profileRouter from './routes/profile.router';
@@ -12,6 +14,7 @@ import { logger, logInfo } from './utils/logger';
 declare module 'fastify' {
   interface FastifyRequest {
     projectId: string;
+    client: IServiceClient | null;
   }
 }
 
@@ -33,6 +36,7 @@ const startServer = async () => {
     fastify.register(profileRouter, { prefix: '/profile' });
     fastify.register(liveRouter, { prefix: '/live' });
     fastify.register(miscRouter, { prefix: '/misc' });
+    fastify.register(exportRouter, { prefix: '/export' });
     fastify.setErrorHandler((error) => {
       fastify.log.error(error);
     });

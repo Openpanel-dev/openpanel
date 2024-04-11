@@ -248,6 +248,10 @@ export interface GetEventListOptions {
   cursor?: number;
   events?: string[] | null;
   filters?: IChartEventFilter[];
+  startDate?: Date;
+  endDate?: Date;
+  meta?: boolean;
+  profile?: boolean;
 }
 
 export async function getEventList({
@@ -257,6 +261,10 @@ export async function getEventList({
   profileId,
   events,
   filters,
+  startDate,
+  endDate,
+  meta = true,
+  profile = true,
 }: GetEventListOptions) {
   const { sb, getSql, join } = createSqlBuilder();
 
@@ -266,6 +274,10 @@ export async function getEventList({
 
   if (profileId) {
     sb.where.deviceId = `device_id IN (SELECT device_id as did FROM events WHERE profile_id = ${escape(profileId)} group by did)`;
+  }
+
+  if (startDate && endDate) {
+    sb.where.created_at = `created_at BETWEEN '${formatClickhouseDate(startDate)}' AND '${formatClickhouseDate(endDate)}'`;
   }
 
   if (events && events.length > 0) {
@@ -288,7 +300,7 @@ export async function getEventList({
 
   sb.orderBy.created_at = 'created_at DESC';
 
-  return getEvents(getSql(), { profile: true, meta: true });
+  return getEvents(getSql(), { profile, meta });
 }
 
 export async function getEventsCount({
@@ -296,11 +308,17 @@ export async function getEventsCount({
   profileId,
   events,
   filters,
+  startDate,
+  endDate,
 }: Omit<GetEventListOptions, 'cursor' | 'take'>) {
   const { sb, getSql, join } = createSqlBuilder();
   sb.where.projectId = `project_id = ${escape(projectId)}`;
   if (profileId) {
     sb.where.profileId = `profile_id = ${escape(profileId)}`;
+  }
+
+  if (startDate && endDate) {
+    sb.where.created_at = `created_at BETWEEN '${formatClickhouseDate(startDate)}' AND '${formatClickhouseDate(endDate)}'`;
   }
 
   if (events && events.length > 0) {

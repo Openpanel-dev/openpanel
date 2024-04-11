@@ -19,5 +19,6 @@
   },
   "javascript": "Javascript SDK",
   "web": "Web SDK",
-  "api": "API"
+  "api": "API",
+  "export": "Export"
 }
