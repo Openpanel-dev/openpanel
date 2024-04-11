@@ -1,5 +1,6 @@
 import { LogoSquare } from '@/components/logo';
 import { ProjectCard } from '@/components/projects/project-card';
+import { SignOutButton } from '@clerk/nextjs';
 import { notFound, redirect } from 'next/navigation';
 
 import {
@@ -62,6 +63,7 @@ export default async function Page({
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 pt-20 ">
+      <SignOutButton />
       <h1 className="text-xl font-medium">Select project</h1>
       {projects.map((item) => (
         <ProjectCard key={item.id} {...item} />
