@@ -1,0 +1,21 @@
+# Export API
+
+## Authentication
+
+To authenticate with the Export API, you need to use your `clientId` and `clientSecret`. Make sure your client has `read` or `root` mode. The default client does not have access to the Export API.
+
+We expect you to send `openpanel-client-id` and `openpanel-client-secret` headers with your requests.
+
+## Events
+
+Get all `screen_view` events from project `abc` between `2024-04-15` and `2024-04-18`.
+
+```bash
+curl 'https://api.openpanel.dev/export/events?project_id=abc&event=screen_view&start=2024-04-15&end=2024-04-18' \
+  -H 'openpanel-client-id: CLIENT_ID' \
+  -H 'openpanel-client-secret: CLIENT_SECRET'
+```
+
+## Profiles
+
+During development
