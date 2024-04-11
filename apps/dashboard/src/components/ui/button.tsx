@@ -7,6 +7,7 @@ import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 const buttonVariants = cva(
   'inline-flex flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -94,5 +95,61 @@ Button.displayName = 'Button';
 Button.defaultProps = {
   type: 'button',
 };
+export interface LinkButtonProps
+  extends React.AnchorHTMLAttributes<HTMLAnchorElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
+  loading?: boolean;
+  icon?: LucideIcon;
+  responsive?: boolean;
+  href: string;
+}
 
-export { Button, buttonVariants };
+const LinkButton = React.forwardRef<
+  typeof Link,
+  React.PropsWithoutRef<LinkButtonProps>
+>(
+  (
+    {
+      className,
+      variant,
+      size,
+      children,
+      loading,
+      icon,
+      responsive,
+      href,
+      ...props
+    },
+    ref
+  ) => {
+    const Icon = loading ? Loader2 : icon ?? null;
+    return (
+      <Link
+        href={href}
+        className={cn(buttonVariants({ variant, size, className }))}
+        // @ts-expect-error
+        ref={ref}
+        {...props}
+      >
+        {Icon && (
+          <Icon
+            className={cn(
+              'mr-2 h-4 w-4 flex-shrink-0',
+              responsive && 'mr-0 sm:mr-2',
+              loading && 'animate-spin'
+            )}
+          />
+        )}
+        {responsive ? (
+          <span className="hidden sm:block">{children}</span>
+        ) : (
+          children
+        )}
+      </Link>
+    );
+  }
+);
+LinkButton.displayName = 'LinkButton';
+
+export { Button, LinkButton, buttonVariants };
