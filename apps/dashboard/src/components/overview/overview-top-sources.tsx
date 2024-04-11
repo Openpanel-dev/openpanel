@@ -133,7 +133,7 @@ export default function OverviewTopSources({
         breakdowns: [
           {
             id: 'A',
-            name: 'properties.query.utm_source',
+            name: 'properties.__query.utm_source',
           },
         ],
         chartType,
@@ -163,7 +163,7 @@ export default function OverviewTopSources({
         breakdowns: [
           {
             id: 'A',
-            name: 'properties.query.utm_medium',
+            name: 'properties.__query.utm_medium',
           },
         ],
         chartType,
@@ -193,7 +193,7 @@ export default function OverviewTopSources({
         breakdowns: [
           {
             id: 'A',
-            name: 'properties.query.utm_campaign',
+            name: 'properties.__query.utm_campaign',
           },
         ],
         chartType,
@@ -223,7 +223,7 @@ export default function OverviewTopSources({
         breakdowns: [
           {
             id: 'A',
-            name: 'properties.query.utm_term',
+            name: 'properties.__query.utm_term',
           },
         ],
         chartType,
@@ -253,7 +253,7 @@ export default function OverviewTopSources({
         breakdowns: [
           {
             id: 'A',
-            name: 'properties.query.utm_content',
+            name: 'properties.__query.utm_content',
           },
         ],
         chartType,
@@ -307,19 +307,19 @@ export default function OverviewTopSources({
                   setWidget('domain');
                   break;
                 case 'utm_source':
-                  setFilter('properties.query.utm_source', item.name);
+                  setFilter('properties.__query.utm_source', item.name);
                   break;
                 case 'utm_medium':
-                  setFilter('properties.query.utm_medium', item.name);
+                  setFilter('properties.__query.utm_medium', item.name);
                   break;
                 case 'utm_campaign':
-                  setFilter('properties.query.utm_campaign', item.name);
+                  setFilter('properties.__query.utm_campaign', item.name);
                   break;
                 case 'utm_term':
-                  setFilter('properties.query.utm_term', item.name);
+                  setFilter('properties.__query.utm_term', item.name);
                   break;
                 case 'utm_content':
-                  setFilter('properties.query.utm_content', item.name);
+                  setFilter('properties.__query.utm_content', item.name);
                   break;
               }
             }}
