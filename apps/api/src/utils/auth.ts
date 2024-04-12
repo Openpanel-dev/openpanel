@@ -23,11 +23,6 @@ export async function validateSdkRequest(
   const clientSecret = clientSecretNew || clientSecretOld;
 
   const origin = headers.origin;
-  // Temp log
-  logger.info(
-    { clientId, origin: origin ? origin : 'empty' },
-    'validateSdkRequest'
-  );
 
   if (!clientId) {
     throw new Error('Ingestion: Missing client id');
@@ -69,7 +64,12 @@ export async function validateSdkRequest(
     }
   }
 
-  throw new Error('Ingestion: Invalid client secret');
+  logger.error({
+    client,
+    headers,
+    origin,
+  });
+  throw new Error('Ingestion: Invalid cors or secret');
 }
 
 export async function validateExportRequest(

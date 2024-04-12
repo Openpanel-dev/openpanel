@@ -17,7 +17,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
     ) => {
       try {
         const projectId = await validateSdkRequest(req.headers).catch(
-          () => null
+          req.log.error
         );
         if (!projectId) {
           return reply.status(401).send();
