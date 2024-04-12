@@ -58,7 +58,9 @@ export async function validateSdkRequest(
       return client.projectId;
     }
 
-    // Check if cors is a wildcard
+    if (client.cors === '*' && origin) {
+      return client.projectId;
+    }
   }
 
   if (client.secret && clientSecret) {
