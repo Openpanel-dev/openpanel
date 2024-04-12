@@ -14,7 +14,7 @@ export const columns: ColumnDef<IServiceClientWithProject>[] = [
         <div>
           <div>{row.original.name}</div>
           <div className="text-sm text-muted-foreground">
-            {row.original.project.name}
+            {row.original.project?.name ?? 'No project'}
           </div>
         </div>
       );

@@ -35,15 +35,16 @@ export const onboardingRouter = createTRPCRouter({
             name: `${project.name} Client`,
             organizationSlug: org.slug,
             projectId: project.id,
-            cors: input.cors ? stripTrailingSlash(input.cors) : '*',
-            secret: input.cors ? null : await hashPassword(secret),
+            type: 'write',
+            cors: input.cors ? stripTrailingSlash(input.cors) : null,
+            secret: await hashPassword(secret),
           },
         });
 
         return {
           client: {
             ...client,
-            secret: input.cors ? null : secret,
+            secret,
           },
           project,
           organization: transformOrganization(org),

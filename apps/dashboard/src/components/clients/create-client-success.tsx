@@ -1,7 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { clipboard } from '@/utils/clipboard';
 import { Copy, RocketIcon } from 'lucide-react';
-import Link from 'next/link';
 
 import type { IServiceClient } from '@openpanel/db';
 
@@ -19,17 +18,28 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
           <Copy size={16} />
         </div>
       </button>
-      {secret ? (
-        <button className="text-left" onClick={() => clipboard(secret)}>
-          <Label>Secret</Label>
-          <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
-            {secret}
-            <Copy size={16} />
-          </div>
-        </button>
-      ) : (
+      {secret && (
+        <div className="w-full">
+          <button
+            className="w-full text-left"
+            onClick={() => clipboard(secret)}
+          >
+            <Label>Client secret</Label>
+            <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
+              {secret}
+              <Copy size={16} />
+            </div>
+          </button>
+          {cors && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              You will only need the secret if you want to send server events.
+            </p>
+          )}
+        </div>
+      )}
+      {cors && (
         <div className="text-left">
-          <Label>Cors settings</Label>
+          <Label>CORS settings</Label>
           <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
             {cors}
           </div>
@@ -39,7 +49,15 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
         <RocketIcon className="h-4 w-4" />
         <AlertTitle>Get started!</AlertTitle>
         <AlertDescription>
-          Read our documentation to get started. Easy peasy!
+          Read our{' '}
+          <a
+            target="_blank"
+            href="https://docs.openpanel.dev"
+            className="underline"
+          >
+            documentation
+          </a>{' '}
+          to get started. Easy peasy!
         </AlertDescription>
       </Alert>
     </div>

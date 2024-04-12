@@ -1,12 +1,11 @@
 'use client';
 
-import { Fragment } from 'react';
 import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import AnimateHeight from 'react-animate-height';
 
 import type { IChartInput } from '@openpanel/validation';
 
+import AnimateHeight from '../animate-height';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { useOverviewOptions } from './useOverviewOptions';
 
@@ -135,7 +134,7 @@ interface WrapperProps {
 
 function Wrapper({ open, children, count }: WrapperProps) {
   return (
-    <AnimateHeight duration={500} height={open ? 'auto' : 0}>
+    <AnimateHeight open={open}>
       <div className="flex flex-col items-end md:flex-row">
         <div className="md:card flex items-end max-md:mb-2 max-md:w-full max-md:justify-between md:mr-2 md:flex-col md:p-4">
           <div className="text-sm max-md:mb-1">Last 30 minutes</div>

@@ -18,7 +18,7 @@ type EditClientProps = IServiceClient;
 const validator = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  cors: z.string().min(1),
+  cors: z.string().nullable(),
 });
 
 type IForm = z.infer<typeof validator>;
@@ -59,13 +59,11 @@ export default function EditClient({ id, name, cors }: EditClientProps) {
             label="Name"
             placeholder="Name"
             {...register('name')}
-            defaultValue={name}
           />
           <InputWithLabel
             label="Cors"
             placeholder="Cors"
             {...register('cors')}
-            defaultValue={cors}
           />
         </div>
         <ButtonContainer>

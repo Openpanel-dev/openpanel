@@ -3,6 +3,7 @@ import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
 import { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
+import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
 
 export const clientRouter = createTRPCRouter({
@@ -11,7 +12,7 @@ export const clientRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
-        cors: z.string(),
+        cors: z.string().nullable(),
       })
     )
     .mutation(({ input }) => {
@@ -21,7 +22,7 @@ export const clientRouter = createTRPCRouter({
         },
         data: {
           name: input.name,
-          cors: input.cors,
+          cors: input.cors ?? null,
         },
       });
     }),
@@ -32,23 +33,25 @@ export const clientRouter = createTRPCRouter({
         projectId: z.string(),
         organizationSlug: z.string(),
         cors: z.string().nullable(),
+        type: z.enum(['read', 'write', 'root']).optional(),
       })
     )
     .mutation(async ({ input }) => {
       const secret = randomUUID();
-      const client = await db.client.create({
-        data: {
-          organizationSlug: input.organizationSlug,
-          projectId: input.projectId,
-          name: input.name,
-          secret: input.cors ? null : await hashPassword(secret),
-          cors: input.cors ? stripTrailingSlash(input.cors) : '*',
-        },
-      });
+      const data: Prisma.ClientCreateArgs['data'] = {
+        organizationSlug: input.organizationSlug,
+        projectId: input.projectId,
+        name: input.name,
+        type: input.type ?? 'write',
+        cors: input.cors ? stripTrailingSlash(input.cors) : null,
+        secret: await hashPassword(secret),
+      };
+
+      const client = await db.client.create({ data });
 
       return {
         ...client,
-        secret: input.cors ? null : secret,
+        secret,
       };
     }),
   remove: protectedProcedure

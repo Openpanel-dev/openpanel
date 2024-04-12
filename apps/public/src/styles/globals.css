@@ -73,7 +73,7 @@
 }
 
 .fancy-text {
-  @apply text-transparent inline-block bg-gradient-to-br from-blue-200 to-blue-400 bg-clip-text;
+  @apply inline-block bg-gradient-to-br from-blue-200 to-blue-400 bg-clip-text text-transparent;
 }
 
 strong {
