@@ -1,12 +1,14 @@
 'use client';
 
+import { useState } from 'react';
+import AnimateHeight from '@/components/animate-height';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
 import { LogoSquare } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { api, handleError } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,33 +18,23 @@ import type { SubmitHandler } from 'react-hook-form';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-const validation = z
-  .object({
-    organization: z.string().min(3),
-    project: z.string().min(3),
-    cors: z.string().nullable(),
-    tab: z.string(),
-  })
-  .refine(
-    (data) =>
-      data.tab === 'other' || (data.tab === 'website' && data.cors !== ''),
-    {
-      message: 'Cors is required',
-      path: ['cors'],
-    }
-  );
+const validation = z.object({
+  organization: z.string().min(3),
+  project: z.string().min(3),
+  cors: z.string().url().or(z.literal('')),
+});
 
 type IForm = z.infer<typeof validation>;
 
 export function CreateOrganization() {
   const router = useRouter();
+  const [hasDomain, setHasDomain] = useState(true);
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
     defaultValues: {
       organization: '',
       project: '',
       cors: '',
-      tab: 'website',
     },
   });
   const mutation = api.onboarding.organziation.useMutation({
@@ -51,7 +43,7 @@ export function CreateOrganization() {
   const onSubmit: SubmitHandler<IForm> = (values) => {
     mutation.mutate({
       ...values,
-      cors: values.tab === 'website' ? values.cors : null,
+      cors: hasDomain ? values.cors : null,
     });
   };
 
@@ -128,29 +120,19 @@ export function CreateOrganization() {
           />
         </div>
 
-        <Tabs
-          defaultValue="website"
-          onValueChange={(val) => form.setValue('tab', val)}
-          className="h-28"
-        >
-          <TabsList className="bg-slate-200">
-            <TabsTrigger value="website">Website</TabsTrigger>
-            <TabsTrigger value="other">Other</TabsTrigger>
-          </TabsList>
-          <TabsContent value="website">
-            <Label>Cors *</Label>
+        <div>
+          <Label className="flex items-center justify-between">
+            <span>Domain</span>
+            <Switch checked={hasDomain} onCheckedChange={setHasDomain} />
+          </Label>
+          <AnimateHeight open={hasDomain}>
             <Input
               placeholder="https://example.com"
               error={form.formState.errors.cors?.message}
               {...form.register('cors')}
             />
-          </TabsContent>
-          <TabsContent value="other">
-            <div className="rounded bg-background p-2 px-3 text-sm">
-              🔑 You will get a secret to use for your API requests.
-            </div>
-          </TabsContent>
-        </Tabs>
+          </AnimateHeight>
+        </div>
 
         <div className="flex justify-end">
           <Button

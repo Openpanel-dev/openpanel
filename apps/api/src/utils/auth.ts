@@ -23,17 +23,14 @@ export async function validateSdkRequest(
   const clientSecret = clientSecretNew || clientSecretOld;
 
   const origin = headers.origin;
+  // Temp log
+  logger.info(
+    { clientId, origin: origin ? origin : 'empty' },
+    'validateSdkRequest'
+  );
+
   if (!clientId) {
-    logger.error(
-      {
-        clientId,
-        clientSecret,
-        origin,
-        headers,
-      },
-      'validateSdkRequest: Missing client id'
-    );
-    throw new Error('Missing client id');
+    throw new Error('Ingestion: Missing client id');
   }
 
   const client = await db.client.findUnique({
@@ -43,58 +40,34 @@ export async function validateSdkRequest(
   });
 
   if (!client) {
-    logger.error(
-      {
-        clientId,
-        clientSecret,
-        origin,
-        headers,
-      },
-      'validateSdkRequest: Invalid client id'
-    );
-    throw new Error('Invalid client id');
+    throw new Error('Ingestion: Invalid client id');
   }
 
-  if (client.secret) {
-    if (!(await verifyPassword(clientSecret || '', client.secret))) {
-      logger.error(
-        {
-          clientId,
-          clientSecret,
-          origin,
-          headers,
-        },
-        'validateSdkRequest: Invalid client secret'
-      );
-      throw new Error('Invalid client secret');
-    }
-  } else if (client.cors !== '*') {
+  if (!client.projectId) {
+    throw new Error('Ingestion: Client has no project');
+  }
+
+  if (client.cors) {
     const domainAllowed = client.cors.split(',').find((domain) => {
       if (cleanDomain(domain) === cleanDomain(origin || '')) {
         return true;
       }
     });
 
-    if (!domainAllowed) {
-      logger.error(
-        {
-          clientId,
-          clientSecret,
-          client,
-          origin,
-          headers,
-        },
-        'validateSdkRequest: Invalid cors settings'
-      );
-      throw new Error('Invalid cors settings');
+    if (domainAllowed) {
+      return client.projectId;
+    }
+
+    // Check if cors is a wildcard
+  }
+
+  if (client.secret && clientSecret) {
+    if (await verifyPassword(clientSecret, client.secret)) {
+      return client.projectId;
     }
   }
 
-  if (!client.projectId) {
-    throw new Error('No project id found for client');
-  }
-
-  return client.projectId;
+  throw new Error('Ingestion: Invalid client secret');
 }
 
 export async function validateExportRequest(

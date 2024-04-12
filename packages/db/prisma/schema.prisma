@@ -104,7 +104,7 @@ model Client {
   projectId        String?
   project          Project?   @relation(fields: [projectId], references: [id])
   organizationSlug String
-  cors             String     @default("*")
+  cors             String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

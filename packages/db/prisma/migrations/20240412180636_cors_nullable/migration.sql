@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "clients" ALTER COLUMN "cors" DROP NOT NULL,
+ALTER COLUMN "cors" DROP DEFAULT;
