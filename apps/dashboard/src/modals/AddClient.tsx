@@ -64,6 +64,7 @@ export default function AddClient(props: Props) {
       cors: hasDomain ? values.cors : null,
       projectId: values.projectId,
       organizationSlug,
+      type: values.type,
     });
   };
 
