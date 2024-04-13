@@ -56,6 +56,7 @@ export async function events(
     return;
   }
 
+  const take = Math.max(Math.min(query.limit, 50), 1);
   const cursor = (parseInt(query.page || '1', 10) || 1) - 1;
   const options: GetEventListOptions = {
     projectId,
@@ -65,7 +66,7 @@ export async function events(
     startDate: query.start ? new Date(query.start) : undefined,
     endDate: query.end ? new Date(query.end) : undefined,
     cursor,
-    take: 50,
+    take,
     meta: false,
     profile: true,
   };
