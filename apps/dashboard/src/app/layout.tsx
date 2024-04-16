@@ -1,4 +1,5 @@
 import { cn } from '@/utils/cn';
+import NextTopLoader from 'nextjs-toploader';
 
 import Providers from './providers';
 
@@ -26,6 +27,12 @@ export default function RootLayout({
       <body
         className={cn('grainy min-h-screen bg-slate-100 font-sans antialiased')}
       >
+        <NextTopLoader
+          showSpinner={false}
+          color="#2463EB"
+          height={2}
+          shadow={false}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
