@@ -9,6 +9,7 @@ type EventsQuery = {
   start?: string;
   end?: string;
   page?: string;
+  limit?: string;
 };
 export async function events(
   request: FastifyRequest<{
@@ -17,6 +18,8 @@ export async function events(
   reply: FastifyReply
 ) {
   const query = request.query;
+  const limit = parseInt(query.limit || '50', 10);
+  const page = parseInt(query.page || '1', 10);
 
   if (query.project_id) {
     if (
@@ -56,8 +59,8 @@ export async function events(
     return;
   }
 
-  const take = Math.max(Math.min(query.limit, 50), 1);
-  const cursor = (parseInt(query.page || '1', 10) || 1) - 1;
+  const take = Math.max(Math.min(limit, 50), 1);
+  const cursor = page - 1;
   const options: GetEventListOptions = {
     projectId,
     events: (Array.isArray(query.event) ? query.event : [query.event]).filter(
@@ -78,7 +81,6 @@ export async function events(
 
   reply.send({
     meta: {
-      // options,
       count: data.length,
       totalCount: totalCount,
       pages: Math.ceil(totalCount / options.take),
