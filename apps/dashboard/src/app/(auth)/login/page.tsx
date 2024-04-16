@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 
 import PageClient from './page.client';
 
+export const dynamic = 'force-dynamic';
+
 // Sign up
 const Page = () => {
   const session = auth();

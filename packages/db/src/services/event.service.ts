@@ -137,6 +137,11 @@ interface GetEventsOptions {
   meta?: boolean | Prisma.EventMetaSelect;
 }
 
+function maskString(str: string, mask = '*') {
+  if (str.length < 9) return mask.repeat(Math.max(str.length, 3));
+  return str.slice(0, 3) + mask.repeat(str.length - 6) + str.slice(-3);
+}
+
 export function transformMinimalEvent(
   event: IServiceCreateEventPayload
 ): IServiceEventMinimal {
@@ -152,7 +157,7 @@ export function transformMinimalEvent(
     device: event.device,
     brand: event.brand,
     duration: event.duration,
-    path: event.path,
+    path: maskString(event.path),
     referrer: event.referrer,
     meta: event.meta,
     minimal: true,
