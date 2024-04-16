@@ -9,6 +9,7 @@ export default authMiddleware({
     '/api/trpc(.*)',
     '/api/clerk/(.*)?',
     '/monitoring',
+    '/sso-callback',
   ],
 });
 
