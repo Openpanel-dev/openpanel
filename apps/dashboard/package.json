@@ -73,6 +73,7 @@
     "next": "~14.2.1",
     "next-auth": "^4.24.5",
     "next-themes": "^0.2.1",
+    "nextjs-toploader": "^1.6.11",
     "nuqs": "^1.16.1",
     "prisma-error-enum": "^0.1.3",
     "pushmodal": "^1.0.0",
