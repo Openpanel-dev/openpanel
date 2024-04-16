@@ -113,7 +113,7 @@ export function EventListItem(props: EventListItemProps) {
 
           <Tooltiper asChild content={createdAt.toLocaleString()}>
             <div className="text-sm text-muted-foreground">
-              {createdAt.toLocaleTimeString()}
+              {createdAt.toLocaleString()}
             </div>
           </Tooltiper>
         </div>

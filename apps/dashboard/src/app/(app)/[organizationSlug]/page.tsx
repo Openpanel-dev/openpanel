@@ -2,13 +2,9 @@ import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullWidthNavbar from '@/components/full-width-navbar';
 import { ProjectCard } from '@/components/projects/project-card';
 import SignOutButton from '@/components/sign-out-button';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 
-import {
-  getCurrentOrganizations,
-  getCurrentProjects,
-  getOrganizationBySlug,
-} from '@openpanel/db';
+import { getCurrentOrganizations, getCurrentProjects } from '@openpanel/db';
 
 interface PageProps {
   params: {

@@ -33,7 +33,7 @@
     "embla-carousel-autoplay": "8.0.0-rc22",
     "embla-carousel-react": "8.0.0-rc22",
     "lucide-react": "^0.323.0",
-    "next": "~14.0.4",
+    "next": "~14.2.1",
     "react": "18.2.0",
     "react-animate-height": "^3.2.3",
     "react-dom": "18.2.0",
