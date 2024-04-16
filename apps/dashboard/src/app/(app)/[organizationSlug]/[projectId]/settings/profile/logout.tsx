@@ -1,8 +1,7 @@
 'use client';
 
-import { buttonVariants } from '@/components/ui/button';
+import SignOutButton from '@/components/sign-out-button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { SignOutButton } from '@clerk/nextjs';
 
 export function Logout() {
   return (
@@ -14,10 +13,7 @@ export function Logout() {
         <p className="mb-4">
           Sometime&apos;s you need to go. See you next time
         </p>
-        <SignOutButton
-          // @ts-expect-error
-          className={buttonVariants({ variant: 'destructive' })}
-        />
+        <SignOutButton />
       </WidgetBody>
     </Widget>
   );

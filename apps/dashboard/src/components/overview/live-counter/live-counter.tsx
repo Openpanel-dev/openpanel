@@ -6,10 +6,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
-import useWebSocket from 'react-use-websocket';
 import { toast } from 'sonner';
 
 import { useOverviewOptions } from '../useOverviewOptions';
@@ -28,29 +28,21 @@ const FIFTEEN_SECONDS = 1000 * 15;
 
 export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
   const { setLiveHistogram } = useOverviewOptions();
-  const ws = String(process.env.NEXT_PUBLIC_API_URL)
-    .replace(/^https/, 'wss')
-    .replace(/^http/, 'ws');
   const client = useQueryClient();
   const [counter, setCounter] = useState(data);
-  const [socketUrl] = useState(`${ws}/live/visitors/${projectId}`);
   const lastRefresh = useRef(Date.now());
 
-  useWebSocket(socketUrl, {
-    shouldReconnect: () => true,
-    onMessage(event) {
-      const value = parseInt(event.data, 10);
-      if (!isNaN(value)) {
-        setCounter(value);
-        if (Date.now() - lastRefresh.current > FIFTEEN_SECONDS) {
-          lastRefresh.current = Date.now();
-          toast('Refreshed data');
-          client.refetchQueries({
-            type: 'active',
-          });
-        }
+  useWS<number>(`/live/visitors/${projectId}`, (value) => {
+    if (!isNaN(value)) {
+      setCounter(value);
+      if (Date.now() - lastRefresh.current > FIFTEEN_SECONDS) {
+        lastRefresh.current = Date.now();
+        toast('Refreshed data');
+        client.refetchQueries({
+          type: 'active',
+        });
       }
-    },
+    }
   });
 
   return (

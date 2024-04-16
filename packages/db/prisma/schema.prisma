@@ -10,11 +10,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ProjectType {
+  website
+  app
+  backend
+}
+
 model Project {
-  id               String @id @default(dbgenerated("gen_random_uuid()"))
+  id               String        @id @default(dbgenerated("gen_random_uuid()"))
   name             String
   organizationSlug String
-  eventsCount      Int    @default(0)
+  eventsCount      Int           @default(0)
+  types            ProjectType[] @default([])
 
   events     Event[]
   profiles   Profile[]

@@ -2,6 +2,12 @@ import { isSameDay, isSameMonth } from 'date-fns';
 
 export const NOT_SET_VALUE = '(not set)';
 
+export const ProjectTypeNames = {
+  website: 'Website',
+  app: 'App',
+  backend: 'Backend',
+} as const;
+
 export const operators = {
   is: 'Is',
   isNot: 'Is not',

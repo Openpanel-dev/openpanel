@@ -28,22 +28,16 @@ export default async function AppLayout({
 
   if (!organizations.find((item) => item.slug === organizationSlug)) {
     return (
-      <FullPageEmptyState
-        title="Could not find organization"
-        className="min-h-screen"
-      >
-        The organization you are looking for could not be found.
+      <FullPageEmptyState title="Not found" className="min-h-screen">
+        The organization you were looking for could not be found.
       </FullPageEmptyState>
     );
   }
 
   if (!projects.find((item) => item.id === projectId)) {
     return (
-      <FullPageEmptyState
-        title="Could not find project"
-        className="min-h-screen"
-      >
-        The project you are looking for could not be found.
+      <FullPageEmptyState title="Not found" className="min-h-screen">
+        The project you were looking for could not be found.
       </FullPageEmptyState>
     );
   }

@@ -12,7 +12,7 @@
     ·
     <a href="https://dashboard.openpanel.dev">Sign in</a>
     ·
-    <a href="https://discord.gg/X9NX3RB42m">Discord</a>
+    <a href="https://go.openpanel.dev/discord">Discord</a>
     ·
     <a href="https://twitter.com/CarlLindesvard">X/Twitter</a>
     ·

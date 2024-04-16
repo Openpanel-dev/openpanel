@@ -1,7 +1,7 @@
 // prettier-ignore
 const data = {
   'chromium os': 'https://upload.wikimedia.org/wikipedia/commons/2/28/Chromium_Logo.svg',
-  'mac os': 'https://upload.wikimedia.org/wikipedia/commons/c/c9/Finder_Icon_macOS_Big_Sur.png',
+  'mac os': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/MacOS_logo.svg/1200px-MacOS_logo.svg.png',
   'mobile safari': 'https://upload.wikimedia.org/wikipedia/commons/5/52/Safari_browser_logo.svg',
   'openpanel.dev': 'https://openpanel.dev',
   'samsung internet': 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Samsung_Internet_logo.svg/1024px-Samsung_Internet_logo.svg.png',
@@ -20,7 +20,7 @@ const data = {
   gmail: 'https://mail.google.com',
   google: 'https://google.com',
   instagram: 'https://instagram.com',
-  ios: 'https://upload.wikimedia.org/wikipedia/commons/6/66/Apple_iOS_logo.svg',
+  ios: 'https://cdn0.iconfinder.com/data/icons/flat-round-system/512/apple-1024.png',
   linkedin: 'https://linkedin.com',
   linux: 'https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg',
   microlaunch: 'https://microlaunch.net',

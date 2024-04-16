@@ -2,17 +2,17 @@
 
 import { Button } from '@/components/ui/button';
 import { DialogContent } from '@/components/ui/dialog';
+import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
 import { popModal } from '..';
 
-interface ModalContentProps {
+interface ModalContentProps extends DialogContentProps {
   children: React.ReactNode;
-  className?: string;
 }
 
-export function ModalContent({ children, className }: ModalContentProps) {
-  return <DialogContent className={className}>{children}</DialogContent>;
+export function ModalContent({ children, ...props }: ModalContentProps) {
+  return <DialogContent {...props}>{children}</DialogContent>;
 }
 
 interface ModalHeaderProps {

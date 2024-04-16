@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "ramda": "^0.29.1",
+    "superjson": "^1.13.3",
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {

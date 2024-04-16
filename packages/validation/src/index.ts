@@ -97,3 +97,36 @@ export const zCreateReference = z.object({
   projectId: z.string(),
   datetime: z.string(),
 });
+
+export const zOnboardingProject = z
+  .object({
+    organization: z.string().min(3),
+    project: z.string().min(3),
+    domain: z.string().url().or(z.literal('').or(z.null())),
+    website: z.boolean(),
+    app: z.boolean(),
+    backend: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.website && !data.domain) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Domain is required for website tracking',
+        path: ['domain'],
+      });
+    }
+
+    if (
+      data.website === false &&
+      data.app === false &&
+      data.backend === false
+    ) {
+      ['app', 'backend', 'website'].forEach((key) => {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'At least one type must be selected',
+          path: [key],
+        });
+      });
+    }
+  });

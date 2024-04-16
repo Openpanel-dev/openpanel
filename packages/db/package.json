@@ -21,6 +21,7 @@
     "@prisma/client": "^5.1.1",
     "ramda": "^0.29.1",
     "sqlstring": "^2.3.3",
+    "superjson": "^1.13.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

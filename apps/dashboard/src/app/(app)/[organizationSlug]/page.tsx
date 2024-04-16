@@ -1,15 +1,14 @@
-import { LogoSquare } from '@/components/logo';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullWidthNavbar from '@/components/full-width-navbar';
 import { ProjectCard } from '@/components/projects/project-card';
-import { SignOutButton } from '@clerk/nextjs';
+import SignOutButton from '@/components/sign-out-button';
 import { notFound, redirect } from 'next/navigation';
 
 import {
+  getCurrentOrganizations,
   getCurrentProjects,
   getOrganizationBySlug,
-  isWaitlistUserAccepted,
 } from '@openpanel/db';
-
-import { CreateProject } from './create-project';
 
 interface PageProps {
   params: {
@@ -20,41 +19,25 @@ interface PageProps {
 export default async function Page({
   params: { organizationSlug },
 }: PageProps) {
-  const [organization, projects] = await Promise.all([
-    getOrganizationBySlug(organizationSlug),
+  const [organizations, projects] = await Promise.all([
+    getCurrentOrganizations(),
     getCurrentProjects(organizationSlug),
   ]);
 
-  if (!organization) {
-    return notFound();
-  }
+  const organization = organizations.find(
+    (org) => org.slug === organizationSlug
+  );
 
-  if (process.env.BLOCK) {
-    const isAccepted = await isWaitlistUserAccepted();
-    if (!isAccepted) {
-      return (
-        <div className="flex h-screen items-center justify-center p-4">
-          <div className="w-full max-w-lg">
-            <LogoSquare className="mb-8 w-20 md:w-28" />
-            <h1 className="text-3xl font-medium">Not quite there yet</h1>
-            <div className="text-lg">
-              We&apos;re still working on Openpanel, but we&apos;re not quite
-              there yet. We&apos;ll let you know when we&apos;re ready to go!
-            </div>
-          </div>
-        </div>
-      );
-    }
+  if (!organization) {
+    return (
+      <FullPageEmptyState title="Not found" className="min-h-screen">
+        The organization you were looking for could not be found.
+      </FullPageEmptyState>
+    );
   }
 
   if (projects.length === 0) {
-    return (
-      <div className="flex h-screen items-center justify-center p-4 ">
-        <div className="w-full max-w-lg">
-          <CreateProject />
-        </div>
-      </div>
-    );
+    return redirect('/onboarding');
   }
 
   if (projects.length === 1 && projects[0]) {
@@ -62,12 +45,16 @@ export default async function Page({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 pt-20 ">
-      <SignOutButton />
-      <h1 className="text-xl font-medium">Select project</h1>
-      {projects.map((item) => (
-        <ProjectCard key={item.id} {...item} />
-      ))}
+    <div>
+      <FullWidthNavbar>
+        <SignOutButton />
+      </FullWidthNavbar>
+      <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-4 pt-20 ">
+        <h1 className="text-xl font-medium">Select project</h1>
+        {projects.map((item) => (
+          <ProjectCard key={item.id} {...item} />
+        ))}
+      </div>
     </div>
   );
 }

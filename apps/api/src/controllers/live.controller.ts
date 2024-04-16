@@ -1,10 +1,15 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { escape } from 'sqlstring';
+import superjson from 'superjson';
 import type * as WebSocket from 'ws';
 
-import { getSafeJson } from '@openpanel/common';
+import { getSuperJson } from '@openpanel/common';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
-import { getEvents, getLiveVisitors } from '@openpanel/db';
+import {
+  getEvents,
+  getLiveVisitors,
+  transformMinimalEvent,
+} from '@openpanel/db';
 import { redis, redisPub, redisSub } from '@openpanel/redis';
 
 export function getLiveEventInfo(key: string) {
@@ -19,13 +24,14 @@ export async function test(
   }>,
   reply: FastifyReply
 ) {
-  const [event] = await getEvents(
-    `SELECT * FROM events WHERE project_id = ${escape(req.params.projectId)} AND name = 'screen_view' LIMIT 1`
+  const events = await getEvents(
+    `SELECT * FROM events WHERE project_id = ${escape(req.params.projectId)} AND name = 'screen_view' LIMIT 500`
   );
+  const event = events[Math.floor(Math.random() * events.length)];
   if (!event) {
     return reply.status(404).send('No event found');
   }
-  redisPub.publish('event', JSON.stringify(event));
+  redisPub.publish('event', superjson.stringify(event));
   redis.set(
     `live:event:${event.projectId}:${Math.random() * 1000}`,
     '',
@@ -52,7 +58,7 @@ export function wsVisitors(
 
   const message = (channel: string, message: string) => {
     if (channel === 'event') {
-      const event = getSafeJson<IServiceCreateEventPayload>(message);
+      const event = getSuperJson<IServiceCreateEventPayload>(message);
       if (event?.projectId === params.projectId) {
         getLiveVisitors(params.projectId).then((count) => {
           connection.socket.send(String(count));
@@ -80,7 +86,25 @@ export function wsVisitors(
   });
 }
 
-export function wsEvents(
+export function wsEvents(connection: { socket: WebSocket }) {
+  redisSub.subscribe('event');
+
+  const message = (channel: string, message: string) => {
+    const event = getSuperJson<IServiceCreateEventPayload>(message);
+    if (event) {
+      connection.socket.send(superjson.stringify(transformMinimalEvent(event)));
+    }
+  };
+
+  redisSub.on('message', message);
+
+  connection.socket.on('close', () => {
+    redisSub.unsubscribe('event');
+    redisSub.off('message', message);
+  });
+}
+
+export function wsProjectEvents(
   connection: {
     socket: WebSocket;
   },
@@ -95,9 +119,9 @@ export function wsEvents(
   redisSub.subscribe('event');
 
   const message = (channel: string, message: string) => {
-    const event = getSafeJson<IServiceCreateEventPayload>(message);
+    const event = getSuperJson<IServiceCreateEventPayload>(message);
     if (event?.projectId === params.projectId) {
-      connection.socket.send(JSON.stringify(event));
+      connection.socket.send(superjson.stringify(transformMinimalEvent(event)));
     }
   };
 

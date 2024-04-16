@@ -7,6 +7,7 @@ import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 const TooltipProvider = TooltipPrimitive.Provider;
 
 const Tooltip = TooltipPrimitive.Root;
+const TooltipPortal = TooltipPrimitive.Portal;
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
@@ -49,7 +50,9 @@ export function Tooltiper({
       <TooltipTrigger asChild={asChild} className={className}>
         {children}
       </TooltipTrigger>
-      <TooltipContent>{content}</TooltipContent>
+      <TooltipPortal>
+        <TooltipContent>{content}</TooltipContent>
+      </TooltipPortal>
     </Tooltip>
   );
 }

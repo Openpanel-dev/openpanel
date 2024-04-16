@@ -23,8 +23,9 @@ export function transformOrganization(org: Organization) {
 
 export async function getCurrentOrganizations() {
   const session = auth();
+  if (!session.userId) return [];
   const organizations = await clerkClient.users.getOrganizationMembershipList({
-    userId: session.userId!,
+    userId: session.userId,
   });
   return organizations.map((item) => transformOrganization(item.organization));
 }

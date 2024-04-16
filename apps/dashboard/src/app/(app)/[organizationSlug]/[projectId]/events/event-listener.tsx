@@ -1,20 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
+import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
-import { useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import useWebSocket from 'react-use-websocket';
 import { toast } from 'sonner';
 
-import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { IServiceEventMinimal } from '@openpanel/db';
 
 const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
   ssr: false,
@@ -24,21 +23,13 @@ const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
 export default function EventListener() {
   const router = useRouter();
   const { projectId } = useAppParams();
-  const ws = String(process.env.NEXT_PUBLIC_API_URL)
-    .replace(/^https/, 'wss')
-    .replace(/^http/, 'ws');
   const [counter, setCounter] = useState(0);
-  const [socketUrl] = useState(`${ws}/live/events/${projectId}`);
 
-  useWebSocket(socketUrl, {
-    shouldReconnect: () => true,
-    onMessage(payload) {
-      const event = JSON.parse(payload.data) as IServiceCreateEventPayload;
-      if (event?.name) {
-        setCounter((prev) => prev + 1);
-        toast(`New event ${event.name} from ${event.country}!`);
-      }
-    },
+  useWS<IServiceEventMinimal>(`/live/events/${projectId}`, (event) => {
+    if (event?.name) {
+      setCounter((prev) => prev + 1);
+      toast(`New event ${event.name} from ${event.country}!`);
+    }
   });
 
   return (

@@ -1,0 +1,127 @@
+'use client';
+
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import useWS from '@/hooks/useWS';
+import { pushModal } from '@/modals';
+import { cn } from '@/utils/cn';
+import { timeAgo } from '@/utils/date';
+import { CheckCircle2Icon, CheckIcon, Loader2 } from 'lucide-react';
+
+import type {
+  IServiceClient,
+  IServiceCreateEventPayload,
+  IServiceProject,
+} from '@openpanel/db';
+
+type Props = {
+  project: IServiceProject;
+  client: IServiceClient | null;
+  events: IServiceCreateEventPayload[];
+  onVerified: (verified: boolean) => void;
+};
+
+const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
+  const [events, setEvents] = useState<IServiceCreateEventPayload[]>(
+    _events ?? []
+  );
+  useWS<IServiceCreateEventPayload>(
+    `/live/events/${client?.projectId}`,
+    (data) => {
+      setEvents((prev) => [...prev, data]);
+      onVerified(true);
+    }
+  );
+
+  const isConnected = events.length > 0;
+
+  const renderBadge = () => {
+    if (isConnected) {
+      return <Badge variant={'success'}>Connected</Badge>;
+    }
+
+    return <Badge variant={'destructive'}>Not connected</Badge>;
+  };
+  const renderIcon = () => {
+    if (isConnected) {
+      return (
+        <CheckCircle2Icon
+          strokeWidth={1.2}
+          size={40}
+          className="shrink-0 text-emerald-600"
+        />
+      );
+    }
+
+    return (
+      <Loader2 size={40} className="shrink-0 animate-spin text-blue-600" />
+    );
+  };
+
+  return (
+    <div className="rounded-lg border p-4 md:p-6">
+      <div className="flex items-center gap-2 text-2xl capitalize">
+        {client?.name}
+      </div>
+      <div className="mt-2 text-xs font-semibold text-muted-foreground">
+        Connection status: {renderBadge()}
+      </div>
+
+      <div
+        className={cn(
+          'my-6 flex gap-6 rounded-xl p-4 md:p-6',
+          isConnected ? 'bg-emerald-100' : 'bg-blue-100'
+        )}
+      >
+        {renderIcon()}
+        <div className="flex-1">
+          <div className="text-lg font-semibold">
+            {isConnected ? 'Success' : 'Waiting for events'}
+          </div>
+          {isConnected ? (
+            <div className="flex flex-col-reverse">
+              {events.length > 5 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckIcon size={14} />{' '}
+                  <span>{events.length - 5} more events</span>
+                </div>
+              )}
+              {events.slice(-5).map((event, index) => (
+                <div key={index} className="flex items-center gap-2 text-sm">
+                  <CheckIcon size={14} />{' '}
+                  <span className="font-medium">{event.name}</span>{' '}
+                  <span className="ml-auto text-emerald-800">
+                    {timeAgo(event.createdAt, 'round')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm">
+              Verify that your events works before submitting any changes to App
+              Store/Google Play
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2 text-xs text-muted-foreground">
+        You can{' '}
+        <button
+          className="underline"
+          onClick={() => {
+            pushModal('OnboardingTroubleshoot', {
+              client,
+              type: 'app',
+            });
+          }}
+        >
+          troubleshoot
+        </button>{' '}
+        if you are having issues connecting your app.
+      </div>
+    </div>
+  );
+};
+
+export default VerifyListener;

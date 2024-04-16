@@ -25,7 +25,7 @@ const OnboardingLayout = ({
   return (
     <div className={cn('flex max-w-3xl flex-col gap-4', className)}>
       <div className="mb-4">
-        <h1 className="text-2xl font-medium">{title}</h1>
+        <h1 className="mb-2 text-3xl font-medium">{title}</h1>
         {description}
       </div>
 
