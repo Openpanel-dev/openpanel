@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Tooltiper } from '@/components/ui/tooltip';
 import type { LucideIcon, LucideProps } from 'lucide-react';
 import {
   ActivityIcon,
@@ -81,8 +82,10 @@ export function SerieIcon({ name, ...props }: SerieIconProps) {
   }, [name]);
 
   return Icon ? (
-    <div className="[&_a]:![&_a]:!h-4 relative h-4 flex-shrink-0 [&_svg]:!rounded-[2px]">
-      <Icon size={16} {...props} />
-    </div>
+    <Tooltiper asChild content={name!}>
+      <div className="[&_a]:![&_a]:!h-4 relative h-4 flex-shrink-0 [&_svg]:!rounded-[2px]">
+        <Icon size={16} {...props} />
+      </div>
+    </Tooltiper>
   ) : null;
 }

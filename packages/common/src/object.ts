@@ -1,4 +1,5 @@
 import { anyPass, assocPath, isEmpty, isNil, reject } from 'ramda';
+import superjson from 'superjson';
 
 export function toDots(
   obj: Record<string, unknown>,
@@ -37,4 +38,17 @@ export function getSafeJson<T>(str: string): T | null {
   } catch (e) {
     return null;
   }
+}
+
+export function getSuperJson<T>(str: string): T | null {
+  const json = getSafeJson<T>(str);
+  if (
+    typeof json === 'object' &&
+    json !== null &&
+    'json' in json &&
+    'meta' in json
+  ) {
+    return superjson.parse<T>(str);
+  }
+  return json;
 }

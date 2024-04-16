@@ -1,15 +1,15 @@
 import { auth } from '@clerk/nextjs';
 import { redirect } from 'next/navigation';
 
-import GetStartedClient from './get-started';
+import PageClient from './page.client';
 
 // Sign up
-const GetStarted = () => {
+const Page = () => {
   const session = auth();
   if (session.userId) {
     return redirect('/');
   }
-  return <GetStartedClient />;
+  return <PageClient />;
 };
 
-export default GetStarted;
+export default Page;

@@ -71,6 +71,9 @@ importers:
       sqlstring:
         specifier: ^2.3.3
         version: 2.3.3
+      superjson:
+        specifier: ^1.13.3
+        version: 1.13.3
       ua-parser-js:
         specifier: ^1.0.37
         version: 1.0.37
@@ -150,6 +153,9 @@ importers:
       '@openpanel/queue':
         specifier: workspace:^
         version: link:../../packages/queue
+      '@openpanel/sdk-info':
+        specifier: workspace:^
+        version: link:../../packages/sdks/_info
       '@openpanel/validation':
         specifier: workspace:^
         version: link:../../packages/validation
@@ -267,9 +273,18 @@ importers:
       flag-icons:
         specifier: ^7.1.0
         version: 7.1.0
+      framer-motion:
+        specifier: ^11.0.28
+        version: 11.0.28(react-dom@18.2.0)(react@18.2.0)
       hamburger-react:
         specifier: ^2.5.0
         version: 2.5.0(react@18.2.0)
+      input-otp:
+        specifier: ^1.2.4
+        version: 1.2.4(react-dom@18.2.0)(react@18.2.0)
+      javascript-time-ago:
+        specifier: ^2.5.9
+        version: 2.5.9
       lodash.debounce:
         specifier: ^4.0.8
         version: 4.0.8
@@ -730,6 +745,9 @@ importers:
       ramda:
         specifier: ^0.29.1
         version: 0.29.1
+      superjson:
+        specifier: ^1.13.3
+        version: 1.13.3
       unique-names-generator:
         specifier: ^4.7.1
         version: 4.7.1
@@ -818,6 +836,9 @@ importers:
       sqlstring:
         specifier: ^2.3.3
         version: 2.3.3
+      superjson:
+        specifier: ^1.13.3
+        version: 1.13.3
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
@@ -908,6 +929,30 @@ importers:
       '@types/node':
         specifier: ^18.16.0
         version: 18.19.17
+      eslint:
+        specifier: ^8.48.0
+        version: 8.56.0
+      prettier:
+        specifier: ^3.0.3
+        version: 3.2.5
+      prisma:
+        specifier: ^5.1.1
+        version: 5.9.1
+      typescript:
+        specifier: ^5.2.2
+        version: 5.3.3
+
+  packages/sdks/_info:
+    devDependencies:
+      '@openpanel/eslint-config':
+        specifier: workspace:*
+        version: link:../../../tooling/eslint
+      '@openpanel/prettier-config':
+        specifier: workspace:*
+        version: link:../../../tooling/prettier
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../../tooling/typescript
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
@@ -10600,6 +10645,25 @@ packages:
       '@emotion/is-prop-valid': 0.8.8
     dev: false
 
+  /framer-motion@11.0.28(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-j/vNYTCH5MX5sY/3dwMs00z1+qAqKX3iIHF762bwqlU814ooD5dDbuj3pA0LmIT5YqyryCkXEb/q+zRblin0lw==}
+    peerDependencies:
+      '@emotion/is-prop-valid': '*'
+      react: ^18.0.0
+      react-dom: ^18.0.0
+    peerDependenciesMeta:
+      '@emotion/is-prop-valid':
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      tslib: 2.6.2
+    dev: false
+
   /freeport-async@2.0.0:
     resolution: {integrity: sha512-K7od3Uw45AJg00XUmy15+Hae2hOcgKcmN3/EF6Y7i01O0gaqiRx8sUSpsb9+BRNL8RPBrhzPsVfy8q9ADlJuWQ==}
     engines: {node: '>=8'}
@@ -11303,6 +11367,16 @@ packages:
     resolution: {integrity: sha512-7NXolsK4CAS5+xvdj5OMMbI962hU/wvwoxk+LWR9Ek9bVtyuuYScDN6eS0rUm6TxApFpw7CX1o4uJzcd4AyD3Q==}
     dev: false
 
+  /input-otp@1.2.4(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-md6rhmD+zmMnUh5crQNSQxq3keBRYvE3odbr4Qb9g2NWzQv9azi+t1a3X4TBTbh98fsGHgEEJlzbe1q860uGCA==}
+    peerDependencies:
+      react: ^16.8 || ^17.0 || ^18.0
+      react-dom: ^16.8 || ^17.0 || ^18.0
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
   /internal-ip@4.3.0:
     resolution: {integrity: sha512-S1zBo1D6zcsyuC6PMmY5+55YMILQ9av8lotMx447Bq6SAgo/sDK6y6uUKmuYhW7eacnIhFfsPmCNYdDzsnnDCg==}
     engines: {node: '>=6'}
@@ -11755,6 +11829,12 @@ packages:
 
   /javascript-natural-sort@0.7.1:
     resolution: {integrity: sha512-nO6jcEfZWQXDhOiBtG2KvKyEptz7RVbpGP4vTD2hLBdmNQSsCiicO2Ioinv6UI4y9ukqnBpy+XZ9H6uLNgJTlw==}
+    dev: false
+
+  /javascript-time-ago@2.5.9:
+    resolution: {integrity: sha512-pQ8mNco/9g9TqWXWWjP0EWl6i/lAQScOyEeXy5AB+f7MfLSdgyV9BJhiOD1zrIac/lrxPYOWNbyl/IW8CW5n0A==}
+    dependencies:
+      relative-time-format: 1.1.6
     dev: false
 
   /jest-environment-node@29.7.0:
@@ -15419,6 +15499,10 @@ packages:
       '@types/hast': 3.0.4
       hast-util-raw: 9.0.2
       vfile: 6.0.1
+    dev: false
+
+  /relative-time-format@1.1.6:
+    resolution: {integrity: sha512-aCv3juQw4hT1/P/OrVltKWLlp15eW1GRcwP1XdxHrPdZE9MtgqFpegjnTjLhi2m2WI9MT/hQQtE+tjEWG1hgkQ==}
     dev: false
 
   /remark-gfm@3.0.1:

@@ -1,3 +1,7 @@
+import type { FormatStyleName } from 'javascript-time-ago';
+import TimeAgo from 'javascript-time-ago';
+import en from 'javascript-time-ago/locale/en';
+
 export function dateDifferanceInDays(date1: Date, date2: Date) {
   const diffTime = Math.abs(date2.getTime() - date1.getTime());
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -23,4 +27,11 @@ export function formatDateTime(date: Date) {
     hour: 'numeric',
     minute: 'numeric',
   }).format(date);
+}
+
+TimeAgo.addDefaultLocale(en);
+const ta = new TimeAgo(getLocale());
+
+export function timeAgo(date: Date, style?: FormatStyleName) {
+  return ta.format(new Date(date), style);
 }

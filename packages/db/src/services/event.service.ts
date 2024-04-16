@@ -1,5 +1,6 @@
 import { omit, uniq } from 'ramda';
 import { escape } from 'sqlstring';
+import superjson from 'superjson';
 import { v4 as uuid } from 'uuid';
 
 import { randomSplitName, toDots } from '@openpanel/common';
@@ -113,9 +114,49 @@ export interface IServiceCreateEventPayload {
   meta: EventMeta | undefined;
 }
 
+export interface IServiceEventMinimal {
+  id: string;
+  name: string;
+  projectId: string;
+  sessionId: string;
+  createdAt: Date;
+  country?: string | undefined;
+  os?: string | undefined;
+  browser?: string | undefined;
+  device?: string | undefined;
+  brand?: string | undefined;
+  duration: number;
+  path: string;
+  referrer: string | undefined;
+  meta: EventMeta | undefined;
+  minimal: boolean;
+}
+
 interface GetEventsOptions {
   profile?: boolean | Prisma.ProfileSelect;
   meta?: boolean | Prisma.EventMetaSelect;
+}
+
+export function transformMinimalEvent(
+  event: IServiceCreateEventPayload
+): IServiceEventMinimal {
+  return {
+    id: event.id,
+    name: event.name,
+    projectId: event.projectId,
+    sessionId: event.sessionId,
+    createdAt: event.createdAt,
+    country: event.country,
+    os: event.os,
+    browser: event.browser,
+    device: event.device,
+    brand: event.brand,
+    duration: event.duration,
+    path: event.path,
+    referrer: event.referrer,
+    meta: event.meta,
+    minimal: true,
+  };
 }
 
 export async function getLiveVisitors(projectId: string) {
@@ -227,7 +268,7 @@ export async function createEvent(
     },
   });
 
-  redisPub.publish('event', JSON.stringify(transformEvent(event)));
+  redisPub.publish('event', superjson.stringify(transformEvent(event)));
   redis.set(
     `live:event:${event.project_id}:${event.profile_id}`,
     '',

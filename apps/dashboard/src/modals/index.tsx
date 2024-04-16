@@ -47,6 +47,15 @@ const modals = {
   AddReference: dynamic(() => import('./AddReference'), {
     loading: Loading,
   }),
+  Instructions: dynamic(() => import('./Instructions'), {
+    loading: Loading,
+  }),
+  OnboardingTroubleshoot: dynamic(() => import('./OnboardingTroubleshoot'), {
+    loading: Loading,
+  }),
+  VerifyEmail: dynamic(() => import('./VerifyEmail'), {
+    loading: Loading,
+  }),
 };
 
 export const { pushModal, popModal, popAllModals, ModalProvider } =

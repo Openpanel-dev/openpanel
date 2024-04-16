@@ -1,13 +1,13 @@
 'use client';
 
 import { cn } from '@/utils/cn';
-import { ArrowRightCircleIcon, CheckCheckIcon, Edit2Icon } from 'lucide-react';
+import { CheckCheckIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 type Step = {
   name: string;
   status: 'completed' | 'current' | 'pending';
-  href: string;
+  match: string;
 };
 
 type Props = {
@@ -15,32 +15,32 @@ type Props = {
 };
 
 function useSteps(path: string) {
-  console.log('path', path);
-
   const steps: Step[] = [
     {
       name: 'Account creation',
       status: 'pending',
-      href: '/get-started',
+      match: '/sign-up',
     },
     {
-      name: 'Tracking information',
+      name: 'General',
       status: 'pending',
-      href: '/onboarding',
+      match: '/onboarding',
     },
     {
       name: 'Connect your data',
       status: 'pending',
-      href: '/onboarding/connect',
+      match: '/onboarding/(.+)/connect',
     },
     {
       name: 'Verify',
       status: 'pending',
-      href: '/onboarding/verify',
+      match: '/onboarding/(.+)/verify',
     },
   ];
 
-  const matchIndex = steps.findLastIndex((step) => path.startsWith(step.href));
+  const matchIndex = steps.findLastIndex((step) =>
+    path.match(new RegExp(step.match))
+  );
 
   return steps.map((step, index) => {
     if (index < matchIndex) {
@@ -87,18 +87,18 @@ const Steps = ({ className }: Props) => {
             <div
               className={cn(
                 'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm text-white'
-                // step.status === 'completed' && 'bg-blue-500 ring-blue-500/50',
-                // step.status === 'pending' && 'bg-slate-600 ring-slate-500/50'
+                // step.status === 'completed' && 'bg-blue-600 ring-blue-500/50',
+                // step.status === 'pending' && 'bg-slate-400 ring-slate-500/50'
               )}
             >
               <div
                 className={cn(
-                  'absolute inset-0 z-0 rounded-full bg-blue-500',
-                  step.status === 'pending' && 'bg-slate-600'
+                  'absolute inset-0 z-0 rounded-full bg-blue-600',
+                  step.status === 'pending' && 'bg-slate-400'
                 )}
               ></div>
               {step.status === 'current' && (
-                <div className="animate-ping-slow absolute inset-1 z-0 rounded-full bg-blue-500"></div>
+                <div className="absolute inset-1 z-0 animate-ping-slow rounded-full bg-blue-600"></div>
               )}
               <div className="relative">
                 {step.status === 'completed' && <CheckCheckIcon size={14} />}
