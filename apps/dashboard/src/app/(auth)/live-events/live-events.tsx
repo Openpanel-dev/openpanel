@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { EventListItem } from '@/app/(app)/[organizationSlug]/[projectId]/events/event-list-item';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import useWS from '@/hooks/useWS';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -18,7 +17,7 @@ const LiveEvents = ({ events }: Props) => {
     setState((p) => [event, ...p].slice(0, 30));
   });
   return (
-    <ScrollArea className="h-screen">
+    <div className="hide-scrollbar h-screen overflow-y-auto">
       <div className="text-background-foreground py-16 text-center text-2xl font-bold">
         Real time data
         <br />
@@ -40,7 +39,7 @@ const LiveEvents = ({ events }: Props) => {
           ))}
         </div>
       </AnimatePresence>
-    </ScrollArea>
+    </div>
   );
 };
 

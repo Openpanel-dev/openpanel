@@ -138,8 +138,12 @@ interface GetEventsOptions {
 }
 
 function maskString(str: string, mask = '*') {
-  if (str.length < 9) return mask.repeat(Math.max(str.length, 3));
-  return str.slice(0, 3) + mask.repeat(str.length - 6) + str.slice(-3);
+  const allMasked = str.replace(/(\w)/g, mask);
+  if (str.length < 8) {
+    return allMasked;
+  }
+
+  return `${str.slice(0, 4)}${allMasked.slice(4)}`;
 }
 
 export function transformMinimalEvent(
