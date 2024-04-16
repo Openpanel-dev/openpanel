@@ -65,5 +65,8 @@ export async function getCurrentProjects(organizationSlug: string) {
     include: {
       access: true,
     },
+    orderBy: {
+      eventsCount: 'desc',
+    },
   });
 }

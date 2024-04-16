@@ -4,6 +4,7 @@ import type {
   OrganizationInvitation,
   OrganizationMembership,
 } from '@clerk/nextjs/dist/types/server';
+import { sort, sortBy } from 'ramda';
 
 import type { ProjectAccess } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -18,6 +19,7 @@ export function transformOrganization(org: Organization) {
     id: org.id,
     name: org.name,
     slug: org.slug!,
+    createdAt: org.createdAt,
   };
 }
 
@@ -27,7 +29,10 @@ export async function getCurrentOrganizations() {
   const organizations = await clerkClient.users.getOrganizationMembershipList({
     userId: session.userId,
   });
-  return organizations.map((item) => transformOrganization(item.organization));
+  return sort(
+    (a, b) => a.createdAt - b.createdAt,
+    organizations.map((item) => transformOrganization(item.organization))
+  );
 }
 
 export function getOrganizationBySlug(slug: string) {

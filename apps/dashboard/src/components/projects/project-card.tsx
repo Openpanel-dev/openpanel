@@ -1,5 +1,4 @@
 import { shortNumber } from '@/hooks/useNumerFormatter';
-import Link from 'next/link';
 import { escape } from 'sqlstring';
 
 import type { IServiceProject } from '@openpanel/db';
@@ -18,7 +17,7 @@ export async function ProjectCard({
     ),
     chQuery<{ total: number; month: number; day: number }>(
       `
-        SELECT 
+        SELECT
         (
           SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)}
         ) as total, 
@@ -32,8 +31,11 @@ export async function ProjectCard({
     ),
   ]);
 
+  // For some unknown reason I get when navigating back to this page when using <Link />
+  // Should be solved: https://github.com/vercel/next.js/issues/61336
+  // But still get the error
   return (
-    <Link
+    <a
       href={`/${organizationSlug}/${id}`}
       className="card inline-flex flex-col gap-2 p-4 transition-transform hover:-translate-y-1"
     >
@@ -64,6 +66,6 @@ export async function ProjectCard({
           </div>
         </div>
       </div>
-    </Link>
+    </a>
   );
 }

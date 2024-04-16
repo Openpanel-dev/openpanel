@@ -3,69 +3,20 @@
 import { useEffect } from 'react';
 import AnimateHeight from '@/components/animate-height';
 import { ButtonContainer } from '@/components/button-container';
+import { CheckboxItem } from '@/components/forms/checkbox-item';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { api, handleError } from '@/trpc/client';
-import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { LucideIcon } from 'lucide-react';
 import { MonitorIcon, ServerIcon, SmartphoneIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import type { ControllerRenderProps, SubmitHandler } from 'react-hook-form';
+import type { SubmitHandler } from 'react-hook-form';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { z } from 'zod';
 
-import type { IServiceOrganization } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
 import OnboardingLayout, { OnboardingDescription } from '../onboarding-layout';
-
-function CheckboxGroup({
-  label,
-  description,
-  Icon,
-  children,
-  onChange,
-  value,
-  disabled,
-  error,
-}: {
-  label: string;
-  description: string;
-  Icon: LucideIcon;
-  children?: React.ReactNode;
-  error?: string;
-} & ControllerRenderProps) {
-  const randId = Math.random().toString(36).substring(7);
-  return (
-    <div>
-      <label
-        className={cn(
-          'flex items-center gap-4 px-4 py-6 transition-colors hover:bg-slate-100',
-          disabled && 'cursor-not-allowed opacity-50'
-        )}
-        htmlFor={randId}
-      >
-        {Icon && <div className="w-6 shrink-0">{<Icon />}</div>}
-        <div className="flex-1">
-          <div className="font-medium">{label}</div>
-          <div className="text-sm text-muted-foreground">{description}</div>
-          {error && <div className="text-xs text-red-600">{error}</div>}
-        </div>
-        <div>
-          <Switch
-            disabled={disabled}
-            checked={!!value}
-            onCheckedChange={onChange}
-            id={randId}
-          />
-        </div>
-      </label>
-      {children}
-    </div>
-  );
-}
 
 type IForm = z.infer<typeof zOnboardingProject>;
 
@@ -149,7 +100,7 @@ const Tracking = () => {
             name="website"
             control={form.control}
             render={({ field }) => (
-              <CheckboxGroup
+              <CheckboxItem
                 error={form.formState.errors.website?.message}
                 Icon={MonitorIcon}
                 label="Website"
@@ -167,14 +118,14 @@ const Tracking = () => {
                     />
                   </div>
                 </AnimateHeight>
-              </CheckboxGroup>
+              </CheckboxItem>
             )}
           />
           <Controller
             name="app"
             control={form.control}
             render={({ field }) => (
-              <CheckboxGroup
+              <CheckboxItem
                 error={form.formState.errors.app?.message}
                 disabled={isWebsite}
                 Icon={SmartphoneIcon}
@@ -188,7 +139,7 @@ const Tracking = () => {
             name="backend"
             control={form.control}
             render={({ field }) => (
-              <CheckboxGroup
+              <CheckboxItem
                 error={form.formState.errors.backend?.message}
                 Icon={ServerIcon}
                 label="Backend / API"
