@@ -1,19 +1,19 @@
 'use client';
 
-import { useSignIn } from '@clerk/nextjs';
+import { useSignUp } from '@clerk/nextjs';
 import type { OAuthStrategy } from '@clerk/nextjs/dist/types/server';
 import { toast } from 'sonner';
 
 import EmailSignUp from './email-sign-up';
 
 const PageClient = () => {
-  const { signIn } = useSignIn();
+  const { signUp } = useSignUp();
 
   const signInWith = (strategy: OAuthStrategy) => {
-    if (!signIn) {
+    if (!signUp) {
       return toast.error('Sign in is not available at the moment');
     }
-    return signIn.authenticateWithRedirect({
+    return signUp.authenticateWithRedirect({
       strategy,
       redirectUrl: '/sso-callback',
       redirectUrlComplete: '/',
