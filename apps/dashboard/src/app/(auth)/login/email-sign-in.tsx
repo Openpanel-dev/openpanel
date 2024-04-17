@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { getClerkError } from '@/utils/clerk-error';
 import { useSignIn } from '@clerk/nextjs';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { captureMessage } from '@sentry/nextjs';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -55,11 +54,7 @@ const EmailSignUp = () => {
             await setActive({ session: result.createdSessionId });
             router.push('/');
           } else {
-            captureMessage('Sign in failed', {
-              extra: {
-                status: result.status,
-              },
-            });
+            // Error...
           }
         } catch (e) {
           const error = getClerkError(e);

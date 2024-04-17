@@ -4,12 +4,7 @@ import { authMiddleware } from '@clerk/nextjs';
 // Please edit this to allow other routes to be public as needed.
 // See https://clerk.com/docs/references/nextjs/auth-middleware for more information about configuring your Middleware
 export default authMiddleware({
-  publicRoutes: [
-    '/share/overview/:id',
-    '/api/trpc(.*)',
-    '/api/clerk/(.*)?',
-    '/monitoring',
-  ],
+  publicRoutes: ['/share/overview/:id', '/api/trpc(.*)', '/api/clerk/(.*)?'],
   debug: process.env.CLERK_DEBUG ? true : false,
 });
 
