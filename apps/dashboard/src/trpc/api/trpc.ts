@@ -1,4 +1,3 @@
-import { clerkClient } from '@clerk/nextjs';
 import type { getAuth } from '@clerk/nextjs/server';
 import { initTRPC, TRPCError } from '@trpc/server';
 import superjson from 'superjson';
@@ -31,10 +30,9 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
   }
   try {
-    const user = await clerkClient.users.getUser(ctx.session.userId);
     return next({
       ctx: {
-        session: { ...ctx.session, user },
+        session: { ...ctx.session },
       },
     });
   } catch (error) {
