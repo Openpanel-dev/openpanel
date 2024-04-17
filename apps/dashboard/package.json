@@ -13,6 +13,7 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
+    "@baselime/node-opentelemetry": "^0.5.8",
     "@clerk/nextjs": "^4.29.7",
     "@clickhouse/client": "^0.2.9",
     "@hookform/resolvers": "^3.3.4",
