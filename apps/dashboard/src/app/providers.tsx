@@ -17,7 +17,7 @@ import superjson from 'superjson';
 import { OpenpanelProvider } from '@openpanel/nextjs';
 
 function AllProviders({ children }: { children: React.ReactNode }) {
-  const { getToken, userId } = useAuth();
+  const { userId } = useAuth();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -36,9 +36,6 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       links: [
         httpLink({
           url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/api/trpc`,
-          async headers() {
-            return { Authorization: `Bearer ${await getToken()}` };
-          },
         }),
       ],
     })
