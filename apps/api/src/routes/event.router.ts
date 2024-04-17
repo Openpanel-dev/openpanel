@@ -1,6 +1,7 @@
 import { isBot } from '@/bots';
 import * as controller from '@/controllers/event.controller';
 import { validateSdkRequest } from '@/utils/auth';
+import { logger } from '@/utils/logger';
 import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
 
 import { createBotEvent } from '@openpanel/db';
@@ -17,7 +18,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
     ) => {
       try {
         const projectId = await validateSdkRequest(req.headers).catch(
-          req.log.error
+          logger.error
         );
         if (!projectId) {
           return reply.status(401).send();
@@ -31,7 +32,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
         if (bot) {
           const path = (req.body?.properties?.__path ||
             req.body?.properties?.path) as string | undefined;
-          req.log.warn({ ...req.headers, bot }, 'Bot detected (event)');
+          logger.warn({ ...req.headers, bot }, 'Bot detected (event)');
           await createBotEvent({
             ...bot,
             projectId,
@@ -41,7 +42,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
           reply.status(202).send('OK');
         }
       } catch (e) {
-        req.log.error(e, 'Failed to create bot event');
+        logger.error(e, 'Failed to create bot event');
         reply.status(401).send();
         return;
       }

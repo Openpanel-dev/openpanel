@@ -1,13 +1,14 @@
 import { isBot } from '@/bots';
 import * as controller from '@/controllers/profile.controller';
 import { validateSdkRequest } from '@/utils/auth';
+import { logger } from '@/utils/logger';
 import type { FastifyPluginCallback } from 'fastify';
 
 const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.addHook('preHandler', async (req, reply) => {
     try {
       const projectId = await validateSdkRequest(req.headers).catch(
-        req.log.error
+        logger.error
       );
       if (!projectId) {
         return reply.status(401).send();
