@@ -813,8 +813,8 @@ importers:
         specifier: ^4.29.7
         version: 4.29.7(next@14.2.1)(react-dom@18.2.0)(react@18.2.0)
       '@clickhouse/client':
-        specifier: ^0.2.9
-        version: 0.2.9
+        specifier: ^1.0.1
+        version: 1.0.1
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
@@ -2902,11 +2902,22 @@ packages:
     resolution: {integrity: sha512-ecXcegMbT4HYNWtGcfyidW6lNVRqPogbFMY5kfjJmz4IXJ4WZbQMwj2IQgemwFwE7jyia2OEwPIVfw1sNfDHRA==}
     dev: false
 
+  /@clickhouse/client-common@1.0.1:
+    resolution: {integrity: sha512-3L6e0foP6VOktScoi6XWMjJyOpKCWgLUYgPVxP2c7gm6Kotq+iRmmmXtXTSg7B7uozcLZycTtPfIw2d80SYsYw==}
+    dev: false
+
   /@clickhouse/client@0.2.9:
     resolution: {integrity: sha512-KqQlO9vZNSLyhMWG9+0/VXqcUZrNk1Hybr9icgI/nLCoX8RD19BJsakZJj38IQvQxNUTxvcItm/kyu/gD/9LXA==}
     engines: {node: '>=16'}
     dependencies:
       '@clickhouse/client-common': 0.2.9
+    dev: false
+
+  /@clickhouse/client@1.0.1:
+    resolution: {integrity: sha512-fluUNnE2R7COJ6rn6DorYfi4D+AQn3t2qeBtEq37bQV3pD4EbKrBfKAwJ13e1lmMWdQ2B9bJUTMqGsRIDdWhJw==}
+    engines: {node: '>=16'}
+    dependencies:
+      '@clickhouse/client-common': 1.0.1
     dev: false
 
   /@emnapi/runtime@0.45.0:
