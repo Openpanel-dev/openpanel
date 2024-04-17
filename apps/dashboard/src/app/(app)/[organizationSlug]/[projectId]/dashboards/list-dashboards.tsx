@@ -65,6 +65,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
           <Card key={item.id} hover>
             <div>
               <Link
+                prefetch={false}
                 href={`/${organizationSlug}/${projectId}/dashboards/${item.id}`}
                 className="flex flex-col p-4"
               >

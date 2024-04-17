@@ -68,6 +68,7 @@ export function ListReports({ reports }: ListReportsProps) {
           return (
             <div className="card" key={report.id}>
               <Link
+                prefetch={false}
                 href={`/${params.organizationSlug}/${params.projectId}/reports/${report.id}`}
                 className="flex items-center justify-between border-b border-border p-4 leading-none [&_svg]:hover:opacity-100"
                 shallow
