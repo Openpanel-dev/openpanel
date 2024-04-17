@@ -8,12 +8,6 @@ import type {
 import { formatClickhouseDate } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
-function log(sql: string) {
-  const logs = ['--- START', sql, '--- END'];
-  console.log(logs.join('\n'));
-  return sql;
-}
-
 export function getChartSql({
   event,
   breakdowns,
@@ -104,12 +98,10 @@ export function getChartSql({
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
 
-    return log(`${getSelect()} ${getFrom()} ${getGroupBy()} ${getOrderBy()}`);
+    return `${getSelect()} ${getFrom()} ${getGroupBy()} ${getOrderBy()}`;
   }
 
-  return log(
-    `${getSelect()} ${getFrom()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`
-  );
+  return `${getSelect()} ${getFrom()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
 }
 
 export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {

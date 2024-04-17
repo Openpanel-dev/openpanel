@@ -36,8 +36,10 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
       }, {} as T);
     }),
   };
+
   console.log(`Clickhouse query took ${response.statistics?.elapsed}ms`);
   console.log(`chQuery took ${Date.now() - start}ms`);
+  console.log('Query:', query);
 
   return response;
 }
