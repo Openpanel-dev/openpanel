@@ -5,8 +5,8 @@ const targets: TransportTargetOptions[] =
   process.env.NODE_ENV === 'production'
     ? [
         {
-          target: '@logtail/pino',
-          options: { sourceToken: process.env.BETTERSTACK_TOKEN },
+          target: '@baselime/pino-transport',
+          options: { baselimeApiKey: process.env.BASELIME_API_KEY },
         },
       ]
     : [

@@ -23,9 +23,7 @@ const port = parseInt(process.env.API_PORT || '3000', 10);
 const startServer = async () => {
   logInfo('Starting server');
   try {
-    const fastify = Fastify({
-      logger: logger,
-    });
+    const fastify = Fastify();
 
     fastify.register(cors, {
       origin: '*',
@@ -38,7 +36,7 @@ const startServer = async () => {
     fastify.register(miscRouter, { prefix: '/misc' });
     fastify.register(exportRouter, { prefix: '/export' });
     fastify.setErrorHandler((error) => {
-      fastify.log.error(error);
+      logger.error(error, 'Error in request');
     });
     fastify.get('/', (_request, reply) => {
       reply.send({ name: 'openpanel sdk api' });
@@ -70,7 +68,7 @@ const startServer = async () => {
     // Notify when keys expires
     redisPub.config('SET', 'notify-keyspace-events', 'Ex');
   } catch (e) {
-    console.error(e);
+    logger.error(e, 'Failed to start server');
   }
 };
 
