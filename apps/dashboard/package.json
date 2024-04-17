@@ -107,6 +107,7 @@
     "@openpanel/eslint-config": "workspace:*",
     "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
+    "@prisma/nextjs-monorepo-workaround-plugin": "^5.12.1",
     "@types/bcrypt": "^5.0.2",
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.throttle": "^4.1.9",
