@@ -10,6 +10,7 @@ export default authMiddleware({
     '/api/clerk/(.*)?',
     '/monitoring',
   ],
+  debug: process.env.CLERK_DEBUG ? true : false,
 });
 
 export const config = {
