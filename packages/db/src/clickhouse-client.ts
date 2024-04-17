@@ -15,11 +15,12 @@ export const ch = createClient({
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string
 ): Promise<ResponseJSON<T>> {
+  const start = Date.now();
   const res = await ch.query({
     query,
   });
   const json = await res.json<T>();
-  return {
+  const response = {
     ...json,
     data: json.data.map((item) => {
       const keys = Object.keys(item);
@@ -35,6 +36,10 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
       }, {} as T);
     }),
   };
+  console.log(`Clickhouse query took ${response.statistics?.elapsed}ms`);
+  console.log(`chQuery took ${Date.now() - start}ms`);
+
+  return response;
 }
 
 export async function chQuery<T extends Record<string, any>>(
