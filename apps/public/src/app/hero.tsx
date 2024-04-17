@@ -59,12 +59,12 @@ export async function Hero() {
         </div>
         <div className="mt-16 w-full md:pt-16">
           <div className="flex h-[max(90vh,650px)] rounded-2xl bg-black/5 md:p-2">
-            <iframe
+            {/* <iframe
               src="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
               className="h-[max(90vh,650px)] h-full w-full rounded-xl"
               title="Openpanel Dashboard"
               scrolling="no"
-            />
+            /> */}
           </div>
         </div>
       </div>
