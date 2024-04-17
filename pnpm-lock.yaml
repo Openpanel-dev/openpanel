@@ -406,6 +406,9 @@ importers:
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@prisma/nextjs-monorepo-workaround-plugin':
+        specifier: ^5.12.1
+        version: 5.12.1
       '@types/bcrypt':
         specifier: ^5.0.2
         version: 5.0.2
@@ -4649,6 +4652,10 @@ packages:
     resolution: {integrity: sha512-6OQsNxTyhvG+T2Ksr8FPFpuPeL4r9u0JF0OZHUBI/Uy9SS43sPyAIutt4ZEAyqWQt104ERh70EZedkHZKsnNbg==}
     dependencies:
       '@prisma/debug': 5.9.1
+
+  /@prisma/nextjs-monorepo-workaround-plugin@5.12.1:
+    resolution: {integrity: sha512-ISYeAIY2x8riGhpgDqlupqqkqgJe2ksQm4yVH01afQ/7hp7fjPLcEXbDjEYuuloXJgnbvkcN6GXcD3v5hiq85A==}
+    dev: true
 
   /@radix-ui/number@1.0.1:
     resolution: {integrity: sha512-T5gIdVO2mmPW3NNhjNgEP3cqMXjXL9UbO0BzWcXfvdBs+BohbQxvd/K5hSVKmn9/lbTdsQVKbUcP5WLCwvUbBg==}
