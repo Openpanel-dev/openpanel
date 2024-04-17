@@ -103,6 +103,7 @@ export interface LinkButtonProps
   icon?: LucideIcon;
   responsive?: boolean;
   href: string;
+  prefetch?: boolean;
 }
 
 const LinkButton = React.forwardRef<

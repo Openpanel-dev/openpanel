@@ -101,6 +101,7 @@ export function EventListItem(props: EventListItemProps) {
             content={`${profile?.firstName} ${profile?.lastName}`}
           >
             <Link
+              prefetch={false}
               onClick={(e) => {
                 e.stopPropagation();
               }}

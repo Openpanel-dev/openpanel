@@ -46,6 +46,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
                 render(profile) {
                   return (
                     <Link
+                      prefetch={false}
                       href={`/${organizationSlug}/${projectId}/profiles/${profile.id}`}
                       className="flex items-center gap-2 font-medium"
                     >

@@ -9,6 +9,7 @@ const SkipOnboarding = () => {
   if (!pathname.startsWith('/onboarding')) return null;
   return (
     <Link
+      prefetch={false}
       href="/"
       className="flex items-center gap-2 text-sm text-muted-foreground"
     >

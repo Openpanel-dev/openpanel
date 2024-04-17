@@ -64,6 +64,7 @@ const Verify = ({ project, events }: Props) => {
       />
       <ButtonContainer>
         <LinkButton
+          prefetch={false}
           href={`/onboarding/${project.id}/connect`}
           size="lg"
           className="min-w-28 self-start"
@@ -75,6 +76,7 @@ const Verify = ({ project, events }: Props) => {
         <div className="flex items-center gap-8">
           {!verified && (
             <Link
+              prefetch={false}
               href={`/${project.organizationSlug}/${project.id}`}
               className="text-sm text-muted-foreground underline"
             >
@@ -83,6 +85,7 @@ const Verify = ({ project, events }: Props) => {
           )}
 
           <LinkButton
+            prefetch={false}
             href="/"
             size="lg"
             className={cn(

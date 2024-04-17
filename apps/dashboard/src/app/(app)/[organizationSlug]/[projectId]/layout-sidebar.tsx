@@ -55,7 +55,7 @@ export function LayoutSidebar({
           <Hamburger toggled={active} onToggle={setActive} size={20} />
         </div>
         <div className="flex h-16 shrink-0 items-center border-b border-border px-4">
-          <Link href="/">
+          <Link prefetch={false} href="/">
             <Logo />
           </Link>
         </div>
@@ -68,6 +68,7 @@ export function LayoutSidebar({
           <div className="h-8 w-full bg-gradient-to-t from-background to-background/0"></div>
           <div className="flex flex-col gap-2 bg-background p-4 pt-0">
             <Link
+              prefetch={false}
               className={cn('flex gap-2', buttonVariants())}
               href={`/${organizationSlug}/${projectId}/reports`}
             >
