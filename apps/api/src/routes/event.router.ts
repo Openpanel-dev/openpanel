@@ -32,7 +32,6 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
         if (bot) {
           const path = (req.body?.properties?.__path ||
             req.body?.properties?.path) as string | undefined;
-          logger.warn({ ...req.headers, bot }, 'Bot detected (event)');
           await createBotEvent({
             ...bot,
             projectId,
