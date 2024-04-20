@@ -34,7 +34,7 @@ export async function Hero() {
             <ALink
               className="font-semibold"
               size="lg"
-              href="https://dashboard.openpanel.dev"
+              href="https://dashboard.openpanel.dev/register"
             >
               Create account
             </ALink>
