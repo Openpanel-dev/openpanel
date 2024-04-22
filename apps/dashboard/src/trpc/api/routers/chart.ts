@@ -16,6 +16,7 @@ import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
   getFunnelData,
+  getFunnelStep,
   getSeriesFromEvents,
 } from './chart.helpers';
 
@@ -150,8 +151,33 @@ export const chartRouter = createTRPCRouter({
     }),
 
   funnel: publicProcedure.input(zChartInput).query(async ({ input }) => {
-    return getFunnelData(input);
+    const currentPeriod = getChartStartEndDate(input);
+    const previousPeriod = getChartPrevStartEndDate({
+      range: input.range,
+      ...currentPeriod,
+    });
+
+    const [current, previous] = await Promise.all([
+      getFunnelData({ ...input, ...currentPeriod }),
+      getFunnelData({ ...input, ...previousPeriod }),
+    ]);
+
+    return {
+      current,
+      previous,
+    };
   }),
+
+  funnelStep: publicProcedure
+    .input(
+      zChartInput.extend({
+        step: z.number(),
+      })
+    )
+    .query(async ({ input }) => {
+      const currentPeriod = getChartStartEndDate(input);
+      return getFunnelStep({ ...input, ...currentPeriod });
+    }),
 
   // TODO: Make this private
   chart: publicProcedure.input(zChartInput).query(async ({ input }) => {
@@ -189,7 +215,10 @@ export const chartRouter = createTRPCRouter({
 
         return {
           name: serie.name,
-          event: serie.event,
+          event: {
+            ...serie.event,
+            displayName: serie.event.displayName ?? serie.event.name,
+          },
           metrics: {
             ...metrics,
             previous: {

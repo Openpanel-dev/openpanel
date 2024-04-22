@@ -1,175 +1,225 @@
 'use client';
 
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from '@/components/ui/carousel';
+import { ColorSquare } from '@/components/color-square';
+import { AutoSizer } from '@/components/react-virtualized-auto-sizer';
+import { Progress } from '@/components/ui/progress';
+import { Widget, WidgetBody } from '@/components/widget';
+import { pushModal } from '@/modals';
+import { useSelector } from '@/redux';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
-import { ArrowRight, ArrowRightIcon } from 'lucide-react';
+import { getChartColor } from '@/utils/theme';
+import { AlertCircleIcon } from 'lucide-react';
+import { last } from 'ramda';
+import { Cell, Pie, PieChart } from 'recharts';
+
+import type { IChartInput } from '@openpanel/validation';
 
 import { useChartContext } from '../chart/ChartProvider';
 
-function FunnelChart({ from, to }: { from: number; to: number }) {
-  const fromY = 100 - from;
-  const toY = 100 - to;
-  const steps = [
-    `M0,${fromY}`,
-    'L0,100',
-    'L100,100',
-    `L100,${toY}`,
-    `L0,${fromY}`,
-  ];
+const findMostDropoffs = (
+  steps: RouterOutputs['chart']['funnel']['current']['steps']
+) => {
+  return steps.reduce((acc, step) => {
+    if (step.dropoffCount > acc.dropoffCount) {
+      return step;
+    }
+    return acc;
+  });
+};
+
+function InsightCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <svg viewBox="0 0 100 100">
-      <defs>
-        <linearGradient
-          id="blue"
-          x1="50"
-          y1="100"
-          x2="50"
-          y2="0"
-          gradientUnits="userSpaceOnUse"
-        >
-          {/* bottom */}
-          <stop offset="0%" stop-color="#2564eb" />
-          {/* top */}
-          <stop offset="100%" stop-color="#2564eb" />
-        </linearGradient>
-        <linearGradient
-          id="red"
-          x1="50"
-          y1="100"
-          x2="50"
-          y2="0"
-          gradientUnits="userSpaceOnUse"
-        >
-          {/* bottom */}
-          <stop offset="0%" stop-color="#f87171" />
-          {/* top */}
-          <stop offset="100%" stop-color="#fca5a5" />
-        </linearGradient>
-      </defs>
-      <rect
-        x="0"
-        y={fromY}
-        width="100"
-        height="100"
-        fill="url(#red)"
-        fillOpacity={0.2}
-      />
-      <path d={steps.join(' ')} fill="url(#blue)" />
-    </svg>
+    <div className="flex flex-col rounded-lg border border-border p-4 py-3">
+      <span className="text-sm">{title}</span>
+      <div className="whitespace-nowrap text-lg">{children}</div>
+    </div>
   );
 }
 
-function getDropoffColor(value: number) {
-  if (value > 80) {
-    return 'text-red-600';
-  }
-  if (value > 50) {
-    return 'text-orange-600';
-  }
-  if (value > 30) {
-    return 'text-yellow-600';
-  }
-  return 'text-green-600';
-}
+type Props = RouterOutputs['chart']['funnel'] & {
+  input: IChartInput;
+};
 
 export function FunnelSteps({
-  steps,
-  totalSessions,
-}: RouterOutputs['chart']['funnel']) {
+  current: { steps, totalSessions },
+  previous,
+  input,
+}: Props) {
   const { editMode } = useChartContext();
-  return (
-    <Carousel className="w-full" opts={{ loop: false, dragFree: true }}>
-      <CarouselContent>
-        <CarouselItem className={'flex-[0_0_0] pl-3'} />
-        {steps.map((step, index, list) => {
-          const finalStep = index === list.length - 1;
+  const mostDropoffs = findMostDropoffs(steps);
+  const lastStep = last(steps)!;
+  const prevLastStep = last(previous.steps)!;
+  const hasIncreased = lastStep.percent > prevLastStep.percent;
+  const withWidget = (children: React.ReactNode) => {
+    if (editMode) {
+      return (
+        <div className="p-4">
+          <Widget>
+            <WidgetBody>{children}</WidgetBody>
+          </Widget>
+        </div>
+      );
+    }
+
+    return children;
+  };
+
+  return withWidget(
+    <div className="flex flex-col gap-4 @container">
+      <div
+        className={cn(
+          'rounded-lg border border-border',
+          !editMode && 'border-0 p-0'
+        )}
+      >
+        <div className="flex items-center gap-8 p-4">
+          <div className="hidden shrink-0 @xl:block @xl:w-36">
+            <AutoSizer disableHeight>
+              {({ width }) => {
+                const height = width;
+                return (
+                  <div className="relative" style={{ width, height }}>
+                    <PieChart width={width} height={height}>
+                      <Pie
+                        data={[
+                          {
+                            value: lastStep.percent,
+                            label: 'Conversion',
+                          },
+                          {
+                            value: 100 - lastStep.percent,
+                            label: 'Dropoff',
+                          },
+                        ]}
+                        innerRadius={height / 3}
+                        outerRadius={height / 2 - 10}
+                        isAnimationActive={true}
+                        nameKey="label"
+                        dataKey="value"
+                      >
+                        <Cell strokeWidth={0} className="fill-blue-600" />
+                        <Cell strokeWidth={0} className="fill-slate-200" />
+                      </Pie>
+                    </PieChart>
+                    <div
+                      className="absolute inset-0 flex items-center justify-center font-mono font-bold"
+                      style={{
+                        fontSize: width / 6,
+                      }}
+                    >
+                      <div>{round(lastStep.percent, 2)}%</div>
+                    </div>
+                  </div>
+                );
+              }}
+            </AutoSizer>
+          </div>
+          <div>
+            <div className="mb-1 text-xl font-semibold">Insights</div>
+            <div className="flex flex-wrap gap-4">
+              <InsightCard title="Converted">
+                <span className="font-bold">{lastStep.count}</span>
+                <span className="mx-2 text-muted-foreground">of</span>
+                <span className="text-muted-foreground">{totalSessions}</span>
+              </InsightCard>
+              <InsightCard
+                title={hasIncreased ? 'Trending up' : 'Trending down'}
+              >
+                <span className="font-bold">{round(lastStep.percent, 2)}%</span>
+                <span className="mx-2 text-muted-foreground">compared to</span>
+                <span className="text-muted-foreground">
+                  {round(prevLastStep.percent, 2)}%
+                </span>
+              </InsightCard>
+              <InsightCard title={'Most dropoffs'}>
+                <span className="font-bold">
+                  {mostDropoffs.event.displayName}
+                </span>
+                <span className="mx-2 text-muted-foreground">lost</span>
+                <span className="text-muted-foreground">
+                  {mostDropoffs.dropoffCount} sessions
+                </span>
+              </InsightCard>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1 divide-y">
+        {steps.map((step, index) => {
+          const percent = (step.count / totalSessions) * 100;
+          const isMostDropoffs = mostDropoffs.event.id === step.event.id;
           return (
-            <CarouselItem
-              className={cn(
-                'max-w-full flex-[0_0_250px] p-0 px-1',
-                editMode && 'flex-[0_0_320px]'
-              )}
+            <div
               key={step.event.id}
+              className="flex flex-col gap-4 px-4 py-4 @2xl:flex-row @2xl:px-8"
             >
-              <div className="card divide-y divide-border bg-background">
-                <div className="p-4">
-                  <p className="text-muted-foreground">Step {index + 1}</p>
-                  <h3 className="font-bold">
-                    {step.event.displayName || step.event.name}
-                  </h3>
+              <div className="relative flex flex-1 flex-col gap-2 pl-8">
+                <ColorSquare className="absolute left-0 top-0.5">
+                  {step.event.id}
+                </ColorSquare>
+                <div className="font-semibold capitalize">
+                  {step.event.displayName.replace(/_/g, ' ')}
                 </div>
-                <div className="relative aspect-square">
-                  <FunnelChart from={step.prevPercent} to={step.percent} />
-                  <div className="absolute left-0 right-0 top-0 flex flex-col bg-background/40 p-4">
-                    <div className="font-medium uppercase text-muted-foreground">
-                      Sessions
-                    </div>
-                    <div className="flex items-center text-3xl font-bold uppercase">
-                      <span className="text-muted-foreground">
-                        {step.before}
-                      </span>
-                      <ArrowRightIcon size={16} className="mx-2" />
-                      <span>{step.current}</span>
-                    </div>
-                    {index !== 0 && (
-                      <>
-                        <div className="text-muted-foreground">
-                          {step.current} of {totalSessions} (
-                          {round(step.percent, 1)}%)
-                        </div>
-                      </>
-                    )}
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground">
+                      Total:
+                    </span>
+                    <span className="font-semibold">{step.previousCount}</span>
                   </div>
-                </div>
-                {finalStep ? (
-                  <div className={cn('flex flex-col items-center p-4')}>
-                    <div className="text-xs font-medium uppercase">
-                      Conversion
-                    </div>
-                    <div
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground">
+                      Dropoff:
+                    </span>
+                    <span
                       className={cn(
-                        'text-3xl font-bold uppercase',
-                        getDropoffColor(step.dropoff.percent)
+                        'flex items-center gap-1 font-semibold',
+                        isMostDropoffs && 'text-red-600'
                       )}
                     >
-                      {round(step.percent, 1)}%
-                    </div>
-                    <div className="mt-0 text-sm font-medium uppercase text-muted-foreground">
-                      Converted {step.current} of {totalSessions} sessions
+                      {isMostDropoffs && <AlertCircleIcon size={14} />}
+                      {step.dropoffCount}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs text-muted-foreground">
+                      Current:
+                    </span>
+                    <div>
+                      <span className="font-semibold">{step.count}</span>
+                      <button
+                        className="ml-2 underline"
+                        onClick={() =>
+                          pushModal('FunnelStepDetails', {
+                            ...input,
+                            step: index + 1,
+                          })
+                        }
+                      >
+                        Inspect
+                      </button>
                     </div>
                   </div>
-                ) : (
-                  <div className={cn('flex flex-col items-center p-4')}>
-                    <div className="text-xs font-medium uppercase">Dropoff</div>
-                    <div
-                      className={cn(
-                        'text-3xl font-bold uppercase',
-                        getDropoffColor(step.dropoff.percent)
-                      )}
-                    >
-                      {round(step.dropoff.percent, 1)}%
-                    </div>
-                    <div className="mt-0 text-sm font-medium uppercase text-muted-foreground">
-                      Lost {step.dropoff.count} sessions
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            </CarouselItem>
+              <Progress
+                size="lg"
+                className="w-full @2xl:w-1/2"
+                color={getChartColor(index)}
+                value={percent}
+              />
+            </div>
           );
         })}
-        <CarouselItem className={'flex-[0_0_0px] pl-3'} />
-      </CarouselContent>
-      <CarouselPrevious />
-      <CarouselNext />
-    </Carousel>
+      </div>
+    </div>
   );
 }

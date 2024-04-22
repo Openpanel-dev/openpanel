@@ -122,8 +122,7 @@ export async function getProfilesByExternalId(
     ${getProfileSelectFields()}
     FROM profiles 
     GROUP BY id
-    HAVING project_id = ${escape(projectId)} AND external_id = ${escape(externalId)}
-    `
+    HAVING project_id = ${escape(projectId)} AND external_id = ${escape(externalId)}`
   );
 
   return data.map(transformProfile);
@@ -169,7 +168,7 @@ export interface IServiceUpsertProfile {
   properties?: Record<string, unknown>;
 }
 
-function transformProfile({
+export function transformProfile({
   max_created_at,
   first_name,
   last_name,

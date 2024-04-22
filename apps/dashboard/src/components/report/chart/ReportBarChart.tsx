@@ -61,8 +61,8 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
               </div>
               <Progress
                 color={getChartColor(index)}
-                className={cn('w-1/2', editMode ? 'h-5' : 'h-2')}
                 value={(serie.metrics.sum / maxCount) * 100}
+                size={editMode ? 'lg' : 'sm'}
               />
             </div>
           </div>

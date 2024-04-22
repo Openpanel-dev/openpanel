@@ -12,6 +12,8 @@ import {
   formatClickhouseDate,
   getChartSql,
   getEventFiltersWhereClause,
+  getProfiles,
+  transformProfile,
 } from '@openpanel/db';
 import type {
   IChartEvent,
@@ -183,7 +185,6 @@ export function withFormula(
           const scope = {
             [serie.event.id]: item?.count ?? 0,
           };
-
           const count = mathjs
             .parse(formula)
             .compile()
@@ -418,8 +419,17 @@ export function getChartPrevStartEndDate({
   };
 }
 
-export async function getFunnelData({ projectId, ...payload }: IChartInput) {
-  const { startDate, endDate } = getChartStartEndDate(payload);
+const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
+
+export async function getFunnelData({
+  projectId,
+  startDate,
+  endDate,
+  ...payload
+}: IChartInput) {
+  if (!startDate || !endDate) {
+    throw new Error('startDate and endDate are required');
+  }
 
   if (payload.events.length === 0) {
     return {
@@ -437,9 +447,13 @@ export async function getFunnelData({ projectId, ...payload }: IChartInput) {
 
   const innerSql = `SELECT
     session_id,
-    windowFunnel(6048000000000000,'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+    windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM events
-  WHERE (project_id = ${escape(projectId)} AND created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')
+  WHERE 
+    project_id = ${escape(projectId)} AND 
+    created_at >= '${formatClickhouseDate(startDate)}' AND 
+    created_at <= '${formatClickhouseDate(endDate)}' AND
+    name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
   GROUP BY session_id`;
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC`;
@@ -491,31 +505,29 @@ export async function getFunnelData({ projectId, ...payload }: IChartInput) {
     .reduce(
       (acc, item, index, list) => {
         const prev = list[index - 1] ?? { count: totalSessions };
+        const event = payload.events[item.level - 1]!;
         return [
           ...acc,
           {
-            event: payload.events[item.level - 1]!,
-            before: prev.count,
-            current: item.count,
-            dropoff: {
-              count: prev.count - item.count,
-              percent: 100 - (item.count / prev.count) * 100,
+            event: {
+              ...event,
+              displayName: event.displayName ?? event.name,
             },
+            count: item.count,
             percent: (item.count / totalSessions) * 100,
-            prevPercent: (prev.count / totalSessions) * 100,
+            dropoffCount: prev.count - item.count,
+            dropoffPercent: 100 - (item.count / prev.count) * 100,
+            previousCount: prev.count,
           },
         ];
       },
       [] as {
-        event: IChartEvent;
-        before: number;
-        current: number;
-        dropoff: {
-          count: number;
-          percent: number;
-        };
+        event: IChartEvent & { displayName: string };
+        count: number;
         percent: number;
-        prevPercent: number;
+        dropoffCount: number;
+        dropoffPercent: number;
+        previousCount: number;
       }[]
     );
 
@@ -523,6 +535,63 @@ export async function getFunnelData({ projectId, ...payload }: IChartInput) {
     totalSessions,
     steps,
   };
+}
+
+export async function getFunnelStep({
+  projectId,
+  startDate,
+  endDate,
+  step,
+  ...payload
+}: IChartInput & {
+  step: number;
+}) {
+  if (!startDate || !endDate) {
+    throw new Error('startDate and endDate are required');
+  }
+
+  if (payload.events.length === 0) {
+    throw new Error('no events selected');
+  }
+
+  const funnels = payload.events.map((event) => {
+    const { sb, getWhere } = createSqlBuilder();
+    sb.where = getEventFiltersWhereClause(event.filters);
+    sb.where.name = `name = ${escape(event.name)}`;
+    return getWhere().replace('WHERE ', '');
+  });
+
+  const innerSql = `SELECT
+    session_id,
+    windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+  FROM events
+  WHERE 
+    project_id = ${escape(projectId)} AND 
+    created_at >= '${formatClickhouseDate(startDate)}' AND 
+    created_at <= '${formatClickhouseDate(endDate)}' AND
+    name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
+  GROUP BY session_id`;
+
+  const profileIdsQuery = `WITH sessions AS (${innerSql}) 
+    SELECT 
+      DISTINCT e.profile_id as id
+    FROM sessions s
+    JOIN events e ON s.session_id = e.session_id
+    WHERE 
+      s.level = ${step} AND
+      e.project_id = ${escape(projectId)} AND 
+      e.created_at >= '${formatClickhouseDate(startDate)}' AND 
+      e.created_at <= '${formatClickhouseDate(endDate)}' AND
+      name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
+    ORDER BY e.created_at DESC
+    LIMIT 500
+    `;
+
+  const res = await chQuery<{
+    id: string;
+  }>(profileIdsQuery);
+
+  return getProfiles({ ids: res.map((r) => r.id) });
 }
 
 export async function getSeriesFromEvents(input: IChartInput) {

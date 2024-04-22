@@ -45,6 +45,7 @@
     "@radix-ui/react-tooltip": "^1.0.7",
     "@reduxjs/toolkit": "^1.9.7",
     "@t3-oss/env-nextjs": "^0.7.3",
+    "@tailwindcss/container-queries": "^0.1.1",
     "@tanstack/react-query": "^4.36.1",
     "@tanstack/react-table": "^8.11.8",
     "@trpc/client": "^10.45.1",

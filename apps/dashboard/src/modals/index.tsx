@@ -56,6 +56,9 @@ const modals = {
   VerifyEmail: dynamic(() => import('./VerifyEmail'), {
     loading: Loading,
   }),
+  FunnelStepDetails: dynamic(() => import('./FunnelStepDetails'), {
+    loading: Loading,
+  }),
 };
 
 export const { pushModal, popModal, popAllModals, ModalProvider } =

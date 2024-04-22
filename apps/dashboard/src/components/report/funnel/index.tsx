@@ -19,35 +19,33 @@ export const Funnel = withChartProivder(function Chart({
   range,
   projectId,
 }: ReportChartProps) {
-  const [data] = api.chart.funnel.useSuspenseQuery(
-    {
-      events,
-      name,
-      range,
-      projectId,
-      lineType: 'monotone',
-      interval: 'day',
-      chartType: 'funnel',
-      breakdowns: [],
-      startDate: null,
-      endDate: null,
-      previous: false,
-      formula: undefined,
-      unit: undefined,
-      metric: 'sum',
-    },
-    {
-      keepPreviousData: true,
-    }
-  );
+  const input: IChartInput = {
+    events,
+    name,
+    range,
+    projectId,
+    lineType: 'monotone',
+    interval: 'day',
+    chartType: 'funnel',
+    breakdowns: [],
+    startDate: null,
+    endDate: null,
+    previous: false,
+    formula: undefined,
+    unit: undefined,
+    metric: 'sum',
+  };
+  const [data] = api.chart.funnel.useSuspenseQuery(input, {
+    keepPreviousData: true,
+  });
 
-  if (data.steps.length === 0) {
+  if (data.current.steps.length === 0) {
     return <ChartEmpty />;
   }
 
   return (
-    <div className="-mx-4">
-      <FunnelSteps {...data} />
+    <div className="-m-4">
+      <FunnelSteps {...data} input={input} />
     </div>
   );
 });
