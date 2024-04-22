@@ -62,7 +62,7 @@ export function ListReports({ reports }: ListReportsProps) {
           <span className="sm:hidden">Report</span>
         </Button>
       </StickyBelowHeader>
-      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
+      <div className="mx-auto flex max-w-3xl flex-col gap-8 p-4 md:p-8">
         {reports.map((report) => {
           const chartRange = report.range; // timeRanges[report.range];
           return (
@@ -122,12 +122,7 @@ export function ListReports({ reports }: ListReportsProps) {
                   />
                 </div>
               </Link>
-              <div
-                className={cn(
-                  'p-4',
-                  report.chartType === 'bar' && 'max-h-[300px] overflow-auto'
-                )}
-              >
+              <div className={cn('p-4')}>
                 <LazyChart
                   {...report}
                   range={range ?? report.range}
