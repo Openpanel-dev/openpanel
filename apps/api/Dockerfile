@@ -20,6 +20,15 @@ ENV CLICKHOUSE_USER=$CLICKHOUSE_USER
 ARG REDIS_URL
 ENV REDIS_URL=$REDIS_URL
 
+ARG NEXT_PUBLIC_DASHBOARD_URL
+ENV NEXT_PUBLIC_DASHBOARD_URL=$NEXT_PUBLIC_DASHBOARD_URL
+
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+ARG CLERK_SECRET_KEY
+ENV CLERK_SECRET_KEY=$CLERK_SECRET_KEY
+
 ENV PNPM_HOME="/pnpm"
 
 ENV PATH="$PNPM_HOME:$PATH"
@@ -44,6 +53,7 @@ COPY pnpm-workspace.yaml pnpm-workspace.yaml
 COPY apps/api/package.json apps/api/package.json
 COPY packages/db/package.json packages/db/package.json
 COPY packages/redis/package.json packages/redis/package.json
+COPY packages/trpc/package.json packages/trpc/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
 COPY packages/constants/package.json packages/constants/package.json
@@ -86,12 +96,14 @@ COPY --from=prod /app/apps/api/node_modules /app/apps/api/node_modules
 # Packages
 COPY --from=build /app/packages/db /app/packages/db
 COPY --from=build /app/packages/redis /app/packages/redis
+COPY --from=build /app/packages/trpc /app/packages/trpc
 COPY --from=build /app/packages/queue /app/packages/queue
 COPY --from=build /app/packages/common /app/packages/common
 
 # Packages node_modules
 COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
 COPY --from=prod /app/packages/redis/node_modules /app/packages/redis/node_modules
+COPY --from=prod /app/packages/trpc/node_modules /app/packages/trpc/node_modules
 COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modules
 COPY --from=prod /app/packages/common/node_modules /app/packages/common/node_modules
 
