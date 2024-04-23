@@ -33,17 +33,8 @@ const startServer = async () => {
       maxParamLength: 5000,
     });
 
-    const origin = [];
-    if (process.env.NODE_ENV === 'production') {
-      if (process.env.NEXT_PUBLIC_DASHBOARD_URL) {
-        origin.push(process.env.NEXT_PUBLIC_DASHBOARD_URL);
-      }
-    } else {
-      origin.push('http://localhost:3000');
-    }
-
     fastify.register(cors, {
-      origin,
+      origin: '*',
       credentials: true,
     });
 
