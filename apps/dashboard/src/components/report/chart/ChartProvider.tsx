@@ -9,8 +9,8 @@ import {
   useMemo,
   useState,
 } from 'react';
-import type { IChartSerie } from '@/trpc/api/routers/chart';
 
+import type { IChartSerie } from '@openpanel/trpc/src/routers/chart';
 import type { IChartInput } from '@openpanel/validation';
 
 import { ChartLoading } from './ChartLoading';

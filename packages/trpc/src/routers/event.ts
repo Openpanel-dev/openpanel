@@ -1,12 +1,9 @@
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from '@/trpc/api/trpc';
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import { chQuery, convertClickhouseDateToJs, db } from '@openpanel/db';
+
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const eventRouter = createTRPCRouter({
   updateEventMeta: protectedProcedure

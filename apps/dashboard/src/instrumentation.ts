@@ -1,7 +1,10 @@
 /* eslint-disable */
 
 export async function register() {
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.NEXT_RUNTIME === 'nodejs'
+  ) {
     const { BaselimeSDK, VercelPlugin, BetterHttpInstrumentation } =
       // @ts-expect-error
       await import('@baselime/node-opentelemetry');

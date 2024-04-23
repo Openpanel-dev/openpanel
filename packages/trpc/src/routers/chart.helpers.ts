@@ -1,9 +1,9 @@
-import { round } from '@/utils/math';
 import { subDays } from 'date-fns';
 import * as mathjs from 'mathjs';
 import { repeat, reverse, sort } from 'ramda';
 import { escape } from 'sqlstring';
 
+import { round } from '@openpanel/common';
 import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
 import {
   chQuery,
@@ -13,7 +13,6 @@ import {
   getChartSql,
   getEventFiltersWhereClause,
   getProfiles,
-  transformProfile,
 } from '@openpanel/db';
 import type {
   IChartEvent,

@@ -1,17 +1,13 @@
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from '@/trpc/api/trpc';
-import { average, max, min, round, sum } from '@/utils/math';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
+import { average, max, min, round, sum } from '@openpanel/common';
 import { chQuery, createSqlBuilder } from '@openpanel/db';
 import { zChartInput } from '@openpanel/validation';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
@@ -180,7 +176,7 @@ export const chartRouter = createTRPCRouter({
     }),
 
   // TODO: Make this private
-  chart: publicProcedure.input(zChartInput).query(async ({ input }) => {
+  chart: publicProcedure.input(zChartInput).query(async ({ input, ctx }) => {
     const currentPeriod = getChartStartEndDate(input);
     const previousPeriod = getChartPrevStartEndDate({
       range: input.range,

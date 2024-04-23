@@ -1,8 +1,9 @@
-import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
 import { z } from 'zod';
 
 import { db } from '@openpanel/db';
 import { zChartInput } from '@openpanel/validation';
+
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const reportRouter = createTRPCRouter({
   create: protectedProcedure

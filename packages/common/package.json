@@ -8,7 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "mathjs": "^12.3.2",
     "ramda": "^0.29.1",
+    "slugify": "^1.6.6",
     "superjson": "^1.13.3",
     "unique-names-generator": "^4.7.1"
   },

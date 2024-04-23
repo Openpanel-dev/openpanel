@@ -1,8 +1,8 @@
-import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
-import { getId } from '@/utils/getDbId';
 import { z } from 'zod';
 
-import { db, getProjectsByOrganizationSlug } from '@openpanel/db';
+import { db, getId, getProjectsByOrganizationSlug } from '@openpanel/db';
+
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure

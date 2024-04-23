@@ -1,10 +1,10 @@
-import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
-import { getId } from '@/utils/getDbId';
 import { PrismaError } from 'prisma-error-enum';
 import { z } from 'zod';
 
-import { db, getDashboardsByProjectId } from '@openpanel/db';
+import { db, getDashboardsByProjectId, getId } from '@openpanel/db';
 import type { Prisma } from '@openpanel/db';
+
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const dashboardRouter = createTRPCRouter({
   list: protectedProcedure

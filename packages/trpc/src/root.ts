@@ -1,5 +1,3 @@
-import { createTRPCRouter } from '@/trpc/api/trpc';
-
 import { chartRouter } from './routers/chart';
 import { clientRouter } from './routers/client';
 import { dashboardRouter } from './routers/dashboard';
@@ -12,6 +10,7 @@ import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
 import { shareRouter } from './routers/share';
 import { userRouter } from './routers/user';
+import { createTRPCRouter } from './trpc';
 
 /**
  * This is the primary router for your server.

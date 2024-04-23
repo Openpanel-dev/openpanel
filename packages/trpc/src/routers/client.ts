@@ -1,10 +1,11 @@
 import { randomUUID } from 'crypto';
-import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
 import { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
 import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
+
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const clientRouter = createTRPCRouter({
   update: protectedProcedure

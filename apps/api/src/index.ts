@@ -1,8 +1,14 @@
+import { clerkPlugin } from '@clerk/fastify';
+import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
+import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
+import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 
 import type { IServiceClient } from '@openpanel/db';
 import { redisPub } from '@openpanel/redis';
+import type { AppRouter } from '@openpanel/trpc';
+import { appRouter, createContext } from '@openpanel/trpc';
 
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
@@ -23,10 +29,47 @@ const port = parseInt(process.env.API_PORT || '3000', 10);
 const startServer = async () => {
   logInfo('Starting server');
   try {
-    const fastify = Fastify();
+    const fastify = Fastify({
+      maxParamLength: 5000,
+    });
+
+    const origin = [];
+    if (process.env.NODE_ENV === 'production') {
+      if (process.env.NEXT_PUBLIC_DASHBOARD_URL) {
+        origin.push(process.env.NEXT_PUBLIC_DASHBOARD_URL);
+      }
+    } else {
+      origin.push('http://localhost:3000');
+    }
 
     fastify.register(cors, {
-      origin: '*',
+      origin,
+      credentials: true,
+    });
+
+    fastify.register(cookie, {
+      secret: 'random', // for cookies signature
+      hook: 'onRequest',
+    });
+
+    fastify.register(clerkPlugin, {
+      publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+
+    fastify.register(fastifyTRPCPlugin, {
+      prefix: '/trpc',
+      trpcOptions: {
+        router: appRouter,
+        createContext: createContext,
+        onError(error: unknown) {
+          if (error instanceof Error) {
+            logger.error(error, error.message);
+          } else {
+            logger.error(error, 'Unknown error trpc error');
+          }
+        },
+      } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
     });
 
     fastify.decorateRequest('projectId', '');

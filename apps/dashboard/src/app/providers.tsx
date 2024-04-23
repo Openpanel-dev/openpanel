@@ -35,7 +35,15 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       transformer: superjson,
       links: [
         httpLink({
-          url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/api/trpc`,
+          url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
+          fetch(url, options) {
+            // Send cookies
+            return fetch(url, {
+              ...options,
+              credentials: 'include',
+              mode: 'cors',
+            });
+          },
         }),
       ],
     })

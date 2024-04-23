@@ -1,14 +1,12 @@
 import { randomUUID } from 'crypto';
-import { createTRPCRouter, protectedProcedure } from '@/trpc/api/trpc';
-import { getId } from '@/utils/getDbId';
-import { slug } from '@/utils/slug';
-import { clerkClient } from '@clerk/nextjs';
-import { cookies } from 'next/headers';
+import { clerkClient } from '@clerk/fastify';
 
-import { hashPassword, stripTrailingSlash } from '@openpanel/common';
+import { hashPassword, slug, stripTrailingSlash } from '@openpanel/common';
+import { db, getId } from '@openpanel/db';
 import type { ProjectType } from '@openpanel/db';
-import { db } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
+
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const onboardingRouter = createTRPCRouter({
   project: protectedProcedure
@@ -50,7 +48,7 @@ export const onboardingRouter = createTRPCRouter({
         },
       });
 
-      cookies().set('onboarding_client_secret', secret, {
+      ctx.setCookie('onboarding_client_secret', secret, {
         maxAge: 60 * 60, // 1 hour
         path: '/',
       });

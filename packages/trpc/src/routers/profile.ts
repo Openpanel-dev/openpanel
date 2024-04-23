@@ -1,13 +1,10 @@
-import {
-  createTRPCRouter,
-  protectedProcedure,
-  publicProcedure,
-} from '@/trpc/api/trpc';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import { chQuery, createSqlBuilder } from '@openpanel/db';
+
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const profileRouter = createTRPCRouter({
   properties: protectedProcedure

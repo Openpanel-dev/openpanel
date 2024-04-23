@@ -1,9 +1,10 @@
-import type { AppRouter } from '@/trpc/api/root';
 import type { TRPCClientErrorBase } from '@trpc/react-query';
 import { createTRPCReact } from '@trpc/react-query';
 import type { inferRouterInputs, inferRouterOutputs } from '@trpc/server';
 import type { ExternalToast } from 'sonner';
 import { toast } from 'sonner';
+
+import type { AppRouter } from '@openpanel/trpc';
 
 export const api = createTRPCReact<AppRouter>({});
 
