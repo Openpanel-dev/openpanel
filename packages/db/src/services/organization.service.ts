@@ -1,10 +1,10 @@
-import { auth, clerkClient } from '@clerk/nextjs';
 import type {
   Organization,
   OrganizationInvitation,
   OrganizationMembership,
 } from '@clerk/nextjs/dist/types/server';
-import { sort, sortBy } from 'ramda';
+import { auth, clerkClient } from '@clerk/nextjs/server';
+import { sort } from 'ramda';
 
 import type { ProjectAccess } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -31,7 +31,7 @@ export async function getCurrentOrganizations() {
   });
   return sort(
     (a, b) => a.createdAt - b.createdAt,
-    organizations.map((item) => transformOrganization(item.organization))
+    organizations.data.map((item) => transformOrganization(item.organization))
   );
 }
 
@@ -74,7 +74,7 @@ export async function getInvites(organizationSlug: string) {
     .getOrganizationInvitationList({
       organizationId: org.id,
     })
-    .then((invites) => invites.map(transformInvite));
+    .then((invites) => invites.data.map(transformInvite));
 }
 
 export function transformMember(
@@ -112,7 +112,7 @@ export async function getMembers(organizationSlug: string) {
     }),
   ]);
 
-  return members
+  return members.data
     .map((member) => {
       const projectAccess = access.filter(
         (item) => item.userId === member.publicUserData?.userId

@@ -12,7 +12,7 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
-    "@clerk/nextjs": "^4.29.7",
+    "@clerk/nextjs": "^5.0.2",
     "@clickhouse/client": "^1.0.1",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",

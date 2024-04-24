@@ -1,7 +1,7 @@
 'use client';
 
+import type { OAuthStrategy } from '@/types';
 import { useSignIn } from '@clerk/nextjs';
-import type { OAuthStrategy } from '@clerk/nextjs/dist/types/server';
 import { toast } from 'sonner';
 
 import EmailSignUp from './email-sign-in';

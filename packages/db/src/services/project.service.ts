@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';

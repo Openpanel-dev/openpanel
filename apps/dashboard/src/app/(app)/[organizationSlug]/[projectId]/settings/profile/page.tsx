@@ -1,5 +1,5 @@
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
-import { auth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
 
 import { getUserById } from '@openpanel/db';
 

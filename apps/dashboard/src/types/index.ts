@@ -7,3 +7,5 @@ export type HtmlProps<T> = Omit<
 export type IToolTipProps<T> = Omit<TooltipProps<number, string>, 'payload'> & {
   payload?: T[];
 };
+
+export type OAuthStrategy = 'oauth_google' | 'oauth_github';
