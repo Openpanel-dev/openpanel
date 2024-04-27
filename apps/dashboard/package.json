@@ -78,7 +78,7 @@
     "nextjs-toploader": "^1.6.11",
     "nuqs": "^1.16.1",
     "prisma-error-enum": "^0.1.3",
-    "pushmodal": "^1.0.0",
+    "pushmodal": "^1.0.3",
     "ramda": "^0.29.1",
     "random-animal-name": "^0.1.1",
     "react": "18.2.0",

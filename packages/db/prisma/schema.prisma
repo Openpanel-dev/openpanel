@@ -163,7 +163,7 @@ model Report {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name       String
   interval   Interval
-  range      String    @default("1m")
+  range      String    @default("30d")
   chartType  ChartType
   lineType   String    @default("monotone")
   breakdowns Json

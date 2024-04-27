@@ -114,7 +114,7 @@ export default async function Page({
     lineType: 'monotone',
     interval: 'day',
     name: 'Events',
-    range: '1m',
+    range: '30d',
     previous: false,
     metric: 'sum',
   };

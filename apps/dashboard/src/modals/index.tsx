@@ -59,11 +59,19 @@ const modals = {
   FunnelStepDetails: dynamic(() => import('./FunnelStepDetails'), {
     loading: Loading,
   }),
+  DateRangerPicker: dynamic(() => import('./DateRangerPicker'), {
+    loading: Loading,
+  }),
 };
 
-export const { pushModal, popModal, popAllModals, ModalProvider } =
-  createPushModal({
-    modals,
-  });
+export const {
+  pushModal,
+  popModal,
+  popAllModals,
+  ModalProvider,
+  useOnPushModal,
+} = createPushModal({
+  modals,
+});
 
 export const showConfirm = (props: ConfirmProps) => pushModal('Confirm', props);

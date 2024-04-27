@@ -1,4 +1,14 @@
-import { subDays } from 'date-fns';
+import {
+  endOfDay,
+  endOfYear,
+  startOfDay,
+  startOfMonth,
+  startOfYear,
+  subDays,
+  subMinutes,
+  subMonths,
+  subYears,
+} from 'date-fns';
 import * as mathjs from 'mathjs';
 import { repeat, reverse, sort } from 'ramda';
 import { escape } from 'sqlstring';
@@ -298,22 +308,9 @@ export async function getChartData(payload: IGetChartDataInput) {
 }
 
 export function getDatesFromRange(range: IChartRange) {
-  if (range === 'today') {
-    const startDate = new Date();
-    const endDate = new Date();
-    startDate.setUTCHours(0, 0, 0, 0);
-    endDate.setUTCHours(23, 59, 59, 999);
-
-    return {
-      startDate: startDate.toUTCString(),
-      endDate: endDate.toUTCString(),
-    };
-  }
-
-  if (range === '30min' || range === '1h') {
-    const startDate = new Date(
-      Date.now() - 1000 * 60 * (range === '30min' ? 30 : 60)
-    ).toUTCString();
+  if (range === '30min' || range === 'lastHour') {
+    const minutes = range === '30min' ? 30 : 60;
+    const startDate = subMinutes(new Date(), minutes).toUTCString();
     const endDate = new Date().toUTCString();
 
     return {
@@ -322,36 +319,92 @@ export function getDatesFromRange(range: IChartRange) {
     };
   }
 
-  let days = 1;
+  if (range === 'today') {
+    const startDate = startOfDay(new Date());
+    const endDate = endOfDay(new Date());
 
-  if (range === '24h') {
-    const startDate = subDays(new Date(), days);
-    const endDate = new Date();
     return {
       startDate: startDate.toUTCString(),
       endDate: endDate.toUTCString(),
     };
-  } else if (range === '7d') {
-    days = 7;
-  } else if (range === '14d') {
-    days = 14;
-  } else if (range === '1m') {
-    days = 30;
-  } else if (range === '3m') {
-    days = 90;
-  } else if (range === '6m') {
-    days = 180;
-  } else if (range === '1y') {
-    days = 365;
   }
 
-  const startDate = subDays(new Date(), days);
-  startDate.setUTCHours(0, 0, 0, 0);
-  const endDate = new Date();
-  endDate.setUTCHours(23, 59, 59, 999);
+  if (range === '7d') {
+    const startDate = subDays(new Date(), 7).toUTCString();
+    const endDate = new Date().toUTCString();
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  if (range === '30d') {
+    const startDate = subDays(new Date(), 30).toUTCString();
+    const endDate = new Date().toUTCString();
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  if (range === 'monthToDate') {
+    const startDate = startOfMonth(new Date()).toUTCString();
+    const endDate = new Date().toUTCString();
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  if (range === 'lastMonth') {
+    const month = subMonths(new Date(), 1);
+    const startDate = startOfMonth(month).toUTCString();
+    const endDate = endOfDay(month).toUTCString();
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  if (range === 'yearToDate') {
+    const startDate = startOfYear(new Date()).toUTCString();
+    const endDate = new Date().toUTCString();
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  if (range === 'lastYear') {
+    const year = subYears(new Date(), 1);
+    const startDate = startOfYear(year).toUTCString();
+    const endDate = endOfYear(year).toUTCString();
+
+    return {
+      startDate,
+      endDate,
+    };
+  }
+
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
+  console.log('-------------------------------');
   return {
-    startDate: startDate.toUTCString(),
-    endDate: endDate.toUTCString(),
+    startDate: subDays(new Date(), 30).toISOString(),
+    endDate: new Date().toISOString(),
   };
 }
 
@@ -374,44 +427,7 @@ export function getChartPrevStartEndDate({
   endDate: string;
   range: IChartRange;
 }) {
-  let diff = 0;
-
-  switch (range) {
-    case '30min': {
-      diff = 1000 * 60 * 30;
-      break;
-    }
-    case '1h': {
-      diff = 1000 * 60 * 60;
-      break;
-    }
-    case '24h':
-    case 'today': {
-      diff = 1000 * 60 * 60 * 24;
-      break;
-    }
-    case '7d': {
-      diff = 1000 * 60 * 60 * 24 * 7;
-      break;
-    }
-    case '14d': {
-      diff = 1000 * 60 * 60 * 24 * 14;
-      break;
-    }
-    case '1m': {
-      diff = 1000 * 60 * 60 * 24 * 30;
-      break;
-    }
-    case '3m': {
-      diff = 1000 * 60 * 60 * 24 * 90;
-      break;
-    }
-    case '6m': {
-      diff = 1000 * 60 * 60 * 24 * 180;
-      break;
-    }
-  }
-
+  const diff = new Date(endDate).getTime() - new Date(startDate).getTime();
   return {
     startDate: new Date(new Date(startDate).getTime() - diff).toISOString(),
     endDate: new Date(new Date(endDate).getTime() - diff).toISOString(),

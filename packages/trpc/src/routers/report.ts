@@ -29,7 +29,7 @@ export const reportRouter = createTRPCRouter({
           breakdowns: report.breakdowns,
           chartType: report.chartType,
           lineType: report.lineType,
-          range: report.range,
+          range: report.range === 'custom' ? '30d' : report.range,
           formula: report.formula,
         },
       });
@@ -53,7 +53,7 @@ export const reportRouter = createTRPCRouter({
           breakdowns: report.breakdowns,
           chartType: report.chartType,
           lineType: report.lineType,
-          range: report.range,
+          range: report.range === 'custom' ? '30d' : report.range,
           formula: report.formula,
         },
       });

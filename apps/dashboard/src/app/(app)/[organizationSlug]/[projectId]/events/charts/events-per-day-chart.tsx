@@ -23,7 +23,7 @@ export function EventsPerDayChart({ projectId, filters, events }: Props) {
     <div className="card mb-8 p-4">
       <ChartSwitchShortcut
         projectId={projectId}
-        range="1m"
+        range="30d"
         chartType="histogram"
         events={
           events && events.length > 0

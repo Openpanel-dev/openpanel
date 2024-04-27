@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { DialogContent } from '@/components/ui/dialog';
+import { cn } from '@/utils/cn';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 
@@ -19,11 +20,17 @@ interface ModalHeaderProps {
   title: string | React.ReactNode;
   text?: string | React.ReactNode;
   onClose?: (() => void) | false;
+  className?: string;
 }
 
-export function ModalHeader({ title, text, onClose }: ModalHeaderProps) {
+export function ModalHeader({
+  title,
+  text,
+  onClose,
+  className,
+}: ModalHeaderProps) {
   return (
-    <div className="mb-6 flex justify-between">
+    <div className={cn('mb-6 flex justify-between', className)}>
       <div>
         <div className="mt-0.5 font-medium">{title}</div>
         {!!text && <div className="text-sm text-muted-foreground">{text}</div>}

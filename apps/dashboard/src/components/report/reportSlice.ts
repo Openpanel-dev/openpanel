@@ -1,4 +1,3 @@
-import { start } from 'repl';
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { isSameDay, isSameMonth } from 'date-fns';
@@ -39,7 +38,7 @@ const initialState: InitialState = {
   interval: 'day',
   breakdowns: [],
   events: [],
-  range: '1m',
+  range: '30d',
   startDate: null,
   endDate: null,
   previous: false,
@@ -232,10 +231,11 @@ export const reportSlice = createSlice({
     changeDateRanges: (state, action: PayloadAction<IChartRange>) => {
       state.dirty = true;
       state.range = action.payload;
-      state.startDate = null;
-      state.endDate = null;
-
-      state.interval = getDefaultIntervalByRange(action.payload);
+      if (action.payload !== 'custom') {
+        state.startDate = null;
+        state.endDate = null;
+        state.interval = getDefaultIntervalByRange(action.payload);
+      }
     },
 
     // Formula

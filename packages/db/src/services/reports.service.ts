@@ -1,4 +1,8 @@
-import { alphabetIds, lineTypes, timeRanges } from '@openpanel/constants';
+import {
+  alphabetIds,
+  deprecated_timeRanges,
+  lineTypes,
+} from '@openpanel/constants';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -52,7 +56,10 @@ export function transformReport(
     lineType: (report.lineType as IChartLineType) ?? lineTypes.monotone,
     interval: report.interval,
     name: report.name || 'Untitled',
-    range: (report.range as IChartRange) ?? timeRanges['1m'],
+    range:
+      report.range in deprecated_timeRanges
+        ? '30d'
+        : (report.range as IChartRange),
     previous: report.previous ?? false,
     formula: report.formula ?? undefined,
     metric: report.metric ?? 'sum',

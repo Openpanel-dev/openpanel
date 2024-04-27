@@ -6,11 +6,9 @@ import { ChartSwitch } from '@/components/report/chart';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
-import { ReportRange } from '@/components/report/ReportRange';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
   changeDateRanges,
-  changeDates,
   changeEndDate,
   changeStartDate,
   ready,
@@ -18,6 +16,7 @@ import {
   setReport,
 } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
+import { TimeWindowPicker } from '@/components/time-window-picker';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/useAppParams';
@@ -63,32 +62,20 @@ export default function ReportEditor({
         </SheetTrigger>
         <div className="col-span-4 grid grid-cols-2 gap-2 md:grid-cols-4">
           <ReportChartType className="min-w-0 flex-1" />
-          <ReportRange
+          <TimeWindowPicker
             className="min-w-0 flex-1"
-            range={report.range}
-            onRangeChange={(value) => {
+            onChange={(value) => {
               dispatch(changeDateRanges(value));
             }}
-            dates={{
-              startDate: report.startDate,
-              endDate: report.endDate,
-            }}
-            onDatesChange={(val) => {
-              if (!val) return;
-
-              if (val.from && val.to) {
-                dispatch(
-                  changeDates({
-                    startDate: startOfDay(val.from).toISOString(),
-                    endDate: endOfDay(val.to).toISOString(),
-                  })
-                );
-              } else if (val.from) {
-                dispatch(changeStartDate(startOfDay(val.from).toISOString()));
-              } else if (val.to) {
-                dispatch(changeEndDate(endOfDay(val.to).toISOString()));
-              }
-            }}
+            value={report.range}
+            onStartDateChange={(date) =>
+              dispatch(changeStartDate(startOfDay(date).toISOString()))
+            }
+            onEndDateChange={(date) =>
+              dispatch(changeEndDate(endOfDay(date).toISOString()))
+            }
+            endDate={report.endDate}
+            startDate={report.startDate}
           />
           <ReportInterval className="min-w-0 flex-1" />
           <ReportLineType className="min-w-0 flex-1" />

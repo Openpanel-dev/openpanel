@@ -5,7 +5,6 @@ import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
 } from '@openpanel/constants';
-import type { IInterval } from '@openpanel/validation';
 
 import { Combobox } from '../ui/combobox';
 import { changeInterval } from './reportSlice';
@@ -55,10 +54,7 @@ export function ReportInterval({ className }: ReportIntervalProps) {
           value: 'month',
           label: 'Month',
           disabled:
-            range === 'today' ||
-            range === '24h' ||
-            range === '1h' ||
-            range === '30min',
+            range === 'today' || range === 'lastHour' || range === '30min',
         },
       ]}
     />

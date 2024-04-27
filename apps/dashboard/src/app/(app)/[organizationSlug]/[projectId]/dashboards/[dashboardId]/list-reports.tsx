@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
+  timeWindows,
 } from '@openpanel/constants';
 import type { getReportsByDashboardId } from '@openpanel/db';
 
@@ -64,7 +65,7 @@ export function ListReports({ reports }: ListReportsProps) {
       </StickyBelowHeader>
       <div className="mx-auto flex max-w-3xl flex-col gap-8 p-4 md:p-8">
         {reports.map((report) => {
-          const chartRange = report.range; // timeRanges[report.range];
+          const chartRange = report.range;
           return (
             <div className="card" key={report.id}>
               <Link
@@ -84,7 +85,7 @@ export function ListReports({ reports }: ListReportsProps) {
                             : ''
                         }
                       >
-                        {chartRange}
+                        {timeWindows[chartRange].label}
                       </span>
                       {startDate && endDate ? (
                         <span>Custom dates</span>

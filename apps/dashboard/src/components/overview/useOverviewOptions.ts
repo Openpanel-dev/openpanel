@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import {
   parseAsBoolean,
   parseAsInteger,
@@ -9,8 +10,9 @@ import {
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
-  timeRanges,
+  timeWindows,
 } from '@openpanel/constants';
+import type { IChartRange } from '@openpanel/validation';
 import { mapKeys } from '@openpanel/validation';
 
 const nuqsOptions = { history: 'push' } as const;
@@ -30,7 +32,7 @@ export function useOverviewOptions() {
   );
   const [range, setRange] = useQueryState(
     'range',
-    parseAsStringEnum(mapKeys(timeRanges))
+    parseAsStringEnum(mapKeys(timeWindows))
       .withDefault('7d')
       .withOptions(nuqsOptions)
   );
@@ -54,7 +56,13 @@ export function useOverviewOptions() {
     previous,
     setPrevious,
     range,
-    setRange,
+    setRange: (value: IChartRange | null) => {
+      if (value !== 'custom') {
+        setStartDate(null);
+        setEndDate(null);
+      }
+      setRange(value);
+    },
     metric,
     setMetric,
     startDate,

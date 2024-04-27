@@ -6,7 +6,7 @@ import {
   lineTypes,
   metrics,
   operators,
-  timeRanges,
+  timeWindows,
 } from '@openpanel/constants';
 
 export function objectToZodEnums<K extends string>(
@@ -57,7 +57,7 @@ export const zTimeInterval = z.enum(objectToZodEnums(intervals));
 
 export const zMetric = z.enum(objectToZodEnums(metrics));
 
-export const zRange = z.enum(objectToZodEnums(timeRanges));
+export const zRange = z.enum(objectToZodEnums(timeWindows));
 
 export const zChartInput = z.object({
   name: z.string().default(''),
@@ -66,7 +66,7 @@ export const zChartInput = z.object({
   interval: zTimeInterval.default('day'),
   events: zChartEvents,
   breakdowns: zChartBreakdowns.default([]),
-  range: zRange.default('1m'),
+  range: zRange.default('30d'),
   previous: z.boolean().default(false),
   formula: z.string().optional(),
   metric: zMetric.default('sum'),

@@ -1,7 +1,5 @@
 import type { z } from 'zod';
 
-import type { timeRanges } from '@openpanel/constants';
-
 import type {
   zChartBreakdown,
   zChartEvent,
@@ -9,6 +7,7 @@ import type {
   zChartType,
   zLineType,
   zMetric,
+  zRange,
   zTimeInterval,
 } from './index';
 
@@ -24,7 +23,7 @@ export type IInterval = z.infer<typeof zTimeInterval>;
 export type IChartType = z.infer<typeof zChartType>;
 export type IChartMetric = z.infer<typeof zMetric>;
 export type IChartLineType = z.infer<typeof zLineType>;
-export type IChartRange = keyof typeof timeRanges;
+export type IChartRange = z.infer<typeof zRange>;
 export type IGetChartDataInput = {
   event: IChartEvent;
   projectId: string;
