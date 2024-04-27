@@ -631,5 +631,9 @@ export async function getSeriesFromEvents(input: IChartInput) {
     )
   ).flat();
 
-  return withFormula(input, series);
+  try {
+    return withFormula(input, series);
+  } catch (e) {
+    return series;
+  }
 }

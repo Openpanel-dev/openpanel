@@ -91,7 +91,7 @@ export function ReportAreaChart({
                     type={lineType}
                     isAnimationActive={true}
                     strokeWidth={2}
-                    dataKey={`${serie.index}:count`}
+                    dataKey={`${serie.id}:count`}
                     stroke={color}
                     fill={`url(#color${color})`}
                     stackId={'1'}

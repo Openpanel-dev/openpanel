@@ -21,7 +21,7 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
 
   const sum = series.reduce((acc, serie) => acc + serie.metrics.sum, 0);
   const pieData = series.map((serie) => ({
-    id: serie.name,
+    id: serie.id,
     color: getChartColor(serie.index),
     index: serie.index,
     label: serie.name,

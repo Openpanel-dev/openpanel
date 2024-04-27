@@ -20,10 +20,10 @@ export function useRechartDataModel(series: IChartData['series']) {
                 (acc2, item) => {
                   if (item.date === date) {
                     if (item.previous) {
-                      acc2[`${idx}:prev:count`] = item.previous.value;
+                      acc2[`${serie.id}:prev:count`] = item.previous.value;
                     }
-                    acc2[`${idx}:count`] = item.count;
-                    acc2[`${idx}:payload`] = {
+                    acc2[`${serie.id}:count`] = item.count;
+                    acc2[`${serie.id}:payload`] = {
                       ...item,
                       color: getChartColor(idx),
                     } satisfies IRechartPayloadItem;

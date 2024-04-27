@@ -76,7 +76,7 @@ export function ReportHistogramChart({
                     <Bar
                       key={`${serie.name}:prev`}
                       name={`${serie.name}:prev`}
-                      dataKey={`${serie.index}:prev:count`}
+                      dataKey={`${serie.id}:prev:count`}
                       fill={getChartColor(serie.index)}
                       fillOpacity={0.2}
                       radius={8}
@@ -85,7 +85,7 @@ export function ReportHistogramChart({
                   <Bar
                     key={serie.name}
                     name={serie.name}
-                    dataKey={`${serie.index}:count`}
+                    dataKey={`${serie.id}:count`}
                     fill={getChartColor(serie.index)}
                     radius={8}
                   />

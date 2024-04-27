@@ -2,7 +2,7 @@ import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
-import { average, max, min, round, sum } from '@openpanel/common';
+import { average, max, min, round, slug, sum } from '@openpanel/common';
 import { chQuery, createSqlBuilder } from '@openpanel/db';
 import { zChartInput } from '@openpanel/validation';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
@@ -36,6 +36,7 @@ interface Metrics {
 }
 
 export interface IChartSerie {
+  id: string;
   name: string;
   event: IChartEvent;
   metrics: Metrics;
@@ -217,6 +218,7 @@ export const chartRouter = createTRPCRouter({
         };
 
         return {
+          id: slug(serie.name), // TODO: Remove this (temporary fix for the frontend
           name: serie.name,
           event: {
             ...serie.event,

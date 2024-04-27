@@ -44,7 +44,7 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
             filters: [
               ...event.filters,
               {
-                id: (event.filters.length + 1).toString(),
+                id: Math.random().toString(36).substring(7),
                 name: value,
                 operator: 'is',
                 value: [],

@@ -100,7 +100,7 @@ export function ReportLineChart({
                     name={serie.name}
                     isAnimationActive={true}
                     strokeWidth={2}
-                    dataKey={`${serie.index}:count`}
+                    dataKey={`${serie.id}:count`}
                     stroke={getChartColor(serie.index)}
                   />
                   {previous && (
@@ -112,7 +112,7 @@ export function ReportLineChart({
                       strokeWidth={1}
                       dot={false}
                       strokeDasharray={'6 6'}
-                      dataKey={`${serie.index}:prev:count`}
+                      dataKey={`${serie.id}:prev:count`}
                       stroke={getChartColor(serie.index)}
                     />
                   )}

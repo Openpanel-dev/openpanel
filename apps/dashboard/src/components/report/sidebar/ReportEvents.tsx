@@ -54,7 +54,7 @@ export function ReportEvents() {
       <div className="flex flex-col gap-4">
         {selectedEvents.map((event) => {
           return (
-            <div key={event.name} className="rounded-lg border bg-slate-50">
+            <div key={event.id} className="rounded-lg border bg-slate-50">
               <div className="flex items-center gap-2 p-2">
                 <ColorSquare>{event.id}</ColorSquare>
                 <Combobox
