@@ -112,6 +112,15 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
 
     if (value.length === 0) return;
 
+    if (name === 'has_profile') {
+      if (value.includes('true')) {
+        where[id] = `profile_id != device_id`;
+      } else {
+        where[id] = `profile_id = device_id`;
+      }
+      return;
+    }
+
     if (name.startsWith('properties.')) {
       const whereFrom = `mapValues(mapExtractKeyLike(properties, ${escape(
         name.replace(/^properties\./, '').replace('.*.', '.%.')

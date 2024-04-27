@@ -85,6 +85,7 @@ export const chartRouter = createTRPCRouter({
         .map((item) => `properties.${item}`);
 
       properties.push(
+        'has_profile',
         'name',
         'path',
         'referrer',
@@ -119,6 +120,12 @@ export const chartRouter = createTRPCRouter({
       })
     )
     .query(async ({ input: { event, property, projectId } }) => {
+      if (property === 'has_profile') {
+        return {
+          values: ['true', 'false'],
+        };
+      }
+
       const { sb, getSql } = createSqlBuilder();
       sb.where.project_id = `project_id = ${escape(projectId)}`;
       if (event !== '*') {
