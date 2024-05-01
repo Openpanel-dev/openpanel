@@ -23,7 +23,11 @@ export default async function Page({
   }
 
   return (
-    <PageLayout title={organization.name} organizationSlug={organizationSlug}>
+    <>
+      <PageLayout
+        title={organization.name}
+        organizationSlug={organizationSlug}
+      />
       <div className="grid gap-8 p-4 lg:grid-cols-2">
         <EditOrganization organization={organization} />
         <div className="col-span-2">
@@ -33,6 +37,6 @@ export default async function Page({
           <InvitesServer organizationSlug={organizationSlug} />
         </div>
       </div>
-    </PageLayout>
+    </>
   );
 }

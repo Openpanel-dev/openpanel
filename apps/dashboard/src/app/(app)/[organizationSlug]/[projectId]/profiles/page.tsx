@@ -29,7 +29,8 @@ export default function Page({
   searchParams: { cursor, f },
 }: PageProps) {
   return (
-    <PageLayout title="Profiles" organizationSlug={organizationSlug}>
+    <>
+      <PageLayout title="Profiles" organizationSlug={organizationSlug} />
       {/* <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           projectId={projectId}
@@ -57,6 +58,6 @@ export default function Page({
           />
         </div>
       </div>
-    </PageLayout>
+    </>
   );
 }

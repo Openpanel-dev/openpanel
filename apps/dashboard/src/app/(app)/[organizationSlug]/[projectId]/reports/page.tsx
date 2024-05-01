@@ -12,16 +12,17 @@ interface PageProps {
 
 export default function Page({ params: { organizationSlug } }: PageProps) {
   return (
-    <PageLayout
-      organizationSlug={organizationSlug}
-      title={
-        <div className="flex cursor-pointer items-center gap-2">
-          Unnamed report
-          <Pencil size={16} />
-        </div>
-      }
-    >
+    <>
+      <PageLayout
+        organizationSlug={organizationSlug}
+        title={
+          <div className="flex cursor-pointer items-center gap-2">
+            Unnamed report
+            <Pencil size={16} />
+          </div>
+        }
+      />
       <ReportEditor report={null} />
-    </PageLayout>
+    </>
   );
 }

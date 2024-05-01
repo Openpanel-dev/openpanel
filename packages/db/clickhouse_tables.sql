@@ -74,6 +74,20 @@ ORDER BY
   (a, b) SETTINGS index_granularity = 8192;
 
 ALTER TABLE
-  test.events_bots
+  events_bots
 ADD
   COLUMN id UUID DEFAULT generateUUIDv4() FIRST;
+
+--- Materialized views (DAU)
+CREATE MATERIALIZED VIEW dau_mv ENGINE = AggregatingMergeTree() PARTITION BY toYYYYMMDD(date)
+ORDER BY
+  (project_id, date) POPULATE AS
+SELECT
+  toDate(created_at) as date,
+  uniqState(profile_id) as profile_id,
+  project_id
+FROM
+  events
+GROUP BY
+  date,
+  project_id;

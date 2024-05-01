@@ -4,7 +4,7 @@ packages/sdk/test.ts
 dump.sql
 dump-*
 .sql
-clickhouse
+./clickhouse
 
 # Logs
 

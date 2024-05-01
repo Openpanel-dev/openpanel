@@ -1,5 +1,13 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { pushModal } from '@/modals';
 import { api } from '@/trpc/client';
 import { EyeIcon, Globe2Icon, LockIcon } from 'lucide-react';
@@ -7,15 +15,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type { ShareOverview } from '@openpanel/db';
-
-import { Button } from '../ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
 
 interface OverviewShareProps {
   data: ShareOverview | null;

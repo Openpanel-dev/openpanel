@@ -12,6 +12,7 @@ import {
   KeySquareIcon,
   LayoutPanelTopIcon,
   UserIcon,
+  UserSearchIcon,
   UsersIcon,
   WallpaperIcon,
   WarehouseIcon,
@@ -95,6 +96,11 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
         icon={GanttChartIcon}
         label="Events"
         href={`/${params.organizationSlug}/${projectId}/events`}
+      />
+      <LinkWithIcon
+        icon={UserSearchIcon}
+        label="Retention"
+        href={`/${params.organizationSlug}/${projectId}/retention`}
       />
       <LinkWithIcon
         icon={UsersIcon}

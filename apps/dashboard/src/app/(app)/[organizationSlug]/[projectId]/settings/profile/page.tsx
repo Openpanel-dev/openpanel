@@ -18,11 +18,15 @@ export default async function Page({
   const profile = await getUserById(userId!);
 
   return (
-    <PageLayout title={profile.lastName} organizationSlug={organizationSlug}>
+    <>
+      <PageLayout
+        title={profile.lastName}
+        organizationSlug={organizationSlug}
+      />
       <div className="flex flex-col gap-4 p-4">
         <EditProfile profile={profile} />
         <Logout />
       </div>
-    </PageLayout>
+    </>
   );
 }

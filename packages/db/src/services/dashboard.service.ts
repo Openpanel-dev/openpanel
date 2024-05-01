@@ -5,6 +5,7 @@ export type IServiceDashboard = Dashboard;
 export type IServiceDashboards = Prisma.DashboardGetPayload<{
   include: {
     project: true;
+    reports: true;
   };
 }>[];
 
@@ -33,6 +34,7 @@ export function getDashboardsByProjectId(projectId: string) {
     },
     include: {
       project: true,
+      reports: true,
     },
   });
 }

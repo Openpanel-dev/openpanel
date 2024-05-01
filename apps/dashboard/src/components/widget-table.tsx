@@ -10,6 +10,25 @@ interface Props<T> {
   className?: string;
 }
 
+export const WidgetTableHead = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => {
+  return (
+    <thead
+      className={cn(
+        'sticky top-0 z-10 border-b border-border bg-slate-50 text-sm text-slate-500 [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium',
+        className
+      )}
+    >
+      {children}
+    </thead>
+  );
+};
+
 export function WidgetTable<T>({
   className,
   columns,
@@ -18,13 +37,13 @@ export function WidgetTable<T>({
 }: Props<T>) {
   return (
     <table className={cn('w-full', className)}>
-      <thead className="sticky top-0 z-50 border-b border-border bg-slate-50 text-sm text-slate-500 [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium">
+      <WidgetTableHead>
         <tr>
           {columns.map((column) => (
             <th key={column.name}>{column.name}</th>
           ))}
         </tr>
-      </thead>
+      </WidgetTableHead>
       <tbody>
         {data.map((item) => (
           <tr

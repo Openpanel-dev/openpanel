@@ -14,3 +14,4 @@ export * from './src/services/share.service';
 export * from './src/services/user.service';
 export * from './src/services/reference.service';
 export * from './src/services/id.service';
+export * from './src/services/retention.service';

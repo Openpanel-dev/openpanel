@@ -9,6 +9,7 @@ import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 import {
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -79,6 +80,7 @@ export function ReportLineChart({
               allowDecimals={false}
               tickFormatter={number.short}
             />
+            <Legend wrapperStyle={{ fontSize: '10px' }} />
             <Tooltip content={<ReportChartTooltip />} />
             <XAxis
               axisLine={false}

@@ -41,7 +41,7 @@ export function ChartSSR({
   }
 
   return (
-    <div className="@container relative h-full w-full">
+    <div className="relative h-full w-full">
       {/* Chart area */}
       <svg className="absolute inset-0 h-full w-full overflow-visible">
         <svg

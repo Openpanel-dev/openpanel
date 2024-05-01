@@ -56,7 +56,8 @@ export default async function Page({
   ]);
 
   return (
-    <PageLayout title="Events" organizationSlug={organizationSlug}>
+    <>
+      <PageLayout title="Events" organizationSlug={organizationSlug} />
       <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           mode="events"
@@ -82,6 +83,6 @@ export default async function Page({
           <EventConversionsListServer projectId={projectId} />
         </div>
       </div>
-    </PageLayout>
+    </>
   );
 }

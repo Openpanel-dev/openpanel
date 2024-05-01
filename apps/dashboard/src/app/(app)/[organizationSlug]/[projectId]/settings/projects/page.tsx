@@ -22,8 +22,9 @@ export default async function Page({
   ]);
 
   return (
-    <PageLayout title="Projects" organizationSlug={organizationSlug}>
+    <>
+      <PageLayout title="Projects" organizationSlug={organizationSlug} />
       <ListProjects projects={projects} clients={clients} />
-    </PageLayout>
+    </>
   );
 }

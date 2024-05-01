@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
 import { PlusIcon } from 'lucide-react';
 
-import { StickyBelowHeader } from '../layout-sticky-below-header';
+import { StickyBelowHeader } from '../../layout-sticky-below-header';
 
 export function HeaderDashboards() {
   return (

@@ -26,8 +26,9 @@ export default async function Page({
   }
 
   return (
-    <PageLayout title={dashboard.name} organizationSlug={organizationSlug}>
+    <>
+      <PageLayout title={dashboard.name} organizationSlug={organizationSlug} />
       <ListReports reports={reports} />
-    </PageLayout>
+    </>
   );
 }

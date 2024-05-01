@@ -38,7 +38,7 @@ export function LayoutSidebar({
       <button
         onClick={() => setActive(false)}
         className={cn(
-          'fixed bottom-0 left-0 right-0 top-0 z-30 backdrop-blur-sm transition-opacity',
+          'fixed bottom-0 left-0 right-0 top-0 z-50 backdrop-blur-sm transition-opacity',
           active
             ? 'pointer-events-auto opacity-100'
             : 'pointer-events-none opacity-0'
@@ -46,7 +46,7 @@ export function LayoutSidebar({
       />
       <div
         className={cn(
-          'fixed left-0 top-0 z-30 flex h-screen w-72 flex-col border-r border-border bg-background transition-transform',
+          'fixed left-0 top-0 z-50 flex h-screen w-72 flex-col border-r border-border bg-background transition-transform',
           '-translate-x-72 lg:-translate-x-0', // responsive
           active && 'translate-x-0' // force active on mobile
         )}

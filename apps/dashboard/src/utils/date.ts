@@ -1,3 +1,4 @@
+import { isSameYear } from 'date-fns';
 import type { FormatStyleName } from 'javascript-time-ago';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
@@ -16,7 +17,16 @@ export function getLocale() {
 }
 
 export function formatDate(date: Date) {
-  return new Intl.DateTimeFormat(getLocale()).format(date);
+  const options: Intl.DateTimeFormatOptions = {
+    day: 'numeric',
+    month: 'numeric',
+  };
+
+  if (!isSameYear(date, new Date())) {
+    options.year = 'numeric';
+  }
+
+  return new Intl.DateTimeFormat(getLocale(), options).format(date);
 }
 
 export function formatDateTime(date: Date) {

@@ -124,15 +124,16 @@ export default async function Page({
   }
 
   return (
-    <PageLayout
-      organizationSlug={organizationSlug}
-      title={
-        <div className="flex items-center gap-2">
-          <ProfileAvatar {...profile} size="sm" className="hidden sm:block" />
-          {getProfileName(profile)}
-        </div>
-      }
-    >
+    <>
+      <PageLayout
+        organizationSlug={organizationSlug}
+        title={
+          <div className="flex items-center gap-2">
+            <ProfileAvatar {...profile} size="sm" className="hidden sm:block" />
+            {getProfileName(profile)}
+          </div>
+        }
+      />
       {/* <StickyBelowHeader className="flex justify-between p-4">
         <OverviewFiltersDrawer
           projectId={projectId}
@@ -189,7 +190,7 @@ export default async function Page({
           </div>
         </div>
       </div>
-    </PageLayout>
+    </>
   );
 }
 
