@@ -40,7 +40,7 @@ export default function Page({
         </div>
         <OverviewFiltersButtons />
       </StickyBelowHeader>
-      {/* <div className="grid grid-cols-6 gap-4 p-4">
+      <div className="grid grid-cols-6 gap-4 p-4">
         <div className="col-span-6">
           <OverviewLiveHistogram projectId={projectId} />
         </div>
@@ -50,7 +50,7 @@ export default function Page({
         <OverviewTopDevices projectId={projectId} />
         <OverviewTopEvents projectId={projectId} />
         <OverviewTopGeo projectId={projectId} />
-      </div> */}
+      </div>
     </>
   );
 }

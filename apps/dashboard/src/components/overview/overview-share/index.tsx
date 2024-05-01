@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
 import withSuspense from '@/hocs/with-suspense';
-import { Globe2Icon } from 'lucide-react';
 
 import { getShareByProjectId } from '@openpanel/db';
 
@@ -16,5 +15,5 @@ const OverviewShareServer = async ({ projectId }: Props) => {
 };
 
 export default withSuspense(OverviewShareServer, () => (
-  <Button icon={Globe2Icon}>Private</Button>
+  <Button>Private</Button>
 ));
