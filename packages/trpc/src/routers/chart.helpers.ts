@@ -1,10 +1,14 @@
 import {
+  differenceInMilliseconds,
   endOfDay,
+  endOfMonth,
   endOfYear,
+  formatISO,
   startOfDay,
   startOfMonth,
   startOfYear,
   subDays,
+  subMilliseconds,
   subMinutes,
   subMonths,
   subYears,
@@ -41,129 +45,6 @@ export interface ResultItem {
 
 function getEventLegend(event: IChartEvent) {
   return event.displayName ?? `${event.name} (${event.id})`;
-}
-
-function fillEmptySpotsInTimeline(
-  items: ResultItem[],
-  interval: IInterval,
-  startDate: string,
-  endDate: string
-) {
-  const result = [];
-  const clonedStartDate = new Date(startDate);
-  const clonedEndDate = new Date(endDate);
-  const today = new Date();
-
-  if (interval === 'minute') {
-    clonedStartDate.setUTCSeconds(0, 0);
-    clonedEndDate.setUTCMinutes(clonedEndDate.getUTCMinutes() + 1, 0, 0);
-  } else if (interval === 'hour') {
-    clonedStartDate.setUTCMinutes(0, 0, 0);
-    clonedEndDate.setUTCMinutes(0, 0, 0);
-  } else {
-    clonedStartDate.setUTCHours(0, 0, 0, 0);
-    clonedEndDate.setUTCHours(0, 0, 0, 0);
-  }
-
-  if (interval === 'month') {
-    clonedStartDate.setUTCDate(1);
-    clonedEndDate.setUTCDate(1);
-  }
-
-  // Force if interval is month and the start date is the same month as today
-  const shouldForce = () =>
-    interval === 'month' &&
-    clonedStartDate.getUTCFullYear() === today.getUTCFullYear() &&
-    clonedStartDate.getUTCMonth() === today.getUTCMonth();
-  let prev = undefined;
-  while (
-    shouldForce() ||
-    clonedStartDate.getTime() <= clonedEndDate.getTime()
-  ) {
-    if (prev === clonedStartDate.getTime()) {
-      break;
-    }
-    prev = clonedStartDate.getTime();
-
-    const getYear = (date: Date) => date.getUTCFullYear();
-    const getMonth = (date: Date) => date.getUTCMonth();
-    const getDay = (date: Date) => date.getUTCDate();
-    const getHour = (date: Date) => date.getUTCHours();
-    const getMinute = (date: Date) => date.getUTCMinutes();
-
-    const item = items.find((item) => {
-      const date = convertClickhouseDateToJs(item.date);
-
-      if (interval === 'month') {
-        return (
-          getYear(date) === getYear(clonedStartDate) &&
-          getMonth(date) === getMonth(clonedStartDate)
-        );
-      }
-      if (interval === 'day') {
-        return (
-          getYear(date) === getYear(clonedStartDate) &&
-          getMonth(date) === getMonth(clonedStartDate) &&
-          getDay(date) === getDay(clonedStartDate)
-        );
-      }
-      if (interval === 'hour') {
-        return (
-          getYear(date) === getYear(clonedStartDate) &&
-          getMonth(date) === getMonth(clonedStartDate) &&
-          getDay(date) === getDay(clonedStartDate) &&
-          getHour(date) === getHour(clonedStartDate)
-        );
-      }
-      if (interval === 'minute') {
-        return (
-          getYear(date) === getYear(clonedStartDate) &&
-          getMonth(date) === getMonth(clonedStartDate) &&
-          getDay(date) === getDay(clonedStartDate) &&
-          getHour(date) === getHour(clonedStartDate) &&
-          getMinute(date) === getMinute(clonedStartDate)
-        );
-      }
-
-      return false;
-    });
-
-    if (item) {
-      result.push({
-        ...item,
-        date: clonedStartDate.toISOString(),
-      });
-    } else {
-      result.push({
-        date: clonedStartDate.toISOString(),
-        count: 0,
-        label: null,
-      });
-    }
-
-    switch (interval) {
-      case 'day': {
-        clonedStartDate.setUTCDate(clonedStartDate.getUTCDate() + 1);
-        break;
-      }
-      case 'hour': {
-        clonedStartDate.setUTCHours(clonedStartDate.getUTCHours() + 1);
-        break;
-      }
-      case 'minute': {
-        clonedStartDate.setUTCMinutes(clonedStartDate.getUTCMinutes() + 1);
-        break;
-      }
-      case 'month': {
-        clonedStartDate.setUTCMonth(clonedStartDate.getUTCMonth() + 1);
-        break;
-      }
-    }
-  }
-
-  return sort(function (a, b) {
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
-  }, result);
 }
 
 export function withFormula(
@@ -235,6 +116,26 @@ export function withFormula(
   ];
 }
 
+const toDynamicISODateWithTZ = (
+  date: string,
+  blueprint: string,
+  interval: IInterval
+) => {
+  // If we have a space in the date we know it's a date with time
+  if (date.includes(' ')) {
+    // If interval is minutes we need to convert the timezone to what timezone is used (either on client or the server)
+    // - We use timezone from server if its a predefined range (yearToDate, lastYear, etc.)
+    // - We use timezone from client if its a custom range
+    if (interval === 'minute' || interval === 'hour') {
+      return date.replace(' ', 'T') + blueprint.slice(-6);
+    }
+    // Otherwise we just return without the timezone
+    // It will be converted to the correct timezone on the client
+    return date.replace(' ', 'T');
+  }
+  return `${date}T00:00:00`;
+};
+
 export async function getChartData(payload: IGetChartDataInput) {
   let result = await chQuery<ResultItem>(getChartSql(payload));
 
@@ -250,9 +151,15 @@ export async function getChartData(payload: IGetChartDataInput) {
   // group by sql label
   const series = result.reduce(
     (acc, item) => {
+      // If we fill empty spots in the timeline (clickhouse) we wont get a label back
+      // take the event name as label
+      if (!item.label && item.count === 0) {
+        item.label = payload.event.name;
+      }
+
+      const label = item.label?.trim() || NOT_SET_VALUE;
       // item.label can be null when using breakdowns on a property
       // that doesn't exist on all events
-      const label = item.label?.trim() || NOT_SET_VALUE;
       if (label) {
         if (acc[label]) {
           acc[label]?.push(item);
@@ -281,22 +188,25 @@ export async function getChartData(payload: IGetChartDataInput) {
       payload.chartType === 'metric' ||
       payload.chartType === 'pie' ||
       payload.chartType === 'bar'
-        ? fillEmptySpotsInTimeline(
-            series[key] ?? [],
-            payload.interval,
-            payload.startDate,
-            payload.endDate
-          ).map((item) => {
+        ? (series[key] ?? []).map((item) => {
             return {
               label: serieName,
               count: item.count ? round(item.count) : null,
-              date: new Date(item.date).toISOString(),
+              date: toDynamicISODateWithTZ(
+                item.date,
+                payload.startDate,
+                payload.interval
+              ),
             };
           })
         : (series[key] ?? []).map((item) => ({
             label: item.label,
             count: item.count ? round(item.count) : null,
-            date: new Date(item.date).toISOString(),
+            date: toDynamicISODateWithTZ(
+              item.date,
+              payload.startDate,
+              payload.interval
+            ),
           }));
 
     return {
@@ -310,8 +220,8 @@ export async function getChartData(payload: IGetChartDataInput) {
 export function getDatesFromRange(range: IChartRange) {
   if (range === '30min' || range === 'lastHour') {
     const minutes = range === '30min' ? 30 : 60;
-    const startDate = subMinutes(new Date(), minutes).toUTCString();
-    const endDate = new Date().toUTCString();
+    const startDate = formatISO(subMinutes(new Date(), minutes));
+    const endDate = formatISO(new Date());
 
     return {
       startDate,
@@ -320,18 +230,22 @@ export function getDatesFromRange(range: IChartRange) {
   }
 
   if (range === 'today') {
-    const startDate = startOfDay(new Date());
-    const endDate = endOfDay(new Date());
+    // This is last 24 hours instead
+    // Makes it easier to handle timezones
+    // const startDate = startOfDay(new Date());
+    // const endDate = endOfDay(new Date());
+    const startDate = subDays(new Date(), 1);
+    const endDate = new Date();
 
     return {
-      startDate: startDate.toUTCString(),
-      endDate: endDate.toUTCString(),
+      startDate: formatISO(startDate),
+      endDate: formatISO(endDate),
     };
   }
 
   if (range === '7d') {
-    const startDate = subDays(new Date(), 7).toUTCString();
-    const endDate = new Date().toUTCString();
+    const startDate = formatISO(subDays(new Date(), 7));
+    const endDate = formatISO(new Date());
 
     return {
       startDate,
@@ -340,8 +254,8 @@ export function getDatesFromRange(range: IChartRange) {
   }
 
   if (range === '30d') {
-    const startDate = subDays(new Date(), 30).toUTCString();
-    const endDate = new Date().toUTCString();
+    const startDate = formatISO(subDays(new Date(), 30));
+    const endDate = formatISO(new Date());
 
     return {
       startDate,
@@ -350,8 +264,8 @@ export function getDatesFromRange(range: IChartRange) {
   }
 
   if (range === 'monthToDate') {
-    const startDate = startOfMonth(new Date()).toUTCString();
-    const endDate = new Date().toUTCString();
+    const startDate = formatISO(startOfMonth(new Date()));
+    const endDate = formatISO(new Date());
 
     return {
       startDate,
@@ -361,8 +275,8 @@ export function getDatesFromRange(range: IChartRange) {
 
   if (range === 'lastMonth') {
     const month = subMonths(new Date(), 1);
-    const startDate = startOfMonth(month).toUTCString();
-    const endDate = endOfDay(month).toUTCString();
+    const startDate = formatISO(startOfMonth(month));
+    const endDate = formatISO(endOfMonth(month));
 
     return {
       startDate,
@@ -371,8 +285,8 @@ export function getDatesFromRange(range: IChartRange) {
   }
 
   if (range === 'yearToDate') {
-    const startDate = startOfYear(new Date()).toUTCString();
-    const endDate = new Date().toUTCString();
+    const startDate = formatISO(startOfYear(new Date()));
+    const endDate = formatISO(new Date());
 
     return {
       startDate,
@@ -382,8 +296,8 @@ export function getDatesFromRange(range: IChartRange) {
 
   if (range === 'lastYear') {
     const year = subYears(new Date(), 1);
-    const startDate = startOfYear(year).toUTCString();
-    const endDate = endOfYear(year).toUTCString();
+    const startDate = formatISO(startOfYear(year));
+    const endDate = formatISO(endOfYear(year));
 
     return {
       startDate,
@@ -391,20 +305,9 @@ export function getDatesFromRange(range: IChartRange) {
     };
   }
 
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
-  console.log('-------------------------------');
   return {
-    startDate: subDays(new Date(), 30).toISOString(),
-    endDate: new Date().toISOString(),
+    startDate: formatISO(subDays(new Date(), 30)),
+    endDate: formatISO(new Date()),
   };
 }
 
@@ -421,16 +324,15 @@ export function getChartStartEndDate({
 export function getChartPrevStartEndDate({
   startDate,
   endDate,
-  range,
 }: {
   startDate: string;
   endDate: string;
   range: IChartRange;
 }) {
-  const diff = new Date(endDate).getTime() - new Date(startDate).getTime();
+  const diff = differenceInMilliseconds(new Date(endDate), new Date(startDate));
   return {
-    startDate: new Date(new Date(startDate).getTime() - diff).toISOString(),
-    endDate: new Date(new Date(endDate).getTime() - diff).toISOString(),
+    startDate: formatISO(subMilliseconds(new Date(startDate), diff - 1)),
+    endDate: formatISO(subMilliseconds(new Date(endDate), diff - 1)),
   };
 }
 

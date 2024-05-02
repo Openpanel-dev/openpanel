@@ -1,6 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import { isSameDay, isSameMonth } from 'date-fns';
+import {
+  endOfDay,
+  formatISO,
+  isSameDay,
+  isSameMonth,
+  startOfDay,
+} from 'date-fns';
 
 import {
   alphabetIds,
@@ -188,8 +194,8 @@ export const reportSlice = createSlice({
       }>
     ) => {
       state.dirty = true;
-      state.startDate = action.payload.startDate;
-      state.endDate = action.payload.endDate;
+      state.startDate = formatISO(startOfDay(action.payload.startDate));
+      state.endDate = formatISO(endOfDay(action.payload.endDate));
 
       if (isSameDay(state.startDate, state.endDate)) {
         state.interval = 'hour';
@@ -203,7 +209,7 @@ export const reportSlice = createSlice({
     // Date range
     changeStartDate: (state, action: PayloadAction<string>) => {
       state.dirty = true;
-      state.startDate = action.payload;
+      state.startDate = formatISO(startOfDay(action.payload));
 
       const interval = getDefaultIntervalByDates(
         state.startDate,
@@ -217,7 +223,7 @@ export const reportSlice = createSlice({
     // Date range
     changeEndDate: (state, action: PayloadAction<string>) => {
       state.dirty = true;
-      state.endDate = action.payload;
+      state.endDate = formatISO(endOfDay(action.payload));
 
       const interval = getDefaultIntervalByDates(
         state.startDate,

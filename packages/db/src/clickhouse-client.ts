@@ -15,6 +15,7 @@ export const ch = createClient({
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string
 ): Promise<ResponseJSON<T>> {
+  console.log('Query:', query);
   const start = Date.now();
   const res = await ch.query({
     query,
@@ -39,7 +40,6 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
 
   console.log(`Clickhouse query took ${response.statistics?.elapsed}ms`);
   console.log(`chQuery took ${Date.now() - start}ms`);
-  console.log('Query:', query);
 
   return response;
 }
@@ -52,7 +52,11 @@ export async function chQuery<T extends Record<string, any>>(
 
 export function formatClickhouseDate(_date: Date | string) {
   const date = typeof _date === 'string' ? new Date(_date) : _date;
-  return date.toISOString().replace('T', ' ').replace(/Z+$/, '');
+  return date
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/Z+$/, '')
+    .replace(/\.[0-9]+$/, '');
 }
 
 export function convertClickhouseDateToJs(date: string) {

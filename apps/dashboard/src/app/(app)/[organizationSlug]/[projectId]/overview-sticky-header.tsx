@@ -2,6 +2,7 @@
 
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { TimeWindowPicker } from '@/components/time-window-picker';
+import { endOfDay, formatISO, startOfDay } from 'date-fns';
 
 export function OverviewReportRange() {
   const { range, setRange, setStartDate, setEndDate, endDate, startDate } =
@@ -11,8 +12,14 @@ export function OverviewReportRange() {
     <TimeWindowPicker
       onChange={setRange}
       value={range}
-      onStartDateChange={(date) => setStartDate(date)}
-      onEndDateChange={(date) => setEndDate(date)}
+      onStartDateChange={(date) => {
+        const d = formatISO(startOfDay(new Date(date)));
+        setStartDate(d);
+      }}
+      onEndDateChange={(date) => {
+        const d = formatISO(endOfDay(new Date(date)));
+        setEndDate(d);
+      }}
       endDate={endDate}
       startDate={startDate}
     />

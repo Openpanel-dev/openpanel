@@ -15,7 +15,7 @@ export const timeWindows = {
   },
   today: {
     key: 'today',
-    label: 'Today',
+    label: '24 hours',
     shortcut: 'D',
   },
   '7d': {

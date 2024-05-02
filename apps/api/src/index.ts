@@ -56,8 +56,8 @@ const startServer = async () => {
         onError(error: unknown) {
           if (error instanceof Error) {
             logger.error(error, error.message);
-          } else {
-            logger.error(error, 'Unknown error trpc error');
+          } else if (error && typeof error === 'object' && 'error' in error) {
+            logger.error(error.error, 'Unknown error trpc error');
           }
         },
       } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
