@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "date-fns": "^3.3.1",
     "mathjs": "^12.3.2",
     "ramda": "^0.29.1",
     "slugify": "^1.6.6",
@@ -15,6 +16,7 @@
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
+    "@openpanel/validation": "workspace:*",
     "@openpanel/eslint-config": "workspace:*",
     "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",

@@ -184,7 +184,7 @@ export const chartRouter = createTRPCRouter({
     }),
 
   // TODO: Make this private
-  chart: publicProcedure.input(zChartInput).query(async ({ input, ctx }) => {
+  chart: publicProcedure.input(zChartInput).query(async ({ input }) => {
     const currentPeriod = getChartStartEndDate(input);
     const previousPeriod = getChartPrevStartEndDate({
       range: input.range,

@@ -23,35 +23,29 @@ export function getChartSql({
   sb.where = getEventFiltersWhereClause(event.filters);
   sb.where.projectId = `project_id = ${escape(projectId)}`;
 
-  let labelValue = escape('*');
   if (event.name !== '*') {
-    labelValue = `${escape(event.name)}`;
-    sb.select.label = `${labelValue} as label`;
-    sb.where.eventName = `name = ${labelValue}`;
+    sb.select.label = `${escape(event.name)} as label`;
+    sb.where.eventName = `name = ${escape(event.name)}`;
   } else {
-    sb.select.label = `${labelValue} as label`;
+    sb.select.label = `'*' as label`;
   }
 
   sb.select.count = `count(*) as count`;
   switch (interval) {
     case 'minute': {
       sb.select.date = `toStartOfMinute(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
-      sb.orderBy.date = `date ASC WITH FILL FROM toStartOfMinute(toTimeZone(toDateTime('${formatClickhouseDate(startDate)}'), '${getTimezoneFromDateString(startDate)}')) TO toStartOfMinute(toTimeZone(toDateTime('${formatClickhouseDate(endDate)}'), '${getTimezoneFromDateString(startDate)}')) STEP toIntervalMinute(1) INTERPOLATE ( label as ${labelValue} )`;
       break;
     }
     case 'hour': {
       sb.select.date = `toStartOfHour(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
-      sb.orderBy.date = `date ASC WITH FILL FROM toStartOfHour(toTimeZone(toDateTime('${formatClickhouseDate(startDate)}'), '${getTimezoneFromDateString(startDate)}')) TO toStartOfHour(toTimeZone(toDateTime('${formatClickhouseDate(endDate)}'), '${getTimezoneFromDateString(startDate)}')) STEP toIntervalHour(1) INTERPOLATE ( label as ${labelValue} )`;
       break;
     }
     case 'day': {
       sb.select.date = `toStartOfDay(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
-      sb.orderBy.date = `date ASC WITH FILL FROM toStartOfDay(toTimeZone(toDateTime('${formatClickhouseDate(startDate)}'), '${getTimezoneFromDateString(startDate)}')) TO toStartOfDay(toTimeZone(toDateTime('${formatClickhouseDate(endDate)}'), '${getTimezoneFromDateString(startDate)}')) STEP toIntervalDay(1) INTERPOLATE ( label as ${labelValue} )`;
       break;
     }
     case 'month': {
       sb.select.date = `toStartOfMonth(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
-      sb.orderBy.date = `date ASC WITH FILL FROM toStartOfMonth(toTimeZone(toDateTime('${formatClickhouseDate(startDate)}'), '${getTimezoneFromDateString(startDate)}')) TO toStartOfMonth(toTimeZone(toDateTime('${formatClickhouseDate(endDate)}'), '${getTimezoneFromDateString(startDate)}')) STEP toIntervalMonth(1) INTERPOLATE ( label as ${labelValue} )`;
       break;
     }
   }

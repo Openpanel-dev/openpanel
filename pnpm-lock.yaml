@@ -763,6 +763,9 @@ importers:
 
   packages/common:
     dependencies:
+      date-fns:
+        specifier: ^3.3.1
+        version: 3.3.1
       mathjs:
         specifier: ^12.3.2
         version: 12.3.2
@@ -788,6 +791,9 @@ importers:
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@openpanel/validation':
+        specifier: workspace:*
+        version: link:../validation
       '@types/node':
         specifier: ^18.16.0
         version: 18.19.17

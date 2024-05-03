@@ -17,7 +17,7 @@ import * as mathjs from 'mathjs';
 import { repeat, reverse, sort } from 'ramda';
 import { escape } from 'sqlstring';
 
-import { round } from '@openpanel/common';
+import { completeTimeline, round } from '@openpanel/common';
 import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
 import {
   chQuery,
@@ -133,88 +133,59 @@ const toDynamicISODateWithTZ = (
     // It will be converted to the correct timezone on the client
     return date.replace(' ', 'T');
   }
-  return `${date}T00:00:00`;
+  return `${date}T00:00:00Z`;
 };
 
 export async function getChartData(payload: IGetChartDataInput) {
-  let result = await chQuery<ResultItem>(getChartSql(payload));
-
-  if (result.length === 0 && payload.breakdowns.length > 0) {
-    result = await chQuery<ResultItem>(
-      getChartSql({
-        ...payload,
-        breakdowns: [],
-      })
-    );
+  async function getSeries() {
+    const result = await chQuery<ResultItem>(getChartSql(payload));
+    if (result.length === 0 && payload.breakdowns.length > 0) {
+      return await chQuery<ResultItem>(
+        getChartSql({
+          ...payload,
+          breakdowns: [],
+        })
+      );
+    }
+    return result;
   }
 
-  // group by sql label
-  const series = result.reduce(
-    (acc, item) => {
-      // If we fill empty spots in the timeline (clickhouse) we wont get a label back
-      // take the event name as label
-      if (!item.label && item.count === 0) {
-        item.label = payload.event.name;
-      }
+  return getSeries()
+    .then((data) =>
+      completeTimeline(
+        data.map((item) => {
+          const label = item.label?.trim() || NOT_SET_VALUE;
 
-      const label = item.label?.trim() || NOT_SET_VALUE;
-      // item.label can be null when using breakdowns on a property
-      // that doesn't exist on all events
-      if (label) {
-        if (acc[label]) {
-          acc[label]?.push(item);
-        } else {
-          acc[label] = [item];
-        }
-      }
-
-      return {
-        ...acc,
-      };
-    },
-    {} as Record<string, ResultItem[]>
-  );
-
-  return Object.keys(series).map((key) => {
-    // If we have breakdowns, we want to use the breakdown key as the legend
-    // But only if it successfully broke it down, otherwise we use the getEventLabel
-    const isBreakdown =
-      payload.breakdowns.length && !alphabetIds.includes(key as 'A');
-    const serieName = isBreakdown ? key : getEventLegend(payload.event);
-    const data =
-      payload.chartType === 'area' ||
-      payload.chartType === 'linear' ||
-      payload.chartType === 'histogram' ||
-      payload.chartType === 'metric' ||
-      payload.chartType === 'pie' ||
-      payload.chartType === 'bar'
-        ? (series[key] ?? []).map((item) => {
-            return {
-              label: serieName,
-              count: item.count ? round(item.count) : null,
-              date: toDynamicISODateWithTZ(
-                item.date,
-                payload.startDate,
-                payload.interval
-              ),
-            };
-          })
-        : (series[key] ?? []).map((item) => ({
-            label: item.label,
+          return {
+            ...item,
             count: item.count ? round(item.count) : null,
+            label,
+          };
+        }),
+        payload.startDate,
+        payload.endDate,
+        payload.interval
+      )
+    )
+    .then((series) => {
+      return Object.keys(series).map((label) => {
+        const isBreakdown =
+          payload.breakdowns.length && !alphabetIds.includes(label as 'A');
+        const serieLabel = isBreakdown ? label : getEventLegend(payload.event);
+        return {
+          name: serieLabel,
+          event: payload.event,
+          data: series[label]!.map((item) => ({
+            ...item,
             date: toDynamicISODateWithTZ(
               item.date,
               payload.startDate,
               payload.interval
             ),
-          }));
-
-    return {
-      name: serieName,
-      event: payload.event,
-      data,
-    };
-  });
+          })),
+        };
+      });
+    });
 }
 
 export function getDatesFromRange(range: IChartRange) {
