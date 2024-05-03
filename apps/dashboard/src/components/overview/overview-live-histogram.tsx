@@ -135,18 +135,11 @@ interface WrapperProps {
 function Wrapper({ open, children, count }: WrapperProps) {
   return (
     <AnimateHeight open={open}>
-      <div className="flex flex-col items-end md:flex-row">
-        <div className="md:card flex items-end max-md:mb-2 max-md:w-full max-md:justify-between md:mr-2 md:flex-col md:p-4">
-          <div className="text-sm max-md:mb-1">Last 30 minutes</div>
-          <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">
-            {count}
-          </div>
+      <div className="flex flex-col">
+        <div className="relative -top-2 text-center text-xs font-medium text-muted-foreground">
+          {count} unique vistors last 30 minutes
         </div>
-        <div className="relative flex aspect-[5/1] max-h-[150px] w-full flex-1 items-end gap-0.5 md:gap-2">
-          <div className="absolute -top-3 right-0 text-xs text-muted-foreground">
-            NOW
-          </div>
-          {/* <div className="md:absolute top-0 left-0 md:card md:p-4 mr-2 md:bg-background/90 z-50"> */}
+        <div className="relative flex aspect-[6/1] max-h-[150px] w-full flex-1 items-end gap-0.5 md:aspect-[10/1] md:gap-2">
           {children}
         </div>
       </div>

@@ -57,24 +57,23 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'group relative h-[70px] overflow-hidden',
-        '[#report-editor_&&]:card [#report-editor_&&]:px-4 [#report-editor_&&]:py-2'
+        'group relative h-[70px] overflow-hidden'
+        // '[#report-editor_&&]:card [#report-editor_&&]:px-4 [#report-editor_&&]:py-2'
       )}
       key={serie.name}
     >
       <div
         className={cn(
-          'absolute -right-1 bottom-2 top-0 z-0 rounded-md opacity-20 transition-opacity duration-300 group-hover:opacity-50',
-          previous ? 'left-[80px]' : '-left-1'
+          'pointer-events-none absolute -bottom-1 -left-1 -right-1 top-0 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50'
         )}
       >
         <AutoSizer>
           {({ width, height }) => (
             <AreaChart
               width={width}
-              height={height / 3}
+              height={height / 2.5}
               data={serie.data}
-              style={{ marginTop: (height / 3) * 2 }}
+              style={{ marginTop: (height / 2.5) * 1.5 }}
             >
               <Area
                 dataKey="count"
@@ -105,11 +104,11 @@ export function MetricCard({
           <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">
             {renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
           </div>
+          <PreviousDiffIndicatorText
+            {...previous}
+            className="mb-0.5 text-xs font-medium"
+          />
         </div>
-        <PreviousDiffIndicatorText
-          {...previous}
-          className="mb-0.5 text-xs font-medium"
-        />
       </div>
     </div>
   );

@@ -192,13 +192,13 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 
   return (
     <div className="card col-span-6 p-4">
-      <div className="mb-2 grid grid-cols-6 gap-2">
+      <div className="-mx-2 -mt-2 mb-2 grid grid-cols-6 gap-2">
         {reports.map((report, index) => (
           <button
             key={index}
             className={cn(
-              'col-span-3 rounded p-2 transition-all max-md:flex-1 md:col-span-2 lg:col-span-1 [&_[role="heading"]]:text-sm',
-              index === metric && 'border-l-4 border-blue-600 bg-slate-50'
+              'col-span-3 rounded-lg border border-background p-2 transition-all max-md:flex-1 md:col-span-2 lg:col-span-1 [&_[role="heading"]]:text-xs',
+              index === metric && 'border-border'
             )}
             onClick={() => {
               setMetric(index);
