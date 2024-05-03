@@ -127,7 +127,11 @@ const toDynamicISODateWithTZ = (
     // - We use timezone from server if its a predefined range (yearToDate, lastYear, etc.)
     // - We use timezone from client if its a custom range
     if (interval === 'minute' || interval === 'hour') {
-      return date.replace(' ', 'T') + blueprint.slice(-6);
+      return (
+        date.replace(' ', 'T') +
+        // Only append timezone if it's not UTC (Z)
+        (blueprint.match(/[+-]\d{2}:\d{2}/) ? blueprint.slice(-6) : 'Z')
+      );
     }
     // Otherwise we just return without the timezone
     // It will be converted to the correct timezone on the client
