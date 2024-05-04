@@ -182,18 +182,26 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       if (duration < 0) {
         job.log(`prevEvent ${JSON.stringify(prevEvent, null, 2)}`);
       } else {
-        // Skip update duration if it's wrong
-        // Seems like request is not in right order
-        await prevEventJob.updateData({
-          type: 'createEvent',
-          payload: {
-            ...prevEvent,
-            duration,
-          },
-        });
+        try {
+          // Skip update duration if it's wrong
+          // Seems like request is not in right order
+          await prevEventJob.updateData({
+            type: 'createEvent',
+            payload: {
+              ...prevEvent,
+              duration,
+            },
+          });
+        } catch (e) {
+          job.log(`Failed to update duration: ${e.message}`);
+        }
       }
 
-      await prevEventJob.promote();
+      try {
+        await prevEventJob.promote();
+      } catch (e) {
+        job.log(`Failed to promote job: ${e.message}`);
+      }
     }
   } else if (payload.name !== 'screen_view') {
     job.log(
