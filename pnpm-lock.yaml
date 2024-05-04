@@ -690,6 +690,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@baselime/pino-transport':
+        specifier: ^0.1.5
+        version: 0.1.5
       '@bull-board/api':
         specifier: ^5.13.0
         version: 5.14.1(@bull-board/ui@5.14.1)
@@ -717,6 +720,9 @@ importers:
       express:
         specifier: ^4.18.2
         version: 4.18.2
+      pino:
+        specifier: ^8.17.2
+        version: 8.19.0
       ramda:
         specifier: ^0.29.1
         version: 0.29.1
