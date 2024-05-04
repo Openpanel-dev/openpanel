@@ -1,3 +1,4 @@
+import { logger } from '@/utils/logger';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
 import { isUserAgentSet, parseUserAgent } from '@/utils/parse-user-agent';
 import { isSameDomain, parsePath } from '@/utils/url';
@@ -192,15 +193,31 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
               duration,
             },
           });
-        } catch (e) {
-          job.log(`Failed to update duration: ${e.message}`);
+        } catch (error) {
+          logger.error(
+            {
+              error,
+              prevEventJobStatus: await prevEventJob
+                .getState()
+                .catch(() => 'unknown'),
+            },
+            `Failed update delayed job`
+          );
         }
       }
 
       try {
         await prevEventJob.promote();
-      } catch (e) {
-        job.log(`Failed to promote job: ${e.message}`);
+      } catch (error) {
+        logger.error(
+          {
+            error,
+            prevEventJobStatus: await prevEventJob
+              .getState()
+              .catch(() => 'unknown'),
+          },
+          `Failed to promote job`
+        );
       }
     }
   } else if (payload.name !== 'screen_view') {

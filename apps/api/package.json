@@ -18,6 +18,7 @@
     "@fastify/websocket": "^8.3.1",
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
+    "@openpanel/logger": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/trpc": "workspace:*",

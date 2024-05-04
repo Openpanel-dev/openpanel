@@ -1,25 +1,6 @@
-import type { TransportTargetOptions } from 'pino';
-import pino from 'pino';
+import { createLogger } from '@openpanel/logger';
 
-const targets: TransportTargetOptions[] =
-  process.env.NODE_ENV === 'production'
-    ? [
-        {
-          target: '@baselime/pino-transport',
-          options: { baselimeApiKey: process.env.BASELIME_API_KEY },
-        },
-      ]
-    : [
-        {
-          target: 'pino-pretty',
-        },
-      ];
-
-const transport = pino.transport({
-  targets,
-});
-
-export const logger = pino(transport);
+export const logger = createLogger({ target: 'api' });
 
 export function logInfo(msg: string, obj?: unknown) {
   logger.info(obj, msg);

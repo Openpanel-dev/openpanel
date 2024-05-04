@@ -1,0 +1,32 @@
+{
+  "name": "@openpanel/logger",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@baselime/pino-transport": "^0.1.5",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1"
+  },
+  "devDependencies": {
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
+    "date-fns": "^3.3.1",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "prisma": "^5.1.1",
+    "typescript": "^5.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@openpanel/eslint-config/base"
+    ]
+  },
+  "prettier": "@openpanel/prettier-config"
+}

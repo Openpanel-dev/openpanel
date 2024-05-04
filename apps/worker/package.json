@@ -14,6 +14,7 @@
     "@bull-board/api": "^5.13.0",
     "@bull-board/express": "^5.13.0",
     "@openpanel/common": "workspace:*",
+    "@openpanel/logger": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
