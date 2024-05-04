@@ -1,6 +1,6 @@
 import { createLogger } from '@openpanel/logger';
 
-export const logger = createLogger({ target: 'api' });
+export const logger = createLogger({ dataset: 'api' });
 
 export function logInfo(msg: string, obj?: unknown) {
   logger.info(obj, msg);
