@@ -47,6 +47,9 @@ importers:
       '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@openpanel/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -699,6 +702,9 @@ importers:
       '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@openpanel/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
       '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -897,6 +903,43 @@ importers:
       '@types/uuid':
         specifier: ^9.0.8
         version: 9.0.8
+      eslint:
+        specifier: ^8.48.0
+        version: 8.56.0
+      prettier:
+        specifier: ^3.0.3
+        version: 3.2.5
+      prisma:
+        specifier: ^5.1.1
+        version: 5.9.1
+      typescript:
+        specifier: ^5.2.2
+        version: 5.3.3
+
+  packages/logger:
+    dependencies:
+      '@baselime/pino-transport':
+        specifier: ^0.1.5
+        version: 0.1.5
+      pino:
+        specifier: ^8.17.2
+        version: 8.19.0
+      pino-pretty:
+        specifier: ^10.3.1
+        version: 10.3.1
+    devDependencies:
+      '@openpanel/eslint-config':
+        specifier: workspace:*
+        version: link:../../tooling/eslint
+      '@openpanel/prettier-config':
+        specifier: workspace:*
+        version: link:../../tooling/prettier
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      date-fns:
+        specifier: ^3.3.1
+        version: 3.3.1
       eslint:
         specifier: ^8.48.0
         version: 8.56.0
