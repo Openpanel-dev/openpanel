@@ -20,6 +20,7 @@ function toCamelCase(str: string) {
 
 export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
   private lastPath = '';
+  private debounceTimer: number | undefined;
 
   constructor(options: OpenpanelOptions) {
     super(options);
@@ -41,6 +42,11 @@ export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
         this.trackAttributes();
       }
     }
+  }
+
+  private debounce(func: () => void, delay: number) {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(func, delay);
   }
 
   private isServer() {
@@ -92,20 +98,20 @@ export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
       return ret;
     };
 
-    window.addEventListener('popstate', () =>
-      window.dispatchEvent(new Event('locationchange'))
-    );
+    window.addEventListener('popstate', function () {
+      window.dispatchEvent(new Event('locationchange'));
+    });
+
+    const eventHandler = () => this.debounce(() => this.screenView(), 50);
 
     if (this.options.hash) {
-      window.addEventListener('hashchange', () => this.screenView());
+      window.addEventListener('hashchange', eventHandler);
     } else {
-      window.addEventListener('locationchange', () => this.screenView());
+      window.addEventListener('locationchange', eventHandler);
     }
 
     // give time for setProfile to be called
-    setTimeout(() => {
-      this.screenView();
-    }, 50);
+    setTimeout(() => eventHandler(), 50);
   }
 
   public trackAttributes() {
