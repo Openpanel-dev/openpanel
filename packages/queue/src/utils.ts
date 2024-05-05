@@ -5,5 +5,5 @@ export async function findJobByPrefix<T>(
   matcher: string
 ) {
   const delayed = await queue.getJobs('delayed');
-  return delayed.find((job) => job.opts.jobId?.startsWith(matcher));
+  return delayed.find((job) => job?.opts?.jobId?.startsWith(matcher));
 }

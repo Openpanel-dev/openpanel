@@ -215,6 +215,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
             prevEventJobStatus: await prevEventJob
               .getState()
               .catch(() => 'unknown'),
+            prevEvent,
+            currEvent: payload,
           },
           `Failed to promote job`
         );
