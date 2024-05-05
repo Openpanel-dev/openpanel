@@ -28,11 +28,13 @@ export async function validateSdkRequest(
     throw new Error('Ingestion: Missing client id');
   }
 
-  const client = await db.client.findUnique({
-    where: {
-      id: clientId,
-    },
-  });
+  const client = await db.client
+    .findUnique({
+      where: {
+        id: clientId,
+      },
+    })
+    .catch(() => null);
 
   if (!client) {
     throw new Error('Ingestion: Invalid client id');

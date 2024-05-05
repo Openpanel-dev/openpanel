@@ -7,9 +7,10 @@ import type { FastifyPluginCallback } from 'fastify';
 const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.addHook('preHandler', async (req, reply) => {
     try {
-      const projectId = await validateSdkRequest(req.headers).catch(
-        logger.error
-      );
+      const projectId = await validateSdkRequest(req.headers).catch((error) => {
+        logger.error(error, 'Failed to validate sdk request');
+        return null;
+      });
       if (!projectId) {
         return reply.status(401).send();
       }
