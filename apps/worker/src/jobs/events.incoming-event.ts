@@ -181,7 +181,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
 
     if (payload.name === 'screen_view') {
       if (duration < 0) {
-        job.log(`prevEvent ${JSON.stringify(prevEvent, null, 2)}`);
+        logger.info({ prevEvent, payload }, 'Duration is negative');
       } else {
         try {
           // Skip update duration if it's wrong
