@@ -52,11 +52,7 @@ export async function chQuery<T extends Record<string, any>>(
 
 export function formatClickhouseDate(_date: Date | string) {
   const date = typeof _date === 'string' ? new Date(_date) : _date;
-  return date
-    .toISOString()
-    .replace('T', ' ')
-    .replace(/Z+$/, '')
-    .replace(/\.[0-9]+$/, '');
+  return date.toISOString().replace('T', ' ').replace(/Z+$/, '');
 }
 
 export function convertClickhouseDateToJs(date: string) {
