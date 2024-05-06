@@ -24,6 +24,7 @@ export async function updateProfile(
 
   await upsertProfile({
     id: profileId,
+    isExternal: true,
     projectId,
     properties: {
       ...(properties ?? {}),
@@ -45,7 +46,7 @@ export async function incrementProfileProperty(
   const { profileId, property, value } = request.body;
   const projectId = request.projectId;
 
-  const profile = await getProfileById(profileId);
+  const profile = await getProfileById(profileId, projectId);
   if (!profile) {
     return reply.status(404).send('Not found');
   }
@@ -69,6 +70,7 @@ export async function incrementProfileProperty(
     id: profile.id,
     projectId,
     properties: profile.properties,
+    isExternal: true,
   });
 
   reply.status(202).send(profile.id);
@@ -83,7 +85,7 @@ export async function decrementProfileProperty(
   const { profileId, property, value } = request.body;
   const projectId = request.projectId;
 
-  const profile = await getProfileById(profileId);
+  const profile = await getProfileById(profileId, projectId);
   if (!profile) {
     return reply.status(404).send('Not found');
   }
@@ -107,6 +109,7 @@ export async function decrementProfileProperty(
     id: profile.id,
     projectId,
     properties: profile.properties,
+    isExternal: true,
   });
 
   reply.status(202).send(profile.id);

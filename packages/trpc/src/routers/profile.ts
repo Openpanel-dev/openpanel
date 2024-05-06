@@ -20,7 +20,7 @@ export const profileRouter = createTRPCRouter({
         .map((item) => item.replace(/\.([0-9]+)/g, '[*]'))
         .map((item) => `properties.${item}`);
 
-      properties.push('external_id', 'first_name', 'last_name', 'email');
+      properties.push('id', 'first_name', 'last_name', 'email');
 
       return pipe(
         sort<string>((a, b) => a.length - b.length),

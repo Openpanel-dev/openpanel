@@ -58,7 +58,7 @@ export default async function Page({
   const startDate = parseAsString.parseServerSide(searchParams.startDate);
   const endDate = parseAsString.parseServerSide(searchParams.endDate);
   const [profile, events, count, conversions] = await Promise.all([
-    getProfileById(profileId),
+    getProfileById(profileId, projectId),
     getEventList(eventListOptions),
     getEventsCount(eventListOptions),
     getConversionEventNames(projectId),

@@ -3,7 +3,7 @@ import { escape } from 'sqlstring';
 import superjson from 'superjson';
 import { v4 as uuid } from 'uuid';
 
-import { randomSplitName, toDots } from '@openpanel/common';
+import { toDots } from '@openpanel/common';
 import { redis, redisPub } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
@@ -215,14 +215,14 @@ export async function createEvent(
     `create event ${payload.name} for deviceId: ${payload.deviceId} profileId ${payload.profileId}`
   );
 
-  const exists = await getProfileById(payload.profileId);
+  const exists = await getProfileById(payload.profileId, payload.projectId);
   if (!exists && payload.profileId !== '') {
-    const { firstName, lastName } = randomSplitName();
     await upsertProfile({
       id: payload.profileId,
+      isExternal: false,
       projectId: payload.projectId,
-      firstName,
-      lastName,
+      firstName: '',
+      lastName: '',
       properties: {
         path: payload.path,
         country: payload.country,

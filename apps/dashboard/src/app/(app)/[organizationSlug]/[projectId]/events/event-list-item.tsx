@@ -6,6 +6,7 @@ import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
+import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
 
 import type {
@@ -96,10 +97,7 @@ export function EventListItem(props: EventListItemProps) {
           </div>
         </div>
         <div className="flex gap-4">
-          <Tooltiper
-            asChild
-            content={`${profile?.firstName} ${profile?.lastName}`}
-          >
+          <Tooltiper asChild content={getProfileName(profile)}>
             <Link
               prefetch={false}
               onClick={(e) => {
@@ -108,7 +106,7 @@ export function EventListItem(props: EventListItemProps) {
               href={`/${organizationSlug}/${projectId}/profiles/${profile?.id}`}
               className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted-foreground hover:underline"
             >
-              {profile?.firstName} {profile?.lastName}
+              {getProfileName(profile)}
             </Link>
           </Tooltiper>
 

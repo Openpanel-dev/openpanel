@@ -7,13 +7,13 @@ import { ch, chQuery } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
 
-export async function getProfileById(id: string) {
-  if (id === '') {
+export async function getProfileById(id: string, projectId: string) {
+  if (id === '' || projectId === '') {
     return null;
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT *, created_at as max_created_at FROM profiles WHERE id = ${escape(id)} ORDER BY created_at DESC LIMIT 1`
+    `SELECT *, created_at as max_created_at FROM profiles WHERE id = ${escape(id)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
   );
 
   if (!profile) {
@@ -39,6 +39,7 @@ function getProfileSelectFields() {
     'argMax(avatar, created_at) as avatar',
     'argMax(properties, created_at) as properties',
     'argMax(project_id, created_at) as project_id',
+    'argMax(is_external, created_at) as is_external',
     'max(created_at) as max_created_at',
   ].join(', ');
 }
@@ -109,32 +110,14 @@ export async function getProfileListCount({
   return data?.count ?? 0;
 }
 
-export async function getProfilesByExternalId(
-  externalId: string | null,
-  projectId: string
-) {
-  if (externalId === null) {
-    return [];
-  }
-
-  const data = await chQuery<IClickhouseProfile>(
-    `SELECT 
-    ${getProfileSelectFields()}
-    FROM profiles 
-    GROUP BY id
-    HAVING project_id = ${escape(projectId)} AND external_id = ${escape(externalId)}`
-  );
-
-  return data.map(transformProfile);
-}
-
 export type IServiceProfile = Omit<
   IClickhouseProfile,
-  'max_created_at' | 'properties' | 'first_name' | 'last_name'
+  'max_created_at' | 'properties' | 'first_name' | 'last_name' | 'is_external'
 > & {
   firstName: string;
   lastName: string;
   createdAt: Date;
+  isExternal: boolean;
   properties: Record<string, unknown> & {
     country?: string;
     city?: string;
@@ -155,6 +138,7 @@ export interface IClickhouseProfile {
   avatar: string;
   properties: Record<string, string | undefined>;
   project_id: string;
+  is_external: boolean;
   max_created_at: string;
 }
 
@@ -166,6 +150,7 @@ export interface IServiceUpsertProfile {
   email?: string;
   avatar?: string;
   properties?: Record<string, unknown>;
+  isExternal: boolean;
 }
 
 export function transformProfile({
@@ -178,6 +163,7 @@ export function transformProfile({
     ...profile,
     firstName: first_name,
     lastName: last_name,
+    isExternal: profile.is_external,
     properties: toObject(profile.properties),
     createdAt: new Date(max_created_at),
   };

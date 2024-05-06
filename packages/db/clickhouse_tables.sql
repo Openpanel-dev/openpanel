@@ -43,7 +43,6 @@ ORDER BY
 
 CREATE TABLE openpanel.profiles (
   `id` String,
-  `external_id` String,
   `first_name` String,
   `last_name` String,
   `email` String,
@@ -91,3 +90,22 @@ FROM
 GROUP BY
   date,
   project_id;
+
+-- DROP external_id and add is_external column
+ALTER TABLE
+  profiles DROP COLUMN external_id;
+
+ALTER TABLE
+  profiles
+ADD
+  COLUMN is_external Boolean
+AFTER
+  id;
+
+ALTER TABLE
+  profiles
+UPDATE
+  is_external = length(id) != 32
+WHERE
+  true
+  and length(id) != 32;
