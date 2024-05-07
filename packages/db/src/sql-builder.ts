@@ -1,5 +1,6 @@
 export interface SqlBuilderObject {
   where: Record<string, string>;
+  having: Record<string, string>;
   select: Record<string, string>;
   groupBy: Record<string, string>;
   orderBy: Record<string, string>;
@@ -18,12 +19,15 @@ export function createSqlBuilder() {
     select: {},
     groupBy: {},
     orderBy: {},
+    having: {},
     limit: undefined,
     offset: undefined,
   };
 
   const getWhere = () =>
     Object.keys(sb.where).length ? 'WHERE ' + join(sb.where, ' AND ') : '';
+  const getHaving = () =>
+    Object.keys(sb.having).length ? 'HAVING ' + join(sb.having, ' AND ') : '';
   const getFrom = () => `FROM ${sb.from}`;
   const getSelect = () =>
     'SELECT ' + (Object.keys(sb.select).length ? join(sb.select, ', ') : '*');
@@ -42,22 +46,20 @@ export function createSqlBuilder() {
     getSelect,
     getGroupBy,
     getOrderBy,
+    getHaving,
     getSql: () => {
       const sql = [
         getSelect(),
         getFrom(),
         getWhere(),
         getGroupBy(),
+        getHaving(),
         getOrderBy(),
         getLimit(),
         getOffset(),
       ]
         .filter(Boolean)
         .join(' ');
-      console.log('---');
-      console.log(sql);
-      console.log('---');
-
       return sql;
     },
   };

@@ -15,16 +15,15 @@ export const ch = createClient({
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string
 ): Promise<ResponseJSON<T>> {
-  console.log('Query:', query);
   const start = Date.now();
   const res = await ch.query({
     query,
   });
   const json = await res.json<T>();
+  const keys = Object.keys(json.data[0] || {});
   const response = {
     ...json,
     data: json.data.map((item) => {
-      const keys = Object.keys(item);
       return keys.reduce((acc, key) => {
         const meta = json.meta?.find((m) => m.name === key);
         return {
@@ -38,8 +37,10 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
     }),
   };
 
-  console.log(`Clickhouse query took ${response.statistics?.elapsed}ms`);
-  console.log(`chQuery took ${Date.now() - start}ms`);
+  console.log(
+    `Query: (${Date.now() - start}ms, ${response.statistics?.elapsed}ms)`,
+    query
+  );
 
   return response;
 }

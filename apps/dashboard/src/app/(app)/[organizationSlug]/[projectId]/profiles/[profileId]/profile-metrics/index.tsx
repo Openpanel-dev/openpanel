@@ -1,4 +1,4 @@
-import withLoadingWidget from '@/hocs/with-loading-widget';
+import withSuspense from '@/hocs/with-suspense';
 
 import { getProfileMetrics } from '@openpanel/db';
 
@@ -14,4 +14,4 @@ const ProfileMetricsServer = async ({ projectId, profileId }: Props) => {
   return <ProfileMetrics data={data} />;
 };
 
-export default withLoadingWidget(ProfileMetricsServer);
+export default withSuspense(ProfileMetricsServer, () => null);

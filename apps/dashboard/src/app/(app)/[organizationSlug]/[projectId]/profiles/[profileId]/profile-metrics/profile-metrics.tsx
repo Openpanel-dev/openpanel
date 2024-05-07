@@ -12,52 +12,52 @@ type Props = {
 const ProfileMetrics = ({ data }: Props) => {
   const number = useNumber();
   return (
-    <div className="flex gap-6">
-      <div className="rounded-xl text-right">
+    <div className="flex flex-wrap gap-6 whitespace-nowrap md:justify-end md:text-right">
+      <div>
         <div className="text-xs font-medium text-muted-foreground">
           First seen
         </div>
-        <div className="text-xl font-medium">
+        <div className="text-lg font-semibold">
           {formatDistanceToNow(data.firstSeen)}
         </div>
       </div>
-      <div className="rounded-xl text-right">
+      <div>
         <div className="text-xs font-medium text-muted-foreground">
           Last seen
         </div>
-        <div className="text-xl font-medium">
+        <div className="text-lg font-semibold">
           {formatDistanceToNow(data.lastSeen)}
         </div>
       </div>
-      <div className="rounded-xl text-right">
+      <div>
         <div className="text-xs font-medium text-muted-foreground">
           Sessions
         </div>
-        <div className="text-xl font-medium">
+        <div className="text-lg font-semibold">
           {number.format(data.sessions)}
         </div>
       </div>
-      <div className="rounded-xl text-right">
+      <div>
         <div className="text-xs font-medium text-muted-foreground">
           Avg. Session
         </div>
-        <div className="text-xl font-medium">
+        <div className="text-lg font-semibold">
           {number.formatWithUnit(data.durationAvg / 1000, 'min')}
         </div>
       </div>
-      <div className="rounded-xl text-right">
+      <div>
         <div className="text-xs font-medium text-muted-foreground">
           P90. Session
         </div>
-        <div className="text-xl font-medium">
+        <div className="text-lg font-semibold">
           {number.formatWithUnit(data.durationP90 / 1000, 'min')}
         </div>
       </div>
-      <div className="rounded-xl text-right">
+      <div>
         <div className="text-xs font-medium text-muted-foreground">
           Page views
         </div>
-        <div className="text-xl font-medium">
+        <div className="text-lg font-semibold">
           {number.format(data.screenViews)}
         </div>
       </div>

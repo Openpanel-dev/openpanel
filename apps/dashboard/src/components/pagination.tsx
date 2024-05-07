@@ -29,6 +29,7 @@ export function Pagination({
   setCursor,
   className,
   size = 'base',
+  loading,
 }: {
   take: number;
   count: number;
@@ -36,6 +37,7 @@ export function Pagination({
   setCursor: Dispatch<SetStateAction<number>>;
   className?: string;
   size?: 'sm' | 'base';
+  loading?: boolean;
 }) {
   const lastCursor = Math.floor(count / take) - 1;
   const isNextDisabled = count === 0 || lastCursor === cursor;
@@ -56,42 +58,43 @@ export function Pagination({
       )}
       {size === 'base' && (
         <Button
+          loading={loading}
           variant="outline"
           size="icon"
           onClick={() => setCursor(0)}
           disabled={cursor === 0}
           className="max-sm:hidden"
-        >
-          <ChevronsLeftIcon size={14} />
-        </Button>
+          icon={ChevronsLeftIcon}
+        />
       )}
       <Button
+        loading={loading}
         variant="outline"
         size="icon"
         onClick={() => setCursor((p) => Math.max(0, p - 1))}
         disabled={cursor === 0}
-      >
-        <ChevronLeftIcon size={14} />
-      </Button>
+        icon={ChevronLeftIcon}
+      />
 
       <Button
+        loading={loading}
         variant="outline"
         size="icon"
         onClick={() => setCursor((p) => Math.min(lastCursor, p + 1))}
         disabled={isNextDisabled}
-      >
-        <ChevronRightIcon size={14} />
-      </Button>
+        icon={ChevronRightIcon}
+      />
+
       {size === 'base' && (
         <Button
+          loading={loading}
           variant="outline"
           size="icon"
           onClick={() => setCursor(lastCursor)}
           disabled={isNextDisabled}
           className="max-sm:hidden"
-        >
-          <ChevronsRightIcon size={14} />
-        </Button>
+          icon={ChevronsRightIcon}
+        />
       )}
     </div>
   );

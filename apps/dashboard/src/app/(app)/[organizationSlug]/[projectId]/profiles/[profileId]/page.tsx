@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
 import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
@@ -64,12 +64,7 @@ export default async function Page({
   };
   const startDate = parseAsString.parseServerSide(searchParams.startDate);
   const endDate = parseAsString.parseServerSide(searchParams.endDate);
-  const [profile, events, count, metrics] = await Promise.all([
-    getProfileById(profileId, projectId),
-    getEventList(eventListOptions),
-    getEventsCount(eventListOptions),
-    getProfileMetrics(profileId, projectId),
-  ]);
+  const profile = await getProfileById(profileId, projectId);
 
   const pageViewsChart: IChartInput = {
     projectId,
@@ -148,11 +143,11 @@ export default async function Page({
   return (
     <>
       <PageLayout organizationSlug={organizationSlug} title={<div />} />
-      <StickyBelowHeader className="!relative !top-auto !z-0 flex items-center gap-8 p-8">
+      <StickyBelowHeader className="!relative !top-auto !z-0 flex flex-col gap-8 p-4 md:flex-row md:items-center md:p-8">
         <div className="flex flex-1 gap-4">
           <ProfileAvatar {...profile} size={'lg'} />
-          <div className="">
-            <h1 className="text-2xl font-semibold">
+          <div className="min-w-0">
+            <h1 className="max-w-full overflow-hidden text-ellipsis break-words text-lg font-semibold md:max-w-sm md:whitespace-nowrap md:text-2xl">
               {getProfileName(profile)}
             </h1>
             <div className="flex items-center gap-4">
@@ -194,31 +189,19 @@ export default async function Page({
           </Widget>
         </div>
         <div className="mt-8">
-          <EventList data={events} count={count} />
+          <Suspense fallback={<div />}>
+            <EventListServer {...eventListOptions} />
+          </Suspense>
         </div>
       </div>
     </>
   );
 }
 
-function ValueRow({ name, value }: { name: string; value?: unknown }) {
-  if (!value) {
-    return null;
-  }
-  return (
-    <div className="flex flex-row justify-between">
-      <div className="font-medium capitalize text-muted-foreground">
-        {name.replace('_', ' ')}
-      </div>
-      <div className="flex items-center gap-2 text-right">
-        {typeof value === 'string' ? (
-          <>
-            <SerieIcon name={value} /> {value}
-          </>
-        ) : (
-          <>{value}</>
-        )}
-      </div>
-    </div>
-  );
+async function EventListServer(props: GetEventListOptions) {
+  const [events, count] = await Promise.all([
+    getEventList(props),
+    getEventsCount(props),
+  ]);
+  return <EventList data={events} count={count} />;
 }

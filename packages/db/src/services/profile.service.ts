@@ -42,7 +42,7 @@ export async function getProfileById(id: string, projectId: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT *, created_at as max_created_at FROM profiles WHERE id = ${escape(id)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
+    `SELECT * FROM profiles WHERE id = ${escape(id)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
   );
 
   if (!profile) {
@@ -59,20 +59,6 @@ interface GetProfileListOptions {
   filters?: IChartEventFilter[];
 }
 
-function getProfileSelectFields() {
-  return [
-    'id',
-    'argMax(first_name, created_at) as first_name',
-    'argMax(last_name, created_at) as last_name',
-    'argMax(email, created_at) as email',
-    'argMax(avatar, created_at) as avatar',
-    'argMax(properties, created_at) as properties',
-    'argMax(project_id, created_at) as project_id',
-    'argMax(is_external, created_at) as is_external',
-    'max(created_at) as max_created_at',
-  ].join(', ');
-}
-
 interface GetProfilesOptions {
   ids: string[];
 }
@@ -82,23 +68,13 @@ export async function getProfiles({ ids }: GetProfilesOptions) {
   }
 
   const data = await chQuery<IClickhouseProfile>(
-    `SELECT 
-    ${getProfileSelectFields()}
-    FROM profiles 
+    `SELECT *
+    FROM profiles FINAL 
     WHERE id IN (${ids.map((id) => escape(id)).join(',')})
-    GROUP BY id
     `
   );
 
   return data.map(transformProfile);
-}
-
-function getProfileInnerSelect(projectId: string) {
-  return `(SELECT 
-    ${getProfileSelectFields()}
-    FROM profiles 
-    GROUP BY id
-    HAVING project_id = ${escape(projectId)})`;
 }
 
 export async function getProfileList({
@@ -108,16 +84,12 @@ export async function getProfileList({
   filters,
 }: GetProfileListOptions) {
   const { sb, getSql } = createSqlBuilder();
-  sb.from = getProfileInnerSelect(projectId);
-  if (filters) {
-    sb.where = {
-      ...sb.where,
-      ...getEventFiltersWhereClause(filters),
-    };
-  }
+  sb.from = 'profiles FINAL';
+  sb.select.all = '*';
+  sb.where.project_id = `project_id = ${escape(projectId)}`;
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
-  sb.orderBy.created_at = 'max_created_at DESC';
+  sb.orderBy.created_at = 'created_at DESC';
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
 }
@@ -127,21 +99,17 @@ export async function getProfileListCount({
   filters,
 }: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
   const { sb, getSql } = createSqlBuilder();
+  sb.from = 'profiles FINAL';
   sb.select.count = 'count(id) as count';
-  sb.from = getProfileInnerSelect(projectId);
-  if (filters) {
-    sb.where = {
-      ...sb.where,
-      ...getEventFiltersWhereClause(filters),
-    };
-  }
-  const [data] = await chQuery<{ count: number }>(getSql());
-  return data?.count ?? 0;
+  sb.where.project_id = `project_id = ${escape(projectId)}`;
+  sb.groupBy.project_id = 'project_id';
+  const data = await chQuery<{ count: number }>(getSql());
+  return data[0]?.count ?? 0;
 }
 
 export type IServiceProfile = Omit<
   IClickhouseProfile,
-  'max_created_at' | 'properties' | 'first_name' | 'last_name' | 'is_external'
+  'created_at' | 'properties' | 'first_name' | 'last_name' | 'is_external'
 > & {
   firstName: string;
   lastName: string;
@@ -168,7 +136,7 @@ export interface IClickhouseProfile {
   properties: Record<string, string | undefined>;
   project_id: string;
   is_external: boolean;
-  max_created_at: string;
+  created_at: string;
 }
 
 export interface IServiceUpsertProfile {
@@ -183,7 +151,7 @@ export interface IServiceUpsertProfile {
 }
 
 export function transformProfile({
-  max_created_at,
+  created_at,
   first_name,
   last_name,
   ...profile
@@ -194,7 +162,7 @@ export function transformProfile({
     lastName: last_name,
     isExternal: profile.is_external,
     properties: toObject(profile.properties),
-    createdAt: new Date(max_created_at),
+    createdAt: new Date(created_at),
   };
 }
 

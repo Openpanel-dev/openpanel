@@ -30,7 +30,7 @@ interface EventListProps {
   count: number;
 }
 export function EventList({ data, count }: EventListProps) {
-  const { cursor, setCursor } = useCursor();
+  const { cursor, setCursor, loading } = useCursor();
   const [filters] = useEventQueryFilters();
   return (
     <>
@@ -77,6 +77,7 @@ export function EventList({ data, count }: EventListProps) {
                           setCursor={setCursor}
                           count={count}
                           take={50}
+                          loading={loading}
                         />
                       )}
                     </div>
@@ -92,6 +93,7 @@ export function EventList({ data, count }: EventListProps) {
             setCursor={setCursor}
             count={count}
             take={50}
+            loading={loading}
           />
         </>
       )}

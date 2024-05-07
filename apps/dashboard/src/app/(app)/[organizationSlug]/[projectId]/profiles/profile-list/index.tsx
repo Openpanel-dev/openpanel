@@ -11,7 +11,7 @@ interface Props {
   filters?: IChartEventFilter[];
 }
 
-const limit = 50;
+const limit = 40;
 
 async function ProfileListServer({ projectId, cursor, filters }: Props) {
   const [profiles, count] = await Promise.all([

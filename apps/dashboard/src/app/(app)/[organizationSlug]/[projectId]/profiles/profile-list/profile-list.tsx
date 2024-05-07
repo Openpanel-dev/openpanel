@@ -23,7 +23,7 @@ interface ProfileListProps {
 }
 export function ProfileList({ data, count, limit = 50 }: ProfileListProps) {
   const { organizationSlug, projectId } = useAppParams();
-  const { cursor, setCursor } = useCursor();
+  const { cursor, setCursor, loading } = useCursor();
   return (
     <Widget>
       <WidgetHead className="flex items-center justify-between">
@@ -32,6 +32,7 @@ export function ProfileList({ data, count, limit = 50 }: ProfileListProps) {
           size="sm"
           cursor={cursor}
           setCursor={setCursor}
+          loading={loading}
           count={count}
           take={limit}
         />
