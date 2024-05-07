@@ -8,7 +8,7 @@ import makeStore from '@/redux';
 import { api } from '@/trpc/client';
 import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { httpLink } from '@trpc/client';
+import { httpLink, unstable_httpBatchStreamLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
@@ -34,7 +34,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
     api.createClient({
       transformer: superjson,
       links: [
-        httpLink({
+        unstable_httpBatchStreamLink({
           url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
           async headers() {
             const token = await getToken();
