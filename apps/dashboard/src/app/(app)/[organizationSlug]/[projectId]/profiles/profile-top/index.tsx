@@ -2,6 +2,7 @@ import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { Widget, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
+import withLoadingWidget from '@/hocs/with-loading-widget';
 import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
 import { escape } from 'sqlstring';
@@ -13,14 +14,11 @@ interface Props {
   organizationSlug: string;
 }
 
-export default async function ProfileTopServer({
-  organizationSlug,
-  projectId,
-}: Props) {
+async function ProfileTopServer({ organizationSlug, projectId }: Props) {
   // Days since last event from users
   // group by days
   const res = await chQuery<{ profile_id: string; count: number }>(
-    `SELECT profile_id, count(*) as count from events where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT 10`
+    `SELECT profile_id, count(*) as count from events where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT 50`
   );
   const profiles = await getProfiles({ ids: res.map((r) => r.profile_id) });
   const list = res.map((item) => {
@@ -71,3 +69,5 @@ export default async function ProfileTopServer({
     </Widget>
   );
 }
+
+export default withLoadingWidget(ProfileTopServer);

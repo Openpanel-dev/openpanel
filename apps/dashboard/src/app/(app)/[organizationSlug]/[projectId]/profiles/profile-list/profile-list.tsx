@@ -19,8 +19,9 @@ import type { IServiceProfile } from '@openpanel/db';
 interface ProfileListProps {
   data: IServiceProfile[];
   count: number;
+  limit?: number;
 }
-export function ProfileList({ data, count }: ProfileListProps) {
+export function ProfileList({ data, count, limit = 50 }: ProfileListProps) {
   const { organizationSlug, projectId } = useAppParams();
   const { cursor, setCursor } = useCursor();
   return (
@@ -32,7 +33,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
           cursor={cursor}
           setCursor={setCursor}
           count={count}
-          take={10}
+          take={limit}
         />
       </WidgetHead>
       {data.length ? (
@@ -84,7 +85,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
               cursor={cursor}
               setCursor={setCursor}
               count={count}
-              take={10}
+              take={limit}
             />
           </div>
         </>
@@ -97,7 +98,7 @@ export function ProfileList({ data, count }: ProfileListProps) {
                 className="mt-4"
                 variant="outline"
                 size="sm"
-                onClick={() => setCursor(Math.max(0, count / 10 - 1))}
+                onClick={() => setCursor(Math.max(0, count / limit - 1))}
               >
                 Go back
               </Button>

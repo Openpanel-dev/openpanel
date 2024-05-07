@@ -7,6 +7,35 @@ import { ch, chQuery } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
 
+export type IProfileMetrics = {
+  lastSeen: string;
+  firstSeen: string;
+  screenViews: number;
+  sessions: number;
+  durationAvg: number;
+  durationP90: number;
+};
+export function getProfileMetrics(profileId: string, projectId: string) {
+  return chQuery<IProfileMetrics>(`
+    WITH lastSeen AS (
+      SELECT max(created_at) as lastSeen FROM events WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+    ),
+    firstSeen AS (
+      SELECT min(created_at) as firstSeen FROM events WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+    ),
+    screenViews AS (
+      SELECT count(*) as screenViews FROM events WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+    ),
+    sessions AS (
+      SELECT count(*) as sessions FROM events WHERE name = 'session_start' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+    ),
+    duration AS (
+      SELECT avg(duration) as durationAvg, quantilesExactInclusive(0.9)(duration)[1] as durationP90 FROM events WHERE name = 'session_end' AND duration != 0 AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+    )
+    SELECT lastSeen, firstSeen, screenViews, sessions, durationAvg, durationP90 FROM lastSeen, firstSeen, screenViews,sessions, duration
+  `).then((data) => data[0]!);
+}
+
 export async function getProfileById(id: string, projectId: string) {
   if (id === '' || projectId === '') {
     return null;

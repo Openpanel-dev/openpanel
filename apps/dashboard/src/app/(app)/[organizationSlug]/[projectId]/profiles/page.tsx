@@ -1,11 +1,9 @@
+import { Suspense } from 'react';
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
-import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { eventQueryFiltersParser } from '@/hooks/useEventQueryFilters';
 import { parseAsInteger } from 'nuqs';
 
-import { StickyBelowHeader } from '../layout-sticky-below-header';
-import ProfileLastSeenServer from './profile-last-seen';
+import LastActiveUsersServer from '../retention/last-active-users';
 import ProfileListServer from './profile-list';
 import ProfileTopServer from './profile-top';
 
@@ -31,17 +29,6 @@ export default function Page({
   return (
     <>
       <PageLayout title="Profiles" organizationSlug={organizationSlug} />
-      {/* <StickyBelowHeader className="flex justify-between p-4">
-        <OverviewFiltersDrawer
-          projectId={projectId}
-          nuqsOptions={nuqsOptions}
-          mode="events"
-        />
-        <OverviewFiltersButtons
-          className="justify-end p-0"
-          nuqsOptions={nuqsOptions}
-        />
-      </StickyBelowHeader> */}
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
         <ProfileListServer
           projectId={projectId}
@@ -51,7 +38,7 @@ export default function Page({
           }
         />
         <div className="flex flex-col gap-4">
-          <ProfileLastSeenServer projectId={projectId} />
+          <LastActiveUsersServer projectId={projectId} />
           <ProfileTopServer
             projectId={projectId}
             organizationSlug={organizationSlug}

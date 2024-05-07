@@ -56,8 +56,6 @@ function Tooltip({ payload }: any) {
 const Chart = ({ data }: Props) => {
   const max = Math.max(...data.map((d) => d.retention));
   const number = useNumber();
-  console.log('data', data);
-
   return (
     <div className="p-4">
       <ResponsiveContainer>

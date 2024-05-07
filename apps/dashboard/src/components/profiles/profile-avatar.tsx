@@ -15,9 +15,10 @@ interface ProfileAvatarProps
   className?: string;
 }
 
-const variants = cva('', {
+const variants = cva('shrink-0', {
   variants: {
     size: {
+      lg: 'h-14 w-14 rounded [&>span]:rounded',
       default: 'h-8 w-8 rounded [&>span]:rounded',
       sm: 'h-6 w-6 rounded [&>span]:rounded',
       xs: 'h-4 w-4 rounded [&>span]:rounded',
@@ -39,11 +40,13 @@ export function ProfileAvatar({
       {avatar && <AvatarImage src={avatar} />}
       <AvatarFallback
         className={cn(
-          size === 'sm'
-            ? 'text-xs'
-            : size === 'xs'
-              ? 'text-[8px]'
-              : 'text-base',
+          size === 'lg'
+            ? 'text-lg'
+            : size === 'sm'
+              ? 'text-xs'
+              : size === 'xs'
+                ? 'text-[8px]'
+                : 'text-base',
           'bg-slate-200 text-slate-800'
         )}
       >

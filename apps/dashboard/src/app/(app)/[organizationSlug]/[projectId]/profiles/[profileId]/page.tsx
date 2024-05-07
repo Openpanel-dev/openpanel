@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
+import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
@@ -19,11 +21,16 @@ import {
   getEventList,
   getEventsCount,
   getProfileById,
+  getProfileMetrics,
 } from '@openpanel/db';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 
 import { EventList } from '../../events/event-list';
 import { StickyBelowHeader } from '../../layout-sticky-below-header';
+import MostEventsServer from './most-events';
+import PopularRoutesServer from './popular-routes';
+import ProfileActivityServer from './profile-activity';
+import ProfileMetrics from './profile-metrics';
 
 interface PageProps {
   params: {
@@ -57,60 +64,75 @@ export default async function Page({
   };
   const startDate = parseAsString.parseServerSide(searchParams.startDate);
   const endDate = parseAsString.parseServerSide(searchParams.endDate);
-  const [profile, events, count, conversions] = await Promise.all([
+  const [profile, events, count, metrics] = await Promise.all([
     getProfileById(profileId, projectId),
     getEventList(eventListOptions),
     getEventsCount(eventListOptions),
-    getConversionEventNames(projectId),
+    getProfileMetrics(profileId, projectId),
   ]);
 
-  const chartSelectedEvents: IChartEvent[] = [
-    {
-      segment: 'event',
-      filters: [
-        {
-          id: 'profile_id',
-          name: 'profile_id',
-          operator: 'is',
-          value: [profileId],
-        },
-      ],
-      id: 'A',
-      name: '*',
-      displayName: 'Events',
-    },
-  ];
-
-  if (conversions.length) {
-    chartSelectedEvents.push({
-      segment: 'event',
-      filters: [
-        {
-          id: 'profile_id',
-          name: 'profile_id',
-          operator: 'is',
-          value: [profileId],
-        },
-        {
-          id: 'name',
-          name: 'name',
-          operator: 'is',
-          value: conversions.map((c) => c.name),
-        },
-      ],
-      id: 'B',
-      name: '*',
-      displayName: 'Conversions',
-    });
-  }
-
-  const profileChart: IChartInput = {
+  const pageViewsChart: IChartInput = {
     projectId,
     startDate,
     endDate,
-    chartType: 'histogram',
-    events: chartSelectedEvents,
-    breakdowns: [],
+    chartType: 'linear',
+    events: [
+      {
+        segment: 'event',
+        filters: [
+          {
+            id: 'profile_id',
+            name: 'profile_id',
+            operator: 'is',
+            value: [profileId],
+          },
+        ],
+        id: 'A',
+        name: '*',
+        displayName: 'Events',
+      },
+    ],
+    breakdowns: [
+      {
+        id: 'path',
+        name: 'path',
+      },
+    ],
+    lineType: 'monotone',
+    interval: 'day',
+    name: 'Events',
+    range: '30d',
+    previous: false,
+    metric: 'sum',
+  };
+
+  const eventsChart: IChartInput = {
+    projectId,
+    startDate,
+    endDate,
+    chartType: 'linear',
+    events: [
+      {
+        segment: 'event',
+        filters: [
+          {
+            id: 'profile_id',
+            name: 'profile_id',
+            operator: 'is',
+            value: [profileId],
+          },
+        ],
+        id: 'A',
+        name: '*',
+        displayName: 'Events',
+      },
+    ],
+    breakdowns: [
+      {
+        id: 'name',
+        name: 'name',
+      },
+    ],
     lineType: 'monotone',
     interval: 'day',
     name: 'Events',
@@ -125,69 +147,54 @@ export default async function Page({
 
   return (
     <>
-      <PageLayout
-        organizationSlug={organizationSlug}
-        title={
-          <div className="flex items-center gap-2">
-            <ProfileAvatar {...profile} size="sm" className="hidden sm:block" />
-            {getProfileName(profile)}
+      <PageLayout organizationSlug={organizationSlug} title={<div />} />
+      <StickyBelowHeader className="!relative !top-auto !z-0 flex items-center gap-8 p-8">
+        <div className="flex flex-1 gap-4">
+          <ProfileAvatar {...profile} size={'lg'} />
+          <div className="">
+            <h1 className="text-2xl font-semibold">
+              {getProfileName(profile)}
+            </h1>
+            <div className="flex items-center gap-4">
+              <ListPropertiesIcon {...profile.properties} />
+            </div>
           </div>
-        }
-      />
-      {/* <StickyBelowHeader className="flex justify-between p-4">
-        <OverviewFiltersDrawer
-          projectId={projectId}
-          mode="events"
-          nuqsOptions={{ shallow: false }}
-        />
-        <OverviewFiltersButtons
-          nuqsOptions={{ shallow: false }}
-          className="justify-end p-0"
-        />
-      </StickyBelowHeader> */}
+        </div>
+        <ProfileMetrics profileId={profileId} projectId={projectId} />
+      </StickyBelowHeader>
       <div className="p-4">
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <EventList data={events} count={count} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+          <div className="col-span-2">
+            <ProfileActivityServer
+              profileId={profileId}
+              projectId={projectId}
+            />
           </div>
-          <div className="flex flex-col gap-4">
-            <Widget className="w-full">
-              <WidgetHead>
-                <span className="title">Events per day</span>
-              </WidgetHead>
-              <WidgetBody className="flex gap-2">
-                <ChartSwitch {...profileChart} />
-              </WidgetBody>
-            </Widget>
-            <Widget className="w-full">
-              <WidgetHead className="flex items-center justify-between">
-                <span className="title">Profile</span>
-                <ProfileAvatar {...profile} />
-              </WidgetHead>
-              <div className="grid grid-cols-1 text-sm">
-                <ValueRow name={'ID'} value={profile.id} />
-                <ValueRow name={'First name'} value={profile.firstName} />
-                <ValueRow name={'Last name'} value={profile.lastName} />
-                <ValueRow name={'Mail'} value={profile.email} />
-                <ValueRow
-                  name={'Last seen'}
-                  value={profile.createdAt.toLocaleString()}
-                />
-              </div>
-            </Widget>
-            <Widget className="w-full">
-              <WidgetHead>
-                <span className="title">Properties</span>
-              </WidgetHead>
-              <div className="grid grid-cols-1 text-sm">
-                {Object.entries(profile.properties)
-                  .filter(([, value]) => !!value)
-                  .map(([key, value]) => (
-                    <ValueRow key={key} name={key} value={value} />
-                  ))}
-              </div>
-            </Widget>
+          <div className="col-span-2">
+            <MostEventsServer profileId={profileId} projectId={projectId} />
           </div>
+          <div className="col-span-2">
+            <PopularRoutesServer profileId={profileId} projectId={projectId} />
+          </div>
+          <Widget className="col-span-3 w-full">
+            <WidgetHead>
+              <span className="title">Page views</span>
+            </WidgetHead>
+            <WidgetBody className="flex gap-2">
+              <ChartSwitch {...pageViewsChart} />
+            </WidgetBody>
+          </Widget>
+          <Widget className="col-span-3 w-full">
+            <WidgetHead>
+              <span className="title">Events per day</span>
+            </WidgetHead>
+            <WidgetBody className="flex gap-2">
+              <ChartSwitch {...eventsChart} />
+            </WidgetBody>
+          </Widget>
+        </div>
+        <div className="mt-8">
+          <EventList data={events} count={count} />
         </div>
       </div>
     </>
@@ -199,7 +206,7 @@ function ValueRow({ name, value }: { name: string; value?: unknown }) {
     return null;
   }
   return (
-    <div className="flex flex-row justify-between p-2 px-4">
+    <div className="flex flex-row justify-between">
       <div className="font-medium capitalize text-muted-foreground">
         {name.replace('_', ' ')}
       </div>

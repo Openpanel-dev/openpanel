@@ -1,3 +1,5 @@
+import withLoadingWidget from '@/hocs/with-loading-widget';
+
 import { getProfileList, getProfileListCount } from '@openpanel/db';
 import type { IChartEventFilter } from '@openpanel/validation';
 
@@ -9,15 +11,13 @@ interface Props {
   filters?: IChartEventFilter[];
 }
 
-export default async function ProfileListServer({
-  projectId,
-  cursor,
-  filters,
-}: Props) {
+const limit = 50;
+
+async function ProfileListServer({ projectId, cursor, filters }: Props) {
   const [profiles, count] = await Promise.all([
     getProfileList({
       projectId,
-      take: 10,
+      take: limit,
       cursor,
       filters,
     }),
@@ -26,5 +26,7 @@ export default async function ProfileListServer({
       filters,
     }),
   ]);
-  return <ProfileList data={profiles} count={count} />;
+  return <ProfileList data={profiles} count={count} limit={limit} />;
 }
+
+export default withLoadingWidget(ProfileListServer);

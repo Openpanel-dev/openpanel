@@ -1,4 +1,5 @@
 import { cn } from '@/utils/cn';
+import type { LucideIcon } from 'lucide-react';
 
 export interface WidgetHeadProps {
   children: React.ReactNode;
@@ -13,6 +14,34 @@ export function WidgetHead({ children, className }: WidgetHeadProps) {
       )}
     >
       {children}
+    </div>
+  );
+}
+
+export interface WidgetTitleProps {
+  children: React.ReactNode;
+  className?: string;
+  icon?: LucideIcon;
+}
+export function WidgetTitle({
+  children,
+  className,
+  icon: Icon,
+}: WidgetTitleProps) {
+  return (
+    <div
+      className={cn(
+        'relative flex items-center gap-4',
+        className,
+        !!Icon && 'pl-12'
+      )}
+    >
+      {Icon && (
+        <div className="absolute left-0 rounded-lg bg-slate-100 p-2">
+          <Icon size={18} />
+        </div>
+      )}
+      <div className="title">{children}</div>
     </div>
   );
 }
