@@ -174,6 +174,7 @@ export async function upsertProfile({
   avatar,
   properties,
   projectId,
+  isExternal,
 }: IServiceUpsertProfile) {
   const [profile] = await chQuery<IClickhouseProfile>(
     `SELECT * FROM profiles WHERE id = ${escape(id)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
@@ -198,6 +199,7 @@ export async function upsertProfile({
         }),
         project_id: projectId ?? profile?.project_id ?? '',
         created_at: new Date(),
+        is_external: isExternal,
       },
     ],
   });
