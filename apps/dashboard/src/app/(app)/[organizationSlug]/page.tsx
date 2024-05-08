@@ -1,6 +1,6 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullWidthNavbar from '@/components/full-width-navbar';
-import { ProjectCard } from '@/components/projects/project-card';
+import ProjectCard from '@/components/projects/project-card';
 import SignOutButton from '@/components/sign-out-button';
 import { redirect } from 'next/navigation';
 

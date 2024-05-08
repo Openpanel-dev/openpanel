@@ -1,36 +1,17 @@
+import { Suspense } from 'react';
+import withSuspense from '@/hocs/with-suspense';
 import { shortNumber } from '@/hooks/useNumerFormatter';
+import { Fallback } from '@radix-ui/react-avatar';
+import { endOfMonth, startOfMonth } from 'date-fns';
 import { escape } from 'sqlstring';
 
 import type { IServiceProject } from '@openpanel/db';
 import { chQuery } from '@openpanel/db';
 
 import { ChartSSR } from '../chart-ssr';
+import { FadeIn } from '../fade-in';
 
-export async function ProjectCard({
-  id,
-  name,
-  organizationSlug,
-}: IServiceProject) {
-  const [chart, [data]] = await Promise.all([
-    chQuery<{ value: number; date: string }>(
-      `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM events WHERE project_id = ${escape(id)} AND name = 'session_start' AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`
-    ),
-    chQuery<{ total: number; month: number; day: number }>(
-      `
-        SELECT
-        (
-          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)}
-        ) as total, 
-        (
-          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 month'
-        ) as month,
-        (
-          SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 day'
-        ) as day
-      `
-    ),
-  ]);
-
+function ProjectCard({ id, name, organizationSlug }: IServiceProject) {
   // For some unknown reason I get when navigating back to this page when using <Link />
   // Should be solved: https://github.com/vercel/next.js/issues/61336
   // But still get the error
@@ -41,31 +22,69 @@ export async function ProjectCard({
     >
       <div className="font-medium">{name}</div>
       <div className="-mx-4 aspect-[15/1]">
-        <ChartSSR data={chart.map((d) => ({ ...d, date: new Date(d.date) }))} />
+        <Suspense>
+          <ProjectChart id={id} />
+        </Suspense>
       </div>
       <div className="flex justify-between gap-4 text-sm text-muted-foreground">
         <div className="font-medium">Visitors</div>
-        <div className="flex gap-4">
-          <div className="flex flex-col gap-2 md:flex-row">
-            <div>Total</div>
-            <span className="font-medium text-black">
-              {shortNumber('en')(data?.total)}
-            </span>
-          </div>
-          <div className="flex flex-col gap-2 md:flex-row">
-            <div>Month</div>
-            <span className="font-medium text-black">
-              {shortNumber('en')(data?.month)}
-            </span>
-          </div>
-          <div className="flex flex-col gap-2 md:flex-row">
-            <div>24h</div>
-            <span className="font-medium text-black">
-              {shortNumber('en')(data?.day)}
-            </span>
-          </div>
-        </div>
+
+        <Suspense>
+          <ProjectMetrics id={id} />
+        </Suspense>
       </div>
     </a>
   );
 }
+
+async function ProjectChart({ id }: { id: string }) {
+  const chart = await chQuery<{ value: number; date: string }>(
+    `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM events WHERE project_id = ${escape(id)} AND name = 'session_start' AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`
+  );
+
+  return (
+    <FadeIn className="h-full w-full">
+      <ChartSSR data={chart.map((d) => ({ ...d, date: new Date(d.date) }))} />
+    </FadeIn>
+  );
+}
+
+function Metric({ value, label }: { value: React.ReactNode; label: string }) {
+  return (
+    <div className="flex flex-col gap-2 md:flex-row">
+      <div>{label}</div>
+      <span className="font-medium text-black">{value}</span>
+    </div>
+  );
+}
+
+async function ProjectMetrics({ id }: { id: string }) {
+  const [metrics] = await chQuery<{
+    total: number;
+    month: number;
+    day: number;
+  }>(
+    `
+      SELECT
+      (
+        SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)}
+      ) as total, 
+      (
+        SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 month'
+      ) as month,
+      (
+        SELECT count(DISTINCT profile_id) as count FROM events WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 day'
+      ) as day
+    `
+  );
+
+  return (
+    <FadeIn className="flex gap-4">
+      <Metric label="Total" value={shortNumber('en')(metrics?.total)} />
+      <Metric label="Month" value={shortNumber('en')(metrics?.month)} />
+      <Metric label="24h" value={shortNumber('en')(metrics?.day)} />
+    </FadeIn>
+  );
+}
+
+export default ProjectCard;
