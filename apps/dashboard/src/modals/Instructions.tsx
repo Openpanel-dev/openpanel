@@ -39,7 +39,6 @@ const Footer = ({ framework }: Pick<Props, 'framework'>) => (
       Close
     </Button>
     <LinkButton
-      prefetch={false}
       target="_blank"
       href={framework.href}
       className="flex-1"

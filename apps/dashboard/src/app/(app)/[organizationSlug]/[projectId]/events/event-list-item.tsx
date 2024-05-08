@@ -99,7 +99,6 @@ export function EventListItem(props: EventListItemProps) {
         <div className="flex gap-4">
           <Tooltiper asChild content={getProfileName(profile)}>
             <Link
-              prefetch={false}
               onClick={(e) => {
                 e.stopPropagation();
               }}

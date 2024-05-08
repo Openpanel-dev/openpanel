@@ -44,7 +44,6 @@ const Connect = ({ project }: Props) => {
       <ButtonContainer>
         <div />
         <LinkButton
-          prefetch={false}
           href={`/onboarding/${project.id}/verify`}
           size="lg"
           className="min-w-28 self-start"

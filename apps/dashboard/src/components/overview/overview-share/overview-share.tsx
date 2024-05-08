@@ -46,7 +46,6 @@ export function OverviewShare({ data }: OverviewShareProps) {
           {data?.public && (
             <DropdownMenuItem asChild>
               <Link
-                prefetch={false}
                 href={`${process.env.NEXT_PUBLIC_DASHBOARD_URL}/share/overview/${data.id}`}
               >
                 <EyeIcon size={16} className="mr-2" />
