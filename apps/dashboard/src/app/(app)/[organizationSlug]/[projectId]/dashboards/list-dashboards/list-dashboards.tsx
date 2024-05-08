@@ -20,7 +20,6 @@ import {
   Pencil,
   PieChartIcon,
   PlusIcon,
-  SquarePenIcon,
   Trash,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -86,14 +85,13 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
             <Card key={item.id} hover>
               <div>
                 <Link
-                  prefetch={false}
                   href={`/${organizationSlug}/${projectId}/dashboards/${item.id}`}
                   className="flex flex-col p-4 @container"
                 >
                   <div>
                     <div className="font-medium">{item.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {item.updatedAt.toLocaleString()}
+                      {format(item.updatedAt, 'HH:mm · MMM d')}
                     </div>
                   </div>
                   <div

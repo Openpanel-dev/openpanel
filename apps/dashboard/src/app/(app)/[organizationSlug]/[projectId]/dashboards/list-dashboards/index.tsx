@@ -16,12 +16,7 @@ interface Props {
 const ListDashboardsServer = async ({ projectId }: Props) => {
   const dashboards = await getDashboardsByProjectId(projectId);
 
-  return (
-    <>
-      {dashboards.length > 0 && <HeaderDashboards />}
-      <ListDashboards dashboards={dashboards} />
-    </>
-  );
+  return <ListDashboards dashboards={dashboards} />;
 };
 
 export default withSuspense(ListDashboardsServer, FullPageLoadingState);

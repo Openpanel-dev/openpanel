@@ -16,7 +16,12 @@ export function FullPageEmptyState({
   className,
 }: FullPageEmptyStateProps) {
   return (
-    <div className={cn('flex items-center justify-center p-4', className)}>
+    <div
+      className={cn(
+        'flex items-center justify-center p-4 text-center',
+        className
+      )}
+    >
       <div className="flex w-full max-w-xl flex-col items-center justify-center p-8">
         <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-background shadow-sm">
           <Icon size={60} strokeWidth={1} />
