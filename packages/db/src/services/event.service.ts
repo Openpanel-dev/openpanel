@@ -37,6 +37,8 @@ export interface IClickhouseEvent {
   country: string;
   city: string;
   region: string;
+  longitude: number | null;
+  latitude: number | null;
   os: string;
   os_version: string;
   browser: string;
@@ -65,6 +67,8 @@ export function transformEvent(
     country: event.country,
     city: event.city,
     region: event.region,
+    longitude: event.longitude,
+    latitude: event.latitude,
     os: event.os,
     osVersion: event.os_version,
     browser: event.browser,
@@ -97,7 +101,8 @@ export interface IServiceCreateEventPayload {
   country?: string | undefined;
   city?: string | undefined;
   region?: string | undefined;
-  continent?: string | undefined;
+  longitude?: number | undefined | null;
+  latitude?: number | undefined | null;
   os?: string | undefined;
   osVersion?: string | undefined;
   browser?: string | undefined;
@@ -121,6 +126,8 @@ export interface IServiceEventMinimal {
   sessionId: string;
   createdAt: Date;
   country?: string | undefined;
+  longitude?: number | undefined | null;
+  latitude?: number | undefined | null;
   os?: string | undefined;
   browser?: string | undefined;
   device?: string | undefined;
@@ -156,6 +163,8 @@ export function transformMinimalEvent(
     sessionId: event.sessionId,
     createdAt: event.createdAt,
     country: event.country,
+    longitude: event.longitude,
+    latitude: event.latitude,
     os: event.os,
     browser: event.browser,
     device: event.device,
@@ -228,6 +237,8 @@ export async function createEvent(
         country: payload.country,
         city: payload.city,
         region: payload.region,
+        longitude: payload.longitude,
+        latitude: payload.latitude,
         os: payload.os,
         os_version: payload.osVersion,
         browser: payload.browser,
@@ -255,6 +266,8 @@ export async function createEvent(
     country: payload.country ?? '',
     city: payload.city ?? '',
     region: payload.region ?? '',
+    longitude: payload.longitude ?? null,
+    latitude: payload.latitude ?? null,
     os: payload.os ?? '',
     os_version: payload.osVersion ?? '',
     browser: payload.browser ?? '',

@@ -14,7 +14,8 @@ export interface EventsQueuePayloadIncomingEvent {
       country: string | undefined;
       city: string | undefined;
       region: string | undefined;
-      continent: string | undefined;
+      longitude: number | undefined;
+      latitude: number | undefined;
     };
     headers: {
       origin: string | undefined;

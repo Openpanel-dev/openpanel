@@ -15,7 +15,8 @@ CREATE TABLE openpanel.events (
   `country` String,
   `city` String,
   `region` String,
-  `continent` String,
+  `longitude` Int16,
+  `latitude` Int16,
   `os` String,
   `os_version` String,
   `browser` String,
@@ -76,6 +77,16 @@ ALTER TABLE
   events_bots
 ADD
   COLUMN id UUID DEFAULT generateUUIDv4() FIRST;
+
+ALTER TABLE
+  events
+ADD
+  COLUMN longitude Nullable(Int16);
+
+ALTER TABLE
+  events
+ADD
+  COLUMN latitude Nullable(Int16);
 
 --- Materialized views (DAU)
 CREATE MATERIALIZED VIEW dau_mv ENGINE = AggregatingMergeTree() PARTITION BY toYYYYMMDD(date)

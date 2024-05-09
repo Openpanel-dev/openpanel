@@ -7,21 +7,24 @@ interface RemoteIpLookupResponse {
   country: string | undefined;
   city: string | undefined;
   stateprov: string | undefined;
-  continent: string | undefined;
+  longitude: number | undefined;
+  latitude: number | undefined;
 }
 
 interface GeoLocation {
   country: string | undefined;
   city: string | undefined;
   region: string | undefined;
-  continent: string | undefined;
+  longitude: number | undefined;
+  latitude: number | undefined;
 }
 
 const geo: GeoLocation = {
   country: undefined,
   city: undefined,
   region: undefined,
-  continent: undefined,
+  longitude: undefined,
+  latitude: undefined,
 };
 
 const ignore = ['127.0.0.1', '::1'];
@@ -45,7 +48,8 @@ export async function parseIp(ip?: string): Promise<GeoLocation> {
       country: res.country,
       city: res.city,
       region: res.stateprov,
-      continent: res.continent,
+      longitude: res.longitude,
+      latitude: res.latitude,
     };
   } catch (e) {
     logger.error('Failed to fetch geo location for ip', e);

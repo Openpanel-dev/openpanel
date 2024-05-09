@@ -123,13 +123,6 @@ export function EventDetails({ event, open, setOpen }: Props) {
       },
     },
     {
-      name: 'Continent',
-      value: event.continent,
-      onClick() {
-        setFilter('continent', event.continent ?? '');
-      },
-    },
-    {
       name: 'Device',
       value: event.device,
       onClick() {
