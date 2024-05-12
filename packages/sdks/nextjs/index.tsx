@@ -9,6 +9,7 @@ import type {
 } from '@openpanel/web';
 
 export * from '@openpanel/web';
+export { createNextRouteHandler } from './createNextRouteHandler';
 
 const CDN_URL = 'https://openpanel.dev/op.js';
 
