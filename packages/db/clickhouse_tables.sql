@@ -81,12 +81,12 @@ ADD
 ALTER TABLE
   events
 ADD
-  COLUMN longitude Nullable(Int16);
+  COLUMN longitude Nullable(Float32);
 
 ALTER TABLE
   events
 ADD
-  COLUMN latitude Nullable(Int16);
+  COLUMN latitude Nullable(Float32);
 
 --- Materialized views (DAU)
 CREATE MATERIALIZED VIEW dau_mv ENGINE = AggregatingMergeTree() PARTITION BY toYYYYMMDD(date)

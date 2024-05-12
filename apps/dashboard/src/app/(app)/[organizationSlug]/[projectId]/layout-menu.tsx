@@ -9,6 +9,7 @@ import {
   BuildingIcon,
   CogIcon,
   GanttChartIcon,
+  Globe2Icon,
   KeySquareIcon,
   LayoutPanelTopIcon,
   UserIcon,
@@ -90,6 +91,11 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
         icon={LayoutPanelTopIcon}
         label="Dashboards"
         href={`/${params.organizationSlug}/${projectId}/dashboards`}
+      />
+      <LinkWithIcon
+        icon={Globe2Icon}
+        label="Realtime"
+        href={`/${params.organizationSlug}/${projectId}/realtime`}
       />
       <LinkWithIcon
         icon={GanttChartIcon}

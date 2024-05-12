@@ -1,12 +1,11 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Progress } from '@/components/ui/progress';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { getChartColor } from '@/utils/theme';
 
+import { round } from '@openpanel/common';
 import { NOT_SET_VALUE } from '@openpanel/constants';
 
 import { PreviousDiffIndicatorText } from '../PreviousDiffIndicator';
@@ -29,41 +28,45 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   return (
     <div
       className={cn(
-        '-mx-2 flex w-full flex-col text-xs',
-        editMode && 'card p-4 text-base'
+        'flex flex-col text-xs',
+        editMode ? 'card gap-2 p-4 text-base' : '-m-3 gap-1'
       )}
     >
-      {series.map((serie, index) => {
+      {series.map((serie) => {
         const isClickable = serie.name !== NOT_SET_VALUE && onClick;
         return (
           <div
             key={serie.name}
-            className={cn(
-              'relative flex w-full flex-1 items-center gap-4 overflow-hidden rounded px-2 py-3 even:bg-slate-50 dark:even:bg-slate-100',
-              '[&_[role=progressbar]]:shadow-sm [&_[role=progressbar]]:even:bg-background',
-              isClickable &&
-                'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-50'
-            )}
+            className={cn('relative', isClickable && 'cursor-pointer')}
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >
-            <div className="flex flex-1 items-center gap-2 break-all font-medium">
-              <SerieIcon name={serie.name} />
-              {serie.name}
-            </div>
-            <div className="flex w-1/4 flex-shrink-0 items-center justify-end gap-4">
-              <PreviousDiffIndicatorText
-                {...serie.metrics.previous[metric]}
-                className="text-xs font-medium"
-              />
-              {serie.metrics.previous[metric]?.value}
-              <div className="font-bold">
-                {number.format(serie.metrics.sum)}
+            <div
+              className="absolute bottom-0 left-0 top-0 rounded bg-slate-100"
+              style={{
+                width: `${(serie.metrics.sum / maxCount) * 100}%`,
+              }}
+            />
+            <div className="relative z-10 flex w-full flex-1 items-center gap-4 overflow-hidden px-3 py-2">
+              <div className="flex flex-1 items-center gap-2 break-all font-medium">
+                <SerieIcon name={serie.name} />
+                {serie.name}
               </div>
-              <Progress
-                color={getChartColor(index)}
-                value={(serie.metrics.sum / maxCount) * 100}
-                size={editMode ? 'lg' : 'sm'}
-              />
+              <div className="flex flex-shrink-0 items-center justify-end gap-4">
+                <PreviousDiffIndicatorText
+                  {...serie.metrics.previous[metric]}
+                  className="text-xs font-medium"
+                />
+                {serie.metrics.previous[metric]?.value}
+                <div className="text-muted-foreground">
+                  {number.format(
+                    round((serie.metrics.sum / data.metrics.sum) * 100, 2)
+                  )}
+                  %
+                </div>
+                <div className="font-bold">
+                  {number.format(serie.metrics.sum)}
+                </div>
+              </div>
             </div>
           </div>
         );

@@ -1,3 +1,4 @@
+import { getAuth } from '@clerk/fastify';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { escape } from 'sqlstring';
 import superjson from 'superjson';
@@ -8,6 +9,7 @@ import type { IServiceCreateEventPayload } from '@openpanel/db';
 import {
   getEvents,
   getLiveVisitors,
+  getProfileById,
   transformMinimalEvent,
 } from '@openpanel/db';
 import { redis, redisPub, redisSub } from '@openpanel/redis';
@@ -115,20 +117,31 @@ export function wsProjectEvents(
   }>
 ) {
   const { params } = req;
+  const auth = getAuth(req);
 
   redisSub.subscribe('event');
 
-  const message = (channel: string, message: string) => {
+  const message = async (channel: string, message: string) => {
     const event = getSuperJson<IServiceCreateEventPayload>(message);
     if (event?.projectId === params.projectId) {
-      connection.socket.send(superjson.stringify(transformMinimalEvent(event)));
+      const profile = await getProfileById(event.profileId, event.projectId);
+      connection.socket.send(
+        superjson.stringify(
+          auth.userId
+            ? {
+                ...event,
+                profile,
+              }
+            : transformMinimalEvent(event)
+        )
+      );
     }
   };
 
-  redisSub.on('message', message);
+  redisSub.on('message', message as any);
 
   connection.socket.on('close', () => {
     redisSub.unsubscribe('event');
-    redisSub.off('message', message);
+    redisSub.off('message', message as any);
   });
 }
