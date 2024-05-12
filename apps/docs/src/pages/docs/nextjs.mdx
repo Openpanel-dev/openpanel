@@ -208,3 +208,16 @@ opServer.event('my_server_event', { ok: '✅' });
 // Pass `profileId` to track events for a specific user
 opServer.event('my_server_event', { profileId: '123', ok: '✅' });
 ```
+
+### Proxy events
+
+With `createNextRouteHandler` you can proxy your events through your server, this will ensure all events are tracked since there is a lot of adblockers that block requests to third party domains.
+
+```typescript
+import { createNextRouteHandler } from '@openpanel/nextjs';
+
+export const { POST } = createNextRouteHandler({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+```
