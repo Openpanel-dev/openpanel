@@ -1,29 +1,25 @@
-import { Suspense, useMemo } from 'react';
+import { Suspense } from 'react';
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
+import ClickToCopy from '@/components/click-to-copy';
 import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
-import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { ChartSwitch } from '@/components/report/chart';
-import { SerieIcon } from '@/components/report/chart/SerieIcon';
+import { Tooltiper } from '@/components/ui/tooltip';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import {
   eventQueryFiltersParser,
   eventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
+import { clipboard } from '@/utils/clipboard';
 import { getProfileName } from '@/utils/getters';
+import { CopyIcon } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { parseAsInteger, parseAsString } from 'nuqs';
+import { toast } from 'sonner';
 
 import type { GetEventListOptions } from '@openpanel/db';
-import {
-  getConversionEventNames,
-  getEventList,
-  getEventsCount,
-  getProfileById,
-  getProfileMetrics,
-} from '@openpanel/db';
-import type { IChartEvent, IChartInput } from '@openpanel/validation';
+import { getEventList, getEventsCount, getProfileById } from '@openpanel/db';
+import type { IChartInput } from '@openpanel/validation';
 
 import { EventList } from '../../events/event-list';
 import { StickyBelowHeader } from '../../layout-sticky-below-header';
@@ -147,10 +143,12 @@ export default async function Page({
         <div className="flex flex-1 gap-4">
           <ProfileAvatar {...profile} size={'lg'} />
           <div className="min-w-0">
-            <h1 className="max-w-full overflow-hidden text-ellipsis break-words text-lg font-semibold md:max-w-sm md:whitespace-nowrap md:text-2xl">
-              {getProfileName(profile)}
-            </h1>
-            <div className="flex items-center gap-4">
+            <ClickToCopy value={profile.id}>
+              <h1 className="max-w-full overflow-hidden text-ellipsis break-words text-lg font-semibold md:max-w-sm md:whitespace-nowrap md:text-2xl">
+                {getProfileName(profile)}
+              </h1>
+            </ClickToCopy>
+            <div className="mt-1 flex items-center gap-4">
               <ListPropertiesIcon {...profile.properties} />
             </div>
           </div>

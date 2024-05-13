@@ -38,20 +38,22 @@ interface TooltiperProps {
   content: string;
   children: React.ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 export function Tooltiper({
   asChild,
   content,
   children,
   className,
+  onClick,
 }: TooltiperProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild={asChild} className={className}>
+    <Tooltip delayDuration={0}>
+      <TooltipTrigger asChild={asChild} className={className} onClick={onClick}>
         {children}
       </TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent>{content}</TooltipContent>
+        <TooltipContent sideOffset={10}>{content}</TooltipContent>
       </TooltipPortal>
     </Tooltip>
   );

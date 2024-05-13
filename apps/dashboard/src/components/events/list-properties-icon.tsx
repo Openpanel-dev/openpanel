@@ -1,5 +1,10 @@
 import { SerieIcon } from '../report/chart/SerieIcon';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  Tooltiper,
+  TooltipTrigger,
+} from '../ui/tooltip';
 
 interface Props {
   country?: string;
@@ -23,46 +28,26 @@ export function ListPropertiesIcon({
   referrer_type,
 }: Props) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1.5">
       {country && (
-        <Tooltip>
-          <TooltipTrigger>
-            <SerieIcon name={country} />
-          </TooltipTrigger>
-          <TooltipContent>
-            {country}, {city}
-          </TooltipContent>
-        </Tooltip>
+        <Tooltiper content={[country, city].filter(Boolean).join(', ')}>
+          <SerieIcon name={country} />
+        </Tooltiper>
       )}
       {os && (
-        <Tooltip>
-          <TooltipTrigger>
-            <SerieIcon name={os} />
-          </TooltipTrigger>
-          <TooltipContent>
-            {os} ({os_version})
-          </TooltipContent>
-        </Tooltip>
+        <Tooltiper content={`${os} (${os_version})`}>
+          <SerieIcon name={os} />
+        </Tooltiper>
       )}
       {browser && (
-        <Tooltip>
-          <TooltipTrigger>
-            <SerieIcon name={browser} />
-          </TooltipTrigger>
-          <TooltipContent>
-            {browser} ({browser_version})
-          </TooltipContent>
-        </Tooltip>
+        <Tooltiper content={`${browser} (${browser_version})`}>
+          <SerieIcon name={browser} />
+        </Tooltiper>
       )}
       {referrer_name && (
-        <Tooltip>
-          <TooltipTrigger>
-            <SerieIcon name={referrer_name} />
-          </TooltipTrigger>
-          <TooltipContent>
-            {referrer_name} ({referrer_type})
-          </TooltipContent>
-        </Tooltip>
+        <Tooltiper content={`${referrer_name} (${referrer_type})`}>
+          <SerieIcon name={referrer_name} />
+        </Tooltiper>
       )}
     </div>
   );

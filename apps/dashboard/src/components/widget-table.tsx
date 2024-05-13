@@ -36,26 +36,28 @@ export function WidgetTable<T>({
   keyExtractor,
 }: Props<T>) {
   return (
-    <table className={cn('w-full', className)}>
-      <WidgetTableHead>
-        <tr>
-          {columns.map((column) => (
-            <th key={column.name}>{column.name}</th>
-          ))}
-        </tr>
-      </WidgetTableHead>
-      <tbody>
-        {data.map((item) => (
-          <tr
-            key={keyExtractor(item)}
-            className="border-b border-border text-right text-sm last:border-0 [&_td:first-child]:text-left [&_td]:p-4"
-          >
+    <div className="w-full overflow-x-auto">
+      <table className={cn('w-full', className)}>
+        <WidgetTableHead>
+          <tr>
             {columns.map((column) => (
-              <td key={column.name}>{column.render(item)}</td>
+              <th key={column.name}>{column.name}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </WidgetTableHead>
+        <tbody>
+          {data.map((item) => (
+            <tr
+              key={keyExtractor(item)}
+              className="border-b border-border text-right text-sm last:border-0 [&_td:first-child]:text-left [&_td]:p-4"
+            >
+              {columns.map((column) => (
+                <td key={column.name}>{column.render(item)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

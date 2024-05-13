@@ -50,6 +50,7 @@ export function ProfileList({ data, count, limit = 50 }: ProfileListProps) {
                     <Link
                       href={`/${organizationSlug}/${projectId}/profiles/${profile.id}`}
                       className="flex items-center gap-2 font-medium"
+                      title={getProfileName(profile, false)}
                     >
                       <ProfileAvatar size="sm" {...profile} />
                       {getProfileName(profile)}
