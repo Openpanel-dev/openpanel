@@ -35,6 +35,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       transformer: superjson,
       links: [
         unstable_httpBatchStreamLink({
+          maxURLLength: 4000,
           url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
           async headers() {
             const token = await getToken();
@@ -45,13 +46,6 @@ function AllProviders({ children }: { children: React.ReactNode }) {
             }
             return {};
           },
-          // fetch(url, options) {
-          //   return fetch(url, {
-          //     ...options,
-          //     credentials: 'include',
-          //     mode: 'cors',
-          //   });
-          // },
         }),
       ],
     })
