@@ -2,23 +2,38 @@ import type { Queue } from 'bullmq';
 
 export async function findJobByPrefix<T>(
   queue: Queue<T, any, string>,
+  keys: string[],
   matcher: string
 ) {
-  const delayed = await queue.getJobs('delayed');
-  const filtered = delayed.filter((job) =>
-    job?.opts?.jobId?.startsWith(matcher)
-  );
+  const filtered = keys.filter((key) => key.includes(matcher));
   const getTime = (val?: string) => {
     if (!val) return null;
     const match = val.match(/:(\d+)$/);
     return match?.[1] ? parseInt(match[1], 10) : null;
   };
+
   filtered.sort((a, b) => {
-    const aTime = getTime(a?.opts?.jobId);
-    const bTime = getTime(b?.opts?.jobId);
+    const aTime = getTime(a);
+    const bTime = getTime(b);
     if (aTime === null) return 1;
     if (bTime === null) return -1;
     return aTime - bTime;
   });
-  return filtered[0];
+
+  async function getJob(index: number) {
+    if (index >= filtered.length) return null;
+
+    const key = filtered[index]?.replace(/^bull:events:/, '');
+    // return new Promise((resolve) => )
+    if (key) {
+      const job = await queue.getJob(key);
+      if ((await job?.getState()) === 'delayed') {
+        return job;
+      }
+    }
+
+    return getJob(index + 1);
+  }
+
+  return getJob(0);
 }

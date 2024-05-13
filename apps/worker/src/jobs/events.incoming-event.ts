@@ -13,6 +13,7 @@ import { createEvent, getEvents } from '@openpanel/db';
 import { findJobByPrefix } from '@openpanel/queue';
 import { eventsQueue } from '@openpanel/queue/src/queues';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue/src/queues';
+import { redis } from '@openpanel/redis';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 const SESSION_TIMEOUT = 1000 * 60 * 30;
@@ -89,17 +90,21 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     return createEvent(payload);
   }
 
-  const [sessionEndJobCurrentDeviceId, sessionEndJobPreviousDeviceId] =
-    await Promise.all([
-      findJobByPrefix(
-        eventsQueue,
-        `sessionEnd:${projectId}:${currentDeviceId}:`
-      ),
-      findJobByPrefix(
-        eventsQueue,
-        `sessionEnd:${projectId}:${previousDeviceId}:`
-      ),
-    ]);
+  const [sessionEndKeys, eventsKeys] = await Promise.all([
+    redis.keys(`bull:events:sessionEnd:${projectId}:*`),
+    redis.keys(`bull:events:event:${projectId}:*`),
+  ]);
+
+  const sessionEndJobCurrentDeviceId = await findJobByPrefix(
+    eventsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${currentDeviceId}:`
+  );
+  const sessionEndJobPreviousDeviceId = await findJobByPrefix(
+    eventsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${previousDeviceId}:`
+  );
 
   const createSessionStart =
     !sessionEndJobCurrentDeviceId && !sessionEndJobPreviousDeviceId;
@@ -130,12 +135,15 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     );
   }
 
-  const [[sessionStartEvent], prevEventJob] = await Promise.all([
-    getEvents(
-      `SELECT * FROM events WHERE name = 'session_start' AND device_id = ${escape(deviceId)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
-    ),
-    findJobByPrefix(eventsQueue, `event:${projectId}:${deviceId}:`),
-  ]);
+  const prevEventJob = await findJobByPrefix(
+    eventsQueue,
+    eventsKeys,
+    `event:${projectId}:${deviceId}:`
+  );
+
+  const [sessionStartEvent] = await getEvents(
+    `SELECT * FROM events WHERE name = 'session_start' AND device_id = ${escape(deviceId)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
+  );
 
   const payload: Omit<IServiceCreateEventPayload, 'id'> = {
     name: body.name,
