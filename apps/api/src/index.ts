@@ -30,7 +30,7 @@ const startServer = async () => {
   logInfo('Starting server');
   try {
     const fastify = Fastify({
-      maxParamLength: 5000,
+      maxParamLength: 15_000,
     });
 
     fastify.register(cors, {
