@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/nextjs",
-  "version": "0.0.1",
+  "version": "0.0.8-beta",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/web": "workspace:*"
+    "@openpanel/web": "0.0.8-beta"
   },
   "peerDependencies": {
     "next": "^12.0.0 || ^13.0.0 || ^14.0.0",
