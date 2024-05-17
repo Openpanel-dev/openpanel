@@ -38,35 +38,36 @@ const startServer = async () => {
       credentials: true,
     });
 
-    fastify.register(cookie, {
-      secret: 'random', // for cookies signature
-      hook: 'onRequest',
-    });
-
-    fastify.register(clerkPlugin, {
-      publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-      secretKey: process.env.CLERK_SECRET_KEY,
-    });
-
-    fastify.register(fastifyTRPCPlugin, {
-      prefix: '/trpc',
-      trpcOptions: {
-        router: appRouter,
-        createContext: createContext,
-        onError(error: unknown) {
-          if (error instanceof Error) {
-            logger.error(error, error.message);
-          } else if (error && typeof error === 'object' && 'error' in error) {
-            logger.error(error.error, 'Unknown error trpc error');
-          }
-        },
-      } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
+    fastify.register((instance, opts, done) => {
+      fastify.register(cookie, {
+        secret: 'random', // for cookies signature
+        hook: 'onRequest',
+      });
+      instance.register(clerkPlugin, {
+        publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+      instance.register(fastifyTRPCPlugin, {
+        prefix: '/trpc',
+        trpcOptions: {
+          router: appRouter,
+          createContext: createContext,
+          onError(error: unknown) {
+            if (error instanceof Error) {
+              logger.error(error, error.message);
+            } else if (error && typeof error === 'object' && 'error' in error) {
+              logger.error(error.error, 'Unknown error trpc error');
+            }
+          },
+        } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
+      });
+      instance.register(liveRouter, { prefix: '/live' });
+      done();
     });
 
     fastify.decorateRequest('projectId', '');
     fastify.register(eventRouter, { prefix: '/event' });
     fastify.register(profileRouter, { prefix: '/profile' });
-    fastify.register(liveRouter, { prefix: '/live' });
     fastify.register(miscRouter, { prefix: '/misc' });
     fastify.register(exportRouter, { prefix: '/export' });
     fastify.setErrorHandler((error) => {
