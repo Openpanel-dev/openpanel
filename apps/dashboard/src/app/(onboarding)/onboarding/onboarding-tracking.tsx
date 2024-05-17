@@ -6,21 +6,33 @@ import { ButtonContainer } from '@/components/button-container';
 import { CheckboxItem } from '@/components/forms/checkbox-item';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
+import { Combobox } from '@/components/ui/combobox';
+import { Label } from '@/components/ui/label';
 import { api, handleError } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { MonitorIcon, ServerIcon, SmartphoneIcon } from 'lucide-react';
+import {
+  Building,
+  MonitorIcon,
+  ServerIcon,
+  SmartphoneIcon,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { z } from 'zod';
 
+import type { IServiceOrganization } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
 import OnboardingLayout, { OnboardingDescription } from '../onboarding-layout';
 
 type IForm = z.infer<typeof zOnboardingProject>;
 
-const Tracking = () => {
+const Tracking = ({
+  organizations,
+}: {
+  organizations: IServiceOrganization[];
+}) => {
   const router = useRouter();
   const mutation = api.onboarding.project.useMutation({
     onError: handleError,
@@ -81,13 +93,43 @@ const Tracking = () => {
         }
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <InputWithLabel
-            label="Workspace name"
-            info="This is the name of your workspace. It can be anything you like."
-            placeholder="Eg. The Music Company"
-            error={form.formState.errors.organization?.message}
-            {...form.register('organization')}
-          />
+          {organizations.length > 0 ? (
+            <Controller
+              control={form.control}
+              name="organizationSlug"
+              render={({ field, formState }) => {
+                return (
+                  <div>
+                    <Label>Workspace name</Label>
+                    <Combobox
+                      className="w-full"
+                      placeholder="Select workspace"
+                      icon={Building}
+                      error={formState.errors.organizationSlug?.message}
+                      value={field.value}
+                      items={
+                        organizations
+                          .filter((item) => item.slug)
+                          .map((item) => ({
+                            label: item.name,
+                            value: item.slug,
+                          })) ?? []
+                      }
+                      onChange={field.onChange}
+                    />
+                  </div>
+                );
+              }}
+            />
+          ) : (
+            <InputWithLabel
+              label="Workspace name"
+              info="This is the name of your workspace. It can be anything you like."
+              placeholder="Eg. The Music Company"
+              error={form.formState.errors.organization?.message}
+              {...form.register('organization')}
+            />
+          )}
           <InputWithLabel
             label="Project name"
             placeholder="Eg. The Music App"

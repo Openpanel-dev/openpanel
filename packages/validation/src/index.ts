@@ -100,7 +100,8 @@ export const zCreateReference = z.object({
 
 export const zOnboardingProject = z
   .object({
-    organization: z.string().min(3),
+    organization: z.string().optional(),
+    organizationSlug: z.string().optional(),
     project: z.string().min(3),
     domain: z.string().url().or(z.literal('').or(z.null())),
     website: z.boolean(),
@@ -108,6 +109,19 @@ export const zOnboardingProject = z
     backend: z.boolean(),
   })
   .superRefine((data, ctx) => {
+    if (!data.organization && !data.organizationSlug) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Organization is required',
+        path: ['organization'],
+      });
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Organization is required',
+        path: ['organizationSlug'],
+      });
+    }
+
     if (data.website && !data.domain) {
       ctx.addIssue({
         code: 'custom',

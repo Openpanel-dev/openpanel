@@ -37,6 +37,7 @@ export interface ComboboxProps<T> {
   label?: string;
   align?: 'start' | 'end' | 'center';
   portal?: boolean;
+  error?: string;
 }
 
 export type ExtendedComboboxProps<T> = Omit<
@@ -59,6 +60,7 @@ export function Combobox<T extends string>({
   size,
   align = 'start',
   portal,
+  error,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -77,7 +79,11 @@ export function Combobox<T extends string>({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className={cn('justify-between', className)}
+            className={cn(
+              'justify-between',
+              !!error && 'border-destructive',
+              className
+            )}
           >
             <div className="flex min-w-0 items-center">
               {Icon ? <Icon size={16} className="mr-2 shrink-0" /> : null}

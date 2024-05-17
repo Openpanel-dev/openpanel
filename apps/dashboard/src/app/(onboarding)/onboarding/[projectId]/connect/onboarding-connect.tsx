@@ -1,7 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import { ButtonContainer } from '@/components/button-container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Alert } from '@/components/ui/alert';
 import { LinkButton } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { KeyIcon, LockIcon } from 'lucide-react';
 
 import type { IServiceProjectWithClients } from '@openpanel/db';
 
@@ -32,6 +37,18 @@ const Connect = ({ project }: Props) => {
         </OnboardingDescription>
       }
     >
+      <div className="flex flex-col gap-4 rounded-xl border bg-slate-100 p-4 md:p-6">
+        <div className="flex items-center gap-2 text-2xl capitalize">
+          <LockIcon />
+          Credentials
+        </div>
+        <InputWithLabel label="Client ID" disabled value={client.id} />
+        <InputWithLabel
+          label="Client Secret"
+          disabled
+          value={client.secret ?? 'unknown'}
+        />
+      </div>
       {project.types.map((type) => {
         const Component = {
           website: ConnectWeb,

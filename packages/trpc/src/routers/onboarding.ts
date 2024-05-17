@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import { clerkClient } from '@clerk/fastify';
+import type { z } from 'zod';
 
 import { hashPassword, slug, stripTrailingSlash } from '@openpanel/common';
 import { db, getId } from '@openpanel/db';
@@ -7,6 +8,27 @@ import type { ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
+
+async function createOrGetOrganization(
+  input: z.infer<typeof zOnboardingProject>,
+  userId: string
+) {
+  if (input.organizationSlug) {
+    return await clerkClient.organizations.getOrganization({
+      slug: input.organizationSlug,
+    });
+  }
+
+  if (input.organization) {
+    return await clerkClient.organizations.createOrganization({
+      name: input.organization,
+      slug: slug(input.organization),
+      createdBy: userId,
+    });
+  }
+
+  return null;
+}
 
 export const onboardingRouter = createTRPCRouter({
   project: protectedProcedure
@@ -17,13 +39,12 @@ export const onboardingRouter = createTRPCRouter({
       if (input.app) types.push('app');
       if (input.backend) types.push('backend');
 
-      const organization = await clerkClient.organizations.createOrganization({
-        name: input.organization,
-        slug: slug(input.organization),
-        createdBy: ctx.session.userId,
-      });
+      const organization = await createOrGetOrganization(
+        input,
+        ctx.session.userId
+      );
 
-      if (!organization.slug) {
+      if (!organization?.slug) {
         throw new Error('Organization slug is missing');
       }
 
