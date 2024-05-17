@@ -1057,7 +1057,7 @@ importers:
   packages/sdks/express:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:*
+        specifier: 0.0.8-beta
         version: link:../sdk
       express:
         specifier: ^3.0.0 || ^4.0.0
@@ -1097,7 +1097,7 @@ importers:
   packages/sdks/nextjs:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:*
+        specifier: 0.0.8-beta
         version: link:../web
       next:
         specifier: ^12.0.0 || ^13.0.0 || ^14.0.0
@@ -1137,7 +1137,7 @@ importers:
   packages/sdks/react-native:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:*
+        specifier: 0.0.8-beta
         version: link:../sdk
       expo-application:
         specifier: ^5.3.0
@@ -1198,7 +1198,7 @@ importers:
   packages/sdks/web:
     dependencies:
       '@openpanel/sdk':
-        specifier: workspace:*
+        specifier: 0.0.8-beta
         version: link:../sdk
     devDependencies:
       '@openpanel/eslint-config':
