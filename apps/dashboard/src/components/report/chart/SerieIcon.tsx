@@ -5,6 +5,7 @@ import {
   ExternalLinkIcon,
   HelpCircleIcon,
   MailIcon,
+  MessageCircleIcon,
   MonitorIcon,
   MonitorPlayIcon,
   PodcastIcon,
@@ -47,6 +48,8 @@ const mapper: Record<string, LucideIcon> = {
   search: SearchIcon,
   social: PodcastIcon,
   email: MailIcon,
+  podcast: PodcastIcon,
+  comment: MessageCircleIcon,
   unknown: HelpCircleIcon,
   [NOT_SET_VALUE]: ScanIcon,
 
@@ -75,6 +78,10 @@ export function SerieIcon({ name, ...props }: SerieIconProps) {
 
     if (name.includes('http')) {
       return createImageIcon(getProxyImage(name));
+    }
+
+    if (name.match(/(.+)\.\w{2,3}$/)) {
+      return createImageIcon(getProxyImage(`https://${name}`));
     }
 
     return null;

@@ -38,9 +38,10 @@ export function getReferrerWithQuery(
     return null;
   }
 
-  const match = Object.values(referrers).find(
-    (referrer) => referrer.name.toLowerCase() === source.toLowerCase()
-  );
+  const match =
+    Object.values(referrers).find(
+      (referrer) => referrer.name.toLowerCase() === source.toLowerCase()
+    ) || referrers[source];
 
   if (match) {
     return {

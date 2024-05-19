@@ -23,6 +23,8 @@ const data = {
   ios: 'https://cdn0.iconfinder.com/data/icons/flat-round-system/512/apple-1024.png',
   linkedin: 'https://linkedin.com',
   linux: 'https://upload.wikimedia.org/wikipedia/commons/3/35/Tux.svg',
+  ubuntu: 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo-ubuntu_cof-orange-hex.svg',
+  weibo: 'https://en.wikipedia.org/wiki/Weibo#/media/File:Sina_Weibo.svg',
   microlaunch: 'https://microlaunch.net',
   openalternative: 'https://openalternative.co',
   opera: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Opera_2015_icon.svg/1920px-Opera_2015_icon.svg.png',
@@ -37,6 +39,18 @@ const data = {
   windows: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Windows_logo_-_2012.png',
   yandex: 'https://yandex.com',
   youtube: 'https://youtube.com',
+  ossgallery: 'https://oss.gallery',
+  convertkit: 'https://convertkit.com',
+  whatsapp: 'https://www.whatsapp.com/',
+  telegram: 'https://telegram.org/',
+  tiktok: 'https://tiktok.com',
+  sharpspring: 'https://sharpspring.com',
+  'hacker news': 'https://news.ycombinator.com',
+  'betalist': 'https://betalist.com',
+  'qwant': 'https://www.qwant.com',
+  flipboard: 'https://flipboard.com/',
+  trustpilot: 'https://trustpilot.com',
+  'outlook.com': 'https://login.live.com/',
 };
 
 export default data;
