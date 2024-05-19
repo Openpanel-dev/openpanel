@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/clerk/(.*)?',
   '/login',
   '/register',
+  '/sso-callback(.*)?',
 ]);
 
 export default clerkMiddleware(
