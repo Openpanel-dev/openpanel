@@ -20,7 +20,7 @@ function toCamelCase(str: string) {
 
 export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
   private lastPath = '';
-  private debounceTimer: number | undefined;
+  private debounceTimer: any;
 
   constructor(options: OpenpanelOptions) {
     super(options);
