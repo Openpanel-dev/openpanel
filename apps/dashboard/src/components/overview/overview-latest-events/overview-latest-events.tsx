@@ -5,6 +5,7 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import { Widget, WidgetBody } from '../../widget';
+import OverviewDetailsButton from '../overview-details-button';
 import { WidgetButtons, WidgetHead } from '../overview-widget';
 import { useOverviewOptions } from '../useOverviewOptions';
 import { useOverviewWidget } from '../useOverviewWidget';
@@ -121,6 +122,7 @@ export default function OverviewLatestEvents({
         </WidgetHead>
         <WidgetBody>
           <LazyChart hideID {...widget.chart} previous={false} />
+          <OverviewDetailsButton chart={widget.chart} />
         </WidgetBody>
       </Widget>
     </>

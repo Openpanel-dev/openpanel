@@ -9,6 +9,7 @@ import type { IChartType } from '@openpanel/validation';
 import { LazyChart } from '../report/chart/LazyChart';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
+import OverviewDetailsButton from './overview-details-button';
 import OverviewTopBots from './overview-top-bots';
 import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
@@ -154,6 +155,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
               }}
             />
           )}
+          <OverviewDetailsButton chart={widget.chart} />
         </WidgetBody>
       </Widget>
     </>

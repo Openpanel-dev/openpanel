@@ -62,6 +62,9 @@ const modals = {
   DateRangerPicker: dynamic(() => import('./DateRangerPicker'), {
     loading: Loading,
   }),
+  OverviewChartDetails: dynamic(() => import('./OverviewChartDetails'), {
+    loading: Loading,
+  }),
 };
 
 export const {

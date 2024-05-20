@@ -17,11 +17,11 @@ interface ReportBarChartProps {
 }
 
 export function ReportBarChart({ data }: ReportBarChartProps) {
-  const { editMode, metric, onClick } = useChartContext();
+  const { editMode, metric, onClick, limit } = useChartContext();
   const number = useNumber();
   const series = useMemo(
-    () => (editMode ? data.series : data.series.slice(0, 10)),
-    [data, editMode]
+    () => (editMode ? data.series : data.series.slice(0, limit || 10)),
+    [data, editMode, limit]
   );
   const maxCount = Math.max(...series.map((serie) => serie.metrics[metric]));
 

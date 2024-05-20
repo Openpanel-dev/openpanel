@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
+import { ScanEyeIcon } from 'lucide-react';
 
 import type { IChartType } from '@openpanel/validation';
 
 import { LazyChart } from '../report/chart/LazyChart';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
+import OverviewDetailsButton from './overview-details-button';
 import { WidgetButtons, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
@@ -324,6 +327,7 @@ export default function OverviewTopSources({
               }
             }}
           />
+          <OverviewDetailsButton chart={widget.chart} />
         </WidgetBody>
       </Widget>
     </>

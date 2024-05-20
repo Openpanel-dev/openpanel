@@ -1,17 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { ChartSwitch } from '@/components/report/chart';
 import { LazyChart } from '@/components/report/chart/LazyChart';
-import { Button } from '@/components/ui/button';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
-import { BarChartIcon, LineChart, LineChartIcon } from 'lucide-react';
 
 import type { IChartType } from '@openpanel/validation';
 
 import { Widget, WidgetBody } from '../../widget';
 import { OverviewChartToggle } from '../overview-chart-toggle';
+import OverviewDetailsButton from '../overview-details-button';
 import { WidgetButtons, WidgetHead } from '../overview-widget';
 import { useOverviewOptions } from '../useOverviewOptions';
 import { useOverviewWidget } from '../useOverviewWidget';
@@ -132,6 +130,7 @@ export default function OverviewTopEvents({
         </WidgetHead>
         <WidgetBody>
           <LazyChart hideID {...widget.chart} previous={false} />
+          <OverviewDetailsButton chart={widget.chart} />
         </WidgetBody>
       </Widget>
     </>

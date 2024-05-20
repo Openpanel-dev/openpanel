@@ -209,7 +209,9 @@ export const chartRouter = createTRPCRouter({
     const final: FinalChart = {
       events: input.events,
       series: series.map((serie, index) => {
-        const previousSerie = previousSeries?.[index];
+        const previousSerie = previousSeries?.find(
+          (item) => item.name === serie.name
+        );
         const metrics = {
           sum: sum(serie.data.map((item) => item.count)),
           average: round(average(serie.data.map((item) => item.count)), 2),

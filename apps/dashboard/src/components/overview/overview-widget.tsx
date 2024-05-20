@@ -20,7 +20,7 @@ export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (
     <WidgetHeadBase
       className={cn(
-        'flex flex-col rounded-t-xl p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:justify-between [&_.title]:p-4',
+        'flex flex-col rounded-t-xl p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:justify-between [&_.title]:p-4 [&_.title]:font-semibold',
         className
       )}
       {...props}

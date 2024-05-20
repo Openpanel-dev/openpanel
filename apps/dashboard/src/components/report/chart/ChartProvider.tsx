@@ -20,6 +20,7 @@ export interface ChartContextType extends IChartInput {
   editMode?: boolean;
   hideID?: boolean;
   onClick?: (item: IChartSerie) => void;
+  limit?: number;
 }
 
 type ChartProviderProps = {
@@ -37,6 +38,7 @@ const ChartContext = createContext<ChartContextType | null>({
   metric: 'sum',
   previous: false,
   projectId: '',
+  limit: undefined,
 });
 
 export function ChartProvider({
@@ -44,6 +46,7 @@ export function ChartProvider({
   editMode,
   previous,
   hideID,
+  limit,
   ...props
 }: ChartProviderProps) {
   return (
@@ -54,8 +57,9 @@ export function ChartProvider({
           editMode: editMode ?? false,
           previous: previous ?? false,
           hideID: hideID ?? false,
+          limit,
         }),
-        [editMode, previous, hideID, props]
+        [editMode, previous, hideID, limit, props]
       )}
     >
       {children}
