@@ -57,8 +57,8 @@ export async function Hero() {
             in total!
           </p>
         </div>
-        <div className="mt-16 w-full md:pt-16">
-          <div className="flex h-[max(90vh,650px)] rounded-2xl bg-black/5 md:p-2">
+        <div className="relative mt-24 h-[max(90vh,650px)] w-full">
+          <div className="absolute bottom-0 left-0 right-0 top-0 flex rounded-2xl bg-slate-300 md:p-2">
             <iframe
               src="https://dashboard.openpanel.dev/share/overview/ZQsEhG?header=0"
               className="h-[max(90vh,650px)] w-full rounded-xl"
