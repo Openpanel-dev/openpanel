@@ -41,9 +41,6 @@ export default function Page({
         <OverviewFiltersButtons />
       </StickyBelowHeader>
       <div className="grid grid-cols-6 gap-4 p-4">
-        <div className="col-span-6">
-          <OverviewLiveHistogram projectId={projectId} />
-        </div>
         <OverviewMetrics projectId={projectId} />
         <OverviewTopSources projectId={projectId} />
         <OverviewTopPages projectId={projectId} />

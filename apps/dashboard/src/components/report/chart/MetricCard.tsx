@@ -71,9 +71,9 @@ export function MetricCard({
           {({ width, height }) => (
             <AreaChart
               width={width}
-              height={height / 2.5}
+              height={height / 3}
               data={serie.data}
-              style={{ marginTop: (height / 2.5) * 1.5 }}
+              style={{ marginTop: (height / 3) * 2 }}
             >
               <Area
                 dataKey="count"
@@ -89,12 +89,9 @@ export function MetricCard({
       </div>
       <div className="relative">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2 text-left font-medium">
+          <div className="flex min-w-0 items-center gap-2 text-left font-semibold">
             <ColorSquare>{serie.event.id}</ColorSquare>
-            <span
-              role="heading"
-              className="overflow-hidden text-ellipsis whitespace-nowrap"
-            >
+            <span className="overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground">
               {serie.name || serie.event.displayName || serie.event.name}
             </span>
           </div>

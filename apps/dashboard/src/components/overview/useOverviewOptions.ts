@@ -46,12 +46,6 @@ export function useOverviewOptions() {
     parseAsInteger.withDefault(0).withOptions(nuqsOptions)
   );
 
-  // Toggles
-  const [liveHistogram, setLiveHistogram] = useQueryState(
-    'live',
-    parseAsBoolean.withDefault(true).withOptions(nuqsOptions)
-  );
-
   return {
     previous,
     setPrevious,
@@ -72,9 +66,5 @@ export function useOverviewOptions() {
 
     // Computed
     interval,
-
-    // Toggles
-    liveHistogram,
-    setLiveHistogram,
   };
 }

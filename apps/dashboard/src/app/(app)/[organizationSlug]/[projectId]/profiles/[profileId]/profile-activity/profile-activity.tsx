@@ -14,6 +14,7 @@ import {
   eachDayOfInterval,
   endOfMonth,
   format,
+  formatISO,
   startOfMonth,
   subMonths,
 } from 'date-fns';
@@ -60,7 +61,9 @@ const ProfileActivity = ({ data }: Props) => {
                 end: endOfMonth(subMonths(startDate, 1)),
               }).map((date) => {
                 const hit = data.find((item) =>
-                  item.date.includes(date.toISOString().split('T')[0])
+                  item.date.includes(
+                    formatISO(date, { representation: 'date' })
+                  )
                 );
                 return (
                   <div
@@ -82,7 +85,9 @@ const ProfileActivity = ({ data }: Props) => {
                 end: endDate,
               }).map((date) => {
                 const hit = data.find((item) =>
-                  item.date.includes(date.toISOString().split('T')[0])
+                  item.date.includes(
+                    formatISO(date, { representation: 'date' })
+                  )
                 );
                 return (
                   <div

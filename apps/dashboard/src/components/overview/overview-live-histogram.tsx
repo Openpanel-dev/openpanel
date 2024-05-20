@@ -5,9 +5,7 @@ import { cn } from '@/utils/cn';
 
 import type { IChartInput } from '@openpanel/validation';
 
-import AnimateHeight from '../animate-height';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { useOverviewOptions } from './useOverviewOptions';
 
 interface OverviewLiveHistogramProps {
   projectId: string;
@@ -16,7 +14,6 @@ interface OverviewLiveHistogramProps {
 export function OverviewLiveHistogram({
   projectId,
 }: OverviewLiveHistogramProps) {
-  const { liveHistogram } = useOverviewOptions();
   const report: IChartInput = {
     projectId,
     events: [
@@ -80,11 +77,11 @@ export function OverviewLiveHistogram({
     ];
 
     return (
-      <Wrapper count={0} open={liveHistogram}>
+      <Wrapper count={0}>
         {staticArray.map((percent, i) => (
           <div
             key={i}
-            className="flex-1 animate-pulse rounded-md bg-slate-200 dark:bg-slate-800"
+            className="flex-1 animate-pulse rounded bg-slate-200 dark:bg-slate-800"
             style={{ height: `${percent}%` }}
           />
         ))}
@@ -97,14 +94,14 @@ export function OverviewLiveHistogram({
   }
 
   return (
-    <Wrapper open={liveHistogram} count={liveCount}>
+    <Wrapper count={liveCount}>
       {minutes.map((minute) => {
         return (
           <Tooltip key={minute.date}>
             <TooltipTrigger asChild>
               <div
                 className={cn(
-                  'flex-1 rounded-md transition-all ease-in-out hover:scale-110',
+                  'flex-1 rounded transition-all ease-in-out hover:scale-110',
                   minute.count === 0 ? 'bg-slate-200' : 'bg-blue-600'
                 )}
                 style={{
@@ -127,22 +124,19 @@ export function OverviewLiveHistogram({
 }
 
 interface WrapperProps {
-  open: boolean;
   children: React.ReactNode;
   count: number;
 }
 
-function Wrapper({ open, children, count }: WrapperProps) {
+function Wrapper({ children, count }: WrapperProps) {
   return (
-    <AnimateHeight open={open}>
-      <div className="flex flex-col">
-        <div className="relative -top-2 text-center text-xs font-medium text-muted-foreground">
-          {count} unique vistors last 30 minutes
-        </div>
-        <div className="relative flex aspect-[6/1] max-h-[150px] w-full flex-1 items-end gap-0.5 md:aspect-[10/1] md:gap-2">
-          {children}
-        </div>
+    <div className="flex h-full flex-col">
+      <div className="relative mb-1 text-xs font-medium text-muted-foreground">
+        {count} unique vistors last 30 minutes
       </div>
-    </AnimateHeight>
+      <div className="relative flex h-full w-full flex-1 items-end gap-1">
+        {children}
+      </div>
+    </div>
   );
 }

@@ -25,7 +25,7 @@ function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
   return (
     <rect
       {...{ x, y, width, height, top, left, right, bottom }}
-      rx="8"
+      rx="3"
       fill={bg}
       fillOpacity={0.5}
     />
@@ -79,7 +79,7 @@ export function ReportHistogramChart({
                       dataKey={`${serie.id}:prev:count`}
                       fill={getChartColor(serie.index)}
                       fillOpacity={0.2}
-                      radius={8}
+                      radius={3}
                     />
                   )}
                   <Bar
@@ -87,7 +87,7 @@ export function ReportHistogramChart({
                     name={serie.name}
                     dataKey={`${serie.id}:count`}
                     fill={getChartColor(serie.index)}
-                    radius={8}
+                    radius={3}
                   />
                 </React.Fragment>
               );

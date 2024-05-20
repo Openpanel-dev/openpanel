@@ -18,9 +18,15 @@ interface PageProps {
   params: {
     id: string;
   };
+  searchParams: {
+    header: string;
+  };
 }
 
-export default async function Page({ params: { id } }: PageProps) {
+export default async function Page({
+  params: { id },
+  searchParams,
+}: PageProps) {
   const share = await getShareOverviewById(id);
   if (!share) {
     return notFound();
@@ -32,43 +38,42 @@ export default async function Page({ params: { id } }: PageProps) {
   const organization = await getOrganizationBySlug(share.organizationSlug);
 
   return (
-    <div className="bg-gradient-to-tl from-blue-950 to-blue-600 p-4 md:p-16">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-4 flex items-end justify-between">
+    <div>
+      {searchParams.header !== '0' && (
+        <div className="flex items-center justify-between border-b border-border bg-white p-4">
           <div className="leading-none">
-            <span className="mb-4 text-white">{organization?.name}</span>
-            <h1 className="text-xl font-medium text-white">
-              {share.project?.name}
-            </h1>
+            <span className="mb-4">{organization?.name}</span>
+            <h1 className="text-xl font-medium">{share.project?.name}</h1>
           </div>
-          <a href="https://openpanel.dev?utm_source=openpanel.dev&utm_medium=share">
-            <Logo className="text-white max-sm:[&_span]:hidden" />
+          <a
+            href="https://openpanel.dev?utm_source=openpanel.dev&utm_medium=share"
+            className="flex flex-col items-end text-lg font-medium"
+          >
+            <span className="text-xs">POWERED BY</span>
+            <span>openpanel.dev</span>
           </a>
         </div>
-        <div className="rounded-lg bg-slate-100 shadow ring-8 ring-blue-600/50 max-sm:-mx-3">
-          <StickyBelowHeader>
-            <div className="flex justify-between gap-2 p-4">
-              <div className="flex gap-2">
-                <OverviewReportRange />
-                {/* <OverviewFiltersDrawer projectId={projectId} mode="events" /> */}
-              </div>
-              <div className="flex gap-2">
-                <ServerLiveCounter projectId={projectId} />
-              </div>
+      )}
+      <div className="">
+        <StickyBelowHeader>
+          <div className="flex justify-between gap-2 p-4">
+            <div className="flex gap-2">
+              <OverviewReportRange />
+              {/* <OverviewFiltersDrawer projectId={projectId} mode="events" /> */}
             </div>
-            <OverviewFiltersButtons />
-          </StickyBelowHeader>
-          <div className="grid grid-cols-6 gap-4 p-4">
-            <div className="col-span-6">
-              <OverviewLiveHistogram projectId={projectId} />
+            <div className="flex gap-2">
+              <ServerLiveCounter projectId={projectId} />
             </div>
-            <OverviewMetrics projectId={projectId} />
-            <OverviewTopSources projectId={projectId} />
-            <OverviewTopPages projectId={projectId} />
-            <OverviewTopDevices projectId={projectId} />
-            <OverviewTopEvents projectId={projectId} />
-            <OverviewTopGeo projectId={projectId} />
           </div>
+          <OverviewFiltersButtons />
+        </StickyBelowHeader>
+        <div className="mx-auto grid max-w-7xl grid-cols-6 gap-4 p-4">
+          <OverviewMetrics projectId={projectId} />
+          <OverviewTopSources projectId={projectId} />
+          <OverviewTopPages projectId={projectId} />
+          <OverviewTopDevices projectId={projectId} />
+          <OverviewTopEvents projectId={projectId} />
+          <OverviewTopGeo projectId={projectId} />
         </div>
       </div>
     </div>

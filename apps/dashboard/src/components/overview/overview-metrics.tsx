@@ -1,13 +1,13 @@
 'use client';
 
-import { WidgetHead } from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { ChartSwitch } from '@/components/report/chart';
-import { Widget, WidgetBody } from '@/components/widget';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import type { IChartInput } from '@openpanel/validation';
+
+import { OverviewLiveHistogram } from './overview-live-histogram';
 
 interface OverviewMetricsProps {
   projectId: string;
@@ -191,30 +191,40 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
   const selectedMetric = reports[metric]!;
 
   return (
-    <div className="card col-span-6 p-4">
-      <div className="-mx-2 -mt-2 mb-2 grid grid-cols-6 gap-2">
-        {reports.map((report, index) => (
-          <button
-            key={index}
+    <>
+      <div className="relative -top-0.5 col-span-6 -m-4 mb-0 md:m-0">
+        <div className="card mb-2 grid grid-cols-4">
+          {reports.map((report, index) => (
+            <button
+              key={index}
+              className={cn(
+                'col-span-2 flex-1 p-4 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
+                index === metric && 'bg-slate-50'
+              )}
+              onClick={() => {
+                setMetric(index);
+              }}
+            >
+              <ChartSwitch hideID {...report} />
+            </button>
+          ))}
+          <div
             className={cn(
-              'col-span-3 rounded-lg border border-background p-2 transition-all max-md:flex-1 md:col-span-2 lg:col-span-1 [&_[role="heading"]]:text-xs',
-              index === metric && 'border-border'
+              'col-span-4 min-h-28 flex-1 p-4 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-2'
             )}
-            onClick={() => {
-              setMetric(index);
-            }}
           >
-            <ChartSwitch hideID {...report} />
-            {/* add active border */}
-          </button>
-        ))}
+            <OverviewLiveHistogram projectId={projectId} />
+          </div>
+        </div>
+        <div className="card col-span-6 p-4">
+          <ChartSwitch
+            key={selectedMetric.id}
+            hideID
+            {...selectedMetric}
+            chartType="linear"
+          />
+        </div>
       </div>
-      <ChartSwitch
-        key={selectedMetric.id}
-        hideID
-        {...selectedMetric}
-        chartType="linear"
-      />
-    </div>
+    </>
   );
 }
