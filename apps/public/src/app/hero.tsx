@@ -47,7 +47,7 @@ export async function Hero() {
               Get started
             </ALink>
           </div>
-          <p className="mt-8 flex gap-8">
+          <div className="mt-8 flex gap-8">
             <div>
               <div className="text-sm uppercase text-muted-foreground">
                 Collected events
@@ -64,13 +64,14 @@ export async function Hero() {
                 {projectCount}
               </div>
             </div>
-          </p>
+          </div>
         </div>
         <div className="relative mt-12 h-[max(90vh,650px)] w-full md:mt-24">
-          <div className="absolute bottom-0 left-0 right-0 top-0 flex rounded-2xl bg-slate-300 p-2">
+          <div className="absolute inset-0 flex rounded-2xl ring-8 ring-slate-300">
+            <div className="absolute inset-0 w-full animate-pulse overflow-hidden rounded-2xl bg-slate-100" />
             <iframe
               src="https://dashboard.openpanel.dev/share/overview/ZQsEhG?header=0"
-              className="h-[max(90vh,650px)] w-full rounded-xl"
+              className="relative z-10 h-[max(90vh,650px)] w-full rounded-2xl"
               title="Openpanel Dashboard"
               scrolling="no"
             />
