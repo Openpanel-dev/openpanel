@@ -25,8 +25,8 @@ export async function Hero() {
       <div className="container relative flex min-h-[700px] flex-col items-center gap-4 max-md:pt-32 md:h-screen md:flex-row md:gap-8">
         <div className="flex-1 max-md:text-center sm:min-w-[350px] lg:min-w-[400px]">
           <div className="mb-4 flex justify-center md:justify-start">
-            <div className="rounded-full border border-border p-2 px-4 text-sm">
-              NOW OPEN BETA!
+            <div className="rounded-md border border-border p-1.5 px-4 text-sm font-medium">
+              FREE DURING BETA
             </div>
           </div>
           <Heading1 className="mb-4 text-slate-950">
