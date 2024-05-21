@@ -4,6 +4,14 @@ import { chQuery } from '@openpanel/db';
 
 import { Heading1, Lead2 } from './copy';
 
+function shortNumber(num: number) {
+  if (num < 1e3) return num;
+  if (num >= 1e3 && num < 1e6) return +(num / 1e3).toFixed(1) + 'K';
+  if (num >= 1e6 && num < 1e9) return +(num / 1e6).toFixed(1) + 'M';
+  if (num >= 1e9 && num < 1e12) return +(num / 1e9).toFixed(1) + 'B';
+  if (num >= 1e12) return +(num / 1e12).toFixed(1) + 'T';
+}
+
 export async function Hero() {
   const projects = await chQuery<{ project_id: string; count: number }>(
     'SELECT project_id, count(*) as count from events GROUP by project_id order by count()'
@@ -36,29 +44,30 @@ export async function Hero() {
               size="lg"
               href="https://dashboard.openpanel.dev/register"
             >
-              Create account
-            </ALink>
-            <ALink
-              className="font-semibold"
-              size="lg"
-              variant="secondary"
-              href="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
-            >
-              See demo
+              Get started
             </ALink>
           </div>
-          <p className="mt-2">
-            We have{' '}
-            <span className="font-semibold">{projectCount} projects</span>{' '}
-            receiving{' '}
-            <span className="font-semibold">
-              {new Intl.NumberFormat('en').format(eventCount)} events
-            </span>{' '}
-            in total!
+          <p className="mt-8 flex gap-8">
+            <div>
+              <div className="text-sm uppercase text-muted-foreground">
+                Collected events
+              </div>
+              <div className="font-serif text-3xl font-semibold">
+                {shortNumber(eventCount)}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm uppercase text-muted-foreground">
+                Active projects
+              </div>
+              <div className="font-serif text-3xl font-semibold">
+                {projectCount}
+              </div>
+            </div>
           </p>
         </div>
-        <div className="relative mt-24 h-[max(90vh,650px)] w-full">
-          <div className="absolute bottom-0 left-0 right-0 top-0 flex rounded-2xl bg-slate-300 md:p-2">
+        <div className="relative mt-12 h-[max(90vh,650px)] w-full md:mt-24">
+          <div className="absolute bottom-0 left-0 right-0 top-0 flex rounded-2xl bg-slate-300 p-2">
             <iframe
               src="https://dashboard.openpanel.dev/share/overview/ZQsEhG?header=0"
               className="h-[max(90vh,650px)] w-full rounded-xl"
