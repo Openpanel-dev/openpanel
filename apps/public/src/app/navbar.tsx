@@ -16,7 +16,7 @@ export function Navbar({ darkText = false, className }: Props) {
   return (
     <div
       className={cn(
-        'fixed left-0 right-0 top-0 z-10 flex h-20 items-center border-b border-border bg-white',
+        'fixed left-0 right-0 top-0 z-10 z-50 flex h-20 items-center border-b border-border bg-white',
         textColor,
         className
       )}

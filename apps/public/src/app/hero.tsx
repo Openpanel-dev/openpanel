@@ -2,6 +2,7 @@ import { ALink } from '@/components/ui/button';
 
 import { chQuery } from '@openpanel/db';
 
+import AnimatedText from './animated-text';
 import { Heading1, Lead2 } from './copy';
 
 function shortNumber(num: number) {
@@ -31,7 +32,23 @@ export async function Hero() {
           <Heading1 className="mb-4 text-slate-950">
             An open-source
             <br />
-            alternative to Mixpanel
+            alternative to{' '}
+            <AnimatedText
+              texts={[
+                {
+                  text: 'Mixpanel',
+                  color: '#5028C0',
+                },
+                {
+                  text: 'Google Analytics',
+                  color: '#FAAE17',
+                },
+                {
+                  text: 'Plausible',
+                  color: '#5850EC',
+                },
+              ]}
+            />
           </Heading1>
           <Lead2 className="mb-12">
             The power of Mixpanel, the ease of Plausible and nothing from Google
@@ -47,7 +64,7 @@ export async function Hero() {
               Get started
             </ALink>
           </div>
-          <div className="mt-8 flex gap-8">
+          <div className="mt-8 flex justify-center gap-8 md:justify-start">
             <div>
               <div className="text-sm uppercase text-muted-foreground">
                 Collected events
@@ -66,7 +83,7 @@ export async function Hero() {
             </div>
           </div>
         </div>
-        <div className="relative mt-12 h-[max(90vh,650px)] w-full md:mt-24">
+        <div className="relative mt-12 h-[max(90vh,650px)] w-full md:mt-36">
           <div className="absolute inset-0 flex rounded-2xl ring-8 ring-slate-300">
             <div className="absolute inset-0 w-full animate-pulse overflow-hidden rounded-2xl bg-slate-100" />
             <iframe
