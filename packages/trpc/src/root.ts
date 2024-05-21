@@ -9,6 +9,7 @@ import { projectRouter } from './routers/project';
 import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
 import { shareRouter } from './routers/share';
+import { ticketRouter } from './routers/ticket';
 import { userRouter } from './routers/user';
 import { createTRPCRouter } from './trpc';
 
@@ -30,6 +31,7 @@ export const appRouter = createTRPCRouter({
   share: shareRouter,
   onboarding: onboardingRouter,
   reference: referenceRouter,
+  ticket: ticketRouter,
 });
 
 // export type definition of API

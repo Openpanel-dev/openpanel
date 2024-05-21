@@ -74,6 +74,7 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
     if (hasProjectId) {
       user?.update({
         unsafeMetadata: {
+          ...user.unsafeMetadata,
           projectId: params.projectId,
         },
       });

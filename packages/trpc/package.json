@@ -13,6 +13,7 @@
     "@openpanel/constants": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/validation": "workspace:*",
+    "@seventy-seven/sdk": "0.0.0-beta.2",
     "@trpc/server": "^10.45.1",
     "date-fns": "^3.3.1",
     "mathjs": "^12.3.2",

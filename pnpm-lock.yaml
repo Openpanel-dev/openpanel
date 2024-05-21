@@ -1243,6 +1243,9 @@ importers:
       '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
+      '@seventy-seven/sdk':
+        specifier: 0.0.0-beta.2
+        version: 0.0.0-beta.2
       '@trpc/server':
         specifier: ^10.45.1
         version: 10.45.1
@@ -6977,6 +6980,10 @@ packages:
     dependencies:
       component-type: 1.2.2
       join-component: 1.1.0
+    dev: false
+
+  /@seventy-seven/sdk@0.0.0-beta.2:
+    resolution: {integrity: sha512-aqRk1zvfEiq0yn20UwGvcQ1PGOLrGo3fSKZmhgKOesh8HFnimrduJ4uGJjpJUSmvvKafL/rC7wXCrMuwtSiYQg==}
     dev: false
 
   /@sideway/address@4.1.5:

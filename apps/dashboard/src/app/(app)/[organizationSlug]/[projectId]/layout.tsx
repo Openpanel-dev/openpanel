@@ -7,6 +7,7 @@ import {
 } from '@openpanel/db';
 
 import { LayoutSidebar } from './layout-sidebar';
+import SideEffects from './side-effects';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -48,6 +49,7 @@ export default async function AppLayout({
         {...{ organizationSlug, projectId, organizations, dashboards }}
       />
       <div className="transition-all lg:pl-72">{children}</div>
+      <SideEffects />
     </div>
   );
 }

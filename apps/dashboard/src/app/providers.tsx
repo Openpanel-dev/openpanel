@@ -8,7 +8,7 @@ import makeStore from '@/redux';
 import { api } from '@/trpc/client';
 import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { httpLink, unstable_httpBatchStreamLink } from '@trpc/client';
+import { unstable_httpBatchStreamLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';

@@ -65,6 +65,9 @@ const modals = {
   OverviewChartDetails: dynamic(() => import('./OverviewChartDetails'), {
     loading: Loading,
   }),
+  Testimonial: dynamic(() => import('./Testimonial'), {
+    loading: Loading,
+  }),
 };
 
 export const {
