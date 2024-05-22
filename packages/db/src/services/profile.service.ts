@@ -3,7 +3,7 @@ import { escape } from 'sqlstring';
 import { toDots, toObject } from '@openpanel/common';
 import type { IChartEventFilter } from '@openpanel/validation';
 
-import { ch, chQuery } from '../clickhouse-client';
+import { ch, chNew, chQuery } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
 
@@ -203,4 +203,34 @@ export async function upsertProfile({
       },
     ],
   });
+
+  try {
+    if (process.env.CLICKHOUSE_URL_NEW) {
+      await chNew.insert({
+        table: 'profiles',
+        format: 'JSONEachRow',
+        clickhouse_settings: {
+          date_time_input_format: 'best_effort',
+        },
+        values: [
+          {
+            id,
+            first_name: firstName ?? profile?.first_name ?? '',
+            last_name: lastName ?? profile?.last_name ?? '',
+            email: email ?? profile?.email ?? '',
+            avatar: avatar ?? profile?.avatar ?? '',
+            properties: toDots({
+              ...(profile?.properties ?? {}),
+              ...(properties ?? {}),
+            }),
+            project_id: projectId ?? profile?.project_id ?? '',
+            created_at: new Date(),
+            is_external: isExternal,
+          },
+        ],
+      });
+    }
+  } catch (e) {
+    console.error('Error inserting into new clickhouse', e);
+  }
 }
