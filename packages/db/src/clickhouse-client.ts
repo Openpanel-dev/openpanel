@@ -12,26 +12,6 @@ export const ch = createClient({
   },
 });
 
-export const chNew = process.env.CLICKHOUSE_URL_NEW
-  ? createClient({
-      url: process.env.CLICKHOUSE_URL_NEW,
-      username: process.env.CLICKHOUSE_USER,
-      password: process.env.CLICKHOUSE_PASSWORD,
-      database: process.env.CLICKHOUSE_DB,
-      max_open_connections: 10,
-      keep_alive: {
-        enabled: true,
-      },
-    })
-  : {
-      query: async () => {
-        return Promise.reject(new Error('Clickhouse URL not configured'));
-      },
-      insert: async () => {
-        return Promise.reject(new Error('Clickhouse URL not configured'));
-      },
-    };
-
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string
 ): Promise<ResponseJSON<T>> {

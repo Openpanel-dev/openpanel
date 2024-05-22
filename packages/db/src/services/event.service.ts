@@ -9,7 +9,6 @@ import type { IChartEventFilter } from '@openpanel/validation';
 
 import {
   ch,
-  chNew,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
@@ -290,20 +289,6 @@ export async function createEvent(
       date_time_input_format: 'best_effort',
     },
   });
-  try {
-    if (process.env.CLICKHOUSE_URL_NEW) {
-      await chNew.insert({
-        table: 'events',
-        values: [event],
-        format: 'JSONEachRow',
-        clickhouse_settings: {
-          date_time_input_format: 'best_effort',
-        },
-      });
-    }
-  } catch (e) {
-    console.error('Error inserting into new clickhouse', e);
-  }
 
   redisPub.publish('event', superjson.stringify(transformEvent(event)));
   redis.set(
