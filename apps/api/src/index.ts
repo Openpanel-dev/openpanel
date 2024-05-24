@@ -4,6 +4,7 @@ import cors from '@fastify/cors';
 import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
+import metricsPlugin from 'fastify-metrics';
 
 import type { IServiceClient } from '@openpanel/db';
 import { redisPub } from '@openpanel/redis';
@@ -32,6 +33,8 @@ const startServer = async () => {
     const fastify = Fastify({
       maxParamLength: 15_000,
     });
+
+    await fastify.register(metricsPlugin, { endpoint: '/metrics' });
 
     fastify.register(cors, {
       origin: '*',

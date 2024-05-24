@@ -65,6 +65,9 @@ importers:
       fastify:
         specifier: ^4.25.2
         version: 4.26.1
+      fastify-metrics:
+        specifier: ^11.0.0
+        version: 11.0.0(fastify@4.26.1)
       ico-to-png:
         specifier: ^0.2.1
         version: 0.2.1
@@ -8511,6 +8514,10 @@ packages:
     resolution: {integrity: sha512-PJvH288AWQhKs2v9zyfYdPzlPqf5bXbGMmhmUIY9x4dAUGIWgomO771oBQNwJnMQSnUIXhKu6sgzpBRXTlvb8Q==}
     dev: false
 
+  /bintrees@1.0.2:
+    resolution: {integrity: sha512-VOMgTMwjAaUG580SXn3LacVgjurrbMme7ZZNYGSSV7mmtY6QQRh0Eg3pwIcntQ77DErK1L0NxkbetjcoXzVwKw==}
+    dev: false
+
   /bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
     dependencies:
@@ -11066,6 +11073,16 @@ packages:
     hasBin: true
     dependencies:
       strnum: 1.0.5
+    dev: false
+
+  /fastify-metrics@11.0.0(fastify@4.26.1):
+    resolution: {integrity: sha512-2nv0pzkuRVRuAmW3fR2vh1FQF7sV/mgzOJ8cz3HjUzByudWvx2IOHKnJLWtUohiD1AaI2QxtLQKTDZv/nASBRQ==}
+    peerDependencies:
+      fastify: '>=4'
+    dependencies:
+      fastify: 4.26.1
+      fastify-plugin: 4.5.1
+      prom-client: 15.1.2
     dev: false
 
   /fastify-plugin@4.5.1:
@@ -15484,6 +15501,14 @@ packages:
     engines: {node: '>=0.4.0'}
     dev: false
 
+  /prom-client@15.1.2:
+    resolution: {integrity: sha512-on3h1iXb04QFLLThrmVYg1SChBQ9N1c+nKAjebBjokBqipddH3uxmOUcEkTnzmJ8Jh/5TSUnUqS40i2QB2dJHQ==}
+    engines: {node: ^16 || ^18 || >=20}
+    dependencies:
+      '@opentelemetry/api': 1.8.0
+      tdigest: 0.1.2
+    dev: false
+
   /promise-inflight@1.0.1:
     resolution: {integrity: sha512-6zWPyEOFaQBJYcGMHBKTKJ3u6TBsnMFOIZSa6ce1e/ZrrsOlnHRHbabMjLiBYKp+n44X9eUI6VUPaukCXHuG4g==}
     peerDependencies:
@@ -17327,6 +17352,12 @@ packages:
       minizlib: 2.1.2
       mkdirp: 1.0.4
       yallist: 4.0.0
+    dev: false
+
+  /tdigest@0.1.2:
+    resolution: {integrity: sha512-+G0LLgjjo9BZX2MfdvPfH+MKLCrxlXSYec5DaPYP1fe6Iyhf0/fSmJ0bFiZ1F8BT6cGXl2LpltQptzjXKWEkKA==}
+    dependencies:
+      bintrees: 1.0.2
     dev: false
 
   /temp-dir@1.0.0:

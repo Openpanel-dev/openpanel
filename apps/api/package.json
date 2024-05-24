@@ -24,6 +24,7 @@
     "@openpanel/trpc": "workspace:*",
     "@trpc/server": "^10.45.1",
     "fastify": "^4.25.2",
+    "fastify-metrics": "^11.0.0",
     "ico-to-png": "^0.2.1",
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1",
