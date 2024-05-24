@@ -11,7 +11,7 @@ export function Logout() {
       </WidgetHead>
       <WidgetBody>
         <p className="mb-4">
-          Sometime&apos;s you need to go. See you next time
+          Sometimes you need to go. See you next time
         </p>
         <SignOutButton />
       </WidgetBody>
