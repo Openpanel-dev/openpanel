@@ -1,19 +1,13 @@
 'use client';
 
-import { Fragment, Suspense } from 'react';
+import { Fragment } from 'react';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Pagination } from '@/components/pagination';
-import { ChartSwitch, ChartSwitchShortcut } from '@/components/report/chart';
 import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/useAppParams';
 import { useCursor } from '@/hooks/useCursor';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { isSameDay } from 'date-fns';
-import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  GanttChartIcon,
-} from 'lucide-react';
+import { GanttChartIcon } from 'lucide-react';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 
@@ -29,9 +23,11 @@ interface EventListProps {
   data: IServiceCreateEventPayload[];
   count: number;
 }
-export function EventList({ data, count }: EventListProps) {
+
+function EventList({ data, count }: EventListProps) {
   const { cursor, setCursor, loading } = useCursor();
   const [filters] = useEventQueryFilters();
+
   return (
     <>
       {data.length === 0 ? (
@@ -100,3 +96,5 @@ export function EventList({ data, count }: EventListProps) {
     </>
   );
 }
+
+export default EventList;

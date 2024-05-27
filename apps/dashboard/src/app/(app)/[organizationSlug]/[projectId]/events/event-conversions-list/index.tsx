@@ -1,3 +1,4 @@
+import withLoadingWidget from '@/hocs/with-loading-widget';
 import { escape } from 'sqlstring';
 
 import { db, getEvents } from '@openpanel/db';
@@ -8,7 +9,7 @@ interface Props {
   projectId: string;
 }
 
-export default async function EventConversionsListServer({ projectId }: Props) {
+async function EventConversionsListServer({ projectId }: Props) {
   const conversions = await db.eventMeta.findMany({
     where: {
       projectId,
@@ -30,3 +31,5 @@ export default async function EventConversionsListServer({ projectId }: Props) {
 
   return <EventConversionsList data={events} />;
 }
+
+export default withLoadingWidget(EventConversionsListServer);

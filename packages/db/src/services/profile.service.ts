@@ -59,10 +59,7 @@ interface GetProfileListOptions {
   filters?: IChartEventFilter[];
 }
 
-interface GetProfilesOptions {
-  ids: string[];
-}
-export async function getProfiles({ ids }: GetProfilesOptions) {
+export async function getProfiles(ids: string[]) {
   if (ids.length === 0) {
     return [];
   }

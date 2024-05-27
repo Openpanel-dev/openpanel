@@ -483,7 +483,7 @@ export async function getFunnelStep({
     id: string;
   }>(profileIdsQuery);
 
-  return getProfiles({ ids: res.map((r) => r.id) });
+  return getProfiles(res.map((r) => r.id));
 }
 
 export async function getSeriesFromEvents(input: IChartInput) {

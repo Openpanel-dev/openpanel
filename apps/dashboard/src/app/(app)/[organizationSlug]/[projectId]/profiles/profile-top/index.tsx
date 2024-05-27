@@ -20,7 +20,7 @@ async function ProfileTopServer({ organizationSlug, projectId }: Props) {
   const res = await chQuery<{ profile_id: string; count: number }>(
     `SELECT profile_id, count(*) as count from events where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT 50`
   );
-  const profiles = await getProfiles({ ids: res.map((r) => r.profile_id) });
+  const profiles = await getProfiles(res.map((r) => r.profile_id));
   const list = res.map((item) => {
     return {
       count: item.count,

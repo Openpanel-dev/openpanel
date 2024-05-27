@@ -1,5 +1,3 @@
-'use client';
-
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { ChartSwitchShortcut } from '@/components/report/chart';
@@ -27,6 +25,7 @@ interface Props {
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
+
 export function EventDetails({ event, open, setOpen }: Props) {
   const { name } = event;
   const [isEditOpen, setIsEditOpen] = useState(false);

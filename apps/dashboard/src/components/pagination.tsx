@@ -44,21 +44,12 @@ export function Pagination({
   return (
     <div
       className={cn(
-        'flex select-none items-center justify-end gap-2',
+        'flex select-none items-center justify-end gap-1',
         className
       )}
     >
       {size === 'base' && (
-        <>
-          <div className="text-xs font-medium">Page: {cursor + 1}</div>
-          {typeof count === 'number' && (
-            <div className="text-xs font-medium">Total rows: {count}</div>
-          )}
-        </>
-      )}
-      {size === 'base' && (
         <Button
-          loading={loading}
           variant="outline"
           size="icon"
           onClick={() => setCursor(0)}
@@ -68,7 +59,6 @@ export function Pagination({
         />
       )}
       <Button
-        loading={loading}
         variant="outline"
         size="icon"
         onClick={() => setCursor((p) => Math.max(0, p - 1))}
@@ -76,8 +66,11 @@ export function Pagination({
         icon={ChevronLeftIcon}
       />
 
+      <Button loading={loading} disabled variant="outline" size="icon">
+        {loading ? '' : cursor}
+      </Button>
+
       <Button
-        loading={loading}
         variant="outline"
         size="icon"
         onClick={() => setCursor((p) => Math.min(lastCursor, p + 1))}
@@ -87,7 +80,6 @@ export function Pagination({
 
       {size === 'base' && (
         <Button
-          loading={loading}
           variant="outline"
           size="icon"
           onClick={() => setCursor(lastCursor)}

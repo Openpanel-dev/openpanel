@@ -1,4 +1,5 @@
 import { ChartSwitchShortcut } from '@/components/report/chart';
+import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 
 import type { IChartEvent } from '@openpanel/validation';
 
@@ -20,23 +21,28 @@ export function EventsPerDayChart({ projectId, filters, events }: Props) {
   ];
 
   return (
-    <div className="card mb-8 p-4">
-      <ChartSwitchShortcut
-        projectId={projectId}
-        range="30d"
-        chartType="histogram"
-        events={
-          events && events.length > 0
-            ? events.map((name) => ({
-                id: name,
-                name,
-                displayName: name,
-                segment: 'event',
-                filters: filters ?? [],
-              }))
-            : fallback
-        }
-      />
-    </div>
+    <Widget className="w-full">
+      <WidgetHead>
+        <span className="title">Events per day</span>
+      </WidgetHead>
+      <WidgetBody>
+        <ChartSwitchShortcut
+          projectId={projectId}
+          range="30d"
+          chartType="histogram"
+          events={
+            events && events.length > 0
+              ? events.map((name) => ({
+                  id: name,
+                  name,
+                  displayName: name,
+                  segment: 'event',
+                  filters: filters ?? [],
+                }))
+              : fallback
+          }
+        />
+      </WidgetBody>
+    </Widget>
   );
 }

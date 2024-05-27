@@ -6,6 +6,7 @@ const withSuspense = <P,>(
 ) => {
   const WithSuspense: React.ComponentType<P> = (props) => {
     const fallback = <Fallback {...(props as any)} />;
+    // return <>{fallback}</>;
     return (
       <Suspense fallback={fallback}>
         <Component {...(props as any)} />

@@ -1,25 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import {
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
-import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
-import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { TooltipTrigger } from '@radix-ui/react-tooltip';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 
 import type { EventMeta } from '@openpanel/db';
 

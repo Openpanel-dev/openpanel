@@ -189,7 +189,7 @@ export async function getEvents(
   const events = await chQuery<IClickhouseEvent>(sql);
   if (options.profile) {
     const ids = events.map((e) => e.profile_id);
-    const profiles = await getProfiles({ ids });
+    const profiles = await getProfiles(ids);
 
     for (const event of events) {
       event.profile = profiles.find((p) => p.id === event.profile_id);

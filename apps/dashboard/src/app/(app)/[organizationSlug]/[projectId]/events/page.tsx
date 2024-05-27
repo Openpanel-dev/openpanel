@@ -7,12 +7,10 @@ import {
 } from '@/hooks/useEventQueryFilters';
 import { parseAsInteger } from 'nuqs';
 
-import { getEventList, getEventsCount } from '@openpanel/db';
-
 import { StickyBelowHeader } from '../layout-sticky-below-header';
 import { EventsPerDayChart } from './charts/events-per-day-chart';
 import EventConversionsListServer from './event-conversions-list';
-import { EventList } from './event-list';
+import EventListServer from './event-list';
 
 interface PageProps {
   params: {
@@ -30,30 +28,16 @@ const nuqsOptions = {
   shallow: false,
 };
 
-export default async function Page({
+export default function Page({
   params: { projectId, organizationSlug },
   searchParams,
 }: PageProps) {
+  const cursor =
+    parseAsInteger.parseServerSide(searchParams.cursor ?? '') ?? undefined;
   const filters =
     eventQueryFiltersParser.parseServerSide(searchParams.f ?? '') ?? undefined;
-  const eventsFilter = eventQueryNamesFilter.parseServerSide(
-    searchParams.events ?? ''
-  );
-  const [events, count] = await Promise.all([
-    getEventList({
-      cursor:
-        parseAsInteger.parseServerSide(searchParams.cursor ?? '') ?? undefined,
-      projectId,
-      take: 50,
-      events: eventsFilter,
-      filters,
-    }),
-    getEventsCount({
-      projectId,
-      events: eventsFilter,
-      filters,
-    }),
-  ]);
+  const eventNames =
+    eventQueryNamesFilter.parseServerSide(searchParams.events) ?? undefined;
 
   return (
     <>
@@ -72,12 +56,17 @@ export default async function Page({
       </StickyBelowHeader>
       <div className="grid gap-4 p-4 md:grid-cols-2">
         <div>
-          <EventList data={events} count={count} />
+          <EventListServer
+            projectId={projectId}
+            cursor={cursor}
+            filters={filters}
+            eventNames={eventNames}
+          />
         </div>
-        <div>
+        <div className="flex flex-col gap-4">
           <EventsPerDayChart
             projectId={projectId}
-            events={eventsFilter}
+            events={eventNames}
             filters={filters}
           />
           <EventConversionsListServer projectId={projectId} />

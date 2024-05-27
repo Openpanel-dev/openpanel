@@ -1,8 +1,5 @@
 import { useCallback } from 'react';
-
-// prettier-ignore
 import type { Options as NuqsOptions } from 'nuqs';
-
 import {
   createParser,
   parseAsArrayOf,

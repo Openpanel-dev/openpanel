@@ -6,7 +6,7 @@ import { isSameDay } from 'date-fns';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 
-import { EventListItem } from '../event-list-item';
+import { EventListItem } from '../event-list/event-list-item';
 
 function showDateHeader(a: Date, b?: Date) {
   if (!b) return true;
@@ -18,7 +18,7 @@ interface EventListProps {
 }
 export function EventConversionsList({ data }: EventListProps) {
   return (
-    <Widget>
+    <Widget className="w-full">
       <WidgetHead>
         <div className="title">Conversions</div>
       </WidgetHead>
