@@ -89,7 +89,7 @@ export function ReportAreaChart({
                   <Area
                     key={serie.name}
                     type={lineType}
-                    isAnimationActive={true}
+                    isAnimationActive={false}
                     strokeWidth={2}
                     dataKey={`${serie.id}:count`}
                     stroke={color}

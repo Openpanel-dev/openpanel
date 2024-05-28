@@ -101,7 +101,7 @@ export function FunnelSteps({
                         ]}
                         innerRadius={height / 3}
                         outerRadius={height / 2 - 10}
-                        isAnimationActive={true}
+                        isAnimationActive={false}
                         nameKey="label"
                         dataKey="value"
                       >

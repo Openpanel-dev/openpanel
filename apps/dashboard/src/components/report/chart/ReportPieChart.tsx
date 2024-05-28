@@ -43,7 +43,7 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
                   data={pieData}
                   innerRadius={height / 4}
                   outerRadius={height / 2.5}
-                  isAnimationActive={true}
+                  isAnimationActive={false}
                   label={renderLabel}
                 >
                   {pieData.map((item) => {

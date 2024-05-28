@@ -100,7 +100,7 @@ export function ReportLineChart({
                     type={lineType}
                     key={serie.name}
                     name={serie.name}
-                    isAnimationActive={true}
+                    isAnimationActive={false}
                     strokeWidth={2}
                     dataKey={`${serie.id}:count`}
                     stroke={getChartColor(serie.index)}
@@ -110,7 +110,7 @@ export function ReportLineChart({
                       type={lineType}
                       key={`${serie.name}:prev`}
                       name={`${serie.name}:prev`}
-                      isAnimationActive={true}
+                      isAnimationActive={false}
                       strokeWidth={1}
                       dot={false}
                       strokeDasharray={'6 6'}
