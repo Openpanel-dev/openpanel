@@ -49,7 +49,7 @@ function EventList({ data, count }: EventListProps) {
               {filters.length ? (
                 <p>Could not find any events with your filter</p>
               ) : (
-                <p>We have not recieved any events yet</p>
+                <p>We have not received any events yet</p>
               )}
             </>
           )}
