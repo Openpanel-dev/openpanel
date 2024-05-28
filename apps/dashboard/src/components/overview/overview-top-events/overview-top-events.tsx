@@ -27,9 +27,9 @@ export default function OverviewTopEvents({
   const [filters] = useEventQueryFilters();
   const [chartType, setChartType] = useState<IChartType>('bar');
   const [widget, setWidget, widgets] = useOverviewWidget('ev', {
-    all: {
+    your: {
       title: 'Top events',
-      btn: 'All',
+      btn: 'Your',
       chart: {
         projectId,
         startDate,
@@ -43,9 +43,39 @@ export default function OverviewTopEvents({
                 id: 'ex_session',
                 name: 'name',
                 operator: 'isNot',
-                value: ['session_start', 'session_end'],
+                value: ['session_start', 'session_end', 'screen_view'],
               },
             ],
+            id: 'A',
+            name: '*',
+          },
+        ],
+        breakdowns: [
+          {
+            id: 'A',
+            name: 'name',
+          },
+        ],
+        chartType,
+        lineType: 'monotone',
+        interval: interval,
+        name: 'Top sources',
+        range: range,
+        previous: previous,
+        metric: 'sum',
+      },
+    },
+    all: {
+      title: 'Top events',
+      btn: 'All',
+      chart: {
+        projectId,
+        startDate,
+        endDate,
+        events: [
+          {
+            segment: 'event',
+            filters: [...filters],
             id: 'A',
             name: '*',
           },
