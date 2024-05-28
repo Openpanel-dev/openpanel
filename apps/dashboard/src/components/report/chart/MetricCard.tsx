@@ -82,6 +82,7 @@ export function MetricCard({
                 fillOpacity={1}
                 stroke={graphColors}
                 strokeWidth={2}
+                isAnimationActive={false}
               />
             </AreaChart>
           )}

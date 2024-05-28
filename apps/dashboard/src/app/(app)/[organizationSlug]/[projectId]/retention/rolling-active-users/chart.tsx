@@ -109,18 +109,21 @@ const Chart = ({ data }: Props) => {
               stroke={getChartColor(0)}
               strokeWidth={2}
               fill={`url(#dau)`}
+              isAnimationActive={false}
             />
             <Area
               dataKey="wau"
               stroke={getChartColor(1)}
               strokeWidth={2}
               fill={`url(#wau)`}
+              isAnimationActive={false}
             />
             <Area
               dataKey="mau"
               stroke={getChartColor(2)}
               strokeWidth={2}
               fill={`url(#mau)`}
+              isAnimationActive={false}
             />
             <XAxis
               dataKey="date"

@@ -68,6 +68,7 @@ const Chart = ({ data }: Props) => {
               stroke={getChartColor(0)}
               strokeWidth={2}
               fill={`url(#bg)`}
+              isAnimationActive={false}
             />
             <XAxis
               dataKey="days"
