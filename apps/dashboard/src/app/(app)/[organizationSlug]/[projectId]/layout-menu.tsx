@@ -42,7 +42,7 @@ function LinkWithIcon({
   return (
     <Link
       className={cn(
-        'text-text flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium leading-none transition-all transition-colors hover:bg-slate-100',
+        'text-text flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all transition-colors hover:bg-slate-100',
         active && 'bg-slate-100',
         className
       )}
@@ -150,14 +150,7 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
               <LinkWithIcon
                 key={item.id}
                 icon={LayoutPanelTopIcon}
-                label={
-                  <div className="flex items-center justify-between gap-0.5">
-                    <span>{item.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {item.project.name}
-                    </span>
-                  </div>
-                }
+                label={item.name}
                 href={`/${item.organizationSlug}/${item.projectId}/dashboards/${item.id}`}
               />
             ))}
