@@ -1,8 +1,5 @@
 import { Suspense } from 'react';
-import withSuspense from '@/hocs/with-suspense';
 import { shortNumber } from '@/hooks/useNumerFormatter';
-import { Fallback } from '@radix-ui/react-avatar';
-import { endOfMonth, startOfMonth } from 'date-fns';
 import { escape } from 'sqlstring';
 
 import type { IServiceProject } from '@openpanel/db';
@@ -26,9 +23,7 @@ function ProjectCard({ id, name, organizationSlug }: IServiceProject) {
           <ProjectChart id={id} />
         </Suspense>
       </div>
-      <div className="flex justify-between gap-4 text-sm text-muted-foreground">
-        <div className="font-medium">Visitors</div>
-
+      <div className="flex justify-end gap-4 text-sm text-muted-foreground">
         <Suspense>
           <ProjectMetrics id={id} />
         </Suspense>
