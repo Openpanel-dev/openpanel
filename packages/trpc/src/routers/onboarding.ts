@@ -69,11 +69,6 @@ export const onboardingRouter = createTRPCRouter({
         },
       });
 
-      ctx.setCookie('onboarding_client_secret', secret, {
-        maxAge: 60 * 60, // 1 hour
-        path: '/',
-      });
-
       return {
         ...client,
         secret,

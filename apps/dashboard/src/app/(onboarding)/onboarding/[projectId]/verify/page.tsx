@@ -27,15 +27,9 @@ const Verify = async ({ params: { projectId } }: Props) => {
       `SELECT * FROM events WHERE project_id = ${escape(projectId)} LIMIT 100`
     ),
   ]);
-  const clientSecret = cookies().get('onboarding_client_secret')?.value ?? null;
 
   if (!project) {
     return <div>Hmm, something fishy is going on. Please reload the page.</div>;
-  }
-
-  // set visible client secret from cookie
-  if (clientSecret && project.clients[0]) {
-    project.clients[0].secret = clientSecret;
   }
 
   return <OnboardingVerify project={project} events={events} />;

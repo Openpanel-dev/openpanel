@@ -8,6 +8,7 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
+import { useClientSecret } from '@/hooks/useClientSecret';
 import { api, handleError } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -33,10 +34,12 @@ const Tracking = ({
 }: {
   organizations: IServiceOrganization[];
 }) => {
+  const [, setSecret] = useClientSecret();
   const router = useRouter();
   const mutation = api.onboarding.project.useMutation({
     onError: handleError,
     onSuccess(res) {
+      setSecret(res.secret);
       router.push(`/onboarding/${res.projectId}/connect`);
     },
   });

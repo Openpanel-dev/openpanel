@@ -1,12 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
 import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Alert } from '@/components/ui/alert';
 import { LinkButton } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { KeyIcon, LockIcon } from 'lucide-react';
+import { useClientSecret } from '@/hooks/useClientSecret';
+import { LockIcon } from 'lucide-react';
 
 import type { IServiceProjectWithClients } from '@openpanel/db';
 
@@ -23,6 +21,7 @@ type Props = {
 
 const Connect = ({ project }: Props) => {
   const client = project.clients[0];
+  const [secret] = useClientSecret();
 
   if (!client) {
     return <div>Hmm, something fishy is going on. Please reload the page.</div>;
@@ -43,11 +42,7 @@ const Connect = ({ project }: Props) => {
           Credentials
         </div>
         <InputWithLabel label="Client ID" disabled value={client.id} />
-        <InputWithLabel
-          label="Client Secret"
-          disabled
-          value={client.secret ?? 'unknown'}
-        />
+        <InputWithLabel label="Client Secret" disabled value={secret} />
       </div>
       {project.types.map((type) => {
         const Component = {
@@ -56,7 +51,7 @@ const Connect = ({ project }: Props) => {
           backend: ConnectBackend,
         }[type];
 
-        return <Component key={type} client={client} />;
+        return <Component key={type} client={{ ...client, secret }} />;
       })}
       <ButtonContainer>
         <div />
