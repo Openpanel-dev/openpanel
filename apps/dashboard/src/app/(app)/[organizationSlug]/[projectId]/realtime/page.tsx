@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { Fullscreen, FullscreenToggle } from '@/components/fullscreen-toggle';
 import { LazyChart } from '@/components/report/chart/LazyChart';
 
 import PageLayout from '../page-layout';
@@ -17,22 +18,25 @@ export default function Page({
   params: { projectId, organizationSlug },
 }: Props) {
   return (
-    <div className="">
-      <RealtimeReloader projectId={projectId} />
-      <PageLayout title="Realtime" {...{ projectId, organizationSlug }} />
-      <Suspense>
-        <RealtimeMap projectId={projectId} />
-      </Suspense>
-      <div className="pointer-events-none relative z-10 w-full overflow-hidden">
-        <div className="pointer-events-none grid min-h-[calc(100vh-theme(spacing.16))] items-start gap-4 p-8 md:grid-cols-3">
+    <>
+      <PageLayout
+        title={<FullscreenToggle />}
+        {...{ projectId, organizationSlug }}
+      />
+      <Fullscreen>
+        <RealtimeReloader projectId={projectId} />
+        <Suspense>
+          <RealtimeMap projectId={projectId} />
+        </Suspense>
+        <div className="relative z-10 grid min-h-[calc(100vh-theme(spacing.16))] items-start gap-4 overflow-hidden p-8 md:grid-cols-3">
           <div className="card bg-background/80 p-4">
             <RealtimeLiveHistogram projectId={projectId} />
           </div>
-          <div className="pointer-events-auto col-span-2">
+          <div className="col-span-2">
             <RealtimeLiveEventsServer projectId={projectId} limit={5} />
           </div>
         </div>
-        <div className="-mt-32 grid gap-4 p-8 md:grid-cols-3">
+        <div className="relative z-10 -mt-32 grid gap-4 p-8 md:grid-cols-3">
           <div className="card p-4">
             <div className="mb-6">
               <div className="font-bold">Pages</div>
@@ -130,7 +134,7 @@ export default function Page({
             />
           </div>
         </div>
-      </div>
-    </div>
+      </Fullscreen>
+    </>
   );
 }

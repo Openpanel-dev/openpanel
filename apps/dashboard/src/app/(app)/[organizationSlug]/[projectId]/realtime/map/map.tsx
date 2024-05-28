@@ -1,8 +1,9 @@
 'use client';
 
-import React, { Fragment, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { useFullscreen } from '@/components/fullscreen-toggle';
 import { Tooltiper } from '@/components/ui/tooltip';
+import { cn } from '@/utils/cn';
 import { bind } from 'bind-event-listener';
 import {
   ComposableMap,
@@ -25,12 +26,13 @@ import {
   getBoundingBox,
   useAnimatedState,
 } from './map.helpers';
-import useActiveMarkers, { calculateMarkerSize } from './markers';
+import { calculateMarkerSize } from './markers';
 
 type Props = {
   markers: Coordinate[];
 };
 const Map = ({ markers }: Props) => {
+  const [isFullscreen] = useFullscreen();
   const showCenterMarker = false;
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(
@@ -54,31 +56,33 @@ const Map = ({ markers }: Props) => {
   const [lat] = useAnimatedState(center.lat);
 
   useEffect(() => {
-    if (ref.current) {
-      setSize({
-        width: ref.current.clientWidth,
-        height: ref.current.clientHeight,
-      });
-    }
-  }, []);
+    requestAnimationFrame(() => {
+      if (ref.current) {
+        setSize({
+          width: ref.current.clientWidth,
+          height: ref.current.clientHeight,
+        });
+      }
+    });
+  }, [isFullscreen]);
 
-  // useEffect(() => {
-  //   return bind(window, {
-  //     type: 'resize',
-  //     listener() {
-  //       if (ref.current) {
-  //         setSize({
-  //           width: ref.current.clientWidth,
-  //           height: ref.current.clientHeight,
-  //         });
-  //       }
-  //     },
-  //   });
-  // }, []);
+  useEffect(() => {
+    return bind(window, {
+      type: 'resize',
+      listener() {
+        if (ref.current) {
+          setSize({
+            width: ref.current.clientWidth,
+            height: ref.current.clientHeight,
+          });
+        }
+      },
+    });
+  }, []);
 
   const adjustSizeBasedOnZoom = (size: number) => {
     const minMultiplier = 1;
-    const maxMultiplier = 3;
+    const maxMultiplier = 7;
 
     // Linearly interpolate the multiplier based on the zoom level
     const multiplier =
@@ -88,7 +92,13 @@ const Map = ({ markers }: Props) => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 top-16 lg:left-72" ref={ref}>
+    <div
+      className={cn(
+        'fixed bottom-0 left-0 right-0 top-0',
+        !isFullscreen && 'top-16 lg:left-72'
+      )}
+      ref={ref}
+    >
       {size === null ? (
         <></>
       ) : (
@@ -102,7 +112,7 @@ const Map = ({ markers }: Props) => {
               scale: 100 * 20,
             }}
           >
-            <CustomZoomableGroup zoom={zoom * 0.05} center={[long, lat]}>
+            <CustomZoomableGroup zoom={zoom * 0.06} center={[long, lat]}>
               <Geographies geography={GEO_MAP_URL}>
                 {({ geographies }) =>
                   geographies.map((geo) => (
