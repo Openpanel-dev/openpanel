@@ -91,7 +91,7 @@ export function ProfileList({ data, count, limit = 50 }: ProfileListProps) {
           </div>
         </>
       ) : (
-        <FullPageEmptyState title="No profiles here" icon={UsersIcon}>
+        <FullPageEmptyState title="No profiles" icon={UsersIcon}>
           {cursor !== 0 ? (
             <>
               <p>Looks like you have reached the end of the list</p>
@@ -105,7 +105,7 @@ export function ProfileList({ data, count, limit = 50 }: ProfileListProps) {
               </Button>
             </>
           ) : (
-            <p>Looks like there is no profiles here</p>
+            <p>Looks like there are no profiles here</p>
           )}
         </FullPageEmptyState>
       )}
