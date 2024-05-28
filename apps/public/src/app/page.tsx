@@ -26,7 +26,7 @@ export default function Page() {
             Analytics 😉 Curious how it looks?
           </Lead2>
           <ALink
-            href="https://dashboard.openpanel.dev/share/overview/ZQsEhG"
+            href="https://dashboard.openpanel.dev/share/overview/zef2XC"
             target="_blank"
             className="mt-8"
             variant={'outline'}
