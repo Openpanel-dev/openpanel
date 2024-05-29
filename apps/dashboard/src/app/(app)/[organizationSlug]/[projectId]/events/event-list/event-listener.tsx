@@ -11,7 +11,6 @@ import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 
 import type { IServiceEventMinimal } from '@openpanel/db';
 
@@ -28,7 +27,6 @@ export default function EventListener() {
   useWS<IServiceEventMinimal>(`/live/events/${projectId}`, (event) => {
     if (event?.name) {
       setCounter((prev) => prev + 1);
-      toast(`New event ${event.name} from ${event.country}!`);
     }
   });
 
