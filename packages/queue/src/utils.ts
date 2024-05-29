@@ -5,13 +5,14 @@ export async function findJobByPrefix<T>(
   keys: string[],
   matcher: string
 ) {
-  const filtered = keys.filter((key) => key.includes(matcher));
   const getTime = (val?: string) => {
     if (!val) return null;
     const match = val.match(/:(\d+)$/);
     return match?.[1] ? parseInt(match[1], 10) : null;
   };
-
+  const filtered = keys
+    .filter((key) => key.includes(matcher))
+    .filter((key) => getTime(key));
   filtered.sort((a, b) => {
     const aTime = getTime(a);
     const bTime = getTime(b);
