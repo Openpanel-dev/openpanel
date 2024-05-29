@@ -227,7 +227,7 @@ export async function createEvent(
   const exists = await getProfileById(payload.profileId, payload.projectId);
   if (!exists && payload.profileId !== '') {
     await upsertProfile({
-      id: payload.profileId,
+      id: String(payload.profileId),
       isExternal: false,
       projectId: payload.projectId,
       firstName: '',
@@ -257,7 +257,7 @@ export async function createEvent(
     id: uuid(),
     name: payload.name,
     device_id: payload.deviceId,
-    profile_id: payload.profileId,
+    profile_id: payload.profileId ? String(payload.profileId) : '',
     project_id: payload.projectId,
     session_id: payload.sessionId,
     properties: toDots(omit(['_path'], payload.properties)),
