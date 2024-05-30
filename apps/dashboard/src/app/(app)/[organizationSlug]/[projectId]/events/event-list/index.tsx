@@ -10,6 +10,7 @@ type Props = {
   projectId: string;
   filters?: IChartEventFilter[];
   eventNames?: string[];
+  profileId?: string;
 };
 
 const EventListServer = async ({
@@ -17,6 +18,7 @@ const EventListServer = async ({
   projectId,
   eventNames,
   filters,
+  profileId,
 }: Props) => {
   const [events, count] = await Promise.all([
     getEventList({
@@ -25,11 +27,13 @@ const EventListServer = async ({
       take: 50,
       events: eventNames,
       filters,
+      profileId,
     }),
     getEventsCount({
       projectId,
       events: eventNames,
       filters,
+      profileId,
     }),
   ]);
 
