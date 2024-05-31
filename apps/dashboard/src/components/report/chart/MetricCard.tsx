@@ -115,7 +115,7 @@ export function MetricCard({
 export function MetricCardEmpty() {
   return (
     <div className="card h-24 p-4">
-      <div className="flex h-full items-center justify-center text-slate-600">
+      <div className="flex h-full items-center justify-center text-muted-foreground">
         No data
       </div>
     </div>
@@ -125,9 +125,9 @@ export function MetricCardEmpty() {
 export function MetricCardLoading() {
   return (
     <div className="flex h-[70px] flex-col justify-between">
-      <div className="h-4 w-1/2 animate-pulse rounded bg-slate-200"></div>
-      <div className="h-8 w-1/3 animate-pulse rounded bg-slate-200"></div>
-      <div className="h-3 w-1/5 animate-pulse rounded bg-slate-200"></div>
+      <div className="bg-def-200 h-4 w-1/2 animate-pulse rounded"></div>
+      <div className="bg-def-200 h-8 w-1/3 animate-pulse rounded"></div>
+      <div className="bg-def-200 h-3 w-1/5 animate-pulse rounded"></div>
     </div>
   );
 }

@@ -96,7 +96,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                   </div>
                   <div
                     className={cn(
-                      'mt-2 grid gap-4',
+                      'mt-4 grid gap-4',
                       'grid-cols-2 @xs:grid-cols-3 @lg:grid-cols-4'
                     )}
                   >
@@ -114,19 +114,19 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
 
                       return (
                         <div
-                          className="flex flex-col items-center justify-center rounded-xl bg-slate-50 p-4"
+                          className="bg-def-200 flex flex-col rounded-xl p-4"
                           key={report.id}
                         >
-                          <Icon size={24} className="text-blue-600" />
-                          <div className="mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-xs">
+                          <Icon size={24} className="text-highlight" />
+                          <div className="mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
                             {report.name}
                           </div>
                         </div>
                       );
                     })}
                     {item.reports.length > 6 && (
-                      <div className="flex flex-col items-center justify-center rounded-xl bg-slate-50 p-4">
-                        <PlusIcon size={24} className="text-blue-600" />
+                      <div className="bg-def-200 flex flex-col rounded-xl p-4">
+                        <PlusIcon size={24} className="text-highlight" />
                         <div className="mt-2 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
                           {item.reports.length - 5} more
                         </div>

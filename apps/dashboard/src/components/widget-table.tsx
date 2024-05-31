@@ -20,7 +20,7 @@ export const WidgetTableHead = ({
   return (
     <thead
       className={cn(
-        'sticky top-0 z-10 border-b border-border bg-slate-50 text-sm text-slate-500 [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium',
+        'bg-def-100 text-def-1000 sticky top-0 z-10 border-b border-border text-sm [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium',
         className
       )}
     >

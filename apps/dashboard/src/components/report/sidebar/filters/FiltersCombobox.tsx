@@ -54,7 +54,7 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
         );
       }}
     >
-      <button className="flex items-center gap-1 rounded-md border border-border bg-background p-1 px-2 text-xs font-medium leading-none">
+      <button className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-xs font-medium leading-none">
         <FilterIcon size={12} /> Add filter
       </button>
     </Combobox>

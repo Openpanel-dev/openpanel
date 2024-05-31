@@ -29,7 +29,7 @@ export default function Page({
           <RealtimeMap projectId={projectId} />
         </Suspense>
         <div className="relative z-10 grid min-h-[calc(100vh-theme(spacing.16))] items-start gap-4 overflow-hidden p-8 md:grid-cols-3">
-          <div className="card bg-background/80 p-4">
+          <div className="card bg-card/80 p-4">
             <RealtimeLiveHistogram projectId={projectId} />
           </div>
           <div className="col-span-2">

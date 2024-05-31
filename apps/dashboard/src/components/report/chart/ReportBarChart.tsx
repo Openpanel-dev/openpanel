@@ -41,7 +41,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >
             <div
-              className="absolute bottom-0 left-0 top-0 rounded bg-slate-100"
+              className="bg-def-200 absolute bottom-0 left-0 top-0 rounded"
               style={{
                 width: `${(serie.metrics.sum / maxCount) * 100}%`,
               }}

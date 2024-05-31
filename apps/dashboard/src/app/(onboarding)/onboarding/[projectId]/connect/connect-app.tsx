@@ -30,7 +30,7 @@ const ConnectApp = ({ client }: Props) => {
             className="flex items-center gap-4 rounded-md border p-2 py-2 text-left"
             key={framework.name}
           >
-            <div className="h-10 w-10 rounded-md bg-slate-200 p-2">
+            <div className="bg-def-200 h-10 w-10 rounded-md p-2">
               <img
                 className="h-full w-full object-contain"
                 src={framework.logo}

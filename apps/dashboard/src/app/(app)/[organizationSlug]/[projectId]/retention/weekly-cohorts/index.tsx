@@ -15,7 +15,7 @@ const Cell = ({ value, ratio }: { value: number; ratio: number }) => {
       className={cn('relative h-8 border', ratio !== 0 && 'border-background')}
     >
       <div
-        className="absolute inset-0 z-0 bg-blue-600"
+        className="bg-highlight absolute inset-0 z-0"
         style={{ opacity: ratio }}
       ></div>
       <div className="relative z-10">{value}</div>
@@ -76,7 +76,7 @@ const WeeklyCohortsServer = async ({ projectId }: Props) => {
             <tbody>
               {res.map((row) => (
                 <tr key={row.first_seen}>
-                  <td className="bg-slate-50 text-sm font-medium text-slate-500">
+                  <td className="bg-def-100 text-def-1000 text-sm font-medium">
                     {row.first_seen}
                   </td>
                   <Cell

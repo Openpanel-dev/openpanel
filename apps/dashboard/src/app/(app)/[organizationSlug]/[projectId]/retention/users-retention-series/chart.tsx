@@ -33,7 +33,7 @@ function Tooltip({ payload }: any) {
     return null;
   }
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-background p-3 text-sm shadow-xl">
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 text-sm shadow-xl">
       <div className="flex justify-between gap-8">
         <div>{formatDate(new Date(date))}</div>
       </div>

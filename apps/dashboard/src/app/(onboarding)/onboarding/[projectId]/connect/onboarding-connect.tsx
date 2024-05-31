@@ -36,7 +36,7 @@ const Connect = ({ project }: Props) => {
         </OnboardingDescription>
       }
     >
-      <div className="flex flex-col gap-4 rounded-xl border bg-slate-100 p-4 md:p-6">
+      <div className="bg-def-200 flex flex-col gap-4 rounded-xl border p-4 md:p-6">
         <div className="flex items-center gap-2 text-2xl capitalize">
           <LockIcon />
           Credentials

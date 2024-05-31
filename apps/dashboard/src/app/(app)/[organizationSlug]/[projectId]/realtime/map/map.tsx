@@ -5,6 +5,7 @@ import { useFullscreen } from '@/components/fullscreen-toggle';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { cn } from '@/utils/cn';
 import { bind } from 'bind-event-listener';
+import { useTheme } from 'next-themes';
 import {
   ComposableMap,
   Geographies,
@@ -91,6 +92,9 @@ const Map = ({ markers }: Props) => {
     return size * multiplier;
   };
 
+  const theme = useTheme();
+  console.log(theme.theme);
+
   return (
     <div
       className={cn(
@@ -119,8 +123,8 @@ const Map = ({ markers }: Props) => {
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
-                      fill="#EAEAEC"
-                      stroke="black"
+                      fill={theme.theme === 'dark' ? '#0f0f0f' : '#F0F4F9'}
+                      stroke={theme.theme === 'dark' ? '#262626' : '#DDE3E9'}
                       pointerEvents={'none'}
                     />
                   ))
@@ -149,13 +153,17 @@ const Map = ({ markers }: Props) => {
                     <Marker coordinates={coordinates}>
                       <circle
                         r={size}
-                        fill="#2463EB"
+                        fill={theme.theme === 'dark' ? '#3d79ff' : '#2266ec'}
                         className="animate-ping opacity-20"
                       />
                     </Marker>
                     <Tooltiper asChild content={`${marker.count} visitors`}>
                       <Marker coordinates={coordinates}>
-                        <circle r={size} fill="#2463EB" fillOpacity={0.5} />
+                        <circle
+                          r={size}
+                          fill={theme.theme === 'dark' ? '#3d79ff' : '#2266ec'}
+                          fillOpacity={0.5}
+                        />
                       </Marker>
                     </Tooltiper>
                   </Fragment>

@@ -55,7 +55,7 @@ export function ReportLineChart({
               strokeDasharray="3 3"
               horizontal={true}
               vertical={false}
-              className="stroke-slate-300"
+              className="stroke-def-200"
             />
             {references.map((ref) => (
               <ReferenceLine

@@ -15,7 +15,7 @@ async function PageLayout({ title, organizationSlug }: PageLayoutProps) {
 
   return (
     <>
-      <div className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-background px-4 pl-12 lg:pl-4">
+      <div className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-card px-4 pl-12 lg:pl-4">
         <div className="text-xl font-medium">{title}</div>
         <div className="flex gap-2">
           <div>
@@ -30,7 +30,7 @@ async function PageLayout({ title, organizationSlug }: PageLayoutProps) {
 
 const Loading = ({ title }: PageLayoutProps) => (
   <>
-    <div className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-background px-4 pl-12 lg:pl-4">
+    <div className="sticky top-0 z-20 flex h-16 flex-shrink-0 items-center justify-between border-b border-border bg-card px-4 pl-12 lg:pl-4">
       <div className="text-xl font-medium">{title}</div>
     </div>
   </>

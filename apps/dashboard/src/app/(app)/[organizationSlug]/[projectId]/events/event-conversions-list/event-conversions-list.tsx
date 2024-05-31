@@ -28,7 +28,7 @@ export function EventConversionsList({ data }: EventListProps) {
             {showDateHeader(item.createdAt, list[index - 1]?.createdAt) && (
               <div className="flex flex-row justify-between gap-2 [&:not(:first-child)]:mt-12">
                 <div className="flex gap-2">
-                  <div className="flex h-8 items-center gap-2 rounded border border-slate-300 bg-slate-100 px-3 text-sm font-medium leading-none">
+                  <div className="bg-def-200 border-def-200 flex h-8 items-center gap-2 rounded border px-3 text-sm font-medium leading-none">
                     {item.createdAt.toLocaleDateString()}
                   </div>
                 </div>

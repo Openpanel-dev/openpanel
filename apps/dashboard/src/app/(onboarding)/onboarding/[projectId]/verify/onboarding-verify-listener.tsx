@@ -54,7 +54,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
     }
 
     return (
-      <Loader2 size={40} className="shrink-0 animate-spin text-blue-600" />
+      <Loader2 size={40} className="text-highlight shrink-0 animate-spin" />
     );
   };
 
@@ -70,7 +70,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
       <div
         className={cn(
           'my-6 flex gap-6 rounded-xl p-4 md:p-6',
-          isConnected ? 'bg-emerald-100' : 'bg-blue-100'
+          isConnected ? 'bg-emerald-100' : 'bg-highlight'
         )}
       >
         {renderIcon()}

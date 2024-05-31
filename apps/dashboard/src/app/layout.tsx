@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={cn('grainy min-h-screen bg-secondary font-sans antialiased')}
+        className={cn('grainy bg-def-100 min-h-screen font-sans antialiased')}
       >
         <NextTopLoader
           showSpinner={false}

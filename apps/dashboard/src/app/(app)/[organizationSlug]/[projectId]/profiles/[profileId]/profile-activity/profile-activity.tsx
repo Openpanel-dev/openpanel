@@ -70,7 +70,7 @@ const ProfileActivity = ({ data }: Props) => {
                     key={date.toISOString()}
                     className={cn(
                       'aspect-square w-full rounded',
-                      hit ? 'bg-blue-600' : 'bg-slate-100'
+                      hit ? 'bg-highlight' : 'bg-def-200'
                     )}
                   ></div>
                 );
@@ -94,7 +94,7 @@ const ProfileActivity = ({ data }: Props) => {
                     key={date.toISOString()}
                     className={cn(
                       'aspect-square w-full rounded',
-                      hit ? 'bg-blue-600' : 'bg-slate-100'
+                      hit ? 'bg-highlight' : 'bg-def-200'
                     )}
                   ></div>
                 );

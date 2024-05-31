@@ -13,7 +13,7 @@ export function GradientBackground({
   return (
     <div
       className={cn(
-        'rounded-md bg-gradient-to-tr from-slate-100 to-white',
+        'from-def-200 rounded-md bg-gradient-to-tr to-white',
         className
       )}
       {...props}

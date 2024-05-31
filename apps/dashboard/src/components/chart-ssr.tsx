@@ -75,7 +75,7 @@ export function ChartSSR({
           <path
             d={pathLine}
             fill="none"
-            className="text-blue-600"
+            className="text-highlight"
             stroke="currentColor"
             strokeWidth="2"
             vectorEffect="non-scaling-stroke"

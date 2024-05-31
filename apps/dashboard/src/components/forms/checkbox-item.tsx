@@ -24,7 +24,7 @@ export const CheckboxItem = forwardRef<HTMLButtonElement, Props>(
       <div>
         <label
           className={cn(
-            'flex items-center gap-4 px-4 py-6 transition-colors hover:bg-slate-100',
+            'hover:bg-def-200 flex items-center gap-4 px-4 py-6 transition-colors',
             disabled && 'cursor-not-allowed opacity-50'
           )}
           htmlFor={id}

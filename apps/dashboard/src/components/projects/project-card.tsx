@@ -23,7 +23,7 @@ function ProjectCard({ id, name, organizationSlug }: IServiceProject) {
           <ProjectChart id={id} />
         </Suspense>
       </div>
-      <div className="flex justify-end gap-4 text-sm text-muted-foreground">
+      <div className="flex justify-end gap-4 text-sm">
         <Suspense>
           <ProjectMetrics id={id} />
         </Suspense>
@@ -47,8 +47,8 @@ async function ProjectChart({ id }: { id: string }) {
 function Metric({ value, label }: { value: React.ReactNode; label: string }) {
   return (
     <div className="flex flex-col gap-2 md:flex-row">
-      <div>{label}</div>
-      <span className="font-medium text-black">{value}</span>
+      <div className="text-muted-foreground">{label}</div>
+      <span className="font-medium">{value}</span>
     </div>
   );
 }

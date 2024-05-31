@@ -90,7 +90,7 @@ export function FilterItem({ filter, event }: FilterProps) {
   return (
     <div
       key={filter.name}
-      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-slate-200 first:border-t"
+      className="shadow-def-200 px-4 py-2 shadow-[inset_6px_0_0] first:border-t"
     >
       <div className="mb-2 flex items-center gap-2">
         <ColorSquare className="bg-emerald-500">

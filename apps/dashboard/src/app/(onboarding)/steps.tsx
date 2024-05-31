@@ -59,9 +59,9 @@ const Steps = ({ className }: Props) => {
   const currentIndex = steps.findIndex((i) => i.status === 'current');
   return (
     <div className="relative">
-      <div className="absolute bottom-4 left-4 top-4 w-px bg-slate-300"></div>
+      <div className="bg-def-200 absolute bottom-4 left-4 top-4 w-px"></div>
       <div
-        className="absolute left-4 top-4 w-px bg-blue-600"
+        className="bg-highlight absolute left-4 top-4 w-px"
         style={{
           height: `calc(${((currentIndex + 1) / steps.length) * 100}% - 3.5rem)`,
         }}
@@ -77,7 +77,7 @@ const Steps = ({ className }: Props) => {
             className={cn(
               'flex flex-shrink-0 items-center gap-2 self-start px-3 py-1.5',
               step.status === 'current' &&
-                'rounded-xl border border-border bg-background',
+                'rounded-xl border border-border bg-card',
               step.status === 'completed' &&
                 index !== currentIndex - 1 &&
                 'max-md:hidden'
@@ -87,18 +87,16 @@ const Steps = ({ className }: Props) => {
             <div
               className={cn(
                 'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm text-white'
-                // step.status === 'completed' && 'bg-blue-600 ring-blue-500/50',
-                // step.status === 'pending' && 'bg-slate-400 ring-slate-500/50'
               )}
             >
               <div
                 className={cn(
-                  'absolute inset-0 z-0 rounded-full bg-blue-600',
-                  step.status === 'pending' && 'bg-slate-400'
+                  'bg-highlight absolute inset-0 z-0 rounded-full',
+                  step.status === 'pending' && 'bg-def-400'
                 )}
               ></div>
               {step.status === 'current' && (
-                <div className="absolute inset-1 z-0 animate-ping-slow rounded-full bg-blue-600"></div>
+                <div className="bg-highlight absolute inset-1 z-0 animate-ping-slow rounded-full"></div>
               )}
               <div className="relative">
                 {step.status === 'completed' && <CheckCheckIcon size={14} />}

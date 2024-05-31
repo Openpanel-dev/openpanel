@@ -25,7 +25,7 @@ export const Fullscreen = (props: Props) => {
   return (
     <div
       className={cn(
-        isFullscreen && 'fixed inset-0 z-50 overflow-auto bg-slate-100'
+        isFullscreen && 'bg-def-200 fixed inset-0 z-50 overflow-auto'
       )}
     >
       {props.children}

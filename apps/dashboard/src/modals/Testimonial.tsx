@@ -27,7 +27,7 @@ const Testimonial = () => {
   });
   return (
     <ModalContent className="p-0">
-      <div className="w-full rounded-t-lg border-b border-border bg-secondary p-4">
+      <div className="bg-def-100 w-full rounded-t-lg border-b border-border p-4">
         <h1 className="mb-2 text-2xl font-bold">Review time 🫶</h1>
         <p className="mb-2">
           Thank you so much for using Openpanel — it truly means a great deal to

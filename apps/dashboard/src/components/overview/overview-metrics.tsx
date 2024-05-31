@@ -199,7 +199,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               key={index}
               className={cn(
                 'col-span-2 flex-1 p-4 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
-                index === metric && 'bg-slate-50'
+                index === metric && 'bg-def-100'
               )}
               onClick={() => {
                 setMetric(index);

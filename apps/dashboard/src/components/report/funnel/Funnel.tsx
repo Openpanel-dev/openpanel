@@ -105,8 +105,8 @@ export function FunnelSteps({
                         nameKey="label"
                         dataKey="value"
                       >
-                        <Cell strokeWidth={0} className="fill-blue-600" />
-                        <Cell strokeWidth={0} className="fill-slate-200" />
+                        <Cell strokeWidth={0} className="fill-highlight" />
+                        <Cell strokeWidth={0} className="fill-def-200" />
                       </Pie>
                     </PieChart>
                     <div

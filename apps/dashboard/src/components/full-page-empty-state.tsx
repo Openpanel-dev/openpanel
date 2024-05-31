@@ -23,7 +23,7 @@ export function FullPageEmptyState({
       )}
     >
       <div className="flex w-full max-w-xl flex-col items-center justify-center p-8">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-background shadow-sm">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-card shadow-sm">
           <Icon size={60} strokeWidth={1} />
         </div>
 

@@ -50,7 +50,7 @@ export function ReportHistogramChart({
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
-              className="stroke-slate-300"
+              className="stroke-def-200"
             />
             <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
             <XAxis

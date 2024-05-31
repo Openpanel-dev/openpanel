@@ -85,7 +85,7 @@ export function RealtimeLiveHistogram({
         {staticArray.map((percent, i) => (
           <div
             key={i}
-            className="flex-1 animate-pulse rounded-md bg-slate-200 dark:bg-slate-800"
+            className="bg-def-200 flex-1 animate-pulse rounded-md"
             style={{ height: `${percent}%` }}
           />
         ))}
@@ -106,7 +106,7 @@ export function RealtimeLiveHistogram({
               <div
                 className={cn(
                   'flex-1 rounded-md transition-all ease-in-out hover:scale-110',
-                  minute.count === 0 ? 'bg-slate-200' : 'bg-blue-600'
+                  minute.count === 0 ? 'bg-def-200' : 'bg-highlight'
                 )}
                 style={{
                   height:

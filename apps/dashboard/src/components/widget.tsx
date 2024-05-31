@@ -37,7 +37,7 @@ export function WidgetTitle({
       )}
     >
       {Icon && (
-        <div className="absolute left-0 rounded-lg bg-slate-100 p-2">
+        <div className="bg-def-200 absolute left-0 rounded-lg p-2">
           <Icon size={18} />
         </div>
       )}

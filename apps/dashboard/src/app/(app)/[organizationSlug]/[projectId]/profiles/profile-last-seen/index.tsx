@@ -37,7 +37,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
       <Tooltip>
         <TooltipTrigger asChild>
           <div
-            className={cn('aspect-square w-full shrink-0 rounded bg-blue-600')}
+            className={cn('bg-highlight aspect-square w-full shrink-0 rounded')}
             style={{
               opacity: calculateRatio(item.count),
             }}

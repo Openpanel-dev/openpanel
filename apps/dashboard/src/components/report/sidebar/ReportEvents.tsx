@@ -54,7 +54,7 @@ export function ReportEvents() {
       <div className="flex flex-col gap-4">
         {selectedEvents.map((event) => {
           return (
-            <div key={event.id} className="rounded-lg border bg-slate-50">
+            <div key={event.id} className="bg-def-100 rounded-lg border">
               <div className="flex items-center gap-2 p-2">
                 <ColorSquare>{event.id}</ColorSquare>
                 <Combobox
@@ -135,7 +135,7 @@ export function ReportEvents() {
                   ]}
                   label="Segment"
                 >
-                  <button className="flex items-center gap-1 rounded-md border border-border bg-background p-1 px-2 text-xs font-medium leading-none">
+                  <button className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-xs font-medium leading-none">
                     {event.segment === 'user' ? (
                       <>
                         <Users size={12} /> Unique users

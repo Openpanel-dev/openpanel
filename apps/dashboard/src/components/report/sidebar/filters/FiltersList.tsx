@@ -9,7 +9,7 @@ interface ReportEventFiltersProps {
 export function FiltersList({ event }: ReportEventFiltersProps) {
   return (
     <div>
-      <div className="flex flex-col divide-y bg-slate-50">
+      <div className="bg-def-100 flex flex-col divide-y">
         {event.filters.map((filter) => {
           return <FilterItem key={filter.name} filter={filter} event={event} />;
         })}

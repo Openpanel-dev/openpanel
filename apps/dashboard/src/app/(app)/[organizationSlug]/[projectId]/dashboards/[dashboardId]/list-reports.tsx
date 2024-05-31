@@ -1,6 +1,7 @@
 'use client';
 
 import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { LazyChart } from '@/components/report/chart/LazyChart';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,13 @@ import {
 import { useAppParams } from '@/hooks/useAppParams';
 import { api, handleError } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { ChevronRight, MoreHorizontal, PlusIcon, Trash } from 'lucide-react';
+import {
+  ChevronRight,
+  LayoutPanelTopIcon,
+  MoreHorizontal,
+  PlusIcon,
+  Trash,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -138,6 +145,26 @@ export function ListReports({ reports }: ListReportsProps) {
             </div>
           );
         })}
+        {reports.length === 0 && (
+          <FullPageEmptyState title="No reports" icon={LayoutPanelTopIcon}>
+            <p>You can visualize your data with a report</p>
+            <Button
+              onClick={() =>
+                router.push(
+                  `/${params.organizationSlug}/${
+                    params.projectId
+                  }/reports?${new URLSearchParams({
+                    dashboardId: params.dashboardId,
+                  }).toString()}`
+                )
+              }
+              className="mt-14"
+              icon={PlusIcon}
+            >
+              Create report
+            </Button>
+          </FullPageEmptyState>
+        )}
       </div>
     </>
   );

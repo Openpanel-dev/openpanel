@@ -39,7 +39,7 @@ export function ReportChartTooltip({
   const hidden = sorted.slice(limit);
 
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-background p-3 text-sm shadow-xl">
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 text-sm shadow-xl">
       {visible.map((item, index) => {
         // If we have a <Cell /> component, payload can be nested
         const payload = item.payload.payload ?? item.payload;
