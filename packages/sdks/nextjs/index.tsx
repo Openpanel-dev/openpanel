@@ -50,11 +50,11 @@ export function OpenpanelProvider({
   cdnUrl,
   ...options
 }: OpenpanelProviderProps) {
-  const events: { name: OpenpanelMethods; value: unknown }[] = [
+  const methods: { name: OpenpanelMethods; value: unknown }[] = [
     { name: 'ctor', value: options },
   ];
   if (profileId) {
-    events.push({ name: 'setProfileId', value: profileId });
+    methods.push({ name: 'setProfileId', value: profileId });
   }
   return (
     <>
@@ -62,9 +62,9 @@ export function OpenpanelProvider({
       <Script
         dangerouslySetInnerHTML={{
           __html: `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
-          ${events
-            .map((event) => {
-              return `window.op('${event.name}', ${JSON.stringify(event.value)});`;
+          ${methods
+            .map((method) => {
+              return `window.op('${method.name}', ${JSON.stringify(method.value)});`;
             })
             .join('\n')}`,
         }}
@@ -83,6 +83,20 @@ export function SetProfileId({ value }: SetProfileIdProps) {
       <Script
         dangerouslySetInnerHTML={{
           __html: `window.op('setProfileId', '${value}');`,
+        }}
+      />
+    </>
+  );
+}
+
+type SetProfileProps = UpdateProfilePayload;
+
+export function SetProfile(props: SetProfileProps) {
+  return (
+    <>
+      <Script
+        dangerouslySetInnerHTML={{
+          __html: `window.op('setProfile', ${JSON.stringify(props)});`,
         }}
       />
     </>

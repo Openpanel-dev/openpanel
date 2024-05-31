@@ -5,7 +5,6 @@ export interface OpenpanelEventOptions {
 export interface PostEventPayload {
   name: string;
   timestamp: string;
-  deviceId?: string;
   profileId?: string;
   properties?: Record<string, unknown> & OpenpanelEventOptions;
 }
@@ -36,13 +35,9 @@ export interface OpenpanelSdkOptions {
   clientId: string;
   clientSecret?: string;
   verbose?: boolean;
-  setDeviceId?: (deviceId: string) => void;
-  getDeviceId?: () => string | null | undefined;
-  removeDeviceId?: () => void;
 }
 
 export interface OpenpanelState {
-  deviceId?: string;
   profileId?: string;
   properties: Record<string, unknown>;
 }
@@ -149,9 +144,9 @@ export class OpenpanelSdk<
     this.state.profileId = profileId;
   }
 
-  public setProfile(payload: UpdateProfilePayload) {
+  public async setProfile(payload: UpdateProfilePayload) {
     this.setProfileId(payload.profileId);
-    this.api.fetch<UpdateProfilePayload, string>('/profile', {
+    return this.api.fetch<UpdateProfilePayload, string>('/profile', {
       ...payload,
       properties: {
         ...this.state.properties,
@@ -160,7 +155,7 @@ export class OpenpanelSdk<
     });
   }
 
-  public increment(
+  public async increment(
     property: string,
     value: number,
     options?: OpenpanelEventOptions
@@ -169,14 +164,17 @@ export class OpenpanelSdk<
     if (!profileId) {
       return console.log('No profile id');
     }
-    this.api.fetch<IncrementProfilePayload, string>('/profile/increment', {
-      profileId,
-      property,
-      value,
-    });
+    return this.api.fetch<IncrementProfilePayload, string>(
+      '/profile/increment',
+      {
+        profileId,
+        property,
+        value,
+      }
+    );
   }
 
-  public decrement(
+  public async decrement(
     property: string,
     value: number,
     options?: OpenpanelEventOptions
@@ -185,32 +183,31 @@ export class OpenpanelSdk<
     if (!profileId) {
       return console.log('No profile id');
     }
-    this.api.fetch<DecrementProfilePayload, string>('/profile/decrement', {
-      profileId,
-      property,
-      value,
-    });
+    return this.api.fetch<DecrementProfilePayload, string>(
+      '/profile/decrement',
+      {
+        profileId,
+        property,
+        value,
+      }
+    );
   }
 
-  public event(name: string, properties?: PostEventPayload['properties']) {
+  public async event(
+    name: string,
+    properties?: PostEventPayload['properties']
+  ) {
     const profileId = properties?.profileId ?? this.state.profileId;
     delete properties?.profileId;
-    this.api
-      .fetch<PostEventPayload, string>('/event', {
-        name,
-        properties: {
-          ...this.state.properties,
-          ...(properties ?? {}),
-        },
-        timestamp: this.timestamp(),
-        deviceId: this.getDeviceId(),
-        profileId,
-      })
-      .then((deviceId) => {
-        if (this.options.setDeviceId && deviceId) {
-          this.options.setDeviceId(deviceId);
-        }
-      });
+    return this.api.fetch<PostEventPayload, string>('/event', {
+      name,
+      properties: {
+        ...this.state.properties,
+        ...(properties ?? {}),
+      },
+      timestamp: this.timestamp(),
+      profileId,
+    });
   }
 
   public setGlobalProperties(properties: Record<string, unknown>) {
@@ -221,24 +218,12 @@ export class OpenpanelSdk<
   }
 
   public clear() {
-    this.state.deviceId = undefined;
     this.state.profileId = undefined;
-    if (this.options.removeDeviceId) {
-      this.options.removeDeviceId();
-    }
   }
 
   // Private
 
   private timestamp() {
     return new Date().toISOString();
-  }
-
-  private getDeviceId() {
-    if (this.state.deviceId) {
-      return this.state.deviceId;
-    } else if (this.options.getDeviceId) {
-      this.state.deviceId = this.options.getDeviceId() || undefined;
-    }
   }
 }

@@ -126,6 +126,21 @@ const profileId = '123';
 setProfileId(profileId);
 ```
 
+Or if you want to identify the user with a server component.
+
+```typescript
+import { SetProfileId } from '@openpanel/nextjs';
+
+export function Layout({ children }) {
+  return (
+    <>
+      <SetProfileId value={'123'} />
+      {children}
+    </>
+  )
+}
+```
+
 #### Additional data
 
 This method does the same as `setProfileId` but also allows you to update the profile with additional data.
@@ -144,6 +159,21 @@ setProfile({
   // avatar?: string;
   // properties?: Record<string, unknown>;
 });
+```
+
+Or if you want to identify the user with a server component.
+
+```typescript
+import { SetProfile } from '@openpanel/nextjs';
+
+export function Layout({ children }) {
+  return (
+    <>
+      <SetProfile profileId={'12'} firstName={'Joe'} lastName={'Doe'} email={'joe.doe@openpanel.dev'} avatar={'https://image.com'} properties={{...}} />
+      {children}
+    </>
+  )
+}
 ```
 
 #### Increment property
@@ -184,7 +214,7 @@ import { clear } from '@openpanel/nextjs';
 clear();
 ```
 
-### Track server events
+## Track server events
 
 If you want to track server-side events, you should create an instance of our Javascript SDK. It's exported from `@openpanel/nextjs`
 
@@ -209,7 +239,24 @@ opServer.event('my_server_event', { ok: '✅' });
 opServer.event('my_server_event', { profileId: '123', ok: '✅' });
 ```
 
-### Proxy events
+### Serverless & Vercel
+
+If you log events in a serverless environment like Vercel, you can use `waitUntil` to ensure the event is logged before the function is done.
+
+Otherwise your function might close before the event is logged. Read more about it [here](https://vercel.com/docs/functions/functions-api-reference#waituntil).
+
+```typescript
+import { waitUntil } from '@vercel/functions';
+import { opServer } from 'path/to/your-sdk-instance';
+
+export function GET() {
+  // Returns a response immediately while keeping the function alive
+  waitUntil(opServer.event('my_server_event', { foo: 'bar' }));
+  return new Response(`You're event has been logged!`);
+}
+```
+
+## Proxy events
 
 With `createNextRouteHandler` you can proxy your events through your server, this will ensure all events are tracked since there is a lot of adblockers that block requests to third party domains.
 
