@@ -155,7 +155,7 @@ function main() {
           (acc, [depName, depVersion]) => {
             const dep = packages[depName];
             if (!dep) {
-              return acc;
+              return { ...acc, [depName]: depVersion };
             }
 
             return {
