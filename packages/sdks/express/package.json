@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/express",
-  "version": "0.0.8-beta",
+  "version": "0.0.9-beta",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "0.0.8-beta",
+    "@openpanel/sdk": "0.0.9-beta",
     "request-ip": "^3.3.0"
   },
   "peerDependencies": {
