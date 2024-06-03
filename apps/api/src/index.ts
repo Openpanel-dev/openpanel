@@ -6,8 +6,10 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
 
+import { db } from '@openpanel/db';
 import type { IServiceClient } from '@openpanel/db';
-import { redisPub } from '@openpanel/redis';
+import { eventsQueue } from '@openpanel/queue';
+import { redis, redisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
@@ -79,14 +81,22 @@ const startServer = async () => {
     fastify.get('/', (_request, reply) => {
       reply.send({ name: 'openpanel sdk api' });
     });
-    // fastify.get('/health-check', async (request, reply) => {
-    //   try {
-    //     await utils.healthCheck()
-    //     reply.status(200).send()
-    //   } catch (e) {
-    //     reply.status(500).send()
-    //   }
-    // })
+    fastify.get('/healthcheck', async (request, reply) => {
+      try {
+        const [redisRes, dbRes, queueRes] = await Promise.all([
+          redis.keys('*'),
+          db.project.findFirst(),
+          eventsQueue.getCompleted(),
+        ]);
+        reply.send({
+          redis: redisRes.length > 0,
+          db: dbRes ? true : false,
+          queue: queueRes.length > 0,
+        });
+      } catch (e) {
+        reply.status(500).send();
+      }
+    });
     if (process.env.NODE_ENV === 'production') {
       for (const signal of ['SIGINT', 'SIGTERM']) {
         process.on(signal, (err) => {
