@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { chQuery, createSqlBuilder } from '@openpanel/db';
 
-import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const profileRouter = createTRPCRouter({
   properties: protectedProcedure
@@ -28,7 +28,7 @@ export const profileRouter = createTRPCRouter({
       )(properties);
     }),
 
-  values: publicProcedure
+  values: protectedProcedure
     .input(
       z.object({
         property: z.string(),

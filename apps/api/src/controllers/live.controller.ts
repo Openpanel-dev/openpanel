@@ -1,4 +1,4 @@
-import { getAuth } from '@clerk/fastify';
+import { validateClerkJwt } from '@/utils/auth';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { escape } from 'sqlstring';
 import superjson from 'superjson';
@@ -13,6 +13,7 @@ import {
   transformMinimalEvent,
 } from '@openpanel/db';
 import { redis, redisPub, redisSub } from '@openpanel/redis';
+import { getProjectAccess } from '@openpanel/trpc';
 
 export function getLiveEventInfo(key: string) {
   return key.split(':').slice(2) as [string, string];
@@ -106,7 +107,7 @@ export function wsEvents(connection: { socket: WebSocket }) {
   });
 }
 
-export function wsProjectEvents(
+export async function wsProjectEvents(
   connection: {
     socket: WebSocket;
   },
@@ -114,10 +115,19 @@ export function wsProjectEvents(
     Params: {
       projectId: string;
     };
+    Querystring: {
+      token?: string;
+    };
   }>
 ) {
-  const { params } = req;
-  const auth = getAuth(req);
+  const { params, query } = req;
+  const { token } = query;
+  const decoded = validateClerkJwt(token);
+  const userId = decoded?.sub;
+  const access = await getProjectAccess({
+    userId: userId!,
+    projectId: params.projectId,
+  });
 
   redisSub.subscribe('event');
 
@@ -127,7 +137,7 @@ export function wsProjectEvents(
       const profile = await getProfileById(event.profileId, event.projectId);
       connection.socket.send(
         superjson.stringify(
-          auth.userId
+          access
             ? {
                 ...event,
                 profile,

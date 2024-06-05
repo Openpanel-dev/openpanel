@@ -3,10 +3,12 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import { average, max, min, round, slug, sum } from '@openpanel/common';
-import { chQuery, createSqlBuilder } from '@openpanel/db';
+import { chQuery, createSqlBuilder, db } from '@openpanel/db';
 import { zChartInput } from '@openpanel/validation';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 
+import { getProjectAccessCached } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import {
   getChartPrevStartEndDate,
@@ -111,8 +113,7 @@ export const chartRouter = createTRPCRouter({
       )(properties);
     }),
 
-  // TODO: Make this private
-  values: publicProcedure
+  values: protectedProcedure
     .input(
       z.object({
         event: z.string(),
@@ -154,7 +155,7 @@ export const chartRouter = createTRPCRouter({
       };
     }),
 
-  funnel: publicProcedure.input(zChartInput).query(async ({ input }) => {
+  funnel: protectedProcedure.input(zChartInput).query(async ({ input }) => {
     const currentPeriod = getChartStartEndDate(input);
     const previousPeriod = getChartPrevStartEndDate({
       range: input.range,
@@ -172,7 +173,7 @@ export const chartRouter = createTRPCRouter({
     };
   }),
 
-  funnelStep: publicProcedure
+  funnelStep: protectedProcedure
     .input(
       zChartInput.extend({
         step: z.number(),
@@ -183,8 +184,27 @@ export const chartRouter = createTRPCRouter({
       return getFunnelStep({ ...input, ...currentPeriod });
     }),
 
-  // TODO: Make this private
-  chart: publicProcedure.input(zChartInput).query(async ({ input }) => {
+  chart: publicProcedure.input(zChartInput).query(async ({ input, ctx }) => {
+    if (ctx.session.userId) {
+      const access = await getProjectAccessCached({
+        projectId: input.projectId,
+        userId: ctx.session.userId,
+      });
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+    } else {
+      const share = await db.shareOverview.findFirst({
+        where: {
+          projectId: input.projectId,
+        },
+      });
+
+      if (!share) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+    }
+
     const currentPeriod = getChartStartEndDate(input);
     const previousPeriod = getChartPrevStartEndDate({
       range: input.range,

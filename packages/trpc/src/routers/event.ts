@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 import { chQuery, convertClickhouseDateToJs, db } from '@openpanel/db';
 
+import { getProjectAccessCached } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const eventRouter = createTRPCRouter({
@@ -37,7 +39,27 @@ export const eventRouter = createTRPCRouter({
         limit: z.number().default(8),
       })
     )
-    .query(async ({ input: { projectId, cursor, limit } }) => {
+    .query(async ({ input: { projectId, cursor, limit }, ctx }) => {
+      if (ctx.session.userId) {
+        const access = await getProjectAccessCached({
+          projectId,
+          userId: ctx.session.userId,
+        });
+        if (!access) {
+          throw TRPCAccessError('You do not have access to this project');
+        }
+      } else {
+        const share = await db.shareOverview.findFirst({
+          where: {
+            projectId,
+          },
+        });
+
+        if (!share) {
+          throw TRPCAccessError('You do not have access to this project');
+        }
+      }
+
       const [events, counts] = await Promise.all([
         chQuery<{
           id: string;

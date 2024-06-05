@@ -1,8 +1,12 @@
 import { getAuth } from '@clerk/fastify';
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
+import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
+
+import { getProjectAccessCached } from './access';
+import { TRPCAccessError } from './errors';
 
 export function createContext({ req, res }: CreateFastifyContextOptions) {
   return {
@@ -41,10 +45,11 @@ const t = initTRPC.context<Context>().create({
   },
 });
 
-const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
+const enforceUserIsAuthed = t.middleware(async ({ ctx, next, input }) => {
   if (!ctx.session?.userId) {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
   }
+
   try {
     return next({
       ctx: {
@@ -60,7 +65,25 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
   }
 });
 
+// Only used on protected routes
+const enforceProjectAccess = t.middleware(async ({ ctx, next, rawInput }) => {
+  if (has('projectId', rawInput)) {
+    const access = await getProjectAccessCached({
+      userId: ctx.session.userId!,
+      projectId: rawInput.projectId as string,
+    });
+
+    if (!access) {
+      throw TRPCAccessError('You do not have access to this project');
+    }
+  }
+
+  return next();
+});
+
 export const createTRPCRouter = t.router;
 
 export const publicProcedure = t.procedure;
-export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);
+export const protectedProcedure = t.procedure
+  .use(enforceUserIsAuthed)
+  .use(enforceProjectAccess);
