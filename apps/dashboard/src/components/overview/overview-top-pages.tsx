@@ -155,7 +155,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
               }}
             />
           )}
-          <OverviewDetailsButton chart={widget.chart} />
+          {widget.chart?.name && <OverviewDetailsButton chart={widget.chart} />}
         </WidgetBody>
       </Widget>
     </>
