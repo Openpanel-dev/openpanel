@@ -28,7 +28,6 @@ export default function useWS<T>(path: string, onMessage: (event: T) => void) {
     if (baseUrl === `${ws}${path}`) return;
     setBaseUrl(`${ws}${path}`);
   }, [path, baseUrl, ws]);
-  console.log('socketUrl', socketUrl);
 
   useWebSocket(socketUrl, {
     shouldReconnect: () => true,
