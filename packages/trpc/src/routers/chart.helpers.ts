@@ -1,10 +1,8 @@
 import {
   differenceInMilliseconds,
-  endOfDay,
   endOfMonth,
   endOfYear,
   formatISO,
-  startOfDay,
   startOfMonth,
   startOfYear,
   subDays,
@@ -14,14 +12,13 @@ import {
   subYears,
 } from 'date-fns';
 import * as mathjs from 'mathjs';
-import { repeat, reverse, sort } from 'ramda';
+import { repeat, reverse } from 'ramda';
 import { escape } from 'sqlstring';
 
 import { completeTimeline, round } from '@openpanel/common';
 import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
 import {
   chQuery,
-  convertClickhouseDateToJs,
   createSqlBuilder,
   formatClickhouseDate,
   getChartSql,
@@ -44,7 +41,7 @@ export interface ResultItem {
 }
 
 function getEventLegend(event: IChartEvent) {
-  return event.displayName ?? `${event.name} (${event.id})`;
+  return event.displayName ?? event.name;
 }
 
 export function withFormula(
@@ -68,12 +65,16 @@ export function withFormula(
 
   if (events.length === 1) {
     return series.map((serie) => {
+      if (!serie.event.id) {
+        return serie;
+      }
+
       return {
         ...serie,
         data: serie.data.map((item) => {
           serie.event.id;
           const scope = {
-            [serie.event.id]: item?.count ?? 0,
+            [serie.event.id ?? '']: item?.count ?? 0,
           };
           const count = mathjs
             .parse(formula)
@@ -97,6 +98,10 @@ export function withFormula(
       ...series[0],
       data: series[0].data.map((item, dIndex) => {
         const scope = series.reduce((acc, item) => {
+          if (!item.event.id) {
+            return acc;
+          }
+
           return {
             ...acc,
             [item.event.id]: item.data[dIndex]?.count ?? 0,

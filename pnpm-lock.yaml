@@ -59,6 +59,9 @@ importers:
       '@openpanel/trpc':
         specifier: workspace:*
         version: link:../../packages/trpc
+      '@openpanel/validation':
+        specifier: workspace:*
+        version: link:../../packages/validation
       '@trpc/server':
         specifier: ^10.45.1
         version: 10.45.1
@@ -101,6 +104,9 @@ importers:
       url-metadata:
         specifier: ^4.1.0
         version: 4.1.0
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
     devDependencies:
       '@openpanel/eslint-config':
         specifier: workspace:*

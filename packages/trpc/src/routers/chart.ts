@@ -205,153 +205,155 @@ export const chartRouter = createTRPCRouter({
       }
     }
 
-    const currentPeriod = getChartStartEndDate(input);
-    const previousPeriod = getChartPrevStartEndDate({
-      range: input.range,
-      ...currentPeriod,
-    });
-
-    const promises = [getSeriesFromEvents({ ...input, ...currentPeriod })];
-
-    if (input.previous) {
-      promises.push(
-        getSeriesFromEvents({
-          ...input,
-          ...previousPeriod,
-        })
-      );
-    }
-
-    const result = await Promise.all(promises);
-    const series = result[0]!;
-    const previousSeries = result[1];
-
-    const final: FinalChart = {
-      events: input.events,
-      series: series.map((serie, index) => {
-        const previousSerie = previousSeries?.find(
-          (item) => item.name === serie.name
-        );
-        const metrics = {
-          sum: sum(serie.data.map((item) => item.count)),
-          average: round(average(serie.data.map((item) => item.count)), 2),
-          min: min(serie.data.map((item) => item.count)),
-          max: max(serie.data.map((item) => item.count)),
-        };
-
-        return {
-          id: slug(serie.name), // TODO: Remove this (temporary fix for the frontend
-          name: serie.name,
-          event: {
-            ...serie.event,
-            displayName: serie.event.displayName ?? serie.event.name,
-          },
-          metrics: {
-            ...metrics,
-            previous: {
-              sum: getPreviousMetric(
-                metrics.sum,
-                previousSerie
-                  ? sum(previousSerie?.data.map((item) => item.count))
-                  : null
-              ),
-              average: getPreviousMetric(
-                metrics.average,
-                previousSerie
-                  ? round(
-                      average(previousSerie?.data.map((item) => item.count)),
-                      2
-                    )
-                  : null
-              ),
-              min: getPreviousMetric(
-                metrics.sum,
-                previousSerie
-                  ? min(previousSerie?.data.map((item) => item.count))
-                  : null
-              ),
-              max: getPreviousMetric(
-                metrics.sum,
-                previousSerie
-                  ? max(previousSerie?.data.map((item) => item.count))
-                  : null
-              ),
-            },
-          },
-          data: serie.data.map((item, index) => ({
-            date: item.date,
-            count: item.count ?? 0,
-            label: item.label,
-            previous: previousSerie?.data[index]
-              ? getPreviousMetric(
-                  item.count ?? 0,
-                  previousSerie?.data[index]?.count ?? null
-                )
-              : null,
-          })),
-        };
-      }),
-      metrics: {
-        sum: 0,
-        average: 0,
-        min: 0,
-        max: 0,
-        previous: {
-          sum: null,
-          average: null,
-          min: null,
-          max: null,
-        },
-      },
-    };
-
-    final.metrics.sum = sum(final.series.map((item) => item.metrics.sum));
-    final.metrics.average = round(
-      average(final.series.map((item) => item.metrics.average)),
-      2
-    );
-    final.metrics.min = min(final.series.map((item) => item.metrics.min));
-    final.metrics.max = max(final.series.map((item) => item.metrics.max));
-    final.metrics.previous = {
-      sum: getPreviousMetric(
-        final.metrics.sum,
-        sum(final.series.map((item) => item.metrics.previous.sum?.value ?? 0))
-      ),
-      average: getPreviousMetric(
-        final.metrics.average,
-        round(
-          average(
-            final.series.map(
-              (item) => item.metrics.previous.average?.value ?? 0
-            )
-          ),
-          2
-        )
-      ),
-      min: getPreviousMetric(
-        final.metrics.min,
-        min(final.series.map((item) => item.metrics.previous.min?.value ?? 0))
-      ),
-      max: getPreviousMetric(
-        final.metrics.max,
-        max(final.series.map((item) => item.metrics.previous.max?.value ?? 0))
-      ),
-    };
-
-    // Sort by sum
-    final.series = final.series.sort((a, b) => {
-      if (input.chartType === 'linear') {
-        const sumA = a.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
-        const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
-        return sumB - sumA;
-      } else {
-        return b.metrics[input.metric] - a.metrics[input.metric];
-      }
-    });
-
-    return final;
+    return getChart(input);
   }),
 });
+
+export async function getChart(input: IChartInput) {
+  const currentPeriod = getChartStartEndDate(input);
+  const previousPeriod = getChartPrevStartEndDate({
+    range: input.range,
+    ...currentPeriod,
+  });
+
+  const promises = [getSeriesFromEvents({ ...input, ...currentPeriod })];
+
+  if (input.previous) {
+    promises.push(
+      getSeriesFromEvents({
+        ...input,
+        ...previousPeriod,
+      })
+    );
+  }
+
+  const result = await Promise.all(promises);
+  const series = result[0]!;
+  const previousSeries = result[1];
+
+  const final: FinalChart = {
+    events: input.events,
+    series: series.map((serie) => {
+      const previousSerie = previousSeries?.find(
+        (item) => item.name === serie.name
+      );
+      const metrics = {
+        sum: sum(serie.data.map((item) => item.count)),
+        average: round(average(serie.data.map((item) => item.count)), 2),
+        min: min(serie.data.map((item) => item.count)),
+        max: max(serie.data.map((item) => item.count)),
+      };
+
+      return {
+        id: slug(serie.name), // TODO: Remove this (temporary fix for the frontend
+        name: serie.name,
+        event: {
+          ...serie.event,
+          displayName: serie.event.displayName ?? serie.event.name,
+        },
+        metrics: {
+          ...metrics,
+          previous: {
+            sum: getPreviousMetric(
+              metrics.sum,
+              previousSerie
+                ? sum(previousSerie?.data.map((item) => item.count))
+                : null
+            ),
+            average: getPreviousMetric(
+              metrics.average,
+              previousSerie
+                ? round(
+                    average(previousSerie?.data.map((item) => item.count)),
+                    2
+                  )
+                : null
+            ),
+            min: getPreviousMetric(
+              metrics.sum,
+              previousSerie
+                ? min(previousSerie?.data.map((item) => item.count))
+                : null
+            ),
+            max: getPreviousMetric(
+              metrics.sum,
+              previousSerie
+                ? max(previousSerie?.data.map((item) => item.count))
+                : null
+            ),
+          },
+        },
+        data: serie.data.map((item, index) => ({
+          date: item.date,
+          count: item.count ?? 0,
+          label: item.label,
+          previous: previousSerie?.data[index]
+            ? getPreviousMetric(
+                item.count ?? 0,
+                previousSerie?.data[index]?.count ?? null
+              )
+            : null,
+        })),
+      };
+    }),
+    metrics: {
+      sum: 0,
+      average: 0,
+      min: 0,
+      max: 0,
+      previous: {
+        sum: null,
+        average: null,
+        min: null,
+        max: null,
+      },
+    },
+  };
+
+  final.metrics.sum = sum(final.series.map((item) => item.metrics.sum));
+  final.metrics.average = round(
+    average(final.series.map((item) => item.metrics.average)),
+    2
+  );
+  final.metrics.min = min(final.series.map((item) => item.metrics.min));
+  final.metrics.max = max(final.series.map((item) => item.metrics.max));
+  final.metrics.previous = {
+    sum: getPreviousMetric(
+      final.metrics.sum,
+      sum(final.series.map((item) => item.metrics.previous.sum?.value ?? 0))
+    ),
+    average: getPreviousMetric(
+      final.metrics.average,
+      round(
+        average(
+          final.series.map((item) => item.metrics.previous.average?.value ?? 0)
+        ),
+        2
+      )
+    ),
+    min: getPreviousMetric(
+      final.metrics.min,
+      min(final.series.map((item) => item.metrics.previous.min?.value ?? 0))
+    ),
+    max: getPreviousMetric(
+      final.metrics.max,
+      max(final.series.map((item) => item.metrics.previous.max?.value ?? 0))
+    ),
+  };
+
+  // Sort by sum
+  final.series = final.series.sort((a, b) => {
+    if (input.chartType === 'linear') {
+      const sumA = a.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
+      const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
+      return sumB - sumA;
+    } else {
+      return b.metrics[input.metric] - a.metrics[input.metric];
+    }
+  });
+
+  return final;
+}
 
 export function getPreviousMetric(
   current: number,

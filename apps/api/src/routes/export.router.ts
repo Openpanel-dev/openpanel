@@ -31,6 +31,12 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/events',
     handler: controller.events,
   });
+
+  fastify.route({
+    method: 'GET',
+    url: '/charts',
+    handler: controller.charts,
+  });
   done();
 };
 

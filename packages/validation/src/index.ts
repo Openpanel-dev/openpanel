@@ -19,7 +19,7 @@ export function objectToZodEnums<K extends string>(
 export const mapKeys = objectToZodEnums;
 
 export const zChartEvent = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   name: z.string(),
   displayName: z.string().optional(),
   property: z.string().optional(),
@@ -34,7 +34,7 @@ export const zChartEvent = z.object({
   ]),
   filters: z.array(
     z.object({
-      id: z.string(),
+      id: z.string().optional(),
       name: z.string(),
       operator: z.enum(objectToZodEnums(operators)),
       value: z.array(z.string().or(z.number()).or(z.boolean()).or(z.null())),
@@ -42,7 +42,7 @@ export const zChartEvent = z.object({
   ),
 });
 export const zChartBreakdown = z.object({
-  id: z.string(),
+  id: z.string().optional(),
   name: z.string(),
 });
 

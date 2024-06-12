@@ -22,6 +22,7 @@
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/trpc": "workspace:*",
+    "@openpanel/validation": "workspace:*",
     "@trpc/server": "^10.45.1",
     "fastify": "^4.25.2",
     "fastify-metrics": "^11.0.0",
@@ -35,7 +36,8 @@
     "sqlstring": "^2.3.3",
     "superjson": "^1.13.3",
     "ua-parser-js": "^1.0.37",
-    "url-metadata": "^4.1.0"
+    "url-metadata": "^4.1.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@openpanel/eslint-config": "workspace:*",
