@@ -5,7 +5,7 @@ import { ChartSwitch } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 import { OverviewLiveHistogram } from './overview-live-histogram';
 
@@ -186,7 +186,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       metric: 'average',
       unit: 'min',
     },
-  ] satisfies (IChartInput & { id: string })[];
+  ] satisfies (IChartProps & { id: string })[];
 
   const selectedMetric = reports[metric]!;
 

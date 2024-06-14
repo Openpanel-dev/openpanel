@@ -11,13 +11,13 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
 type SaveReportProps = {
-  report: IChartInput;
+  report: IChartProps;
   reportId?: string;
 };
 

@@ -8,10 +8,17 @@ import type {
   zLineType,
   zMetric,
   zRange,
+  zReportInput,
   zTimeInterval,
 } from './index';
 
 export type IChartInput = z.infer<typeof zChartInput>;
+export type IChartProps = z.infer<typeof zReportInput> & {
+  name: string;
+  lineType: IChartLineType;
+  unit?: string;
+  previousIndicatorInverted?: boolean;
+};
 export type IChartEvent = z.infer<typeof zChartEvent>;
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =

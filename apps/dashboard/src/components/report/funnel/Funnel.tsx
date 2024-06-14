@@ -5,7 +5,6 @@ import { AutoSizer } from '@/components/react-virtualized-auto-sizer';
 import { Progress } from '@/components/ui/progress';
 import { Widget, WidgetBody } from '@/components/widget';
 import { pushModal } from '@/modals';
-import { useSelector } from '@/redux';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';

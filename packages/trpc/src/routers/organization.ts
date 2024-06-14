@@ -66,6 +66,38 @@ export const organizationRouter = createTRPCRouter({
       });
     }),
 
+  removeMember: protectedProcedure
+    .input(
+      z.object({
+        organizationId: z.string(),
+        userId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (ctx.session.userId === input.userId) {
+        throw new Error('You cannot remove yourself from the organization');
+      }
+      const organization = await clerkClient.organizations.getOrganization({
+        organizationId: input.organizationId,
+      });
+
+      if (!organization?.slug) {
+        throw new Error('Organization not found');
+      }
+
+      await db.projectAccess.deleteMany({
+        where: {
+          userId: input.userId,
+          organizationSlug: organization.slug,
+        },
+      });
+
+      return clerkClient.organizations.deleteOrganizationMembership({
+        organizationId: input.organizationId,
+        userId: input.userId,
+      });
+    }),
+
   updateMemberAccess: protectedProcedure
     .input(
       z.object({

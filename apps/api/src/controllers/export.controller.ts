@@ -151,9 +151,7 @@ export async function charts(
 
   return getChart({
     ...query.data,
-    name: 'export-api',
-    metric: 'sum',
-    lineType: 'monotone',
     chartType: 'linear',
+    metric: 'sum',
   });
 }

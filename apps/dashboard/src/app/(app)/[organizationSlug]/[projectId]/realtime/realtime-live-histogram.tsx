@@ -9,7 +9,7 @@ import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import dynamic from 'next/dynamic';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 interface RealtimeLiveHistogramProps {
   projectId: string;
@@ -18,20 +18,18 @@ interface RealtimeLiveHistogramProps {
 export function RealtimeLiveHistogram({
   projectId,
 }: RealtimeLiveHistogramProps) {
-  const report: IChartInput = {
+  const report: IChartProps = {
     projectId,
     events: [
       {
         segment: 'user',
         filters: [
           {
-            id: '1',
             name: 'name',
             operator: 'is',
             value: ['screen_view', 'session_start'],
           },
         ],
-        id: 'A',
         name: '*',
         displayName: 'Active users',
       },
@@ -45,7 +43,7 @@ export function RealtimeLiveHistogram({
     lineType: 'monotone',
     previous: false,
   };
-  const countReport: IChartInput = {
+  const countReport: IChartProps = {
     name: '',
     projectId,
     events: [
@@ -85,7 +83,7 @@ export function RealtimeLiveHistogram({
         {staticArray.map((percent, i) => (
           <div
             key={i}
-            className="bg-def-200 flex-1 animate-pulse rounded-md"
+            className="flex-1 animate-pulse rounded-md bg-def-200"
             style={{ height: `${percent}%` }}
           />
         ))}

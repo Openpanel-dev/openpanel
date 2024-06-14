@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { ChartSwitch } from '@/components/report/chart';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 type Props = {
   profileId: string;
@@ -12,7 +12,7 @@ type Props = {
 };
 
 const ProfileCharts = ({ profileId, projectId }: Props) => {
-  const pageViewsChart: IChartInput = {
+  const pageViewsChart: IChartProps = {
     projectId,
     chartType: 'linear',
     events: [
@@ -45,7 +45,7 @@ const ProfileCharts = ({ profileId, projectId }: Props) => {
     metric: 'sum',
   };
 
-  const eventsChart: IChartInput = {
+  const eventsChart: IChartProps = {
     projectId,
     chartType: 'linear',
     events: [

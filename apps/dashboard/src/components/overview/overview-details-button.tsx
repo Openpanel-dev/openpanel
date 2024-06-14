@@ -1,10 +1,10 @@
 import { pushModal } from '@/modals';
 import { ScanEyeIcon } from 'lucide-react';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 type Props = {
-  chart: IChartInput;
+  chart: IChartProps;
 };
 
 const OverviewDetailsButton = ({ chart }: Props) => {

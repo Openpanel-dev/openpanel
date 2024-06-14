@@ -13,7 +13,7 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
     <div className="grid gap-4">
       <button className="text-left" onClick={() => clipboard(id)}>
         <Label>Client ID</Label>
-        <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
+        <div className="flex items-center justify-between rounded border-input bg-background p-2 px-3 font-mono text-sm">
           {id}
           <Copy size={16} />
         </div>
@@ -25,7 +25,7 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
             onClick={() => clipboard(secret)}
           >
             <Label>Client secret</Label>
-            <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
+            <div className="flex items-center justify-between rounded border-input bg-background p-2 px-3 font-mono text-sm">
               {secret}
               <Copy size={16} />
             </div>
@@ -40,7 +40,7 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
       {cors && (
         <div className="text-left">
           <Label>CORS settings</Label>
-          <div className="flex items-center justify-between rounded bg-gray-100 p-2 px-3">
+          <div className="flex items-center justify-between rounded border-input bg-background p-2 px-3 font-mono text-sm">
             {cors}
           </div>
         </div>

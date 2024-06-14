@@ -7,8 +7,8 @@ import type {
   IChartBreakdown,
   IChartEvent,
   IChartEventFilter,
-  IChartInput,
   IChartLineType,
+  IChartProps,
   IChartRange,
 } from '@openpanel/validation';
 
@@ -46,7 +46,7 @@ export function transformReportEvent(
 
 export function transformReport(
   report: DbReport
-): IChartInput & { id: string } {
+): IChartProps & { id: string } {
   return {
     id: report.id,
     projectId: report.projectId,

@@ -3,6 +3,13 @@
 import { Dot } from '@/components/dot';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -12,7 +19,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Widget, WidgetHead } from '@/components/widget';
+import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
+import { MoreHorizontalIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import type { IServiceInvite, IServiceProject } from '@openpanel/db';
 
@@ -38,6 +49,7 @@ const Invites = ({ invites, projects }: Props) => {
             <TableHead>Created</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Access</TableHead>
+            <TableHead>More</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -62,8 +74,19 @@ function Item({
   projects,
   publicMetadata,
   status,
+  organizationId,
 }: ItemProps) {
+  const router = useRouter();
   const access = (publicMetadata?.access ?? []) as string[];
+  const revoke = api.organization.revokeInvite.useMutation({
+    onSuccess() {
+      toast.success(`Invite for ${email} revoked`);
+      router.refresh();
+    },
+    onError() {
+      toast.error(`Failed to revoke invite for ${email}`);
+    },
+  });
   return (
     <TableRow key={id}>
       <TableCell className="font-medium">{email}</TableCell>
@@ -103,6 +126,23 @@ function Item({
         {access.length === 0 && (
           <Badge variant={'secondary'}>All projects</Badge>
         )}
+      </TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button icon={MoreHorizontalIcon} size="icon" variant={'outline'} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => {
+                revoke.mutate({ organizationId, invitationId: id });
+              }}
+            >
+              Revoke invite
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </TableRow>
   );

@@ -1,7 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -12,6 +19,9 @@ import {
 } from '@/components/ui/table';
 import { Widget, WidgetHead } from '@/components/widget';
 import { api } from '@/trpc/client';
+import { MoreHorizontalIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import type { IServiceMember, IServiceProject } from '@openpanel/db';
 
@@ -33,6 +43,7 @@ const Members = ({ members, projects }: Props) => {
             <TableHead>Role</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Access</TableHead>
+            <TableHead>More</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -58,7 +69,17 @@ function Item({
   projects,
   access: prevAccess,
 }: ItemProps) {
+  const router = useRouter();
   const mutation = api.organization.updateMemberAccess.useMutation();
+  const revoke = api.organization.removeMember.useMutation({
+    onSuccess() {
+      toast.success(`${name} has been removed from the organization`);
+      router.refresh();
+    },
+    onError() {
+      toast.error(`Failed to remove ${name} from the organization`);
+    },
+  });
   const [access, setAccess] = useState<string[]>(
     prevAccess.map((item) => item.projectId)
   );
@@ -85,6 +106,23 @@ function Item({
             value: item.id,
           }))}
         />
+      </TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button icon={MoreHorizontalIcon} size="icon" variant={'outline'} />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              className="text-destructive"
+              onClick={() => {
+                revoke.mutate({ organizationId: organization.id, userId: id! });
+              }}
+            >
+              Remove member
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </TableRow>
   );

@@ -11,12 +11,12 @@ import {
 } from 'react';
 
 import type { IChartSerie } from '@openpanel/trpc/src/routers/chart';
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 import { ChartLoading } from './ChartLoading';
 import { MetricCardLoading } from './MetricCard';
 
-export interface ChartContextType extends IChartInput {
+export interface ChartContextType extends IChartProps {
   editMode?: boolean;
   hideID?: boolean;
   onClick?: (item: IChartSerie) => void;

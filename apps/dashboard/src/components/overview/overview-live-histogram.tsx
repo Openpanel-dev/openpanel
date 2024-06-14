@@ -3,7 +3,7 @@
 import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
@@ -14,7 +14,7 @@ interface OverviewLiveHistogramProps {
 export function OverviewLiveHistogram({
   projectId,
 }: OverviewLiveHistogramProps) {
-  const report: IChartInput = {
+  const report: IChartProps = {
     projectId,
     events: [
       {
@@ -41,7 +41,7 @@ export function OverviewLiveHistogram({
     lineType: 'monotone',
     previous: false,
   };
-  const countReport: IChartInput = {
+  const countReport: IChartProps = {
     name: '',
     projectId,
     events: [
@@ -81,7 +81,7 @@ export function OverviewLiveHistogram({
         {staticArray.map((percent, i) => (
           <div
             key={i}
-            className="bg-def-200 flex-1 animate-pulse rounded"
+            className="flex-1 animate-pulse rounded bg-def-200"
             style={{ height: `${percent}%` }}
           />
         ))}

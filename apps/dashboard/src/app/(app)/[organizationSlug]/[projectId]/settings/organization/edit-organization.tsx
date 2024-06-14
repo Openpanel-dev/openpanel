@@ -42,6 +42,7 @@ export default function EditOrganization({
 
   return (
     <form
+      className="opacity-50"
       onSubmit={handleSubmit((values) => {
         mutation.mutate(values);
       })}
@@ -49,12 +50,18 @@ export default function EditOrganization({
       <Widget>
         <WidgetHead className="flex items-center justify-between">
           <span className="title">Org. details</span>
-          <Button size="sm" type="submit" disabled={!formState.isDirty}>
+          <Button
+            size="sm"
+            type="submit"
+            disabled
+            // disabled={!formState.isDirty}
+          >
             Save
           </Button>
         </WidgetHead>
         <WidgetBody>
           <InputWithLabel
+            disabled
             label="Name"
             {...register('name')}
             defaultValue={organization?.name}

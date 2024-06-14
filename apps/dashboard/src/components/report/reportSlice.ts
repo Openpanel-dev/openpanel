@@ -18,14 +18,14 @@ import {
 import type {
   IChartBreakdown,
   IChartEvent,
-  IChartInput,
   IChartLineType,
+  IChartProps,
   IChartRange,
   IChartType,
   IInterval,
 } from '@openpanel/validation';
 
-type InitialState = IChartInput & {
+type InitialState = IChartProps & {
   dirty: boolean;
   ready: boolean;
   startDate: string | null;
@@ -72,7 +72,7 @@ export const reportSlice = createSlice({
         ready: true,
       };
     },
-    setReport(state, action: PayloadAction<IChartInput>) {
+    setReport(state, action: PayloadAction<IChartProps>) {
       return {
         ...state,
         ...action.payload,
@@ -97,7 +97,7 @@ export const reportSlice = createSlice({
     removeEvent: (
       state,
       action: PayloadAction<{
-        id: string;
+        id?: string;
       }>
     ) => {
       state.dirty = true;
@@ -135,7 +135,7 @@ export const reportSlice = createSlice({
     removeBreakdown: (
       state,
       action: PayloadAction<{
-        id: string;
+        id?: string;
       }>
     ) => {
       state.dirty = true;

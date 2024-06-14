@@ -1,15 +1,13 @@
 'use client';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 import { Funnel } from '../funnel';
 import { Chart } from './Chart';
 import { withChartProivder } from './ChartProvider';
 
-export type ReportChartProps = IChartInput;
-
 export const ChartSwitch = withChartProivder(function ChartSwitch(
-  props: ReportChartProps
+  props: IChartProps
 ) {
   if (props.chartType === 'funnel') {
     return <Funnel {...props} />;
@@ -19,12 +17,12 @@ export const ChartSwitch = withChartProivder(function ChartSwitch(
 });
 
 interface ChartSwitchShortcutProps {
-  projectId: ReportChartProps['projectId'];
-  range?: ReportChartProps['range'];
-  previous?: ReportChartProps['previous'];
-  chartType?: ReportChartProps['chartType'];
-  interval?: ReportChartProps['interval'];
-  events: ReportChartProps['events'];
+  projectId: IChartProps['projectId'];
+  range?: IChartProps['range'];
+  previous?: IChartProps['previous'];
+  chartType?: IChartProps['chartType'];
+  interval?: IChartProps['interval'];
+  events: IChartProps['events'];
 }
 
 export const ChartSwitchShortcut = ({

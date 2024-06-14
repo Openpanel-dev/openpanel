@@ -2,7 +2,7 @@
 
 import { api } from '@/trpc/client';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartProps } from '@openpanel/validation';
 
 import { ChartEmpty } from './ChartEmpty';
 import { ReportAreaChart } from './ReportAreaChart';
@@ -13,7 +13,7 @@ import { ReportMapChart } from './ReportMapChart';
 import { ReportMetricChart } from './ReportMetricChart';
 import { ReportPieChart } from './ReportPieChart';
 
-export type ReportChartProps = IChartInput;
+export type ReportChartProps = IChartProps;
 
 export function Chart({
   interval,
@@ -45,20 +45,16 @@ export function Chart({
 
   const [data] = api.chart.chart.useSuspenseQuery(
     {
-      // dont send lineType since it does not need to be sent
-      lineType: 'monotone',
       interval,
       chartType,
       events,
       breakdowns,
-      name,
       range,
       startDate,
       endDate,
       projectId,
       previous,
       formula,
-      unit,
       metric,
     },
     {

@@ -60,9 +60,7 @@ export const zMetric = z.enum(objectToZodEnums(metrics));
 export const zRange = z.enum(objectToZodEnums(timeWindows));
 
 export const zChartInput = z.object({
-  name: z.string().default(''),
   chartType: zChartType.default('linear'),
-  lineType: zLineType.default('monotone'),
   interval: zTimeInterval.default('day'),
   events: zChartEvents,
   breakdowns: zChartBreakdowns.default([]),
@@ -70,11 +68,15 @@ export const zChartInput = z.object({
   previous: z.boolean().default(false),
   formula: z.string().optional(),
   metric: zMetric.default('sum'),
-  unit: z.string().optional(),
-  previousIndicatorInverted: z.boolean().optional(),
   projectId: z.string(),
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
+});
+
+export const zReportInput = zChartInput.extend({
+  name: z.string(),
+  lineType: zLineType,
+  unit: z.string().optional(),
 });
 
 export const zInviteUser = z.object({

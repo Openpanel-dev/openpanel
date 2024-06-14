@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { db } from '@openpanel/db';
-import { zChartInput } from '@openpanel/validation';
+import { zReportInput } from '@openpanel/validation';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -9,7 +9,7 @@ export const reportRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        report: zChartInput.omit({ projectId: true }),
+        report: zReportInput.omit({ projectId: true }),
         dashboardId: z.string(),
       })
     )
@@ -38,7 +38,7 @@ export const reportRouter = createTRPCRouter({
     .input(
       z.object({
         reportId: z.string(),
-        report: zChartInput.omit({ projectId: true }),
+        report: zReportInput.omit({ projectId: true }),
       })
     )
     .mutation(({ input: { report, reportId } }) => {
