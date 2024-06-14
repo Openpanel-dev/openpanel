@@ -38,7 +38,7 @@ const initialState: InitialState = {
   dirty: false,
   // TODO: remove this
   projectId: '',
-  name: 'Untitled',
+  name: '',
   chartType: 'linear',
   lineType: 'monotone',
   interval: 'day',

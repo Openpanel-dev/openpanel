@@ -1,4 +1,5 @@
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
+import EditReportName from '@/components/report/edit-report-name';
 import { Pencil } from 'lucide-react';
 
 import ReportEditor from './report-editor';
@@ -15,12 +16,7 @@ export default function Page({ params: { organizationSlug } }: PageProps) {
     <>
       <PageLayout
         organizationSlug={organizationSlug}
-        title={
-          <div className="flex cursor-pointer items-center gap-2">
-            Unnamed report
-            <Pencil size={16} />
-          </div>
-        }
+        title={<EditReportName name={undefined} />}
       />
       <ReportEditor report={null} />
     </>

@@ -13,6 +13,7 @@ import {
   changeStartDate,
   ready,
   reset,
+  setName,
   setReport,
 } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
@@ -21,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
+import { bind } from 'bind-event-listener';
 import { endOfDay, startOfDay } from 'date-fns';
 import { GanttChartSquareIcon } from 'lucide-react';
 
@@ -49,6 +51,17 @@ export default function ReportEditor({
       dispatch(reset());
     };
   }, [initialReport, dispatch]);
+
+  useEffect(() => {
+    return bind(window, {
+      type: 'report-name-change',
+      listener: (event) => {
+        if (event instanceof CustomEvent && typeof event.detail === 'string') {
+          dispatch(setName(event.detail));
+        }
+      },
+    });
+  }, [dispatch]);
 
   return (
     <Sheet>
