@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { TooltipComplete } from '@/components/tooltip-complete';
 import {
   Tooltip,
   TooltipContent,
@@ -43,8 +44,8 @@ export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
   });
 
   return (
-    <Tooltip>
-      <TooltipTrigger className="flex h-8 items-center gap-2 rounded border border-border px-3 font-medium leading-none">
+    <TooltipComplete content={`${counter} unique visitors last 5 minutes`}>
+      <div className="flex h-8 items-center gap-2 rounded border border-border px-3 font-medium leading-none">
         <div className="relative">
           <div
             className={cn(
@@ -71,11 +72,7 @@ export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
           animateToNumber={counter}
           locale="en"
         />
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        <p>{counter} unique visitors last 5 minutes</p>
-        <p>Click to see activity for the last 30 minutes</p>
-      </TooltipContent>
-    </Tooltip>
+      </div>
+    </TooltipComplete>
   );
 }
