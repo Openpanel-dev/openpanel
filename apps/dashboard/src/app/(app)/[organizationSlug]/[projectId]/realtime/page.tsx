@@ -1,5 +1,9 @@
 import { Suspense } from 'react';
-import { Fullscreen, FullscreenToggle } from '@/components/fullscreen-toggle';
+import {
+  Fullscreen,
+  FullscreenClose,
+  FullscreenOpen,
+} from '@/components/fullscreen-toggle';
 import { LazyChart } from '@/components/report/chart/LazyChart';
 
 import PageLayout from '../page-layout';
@@ -20,10 +24,11 @@ export default function Page({
   return (
     <>
       <PageLayout
-        title={<FullscreenToggle />}
+        title={<FullscreenOpen />}
         {...{ projectId, organizationSlug }}
       />
       <Fullscreen>
+        <FullscreenClose />
         <RealtimeReloader projectId={projectId} />
         <Suspense>
           <RealtimeMap projectId={projectId} />
