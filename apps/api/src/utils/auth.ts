@@ -13,6 +13,27 @@ const cleanDomain = (domain: string) =>
     .replace(/https?:\/\//, '')
     .replace(/\/$/, '');
 
+class SdkAuthError extends Error {
+  payload: {
+    clientId?: string;
+    clientSecret?: string;
+    origin?: string;
+  };
+
+  constructor(
+    message: string,
+    payload: {
+      clientId?: string;
+      clientSecret?: string;
+      origin?: string;
+    }
+  ) {
+    super(message);
+    this.name = 'SdkAuthError';
+    this.payload = payload;
+  }
+}
+
 export async function validateSdkRequest(
   headers: RawRequestDefaultExpression['headers']
 ): Promise<string> {
@@ -22,11 +43,20 @@ export async function validateSdkRequest(
   const clientSecretOld = headers['mixan-client-secret'] as string;
   const clientId = clientIdNew || clientIdOld;
   const clientSecret = clientSecretNew || clientSecretOld;
-
   const origin = headers.origin;
 
+  const createError = (message: string) =>
+    new SdkAuthError(message, {
+      clientId,
+      clientSecret:
+        typeof clientSecret === 'string'
+          ? clientSecret.slice(0, 5) + '...' + clientSecret.slice(-5)
+          : 'none',
+      origin,
+    });
+
   if (!clientId) {
-    throw new Error('Ingestion: Missing client id');
+    throw createError('Ingestion: Missing client id');
   }
 
   const client = await db.client
@@ -38,11 +68,11 @@ export async function validateSdkRequest(
     .catch(() => null);
 
   if (!client) {
-    throw new Error('Ingestion: Invalid client id');
+    throw createError('Ingestion: Invalid client id');
   }
 
   if (!client.projectId) {
-    throw new Error('Ingestion: Client has no project');
+    throw createError('Ingestion: Client has no project');
   }
 
   if (client.cors) {
@@ -67,12 +97,7 @@ export async function validateSdkRequest(
     }
   }
 
-  logger.error({
-    client,
-    headers,
-    origin,
-  });
-  throw new Error('Ingestion: Invalid cors or secret');
+  throw createError('Ingestion: Invalid cors or secret');
 }
 
 export async function validateExportRequest(
