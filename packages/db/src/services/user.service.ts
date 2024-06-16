@@ -1,17 +1,6 @@
-import type { User } from '@clerk/nextjs/dist/types/server';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 
 import { db } from '../prisma-client';
-
-export function transformUser(user: User) {
-  return {
-    name: `${user.firstName} ${user.lastName}`,
-    email: user.emailAddresses[0]?.emailAddress ?? '',
-    id: user.id,
-    lastName: user.lastName ?? '',
-    firstName: user.firstName ?? '',
-  };
-}
 
 export async function getCurrentUser() {
   const session = auth();
@@ -22,20 +11,9 @@ export async function getCurrentUser() {
 }
 
 export async function getUserById(id: string) {
-  return clerkClient.users.getUser(id).then(transformUser);
-}
-
-export async function isWaitlistUserAccepted() {
-  const user = await getCurrentUser();
-  const waitlist = await db.waitlist.findFirst({
+  return db.user.findUnique({
     where: {
-      email: user?.email,
+      id,
     },
   });
-
-  if (!waitlist) {
-    return false;
-  }
-
-  return waitlist.accepted;
 }

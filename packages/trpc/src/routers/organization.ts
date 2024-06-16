@@ -1,4 +1,5 @@
 import { clerkClient } from '@clerk/fastify';
+import { pathOr } from 'ramda';
 import { z } from 'zod';
 
 import { db, getOrganizationBySlug } from '@openpanel/db';
@@ -7,18 +8,6 @@ import { zInviteUser } from '@openpanel/validation';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const organizationRouter = createTRPCRouter({
-  list: protectedProcedure.query(() => {
-    return clerkClient.organizations.getOrganizationList();
-  }),
-  get: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-      })
-    )
-    .query(({ input }) => {
-      return getOrganizationBySlug(input.id);
-    }),
   update: protectedProcedure
     .input(
       z.object({
@@ -27,42 +16,63 @@ export const organizationRouter = createTRPCRouter({
       })
     )
     .mutation(({ input }) => {
-      return clerkClient.organizations.updateOrganization(input.id, {
-        name: input.name,
+      return db.organization.update({
+        where: {
+          id: input.id,
+        },
+        data: {
+          name: input.name,
+        },
       });
     }),
 
   inviteUser: protectedProcedure
     .input(zInviteUser)
     .mutation(async ({ input, ctx }) => {
-      const organization = await getOrganizationBySlug(input.organizationSlug);
-
-      if (!organization) {
-        throw new Error('Organization not found');
-      }
-
-      return clerkClient.organizations.createOrganizationInvitation({
-        organizationId: organization.id,
+      const ticket = await clerkClient.invitations.createInvitation({
         emailAddress: input.email,
-        role: input.role,
-        inviterUserId: ctx.session.userId,
-        publicMetadata: {
-          access: input.access,
+        notify: true,
+      });
+
+      return db.member.create({
+        data: {
+          email: input.email,
+          organizationId: input.organizationSlug,
+          role: input.role,
+          invitedById: ctx.session.userId,
+          meta: {
+            access: input.access,
+            invitationId: ticket.id,
+          },
         },
       });
     }),
   revokeInvite: protectedProcedure
     .input(
       z.object({
-        organizationId: z.string(),
-        invitationId: z.string(),
+        memberId: z.string(),
       })
     )
-    .mutation(async ({ input, ctx }) => {
-      return clerkClient.organizations.revokeOrganizationInvitation({
-        organizationId: input.organizationId,
-        invitationId: input.invitationId,
-        requestingUserId: ctx.session.userId,
+    .mutation(async ({ input }) => {
+      const member = await db.member.findUniqueOrThrow({
+        where: {
+          id: input.memberId,
+        },
+      });
+      const invitationId = pathOr<string | undefined>(
+        undefined,
+        ['meta', 'invitationId'],
+        member
+      );
+
+      if (invitationId) {
+        await clerkClient.invitations.revokeInvitation(invitationId);
+      }
+
+      return db.member.delete({
+        where: {
+          id: input.memberId,
+        },
       });
     }),
 
@@ -77,25 +87,21 @@ export const organizationRouter = createTRPCRouter({
       if (ctx.session.userId === input.userId) {
         throw new Error('You cannot remove yourself from the organization');
       }
-      const organization = await clerkClient.organizations.getOrganization({
-        organizationId: input.organizationId,
-      });
 
-      if (!organization?.slug) {
-        throw new Error('Organization not found');
-      }
-
-      await db.projectAccess.deleteMany({
-        where: {
-          userId: input.userId,
-          organizationSlug: organization.slug,
-        },
-      });
-
-      return clerkClient.organizations.deleteOrganizationMembership({
-        organizationId: input.organizationId,
-        userId: input.userId,
-      });
+      await db.$transaction([
+        db.member.deleteMany({
+          where: {
+            userId: input.userId,
+            organizationId: input.organizationId,
+          },
+        }),
+        db.projectAccess.deleteMany({
+          where: {
+            userId: input.userId,
+            organizationSlug: input.organizationId,
+          },
+        }),
+      ]);
     }),
 
   updateMemberAccess: protectedProcedure

@@ -20,9 +20,7 @@ export default async function Page({
     getCurrentProjects(organizationSlug),
   ]);
 
-  const organization = organizations.find(
-    (org) => org.slug === organizationSlug
-  );
+  const organization = organizations.find((org) => org.id === organizationSlug);
 
   if (!organization) {
     return (

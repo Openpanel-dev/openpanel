@@ -1,6 +1,5 @@
 'use client';
 
-import { Dot } from '@/components/dot';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,9 +19,9 @@ import {
 } from '@/components/ui/table';
 import { Widget, WidgetHead } from '@/components/widget';
 import { api } from '@/trpc/client';
-import { cn } from '@/utils/cn';
 import { MoreHorizontalIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { pathOr } from 'ramda';
 import { toast } from 'sonner';
 
 import type { IServiceInvite, IServiceProject } from '@openpanel/db';
@@ -44,10 +43,9 @@ const Invites = ({ invites, projects }: Props) => {
       <Table className="mini">
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
+            <TableHead>Mail</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Created</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Access</TableHead>
             <TableHead>More</TableHead>
           </TableRow>
@@ -66,18 +64,9 @@ interface ItemProps extends IServiceInvite {
   projects: IServiceProject[];
 }
 
-function Item({
-  id,
-  email,
-  role,
-  createdAt,
-  projects,
-  publicMetadata,
-  status,
-  organizationId,
-}: ItemProps) {
+function Item({ id, email, role, createdAt, projects, meta }: ItemProps) {
   const router = useRouter();
-  const access = (publicMetadata?.access ?? []) as string[];
+  const access = pathOr<string[]>([], ['access'], meta);
   const revoke = api.organization.revokeInvite.useMutation({
     onSuccess() {
       toast.success(`Invite for ${email} revoked`);
@@ -95,17 +84,6 @@ function Item({
         <TooltipComplete content={new Date(createdAt).toLocaleString()}>
           {new Date(createdAt).toLocaleDateString()}
         </TooltipComplete>
-      </TableCell>
-      <TableCell className="flex items-center gap-2 capitalize">
-        <Dot
-          className={cn(
-            status === 'accepted' && 'bg-emerald-600',
-            status === 'revoked' && 'bg-red-600',
-            status === 'pending' && 'bg-orange-600'
-          )}
-          animated={status === 'pending'}
-        />
-        {status}
       </TableCell>
       <TableCell>
         {access.map((id) => {
@@ -136,7 +114,7 @@ function Item({
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => {
-                revoke.mutate({ organizationId, invitationId: id });
+                revoke.mutate({ memberId: id });
               }}
             >
               Revoke invite

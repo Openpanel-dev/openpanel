@@ -27,7 +27,7 @@ export default async function AppLayout({
     getDashboardsByProjectId(projectId),
   ]);
 
-  if (!organizations.find((item) => item.slug === organizationSlug)) {
+  if (!organizations.find((item) => item.id === organizationSlug)) {
     return (
       <FullPageEmptyState title="Not found" className="min-h-screen">
         The organization you were looking for could not be found.

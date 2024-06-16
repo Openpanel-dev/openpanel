@@ -112,10 +112,10 @@ const Tracking = ({
                       value={field.value}
                       items={
                         organizations
-                          .filter((item) => item.slug)
+                          .filter((item) => item.id)
                           .map((item) => ({
                             label: item.name,
-                            value: item.slug,
+                            value: item.id,
                           })) ?? []
                       }
                       onChange={field.onChange}

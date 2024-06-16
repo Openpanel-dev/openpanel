@@ -53,6 +53,9 @@ export default function CreateInvite({ projects }: Props) {
       closeSheet();
       router.refresh();
     },
+    onError() {
+      toast.error('Failed to invite user');
+    },
   });
 
   return (

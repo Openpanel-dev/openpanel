@@ -1,6 +1,7 @@
-import { clerkClient } from '@clerk/fastify';
 import { SeventySevenClient } from '@seventy-seven/sdk';
 import { z } from 'zod';
+
+import { getUserById } from '@openpanel/db';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -21,14 +22,16 @@ export const ticketRouter = createTRPCRouter({
         throw new Error('Ticket system not configured');
       }
 
-      const user = await clerkClient.users.getUser(ctx.session.userId);
+      const user = await getUserById(ctx.session.userId);
 
       return client.createTicket({
         subject: input.subject,
         body: input.body,
         meta: input.meta,
-        senderEmail: user.primaryEmailAddress?.emailAddress || 'none',
-        senderFullName: user.fullName || 'none',
+        senderEmail: user?.email || 'none',
+        senderFullName: user?.firstName
+          ? [user?.firstName, user?.lastName].filter(Boolean).join(' ')
+          : 'none',
       });
     }),
 });

@@ -1,6 +1,6 @@
 import { clerkClient } from '@clerk/fastify';
 
-import { getProjectById } from '@openpanel/db';
+import { db, getProjectById } from '@openpanel/db';
 import { cacheable } from '@openpanel/redis';
 
 export const getProjectAccessCached = cacheable(getProjectAccess, 60 * 60);
@@ -13,20 +13,19 @@ export async function getProjectAccess({
 }) {
   try {
     // Check if user has access to the project
-    const [project, organizations] = await Promise.all([
-      getProjectById(projectId),
-      clerkClient.users.getOrganizationMembershipList({
-        userId,
-      }),
-    ]);
-
-    if (!project) {
+    const project = await getProjectById(projectId);
+    if (!project?.organizationSlug) {
       return false;
     }
 
-    return !!organizations.data.find(
-      (org) => org.organization.slug === project.organizationSlug
-    );
+    const member = await db.member.findFirst({
+      where: {
+        organizationId: project.organizationSlug,
+        userId,
+      },
+    });
+
+    return member;
   } catch (err) {
     return false;
   }
@@ -43,11 +42,10 @@ export async function getOrganizationAccess({
   userId: string;
   organizationId: string;
 }) {
-  const organizations = await clerkClient.users.getOrganizationMembershipList({
-    userId,
+  return db.member.findFirst({
+    where: {
+      userId,
+      organizationId,
+    },
   });
-
-  return !!organizations.data.find(
-    (org) => org.organization.id === organizationId
-  );
 }

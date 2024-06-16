@@ -12,7 +12,7 @@ type Props = {
 
 const Connect = async ({ params: { projectId } }: Props) => {
   const orgs = await getCurrentOrganizations();
-  const organizationSlug = orgs[0]?.slug;
+  const organizationSlug = orgs[0]?.id;
   if (!organizationSlug) {
     throw new Error('No organization found');
   }

@@ -17,10 +17,63 @@ enum ProjectType {
   backend
 }
 
+model Organization {
+  id              String          @id @default(dbgenerated("gen_random_uuid()"))
+  name            String
+  projects        Project[]
+  members         Member[]
+  createdByUserId String?
+  createdBy       User?           @relation(fields: [createdByUserId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @default(now()) @updatedAt
+  ProjectAccess   ProjectAccess[]
+  Client          Client[]
+  Dashboard       Dashboard[]
+  ShareOverview   ShareOverview[]
+
+  @@map("organizations")
+}
+
+model User {
+  id                   String          @id @default(dbgenerated("gen_random_uuid()"))
+  email                String          @unique
+  firstName            String?
+  lastName             String?
+  createdOrganizations Organization[]
+  membership           Member[]
+  sentInvites          Member[]        @relation("invitedBy")
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @default(now()) @updatedAt
+  deletedAt            DateTime?
+  ProjectAccess        ProjectAccess[]
+
+  @@map("users")
+}
+
+model Member {
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  role           String
+  email          String
+  // userId is nullable because we want to allow invites to be sent to emails that are not registered
+  userId         String?
+  user           User?        @relation(fields: [userId], references: [id])
+  invitedById    String?
+  invitedBy      User?        @relation("invitedBy", fields: [invitedById], references: [id])
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  meta           Json?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@map("members")
+}
+
 model Project {
   id               String        @id @default(dbgenerated("gen_random_uuid()"))
   name             String
   organizationSlug String
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+  organizationId   String?
   eventsCount      Int           @default(0)
   types            ProjectType[] @default([])
 
@@ -47,14 +100,17 @@ enum AccessLevel {
 }
 
 model ProjectAccess {
-  id               String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId        String
-  project          Project     @relation(fields: [projectId], references: [id])
+  project          Project       @relation(fields: [projectId], references: [id])
   organizationSlug String
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+  organizationId   String?
   userId           String
+  user             User          @relation(fields: [userId], references: [id])
   level            AccessLevel
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @default(now()) @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now()) @updatedAt
 
   @@map("project_access")
 }
@@ -105,13 +161,15 @@ enum ClientType {
 }
 
 model Client {
-  id               String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String
   secret           String?
-  type             ClientType @default(write)
+  type             ClientType    @default(write)
   projectId        String?
-  project          Project?   @relation(fields: [projectId], references: [id])
+  project          Project?      @relation(fields: [projectId], references: [id])
   organizationSlug String
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+  organizationId   String?
   cors             String?
 
   createdAt DateTime @default(now())
@@ -139,11 +197,13 @@ enum ChartType {
 }
 
 model Dashboard {
-  id               String   @id @default(dbgenerated("gen_random_uuid()"))
+  id               String        @id @default(dbgenerated("gen_random_uuid()"))
   name             String
   organizationSlug String
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+  organizationId   String?
   projectId        String
-  project          Project  @relation(fields: [projectId], references: [id])
+  project          Project       @relation(fields: [projectId], references: [id])
   reports          Report[]
 
   createdAt DateTime @default(now())
@@ -195,14 +255,16 @@ model Waitlist {
 }
 
 model ShareOverview {
-  id               String   @unique
-  projectId        String   @unique
-  project          Project  @relation(fields: [projectId], references: [id])
+  id               String        @unique
+  projectId        String        @unique
+  project          Project       @relation(fields: [projectId], references: [id])
   organizationSlug String
-  public           Boolean  @default(false)
+  organization     Organization? @relation(fields: [organizationId], references: [id])
+  organizationId   String?
+  public           Boolean       @default(false)
   password         String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @default(now()) @updatedAt
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now()) @updatedAt
 
   @@map("shares")
 }

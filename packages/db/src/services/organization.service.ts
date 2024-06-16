@@ -1,24 +1,22 @@
-import type {
-  Organization,
-  OrganizationInvitation,
-  OrganizationMembership,
-} from '@clerk/nextjs/dist/types/server';
-import { auth, clerkClient } from '@clerk/nextjs/server';
-import { sort } from 'ramda';
+import { auth } from '@clerk/nextjs/server';
 
-import type { ProjectAccess } from '../prisma-client';
+import type { Organization, Prisma, ProjectAccess } from '../prisma-client';
 import { db } from '../prisma-client';
 
 export type IServiceOrganization = ReturnType<typeof transformOrganization>;
-export type IServiceInvite = ReturnType<typeof transformInvite>;
-export type IServiceMember = ReturnType<typeof transformMember>;
+export type IServiceInvite = Prisma.MemberGetPayload<{
+  include: { user: true };
+}>;
+export type IServiceMember = Prisma.MemberGetPayload<{
+  include: { user: true };
+}> & { access: ProjectAccess[] };
 export type IServiceProjectAccess = ProjectAccess;
 
 export function transformOrganization(org: Organization) {
   return {
     id: org.id,
+    slug: org.id,
     name: org.name,
-    slug: org.slug!,
     createdAt: org.createdAt,
   };
 }
@@ -26,20 +24,28 @@ export function transformOrganization(org: Organization) {
 export async function getCurrentOrganizations() {
   const session = auth();
   if (!session.userId) return [];
-  const organizations = await clerkClient.users.getOrganizationMembershipList({
-    userId: session.userId,
+  const organizations = await db.organization.findMany({
+    where: {
+      members: {
+        some: {
+          userId: session.userId,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
   });
-  return sort(
-    (a, b) => a.createdAt - b.createdAt,
-    organizations.data.map((item) => transformOrganization(item.organization))
-  );
+
+  return organizations.map(transformOrganization);
 }
 
 export function getOrganizationBySlug(slug: string) {
-  return clerkClient.organizations
-    .getOrganization({ slug })
-    .then(transformOrganization)
-    .catch(() => null);
+  return db.organization.findUnique({
+    where: {
+      id: slug,
+    },
+  });
 }
 
 export async function getOrganizationByProjectId(projectId: string) {
@@ -47,63 +53,42 @@ export async function getOrganizationByProjectId(projectId: string) {
     where: {
       id: projectId,
     },
+    include: {
+      organization: true,
+    },
   });
 
-  return clerkClient.organizations.getOrganization({
-    slug: project.organizationSlug,
-  });
-}
+  if (!project.organization) {
+    return null;
+  }
 
-export function transformInvite(invite: OrganizationInvitation) {
-  return {
-    id: invite.id,
-    organizationId: invite.organizationId,
-    email: invite.emailAddress,
-    role: invite.role,
-    status: invite.status,
-    createdAt: invite.createdAt,
-    updatedAt: invite.updatedAt,
-    publicMetadata: invite.publicMetadata,
-  };
+  return transformOrganization(project.organization);
 }
 
 export async function getInvites(organizationSlug: string) {
-  const org = await getOrganizationBySlug(organizationSlug);
-  if (!org) return [];
-  return await clerkClient.organizations
-    .getOrganizationInvitationList({
-      organizationId: org.id,
-    })
-    .then((invites) => invites.data.map(transformInvite));
-}
-
-export function transformMember(
-  item: OrganizationMembership & {
-    access: IServiceProjectAccess[];
-  }
-) {
-  return {
-    memberId: item.id,
-    id: item.publicUserData?.userId,
-    name:
-      [item.publicUserData?.firstName, item.publicUserData?.lastName]
-        .filter(Boolean)
-        .join(' ') || 'Unknown',
-    role: item.role,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
-    publicMetadata: item.publicMetadata,
-    organization: transformOrganization(item.organization),
-    access: item.access,
-  };
+  return db.member.findMany({
+    where: {
+      organizationId: organizationSlug,
+      userId: null,
+    },
+    include: {
+      user: true,
+    },
+  });
 }
 
 export async function getMembers(organizationSlug: string) {
-  const org = await getOrganizationBySlug(organizationSlug);
-  if (!org) return [];
   const [members, access] = await Promise.all([
-    clerkClient.organizations.getOrganizationMembershipList({
-      organizationId: org.id,
+    db.member.findMany({
+      where: {
+        organizationId: organizationSlug,
+        userId: {
+          not: null,
+        },
+      },
+      include: {
+        user: true,
+      },
     }),
     db.projectAccess.findMany({
       where: {
@@ -112,22 +97,17 @@ export async function getMembers(organizationSlug: string) {
     }),
   ]);
 
-  return members.data
-    .map((member) => {
-      const projectAccess = access.filter(
-        (item) => item.userId === member.publicUserData?.userId
-      );
-      return {
-        ...member,
-        access: projectAccess,
-      };
-    })
-    .map(transformMember);
+  return members.map((member) => ({
+    ...member,
+    access: access.filter((a) => a.userId === member.userId),
+  }));
 }
 
 export async function getMember(organizationSlug: string, userId: string) {
-  const org = await getOrganizationBySlug(organizationSlug);
-  if (!org) return null;
-  const members = await getMembers(org.id);
-  return members.find((member) => member.id === userId) ?? null;
+  return db.member.findFirst({
+    where: {
+      organizationId: organizationSlug,
+      userId,
+    },
+  });
 }

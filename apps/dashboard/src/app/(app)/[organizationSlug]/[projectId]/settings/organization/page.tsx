@@ -1,10 +1,10 @@
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { ShieldAlertIcon } from 'lucide-react';
 import { notFound } from 'next/navigation';
 
-import { getOrganizationBySlug } from '@openpanel/db';
+import { db } from '@openpanel/db';
 
 import EditOrganization from './edit-organization';
 import InvitesServer from './invites';
@@ -19,25 +19,30 @@ interface PageProps {
 export default async function Page({
   params: { organizationSlug },
 }: PageProps) {
-  const organization = await getOrganizationBySlug(organizationSlug);
   const session = auth();
-  const memberships = await clerkClient.users.getOrganizationMembershipList({
-    userId: session.userId!,
+  const organization = await db.organization.findUnique({
+    where: {
+      id: organizationSlug,
+      members: {
+        some: {
+          userId: session.userId,
+        },
+      },
+    },
+    include: {
+      members: {
+        select: {
+          role: true,
+        },
+      },
+    },
   });
 
   if (!organization) {
     return notFound();
   }
 
-  const member = memberships.data.find(
-    (membership) => membership.organization.id === organization.id
-  );
-
-  if (!member) {
-    return notFound();
-  }
-
-  const hasAccess = member.role === 'org:admin';
+  const hasAccess = organization.members[0]?.role === 'org:admin';
 
   return (
     <>

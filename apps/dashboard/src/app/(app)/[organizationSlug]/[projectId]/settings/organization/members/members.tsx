@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { TooltipComplete } from '@/components/tooltip-complete';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import {
@@ -62,10 +63,10 @@ interface ItemProps extends IServiceMember {
 
 function Item({
   id,
-  name,
+  user,
   role,
+  organizationId,
   createdAt,
-  organization,
   projects,
   access: prevAccess,
 }: ItemProps) {
@@ -73,22 +74,35 @@ function Item({
   const mutation = api.organization.updateMemberAccess.useMutation();
   const revoke = api.organization.removeMember.useMutation({
     onSuccess() {
-      toast.success(`${name} has been removed from the organization`);
+      toast.success(
+        `${user?.firstName} has been removed from the organization`
+      );
       router.refresh();
     },
     onError() {
-      toast.error(`Failed to remove ${name} from the organization`);
+      toast.error(`Failed to remove ${user?.firstName} from the organization`);
     },
   });
   const [access, setAccess] = useState<string[]>(
     prevAccess.map((item) => item.projectId)
   );
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <TableRow key={id}>
-      <TableCell className="font-medium">{name}</TableCell>
+      <TableCell className="font-medium">
+        <div>{[user?.firstName, user?.lastName].filter(Boolean).join(' ')}</div>
+        <div className="text-sm text-muted-foreground">{user?.email}</div>
+      </TableCell>
       <TableCell>{role}</TableCell>
-      <TableCell>{new Date(createdAt).toLocaleString()}</TableCell>
+      <TableCell>
+        <TooltipComplete content={new Date(createdAt).toLocaleString()}>
+          {new Date(createdAt).toLocaleDateString()}
+        </TooltipComplete>
+      </TableCell>
       <TableCell>
         <ComboboxAdvanced
           placeholder="Restrict access to projects"
@@ -96,8 +110,8 @@ function Item({
           onChange={(newAccess) => {
             setAccess(newAccess);
             mutation.mutate({
-              userId: id!,
-              organizationSlug: organization.slug,
+              userId: user.id,
+              organizationSlug: organizationId,
               access: newAccess as string[],
             });
           }}
@@ -116,7 +130,7 @@ function Item({
             <DropdownMenuItem
               className="text-destructive"
               onClick={() => {
-                revoke.mutate({ organizationId: organization.id, userId: id! });
+                revoke.mutate({ organizationId: organizationId, userId: id });
               }}
             >
               Remove member

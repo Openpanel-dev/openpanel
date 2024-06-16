@@ -18,25 +18,21 @@ export default function LayoutOrganizationSelector({
   const router = useRouter();
 
   const organization = organizations.find(
-    (item) => item.slug === params.organizationSlug
+    (item) => item.id === params.organizationSlug
   );
-
-  if (!organization) {
-    return null;
-  }
 
   return (
     <Combobox
       className="w-full"
       placeholder="Select organization"
       icon={Building}
-      value={organization.slug}
+      value={organization?.id}
       items={
         organizations
-          .filter((item) => item.slug)
+          .filter((item) => item.id)
           .map((item) => ({
             label: item.name,
-            value: item.slug,
+            value: item.id,
           })) ?? []
       }
       onChange={(value) => {

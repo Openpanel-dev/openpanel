@@ -58,15 +58,34 @@ export async function getCurrentProjects(organizationSlug: string) {
     return [];
   }
 
-  return db.project.findMany({
-    where: {
-      organizationSlug,
-    },
-    include: {
-      access: true,
-    },
-    orderBy: {
-      eventsCount: 'desc',
-    },
-  });
+  const [projects, members, access] = await Promise.all([
+    db.project.findMany({
+      where: {
+        organizationSlug,
+      },
+    }),
+    db.member.findMany({
+      where: {
+        userId: session.userId,
+        organizationId: organizationSlug,
+      },
+    }),
+    db.projectAccess.findMany({
+      where: {
+        userId: session.userId,
+      },
+    }),
+  ]);
+
+  if (members.length === 0) {
+    return [];
+  }
+
+  if (access.length > 0) {
+    return projects.filter((project) =>
+      access.some((a) => a.projectId === project.id)
+    );
+  }
+
+  return projects;
 }
