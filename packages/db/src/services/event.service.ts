@@ -28,6 +28,7 @@ export interface IClickhouseEvent {
   project_id: string;
   session_id: string;
   path: string;
+  origin: string;
   referrer: string;
   referrer_name: string;
   referrer_type: string;
@@ -78,6 +79,7 @@ export function transformEvent(
     model: event.model,
     duration: event.duration,
     path: event.path,
+    origin: event.origin,
     referrer: event.referrer,
     referrerName: event.referrer_name,
     referrerType: event.referrer_type,
@@ -112,6 +114,7 @@ export interface IServiceCreateEventPayload {
   model?: string | undefined;
   duration: number;
   path: string;
+  origin: string;
   referrer: string | undefined;
   referrerName: string | undefined;
   referrerType: string | undefined;
@@ -134,6 +137,7 @@ export interface IServiceEventMinimal {
   brand?: string | undefined;
   duration: number;
   path: string;
+  origin: string;
   referrer: string | undefined;
   meta: EventMeta | undefined;
   minimal: boolean;
@@ -171,6 +175,7 @@ export function transformMinimalEvent(
     brand: event.brand,
     duration: event.duration,
     path: maskString(event.path),
+    origin: event.origin,
     referrer: event.referrer,
     meta: event.meta,
     minimal: true,
@@ -262,6 +267,7 @@ export async function createEvent(
     session_id: payload.sessionId,
     properties: toDots(omit(['_path'], payload.properties)),
     path: payload.path ?? '',
+    origin: payload.origin ?? '',
     created_at: formatClickhouseDate(payload.createdAt),
     country: payload.country ?? '',
     city: payload.city ?? '',

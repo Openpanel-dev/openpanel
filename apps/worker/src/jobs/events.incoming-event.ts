@@ -41,11 +41,11 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
         | undefined) ?? undefined
     );
   };
-  const { origin, ua } = headers;
+  const { ua } = headers;
   const profileId = body.profileId ?? '';
   const createdAt = new Date(body.timestamp);
   const url = getProperty('__path');
-  const { path, hash, query } = parsePath(url);
+  const { path, hash, query, origin } = parsePath(url);
   const referrer = isSameDomain(getProperty('__referrer'), url)
     ? null
     : parseReferrer(getProperty('__referrer'));
@@ -80,6 +80,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       model: event?.model ?? '',
       duration: 0,
       path: event?.path ?? '',
+      origin: event?.origin ?? '',
       referrer: event?.referrer ?? '',
       referrerName: event?.referrerName ?? '',
       referrerType: event?.referrerType ?? '',
@@ -170,6 +171,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     model: uaInfo?.model ?? '',
     duration: 0,
     path: path,
+    origin: origin,
     referrer: referrer?.url,
     referrerName: referrer?.name || utmReferrer?.name || '',
     referrerType: referrer?.type || utmReferrer?.type || '',
@@ -264,7 +266,6 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   job.log(
     `event is queued ${JSON.stringify(
       {
-        origin,
         ua,
         uaInfo,
         referrer,

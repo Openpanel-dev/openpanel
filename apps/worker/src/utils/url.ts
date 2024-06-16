@@ -11,11 +11,13 @@ export function parseSearchParams(
 export function parsePath(path?: string): {
   query?: Record<string, string>;
   path: string;
+  origin: string;
   hash?: string;
 } {
   if (!path) {
     return {
       path: '',
+      origin: '',
     };
   }
 
@@ -25,10 +27,12 @@ export function parsePath(path?: string): {
       query: parseSearchParams(url.searchParams),
       path: url.pathname,
       hash: url.hash || undefined,
+      origin: url.origin,
     };
   } catch (error) {
     return {
       path,
+      origin: '',
     };
   }
 }
