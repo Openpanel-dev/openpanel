@@ -33,6 +33,7 @@ export default async function Page({
       members: {
         select: {
           role: true,
+          userId: true,
         },
       },
     },
@@ -42,7 +43,11 @@ export default async function Page({
     return notFound();
   }
 
-  const hasAccess = organization.members[0]?.role === 'org:admin';
+  const member = organization.members.find(
+    (member) => member.userId === session.userId
+  );
+
+  const hasAccess = member?.role === 'org:admin';
 
   return (
     <>
