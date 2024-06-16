@@ -11,7 +11,7 @@ export async function getCurrentUser() {
 }
 
 export async function getUserById(id: string) {
-  return db.user.findUnique({
+  return db.user.findUniqueOrThrow({
     where: {
       id,
     },

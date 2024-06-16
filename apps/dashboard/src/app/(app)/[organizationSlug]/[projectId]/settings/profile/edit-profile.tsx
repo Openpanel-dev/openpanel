@@ -39,7 +39,11 @@ export default function EditProfile({ profile }: EditProfileProps) {
       toast('Profile updated', {
         description: 'Your profile has been updated.',
       });
-      reset(res);
+      reset({
+        firstName: res.firstName ?? '',
+        lastName: res.lastName ?? '',
+        email: res.email,
+      });
       router.refresh();
     },
     onError: handleError,
