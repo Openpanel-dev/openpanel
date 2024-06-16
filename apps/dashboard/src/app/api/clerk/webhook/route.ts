@@ -78,7 +78,7 @@ export async function POST(request: Request) {
   }
 
   if (payload.type === 'user.deleted') {
-    db.$transaction([
+    await db.$transaction([
       db.user.update({
         where: {
           id: payload.data.id,
