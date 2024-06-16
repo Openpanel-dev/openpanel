@@ -2,7 +2,7 @@ import { clerkClient } from '@clerk/fastify';
 import { pathOr } from 'ramda';
 import { z } from 'zod';
 
-import { db, getOrganizationBySlug } from '@openpanel/db';
+import { db } from '@openpanel/db';
 import { zInviteUser } from '@openpanel/validation';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';

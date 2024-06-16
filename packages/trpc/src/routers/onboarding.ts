@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import type { z } from 'zod';
 
 import { hashPassword, slug, stripTrailingSlash } from '@openpanel/common';
-import { db, getId, getOrganizationBySlug } from '@openpanel/db';
+import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
 import type { ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
@@ -38,14 +38,23 @@ export const onboardingRouter = createTRPCRouter({
       if (input.app) types.push('app');
       if (input.backend) types.push('backend');
 
-      const organization = await createOrGetOrganization(
-        input,
-        ctx.session.userId
-      );
+      const [organization, user] = await Promise.all([
+        createOrGetOrganization(input, ctx.session.userId),
+        getUserById(ctx.session.userId),
+      ]);
 
       if (!organization?.id) {
         throw new Error('Organization slug is missing');
       }
+
+      await db.member.create({
+        data: {
+          email: user.email,
+          organizationId: organization.id,
+          role: 'org:admin',
+          userId: user.id,
+        },
+      });
 
       const project = await db.project.create({
         data: {
