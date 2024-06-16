@@ -30,6 +30,7 @@ export const dashboardRouter = createTRPCRouter({
           id: await getId('dashboard', name),
           projectId: projectId,
           organizationSlug: organizationSlug,
+          organizationId: organizationSlug,
           name,
         },
       });

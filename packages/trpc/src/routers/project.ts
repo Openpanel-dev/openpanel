@@ -45,6 +45,7 @@ export const projectRouter = createTRPCRouter({
         data: {
           id: await getId('project', name),
           organizationSlug: organizationSlug,
+          organizationId: organizationSlug,
           name: name,
         },
       });

@@ -98,7 +98,7 @@ export const organizationRouter = createTRPCRouter({
         db.projectAccess.deleteMany({
           where: {
             userId: input.userId,
-            organizationSlug: input.organizationId,
+            organizationId: input.organizationId,
           },
         }),
       ]);
@@ -117,13 +117,14 @@ export const organizationRouter = createTRPCRouter({
         db.projectAccess.deleteMany({
           where: {
             userId: input.userId,
-            organizationSlug: input.organizationSlug,
+            organizationId: input.organizationSlug,
           },
         }),
         db.projectAccess.createMany({
           data: input.access.map((projectId) => ({
             userId: input.userId,
             organizationSlug: input.organizationSlug,
+            organizationId: input.organizationSlug,
             projectId: projectId,
             level: 'read',
           })),

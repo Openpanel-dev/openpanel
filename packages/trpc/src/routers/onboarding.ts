@@ -52,6 +52,7 @@ export const onboardingRouter = createTRPCRouter({
           id: await getId('project', input.project),
           name: input.project,
           organizationSlug: organization.id,
+          organizationId: organization.id,
           types,
         },
       });
@@ -61,6 +62,7 @@ export const onboardingRouter = createTRPCRouter({
         data: {
           name: `${project.name} Client`,
           organizationSlug: organization.id,
+          organizationId: organization.id,
           projectId: project.id,
           type: 'write',
           cors: input.domain ? stripTrailingSlash(input.domain) : null,

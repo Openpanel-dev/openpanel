@@ -41,6 +41,7 @@ export const clientRouter = createTRPCRouter({
       const secret = randomUUID();
       const data: Prisma.ClientCreateArgs['data'] = {
         organizationSlug: input.organizationSlug,
+        organizationId: input.organizationSlug,
         projectId: input.projectId,
         name: input.name,
         type: input.type ?? 'write',

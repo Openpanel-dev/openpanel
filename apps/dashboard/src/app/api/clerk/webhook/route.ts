@@ -50,6 +50,7 @@ export async function POST(request: Request) {
             .filter((a) => typeof a === 'string')
             .map((projectId) => ({
               organizationSlug: membership.organizationId,
+              organizationId: membership.organizationId,
               projectId: projectId,
               userId: user.id,
               level: AccessLevel.read,
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
           .filter((a): a is string => typeof a === 'string')
           .map((projectId) => ({
             organizationSlug: payload.data.organization.slug,
+            organizationId: payload.data.organization.slug,
             projectId: projectId,
             userId: payload.data.public_user_data.user_id,
             level: AccessLevel.read,
