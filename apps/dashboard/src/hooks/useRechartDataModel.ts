@@ -1,10 +1,22 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { IChartData, IChartSerieDataItem } from '@/trpc/client';
+import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 
-export type IRechartPayloadItem = IChartSerieDataItem & { color: string };
+export type IRechartPayloadItem = {
+  id: string;
+  name: string;
+  color: string;
+  event: { id: string; name: string };
+  count: number;
+  date: string;
+  previous?: {
+    value: number;
+    diff: number | null;
+    state: 'positive' | 'negative' | 'neutral';
+  };
+};
 
 export function useRechartDataModel(series: IChartData['series']) {
   return useMemo(() => {
@@ -25,6 +37,9 @@ export function useRechartDataModel(series: IChartData['series']) {
                     acc2[`${serie.id}:count`] = item.count;
                     acc2[`${serie.id}:payload`] = {
                       ...item,
+                      id: serie.id,
+                      event: serie.event,
+                      name: serie.name,
                       color: getChartColor(idx),
                     } satisfies IRechartPayloadItem;
                   }

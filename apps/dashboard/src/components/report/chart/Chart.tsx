@@ -20,16 +20,16 @@ export function Chart({
   events,
   breakdowns,
   chartType,
-  name,
   range,
   lineType,
   previous,
   formula,
-  unit,
   metric,
   projectId,
   startDate,
   endDate,
+  limit,
+  offset,
 }: ReportChartProps) {
   const [references] = api.reference.getChartReferences.useSuspenseQuery(
     {
@@ -56,6 +56,8 @@ export function Chart({
       previous,
       formula,
       metric,
+      limit,
+      offset,
     },
     {
       keepPreviousData: true,

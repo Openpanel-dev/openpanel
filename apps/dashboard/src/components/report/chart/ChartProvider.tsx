@@ -10,8 +10,7 @@ import {
   useState,
 } from 'react';
 
-import type { IChartSerie } from '@openpanel/trpc/src/routers/chart';
-import type { IChartProps } from '@openpanel/validation';
+import type { IChartProps, IChartSerie } from '@openpanel/validation';
 
 import { ChartLoading } from './ChartLoading';
 import { MetricCardLoading } from './MetricCard';

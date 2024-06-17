@@ -41,7 +41,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
             {...(isClickable ? { onClick: () => onClick(serie) } : {})}
           >
             <div
-              className="bg-def-200 absolute bottom-0 left-0 top-0 rounded"
+              className="absolute bottom-0 left-0 top-0 rounded bg-def-200"
               style={{
                 width: `${(serie.metrics.sum / maxCount) * 100}%`,
               }}
@@ -53,10 +53,10 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
               </div>
               <div className="flex flex-shrink-0 items-center justify-end gap-4">
                 <PreviousDiffIndicatorText
-                  {...serie.metrics.previous[metric]}
+                  {...serie.metrics.previous?.[metric]}
                   className="text-xs font-medium"
                 />
-                {serie.metrics.previous[metric]?.value}
+                {serie.metrics.previous?.[metric]?.value}
                 <div className="text-muted-foreground">
                   {number.format(
                     round((serie.metrics.sum / data.metrics.sum) * 100, 2)

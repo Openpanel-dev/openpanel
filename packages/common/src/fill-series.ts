@@ -11,12 +11,13 @@ import {
   startOfMonth,
 } from 'date-fns';
 
+import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IInterval } from '@openpanel/validation';
 
 // Define the data structure
-interface DataEntry {
-  label: string;
-  count: number | null;
+export interface ISerieDataItem {
+  label: string | null | undefined;
+  count: number;
   date: string;
 }
 
@@ -37,8 +38,8 @@ function roundDate(date: Date, interval: IInterval): Date {
 }
 
 // Function to complete the timeline for each label
-export function completeTimeline(
-  data: DataEntry[],
+export function completeSerie(
+  data: ISerieDataItem[],
   _startDate: string,
   _endDate: string,
   interval: IInterval
@@ -50,16 +51,16 @@ export function completeTimeline(
   data.forEach((entry) => {
     const roundedDate = roundDate(parseISO(entry.date), interval);
     const dateKey = format(roundedDate, 'yyyy-MM-dd HH:mm:ss');
-
-    if (!labelsMap.has(entry.label)) {
-      labelsMap.set(entry.label, new Map());
+    const label = entry.label || NOT_SET_VALUE;
+    if (!labelsMap.has(label)) {
+      labelsMap.set(label, new Map());
     }
-    const labelData = labelsMap.get(entry.label);
+    const labelData = labelsMap.get(label);
     labelData?.set(dateKey, (labelData.get(dateKey) || 0) + (entry.count || 0));
   });
 
   // Complete the timeline for each label
-  const result: Record<string, DataEntry[]> = {};
+  const result: Record<string, ISerieDataItem[]> = {};
   labelsMap.forEach((counts, label) => {
     let currentDate = roundDate(startDate, interval);
     result[label] = [];

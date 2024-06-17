@@ -29,6 +29,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       title: 'Top countries',
       btn: 'Countries',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -59,6 +60,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       title: 'Top regions',
       btn: 'Regions',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -89,6 +91,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       title: 'Top cities',
       btn: 'Cities',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,

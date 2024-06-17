@@ -30,6 +30,7 @@ export default function OverviewTopDevices({
       title: 'Top devices',
       btn: 'Devices',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -60,6 +61,7 @@ export default function OverviewTopDevices({
       title: 'Top browser',
       btn: 'Browser',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -90,6 +92,7 @@ export default function OverviewTopDevices({
       title: 'Top Browser Version',
       btn: 'Browser Version',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -120,6 +123,7 @@ export default function OverviewTopDevices({
       title: 'Top OS',
       btn: 'OS',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -150,6 +154,7 @@ export default function OverviewTopDevices({
       title: 'Top OS version',
       btn: 'OS Version',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,

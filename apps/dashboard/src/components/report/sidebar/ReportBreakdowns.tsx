@@ -43,7 +43,7 @@ export function ReportBreakdowns() {
       <div className="flex flex-col gap-4">
         {selectedBreakdowns.map((item, index) => {
           return (
-            <div key={item.name} className="bg-def-100 rounded-lg border">
+            <div key={item.name} className="rounded-lg border bg-def-100">
               <div className="flex items-center gap-2 p-2 px-4">
                 <ColorSquare>{index}</ColorSquare>
                 <Combobox
@@ -68,22 +68,20 @@ export function ReportBreakdowns() {
           );
         })}
 
-        {selectedBreakdowns.length === 0 && (
-          <Combobox
-            icon={SplitIcon}
-            searchable
-            value={''}
-            onChange={(value) => {
-              dispatch(
-                addBreakdown({
-                  name: value,
-                })
-              );
-            }}
-            items={propertiesCombobox}
-            placeholder="Select breakdown"
-          />
-        )}
+        <Combobox
+          icon={SplitIcon}
+          searchable
+          value={''}
+          onChange={(value) => {
+            dispatch(
+              addBreakdown({
+                name: value,
+              })
+            );
+          }}
+          items={propertiesCombobox}
+          placeholder="Select breakdown"
+        />
       </div>
     </div>
   );

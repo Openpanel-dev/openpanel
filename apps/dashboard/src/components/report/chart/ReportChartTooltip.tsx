@@ -51,7 +51,7 @@ export function ReportChartTooltip({
         ) as IRechartPayloadItem;
 
         return (
-          <React.Fragment key={data.label}>
+          <React.Fragment key={data.name}>
             {index === 0 && data.date && (
               <div className="flex justify-between gap-8">
                 <div>{formatDate(new Date(data.date))}</div>
@@ -64,7 +64,7 @@ export function ReportChartTooltip({
               />
               <div className="flex flex-1 flex-col">
                 <div className="min-w-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap font-medium">
-                  {getLabel(data.label)}
+                  {getLabel(data.name)}
                 </div>
                 <div className="flex justify-between gap-8">
                   <div>{number.formatWithUnit(data.count, unit)}</div>

@@ -799,6 +799,9 @@ importers:
 
   packages/common:
     dependencies:
+      '@openpanel/constants':
+        specifier: workspace:*
+        version: link:../constants
       date-fns:
         specifier: ^3.3.1
         version: 3.3.1

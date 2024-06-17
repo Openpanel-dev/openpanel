@@ -127,7 +127,7 @@ export function ReportTable({
                       <div className="flex items-center gap-2 font-medium">
                         {number.format(serie.metrics.sum)}
                         <PreviousDiffIndicator
-                          {...serie.metrics.previous.sum}
+                          {...serie.metrics.previous?.sum}
                         />
                       </div>
                     </TableCell>
@@ -135,7 +135,7 @@ export function ReportTable({
                       <div className="flex items-center gap-2 font-medium">
                         {number.format(serie.metrics.average)}
                         <PreviousDiffIndicator
-                          {...serie.metrics.previous.average}
+                          {...serie.metrics.previous?.average}
                         />
                       </div>
                     </TableCell>

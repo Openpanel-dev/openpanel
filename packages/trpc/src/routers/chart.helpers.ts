@@ -3,6 +3,7 @@ import {
   endOfMonth,
   endOfYear,
   formatISO,
+  startOfDay,
   startOfMonth,
   startOfYear,
   subDays,
@@ -15,8 +16,17 @@ import * as mathjs from 'mathjs';
 import { repeat, reverse } from 'ramda';
 import { escape } from 'sqlstring';
 
-import { completeTimeline, round } from '@openpanel/common';
-import { alphabetIds, NOT_SET_VALUE } from '@openpanel/constants';
+import {
+  average,
+  completeSerie,
+  max,
+  min,
+  round,
+  slug,
+  sum,
+} from '@openpanel/common';
+import type { ISerieDataItem } from '@openpanel/common';
+import { alphabetIds } from '@openpanel/constants';
 import {
   chQuery,
   createSqlBuilder,
@@ -26,19 +36,15 @@ import {
   getProfiles,
 } from '@openpanel/db';
 import type {
+  FinalChart,
   IChartEvent,
   IChartInput,
+  IChartInputWithDates,
   IChartRange,
   IGetChartDataInput,
   IInterval,
+  PreviousValue,
 } from '@openpanel/validation';
-
-export type GetChartDataResult = Awaited<ReturnType<typeof getChartData>>;
-export interface ResultItem {
-  label: string | null;
-  count: number | null;
-  date: string;
-}
 
 function getEventLegend(event: IChartEvent) {
   return event.displayName ?? event.name;
@@ -46,7 +52,7 @@ function getEventLegend(event: IChartEvent) {
 
 export function withFormula(
   { formula, events }: IChartInput,
-  series: GetChartDataResult
+  series: Awaited<ReturnType<typeof getChartSerie>>
 ) {
   if (!formula) {
     return series;
@@ -145,58 +151,6 @@ const toDynamicISODateWithTZ = (
   return `${date}T00:00:00Z`;
 };
 
-export async function getChartData(payload: IGetChartDataInput) {
-  async function getSeries() {
-    const result = await chQuery<ResultItem>(getChartSql(payload));
-    if (result.length === 0 && payload.breakdowns.length > 0) {
-      return await chQuery<ResultItem>(
-        getChartSql({
-          ...payload,
-          breakdowns: [],
-        })
-      );
-    }
-    return result;
-  }
-
-  return getSeries()
-    .then((data) =>
-      completeTimeline(
-        data.map((item) => {
-          const label = item.label?.trim() || NOT_SET_VALUE;
-
-          return {
-            ...item,
-            count: item.count ? round(item.count) : null,
-            label,
-          };
-        }),
-        payload.startDate,
-        payload.endDate,
-        payload.interval
-      )
-    )
-    .then((series) => {
-      return Object.keys(series).map((label) => {
-        const isBreakdown =
-          payload.breakdowns.length && !alphabetIds.includes(label as 'A');
-        const serieLabel = isBreakdown ? label : getEventLegend(payload.event);
-        return {
-          name: serieLabel,
-          event: payload.event,
-          data: series[label]!.map((item) => ({
-            ...item,
-            date: toDynamicISODateWithTZ(
-              item.date,
-              payload.startDate,
-              payload.interval
-            ),
-          })),
-        };
-      });
-    });
-}
-
 export function getDatesFromRange(range: IChartRange) {
   if (range === '30min' || range === 'lastHour') {
     const minutes = range === '30min' ? 30 : 60;
@@ -224,17 +178,7 @@ export function getDatesFromRange(range: IChartRange) {
   }
 
   if (range === '7d') {
-    const startDate = formatISO(subDays(new Date(), 7));
-    const endDate = formatISO(new Date());
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  if (range === '30d') {
-    const startDate = formatISO(subDays(new Date(), 30));
+    const startDate = formatISO(startOfDay(subDays(new Date(), 7)));
     const endDate = formatISO(new Date());
 
     return {
@@ -285,9 +229,13 @@ export function getDatesFromRange(range: IChartRange) {
     };
   }
 
+  // range === '30d'
+  const startDate = formatISO(startOfDay(subDays(new Date(), 30)));
+  const endDate = formatISO(new Date());
+
   return {
-    startDate: formatISO(subDays(new Date(), 30)),
-    endDate: formatISO(new Date()),
+    startDate,
+    endDate,
   };
 }
 
@@ -491,22 +439,51 @@ export async function getFunnelStep({
   return getProfiles(res.map((r) => r.id));
 }
 
-export async function getSeriesFromEvents(input: IChartInput) {
-  const { startDate, endDate } =
-    input.startDate && input.endDate
-      ? {
-          startDate: input.startDate,
-          endDate: input.endDate,
-        }
-      : getDatesFromRange(input.range);
+export async function getChartSerie(payload: IGetChartDataInput) {
+  async function getSeries() {
+    const result = await chQuery<ISerieDataItem>(getChartSql(payload));
+    if (result.length === 0 && payload.breakdowns.length > 0) {
+      return await chQuery<ISerieDataItem>(
+        getChartSql({
+          ...payload,
+          breakdowns: [],
+        })
+      );
+    }
+    return result;
+  }
 
+  return getSeries()
+    .then((data) =>
+      completeSerie(data, payload.startDate, payload.endDate, payload.interval)
+    )
+    .then((series) => {
+      return Object.keys(series).map((label) => {
+        const isBreakdown =
+          payload.breakdowns.length && !alphabetIds.includes(label as 'A');
+        const serieLabel = isBreakdown ? label : getEventLegend(payload.event);
+        return {
+          name: serieLabel,
+          event: payload.event,
+          data: series[label]!.map((item) => ({
+            ...item,
+            date: toDynamicISODateWithTZ(
+              item.date,
+              payload.startDate,
+              payload.interval
+            ),
+          })),
+        };
+      });
+    });
+}
+
+export async function getChartSeries(input: IChartInputWithDates) {
   const series = (
     await Promise.all(
       input.events.map(async (event) =>
-        getChartData({
+        getChartSerie({
           ...input,
-          startDate,
-          endDate,
           event,
         })
       )
@@ -518,4 +495,189 @@ export async function getSeriesFromEvents(input: IChartInput) {
   } catch (e) {
     return series;
   }
+}
+
+export async function getChart(input: IChartInput) {
+  const currentPeriod = getChartStartEndDate(input);
+  const previousPeriod = getChartPrevStartEndDate({
+    range: input.range,
+    ...currentPeriod,
+  });
+
+  const promises = [getChartSeries({ ...input, ...currentPeriod })];
+
+  if (input.previous) {
+    promises.push(
+      getChartSeries({
+        ...input,
+        ...previousPeriod,
+      })
+    );
+  }
+
+  const result = await Promise.all(promises);
+  const series = result[0]!;
+  const previousSeries = result[1];
+  const limit = input.limit || 300;
+  const offset = input.offset || 0;
+  const final: FinalChart = {
+    series: series
+      .slice(offset, limit ? offset + limit : series.length)
+      .map((serie) => {
+        const previousSerie = previousSeries?.find(
+          (item) => item.name === serie.name
+        );
+        const metrics = {
+          sum: sum(serie.data.map((item) => item.count)),
+          average: round(average(serie.data.map((item) => item.count)), 2),
+          min: min(serie.data.map((item) => item.count)),
+          max: max(serie.data.map((item) => item.count)),
+        };
+
+        return {
+          id: slug(serie.name),
+          name: serie.name,
+          event: {
+            id: serie.event.id!,
+            name: serie.event.displayName ?? serie.event.name,
+          },
+          metrics: {
+            ...metrics,
+            ...(input.previous
+              ? {
+                  previous: {
+                    sum: getPreviousMetric(
+                      metrics.sum,
+                      previousSerie
+                        ? sum(previousSerie?.data.map((item) => item.count))
+                        : null
+                    ),
+                    average: getPreviousMetric(
+                      metrics.average,
+                      previousSerie
+                        ? round(
+                            average(
+                              previousSerie?.data.map((item) => item.count)
+                            ),
+                            2
+                          )
+                        : null
+                    ),
+                    min: getPreviousMetric(
+                      metrics.sum,
+                      previousSerie
+                        ? min(previousSerie?.data.map((item) => item.count))
+                        : null
+                    ),
+                    max: getPreviousMetric(
+                      metrics.sum,
+                      previousSerie
+                        ? max(previousSerie?.data.map((item) => item.count))
+                        : null
+                    ),
+                  },
+                }
+              : {}),
+          },
+          data: serie.data.map((item, index) => ({
+            date: item.date,
+            count: item.count ?? 0,
+            previous: previousSerie?.data[index]
+              ? getPreviousMetric(
+                  item.count ?? 0,
+                  previousSerie?.data[index]?.count ?? null
+                )
+              : undefined,
+          })),
+        };
+      }),
+    metrics: {
+      sum: 0,
+      average: 0,
+      min: 0,
+      max: 0,
+    },
+  };
+
+  final.metrics.sum = sum(final.series.map((item) => item.metrics.sum));
+  final.metrics.average = round(
+    average(final.series.map((item) => item.metrics.average)),
+    2
+  );
+  final.metrics.min = min(final.series.map((item) => item.metrics.min));
+  final.metrics.max = max(final.series.map((item) => item.metrics.max));
+  if (input.previous) {
+    final.metrics.previous = {
+      sum: getPreviousMetric(
+        final.metrics.sum,
+        sum(final.series.map((item) => item.metrics.previous?.sum?.value ?? 0))
+      ),
+      average: getPreviousMetric(
+        final.metrics.average,
+        round(
+          average(
+            final.series.map(
+              (item) => item.metrics.previous?.average?.value ?? 0
+            )
+          ),
+          2
+        )
+      ),
+      min: getPreviousMetric(
+        final.metrics.min,
+        min(final.series.map((item) => item.metrics.previous?.min?.value ?? 0))
+      ),
+      max: getPreviousMetric(
+        final.metrics.max,
+        max(final.series.map((item) => item.metrics.previous?.max?.value ?? 0))
+      ),
+    };
+  }
+
+  // Sort by sum
+  final.series = final.series.sort((a, b) => {
+    if (input.chartType === 'linear') {
+      const sumA = a.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
+      const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
+      return sumB - sumA;
+    } else {
+      return b.metrics[input.metric] - a.metrics[input.metric];
+    }
+  });
+
+  return final;
+}
+
+export function getPreviousMetric(
+  current: number,
+  previous: number | null
+): PreviousValue {
+  if (previous === null) {
+    return undefined;
+  }
+
+  const diff = round(
+    ((current > previous
+      ? current / previous
+      : current < previous
+        ? previous / current
+        : 0) -
+      1) *
+      100,
+    1
+  );
+
+  return {
+    diff:
+      Number.isNaN(diff) || !Number.isFinite(diff) || current === previous
+        ? null
+        : diff,
+    state:
+      current > previous
+        ? 'positive'
+        : current < previous
+          ? 'negative'
+          : 'neutral',
+    value: previous,
+  };
 }

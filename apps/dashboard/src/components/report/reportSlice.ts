@@ -51,6 +51,7 @@ const initialState: InitialState = {
   formula: undefined,
   unit: undefined,
   metric: 'sum',
+  limit: 500,
 };
 
 export const reportSlice = createSlice({

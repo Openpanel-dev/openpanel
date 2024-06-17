@@ -44,7 +44,7 @@ export function MetricCard({
     );
   };
 
-  const previous = serie.metrics.previous[metric];
+  const previous = serie.metrics.previous?.[metric];
 
   const graphColors = getDiffIndicator(
     previousIndicatorInverted,
@@ -93,7 +93,7 @@ export function MetricCard({
           <div className="flex min-w-0 items-center gap-2 text-left font-semibold">
             <ColorSquare>{serie.event.id}</ColorSquare>
             <span className="overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground">
-              {serie.name || serie.event.displayName || serie.event.name}
+              {serie.name}
             </span>
           </div>
           {/* <PreviousDiffIndicator {...serie.metrics.previous[metric]} /> */}
@@ -125,9 +125,9 @@ export function MetricCardEmpty() {
 export function MetricCardLoading() {
   return (
     <div className="flex h-[70px] flex-col justify-between">
-      <div className="bg-def-200 h-4 w-1/2 animate-pulse rounded"></div>
-      <div className="bg-def-200 h-8 w-1/3 animate-pulse rounded"></div>
-      <div className="bg-def-200 h-3 w-1/5 animate-pulse rounded"></div>
+      <div className="h-4 w-1/2 animate-pulse rounded bg-def-200"></div>
+      <div className="h-8 w-1/3 animate-pulse rounded bg-def-200"></div>
+      <div className="h-3 w-1/5 animate-pulse rounded bg-def-200"></div>
     </div>
   );
 }

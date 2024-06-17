@@ -24,7 +24,7 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
     id: serie.id,
     color: getChartColor(serie.index),
     index: serie.index,
-    label: serie.name,
+    name: serie.name,
     count: serie.metrics.sum,
     percent: serie.metrics.sum / sum,
   }));
@@ -88,7 +88,7 @@ const renderLabel = ({
   innerRadius: number;
   outerRadius: number;
   fill: string;
-  payload: { label: string; percent: number };
+  payload: { name: string; percent: number };
 }) => {
   const RADIAN = Math.PI / 180;
   const radius = 25 + innerRadius + (outerRadius - innerRadius);
@@ -97,7 +97,7 @@ const renderLabel = ({
   const yProcent = cy + radiusProcent * Math.sin(-midAngle * RADIAN);
   const x = cx + radius * Math.cos(-midAngle * RADIAN);
   const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const label = payload.label;
+  const name = payload.name;
   const percent = round(payload.percent * 100, 1);
 
   return (
@@ -108,7 +108,7 @@ const renderLabel = ({
         fill="white"
         textAnchor="middle"
         dominantBaseline="central"
-        fontSize={10}
+        fontSize={12}
         fontWeight={700}
         pointerEvents={'none'}
       >
@@ -120,9 +120,9 @@ const renderLabel = ({
         fill={fill}
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
-        fontSize={10}
+        fontSize={12}
       >
-        {truncate(label, 20)}
+        {truncate(name, 20)}
       </text>
     </>
   );

@@ -14,7 +14,7 @@ export const average = (arr: (number | null)[]) => {
   return Number.isNaN(avg) ? 0 : avg;
 };
 
-export const sum = (arr: (number | null)[]): number =>
+export const sum = (arr: (number | null | undefined)[]): number =>
   round(arr.filter(isNumber).reduce((acc, item) => acc + item, 0));
 
 export const min = (arr: (number | null)[]): number =>

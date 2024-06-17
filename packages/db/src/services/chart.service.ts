@@ -59,18 +59,18 @@ export function getChartSql({
     sb.where.endDate = `created_at <= '${formatClickhouseDate(endDate)}'`;
   }
 
-  const breakdown = breakdowns[0]!;
-  if (breakdown) {
+  breakdowns.forEach((breakdown, index) => {
+    const key = index === 0 ? 'label' : `label_${index}`;
     const value = breakdown.name.startsWith('properties.')
       ? `mapValues(mapExtractKeyLike(properties, ${escape(
           breakdown.name.replace(/^properties\./, '').replace('.*.', '.%.')
         )}))`
       : escape(breakdown.name);
-    sb.select.label = breakdown.name.startsWith('properties.')
-      ? `arrayElement(${value}, 1) as label`
-      : `${breakdown.name} as label`;
-    sb.groupBy.label = `label`;
-  }
+    sb.select[key] = breakdown.name.startsWith('properties.')
+      ? `arrayElement(${value}, 1) as ${key}`
+      : `${breakdown.name} as ${key}`;
+    sb.groupBy[key] = `${key}`;
+  });
 
   if (event.segment === 'user') {
     sb.select.count = `countDistinct(profile_id) as count`;

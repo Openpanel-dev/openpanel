@@ -28,6 +28,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       title: 'Top pages',
       btn: 'Top pages',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -58,6 +59,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       title: 'Entry Pages',
       btn: 'Entries',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -88,6 +90,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       title: 'Exit Pages',
       btn: 'Exits',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,

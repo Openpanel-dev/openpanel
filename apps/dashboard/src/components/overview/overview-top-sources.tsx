@@ -32,6 +32,7 @@ export default function OverviewTopSources({
       title: 'Top sources',
       btn: 'All',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -62,6 +63,7 @@ export default function OverviewTopSources({
       title: 'Top urls',
       btn: 'URLs',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -92,6 +94,7 @@ export default function OverviewTopSources({
       title: 'Top types',
       btn: 'Types',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -122,6 +125,7 @@ export default function OverviewTopSources({
       title: 'UTM Source',
       btn: 'Source',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -152,6 +156,7 @@ export default function OverviewTopSources({
       title: 'UTM Medium',
       btn: 'Medium',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -182,6 +187,7 @@ export default function OverviewTopSources({
       title: 'UTM Campaign',
       btn: 'Campaign',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -212,6 +218,7 @@ export default function OverviewTopSources({
       title: 'UTM Term',
       btn: 'Term',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -242,6 +249,7 @@ export default function OverviewTopSources({
       title: 'UTM Content',
       btn: 'Content',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,

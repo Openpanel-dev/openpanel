@@ -24,6 +24,7 @@ export function transformOrganization(org: Organization) {
 export async function getCurrentOrganizations() {
   const session = auth();
   if (!session.userId) return [];
+
   const organizations = await db.organization.findMany({
     where: {
       members: {

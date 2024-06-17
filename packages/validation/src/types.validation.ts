@@ -31,9 +31,54 @@ export type IChartType = z.infer<typeof zChartType>;
 export type IChartMetric = z.infer<typeof zMetric>;
 export type IChartLineType = z.infer<typeof zLineType>;
 export type IChartRange = z.infer<typeof zRange>;
+export interface IChartInputWithDates extends IChartInput {
+  startDate: string;
+  endDate: string;
+}
 export type IGetChartDataInput = {
   event: IChartEvent;
   projectId: string;
   startDate: string;
   endDate: string;
 } & Omit<IChartInput, 'events' | 'name' | 'startDate' | 'endDate' | 'range'>;
+
+export type PreviousValue =
+  | {
+      value: number;
+      diff: number | null;
+      state: 'positive' | 'negative' | 'neutral';
+    }
+  | undefined;
+
+export type Metrics = {
+  sum: number;
+  average: number;
+  min: number;
+  max: number;
+  previous?: {
+    sum: PreviousValue;
+    average: PreviousValue;
+    min: PreviousValue;
+    max: PreviousValue;
+  };
+};
+
+export type IChartSerie = {
+  id: string;
+  name: string;
+  event: {
+    id: string;
+    name: string;
+  };
+  metrics: Metrics;
+  data: {
+    date: string;
+    count: number;
+    previous: PreviousValue;
+  }[];
+};
+
+export type FinalChart = {
+  series: IChartSerie[];
+  metrics: Metrics;
+};

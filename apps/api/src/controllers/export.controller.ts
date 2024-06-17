@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import type { GetEventListOptions } from '@openpanel/db';
 import { ClientType, db, getEventList, getEventsCount } from '@openpanel/db';
-import { getChart } from '@openpanel/trpc/src/routers/chart';
+import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
 import { zChartInput } from '@openpanel/validation';
 
 async function getProjectId(

@@ -71,6 +71,8 @@ export const zChartInput = z.object({
   projectId: z.string(),
   startDate: z.string().nullish(),
   endDate: z.string().nullish(),
+  limit: z.number().optional(),
+  offset: z.number().optional(),
 });
 
 export const zReportInput = zChartInput.extend({

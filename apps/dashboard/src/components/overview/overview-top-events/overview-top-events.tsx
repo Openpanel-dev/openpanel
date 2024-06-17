@@ -31,6 +31,7 @@ export default function OverviewTopEvents({
       title: 'Top events',
       btn: 'Your',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -69,6 +70,7 @@ export default function OverviewTopEvents({
       title: 'Top events',
       btn: 'All',
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
@@ -100,6 +102,7 @@ export default function OverviewTopEvents({
       btn: 'Conversions',
       hide: conversions.length === 0,
       chart: {
+        limit: 10,
         projectId,
         startDate,
         endDate,
