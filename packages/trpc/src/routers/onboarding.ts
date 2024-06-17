@@ -19,7 +19,7 @@ async function createOrGetOrganization(
   if (input.organization) {
     return db.organization.create({
       data: {
-        id: slug(input.organization),
+        id: await getId('organization', input.organization),
         name: input.organization,
         createdByUserId: userId,
       },

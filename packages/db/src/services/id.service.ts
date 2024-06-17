@@ -2,7 +2,10 @@ import { slug } from '@openpanel/common';
 
 import { db } from '../prisma-client';
 
-export async function getId(tableName: 'project' | 'dashboard', name: string) {
+export async function getId(
+  tableName: 'project' | 'dashboard' | 'organization',
+  name: string
+) {
   const newId = slug(name);
   if (!db[tableName]) {
     throw new Error('Table does not exists');
