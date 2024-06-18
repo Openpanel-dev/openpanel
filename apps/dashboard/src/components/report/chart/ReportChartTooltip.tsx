@@ -10,6 +10,7 @@ import { useChartContext } from './ChartProvider';
 
 type ReportLineChartTooltipProps = IToolTipProps<{
   value: number;
+  name: string;
   dataKey: string;
   payload: Record<string, unknown>;
 }>;
@@ -34,6 +35,7 @@ export function ReportChartTooltip({
   const sorted = payload
     .slice(0)
     .filter((item) => !item.dataKey.includes(':prev:count'))
+    .filter((item) => !item.name.includes(':noTooltip'))
     .sort((a, b) => b.value - a.value);
   const visible = sorted.slice(0, limit);
   const hidden = sorted.slice(limit);
