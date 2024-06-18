@@ -78,7 +78,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               'h-4 w-4 flex-shrink-0',
               loading && 'animate-spin',
               size !== 'icon' && responsive && 'mr-0 sm:mr-2',
-              size !== 'icon' && 'mr-2'
+              size !== 'icon' && !responsive && 'mr-2'
             )}
           />
         )}
