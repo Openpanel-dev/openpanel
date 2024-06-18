@@ -521,76 +521,74 @@ export async function getChart(input: IChartInput) {
   const limit = input.limit || 300;
   const offset = input.offset || 0;
   const final: FinalChart = {
-    series: series
-      .slice(offset, limit ? offset + limit : series.length)
-      .map((serie) => {
-        const previousSerie = previousSeries?.find(
-          (item) => item.name === serie.name
-        );
-        const metrics = {
-          sum: sum(serie.data.map((item) => item.count)),
-          average: round(average(serie.data.map((item) => item.count)), 2),
-          min: min(serie.data.map((item) => item.count)),
-          max: max(serie.data.map((item) => item.count)),
-        };
+    series: series.map((serie) => {
+      const previousSerie = previousSeries?.find(
+        (item) => item.name === serie.name
+      );
+      const metrics = {
+        sum: sum(serie.data.map((item) => item.count)),
+        average: round(average(serie.data.map((item) => item.count)), 2),
+        min: min(serie.data.map((item) => item.count)),
+        max: max(serie.data.map((item) => item.count)),
+      };
 
-        return {
-          id: slug(serie.name),
-          name: serie.name,
-          event: {
-            id: serie.event.id!,
-            name: serie.event.displayName ?? serie.event.name,
-          },
-          metrics: {
-            ...metrics,
-            ...(input.previous
-              ? {
-                  previous: {
-                    sum: getPreviousMetric(
-                      metrics.sum,
-                      previousSerie
-                        ? sum(previousSerie?.data.map((item) => item.count))
-                        : null
-                    ),
-                    average: getPreviousMetric(
-                      metrics.average,
-                      previousSerie
-                        ? round(
-                            average(
-                              previousSerie?.data.map((item) => item.count)
-                            ),
-                            2
-                          )
-                        : null
-                    ),
-                    min: getPreviousMetric(
-                      metrics.sum,
-                      previousSerie
-                        ? min(previousSerie?.data.map((item) => item.count))
-                        : null
-                    ),
-                    max: getPreviousMetric(
-                      metrics.sum,
-                      previousSerie
-                        ? max(previousSerie?.data.map((item) => item.count))
-                        : null
-                    ),
-                  },
-                }
-              : {}),
-          },
-          data: serie.data.map((item, index) => ({
-            date: item.date,
-            count: item.count ?? 0,
-            previous: previousSerie?.data[index]
-              ? getPreviousMetric(
-                  item.count ?? 0,
-                  previousSerie?.data[index]?.count ?? null
-                )
-              : undefined,
-          })),
-        };
-      }),
+      return {
+        id: slug(serie.name),
+        name: serie.name,
+        event: {
+          id: serie.event.id!,
+          name: serie.event.displayName ?? serie.event.name,
+        },
+        metrics: {
+          ...metrics,
+          ...(input.previous
+            ? {
+                previous: {
+                  sum: getPreviousMetric(
+                    metrics.sum,
+                    previousSerie
+                      ? sum(previousSerie?.data.map((item) => item.count))
+                      : null
+                  ),
+                  average: getPreviousMetric(
+                    metrics.average,
+                    previousSerie
+                      ? round(
+                          average(
+                            previousSerie?.data.map((item) => item.count)
+                          ),
+                          2
+                        )
+                      : null
+                  ),
+                  min: getPreviousMetric(
+                    metrics.sum,
+                    previousSerie
+                      ? min(previousSerie?.data.map((item) => item.count))
+                      : null
+                  ),
+                  max: getPreviousMetric(
+                    metrics.sum,
+                    previousSerie
+                      ? max(previousSerie?.data.map((item) => item.count))
+                      : null
+                  ),
+                },
+              }
+            : {}),
+        },
+        data: serie.data.map((item, index) => ({
+          date: item.date,
+          count: item.count ?? 0,
+          previous: previousSerie?.data[index]
+            ? getPreviousMetric(
+                item.count ?? 0,
+                previousSerie?.data[index]?.count ?? null
+              )
+            : undefined,
+        })),
+      };
+    }),
     metrics: {
       sum: 0,
       average: 0,
@@ -598,6 +596,19 @@ export async function getChart(input: IChartInput) {
       max: 0,
     },
   };
+
+  // Sort by sum
+  final.series = final.series
+    .sort((a, b) => {
+      if (input.chartType === 'linear') {
+        const sumA = a.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
+        const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
+        return sumB - sumA;
+      } else {
+        return b.metrics[input.metric] - a.metrics[input.metric];
+      }
+    })
+    .slice(offset, limit ? offset + limit : series.length);
 
   final.metrics.sum = sum(final.series.map((item) => item.metrics.sum));
   final.metrics.average = round(
@@ -633,17 +644,6 @@ export async function getChart(input: IChartInput) {
       ),
     };
   }
-
-  // Sort by sum
-  final.series = final.series.sort((a, b) => {
-    if (input.chartType === 'linear') {
-      const sumA = a.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
-      const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
-      return sumB - sumA;
-    } else {
-      return b.metrics[input.metric] - a.metrics[input.metric];
-    }
-  });
 
   return final;
 }
