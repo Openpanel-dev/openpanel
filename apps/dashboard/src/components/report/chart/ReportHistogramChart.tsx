@@ -4,6 +4,7 @@ import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import type { IChartData } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 import { getChartColor, theme } from '@/utils/theme';
 import { Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis } from 'recharts';
 
@@ -40,57 +41,59 @@ export function ReportHistogramChart({ data }: ReportHistogramChartProps) {
 
   return (
     <>
-      <ResponsiveContainer>
-        {({ width, height }) => (
-          <BarChart width={width} height={height} data={rechartData}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              vertical={false}
-              className="stroke-def-200"
-            />
-            <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
-            <XAxis
-              fontSize={12}
-              dataKey="date"
-              tickFormatter={formatDate}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              fontSize={12}
-              axisLine={false}
-              tickLine={false}
-              width={getYAxisWidth(data.metrics.max)}
-              allowDecimals={false}
-              domain={[0, data.metrics.max]}
-              tickFormatter={number.short}
-            />
-            {series.map((serie) => {
-              return (
-                <React.Fragment key={serie.id}>
-                  {previous && (
+      <div className={cn(editMode && 'card p-4')}>
+        <ResponsiveContainer>
+          {({ width, height }) => (
+            <BarChart width={width} height={height} data={rechartData}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                className="stroke-def-200"
+              />
+              <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
+              <XAxis
+                fontSize={12}
+                dataKey="date"
+                tickFormatter={formatDate}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                fontSize={12}
+                axisLine={false}
+                tickLine={false}
+                width={getYAxisWidth(data.metrics.max)}
+                allowDecimals={false}
+                domain={[0, data.metrics.max]}
+                tickFormatter={number.short}
+              />
+              {series.map((serie) => {
+                return (
+                  <React.Fragment key={serie.id}>
+                    {previous && (
+                      <Bar
+                        key={`${serie.id}:prev`}
+                        name={`${serie.id}:prev`}
+                        dataKey={`${serie.id}:prev:count`}
+                        fill={getChartColor(serie.index)}
+                        fillOpacity={0.2}
+                        radius={3}
+                      />
+                    )}
                     <Bar
-                      key={`${serie.id}:prev`}
-                      name={`${serie.id}:prev`}
-                      dataKey={`${serie.id}:prev:count`}
+                      key={serie.id}
+                      name={serie.id}
+                      dataKey={`${serie.id}:count`}
                       fill={getChartColor(serie.index)}
-                      fillOpacity={0.2}
                       radius={3}
                     />
-                  )}
-                  <Bar
-                    key={serie.id}
-                    name={serie.id}
-                    dataKey={`${serie.id}:count`}
-                    fill={getChartColor(serie.index)}
-                    radius={3}
-                  />
-                </React.Fragment>
-              );
-            })}
-          </BarChart>
-        )}
-      </ResponsiveContainer>
+                  </React.Fragment>
+                );
+              })}
+            </BarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
       {editMode && (
         <ReportTable
           data={data}

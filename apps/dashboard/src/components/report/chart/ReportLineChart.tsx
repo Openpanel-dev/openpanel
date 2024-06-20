@@ -7,6 +7,7 @@ import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { api } from '@/trpc/client';
 import type { IChartData } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { isSameDay, isSameHour, isSameMonth } from 'date-fns';
 import { SplineIcon } from 'lucide-react';
@@ -127,159 +128,161 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
 
   return (
     <>
-      <ResponsiveContainer>
-        {({ width, height }) => (
-          <ComposedChart width={width} height={height} data={rechartData}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={true}
-              vertical={false}
-              className="stroke-def-200"
-            />
-            {references.data?.map((ref) => (
-              <ReferenceLine
-                key={ref.id}
-                x={ref.date.getTime()}
-                stroke={'#94a3b8'}
-                strokeDasharray={'3 3'}
-                label={{
-                  value: ref.title,
-                  position: 'centerTop',
-                  fill: '#334155',
-                  fontSize: 12,
-                }}
-                fontSize={10}
+      <div className={cn(editMode && 'card p-4')}>
+        <ResponsiveContainer>
+          {({ width, height }) => (
+            <ComposedChart width={width} height={height} data={rechartData}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={true}
+                vertical={false}
+                className="stroke-def-200"
               />
-            ))}
-            <YAxis
-              width={getYAxisWidth(data.metrics.max)}
-              fontSize={12}
-              axisLine={false}
-              tickLine={false}
-              allowDecimals={false}
-              tickFormatter={number.short}
-            />
-            {series.length > 1 && (
-              <Legend
-                wrapperStyle={{ fontSize: '10px' }}
-                content={<CustomLegend />}
+              {references.data?.map((ref) => (
+                <ReferenceLine
+                  key={ref.id}
+                  x={ref.date.getTime()}
+                  stroke={'#94a3b8'}
+                  strokeDasharray={'3 3'}
+                  label={{
+                    value: ref.title,
+                    position: 'centerTop',
+                    fill: '#334155',
+                    fontSize: 12,
+                  }}
+                  fontSize={10}
+                />
+              ))}
+              <YAxis
+                width={getYAxisWidth(data.metrics.max)}
+                fontSize={12}
+                axisLine={false}
+                tickLine={false}
+                allowDecimals={false}
+                tickFormatter={number.short}
               />
-            )}
-            <Tooltip content={<ReportChartTooltip />} />
-            <XAxis
-              axisLine={false}
-              fontSize={12}
-              dataKey="timestamp"
-              scale="utc"
-              domain={['dataMin', 'dataMax']}
-              tickFormatter={(m: string) => formatDate(new Date(m))}
-              type="number"
-              tickLine={false}
-            />
-            {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <React.Fragment key={serie.id}>
-                  <defs>
-                    {isAreaStyle && (
-                      <linearGradient
-                        id={`color${color}`}
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor={color}
-                          stopOpacity={0.8}
-                        ></stop>
-                        <stop
-                          offset="100%"
-                          stopColor={color}
-                          stopOpacity={0.1}
-                        ></stop>
-                      </linearGradient>
-                    )}
-                    {gradientTwoColors(
-                      `hideAllButLastInterval_${serie.id}`,
-                      'rgba(0,0,0,0)',
-                      color,
-                      lastIntervalPercent
-                    )}
-                    {gradientTwoColors(
-                      `hideJustLastInterval_${serie.id}`,
-                      color,
-                      'rgba(0,0,0,0)',
-                      lastIntervalPercent
-                    )}
-                  </defs>
-                  <Line
-                    dot={false}
-                    type={lineType}
-                    name={serie.id}
-                    isAnimationActive={false}
-                    strokeWidth={2}
-                    dataKey={`${serie.id}:count`}
-                    stroke={useDashedLastLine ? 'transparent' : color}
-                    // Use for legend
-                    fill={color}
-                  />
-                  {isAreaStyle && (
-                    <Area
-                      name={`${serie.id}:area:noTooltip`}
-                      dataKey={`${serie.id}:count`}
-                      fill={`url(#color${color})`}
-                      type={lineType}
-                      isAnimationActive={false}
-                      fillOpacity={0.1}
-                    />
-                  )}
-                  {useDashedLastLine && (
-                    <>
-                      <Line
-                        dot={false}
-                        type={lineType}
-                        name={`${serie.id}:dashed:noTooltip`}
-                        isAnimationActive={false}
-                        strokeWidth={2}
-                        dataKey={`${serie.id}:count`}
-                        stroke={`url('#hideAllButLastInterval_${serie.id}')`}
-                        strokeDasharray="4 2"
-                        strokeOpacity={0.7}
-                      />
-                      <Line
-                        dot={false}
-                        type={lineType}
-                        name={`${serie.id}:solid:noTooltip`}
-                        isAnimationActive={false}
-                        strokeWidth={2}
-                        dataKey={`${serie.id}:count`}
-                        stroke={`url('#hideJustLastInterval_${serie.id}')`}
-                      />
-                    </>
-                  )}
-                  {previous && (
+              {series.length > 1 && (
+                <Legend
+                  wrapperStyle={{ fontSize: '10px' }}
+                  content={<CustomLegend />}
+                />
+              )}
+              <Tooltip content={<ReportChartTooltip />} />
+              <XAxis
+                axisLine={false}
+                fontSize={12}
+                dataKey="timestamp"
+                scale="utc"
+                domain={['dataMin', 'dataMax']}
+                tickFormatter={(m: string) => formatDate(new Date(m))}
+                type="number"
+                tickLine={false}
+              />
+              {series.map((serie) => {
+                const color = getChartColor(serie.index);
+                return (
+                  <React.Fragment key={serie.id}>
+                    <defs>
+                      {isAreaStyle && (
+                        <linearGradient
+                          id={`color${color}`}
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={color}
+                            stopOpacity={0.8}
+                          ></stop>
+                          <stop
+                            offset="100%"
+                            stopColor={color}
+                            stopOpacity={0.1}
+                          ></stop>
+                        </linearGradient>
+                      )}
+                      {gradientTwoColors(
+                        `hideAllButLastInterval_${serie.id}`,
+                        'rgba(0,0,0,0)',
+                        color,
+                        lastIntervalPercent
+                      )}
+                      {gradientTwoColors(
+                        `hideJustLastInterval_${serie.id}`,
+                        color,
+                        'rgba(0,0,0,0)',
+                        lastIntervalPercent
+                      )}
+                    </defs>
                     <Line
-                      type={lineType}
-                      name={`${serie.id}:prev`}
-                      isAnimationActive={false}
-                      strokeWidth={1}
                       dot={false}
-                      strokeDasharray={'1 1'}
-                      strokeOpacity={0.5}
-                      dataKey={`${serie.id}:prev:count`}
-                      stroke={color}
+                      type={lineType}
+                      name={serie.id}
+                      isAnimationActive={false}
+                      strokeWidth={2}
+                      dataKey={`${serie.id}:count`}
+                      stroke={useDashedLastLine ? 'transparent' : color}
                       // Use for legend
                       fill={color}
                     />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </ComposedChart>
-        )}
-      </ResponsiveContainer>
+                    {isAreaStyle && (
+                      <Area
+                        name={`${serie.id}:area:noTooltip`}
+                        dataKey={`${serie.id}:count`}
+                        fill={`url(#color${color})`}
+                        type={lineType}
+                        isAnimationActive={false}
+                        fillOpacity={0.1}
+                      />
+                    )}
+                    {useDashedLastLine && (
+                      <>
+                        <Line
+                          dot={false}
+                          type={lineType}
+                          name={`${serie.id}:dashed:noTooltip`}
+                          isAnimationActive={false}
+                          strokeWidth={2}
+                          dataKey={`${serie.id}:count`}
+                          stroke={`url('#hideAllButLastInterval_${serie.id}')`}
+                          strokeDasharray="4 2"
+                          strokeOpacity={0.7}
+                        />
+                        <Line
+                          dot={false}
+                          type={lineType}
+                          name={`${serie.id}:solid:noTooltip`}
+                          isAnimationActive={false}
+                          strokeWidth={2}
+                          dataKey={`${serie.id}:count`}
+                          stroke={`url('#hideJustLastInterval_${serie.id}')`}
+                        />
+                      </>
+                    )}
+                    {previous && (
+                      <Line
+                        type={lineType}
+                        name={`${serie.id}:prev`}
+                        isAnimationActive={false}
+                        strokeWidth={1}
+                        dot={false}
+                        strokeDasharray={'1 1'}
+                        strokeOpacity={0.5}
+                        dataKey={`${serie.id}:prev:count`}
+                        stroke={color}
+                        // Use for legend
+                        fill={color}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </ComposedChart>
+          )}
+        </ResponsiveContainer>
+      </div>
       {editMode && (
         <ReportTable
           data={data}
