@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { ChartSwitch } from '@/components/report/chart';
+import { ChartRoot } from '@/components/report/chart';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 
 import type { IChartProps } from '@openpanel/validation';
@@ -85,7 +85,7 @@ const ProfileCharts = ({ profileId, projectId }: Props) => {
           <span className="title">Page views</span>
         </WidgetHead>
         <WidgetBody className="flex gap-2">
-          <ChartSwitch {...pageViewsChart} />
+          <ChartRoot {...pageViewsChart} />
         </WidgetBody>
       </Widget>
       <Widget className="col-span-3 w-full">
@@ -93,7 +93,7 @@ const ProfileCharts = ({ profileId, projectId }: Props) => {
           <span className="title">Events per day</span>
         </WidgetHead>
         <WidgetBody className="flex gap-2">
-          <ChartSwitch {...eventsChart} />
+          <ChartRoot {...eventsChart} />
         </WidgetBody>
       </Widget>
     </>

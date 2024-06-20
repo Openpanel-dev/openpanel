@@ -458,14 +458,17 @@ export async function getChartSerie(payload: IGetChartDataInput) {
       completeSerie(data, payload.startDate, payload.endDate, payload.interval)
     )
     .then((series) => {
-      return Object.keys(series).map((label) => {
+      return Object.keys(series).map((key) => {
+        const firstDataItem = series[key]![0]!;
         const isBreakdown =
-          payload.breakdowns.length && !alphabetIds.includes(label as 'A');
-        const serieLabel = isBreakdown ? label : getEventLegend(payload.event);
+          payload.breakdowns.length && firstDataItem.labels.length;
+        const serieLabel = isBreakdown
+          ? firstDataItem.labels
+          : [getEventLegend(payload.event)];
         return {
           name: serieLabel,
           event: payload.event,
-          data: series[label]!.map((item) => ({
+          data: series[key]!.map((item) => ({
             ...item,
             date: toDynamicISODateWithTZ(
               item.date,
@@ -523,7 +526,7 @@ export async function getChart(input: IChartInput) {
   const final: FinalChart = {
     series: series.map((serie) => {
       const previousSerie = previousSeries?.find(
-        (item) => item.name === serie.name
+        (item) => item.name.join('-') === serie.name.join('-')
       );
       const metrics = {
         sum: sum(serie.data.map((item) => item.count)),
@@ -533,8 +536,8 @@ export async function getChart(input: IChartInput) {
       };
 
       return {
-        id: slug(serie.name),
-        name: serie.name,
+        id: slug(serie.name.join('-')),
+        names: serie.name,
         event: {
           id: serie.event.id!,
           name: serie.event.displayName ?? serie.event.name,

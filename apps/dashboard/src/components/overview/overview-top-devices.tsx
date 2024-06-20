@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
+import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
 import { LazyChart } from '../report/chart/LazyChart';
@@ -51,7 +52,7 @@ export default function OverviewTopDevices({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top devices',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -82,7 +83,7 @@ export default function OverviewTopDevices({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top browser',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -92,6 +93,9 @@ export default function OverviewTopDevices({
       title: 'Top Browser Version',
       btn: 'Browser Version',
       chart: {
+        renderSerieName(name) {
+          return name[1] || NOT_SET_VALUE;
+        },
         limit: 10,
         projectId,
         startDate,
@@ -107,13 +111,17 @@ export default function OverviewTopDevices({
         breakdowns: [
           {
             id: 'A',
+            name: 'browser',
+          },
+          {
+            id: 'B',
             name: 'browser_version',
           },
         ],
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top Browser Version',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -144,7 +152,7 @@ export default function OverviewTopDevices({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top OS',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -154,6 +162,9 @@ export default function OverviewTopDevices({
       title: 'Top OS version',
       btn: 'OS Version',
       chart: {
+        renderSerieName(name) {
+          return name[1] || NOT_SET_VALUE;
+        },
         limit: 10,
         projectId,
         startDate,
@@ -169,13 +180,17 @@ export default function OverviewTopDevices({
         breakdowns: [
           {
             id: 'A',
+            name: 'os',
+          },
+          {
+            id: 'B',
             name: 'os_version',
           },
         ],
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top OS version',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -211,19 +226,19 @@ export default function OverviewTopDevices({
             onClick={(item) => {
               switch (widget.key) {
                 case 'devices':
-                  setFilter('device', item.name);
+                  setFilter('device', item.names[0]);
                   break;
                 case 'browser':
-                  setFilter('browser', item.name);
+                  setFilter('browser', item.names[0]);
                   break;
                 case 'browser_version':
-                  setFilter('browser_version', item.name);
+                  setFilter('browser_version', item.names[1]);
                   break;
                 case 'os':
-                  setFilter('os', item.name);
+                  setFilter('os', item.names[0]);
                   break;
                 case 'os_version':
-                  setFilter('os_version', item.name);
+                  setFilter('os_version', item.names[1]);
                   break;
               }
             }}

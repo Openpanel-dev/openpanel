@@ -53,7 +53,7 @@ export default function OverviewTopSources({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top groups',
+        name: 'Top sources',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -84,7 +84,7 @@ export default function OverviewTopSources({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top urls',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -146,7 +146,7 @@ export default function OverviewTopSources({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'UTM Source',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -177,7 +177,7 @@ export default function OverviewTopSources({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'UTM Medium',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -208,7 +208,7 @@ export default function OverviewTopSources({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'UTM Campaign',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -239,7 +239,7 @@ export default function OverviewTopSources({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'UTM Term',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -270,7 +270,7 @@ export default function OverviewTopSources({
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'UTM Content',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -307,30 +307,30 @@ export default function OverviewTopSources({
             onClick={(item) => {
               switch (widget.key) {
                 case 'all':
-                  setFilter('referrer_name', item.name);
+                  setFilter('referrer_name', item.names[0]);
                   setWidget('domain');
                   break;
                 case 'domain':
-                  setFilter('referrer', item.name);
+                  setFilter('referrer', item.names[0]);
                   break;
                 case 'type':
-                  setFilter('referrer_type', item.name);
+                  setFilter('referrer_type', item.names[0]);
                   setWidget('domain');
                   break;
                 case 'utm_source':
-                  setFilter('properties.__query.utm_source', item.name);
+                  setFilter('properties.__query.utm_source', item.names[0]);
                   break;
                 case 'utm_medium':
-                  setFilter('properties.__query.utm_medium', item.name);
+                  setFilter('properties.__query.utm_medium', item.names[0]);
                   break;
                 case 'utm_campaign':
-                  setFilter('properties.__query.utm_campaign', item.name);
+                  setFilter('properties.__query.utm_campaign', item.names[0]);
                   break;
                 case 'utm_term':
-                  setFilter('properties.__query.utm_term', item.name);
+                  setFilter('properties.__query.utm_term', item.names[0]);
                   break;
                 case 'utm_content':
-                  setFilter('properties.__query.utm_content', item.name);
+                  setFilter('properties.__query.utm_content', item.names[0]);
                   break;
               }
             }}

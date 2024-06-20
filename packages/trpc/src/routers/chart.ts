@@ -102,9 +102,9 @@ export const chartRouter = createTRPCRouter({
         sb.where.event = `name = ${escape(event)}`;
       }
       if (property.startsWith('properties.')) {
-        sb.select.values = `distinct mapValues(mapExtractKeyLike(properties, ${escape(
+        sb.select.values = `distinct arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
           property.replace(/^properties\./, '').replace('.*.', '.%.')
-        )})) as values`;
+        )}))) as values`;
       } else {
         sb.select.values = `distinct ${property} as values`;
       }

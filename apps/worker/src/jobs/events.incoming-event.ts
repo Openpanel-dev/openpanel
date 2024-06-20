@@ -171,7 +171,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     model: uaInfo?.model ?? '',
     duration: 0,
     path: path,
-    origin: origin,
+    origin: origin || sessionStartEvent?.origin || '',
     referrer: referrer?.url,
     referrerName: referrer?.name || utmReferrer?.name || '',
     referrerType: referrer?.type || utmReferrer?.type || '',

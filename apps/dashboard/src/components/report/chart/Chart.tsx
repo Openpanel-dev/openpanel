@@ -5,6 +5,7 @@ import { api } from '@/trpc/client';
 import type { IChartProps } from '@openpanel/validation';
 
 import { ChartEmpty } from './ChartEmpty';
+import { useChartContext } from './ChartProvider';
 import { ReportAreaChart } from './ReportAreaChart';
 import { ReportBarChart } from './ReportBarChart';
 import { ReportHistogramChart } from './ReportHistogramChart';
@@ -15,34 +16,22 @@ import { ReportPieChart } from './ReportPieChart';
 
 export type ReportChartProps = IChartProps;
 
-export function Chart({
-  interval,
-  events,
-  breakdowns,
-  chartType,
-  range,
-  lineType,
-  previous,
-  formula,
-  metric,
-  projectId,
-  startDate,
-  endDate,
-  limit,
-  offset,
-}: ReportChartProps) {
-  const [references] = api.reference.getChartReferences.useSuspenseQuery(
-    {
-      projectId,
-      startDate,
-      endDate,
-      range,
-    },
-    {
-      staleTime: 1000 * 60 * 5,
-    }
-  );
-
+export function Chart() {
+  const {
+    interval,
+    events,
+    breakdowns,
+    chartType,
+    range,
+    previous,
+    formula,
+    metric,
+    projectId,
+    startDate,
+    endDate,
+    limit,
+    offset,
+  } = useChartContext();
   const [data] = api.chart.chart.useSuspenseQuery(
     {
       interval,
@@ -73,7 +62,7 @@ export function Chart({
   }
 
   if (chartType === 'histogram') {
-    return <ReportHistogramChart interval={interval} data={data} />;
+    return <ReportHistogramChart data={data} />;
   }
 
   if (chartType === 'bar') {
@@ -89,20 +78,11 @@ export function Chart({
   }
 
   if (chartType === 'linear') {
-    return (
-      <ReportLineChart
-        lineType={lineType}
-        interval={interval}
-        data={data}
-        references={references}
-      />
-    );
+    return <ReportLineChart data={data} />;
   }
 
   if (chartType === 'area') {
-    return (
-      <ReportAreaChart lineType={lineType} interval={interval} data={data} />
-    );
+    return <ReportAreaChart data={data} />;
   }
 
   return <p>Unknown chart type</p>;

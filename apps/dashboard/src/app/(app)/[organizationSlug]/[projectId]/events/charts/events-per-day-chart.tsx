@@ -1,4 +1,4 @@
-import { ChartSwitchShortcut } from '@/components/report/chart';
+import { ChartRootShortcut } from '@/components/report/chart';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 
 import type { IChartEvent } from '@openpanel/validation';
@@ -26,7 +26,7 @@ export function EventsPerDayChart({ projectId, filters, events }: Props) {
         <span className="title">Events per day</span>
       </WidgetHead>
       <WidgetBody>
-        <ChartSwitchShortcut
+        <ChartRootShortcut
           projectId={projectId}
           range="30d"
           chartType="histogram"

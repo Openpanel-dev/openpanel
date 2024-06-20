@@ -17,7 +17,6 @@ import { ResponsiveContainer } from './ResponsiveContainer';
 
 interface ReportHistogramChartProps {
   data: IChartData;
-  interval: IInterval;
 }
 
 function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
@@ -32,11 +31,8 @@ function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
   );
 }
 
-export function ReportHistogramChart({
-  interval,
-  data,
-}: ReportHistogramChartProps) {
-  const { editMode, previous } = useChartContext();
+export function ReportHistogramChart({ data }: ReportHistogramChartProps) {
+  const { editMode, previous, interval } = useChartContext();
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(series);
@@ -71,11 +67,11 @@ export function ReportHistogramChart({
             />
             {series.map((serie) => {
               return (
-                <React.Fragment key={serie.name}>
+                <React.Fragment key={serie.id}>
                   {previous && (
                     <Bar
-                      key={`${serie.name}:prev`}
-                      name={`${serie.name}:prev`}
+                      key={`${serie.id}:prev`}
+                      name={`${serie.id}:prev`}
                       dataKey={`${serie.id}:prev:count`}
                       fill={getChartColor(serie.index)}
                       fillOpacity={0.2}
@@ -83,8 +79,8 @@ export function ReportHistogramChart({
                     />
                   )}
                   <Bar
-                    key={serie.name}
-                    name={serie.name}
+                    key={serie.id}
+                    name={serie.id}
                     dataKey={`${serie.id}:count`}
                     fill={getChartColor(serie.index)}
                     radius={3}

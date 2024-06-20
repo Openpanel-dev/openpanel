@@ -24,7 +24,7 @@ export function ReportPieChart({ data }: ReportPieChartProps) {
     id: serie.id,
     color: getChartColor(serie.index),
     index: serie.index,
-    name: serie.name,
+    name: serie.names.join(' > '),
     count: serie.metrics.sum,
     percent: serie.metrics.sum / sum,
   }));

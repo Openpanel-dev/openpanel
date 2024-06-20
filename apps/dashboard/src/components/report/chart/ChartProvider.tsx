@@ -1,111 +1,33 @@
 'use client';
 
-import {
-  createContext,
-  memo,
-  Suspense,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { createContext, useContext } from 'react';
+import type { LucideIcon } from 'lucide-react';
 
 import type { IChartProps, IChartSerie } from '@openpanel/validation';
 
-import { ChartLoading } from './ChartLoading';
-import { MetricCardLoading } from './MetricCard';
-
-export interface ChartContextType extends IChartProps {
+export interface IChartContextType extends IChartProps {
   editMode?: boolean;
   hideID?: boolean;
   onClick?: (item: IChartSerie) => void;
-  limit?: number;
+  renderSerieName?: (names: string[]) => React.ReactNode;
+  renderSerieIcon?: (serie: IChartSerie) => React.ReactNode;
+  dropdownMenuContent?: (serie: IChartSerie) => {
+    icon: LucideIcon;
+    title: string;
+    onClick: () => void;
+  }[];
 }
 
-type ChartProviderProps = {
+type IChartProviderProps = {
   children: React.ReactNode;
-} & ChartContextType;
+} & IChartContextType;
 
-const ChartContext = createContext<ChartContextType | null>({
-  events: [],
-  breakdowns: [],
-  chartType: 'linear',
-  lineType: 'monotone',
-  interval: 'day',
-  name: '',
-  range: '7d',
-  metric: 'sum',
-  previous: false,
-  projectId: '',
-  limit: undefined,
-});
+const ChartContext = createContext<IChartContextType | null>(null);
 
-export function ChartProvider({
-  children,
-  editMode,
-  previous,
-  hideID,
-  limit,
-  ...props
-}: ChartProviderProps) {
+export function ChartProvider({ children, ...props }: IChartProviderProps) {
   return (
-    <ChartContext.Provider
-      value={useMemo(
-        () => ({
-          ...props,
-          editMode: editMode ?? false,
-          previous: previous ?? false,
-          hideID: hideID ?? false,
-          limit,
-        }),
-        [editMode, previous, hideID, limit, props]
-      )}
-    >
-      {children}
-    </ChartContext.Provider>
+    <ChartContext.Provider value={props}>{children}</ChartContext.Provider>
   );
-}
-
-export function withChartProivder<ComponentProps>(
-  WrappedComponent: React.FC<ComponentProps>
-) {
-  const WithChartProvider = (props: ComponentProps & ChartContextType) => {
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-      setMounted(true);
-    }, []);
-
-    if (!mounted) {
-      return props.chartType === 'metric' ? (
-        <MetricCardLoading />
-      ) : (
-        <ChartLoading />
-      );
-    }
-
-    return (
-      <Suspense
-        fallback={
-          props.chartType === 'metric' ? (
-            <MetricCardLoading />
-          ) : (
-            <ChartLoading />
-          )
-        }
-      >
-        <ChartProvider {...props}>
-          <WrappedComponent {...props} />
-        </ChartProvider>
-      </Suspense>
-    );
-  };
-
-  WithChartProvider.displayName = `WithChartProvider(${
-    WrappedComponent.displayName ?? WrappedComponent.name ?? 'Component'
-  })`;
-
-  return memo(WithChartProvider);
 }
 
 export function useChartContext() {

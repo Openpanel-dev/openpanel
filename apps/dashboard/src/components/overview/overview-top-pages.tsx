@@ -3,10 +3,13 @@
 import { useState } from 'react';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
+import { ExternalLinkIcon, FilterIcon } from 'lucide-react';
 
+import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
 import { LazyChart } from '../report/chart/LazyChart';
+import { Tooltiper } from '../ui/tooltip';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
 import OverviewDetailsButton from './overview-details-button';
@@ -23,11 +26,19 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
     useOverviewOptions();
   const [chartType, setChartType] = useState<IChartType>('bar');
   const [filters, setFilter] = useEventQueryFilters();
+  const renderSerieName = (names: string[]) => {
+    return (
+      <Tooltiper content={names.join('')} side="left" className="text-left">
+        {names[1] || NOT_SET_VALUE}
+      </Tooltiper>
+    );
+  };
   const [widget, setWidget, widgets] = useOverviewWidget('pages', {
     top: {
       title: 'Top pages',
       btn: 'Top pages',
       chart: {
+        renderSerieName,
         limit: 10,
         projectId,
         startDate,
@@ -43,13 +54,17 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
         breakdowns: [
           {
             id: 'A',
+            name: 'origin',
+          },
+          {
+            id: 'B',
             name: 'path',
           },
         ],
         chartType,
         lineType: 'monotone',
         interval,
-        name: 'Top sources',
+        name: 'Top pages',
         range,
         previous,
         metric: 'sum',
@@ -59,6 +74,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       title: 'Entry Pages',
       btn: 'Entries',
       chart: {
+        renderSerieName,
         limit: 10,
         projectId,
         startDate,
@@ -74,13 +90,17 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
         breakdowns: [
           {
             id: 'A',
+            name: 'origin',
+          },
+          {
+            id: 'B',
             name: 'path',
           },
         ],
         chartType,
         lineType: 'monotone',
         interval,
-        name: 'Top sources',
+        name: 'Entry Pages',
         range,
         previous,
         metric: 'sum',
@@ -90,6 +110,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       title: 'Exit Pages',
       btn: 'Exits',
       chart: {
+        renderSerieName,
         limit: 10,
         projectId,
         startDate,
@@ -105,13 +126,17 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
         breakdowns: [
           {
             id: 'A',
+            name: 'origin',
+          },
+          {
+            id: 'B',
             name: 'path',
           },
         ],
         chartType,
         lineType: 'monotone',
         interval,
-        name: 'Top sources',
+        name: 'Exit Pages',
         range,
         previous,
         metric: 'sum',
@@ -153,9 +178,22 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
               hideID
               {...widget.chart}
               previous={false}
-              onClick={(item) => {
-                setFilter('path', item.name);
-              }}
+              dropdownMenuContent={(serie) => [
+                {
+                  title: 'Visit page',
+                  icon: ExternalLinkIcon,
+                  onClick: () => {
+                    window.open(serie.names.join(''), '_blank');
+                  },
+                },
+                {
+                  title: 'Set filter',
+                  icon: FilterIcon,
+                  onClick: () => {
+                    setFilter('path', serie.names[1]);
+                  },
+                },
+              ]}
             />
           )}
           {widget.chart?.name && <OverviewDetailsButton chart={widget.chart} />}

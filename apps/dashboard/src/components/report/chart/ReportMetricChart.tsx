@@ -24,7 +24,7 @@ export function ReportMetricChart({ data }: ReportMetricChartProps) {
       {series.map((serie) => {
         return (
           <MetricCard
-            key={serie.name}
+            key={serie.id}
             serie={serie}
             metric={metric}
             unit={unit}

@@ -35,10 +35,13 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
 
 interface TooltiperProps {
   asChild?: boolean;
-  content: string;
+  content: React.ReactNode;
   children: React.ReactNode;
   className?: string;
   onClick?: () => void;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+  delayDuration?: number;
+  sideOffset?: number;
 }
 export function Tooltiper({
   asChild,
@@ -46,14 +49,19 @@ export function Tooltiper({
   children,
   className,
   onClick,
+  side,
+  delayDuration = 0,
+  sideOffset = 10,
 }: TooltiperProps) {
   return (
-    <Tooltip delayDuration={0}>
+    <Tooltip delayDuration={delayDuration}>
       <TooltipTrigger asChild={asChild} className={className} onClick={onClick}>
         {children}
       </TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent sideOffset={10}>{content}</TooltipContent>
+        <TooltipContent sideOffset={sideOffset} side={side}>
+          {content}
+        </TooltipContent>
       </TooltipPortal>
     </Tooltip>
   );

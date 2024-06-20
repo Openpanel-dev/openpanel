@@ -1,13 +1,14 @@
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 
 import { mapKeys } from '@openpanel/validation';
-import type { IChartProps } from '@openpanel/validation';
+
+import type { IChartRoot } from '../report/chart';
 
 export function useOverviewWidget<T extends string>(
   key: string,
   widgets: Record<
     T,
-    { title: string; btn: string; chart: IChartProps; hide?: boolean }
+    { title: string; btn: string; chart: IChartRoot; hide?: boolean }
   >
 ) {
   const keys = Object.keys(widgets) as T[];

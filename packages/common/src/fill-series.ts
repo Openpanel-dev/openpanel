@@ -16,7 +16,16 @@ import type { IInterval } from '@openpanel/validation';
 
 // Define the data structure
 export interface ISerieDataItem {
-  label: string | null | undefined;
+  label_0: string | null | undefined;
+  label_1?: string | null | undefined;
+  label_2?: string | null | undefined;
+  label_3?: string | null | undefined;
+  count: number;
+  date: string;
+}
+
+export interface ISerieDataItemComplete {
+  labels: string[];
   count: number;
   date: string;
 }
@@ -37,6 +46,39 @@ function roundDate(date: Date, interval: IInterval): Date {
   }
 }
 
+function filterFalsyAfterTruthy(array: (string | undefined | null)[]) {
+  let foundTruthy = false;
+  const filtered = array.filter((item) => {
+    if (foundTruthy) {
+      // After a truthy, filter out falsy values
+      return !!item;
+    }
+    if (item) {
+      // Mark when the first truthy is encountered
+      foundTruthy = true;
+    }
+    // Return all elements until the first truthy is found
+    return true;
+  });
+
+  if (filtered.some((item) => !!item)) {
+    return filtered;
+  }
+
+  return [null];
+}
+
+function concatLabels(entry: ISerieDataItem): string {
+  return filterFalsyAfterTruthy([
+    entry.label_0,
+    entry.label_1,
+    entry.label_2,
+    entry.label_3,
+  ])
+    .map((label) => label || NOT_SET_VALUE)
+    .join(':::');
+}
+
 // Function to complete the timeline for each label
 export function completeSerie(
   data: ISerieDataItem[],
@@ -51,23 +93,23 @@ export function completeSerie(
   data.forEach((entry) => {
     const roundedDate = roundDate(parseISO(entry.date), interval);
     const dateKey = format(roundedDate, 'yyyy-MM-dd HH:mm:ss');
-    const label = entry.label || NOT_SET_VALUE;
+    const label = concatLabels(entry) || NOT_SET_VALUE;
     if (!labelsMap.has(label)) {
       labelsMap.set(label, new Map());
     }
-    const labelData = labelsMap.get(label);
-    labelData?.set(dateKey, (labelData.get(dateKey) || 0) + (entry.count || 0));
+    const labelData = labelsMap.get(label)!;
+    labelData.set(dateKey, (labelData.get(dateKey) || 0) + (entry.count || 0));
   });
 
   // Complete the timeline for each label
-  const result: Record<string, ISerieDataItem[]> = {};
+  const result: Record<string, ISerieDataItemComplete[]> = {};
   labelsMap.forEach((counts, label) => {
     let currentDate = roundDate(startDate, interval);
     result[label] = [];
     while (currentDate <= endDate) {
       const dateKey = format(currentDate, 'yyyy-MM-dd HH:mm:ss');
       result[label]!.push({
-        label: label,
+        labels: label.split(':::'),
         date: dateKey,
         count: counts.get(dateKey) || 0,
       });

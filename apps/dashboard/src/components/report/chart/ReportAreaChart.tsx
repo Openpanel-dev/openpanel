@@ -14,8 +14,6 @@ import {
   YAxis,
 } from 'recharts';
 
-import type { IChartLineType, IInterval } from '@openpanel/validation';
-
 import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';
 import { ReportChartTooltip } from './ReportChartTooltip';
@@ -24,16 +22,10 @@ import { ResponsiveContainer } from './ResponsiveContainer';
 
 interface ReportAreaChartProps {
   data: IChartData;
-  interval: IInterval;
-  lineType: IChartLineType;
 }
 
-export function ReportAreaChart({
-  lineType,
-  interval,
-  data,
-}: ReportAreaChartProps) {
-  const { editMode } = useChartContext();
+export function ReportAreaChart({ data }: ReportAreaChartProps) {
+  const { editMode, lineType, interval } = useChartContext();
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const formatDate = useFormatDateInterval(interval);
   const rechartData = useRechartDataModel(series);
@@ -65,7 +57,7 @@ export function ReportAreaChart({
             {series.map((serie) => {
               const color = getChartColor(serie.index);
               return (
-                <React.Fragment key={serie.name}>
+                <React.Fragment key={serie.id}>
                   <defs>
                     <linearGradient
                       id={`color${color}`}
@@ -87,7 +79,7 @@ export function ReportAreaChart({
                     </linearGradient>
                   </defs>
                   <Area
-                    key={serie.name}
+                    key={serie.id}
                     type={lineType}
                     isAnimationActive={false}
                     strokeWidth={2}

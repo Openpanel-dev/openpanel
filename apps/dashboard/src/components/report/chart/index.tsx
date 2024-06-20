@@ -1,22 +1,47 @@
 'use client';
 
+import { Suspense, useEffect, useState } from 'react';
+
 import type { IChartProps } from '@openpanel/validation';
 
 import { Funnel } from '../funnel';
 import { Chart } from './Chart';
-import { withChartProivder } from './ChartProvider';
+import { ChartLoading } from './ChartLoading';
+import type { IChartContextType } from './ChartProvider';
+import { ChartProvider } from './ChartProvider';
+import { MetricCardLoading } from './MetricCard';
 
-export const ChartSwitch = withChartProivder(function ChartSwitch(
-  props: IChartProps
-) {
-  if (props.chartType === 'funnel') {
-    return <Funnel {...props} />;
+export type IChartRoot = IChartContextType;
+
+export function ChartRoot(props: IChartContextType) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return props.chartType === 'metric' ? (
+      <MetricCardLoading />
+    ) : (
+      <ChartLoading />
+    );
   }
 
-  return <Chart {...props} />;
-});
+  return (
+    <Suspense
+      fallback={
+        props.chartType === 'metric' ? <MetricCardLoading /> : <ChartLoading />
+      }
+    >
+      <ChartProvider {...props}>
+        {props.chartType === 'funnel' ? <Funnel /> : <Chart />}
+      </ChartProvider>
+    </Suspense>
+  );
+}
 
-interface ChartSwitchShortcutProps {
+interface ChartRootShortcutProps {
   projectId: IChartProps['projectId'];
   range?: IChartProps['range'];
   previous?: IChartProps['previous'];
@@ -25,16 +50,16 @@ interface ChartSwitchShortcutProps {
   events: IChartProps['events'];
 }
 
-export const ChartSwitchShortcut = ({
+export const ChartRootShortcut = ({
   projectId,
   range = '7d',
   previous = false,
   chartType = 'linear',
   interval = 'day',
   events,
-}: ChartSwitchShortcutProps) => {
+}: ChartRootShortcutProps) => {
   return (
-    <ChartSwitch
+    <ChartRoot
       projectId={projectId}
       range={range}
       breakdowns={[]}

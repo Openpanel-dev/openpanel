@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import { ChartSwitchShortcut } from '@/components/report/chart';
+import { ChartRootShortcut } from '@/components/report/chart';
 import { Button } from '@/components/ui/button';
 import { KeyValue } from '@/components/ui/key-value';
 import {
@@ -195,7 +195,7 @@ export function EventDetails({ event, open, setOpen }: Props) {
                     Show all
                   </button>
                 </div>
-                <ChartSwitchShortcut
+                <ChartRootShortcut
                   projectId={event.projectId}
                   chartType="histogram"
                   events={[

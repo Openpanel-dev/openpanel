@@ -6,7 +6,7 @@ import { getChartColor } from '@/utils/theme';
 
 export type IRechartPayloadItem = {
   id: string;
-  name: string;
+  names: string[];
   color: string;
   event: { id: string; name: string };
   count: number;
@@ -39,7 +39,7 @@ export function useRechartDataModel(series: IChartData['series']) {
                       ...item,
                       id: serie.id,
                       event: serie.event,
-                      name: serie.name,
+                      names: serie.names,
                       color: getChartColor(idx),
                     } satisfies IRechartPayloadItem;
                   }

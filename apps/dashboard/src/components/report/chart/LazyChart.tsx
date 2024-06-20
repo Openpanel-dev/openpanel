@@ -3,11 +3,11 @@
 import React, { useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 
-import { ChartSwitch } from '.';
+import type { IChartRoot } from '.';
+import { ChartRoot } from '.';
 import { ChartLoading } from './ChartLoading';
-import type { ChartContextType } from './ChartProvider';
 
-export function LazyChart(props: ChartContextType) {
+export function LazyChart(props: IChartRoot) {
   const ref = useRef<HTMLDivElement>(null);
   const once = useRef(false);
   const { inViewport } = useInViewport(ref, undefined, {
@@ -23,7 +23,7 @@ export function LazyChart(props: ChartContextType) {
   return (
     <div ref={ref}>
       {once.current || inViewport ? (
-        <ChartSwitch {...props} editMode={false} />
+        <ChartRoot {...props} editMode={false} />
       ) : (
         <ChartLoading />
       )}

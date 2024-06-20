@@ -2,19 +2,15 @@
 
 import { api } from '@/trpc/client';
 
-import type { IChartInput, IChartProps } from '@openpanel/validation';
+import type { IChartInput } from '@openpanel/validation';
 
 import { ChartEmpty } from '../chart/ChartEmpty';
-import { withChartProivder } from '../chart/ChartProvider';
+import { useChartContext } from '../chart/ChartProvider';
 import { FunnelSteps } from './Funnel';
 
-export type ReportChartProps = IChartProps;
+export function Funnel() {
+  const { events, range, projectId } = useChartContext();
 
-export const Funnel = withChartProivder(function Chart({
-  events,
-  range,
-  projectId,
-}: ReportChartProps) {
   const input: IChartInput = {
     events,
     range,
@@ -38,4 +34,4 @@ export const Funnel = withChartProivder(function Chart({
       <FunnelSteps {...data} input={input} />
     </div>
   );
-});
+}

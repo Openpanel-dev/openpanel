@@ -65,7 +65,7 @@ export type Metrics = {
 
 export type IChartSerie = {
   id: string;
-  name: string;
+  names: string[];
   event: {
     id: string;
     name: string;

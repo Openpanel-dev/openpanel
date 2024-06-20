@@ -40,9 +40,9 @@ export const profileRouter = createTRPCRouter({
       sb.from = 'profiles';
       sb.where.project_id = `project_id = ${escape(projectId)}`;
       if (property.startsWith('properties.')) {
-        sb.select.values = `distinct mapValues(mapExtractKeyLike(properties, ${escape(
+        sb.select.values = `distinct arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
           property.replace(/^properties\./, '').replace('.*.', '.%.')
-        )})) as values`;
+        )}))) as values`;
       } else {
         sb.select.values = `${property} as values`;
       }

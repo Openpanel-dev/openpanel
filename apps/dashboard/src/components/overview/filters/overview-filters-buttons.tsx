@@ -5,6 +5,7 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
+import { getPropertyLabel } from '@/translations/properties';
 import { cn } from '@/utils/cn';
 import { X } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
@@ -47,7 +48,7 @@ export function OverviewFiltersButtons({
             icon={X}
             onClick={() => setFilter(filter.name, filter.value[0], 'is')}
           >
-            <span className="mr-1">{filter.name} is</span>
+            <span className="mr-1">{getPropertyLabel(filter.name)} is</span>
             <strong>{filter.value[0]}</strong>
           </Button>
         );

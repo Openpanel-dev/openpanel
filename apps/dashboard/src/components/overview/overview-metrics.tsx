@@ -1,7 +1,7 @@
 'use client';
 
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { ChartSwitch } from '@/components/report/chart';
+import { ChartRoot } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
@@ -205,7 +205,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
                 setMetric(index);
               }}
             >
-              <ChartSwitch hideID {...report} />
+              <ChartRoot hideID {...report} />
             </button>
           ))}
           <div
@@ -217,7 +217,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           </div>
         </div>
         <div className="card col-span-6 p-4">
-          <ChartSwitch
+          <ChartRoot
             key={selectedMetric.id}
             hideID
             {...selectedMetric}

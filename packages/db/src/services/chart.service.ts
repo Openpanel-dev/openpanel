@@ -24,10 +24,10 @@ export function getChartSql({
   sb.where.projectId = `project_id = ${escape(projectId)}`;
 
   if (event.name !== '*') {
-    sb.select.label = `${escape(event.name)} as label`;
+    sb.select.label_0 = `${escape(event.name)} as label_0`;
     sb.where.eventName = `name = ${escape(event.name)}`;
   } else {
-    sb.select.label = `'*' as label`;
+    sb.select.label_0 = `'*' as label_0`;
   }
 
   sb.select.count = `count(*) as count`;
@@ -60,11 +60,11 @@ export function getChartSql({
   }
 
   breakdowns.forEach((breakdown, index) => {
-    const key = index === 0 ? 'label' : `label_${index}`;
+    const key = `label_${index}`;
     const value = breakdown.name.startsWith('properties.')
-      ? `mapValues(mapExtractKeyLike(properties, ${escape(
+      ? `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
           breakdown.name.replace(/^properties\./, '').replace('.*.', '.%.')
-        )}))`
+        )})))`
       : escape(breakdown.name);
     sb.select[key] = breakdown.name.startsWith('properties.')
       ? `arrayElement(${value}, 1) as ${key}`
@@ -125,9 +125,9 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
     }
 
     if (name.startsWith('properties.')) {
-      const whereFrom = `mapValues(mapExtractKeyLike(properties, ${escape(
+      const whereFrom = `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
         name.replace(/^properties\./, '').replace('.*.', '.%.')
-      )}))`;
+      )})))`;
 
       switch (operator) {
         case 'is': {

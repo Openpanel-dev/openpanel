@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { ChartSwitch } from '@/components/report/chart';
+import { ChartRoot } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { getCountry } from '@/translations/countries';
 import { cn } from '@/utils/cn';
 
+import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
 import { LazyChart } from '../report/chart/LazyChart';
@@ -29,6 +31,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       title: 'Top countries',
       btn: 'Countries',
       chart: {
+        renderSerieName(name) {
+          return getCountry(name[0]) || NOT_SET_VALUE;
+        },
         limit: 10,
         projectId,
         startDate,
@@ -50,7 +55,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top countries',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -60,6 +65,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       title: 'Top regions',
       btn: 'Regions',
       chart: {
+        renderSerieName(name) {
+          return name[1] || NOT_SET_VALUE;
+        },
         limit: 10,
         projectId,
         startDate,
@@ -75,13 +83,17 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
         breakdowns: [
           {
             id: 'A',
+            name: 'country',
+          },
+          {
+            id: 'B',
             name: 'region',
           },
         ],
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top regions',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -91,6 +103,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       title: 'Top cities',
       btn: 'Cities',
       chart: {
+        renderSerieName(name) {
+          return name[1] || NOT_SET_VALUE;
+        },
         limit: 10,
         projectId,
         startDate,
@@ -106,13 +121,17 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
         breakdowns: [
           {
             id: 'A',
+            name: 'country',
+          },
+          {
+            id: 'B',
             name: 'city',
           },
         ],
         chartType,
         lineType: 'monotone',
         interval: interval,
-        name: 'Top sources',
+        name: 'Top cities',
         range: range,
         previous: previous,
         metric: 'sum',
@@ -149,14 +168,14 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
               switch (widget.key) {
                 case 'countries':
                   setWidget('regions');
-                  setFilter('country', item.name);
+                  setFilter('country', item.names[0]);
                   break;
                 case 'regions':
                   setWidget('cities');
-                  setFilter('region', item.name);
+                  setFilter('region', item.names[1]);
                   break;
                 case 'cities':
-                  setFilter('city', item.name);
+                  setFilter('city', item.names[1]);
                   break;
               }
             }}
@@ -169,7 +188,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
           <div className="title">Map</div>
         </WidgetHead>
         <WidgetBody>
-          <ChartSwitch
+          <ChartRoot
             hideID
             {...{
               projectId,

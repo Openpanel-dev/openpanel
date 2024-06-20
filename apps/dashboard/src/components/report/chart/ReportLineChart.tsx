@@ -1,15 +1,20 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import { api } from '@/trpc/client';
 import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
+import { isSameDay, isSameHour, isSameMonth } from 'date-fns';
 import { SplineIcon } from 'lucide-react';
+import { last, pathOr } from 'ramda';
 import {
+  Area,
   CartesianGrid,
+  ComposedChart,
   Legend,
   Line,
   LineChart,
@@ -27,49 +32,35 @@ import { useChartContext } from './ChartProvider';
 import { ReportChartTooltip } from './ReportChartTooltip';
 import { ReportTable } from './ReportTable';
 import { ResponsiveContainer } from './ResponsiveContainer';
+import { SerieIcon } from './SerieIcon';
+import { SerieName } from './SerieName';
 
 interface ReportLineChartProps {
   data: IChartData;
-  references: IServiceReference[];
-  interval: IInterval;
-  lineType: IChartLineType;
 }
 
-function CustomLegend(props: {
-  payload?: { value: string; payload: { fill: string } }[];
-}) {
-  if (!props.payload) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-      {props.payload
-        .filter((entry) => !entry.value.includes('noTooltip'))
-        .filter((entry) => !entry.value.includes(':prev'))
-        .map((entry) => (
-          <div className="flex gap-1" key={entry.value}>
-            <SplineIcon size={12} color={entry.payload.fill} />
-            <div
-              style={{
-                color: entry.payload.fill,
-              }}
-            >
-              {entry.value}
-            </div>
-          </div>
-        ))}
-    </div>
+export function ReportLineChart({ data }: ReportLineChartProps) {
+  const {
+    editMode,
+    previous,
+    interval,
+    projectId,
+    startDate,
+    endDate,
+    range,
+    lineType,
+  } = useChartContext();
+  const references = api.reference.getChartReferences.useQuery(
+    {
+      projectId,
+      startDate,
+      endDate,
+      range,
+    },
+    {
+      staleTime: 1000 * 60 * 5,
+    }
   );
-}
-
-export function ReportLineChart({
-  lineType,
-  interval,
-  data,
-  references,
-}: ReportLineChartProps) {
-  const { editMode, previous } = useChartContext();
   const formatDate = useFormatDateInterval(interval);
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(series);
@@ -96,20 +87,56 @@ export function ReportLineChart({
     </linearGradient>
   );
 
-  const useDashedLastLine = (series[0]?.data?.length || 0) > 2;
+  const lastSerieDataItem = last(series[0]?.data || [])?.date || new Date();
+  const useDashedLastLine = (() => {
+    if (interval === 'hour') {
+      return isSameHour(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'day') {
+      return isSameDay(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'month') {
+      return isSameMonth(lastSerieDataItem, new Date());
+    }
+
+    return false;
+  })();
+
+  const CustomLegend = useCallback(() => {
+    return (
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+        {series.map((serie) => (
+          <div
+            className="flex items-center gap-1"
+            key={serie.id}
+            style={{
+              color: getChartColor(serie.index),
+            }}
+          >
+            <SerieIcon name={serie.names} />
+            <SerieName name={serie.names} />
+          </div>
+        ))}
+      </div>
+    );
+  }, [series]);
+
+  const isAreaStyle = series.length === 1;
 
   return (
     <>
       <ResponsiveContainer>
         {({ width, height }) => (
-          <LineChart width={width} height={height} data={rechartData}>
+          <ComposedChart width={width} height={height} data={rechartData}>
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}
               vertical={false}
               className="stroke-def-200"
             />
-            {references.map((ref) => (
+            {references.data?.map((ref) => (
               <ReferenceLine
                 key={ref.id}
                 x={ref.date.getTime()}
@@ -150,18 +177,39 @@ export function ReportLineChart({
               tickLine={false}
             />
             {series.map((serie) => {
+              const color = getChartColor(serie.index);
               return (
-                <React.Fragment key={serie.name}>
+                <React.Fragment key={serie.id}>
                   <defs>
+                    {isAreaStyle && (
+                      <linearGradient
+                        id={`color${color}`}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor={color}
+                          stopOpacity={0.8}
+                        ></stop>
+                        <stop
+                          offset="100%"
+                          stopColor={color}
+                          stopOpacity={0.1}
+                        ></stop>
+                      </linearGradient>
+                    )}
                     {gradientTwoColors(
                       `hideAllButLastInterval_${serie.id}`,
                       'rgba(0,0,0,0)',
-                      getChartColor(serie.index),
+                      color,
                       lastIntervalPercent
                     )}
                     {gradientTwoColors(
                       `hideJustLastInterval_${serie.id}`,
-                      getChartColor(serie.index),
+                      color,
                       'rgba(0,0,0,0)',
                       lastIntervalPercent
                     )}
@@ -169,24 +217,30 @@ export function ReportLineChart({
                   <Line
                     dot={false}
                     type={lineType}
-                    name={serie.name}
+                    name={serie.id}
                     isAnimationActive={false}
                     strokeWidth={2}
                     dataKey={`${serie.id}:count`}
-                    stroke={
-                      useDashedLastLine
-                        ? 'transparent'
-                        : getChartColor(serie.index)
-                    }
+                    stroke={useDashedLastLine ? 'transparent' : color}
                     // Use for legend
-                    fill={getChartColor(serie.index)}
+                    fill={color}
                   />
+                  {isAreaStyle && (
+                    <Area
+                      name={`${serie.id}:area:noTooltip`}
+                      dataKey={`${serie.id}:count`}
+                      fill={`url(#color${color})`}
+                      type={lineType}
+                      isAnimationActive={false}
+                      fillOpacity={0.1}
+                    />
+                  )}
                   {useDashedLastLine && (
                     <>
                       <Line
                         dot={false}
                         type={lineType}
-                        name={`${serie.name}:dashed:noTooltip`}
+                        name={`${serie.id}:dashed:noTooltip`}
                         isAnimationActive={false}
                         strokeWidth={2}
                         dataKey={`${serie.id}:count`}
@@ -197,7 +251,7 @@ export function ReportLineChart({
                       <Line
                         dot={false}
                         type={lineType}
-                        name={`${serie.name}:solid:noTooltip`}
+                        name={`${serie.id}:solid:noTooltip`}
                         isAnimationActive={false}
                         strokeWidth={2}
                         dataKey={`${serie.id}:count`}
@@ -208,22 +262,22 @@ export function ReportLineChart({
                   {previous && (
                     <Line
                       type={lineType}
-                      name={`${serie.name}:prev`}
+                      name={`${serie.id}:prev`}
                       isAnimationActive={false}
                       strokeWidth={1}
                       dot={false}
                       strokeDasharray={'1 1'}
                       strokeOpacity={0.5}
                       dataKey={`${serie.id}:prev:count`}
-                      stroke={getChartColor(serie.index)}
+                      stroke={color}
                       // Use for legend
-                      fill={getChartColor(serie.index)}
+                      fill={color}
                     />
                   )}
                 </React.Fragment>
               );
             })}
-          </LineChart>
+          </ComposedChart>
         )}
       </ResponsiveContainer>
       {editMode && (

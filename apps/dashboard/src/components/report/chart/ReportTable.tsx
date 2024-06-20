@@ -13,16 +13,19 @@ import {
 import {
   Tooltip,
   TooltipContent,
+  Tooltiper,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useMappings } from '@/hooks/useMappings';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { useSelector } from '@/redux';
+import { getPropertyLabel } from '@/translations/properties';
 import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
+import { SerieName } from './SerieName';
 
 interface ReportTableProps {
   data: IChartData;
@@ -40,8 +43,8 @@ export function ReportTable({
   const { setPage, paginate, page } = usePagination(ROWS_LIMIT);
   const number = useNumber();
   const interval = useSelector((state) => state.report.interval);
+  const breakdowns = useSelector((state) => state.report.breakdowns);
   const formatDate = useFormatDateInterval(interval);
-  const getLabel = useMappings();
 
   function handleChange(name: string, checked: boolean) {
     setVisibleSeries((prev) => {
@@ -55,49 +58,61 @@ export function ReportTable({
 
   return (
     <>
-      <div className="grid grid-cols-[200px_1fr] overflow-hidden rounded-md border border-border">
+      <div className="grid grid-cols-[max(300px,30vw)_1fr] overflow-hidden rounded-md border border-border">
         <Table className="rounded-none border-b-0 border-l-0 border-t-0">
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              {breakdowns.length === 0 && <TableHead>Name</TableHead>}
+              {breakdowns.map((breakdown) => (
+                <TableHead key={breakdown.name}>
+                  {getPropertyLabel(breakdown.name)}
+                </TableHead>
+              ))}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="bg-def-100">
             {paginate(data.series).map((serie, index) => {
               const checked = !!visibleSeries.find(
-                (item) => item.name === serie.name
+                (item) => item.id === serie.id
               );
 
               return (
-                <TableRow key={serie.name}>
-                  <TableCell className="h-10">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        onCheckedChange={(checked) =>
-                          handleChange(serie.name, !!checked)
-                        }
-                        style={
-                          checked
-                            ? {
-                                background: getChartColor(index),
-                                borderColor: getChartColor(index),
-                              }
-                            : undefined
-                        }
-                        checked={checked}
-                      />
-                      <Tooltip delayDuration={200}>
-                        <TooltipTrigger asChild>
-                          <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                            {getLabel(serie.name)}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{getLabel(serie.name)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </TableCell>
+                <TableRow key={serie.id}>
+                  {serie.names.map((name, nameIndex) => {
+                    return (
+                      <TableCell className="h-10" key={name}>
+                        <div className="flex items-center gap-2">
+                          {nameIndex === 0 ? (
+                            <>
+                              <Checkbox
+                                onCheckedChange={(checked) =>
+                                  handleChange(serie.id, !!checked)
+                                }
+                                style={
+                                  checked
+                                    ? {
+                                        background: getChartColor(index),
+                                        borderColor: getChartColor(index),
+                                      }
+                                    : undefined
+                                }
+                                checked={checked}
+                              />
+                              <Tooltiper
+                                side="left"
+                                sideOffset={30}
+                                content={<SerieName name={serie.names} />}
+                              >
+                                {name}
+                              </Tooltiper>
+                            </>
+                          ) : (
+                            <SerieName name={name} />
+                          )}
+                        </div>
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               );
             })}
@@ -122,7 +137,7 @@ export function ReportTable({
             <TableBody>
               {paginate(data.series).map((serie) => {
                 return (
-                  <TableRow key={serie.name}>
+                  <TableRow key={serie.id}>
                     <TableCell className="h-10">
                       <div className="flex items-center gap-2 font-medium">
                         {number.format(serie.metrics.sum)}

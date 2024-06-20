@@ -7,6 +7,8 @@ import type { IToolTipProps } from '@/types';
 
 import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
+import { SerieIcon } from './SerieIcon';
+import { SerieName } from './SerieName';
 
 type ReportLineChartTooltipProps = IToolTipProps<{
   value: number;
@@ -53,7 +55,7 @@ export function ReportChartTooltip({
         ) as IRechartPayloadItem;
 
         return (
-          <React.Fragment key={data.name}>
+          <React.Fragment key={data.id}>
             {index === 0 && data.date && (
               <div className="flex justify-between gap-8">
                 <div>{formatDate(new Date(data.date))}</div>
@@ -65,8 +67,9 @@ export function ReportChartTooltip({
                 style={{ background: data.color }}
               />
               <div className="flex flex-1 flex-col">
-                <div className="min-w-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap font-medium">
-                  {getLabel(data.name)}
+                <div className="flex items-center gap-1">
+                  <SerieIcon name={data.names} />
+                  <SerieName name={data.names} />
                 </div>
                 <div className="flex justify-between gap-8">
                   <div>{number.formatWithUnit(data.count, unit)}</div>

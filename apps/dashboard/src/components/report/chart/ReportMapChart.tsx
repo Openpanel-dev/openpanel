@@ -18,7 +18,7 @@ export function ReportMapChart({ data }: ReportMapChartProps) {
   const mapData = useMemo(
     () =>
       series.map((s) => ({
-        country: s.name.toLowerCase(),
+        country: s.names[0]?.toLowerCase() ?? '',
         value: s.metrics[metric],
       })),
     [series, metric]

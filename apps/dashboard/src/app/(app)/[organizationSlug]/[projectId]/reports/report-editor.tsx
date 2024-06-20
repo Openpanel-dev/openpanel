@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
-import { ChartSwitch } from '@/components/report/chart';
+import { ChartRoot } from '@/components/report/chart';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
@@ -99,7 +99,7 @@ export default function ReportEditor({
       </StickyBelowHeader>
       <div className="flex flex-col gap-4 p-4" id="report-editor">
         {report.ready && (
-          <ChartSwitch {...report} projectId={projectId} editMode />
+          <ChartRoot {...report} projectId={projectId} editMode />
         )}
       </div>
       <SheetContent className="!max-w-lg" side="left">

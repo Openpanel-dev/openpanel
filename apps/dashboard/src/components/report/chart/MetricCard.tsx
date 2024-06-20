@@ -1,6 +1,5 @@
 'use client';
 
-import { ColorSquare } from '@/components/color-square';
 import { fancyMinutes, useNumber } from '@/hooks/useNumerFormatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -14,6 +13,7 @@ import {
   PreviousDiffIndicatorText,
 } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
+import { SerieName } from './SerieName';
 
 interface MetricCardProps {
   serie: IChartData['series'][number];
@@ -28,7 +28,7 @@ export function MetricCard({
   metric,
   unit,
 }: MetricCardProps) {
-  const { previousIndicatorInverted } = useChartContext();
+  const { previousIndicatorInverted, editMode } = useChartContext();
   const number = useNumber();
 
   const renderValue = (value: number, unitClassName?: string) => {
@@ -57,14 +57,15 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        'group relative h-[70px] overflow-hidden'
-        // '[#report-editor_&&]:card [#report-editor_&&]:px-4 [#report-editor_&&]:py-2'
+        'group relative h-[70px] overflow-hidden',
+        editMode && 'card h-[100px] px-4 py-2'
       )}
-      key={serie.name}
+      key={serie.id}
     >
       <div
         className={cn(
-          'pointer-events-none absolute -bottom-1 -left-1 -right-1 top-0 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50'
+          'pointer-events-none absolute -bottom-1 -left-1 -right-1 top-0 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50',
+          editMode && 'bottom-1'
         )}
       >
         <AutoSizer>
@@ -91,9 +92,8 @@ export function MetricCard({
       <div className="relative">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2 text-left font-semibold">
-            <ColorSquare>{serie.event.id}</ColorSquare>
             <span className="overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground">
-              {serie.name}
+              <SerieName name={serie.names} />
             </span>
           </div>
           {/* <PreviousDiffIndicator {...serie.metrics.previous[metric]} /> */}
