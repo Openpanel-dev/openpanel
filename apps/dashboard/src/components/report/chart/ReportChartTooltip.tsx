@@ -22,7 +22,6 @@ export function ReportChartTooltip({
   payload,
 }: ReportLineChartTooltipProps) {
   const { unit, interval } = useChartContext();
-  const getLabel = useMappings();
   const formatDate = useFormatDateInterval(interval);
   const number = useNumber();
   if (!active || !payload) {

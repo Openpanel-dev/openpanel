@@ -8,7 +8,7 @@ export type IRechartPayloadItem = {
   id: string;
   names: string[];
   color: string;
-  event: { id: string; name: string };
+  event: { id?: string; name: string };
   count: number;
   date: string;
   previous?: {

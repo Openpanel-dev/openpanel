@@ -217,7 +217,7 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
                       )}
                     </defs>
                     <Line
-                      dot={false}
+                      dot={isAreaStyle}
                       type={lineType}
                       name={serie.id}
                       isAnimationActive={false}
@@ -229,6 +229,7 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
                     />
                     {isAreaStyle && (
                       <Area
+                        dot={false}
                         name={`${serie.id}:area:noTooltip`}
                         dataKey={`${serie.id}:count`}
                         fill={`url(#color${color})`}
@@ -265,11 +266,9 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
                       <Line
                         type={lineType}
                         name={`${serie.id}:prev`}
-                        isAnimationActive={false}
-                        strokeWidth={1}
+                        isAnimationActive
                         dot={false}
-                        strokeDasharray={'1 1'}
-                        strokeOpacity={0.5}
+                        strokeOpacity={0.3}
                         dataKey={`${serie.id}:prev:count`}
                         stroke={color}
                         // Use for legend

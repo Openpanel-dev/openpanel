@@ -13,7 +13,7 @@ import {
   subYears,
 } from 'date-fns';
 import * as mathjs from 'mathjs';
-import { repeat, reverse } from 'ramda';
+import { pluck, repeat, reverse, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 
 import {
@@ -47,7 +47,7 @@ import type {
 } from '@openpanel/validation';
 
 function getEventLegend(event: IChartEvent) {
-  return event.displayName ?? event.name;
+  return event.displayName || event.name;
 }
 
 export function withFormula(
@@ -481,6 +481,7 @@ export async function getChartSerie(payload: IGetChartDataInput) {
     });
 }
 
+export type IGetChartSerie = Awaited<ReturnType<typeof getChartSeries>>[number];
 export async function getChartSeries(input: IChartInputWithDates) {
   const series = (
     await Promise.all(
@@ -501,6 +502,9 @@ export async function getChartSeries(input: IChartInputWithDates) {
 }
 
 export async function getChart(input: IChartInput) {
+  const includeEventName =
+    uniq(pluck('name', input.events)).length !==
+    pluck('name', input.events).length;
   const currentPeriod = getChartStartEndDate(input);
   const previousPeriod = getChartPrevStartEndDate({
     range: input.range,
@@ -518,6 +522,8 @@ export async function getChart(input: IChartInput) {
     );
   }
 
+  const getSerieId = (serie: IGetChartSerie) =>
+    [slug(serie.name.join('-')), serie.event.id].filter(Boolean).join('-');
   const result = await Promise.all(promises);
   const series = result[0]!;
   const previousSeries = result[1];
@@ -526,7 +532,7 @@ export async function getChart(input: IChartInput) {
   const final: FinalChart = {
     series: series.map((serie) => {
       const previousSerie = previousSeries?.find(
-        (item) => item.name.join('-') === serie.name.join('-')
+        (prevSerie) => getSerieId(prevSerie) === getSerieId(serie)
       );
       const metrics = {
         sum: sum(serie.data.map((item) => item.count)),
@@ -534,14 +540,20 @@ export async function getChart(input: IChartInput) {
         min: min(serie.data.map((item) => item.count)),
         max: max(serie.data.map((item) => item.count)),
       };
+      const event = {
+        id: serie.event.id,
+        name: serie.event.displayName || serie.event.name,
+      };
 
       return {
-        id: slug(serie.name.join('-')),
-        names: serie.name,
-        event: {
-          id: serie.event.id!,
-          name: serie.event.displayName ?? serie.event.name,
-        },
+        id: getSerieId(serie),
+        names: includeEventName
+          ? [
+              `(${event.id || event.name}) ${serie.name[0]}`,
+              ...serie.name.slice(1),
+            ]
+          : serie.name,
+        event,
         metrics: {
           ...metrics,
           ...(input.previous

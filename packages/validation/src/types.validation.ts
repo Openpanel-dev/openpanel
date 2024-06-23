@@ -67,7 +67,7 @@ export type IChartSerie = {
   id: string;
   names: string[];
   event: {
-    id: string;
+    id?: string;
     name: string;
   };
   metrics: Metrics;

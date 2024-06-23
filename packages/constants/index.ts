@@ -118,17 +118,14 @@ export const alphabetIds = [
 ] as const;
 
 export const deprecated_timeRanges = {
-  '30min': '30min',
   '1h': '1h',
-  today: 'today',
   '24h': '24h',
-  '7d': '7d',
   '14d': '14d',
   '1m': '1m',
   '3m': '3m',
   '6m': '6m',
   '1y': '1y',
-} as const;
+};
 
 export const metrics = {
   sum: 'sum',
