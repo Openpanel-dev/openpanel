@@ -502,9 +502,6 @@ export async function getChartSeries(input: IChartInputWithDates) {
 }
 
 export async function getChart(input: IChartInput) {
-  const includeEventName =
-    uniq(pluck('name', input.events)).length !==
-    pluck('name', input.events).length;
   const currentPeriod = getChartStartEndDate(input);
   const previousPeriod = getChartPrevStartEndDate({
     range: input.range,
@@ -529,6 +526,9 @@ export async function getChart(input: IChartInput) {
   const previousSeries = result[1];
   const limit = input.limit || 300;
   const offset = input.offset || 0;
+  const includeEventName =
+    uniq(pluck('name', input.events)).length !==
+      pluck('name', input.events).length && series.length > 1;
   const final: FinalChart = {
     series: series.map((serie) => {
       const previousSerie = previousSeries?.find(
