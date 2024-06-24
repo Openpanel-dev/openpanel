@@ -159,7 +159,15 @@ export const chartRouter = createTRPCRouter({
         userId: ctx.session.userId,
       });
       if (!access) {
-        throw TRPCAccessError('You do not have access to this project');
+        const share = await db.shareOverview.findFirst({
+          where: {
+            projectId: input.projectId,
+          },
+        });
+
+        if (!share) {
+          throw TRPCAccessError('You do not have access to this project');
+        }
       }
     } else {
       const share = await db.shareOverview.findFirst({
