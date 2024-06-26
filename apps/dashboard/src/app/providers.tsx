@@ -63,7 +63,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <OpenpanelProvider
-        clientId="7f1a992c-12bf-4def-b636-4aee3139e85d"
+        clientId="bda63168-ca41-4eb2-b9a4-24e6bb6d9d1b"
         profileId={userId || undefined}
         trackScreenViews
         trackOutgoingLinks

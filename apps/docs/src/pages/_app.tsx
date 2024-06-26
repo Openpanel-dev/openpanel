@@ -27,7 +27,7 @@ export default function App({ Component, pageProps }: AppProps) {
               (window.op.q = window.op.q || []).push(args);
             };
           window.op('ctor', {
-            clientId: 'e884ef1b-52d7-430a-b2c5-69c432faeba4',
+            clientId: 'bda63168-ca41-4eb2-b9a4-24e6bb6d9d1b',
             trackScreenViews: true,
             trackOutgoingLinks: true,
             trackAttributes: true,

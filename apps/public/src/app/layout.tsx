@@ -50,7 +50,7 @@ export default function RootLayout({
         <Footer />
       </body>
       <OpenpanelProvider
-        clientId="301c6dc1-424c-4bc3-9886-a8beab09b615"
+        clientId="bda63168-ca41-4eb2-b9a4-24e6bb6d9d1b"
         trackAttributes
         trackScreenViews
         trackOutgoingLinks
