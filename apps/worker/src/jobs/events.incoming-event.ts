@@ -27,6 +27,9 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     projectId,
     currentDeviceId,
     previousDeviceId,
+    // TODO: Remove after 2024-09-26
+    currentDeviceIdDeprecated,
+    previousDeviceIdDeprecated,
   } = job.data.payload;
   let deviceId: string | null = null;
 
@@ -106,20 +109,43 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     sessionEndKeys,
     `sessionEnd:${projectId}:${previousDeviceId}:`
   );
+  // TODO: Remove after 2024-09-26
+  const sessionEndJobCurrentDeviceIdDeprecated = await findJobByPrefix(
+    eventsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${currentDeviceIdDeprecated}:`
+  );
+  const sessionEndJobPreviousDeviceIdDeprecated = await findJobByPrefix(
+    eventsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${previousDeviceIdDeprecated}:`
+  );
 
-  const createSessionStart =
-    !sessionEndJobCurrentDeviceId && !sessionEndJobPreviousDeviceId;
+  let createSessionStart = false;
 
-  if (sessionEndJobCurrentDeviceId && !sessionEndJobPreviousDeviceId) {
+  if (sessionEndJobCurrentDeviceId) {
     deviceId = currentDeviceId;
     const diff = Date.now() - sessionEndJobCurrentDeviceId.timestamp;
     sessionEndJobCurrentDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
-  } else if (!sessionEndJobCurrentDeviceId && sessionEndJobPreviousDeviceId) {
+  } else if (sessionEndJobPreviousDeviceId) {
     deviceId = previousDeviceId;
     const diff = Date.now() - sessionEndJobPreviousDeviceId.timestamp;
     sessionEndJobPreviousDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
+  } else if (sessionEndJobCurrentDeviceIdDeprecated) {
+    deviceId = currentDeviceIdDeprecated;
+    const diff = Date.now() - sessionEndJobCurrentDeviceIdDeprecated.timestamp;
+    sessionEndJobCurrentDeviceIdDeprecated.changeDelay(
+      diff + SESSION_END_TIMEOUT
+    );
+  } else if (sessionEndJobPreviousDeviceIdDeprecated) {
+    deviceId = previousDeviceIdDeprecated;
+    const diff = Date.now() - sessionEndJobPreviousDeviceIdDeprecated.timestamp;
+    sessionEndJobPreviousDeviceIdDeprecated.changeDelay(
+      diff + SESSION_END_TIMEOUT
+    );
   } else {
     deviceId = currentDeviceId;
+    createSessionStart = true;
     // Queue session end
     eventsQueue.add(
       'event',

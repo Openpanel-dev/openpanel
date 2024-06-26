@@ -16,5 +16,8 @@ export async function getClientsByOrganizationSlug(organizationSlug: string) {
     include: {
       project: true,
     },
+    orderBy: {
+      createdAt: 'asc',
+    },
   });
 }

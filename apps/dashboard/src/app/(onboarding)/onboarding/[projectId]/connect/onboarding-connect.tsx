@@ -1,7 +1,7 @@
 'use client';
 
 import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel } from '@/components/forms/input-with-label';
+import CopyInput from '@/components/forms/copy-input';
 import { LinkButton } from '@/components/ui/button';
 import { useClientSecret } from '@/hooks/useClientSecret';
 import { LockIcon } from 'lucide-react';
@@ -36,13 +36,13 @@ const Connect = ({ project }: Props) => {
         </OnboardingDescription>
       }
     >
-      <div className="bg-def-200 flex flex-col gap-4 rounded-xl border p-4 md:p-6">
+      <div className="flex flex-col gap-4 rounded-xl border p-4 md:p-6">
         <div className="flex items-center gap-2 text-2xl capitalize">
           <LockIcon />
           Credentials
         </div>
-        <InputWithLabel label="Client ID" disabled value={client.id} />
-        <InputWithLabel label="Client Secret" disabled value={secret} />
+        <CopyInput label="Client ID" value={client.id} />
+        <CopyInput label="Secret" value={secret} />
       </div>
       {project.types.map((type) => {
         const Component = {

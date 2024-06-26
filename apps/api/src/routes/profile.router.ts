@@ -7,24 +7,25 @@ import type { FastifyPluginCallback } from 'fastify';
 const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.addHook('preHandler', async (req, reply) => {
     try {
-      const projectId = await validateSdkRequest(req.headers).catch((error) => {
+      const client = await validateSdkRequest(req.headers).catch((error) => {
         logger.error(error, 'Failed to validate sdk request');
         return null;
       });
-      if (!projectId) {
+      if (!client?.projectId) {
         return reply.status(401).send();
       }
-      req.projectId = projectId;
+      req.projectId = client.projectId;
+      req.client = client;
 
       const bot = req.headers['user-agent']
         ? isBot(req.headers['user-agent'])
         : null;
 
       if (bot) {
-        reply.log.warn({ ...req.headers, bot }, 'Bot detected (profile)');
-        reply.status(202).send('OK');
+        return reply.status(202).send('OK');
       }
     } catch (e) {
+      logger.error(e, 'Failed to create bot event');
       reply.status(401).send();
       return;
     }

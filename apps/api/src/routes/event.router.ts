@@ -17,16 +17,15 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
       reply
     ) => {
       try {
-        const projectId = await validateSdkRequest(req.headers).catch(
-          (error) => {
-            logger.error(error, 'Failed to validate sdk request');
-            return null;
-          }
-        );
-        if (!projectId) {
+        const client = await validateSdkRequest(req.headers).catch((error) => {
+          logger.error(error, 'Failed to validate sdk request');
+          return null;
+        });
+        if (!client?.projectId) {
           return reply.status(401).send();
         }
-        req.projectId = projectId;
+        req.projectId = client.projectId;
+        req.client = client;
 
         const bot = req.headers['user-agent']
           ? isBot(req.headers['user-agent'])
@@ -37,7 +36,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
             req.body?.properties?.path) as string | undefined;
           await createBotEvent({
             ...bot,
-            projectId,
+            projectId: client.projectId,
             path: path ?? '',
             createdAt: new Date(req.body?.timestamp),
           });

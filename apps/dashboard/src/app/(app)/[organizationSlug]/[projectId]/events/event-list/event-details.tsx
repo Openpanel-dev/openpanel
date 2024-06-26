@@ -34,6 +34,10 @@ export function EventDetails({ event, open, setOpen }: Props) {
 
   const common = [
     {
+      name: 'Origin',
+      value: event.origin,
+    },
+    {
       name: 'Duration',
       value: event.duration ? round(event.duration / 1000, 1) : undefined,
     },
@@ -154,7 +158,7 @@ export function EventDetails({ event, open, setOpen }: Props) {
                     {properties.map((item) => (
                       <KeyValue
                         key={item.name}
-                        name={item.name}
+                        name={item.name.replace(/^__/, '')}
                         value={item.value}
                         onClick={() => {
                           setFilter(

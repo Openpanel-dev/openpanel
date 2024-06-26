@@ -1,5 +1,3 @@
-import { clerkClient } from '@clerk/fastify';
-
 import { db, getProjectById } from '@openpanel/db';
 import { cacheable } from '@openpanel/redis';
 

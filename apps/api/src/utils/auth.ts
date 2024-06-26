@@ -2,7 +2,7 @@ import type { RawRequestDefaultExpression } from 'fastify';
 import jwt from 'jsonwebtoken';
 
 import { verifyPassword } from '@openpanel/common';
-import type { IServiceClient } from '@openpanel/db';
+import type { Client, IServiceClient } from '@openpanel/db';
 import { ClientType, db } from '@openpanel/db';
 
 import { logger } from './logger';
@@ -36,7 +36,7 @@ class SdkAuthError extends Error {
 
 export async function validateSdkRequest(
   headers: RawRequestDefaultExpression['headers']
-): Promise<string> {
+): Promise<Client> {
   const clientIdNew = headers['openpanel-client-id'] as string;
   const clientIdOld = headers['mixan-client-id'] as string;
   const clientSecretNew = headers['openpanel-client-secret'] as string;
@@ -83,17 +83,17 @@ export async function validateSdkRequest(
     });
 
     if (domainAllowed) {
-      return client.projectId;
+      return client;
     }
 
     if (client.cors === '*' && origin) {
-      return client.projectId;
+      return client;
     }
   }
 
   if (client.secret && clientSecret) {
     if (await verifyPassword(clientSecret, client.secret)) {
-      return client.projectId;
+      return client;
     }
   }
 

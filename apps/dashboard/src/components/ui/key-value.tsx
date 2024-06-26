@@ -20,10 +20,10 @@ export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
       )}
       {...{ href, onClick }}
     >
-      <div className="bg-black/5 p-1 px-2">{name}</div>
+      <div className="bg-black/5 p-1 px-2 capitalize">{name}</div>
       <div
         className={cn(
-          'text-highlight overflow-hidden text-ellipsis whitespace-nowrap bg-card p-1 px-2 font-mono',
+          'overflow-hidden text-ellipsis whitespace-nowrap bg-card p-1 px-2 font-mono text-highlight',
           clickable && 'group-hover:underline'
         )}
       >

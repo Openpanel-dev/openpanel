@@ -1,9 +1,9 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { clipboard } from '@/utils/clipboard';
-import { Copy, RocketIcon } from 'lucide-react';
+import { RocketIcon } from 'lucide-react';
 
 import type { IServiceClient } from '@openpanel/db';
 
+import CopyInput from '../forms/copy-input';
 import { Label } from '../ui/label';
 
 type Props = IServiceClient;
@@ -11,25 +11,10 @@ type Props = IServiceClient;
 export function CreateClientSuccess({ id, secret, cors }: Props) {
   return (
     <div className="grid gap-4">
-      <button className="text-left" onClick={() => clipboard(id)}>
-        <Label>Client ID</Label>
-        <div className="flex items-center justify-between rounded border-input bg-background p-2 px-3 font-mono text-sm">
-          {id}
-          <Copy size={16} />
-        </div>
-      </button>
+      <CopyInput label="Client ID" value={id} />
       {secret && (
         <div className="w-full">
-          <button
-            className="w-full text-left"
-            onClick={() => clipboard(secret)}
-          >
-            <Label>Client secret</Label>
-            <div className="flex items-center justify-between rounded border-input bg-background p-2 px-3 font-mono text-sm">
-              {secret}
-              <Copy size={16} />
-            </div>
-          </button>
+          <CopyInput label="Secret" value={secret} />
           {cors && (
             <p className="mt-1 text-xs text-muted-foreground">
               You will only need the secret if you want to send server events.
@@ -40,7 +25,7 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
       {cors && (
         <div className="text-left">
           <Label>CORS settings</Label>
-          <div className="flex items-center justify-between rounded border-input bg-background p-2 px-3 font-mono text-sm">
+          <div className="flex items-center justify-between rounded border-input bg-def-200 p-2 px-3 font-mono text-sm">
             {cors}
           </div>
         </div>

@@ -83,9 +83,9 @@ export default function ListProjects({ projects, clients }: ListProjectsProps) {
                               Client ID: ...{item.id.slice(-12)}
                             </Tooltiper>
                             <div className="text-muted-foreground">
-                              {item.secret
-                                ? 'Secret: Hidden'
-                                : `Website: ${item.cors}`}
+                              {item.cors &&
+                                item.cors !== '*' &&
+                                `Website: ${item.cors}`}
                             </div>
                             <div className="absolute right-4 top-4">
                               <ClientActions {...item} />

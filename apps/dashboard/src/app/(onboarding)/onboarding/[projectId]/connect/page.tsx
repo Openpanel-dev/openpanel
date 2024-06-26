@@ -1,5 +1,3 @@
-import { cookies } from 'next/headers';
-
 import { getCurrentOrganizations, getProjectWithClients } from '@openpanel/db';
 
 import OnboardingConnect from './onboarding-connect';

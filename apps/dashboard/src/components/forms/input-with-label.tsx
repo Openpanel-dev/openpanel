@@ -6,39 +6,56 @@ import type { InputProps } from '../ui/input';
 import { Label } from '../ui/label';
 import { Tooltiper } from '../ui/tooltip';
 
-type InputWithLabelProps = InputProps & {
+type WithLabel = {
+  children: React.ReactNode;
   label: string;
   error?: string | undefined;
   info?: string;
+  className?: string;
+};
+type InputWithLabelProps = InputProps & Omit<WithLabel, 'children'>;
+
+export const WithLabel = ({
+  children,
+  className,
+  label,
+  info,
+  error,
+}: WithLabel) => {
+  return (
+    <div className={className}>
+      <div className="mb-2 flex items-end justify-between">
+        <Label
+          className="mb-0 flex flex-1 shrink-0 items-center gap-1 whitespace-nowrap"
+          htmlFor={label}
+        >
+          {label}
+          {info && (
+            <Tooltiper content={info}>
+              <InfoIcon size={14} />
+            </Tooltiper>
+          )}
+        </Label>
+        {error && (
+          <Tooltiper asChild content={error}>
+            <div className="flex items-center gap-1 text-sm leading-none text-destructive">
+              Issues
+              <BanIcon size={14} />
+            </div>
+          </Tooltiper>
+        )}
+      </div>
+      {children}
+    </div>
+  );
 };
 
 export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
-  ({ label, className, info, ...props }, ref) => {
+  (props, ref) => {
     return (
-      <div className={className}>
-        <div className="mb-2 flex items-end justify-between">
-          <Label
-            className="mb-0 flex flex-1 shrink-0 items-center gap-1 whitespace-nowrap"
-            htmlFor={label}
-          >
-            {label}
-            {info && (
-              <Tooltiper content={info}>
-                <InfoIcon size={14} />
-              </Tooltiper>
-            )}
-          </Label>
-          {props.error && (
-            <Tooltiper asChild content={props.error}>
-              <div className="flex items-center gap-1 text-sm leading-none text-destructive">
-                Issues
-                <BanIcon size={14} />
-              </div>
-            </Tooltiper>
-          )}
-        </div>
-        <Input ref={ref} id={label} {...props} />
-      </div>
+      <WithLabel {...props}>
+        <Input ref={ref} id={props.label} {...props} />
+      </WithLabel>
     );
   }
 );

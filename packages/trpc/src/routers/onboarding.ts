@@ -1,7 +1,7 @@
-import { randomUUID } from 'crypto';
+import crypto from 'crypto';
 import type { z } from 'zod';
 
-import { hashPassword, slug, stripTrailingSlash } from '@openpanel/common';
+import { hashPassword, stripTrailingSlash } from '@openpanel/common';
 import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
 import type { ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
@@ -66,7 +66,7 @@ export const onboardingRouter = createTRPCRouter({
         },
       });
 
-      const secret = randomUUID();
+      const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
       const client = await db.client.create({
         data: {
           name: `${project.name} Client`,

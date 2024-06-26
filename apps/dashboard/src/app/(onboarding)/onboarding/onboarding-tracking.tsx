@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 import AnimateHeight from '@/components/animate-height';
 import { ButtonContainer } from '@/components/button-container';
 import { CheckboxItem } from '@/components/forms/checkbox-item';
-import { InputWithLabel } from '@/components/forms/input-with-label';
+import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import TagInput from '@/components/forms/tag-input';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
@@ -155,11 +156,41 @@ const Tracking = ({
               >
                 <AnimateHeight open={isWebsite && !isApp}>
                   <div className="p-4 pl-14">
-                    <InputWithLabel
-                      label="Domain"
-                      placeholder="https://example.com"
-                      error={form.formState.errors.domain?.message}
-                      {...form.register('domain')}
+                    <Controller
+                      name="domain"
+                      control={form.control}
+                      render={({ field }) => (
+                        <WithLabel
+                          label="Domain(s)"
+                          error={form.formState.errors.domain?.message}
+                        >
+                          <TagInput
+                            {...field}
+                            placeholder="Add a domain"
+                            value={field.value?.split(',') ?? []}
+                            renderTag={(tag) =>
+                              tag === '*' ? 'Allow domains' : tag
+                            }
+                            onChange={(newValue) => {
+                              field.onChange(
+                                newValue
+                                  .map((item) => {
+                                    const trimmed = item.trim();
+                                    if (
+                                      trimmed.startsWith('http://') ||
+                                      trimmed.startsWith('https://') ||
+                                      trimmed === '*'
+                                    ) {
+                                      return trimmed;
+                                    }
+                                    return `https://${trimmed}`;
+                                  })
+                                  .join(',')
+                              );
+                            }}
+                          />
+                        </WithLabel>
+                      )}
                     />
                   </div>
                 </AnimateHeight>

@@ -15,14 +15,34 @@ export async function postEvent(
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const origin = request.headers.origin!;
-  const salts = await getSalts();
+  const projectId = request.client?.projectId;
+
+  if (!projectId) {
+    reply.status(400).send('missing origin');
+    return;
+  }
+
+  const [salts, geo] = await Promise.all([getSalts(), parseIp(ip)]);
   const currentDeviceId = generateDeviceId({
     salt: salts.current,
-    origin: origin,
+    origin: projectId,
     ip,
     ua,
   });
   const previousDeviceId = generateDeviceId({
+    salt: salts.previous,
+    origin: projectId,
+    ip,
+    ua,
+  });
+  // TODO: Remove after 2024-09-26
+  const currentDeviceIdDeprecated = generateDeviceId({
+    salt: salts.current,
+    origin,
+    ip,
+    ua,
+  });
+  const previousDeviceIdDeprecated = generateDeviceId({
     salt: salts.previous,
     origin,
     ip,
@@ -34,13 +54,15 @@ export async function postEvent(
     payload: {
       projectId: request.projectId,
       headers: {
-        origin,
         ua,
       },
       event: request.body,
-      geo: await parseIp(ip),
+      geo,
       currentDeviceId,
       previousDeviceId,
+      // TODO: Remove after 2024-09-26
+      currentDeviceIdDeprecated,
+      previousDeviceIdDeprecated,
     },
   });
 

@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import AnimateHeight from '@/components/animate-height';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
+import TagInput from '@/components/forms/tag-input';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { CheckboxInput } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -25,9 +27,10 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 
 const validation = z.object({
   name: z.string().min(1),
-  cors: z.string().url().or(z.literal('')),
+  cors: z.string().min(1).or(z.literal('')),
   projectId: z.string(),
   type: z.enum(['read', 'write', 'root']),
+  crossDomain: z.boolean().optional(),
 });
 
 type IForm = z.infer<typeof validation>;
@@ -45,6 +48,7 @@ export default function AddClient(props: Props) {
       cors: '',
       projectId: props.projectId ?? projectId,
       type: 'write',
+      crossDomain: undefined,
     },
   });
   const [hasDomain, setHasDomain] = useState(true);
@@ -59,12 +63,19 @@ export default function AddClient(props: Props) {
     organizationSlug,
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
+    if (hasDomain && values.cors === '') {
+      return form.setError('cors', {
+        type: 'required',
+        message: 'Please add a domain',
+      });
+    }
     mutation.mutate({
       name: values.name,
       cors: hasDomain ? values.cors : null,
       projectId: values.projectId,
       organizationSlug,
       type: values.type,
+      crossDomain: values.crossDomain,
     });
   };
 
@@ -132,14 +143,59 @@ export default function AddClient(props: Props) {
 
             <div>
               <Label className="flex items-center justify-between">
-                <span>Domain</span>
+                <span>Domain(s)</span>
                 <Switch checked={hasDomain} onCheckedChange={setHasDomain} />
               </Label>
               <AnimateHeight open={hasDomain}>
-                <Input
-                  placeholder="https://example.com"
-                  error={form.formState.errors.cors?.message}
-                  {...form.register('cors')}
+                <Controller
+                  name="cors"
+                  control={form.control}
+                  render={({ field }) => (
+                    <TagInput
+                      {...field}
+                      error={form.formState.errors.cors?.message}
+                      placeholder="Add a domain"
+                      value={field.value?.split(',') ?? []}
+                      renderTag={(tag) => (tag === '*' ? 'Allow domains' : tag)}
+                      onChange={(newValue) => {
+                        field.onChange(
+                          newValue
+                            .map((item) => {
+                              const trimmed = item.trim();
+                              if (
+                                trimmed.startsWith('http://') ||
+                                trimmed.startsWith('https://') ||
+                                trimmed === '*'
+                              ) {
+                                return trimmed;
+                              }
+                              return `https://${trimmed}`;
+                            })
+                            .join(',')
+                        );
+                      }}
+                    />
+                  )}
+                />
+                <Controller
+                  name="crossDomain"
+                  control={form.control}
+                  render={({ field }) => {
+                    return (
+                      <CheckboxInput
+                        className="mt-4"
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        defaultChecked={field.value}
+                        onCheckedChange={field.onChange}
+                      >
+                        <div>Enable cross domain support</div>
+                        <div className="font-normal text-muted-foreground">
+                          This will let you track users across multiple domains
+                        </div>
+                      </CheckboxInput>
+                    );
+                  }}
                 />
               </AnimateHeight>
             </div>

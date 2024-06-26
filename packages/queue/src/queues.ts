@@ -18,11 +18,12 @@ export interface EventsQueuePayloadIncomingEvent {
       latitude: number | undefined;
     };
     headers: {
-      origin: string | undefined;
       ua: string | undefined;
     };
     currentDeviceId: string;
     previousDeviceId: string;
+    currentDeviceIdDeprecated: string;
+    previousDeviceIdDeprecated: string;
   };
 }
 export interface EventsQueuePayloadCreateEvent {
