@@ -194,7 +194,7 @@ export function FunnelSteps({
                     </span>
                     <div>
                       <span className="font-semibold">{step.count}</span>
-                      <button
+                      {/* <button
                         className="ml-2 underline"
                         onClick={() =>
                           pushModal('FunnelStepDetails', {
@@ -204,7 +204,7 @@ export function FunnelSteps({
                         }
                       >
                         Inspect
-                      </button>
+                      </button> */}
                     </div>
                   </div>
                 </div>

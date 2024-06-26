@@ -1,6 +1,7 @@
 'use client';
 
 import { useNumber } from '@/hooks/useNumerFormatter';
+import { utc } from '@/utils/date';
 import { formatDistanceToNow } from 'date-fns';
 
 import type { IProfileMetrics } from '@openpanel/db';
@@ -18,7 +19,7 @@ const ProfileMetrics = ({ data }: Props) => {
           First seen
         </div>
         <div className="text-lg font-semibold">
-          {formatDistanceToNow(data.firstSeen)}
+          {formatDistanceToNow(utc(data.firstSeen))}
         </div>
       </div>
       <div>
@@ -26,7 +27,7 @@ const ProfileMetrics = ({ data }: Props) => {
           Last seen
         </div>
         <div className="text-lg font-semibold">
-          {formatDistanceToNow(data.lastSeen)}
+          {formatDistanceToNow(utc(data.lastSeen))}
         </div>
       </div>
       <div>

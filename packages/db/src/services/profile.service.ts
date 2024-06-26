@@ -5,7 +5,6 @@ import type { IChartEventFilter } from '@openpanel/validation';
 
 import { ch, chQuery } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
-import { getEventFiltersWhereClause } from './chart.service';
 
 export type IProfileMetrics = {
   lastSeen: string;

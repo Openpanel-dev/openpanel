@@ -196,6 +196,75 @@ export default function OverviewTopDevices({
         metric: 'sum',
       },
     },
+    brands: {
+      title: 'Top Brands',
+      btn: 'Brands',
+      chart: {
+        limit: 10,
+        projectId,
+        startDate,
+        endDate,
+        events: [
+          {
+            segment: 'user',
+            filters,
+            id: 'A',
+            name: isPageFilter ? 'screen_view' : 'session_start',
+          },
+        ],
+        breakdowns: [
+          {
+            id: 'A',
+            name: 'brand',
+          },
+        ],
+        chartType,
+        lineType: 'monotone',
+        interval: interval,
+        name: 'Top Brands',
+        range: range,
+        previous: previous,
+        metric: 'sum',
+      },
+    },
+    models: {
+      title: 'Top Models',
+      btn: 'Models',
+      chart: {
+        renderSerieName(name) {
+          return name[1] || NOT_SET_VALUE;
+        },
+        limit: 10,
+        projectId,
+        startDate,
+        endDate,
+        events: [
+          {
+            segment: 'user',
+            filters,
+            id: 'A',
+            name: isPageFilter ? 'screen_view' : 'session_start',
+          },
+        ],
+        breakdowns: [
+          {
+            id: 'A',
+            name: 'brand',
+          },
+          {
+            id: 'B',
+            name: 'model',
+          },
+        ],
+        chartType,
+        lineType: 'monotone',
+        interval: interval,
+        name: 'Top Models',
+        range: range,
+        previous: previous,
+        metric: 'sum',
+      },
+    },
   });
 
   return (

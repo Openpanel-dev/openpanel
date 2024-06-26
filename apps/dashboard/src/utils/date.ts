@@ -45,3 +45,10 @@ const ta = new TimeAgo(getLocale());
 export function timeAgo(date: Date, style?: FormatStyleName) {
   return ta.format(new Date(date), style);
 }
+
+export function utc(date: string) {
+  if (date.match(/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}.\d{3}$/)) {
+    return new Date(`${date}Z`);
+  }
+  return new Date(date).toISOString();
+}
