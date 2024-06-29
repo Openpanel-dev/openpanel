@@ -1,0 +1,148 @@
+version: '3'
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - op_dashboard
+      - op_api
+
+  op_db:
+    image: postgres:14-alpine
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  op_kv:
+    image: redis:7.2.5-alpine
+    restart: always
+    volumes:
+      - kv-data:/data
+    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+
+  op_geo:
+    image: observabilitystack/geoip-api:latest
+    restart: always
+    ports:
+      - 127.0.0.1:7500:8080
+
+  op_ch:
+    image: clickhouse/clickhouse-server:23.3.7.5-alpine
+    restart: always
+    volumes:
+      - ch-data:/var/lib/clickhouse
+      - ch-logs:/var/log/clickhouse-server
+      - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
+      - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
+    environment:
+      - CLICKHOUSE_DB=openpanel
+    healthcheck:
+      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+
+  op_ch_migrator:
+    image: clickhouse/clickhouse-server:23.3.7.5-alpine
+    depends_on:
+      - op_ch
+    volumes:
+      - ../packages/db/clickhouse_init.sql:/migrations/clickhouse_init.sql
+    entrypoint: /bin/sh -c
+    command: >
+      "
+      echo 'Waiting for ClickHouse to start...';
+      while ! clickhouse-client --host op_ch --query 'SELECT 1;' 2>/dev/null; do
+        echo 'ClickHouse is unavailable - sleeping 1s...';
+        sleep 1;
+      done;
+
+      echo 'ClickHouse started. Running migrations...';
+      clickhouse-client --host op_ch --database=openpanel --queries-file /migrations/clickhouse_init.sql;
+      "
+
+  op_api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
+    restart: always
+    command: sh -c "sleep 10 && pnpm -r run migrate:deploy && pnpm start"
+    depends_on:
+      - op_db
+      - op_ch
+      - op_kv
+      - op_geo
+    ports:
+      - 127.0.0.1:7200:3000
+    env_file:
+      - .env
+
+  op_dashboard:
+    build:
+      context: ..
+      dockerfile: apps/dashboard/Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
+        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        - NEXT_PUBLIC_DASHBOARD_URL=${NEXT_PUBLIC_DASHBOARD_URL}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    restart: always
+    depends_on:
+      - op_db
+      - op_ch
+      - op_kv
+    ports:
+      - 127.0.0.1:7100:3000
+    env_file:
+      - .env
+
+  op_worker:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+      args:
+        - DATABASE_URL=${DATABASE_URL}
+    restart: always
+    depends_on:
+      - op_db
+      - op_ch
+      - op_kv
+    ports:
+      - 127.0.0.1:7300:3000
+    env_file:
+      - .env
+
+volumes:
+  db-data:
+    driver: local
+  kv-data:
+    driver: local
+  ch-data:
+    driver: local
+  ch-logs:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
+    driver: local
