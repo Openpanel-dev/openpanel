@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  op_proxy:
+  op-proxy:
     image: caddy:2-alpine
     restart: always
     ports:
@@ -12,10 +12,10 @@ services:
       - caddy-config:/config
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
     depends_on:
-      - op_dashboard
-      - op_api
+      - op-dashboard
+      - op-api
 
-  op_db:
+  op-db:
     image: postgres:14-alpine
     restart: always
     volumes:
@@ -28,20 +28,20 @@ services:
       timeout: 5s
       retries: 5
 
-  op_kv:
+  op-kv:
     image: redis:7.2.5-alpine
     restart: always
     volumes:
       - kv-data:/data
     command: ['redis-server', '--maxmemory-policy', 'noeviction']
 
-  op_geo:
+  op-geo:
     image: observabilitystack/geoip-api:latest
     restart: always
     ports:
       - 127.0.0.1:7500:8080
 
-  op_ch:
+  op-ch:
     image: clickhouse/clickhouse-server:23.3.7.5-alpine
     restart: always
     volumes:
@@ -63,10 +63,10 @@ services:
         soft: 262144
         hard: 262144
 
-  op_ch_migrator:
+  op-ch-migrator:
     image: clickhouse/clickhouse-server:23.3.7.5-alpine
     depends_on:
-      - op_ch
+      - op-ch
     volumes:
       - ../packages/db/clickhouse_init.sql:/migrations/clickhouse_init.sql
     environment:
@@ -77,16 +77,16 @@ services:
     command: >
       "
       echo 'Waiting for ClickHouse to start...';
-      while ! clickhouse-client --host op_ch --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --query 'SELECT 1;' 2>/dev/null; do
+      while ! clickhouse-client --host op-ch --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --query 'SELECT 1;' 2>/dev/null; do
         echo 'ClickHouse is unavailable - sleeping 1s...';
         sleep 1;
       done;
 
       echo 'ClickHouse started. Running migrations...';
-      clickhouse-client --host op_ch --database=$CLICKHOUSE_DB --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --queries-file /migrations/clickhouse_init.sql;
+      clickhouse-client --host op-ch --database=$CLICKHOUSE_DB --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --queries-file /migrations/clickhouse_init.sql;
       "
 
-  op_api:
+  op-api:
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
@@ -95,16 +95,16 @@ services:
     restart: always
     command: sh -c "sleep 10 && pnpm -r run migrate:deploy && pnpm start"
     depends_on:
-      - op_db
-      - op_ch
-      - op_kv
-      - op_geo
+      - op-db
+      - op-ch
+      - op-kv
+      - op-geo
     ports:
       - 127.0.0.1:7200:3000
     env_file:
       - .env
 
-  op_dashboard:
+  op-dashboard:
     build:
       context: ..
       dockerfile: apps/dashboard/Dockerfile
@@ -115,15 +115,15 @@ services:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     restart: always
     depends_on:
-      - op_db
-      - op_ch
-      - op_kv
+      - op-db
+      - op-ch
+      - op-kv
     ports:
       - 127.0.0.1:7100:3000
     env_file:
       - .env
 
-  op_worker:
+  op-worker:
     build:
       context: ..
       dockerfile: apps/worker/Dockerfile
@@ -131,9 +131,9 @@ services:
         - DATABASE_URL=${DATABASE_URL}
     restart: always
     depends_on:
-      - op_db
-      - op_ch
-      - op_kv
+      - op-db
+      - op-ch
+      - op-kv
     ports:
       - 127.0.0.1:7300:3000
     env_file:

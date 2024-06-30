@@ -298,14 +298,14 @@ async function initiateOnboarding() {
   console.log('');
   console.log('Creating .env file...\n');
   writeEnvFile({
-    CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op_ch:8123',
+    CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op-ch:8123',
     CLICKHOUSE_DB: envs.CLICKHOUSE_DB || 'openpanel',
     CLICKHOUSE_USER: envs.CLICKHOUSE_USER || 'openpanel',
     CLICKHOUSE_PASSWORD: envs.CLICKHOUSE_PASSWORD || 'password',
-    REDIS_URL: envs.REDIS_URL || 'redis://op_kv:6379',
+    REDIS_URL: envs.REDIS_URL || 'redis://op-kv:6379',
     DATABASE_URL:
       envs.DATABASE_URL ||
-      'postgresql://postgres:postgres@op_db:5432/postgres?schema=public',
+      'postgresql://postgres:postgres@op-db:5432/postgres?schema=public',
     DOMAIN_NAME: domainNameResponse.domainName,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       clerkResponse.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '',
@@ -315,20 +315,20 @@ async function initiateOnboarding() {
 
   console.log('Updating docker-compose.yml file...\n');
   if (envs.CLICKHOUSE_URL) {
-    removeServiceFromDockerCompose('op_ch');
-    removeServiceFromDockerCompose('op_ch_migrator');
+    removeServiceFromDockerCompose('op-ch');
+    removeServiceFromDockerCompose('op-ch-migrator');
   }
 
   if (envs.REDIS_URL) {
-    removeServiceFromDockerCompose('op_kv');
+    removeServiceFromDockerCompose('op-kv');
   }
 
   if (envs.DATABASE_URL) {
-    removeServiceFromDockerCompose('op_db');
+    removeServiceFromDockerCompose('op-db');
   }
 
   if (proxyResponse.proxy === 'Bring my own') {
-    removeServiceFromDockerCompose('op_proxy');
+    removeServiceFromDockerCompose('op-proxy');
   } else {
     writeCaddyfile(domainNameResponse.domainName);
     fs.copyFileSync(
