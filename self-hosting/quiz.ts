@@ -305,7 +305,7 @@ async function initiateOnboarding() {
     REDIS_URL: envs.REDIS_URL || 'redis://op_kv:6379',
     DATABASE_URL:
       envs.DATABASE_URL ||
-      'postgresql://postgres:postgres@op_db:5432/openpanel?schema=public',
+      'postgresql://postgres:postgres@op_db:5432/postgres?schema=public',
     DOMAIN_NAME: domainNameResponse.domainName,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       clerkResponse.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '',
