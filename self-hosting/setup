@@ -1,9 +1,12 @@
 #!/bin/bash
 
+NODE_VERSION=nvm install 20.15.0
+
 # Function to install Node.js
-require_node() {
-    echo "Install node before proceeding... exiting"
-    exit 1
+install_nvm_and_node() {
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+    source ~/.bashrc
+    nvm install $NODE_VERSION
 }
 
 # Function to install pnpm
@@ -14,7 +17,19 @@ install_pnpm() {
 
 # Check if Node.js is installed
 if ! command -v node >/dev/null 2>&1; then
-    require_node
+    echo "Do you wish to automatically install Node.js version $NODE_VERSION using NVM? (yes/no)"
+    read user_choice
+
+    case $user_choice in
+        [Yy]* )
+            install_nvm_and_node;;
+        [Nn]* )
+            echo "Please install Node.js version $NODE_VERSION by yourself as per your preference. Exiting script."
+            exit 1;;
+        * )
+            echo "Invalid input. Please answer yes or no."
+            exit 1;;
+    esac
 fi
 
 # Check if pnpm is installed

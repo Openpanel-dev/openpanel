@@ -301,7 +301,7 @@ async function initiateOnboarding() {
     CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op_ch:8123',
     CLICKHOUSE_DB: envs.CLICKHOUSE_DB || 'openpanel',
     CLICKHOUSE_USER: envs.CLICKHOUSE_USER || 'openpanel',
-    CLICKHOUSE_PASSWORD: envs.CLICKHOUSE_PASSWORD || '',
+    CLICKHOUSE_PASSWORD: envs.CLICKHOUSE_PASSWORD || 'password',
     REDIS_URL: envs.REDIS_URL || 'redis://op_kv:6379',
     DATABASE_URL:
       envs.DATABASE_URL ||
