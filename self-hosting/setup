@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# Function to install Node.js
+require_node() {
+    echo "Install node before proceeding... exiting"
+    exit 1
+}
+
+# Function to install pnpm
+install_pnpm() {
+    echo "Installing pnpm..."
+    npm install -g pnpm
+}
+
+# Check if Node.js is installed
+if ! command -v node >/dev/null 2>&1; then
+    require_node
+fi
+
+# Check if pnpm is installed
+if ! command -v pnpm >/dev/null 2>&1; then
+    install_pnpm
+fi
+
+pnpm --ignore-workspace install
+./node_modules/.bin/jiti quiz.ts

@@ -1,4 +1,0 @@
-your_domain.com {
-    reverse_proxy /api/v1* op_api:3000
-    reverse_proxy /* op_dashboard:3000
-}

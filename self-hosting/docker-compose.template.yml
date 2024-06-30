@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  caddy:
+  op_proxy:
     image: caddy:2-alpine
     restart: always
     ports:
@@ -50,7 +50,9 @@ services:
       - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/logging.xml:ro
       - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/logging.xml:ro
     environment:
-      - CLICKHOUSE_DB=openpanel
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     healthcheck:
       test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
       interval: 10s
@@ -67,17 +69,21 @@ services:
       - op_ch
     volumes:
       - ../packages/db/clickhouse_init.sql:/migrations/clickhouse_init.sql
+    environment:
+      - CLICKHOUSE_DB=${CLICKHOUSE_DB}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
     entrypoint: /bin/sh -c
     command: >
       "
       echo 'Waiting for ClickHouse to start...';
-      while ! clickhouse-client --host op_ch --query 'SELECT 1;' 2>/dev/null; do
+      while ! clickhouse-client --host op_ch --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --query 'SELECT 1;' 2>/dev/null; do
         echo 'ClickHouse is unavailable - sleeping 1s...';
         sleep 1;
       done;
 
       echo 'ClickHouse started. Running migrations...';
-      clickhouse-client --host op_ch --database=openpanel --queries-file /migrations/clickhouse_init.sql;
+      clickhouse-client --host op_ch --database=$CLICKHOUSE_DB --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --queries-file /migrations/clickhouse_init.sql;
       "
 
   op_api:

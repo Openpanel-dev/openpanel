@@ -1,0 +1,23 @@
+<clickhouse>
+    <logger>
+        <level>warning</level>
+        <console>true</console>
+    </logger>
+    
+    <!-- 
+    Avoid the warning: "Listen [::]:9009 failed: Address family for hostname not supported". 
+    If Docker has IPv6 disabled, bind ClickHouse to IPv4 to prevent this issue. 
+    Add this to the configuration to ensure it listens on all IPv4 interfaces:
+    <listen_host>0.0.0.0</listen_host>
+    -->
+
+    <!-- Stop all the unnecessary logging -->
+    <query_thread_log remove="remove"/>
+    <query_log remove="remove"/>
+    <text_log remove="remove"/>
+    <trace_log remove="remove"/>
+    <metric_log remove="remove"/>
+    <asynchronous_metric_log remove="remove"/>
+    <session_log remove="remove"/>
+    <part_log remove="remove"/>
+</clickhouse>

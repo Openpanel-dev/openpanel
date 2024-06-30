@@ -1,0 +1,13 @@
+$DOMAIN_NAME {
+    encode gzip
+
+    handle_path /worker* {
+        reverse_proxy op_worker:3000
+    }
+    
+    handle_path /api* {
+        reverse_proxy op_api:3000
+    }
+
+    reverse_proxy /* op_dashboard:3000
+}

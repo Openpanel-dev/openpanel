@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS openpanel;
 
-CREATE TABLE openpanel.events_v2 (
+CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
   `id` UUID DEFAULT generateUUIDv4(),
   `name` String,
   `sdk_name` String,
