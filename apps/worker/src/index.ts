@@ -39,6 +39,10 @@ async function start() {
       new BullMQAdapter(cronQueue),
     ],
     serverAdapter: serverAdapter,
+    options: {
+      uiConfig: {},
+      uiBasePath: '/worker',
+    },
   });
 
   app.use('/', serverAdapter.getRouter());
