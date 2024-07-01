@@ -8,6 +8,7 @@ export async function POST(request: Request) {
 
   if (payload.type === 'user.created') {
     const email = payload.data.email_addresses[0]?.email_address;
+    const emails = payload.data.email_addresses.map((e) => e.email_address);
 
     if (!email) {
       return Response.json(
@@ -27,7 +28,9 @@ export async function POST(request: Request) {
 
     const memberships = await db.member.findMany({
       where: {
-        email,
+        email: {
+          in: emails,
+        },
         userId: null,
       },
     });
