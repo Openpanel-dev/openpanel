@@ -55,11 +55,6 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/',
     handler: controller.postEvent,
   });
-  fastify.route({
-    method: 'GET',
-    url: '/',
-    handler: controller.postEvent,
-  });
   done();
 };
 
