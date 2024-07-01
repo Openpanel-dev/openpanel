@@ -15,26 +15,6 @@ export async function postEvent(
 ) {
   if (process.env.TEST_SELF_HOSTING) {
     try {
-      logger.info(
-        {
-          ['X-Forwarded-For']: request.headers['X-Forwarded-For'] as string,
-          ['x-real-ip']: request.headers['x-real-ip'] as string,
-          origin: request.headers.origin!,
-          'user-agent': request.headers['user-agent']!,
-          'Content-Type': 'application/json',
-          'openpanel-client-id': request.headers[
-            'openpanel-client-id'
-          ] as string,
-          'openpanel-client-secret': request.headers[
-            'openpanel-client-secret'
-          ] as string,
-          'mixan-client-id': request.headers['mixan-client-id'] as string,
-          'mixan-client-secret': request.headers[
-            'mixan-client-secret'
-          ] as string,
-        },
-        'Sending event to op.coderax.se'
-      );
       // Test batching on a different service
       await fetch('https://op.coderax.se/api/event', {
         headers: {
