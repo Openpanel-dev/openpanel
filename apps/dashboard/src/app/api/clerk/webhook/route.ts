@@ -90,7 +90,6 @@ export async function POST(request: Request) {
           deletedAt: new Date(),
           firstName: null,
           lastName: null,
-          email: `deleted+${payload.data.id}@openpanel.dev`,
         },
       }),
       db.projectAccess.deleteMany({
