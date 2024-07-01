@@ -66,7 +66,11 @@ export const organizationRouter = createTRPCRouter({
       );
 
       if (invitationId) {
-        await clerkClient.invitations.revokeInvitation(invitationId);
+        await clerkClient.invitations
+          .revokeInvitation(invitationId)
+          .catch(() => {
+            // Ignore errors, this will throw if the invitation is already accepted
+          });
       }
 
       return db.member.delete({

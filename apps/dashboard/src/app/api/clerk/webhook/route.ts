@@ -37,7 +37,7 @@ export async function POST(request: Request) {
 
     for (const membership of memberships) {
       const access = pathOr<string[]>([], ['meta', 'access'], membership);
-      db.$transaction([
+      await db.$transaction([
         // Update the member to link it to the user
         // This will remove the item from invitations
         db.member.update({

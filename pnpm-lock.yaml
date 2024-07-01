@@ -1161,10 +1161,10 @@ importers:
         specifier: 0.0.9-beta
         version: link:../sdk
       expo-application:
-        specifier: ^5.3.0
+        specifier: ^5.3.0 || ^5.8.4
         version: 5.3.1(expo@50.0.7)
       expo-constants:
-        specifier: ^14.4.2
+        specifier: ^14.4.2 || ^15.4.6
         version: 14.4.2(expo@50.0.7)
       react-native:
         specifier: ^0.73.4
@@ -11653,6 +11653,7 @@ packages:
 
   /glob@7.1.6:
     resolution: {integrity: sha512-LwaxwyZ72Lk7vZINtNNrywX0ZuLyStrdDtabefZKAY5ZGJhVtgdznluResxNmPitE0SAO+O26sWTHeKSI2wMBA==}
+    deprecated: Glob versions prior to v9 are no longer supported
     dependencies:
       fs.realpath: 1.0.0
       inflight: 1.0.6
@@ -11664,6 +11665,7 @@ packages:
 
   /glob@7.1.7:
     resolution: {integrity: sha512-OvD9ENzPLbegENnYP5UUfJIirTg4+XwMWGaQfQTY0JenxNvvIKP3U3/tAQSPIu/lHxXYSZmpXlUHeqAIdKzBLQ==}
+    deprecated: Glob versions prior to v9 are no longer supported
     dependencies:
       fs.realpath: 1.0.0
       inflight: 1.0.6
