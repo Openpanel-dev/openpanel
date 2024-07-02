@@ -27,6 +27,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    ports:
+      - 5431:5432
 
   op-kv:
     image: redis:7.2.5-alpine
@@ -34,12 +36,12 @@ services:
     volumes:
       - kv-data:/data
     command: ['redis-server', '--maxmemory-policy', 'noeviction']
+    ports:
+      - 6378:6379
 
   op-geo:
     image: observabilitystack/geoip-api:latest
     restart: always
-    ports:
-      - 127.0.0.1:7500:8080
 
   op-ch:
     image: clickhouse/clickhouse-server:23.3.7.5-alpine
@@ -62,6 +64,9 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    ports:
+      - 8999:9000
+      - 8122:8123
 
   op-ch-migrator:
     image: clickhouse/clickhouse-server:23.3.7.5-alpine
@@ -99,8 +104,6 @@ services:
       - op-ch
       - op-kv
       - op-geo
-    ports:
-      - 127.0.0.1:7200:3000
     env_file:
       - .env
 
@@ -118,8 +121,6 @@ services:
       - op-db
       - op-ch
       - op-kv
-    ports:
-      - 127.0.0.1:7100:3000
     env_file:
       - .env
 
@@ -134,8 +135,6 @@ services:
       - op-db
       - op-ch
       - op-kv
-    ports:
-      - 127.0.0.1:7300:3000
     env_file:
       - .env
 
