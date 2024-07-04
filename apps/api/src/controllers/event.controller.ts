@@ -15,17 +15,7 @@ export async function postEvent(
   }>,
   reply: FastifyReply
 ) {
-  const clientIp = getClientIp(request)!;
-  const ip = request.headers['x-client-ip'];
-  console.log({
-    clientIp,
-    ['X-Forwarded-For']: request.headers['X-Forwarded-For'],
-    ['x-real-ip']: request.headers['x-real-ip'],
-    ['x-client-ip']: request.headers['x-client-ip'],
-    ['CF-Connecting-IP']: request.headers['CF-Connecting-IP'],
-    Forwarded: request.headers.Forwarded,
-  });
-
+  const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const projectId = request.client?.projectId;
 
