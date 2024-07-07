@@ -69,6 +69,7 @@ type IPackageJsonWithExtra = IPackageJson & {
 function main() {
   const args = arg({
     '--name': String,
+    '--publish': Boolean,
     '--test': Boolean,
     '--skip-git': Boolean,
     // Semver
@@ -82,6 +83,7 @@ function main() {
   const pkgName = args['--name'];
   const type = args['--type'] as ReleaseType;
   const test = args['--test'];
+  const publish = args['--publish'];
   const packages: Record<string, IPackageJsonWithExtra> = {};
   const registry = test
     ? 'http://localhost:4873'
@@ -193,12 +195,14 @@ function main() {
   });
 
   // Publish
-  dependents.forEach((dependent) => {
-    console.log(`🚀 Publishing ${dependent} to ${registry}`);
-    execSync(`npm publish --access=public --registry ${registry}`, {
-      cwd: workspacePath(packages[dependent]!.localPath),
+  if (publish) {
+    dependents.forEach((dependent) => {
+      console.log(`🚀 Publishing ${dependent} to ${registry}`);
+      execSync(`npm publish --access=public --registry ${registry}`, {
+        cwd: workspacePath(packages[dependent]!.localPath),
+      });
     });
-  });
+  }
 
   // Restoring package.json
   const filesToRestore = dependents

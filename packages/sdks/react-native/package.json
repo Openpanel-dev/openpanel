@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/react-native",
-  "version": "0.0.9-beta",
+  "version": "0.0.10-beta",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
