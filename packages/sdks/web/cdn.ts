@@ -24,9 +24,11 @@ declare global {
 
     window.op = (t, ...args) => {
       // @ts-expect-error
-      const fn = op[t].bind(op);
+      const fn = op[t] ? op[t].bind(op) : undefined;
       if (typeof fn === 'function') {
         fn(...args);
+      } else {
+        console.warn(`op.js: ${t} is not a function`);
       }
     };
   }

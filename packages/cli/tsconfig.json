@@ -1,0 +1,8 @@
+{
+  "extends": "@openpanel/tsconfig/base.json",
+  "compilerOptions": {
+    "incremental": false,
+    "outDir": "dist"
+  },
+  "exclude": ["dist"]
+}
