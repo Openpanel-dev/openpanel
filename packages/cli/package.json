@@ -1,0 +1,41 @@
+{
+  "name": "@openpanel/cli",
+  "version": "0.0.1-beta",
+  "module": "index.ts",
+  "bin": {
+    "openpanel": "dist/bin/cli.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "lint": "eslint .",
+    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "arg": "^5.0.2",
+    "glob": "^10.4.3",
+    "inquirer": "^9.3.5",
+    "ramda": "^0.29.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@openpanel/db": "workspace:^",
+    "@openpanel/eslint-config": "workspace:*",
+    "@openpanel/prettier-config": "workspace:*",
+    "@openpanel/sdk": "workspace:*",
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "^20.14.10",
+    "@types/ramda": "^0.30.1",
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "tsup": "^7.2.0",
+    "typescript": "^5.2.2"
+  },
+  "eslintConfig": {
+    "root": true,
+    "extends": [
+      "@openpanel/eslint-config/base"
+    ]
+  },
+  "prettier": "@openpanel/prettier-config"
+}

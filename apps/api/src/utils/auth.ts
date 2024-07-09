@@ -128,6 +128,36 @@ export async function validateExportRequest(
   return client;
 }
 
+export async function validateImportRequest(
+  headers: RawRequestDefaultExpression['headers']
+): Promise<IServiceClient> {
+  const clientId = headers['openpanel-client-id'] as string;
+  const clientSecret = (headers['openpanel-client-secret'] as string) || '';
+  const client = await db.client.findUnique({
+    where: {
+      id: clientId,
+    },
+  });
+
+  if (!client) {
+    throw new Error('Import: Invalid client id');
+  }
+
+  if (!client.secret) {
+    throw new Error('Import: Client has no secret');
+  }
+
+  if (client.type === ClientType.write) {
+    throw new Error('Import: Client is not allowed to import');
+  }
+
+  if (!(await verifyPassword(clientSecret, client.secret))) {
+    throw new Error('Import: Invalid client secret');
+  }
+
+  return client;
+}
+
 export function validateClerkJwt(token?: string) {
   if (!token) {
     return null;
