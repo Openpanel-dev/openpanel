@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
-  CommandGroup,
   CommandInput,
   CommandItem,
 } from '@/components/ui/command';
@@ -18,6 +17,7 @@ import {
 import { cn } from '@/utils/cn';
 import type { LucideIcon } from 'lucide-react';
 import { Check, ChevronsUpDown } from 'lucide-react';
+import VirtualList from 'rc-virtual-list';
 
 export interface ComboboxProps<T> {
   placeholder: string;
@@ -123,30 +123,33 @@ export function Combobox<T extends string>({
           ) : (
             <CommandEmpty>Nothing selected</CommandEmpty>
           )}
-          <div className="over-x-hidden max-h-[300px] overflow-y-auto">
-            <CommandGroup>
-              {items.map((item) => (
-                <CommandItem
-                  key={item.value}
-                  value={item.value}
-                  onSelect={(currentValue) => {
-                    const value = find(currentValue)?.value ?? currentValue;
-                    onChange(value as T);
-                    setOpen(false);
-                  }}
-                  {...(item.disabled && { disabled: true })}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4 flex-shrink-0',
-                      value === item.value ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                  {item.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </div>
+          <VirtualList
+            height={300}
+            data={items}
+            itemHeight={32}
+            itemKey="value"
+          >
+            {(item) => (
+              <CommandItem
+                key={item.value}
+                value={item.value}
+                onSelect={(currentValue) => {
+                  const value = find(currentValue)?.value ?? currentValue;
+                  onChange(value as T);
+                  setOpen(false);
+                }}
+                {...(item.disabled && { disabled: true })}
+              >
+                <Check
+                  className={cn(
+                    'mr-2 h-4 w-4 flex-shrink-0',
+                    value === item.value ? 'opacity-100' : 'opacity-0'
+                  )}
+                />
+                {item.label}
+              </CommandItem>
+            )}
+          </VirtualList>
         </Command>
       </PopoverContent>
     </Popover>
