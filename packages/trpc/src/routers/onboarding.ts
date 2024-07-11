@@ -2,7 +2,14 @@ import crypto from 'crypto';
 import type { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
-import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
+import {
+  db,
+  getCurrentOrganizations,
+  getCurrentProjects,
+  getId,
+  getOrganizationBySlug,
+  getUserById,
+} from '@openpanel/db';
 import type { ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
@@ -30,6 +37,35 @@ async function createOrGetOrganization(
 }
 
 export const onboardingRouter = createTRPCRouter({
+  skipOnboardingCheck: protectedProcedure.query(async ({ ctx }) => {
+    const members = await db.member.findMany({
+      where: {
+        userId: ctx.session.userId,
+      },
+    });
+
+    if (members.length > 0) {
+      return {
+        canSkip: true,
+        url: `/${members[0]?.organizationId}`,
+      };
+    }
+
+    const projectAccess = await db.projectAccess.findMany({
+      where: {
+        userId: ctx.session.userId,
+      },
+    });
+
+    if (projectAccess.length > 0) {
+      return {
+        canSkip: true,
+        url: `/${projectAccess[0]?.organizationId}/${projectAccess[0]?.projectId}`,
+      };
+    }
+
+    return { canSkip: false, url: null };
+  }),
   project: protectedProcedure
     .input(zOnboardingProject)
     .mutation(async ({ input, ctx }) => {
