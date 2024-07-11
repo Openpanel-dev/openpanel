@@ -128,6 +128,7 @@ export function Combobox<T extends string>({
             data={items}
             itemHeight={32}
             itemKey="value"
+            className="min-w-60"
           >
             {(item) => (
               <CommandItem
