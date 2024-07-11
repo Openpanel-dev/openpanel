@@ -2,14 +2,7 @@ import crypto from 'crypto';
 import type { z } from 'zod';
 
 import { hashPassword, stripTrailingSlash } from '@openpanel/common';
-import {
-  db,
-  getCurrentOrganizations,
-  getCurrentProjects,
-  getId,
-  getOrganizationBySlug,
-  getUserById,
-} from '@openpanel/db';
+import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
 import type { ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
