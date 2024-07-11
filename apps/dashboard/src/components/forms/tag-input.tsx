@@ -42,6 +42,54 @@ const TagInput = ({
     inputRef.current?.focus();
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+
+      const tagAlreadyExists = value.some(
+        (tag) => tag.toLowerCase() === inputValue.toLowerCase()
+      );
+
+      if (inputValue) {
+        if (tagAlreadyExists) {
+          animate(
+            `span[data-tag="${inputValue.toLowerCase()}"]`,
+            {
+              scale: [1, 1.3, 1],
+            },
+            {
+              duration: 0.3,
+            }
+          );
+          return;
+        }
+
+        appendTag(inputValue);
+        setInputValue('');
+      }
+    }
+
+    if (e.key === 'Backspace' && inputValue === '') {
+      if (!isMarkedForDeletion) {
+        setIsMarkedForDeletion(true);
+        return;
+      }
+      const last = value[value.length - 1];
+      if (last) {
+        removeTag(last);
+      }
+      setIsMarkedForDeletion(false);
+      setInputValue('');
+    }
+  };
+
+  const handleBlur = () => {
+    if (inputValue) {
+      appendTag(inputValue);
+      setInputValue('');
+    }
+  };
+
   useEffect(() => {
     if (inputValue.length > 0) {
       setIsMarkedForDeletion(false);
@@ -91,46 +139,8 @@ const TagInput = ({
         className="min-w-20 flex-1 py-1 text-sm focus-visible:outline-none"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-
-            const tagAlreadyExists = value.some(
-              (tag) => tag.toLowerCase() === inputValue.toLowerCase()
-            );
-
-            if (inputValue) {
-              if (tagAlreadyExists) {
-                animate(
-                  `span[data-tag="${inputValue.toLowerCase()}"]`,
-                  {
-                    scale: [1, 1.3, 1],
-                  },
-                  {
-                    duration: 0.3,
-                  }
-                );
-                return;
-              }
-
-              appendTag(inputValue);
-              setInputValue('');
-            }
-          }
-
-          if (e.key === 'Backspace' && inputValue === '') {
-            if (!isMarkedForDeletion) {
-              setIsMarkedForDeletion(true);
-              return;
-            }
-            const last = value[value.length - 1];
-            if (last) {
-              removeTag(last);
-            }
-            setIsMarkedForDeletion(false);
-            setInputValue('');
-          }
-        }}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
       />
     </div>
   );
