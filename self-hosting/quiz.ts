@@ -1,4 +1,5 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
@@ -35,6 +36,16 @@ export interface DockerComposeFile {
 
 const stripTrailingSlash = (str: string) =>
   str.endsWith('/') ? str.slice(0, -1) : str;
+
+function searchAndReplaceDockerCompose(search: string, replace: string) {
+  const dockerComposePath = path.resolve(__dirname, 'docker-compose.yml');
+  const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
+
+  fs.writeFileSync(
+    dockerComposePath,
+    dockerComposeContent.replaceAll(search, replace)
+  );
+}
 
 function removeServiceFromDockerCompose(serviceName: string) {
   const dockerComposePath = path.resolve(__dirname, 'docker-compose.yml');
@@ -295,6 +306,30 @@ async function initiateOnboarding() {
     },
   ]);
 
+  // OS
+
+  const cpus = await inquirer.prompt([
+    {
+      type: 'input',
+      name: 'CPUS',
+      default: os.cpus().length,
+      message: 'How many CPUs do you have?',
+      validate: (value) => {
+        const parsed = parseInt(value, 10);
+
+        if (Number.isNaN(parsed)) {
+          return 'Please enter a valid number';
+        }
+
+        if (parsed < 1) {
+          return 'Please enter a number greater than 0';
+        }
+
+        return true;
+      },
+    },
+  ]);
+
   console.log('');
   console.log('Creating .env file...\n');
   writeEnvFile({
@@ -331,11 +366,14 @@ async function initiateOnboarding() {
     removeServiceFromDockerCompose('op-proxy');
   } else {
     writeCaddyfile(domainNameResponse.domainName);
-    fs.copyFileSync(
-      path.resolve(__dirname, 'docker-compose.template.yml'),
-      path.resolve(__dirname, 'docker-compose.yml')
-    );
   }
+
+  searchAndReplaceDockerCompose('$OP_WORKER_REPLICAS', cpus.CPUS);
+
+  fs.copyFileSync(
+    path.resolve(__dirname, 'docker-compose.template.yml'),
+    path.resolve(__dirname, 'docker-compose.yml')
+  );
 
   console.log(
     `Make sure that your webhook is pointing at ${domainNameResponse.domainName}/api/webhook/clerk\n`
