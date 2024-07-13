@@ -4,7 +4,9 @@ export function getProfileName(
   profile: IServiceProfile | undefined | null,
   short = true
 ) {
-  if (!profile) return 'Unknown';
+  if (!profile) {
+    return '';
+  }
 
   if (!profile.isExternal) {
     if (short) {
