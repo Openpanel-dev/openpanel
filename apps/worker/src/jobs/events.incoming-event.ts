@@ -126,19 +126,20 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       throw new Error('Invalid session end job');
     }
 
-    await sessionEnd.job.remove();
+    await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
+  } else {
+    await sessionsQueue.add(
+      'session',
+      {
+        type: 'createSessionEnd',
+        payload: sessionEndPayload,
+      },
+      {
+        delay: SESSION_END_TIMEOUT,
+        jobId: sessionEndJobId,
+      }
+    );
   }
-  sessionsQueue.add(
-    'session',
-    {
-      type: 'createSessionEnd',
-      payload: sessionEndPayload,
-    },
-    {
-      delay: SESSION_END_TIMEOUT,
-      jobId: sessionEndJobId,
-    }
-  );
 
   const payload: Omit<IServiceCreateEventPayload, 'id'> = {
     name: body.name,
