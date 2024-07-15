@@ -7,6 +7,21 @@ import { redis } from '@openpanel/redis';
 
 async function debugStalledEvents() {
   const keys = await redis.keys('bull:sessions:sessionEnd*');
+  const delayedZRange = await redis.zrange(
+    'bull:sessions:delayed',
+    0,
+    -1,
+    'WITHSCORES'
+  );
+  const delayedValues = delayedZRange.reduce(
+    (acc, item, index, array) => {
+      if (index % 2 === 0) {
+        acc[item] = Number(array[index + 1]) / 0x1000;
+      }
+      return acc;
+    },
+    [] as Record<string, number>
+  );
   const opKeys = await redis.keys('op:*');
   const stalledEvents = await redis.lrange('op:buffer:events:stalled', 0, -1);
   // keys.forEach((key) => {
@@ -97,7 +112,7 @@ async function debugStalledEvents() {
   delayedJobs.sort((a, b) => a.timestamp + a.delay - (b.timestamp + b.delay));
   let delayedJobsCount = 0;
   delayedJobs.forEach((job) => {
-    const date = new Date(job.timestamp + job.delay);
+    const date = new Date(delayedValues[job.id]);
     // if date is in the past
     // if (date.getTime() - 1000 * 60 * 5 < Date.now()) {
     if (date.getTime() < Date.now()) {
