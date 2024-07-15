@@ -125,24 +125,16 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
 
   if (sessionEndJobCurrentDeviceId) {
     deviceId = currentDeviceId;
-    const diff = Date.now() - sessionEndJobCurrentDeviceId.timestamp;
-    sessionEndJobCurrentDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
+    sessionEndJobCurrentDeviceId.changeDelay(SESSION_END_TIMEOUT);
   } else if (sessionEndJobPreviousDeviceId) {
     deviceId = previousDeviceId;
-    const diff = Date.now() - sessionEndJobPreviousDeviceId.timestamp;
-    sessionEndJobPreviousDeviceId.changeDelay(diff + SESSION_END_TIMEOUT);
+    sessionEndJobPreviousDeviceId.changeDelay(SESSION_END_TIMEOUT);
   } else if (sessionEndJobCurrentDeviceIdDeprecated) {
     deviceId = currentDeviceIdDeprecated;
-    const diff = Date.now() - sessionEndJobCurrentDeviceIdDeprecated.timestamp;
-    sessionEndJobCurrentDeviceIdDeprecated.changeDelay(
-      diff + SESSION_END_TIMEOUT
-    );
+    sessionEndJobCurrentDeviceIdDeprecated.changeDelay(SESSION_END_TIMEOUT);
   } else if (sessionEndJobPreviousDeviceIdDeprecated) {
     deviceId = previousDeviceIdDeprecated;
-    const diff = Date.now() - sessionEndJobPreviousDeviceIdDeprecated.timestamp;
-    sessionEndJobPreviousDeviceIdDeprecated.changeDelay(
-      diff + SESSION_END_TIMEOUT
-    );
+    sessionEndJobPreviousDeviceIdDeprecated.changeDelay(SESSION_END_TIMEOUT);
   } else {
     deviceId = currentDeviceId;
     createSessionStart = true;
