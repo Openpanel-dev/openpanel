@@ -26,5 +26,10 @@
     "semver": "^7.5.4",
     "typescript": "^5.2.2"
   },
-  "prettier": "@openpanel/prettier-config"
+  "prettier": "@openpanel/prettier-config",
+  "pnpm": {
+    "patchedDependencies": {
+      "@bull-board/api@5.21.0": "patches/@bull-board__api@5.21.0.patch"
+    }
+  }
 }
