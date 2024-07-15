@@ -12,8 +12,6 @@ function cli() {
     }
   );
 
-  console.log('cli args', args);
-
   const [command] = args._;
 
   switch (command) {

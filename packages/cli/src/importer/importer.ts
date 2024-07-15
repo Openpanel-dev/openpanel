@@ -1,9 +1,7 @@
 import { randomUUID } from 'crypto';
 import fs from 'fs';
-import os from 'os';
-import v8 from 'v8';
 import { glob } from 'glob';
-import { assocPath, clone, last, prop, uniqBy } from 'ramda';
+import { assocPath, clone, prop, uniqBy } from 'ramda';
 
 import type { IClickhouseEvent } from '@openpanel/db';
 
@@ -11,29 +9,6 @@ import { parsePath } from './copy.url';
 
 const BATCH_SIZE = 8000; // Define your batch size
 const SLEEP_TIME = 100; // Define your sleep time between batches
-
-function checkNodeMemoryLimit() {
-  const totalHeapSize = v8.getHeapStatistics().total_available_size;
-  return totalHeapSize;
-}
-
-function checkMemoryUsage() {
-  const _totalMemory = os.totalmem();
-  const totalMemory = checkNodeMemoryLimit();
-  console.log({
-    totalMemory,
-    _totalMemory,
-  });
-
-  const usedMemory = process.memoryUsage().heapUsed;
-  const percentUsed = (usedMemory / totalMemory) * 100;
-  return percentUsed;
-}
-
-function shouldLoadMoreFiles() {
-  const percentUsed = checkMemoryUsage();
-  return percentUsed < 80; // or any other threshold you deem appropriate
-}
 
 function progress(value: string) {
   process.stdout.clearLine(0);
@@ -204,37 +179,6 @@ function generateSessionId(): string {
   return randomUUID();
 }
 
-export async function loadFilesBatcher() {
-  const files = await glob(['../../../../Downloads/mp-data/*.txt'], {
-    root: '/',
-  });
-
-  function chunks(array: string[], size: number) {
-    const results = [];
-    while (array.length) {
-      results.push(array.splice(0, size));
-    }
-    return results;
-  }
-
-  const times = [];
-  const chunksArray = chunks(files, 5);
-  let chunkIndex = 0;
-  for (const chunk of chunksArray.slice(0, 1)) {
-    if (times.length > 0) {
-      // Print out how much time is approximately left
-      const average = times.reduce((a, b) => a + b) / times.length;
-      const remaining = (chunksArray.length - chunkIndex) * average;
-      console.log(`Estimated time left: ${remaining / 1000 / 60} minutes`);
-    }
-    console.log('Processing chunk:', chunkIndex);
-    chunkIndex++;
-    const d = Date.now();
-    await loadFiles(chunk);
-    times.push(Date.now() - d);
-  }
-}
-
 async function loadFiles(files: string[] = []) {
   const data: any[] = [];
   const filesToParse = files.slice(0, 10);
@@ -245,7 +189,6 @@ async function loadFiles(files: string[] = []) {
       const content: any[] = [];
 
       readStream.on('data', (chunk) => {
-        // console.log(`Received ${chunk.length} bytes of data.`);
         content.push(chunk.toString('utf-8'));
       });
 
@@ -324,13 +267,6 @@ async function loadFiles(files: string[] = []) {
   const sessions = generateSessionEvents(a);
 
   const events = sessions.flatMap((session) => {
-    if (
-      session.profileId === '594447' ||
-      session.deviceId ===
-        '19081f09f2d666-082ba152fdf7548-7f7a3660-5a900-19081f09f2d666'
-    ) {
-      console.log(session);
-    }
     return [
       session.firstEvent && {
         ...session.firstEvent,
@@ -407,7 +343,6 @@ async function loadFiles(files: string[] = []) {
       await Promise.all(promises);
     }
   }
-  console.log(totalPages);
 
   // Trigger the batches
   try {
@@ -417,4 +352,38 @@ async function loadFiles(files: string[] = []) {
   }
 }
 
-loadFilesBatcher();
+export async function importFiles(matcher: string) {
+  const files = await glob([matcher], {
+    root: '/',
+  });
+
+  if (files.length === 0) {
+    console.log('No files found');
+    return;
+  }
+
+  function chunks(array: string[], size: number) {
+    const results = [];
+    while (array.length) {
+      results.push(array.splice(0, size));
+    }
+    return results;
+  }
+
+  const times = [];
+  const chunksArray = chunks(files, 3);
+  let chunkIndex = 0;
+  for (const chunk of chunksArray) {
+    if (times.length > 0) {
+      // Print out how much time is approximately left
+      const average = times.reduce((a, b) => a + b) / times.length;
+      const remaining = (chunksArray.length - chunkIndex) * average;
+      console.log(`\n\nEstimated time left: ${remaining / 1000 / 60} minutes`);
+    }
+    console.log('Processing chunk:', chunkIndex);
+    chunkIndex++;
+    const d = Date.now();
+    await loadFiles(chunk);
+    times.push(Date.now() - d);
+  }
+}
