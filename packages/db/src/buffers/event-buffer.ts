@@ -36,15 +36,17 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
   }
 
   public onInsert?: OnInsert<IClickhouseEvent> | undefined = (event) => {
-    // redisPub.publish(
-    //   'event:received',
-    //   SuperJSON.stringify(transformEvent(event))
-    // );
-    // this.redis.setex(
-    //   `live:event:${event.project_id}:${event.profile_id}`,
-    //   '',
-    //   60 * 5
-    // );
+    redisPub.publish(
+      'event:received',
+      SuperJSON.stringify(transformEvent(event))
+    );
+    if (event.profile_id) {
+      this.redis.setex(
+        `live:event:${event.project_id}:${event.profile_id}`,
+        '',
+        60 * 5
+      );
+    }
   };
 
   public onCompleted?: OnCompleted<IClickhouseEvent> | undefined = (
