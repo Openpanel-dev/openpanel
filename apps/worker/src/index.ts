@@ -5,8 +5,12 @@ import type { WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 import express from 'express';
 
-import { connection, eventsQueue } from '@openpanel/queue';
-import { cronQueue, sessionsQueue } from '@openpanel/queue/src/queues';
+import {
+  connection,
+  cronQueue,
+  eventsQueue,
+  sessionsQueue,
+} from '@openpanel/queue';
 
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';

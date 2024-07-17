@@ -1,7 +1,7 @@
 import type { Job } from 'bullmq';
 
 import { eventBuffer, profileBuffer } from '@openpanel/db';
-import type { CronQueuePayload } from '@openpanel/queue/src/queues';
+import type { CronQueuePayload } from '@openpanel/queue';
 
 import { salt } from './cron.salt';
 

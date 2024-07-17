@@ -6,7 +6,7 @@ import type {
   EventsQueuePayload,
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
-} from '@openpanel/queue/src/queues';
+} from '@openpanel/queue';
 
 import { createSessionEnd } from './events.create-session-end';
 import { incomingEvent } from './events.incoming-event';

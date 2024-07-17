@@ -9,12 +9,11 @@ import { getTime, toISOString } from '@openpanel/common';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
-import { findJobByPrefix } from '@openpanel/queue';
-import { eventsQueue, sessionsQueue } from '@openpanel/queue/src/queues';
+import { eventsQueue, findJobByPrefix, sessionsQueue } from '@openpanel/queue';
 import type {
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
-} from '@openpanel/queue/src/queues';
+} from '@openpanel/queue';
 import { redis } from '@openpanel/redis';
 
 function noDateInFuture(eventDate: Date): Date {
