@@ -22,8 +22,7 @@ export interface EventsQueuePayloadIncomingEvent {
     };
     currentDeviceId: string;
     previousDeviceId: string;
-    currentDeviceIdDeprecated: string;
-    previousDeviceIdDeprecated: string;
+    priority: boolean;
   };
 }
 export interface EventsQueuePayloadCreateEvent {
@@ -32,19 +31,45 @@ export interface EventsQueuePayloadCreateEvent {
 }
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
-  payload: Pick<IServiceCreateEventPayload, 'deviceId'>;
+  payload: Pick<
+    IServiceCreateEventPayload,
+    'deviceId' | 'sessionId' | 'profileId'
+  >;
 }
+
+// TODO: Rename `EventsQueuePayloadCreateSessionEnd`
+export type SessionsQueuePayload = EventsQueuePayloadCreateSessionEnd;
+
 export type EventsQueuePayload =
   | EventsQueuePayloadCreateEvent
   | EventsQueuePayloadCreateSessionEnd
   | EventsQueuePayloadIncomingEvent;
 
-export interface CronQueuePayload {
+export type CronQueuePayloadSalt = {
   type: 'salt';
   payload: undefined;
-}
+};
+export type CronQueuePayloadFlushEvents = {
+  type: 'flushEvents';
+  payload: undefined;
+};
+export type CronQueuePayloadFlushProfiles = {
+  type: 'flushProfiles';
+  payload: undefined;
+};
+export type CronQueuePayload =
+  | CronQueuePayloadSalt
+  | CronQueuePayloadFlushEvents
+  | CronQueuePayloadFlushProfiles;
 
 export const eventsQueue = new Queue<EventsQueuePayload>('events', {
+  connection,
+  defaultJobOptions: {
+    removeOnComplete: 10,
+  },
+});
+
+export const sessionsQueue = new Queue<SessionsQueuePayload>('sessions', {
   connection,
   defaultJobOptions: {
     removeOnComplete: 10,

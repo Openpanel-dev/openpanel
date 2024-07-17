@@ -30,7 +30,7 @@ const config = {
   experimental: {
     // Avoid "Critical dependency: the request of a dependency is an expression"
     serverComponentsExternalPackages: ['bullmq', 'ioredis'],
-    instrumentationHook: true,
+    instrumentationHook: !!process.env.ENABLE_INSTRUMENTATION_HOOK,
   },
   /**
    * If you are using `appDir` then you must comment the below `i18n` config out.

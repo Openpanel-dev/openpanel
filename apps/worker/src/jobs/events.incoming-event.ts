@@ -1,19 +1,29 @@
-import { logger } from '@/utils/logger';
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
-import { isUserAgentSet, parseUserAgent } from '@/utils/parse-user-agent';
+import { parseUserAgent } from '@/utils/parse-user-agent';
 import { isSameDomain, parsePath } from '@/utils/url';
-import type { Job, JobsOptions } from 'bullmq';
+import type { Job } from 'bullmq';
 import { omit } from 'ramda';
-import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { getTime, toISOString } from '@openpanel/common';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
-import { createEvent, getEvents } from '@openpanel/db';
+import { createEvent } from '@openpanel/db';
+import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
 import { findJobByPrefix } from '@openpanel/queue';
-import { eventsQueue } from '@openpanel/queue/src/queues';
-import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue/src/queues';
+import { eventsQueue, sessionsQueue } from '@openpanel/queue/src/queues';
+import type {
+  EventsQueuePayloadCreateSessionEnd,
+  EventsQueuePayloadIncomingEvent,
+} from '@openpanel/queue/src/queues';
 import { redis } from '@openpanel/redis';
+
+function noDateInFuture(eventDate: Date): Date {
+  if (eventDate > new Date()) {
+    return new Date();
+  } else {
+    return eventDate;
+  }
+}
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 const SESSION_TIMEOUT = 1000 * 60 * 30;
@@ -27,12 +37,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     projectId,
     currentDeviceId,
     previousDeviceId,
-    // TODO: Remove after 2024-09-26
-    currentDeviceIdDeprecated,
-    previousDeviceIdDeprecated,
+    priority,
   } = job.data.payload;
-  let deviceId: string | null = null;
-
   const properties = body.properties ?? {};
   const getProperty = (name: string): string | undefined => {
     // replace thing is just for older sdks when we didn't have `__`
@@ -44,22 +50,22 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
         | undefined) ?? undefined
     );
   };
-  const { ua } = headers;
-  const profileId = body.profileId ?? '';
-  const createdAt = new Date(body.timestamp);
+
+  const profileId = body.profileId ? String(body.profileId) : '';
+  const createdAt = noDateInFuture(new Date(body.timestamp));
   const url = getProperty('__path');
   const { path, hash, query, origin } = parsePath(url);
   const referrer = isSameDomain(getProperty('__referrer'), url)
     ? null
     : parseReferrer(getProperty('__referrer'));
   const utmReferrer = getReferrerWithQuery(query);
-  const uaInfo = ua ? parseUserAgent(ua) : null;
-  const isServerEvent = ua ? !isUserAgentSet(ua) : true;
+  const uaInfo = parseUserAgent(headers.ua);
 
-  if (isServerEvent) {
-    const [event] = await getEvents(
-      `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
-    );
+  if (uaInfo.isServer) {
+    const event = await getLastScreenViewFromProfileId({
+      profileId,
+      projectId,
+    });
 
     const payload: Omit<IServiceCreateEventPayload, 'id'> = {
       name: body.name,
@@ -67,7 +73,10 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       sessionId: event?.sessionId || '',
       profileId,
       projectId,
-      properties: Object.assign({}, omit(GLOBAL_PROPERTIES, properties)),
+      properties: {
+        ...omit(GLOBAL_PROPERTIES, properties),
+        user_agent: headers.ua,
+      },
       createdAt,
       country: event?.country || geo.country || '',
       city: event?.city || geo.city || '',
@@ -78,7 +87,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       osVersion: event?.osVersion ?? '',
       browser: event?.browser ?? '',
       browserVersion: event?.browserVersion ?? '',
-      device: event?.device ?? '',
+      device: event?.device ?? uaInfo.device ?? '',
       brand: event?.brand ?? '',
       model: event?.model ?? '',
       duration: 0,
@@ -94,82 +103,50 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     return createEvent(payload);
   }
 
-  const [sessionEndKeys, eventsKeys] = await Promise.all([
-    redis.keys(`bull:events:sessionEnd:${projectId}:*`),
-    redis.keys(`bull:events:event:${projectId}:*`),
-  ]);
+  const sessionEnd = await getSessionEndWithPriority(priority)({
+    projectId,
+    currentDeviceId,
+    previousDeviceId,
+  });
 
-  const sessionEndJobCurrentDeviceId = await findJobByPrefix(
-    eventsQueue,
-    sessionEndKeys,
-    `sessionEnd:${projectId}:${currentDeviceId}:`
-  );
-  const sessionEndJobPreviousDeviceId = await findJobByPrefix(
-    eventsQueue,
-    sessionEndKeys,
-    `sessionEnd:${projectId}:${previousDeviceId}:`
-  );
-  // TODO: Remove after 2024-09-26
-  const sessionEndJobCurrentDeviceIdDeprecated = await findJobByPrefix(
-    eventsQueue,
-    sessionEndKeys,
-    `sessionEnd:${projectId}:${currentDeviceIdDeprecated}:`
-  );
-  const sessionEndJobPreviousDeviceIdDeprecated = await findJobByPrefix(
-    eventsQueue,
-    sessionEndKeys,
-    `sessionEnd:${projectId}:${previousDeviceIdDeprecated}:`
-  );
+  const sessionEndPayload = (sessionEnd?.job?.data
+    ?.payload as EventsQueuePayloadCreateSessionEnd['payload']) || {
+    sessionId: uuid(),
+    deviceId: currentDeviceId,
+    profileId,
+  };
 
-  let createSessionStart = false;
+  const sessionEndJobId =
+    sessionEnd?.job.id ??
+    `sessionEnd:${projectId}:${sessionEndPayload.deviceId}:${Date.now()}`;
 
-  if (sessionEndJobCurrentDeviceId) {
-    deviceId = currentDeviceId;
-    sessionEndJobCurrentDeviceId.changeDelay(SESSION_END_TIMEOUT);
-  } else if (sessionEndJobPreviousDeviceId) {
-    deviceId = previousDeviceId;
-    sessionEndJobPreviousDeviceId.changeDelay(SESSION_END_TIMEOUT);
-  } else if (sessionEndJobCurrentDeviceIdDeprecated) {
-    deviceId = currentDeviceIdDeprecated;
-    sessionEndJobCurrentDeviceIdDeprecated.changeDelay(SESSION_END_TIMEOUT);
-  } else if (sessionEndJobPreviousDeviceIdDeprecated) {
-    deviceId = previousDeviceIdDeprecated;
-    sessionEndJobPreviousDeviceIdDeprecated.changeDelay(SESSION_END_TIMEOUT);
+  if (sessionEnd) {
+    // If for some reason we have a session end job that is not a createSessionEnd job
+    if (sessionEnd.job.data.type !== 'createSessionEnd') {
+      throw new Error('Invalid session end job');
+    }
+
+    await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
   } else {
-    deviceId = currentDeviceId;
-    createSessionStart = true;
-    // Queue session end
-    eventsQueue.add(
-      'event',
+    await sessionsQueue.add(
+      'session',
       {
         type: 'createSessionEnd',
-        payload: {
-          deviceId,
-        },
+        payload: sessionEndPayload,
       },
       {
         delay: SESSION_END_TIMEOUT,
-        jobId: `sessionEnd:${projectId}:${deviceId}:${Date.now()}`,
+        jobId: sessionEndJobId,
       }
     );
   }
 
-  const prevEventJob = await findJobByPrefix(
-    eventsQueue,
-    eventsKeys,
-    `event:${projectId}:${deviceId}:`
-  );
-
-  const [sessionStartEvent] = await getEvents(
-    `SELECT * FROM events WHERE name = 'session_start' AND device_id = ${escape(deviceId)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
-  );
-
   const payload: Omit<IServiceCreateEventPayload, 'id'> = {
     name: body.name,
-    deviceId,
+    deviceId: sessionEndPayload.deviceId,
+    sessionId: sessionEndPayload.sessionId,
     profileId,
     projectId,
-    sessionId: createSessionStart ? uuid() : sessionStartEvent?.sessionId ?? '',
     properties: Object.assign({}, omit(GLOBAL_PROPERTIES, properties), {
       __hash: hash,
       __query: query,
@@ -189,7 +166,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     model: uaInfo?.model ?? '',
     duration: 0,
     path: path,
-    origin: origin || sessionStartEvent?.origin || '',
+    origin: origin,
     referrer: referrer?.url,
     referrerName: referrer?.name || utmReferrer?.name || '',
     referrerType: referrer?.type || utmReferrer?.type || '',
@@ -197,76 +174,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     meta: undefined,
   };
 
-  const isDelayed = prevEventJob ? await prevEventJob?.isDelayed() : false;
-
-  if (isDelayed && prevEventJob && prevEventJob.data.type === 'createEvent') {
-    const prevEvent = prevEventJob.data.payload;
-    const duration = getTime(payload.createdAt) - getTime(prevEvent.createdAt);
-    job.log(`prevEvent ${JSON.stringify(prevEvent, null, 2)}`);
-
-    // Set path from prev screen_view event if current event is not a screen_view
-    if (payload.name != 'screen_view') {
-      payload.path = prevEvent.path;
-    }
-
-    if (payload.name === 'screen_view') {
-      if (duration < 0) {
-        logger.info({ prevEvent, payload }, 'Duration is negative');
-      } else {
-        try {
-          // Skip update duration if it's wrong
-          // Seems like request is not in right order
-          await prevEventJob.updateData({
-            type: 'createEvent',
-            payload: {
-              ...prevEvent,
-              duration,
-            },
-          });
-        } catch (error) {
-          logger.error(
-            {
-              error,
-              prevEventJobStatus: await prevEventJob
-                .getState()
-                .catch(() => 'unknown'),
-            },
-            `Failed update delayed job`
-          );
-        }
-      }
-
-      try {
-        await prevEventJob.promote();
-      } catch (error) {
-        logger.error(
-          {
-            error,
-            prevEventJobStatus: await prevEventJob
-              .getState()
-              .catch(() => 'unknown'),
-            prevEvent,
-            currEvent: payload,
-          },
-          `Failed to promote job`
-        );
-      }
-    }
-  } else if (payload.name !== 'screen_view') {
-    job.log(
-      `no previous job ${JSON.stringify(
-        {
-          prevEventJob,
-          payload,
-        },
-        null,
-        2
-      )}`
-    );
-  }
-
-  if (createSessionStart) {
-    // We do not need to queue session_start
+  if (!sessionEnd) {
     await createEvent({
       ...payload,
       name: 'session_start',
@@ -275,40 +183,78 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     });
   }
 
-  const options: JobsOptions = {};
-  if (payload.name === 'screen_view') {
-    options.delay = SESSION_TIMEOUT;
-    options.jobId = `event:${projectId}:${deviceId}:${Date.now()}`;
+  return createEvent(payload);
+}
+
+function getSessionEndWithPriority(
+  priority: boolean,
+  count = 0
+): typeof getSessionEnd {
+  return async (args) => {
+    const res = await getSessionEnd(args);
+
+    if (count > 5) {
+      throw new Error('Failed to get session end');
+    }
+
+    // if we get simultaneous requests we want to avoid race conditions with getting the session end
+    // one of the events will get priority and the other will wait for the first to finish
+    if (res === null && priority === false) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return getSessionEndWithPriority(priority, count + 1)(args);
+    }
+
+    return res;
+  };
+}
+
+async function getSessionEnd({
+  projectId,
+  currentDeviceId,
+  previousDeviceId,
+}: {
+  projectId: string;
+  currentDeviceId: string;
+  previousDeviceId: string;
+}) {
+  const sessionEndKeys = await redis.keys(`*:sessionEnd:${projectId}:*`);
+
+  const sessionEndJobCurrentDeviceId = await findJobByPrefix(
+    sessionsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${currentDeviceId}:`
+  );
+  if (sessionEndJobCurrentDeviceId) {
+    return { deviceId: currentDeviceId, job: sessionEndJobCurrentDeviceId };
   }
 
-  job.log(
-    `event is queued ${JSON.stringify(
-      {
-        ua,
-        uaInfo,
-        referrer,
-        profileId,
-        projectId,
-        deviceId,
-        geo,
-        sessionStartEvent,
-        path,
-        payload,
-      },
-      null,
-      2
-    )}`
+  const sessionEndJobCurrentDeviceId2 = await findJobByPrefix(
+    eventsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${currentDeviceId}:`
   );
+  if (sessionEndJobCurrentDeviceId2) {
+    return { deviceId: currentDeviceId, job: sessionEndJobCurrentDeviceId2 };
+  }
 
-  // Queue event instead of creating it,
-  // since we want to update duration if we get more events in the same session
-  // The event will only be delayed if it's a screen_view event
-  return eventsQueue.add(
-    'event',
-    {
-      type: 'createEvent',
-      payload,
-    },
-    options
+  const sessionEndJobPreviousDeviceId = await findJobByPrefix(
+    sessionsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${previousDeviceId}:`
   );
+  if (sessionEndJobPreviousDeviceId) {
+    return { deviceId: previousDeviceId, job: sessionEndJobPreviousDeviceId };
+  }
+
+  const sessionEndJobPreviousDeviceId2 = await findJobByPrefix(
+    eventsQueue,
+    sessionEndKeys,
+    `sessionEnd:${projectId}:${previousDeviceId}:`
+  );
+  if (sessionEndJobPreviousDeviceId2) {
+    return { deviceId: previousDeviceId, job: sessionEndJobPreviousDeviceId2 };
+  }
+
+  // Create session
+  return null;
 }

@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@openpanel/db": "workspace:*",
-    "bullmq": "^5.1.1"
+    "bullmq": "^5.8.7"
   },
   "devDependencies": {
     "@openpanel/sdk": "workspace:*",

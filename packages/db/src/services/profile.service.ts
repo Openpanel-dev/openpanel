@@ -1,9 +1,10 @@
 import { escape } from 'sqlstring';
 
-import { toDots, toObject } from '@openpanel/common';
+import { toObject } from '@openpanel/common';
 import type { IChartEventFilter } from '@openpanel/validation';
 
-import { ch, chQuery } from '../clickhouse-client';
+import { profileBuffer } from '../buffers';
+import { chQuery, formatClickhouseDate } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
 export type IProfileMetrics = {
@@ -66,7 +67,10 @@ export async function getProfiles(ids: string[]) {
   const data = await chQuery<IClickhouseProfile>(
     `SELECT *
     FROM profiles FINAL 
-    WHERE id IN (${ids.map((id) => escape(id)).join(',')})
+    WHERE id IN (${ids
+      .map((id) => escape(id))
+      .filter(Boolean)
+      .join(',')})
     `
   );
 
@@ -172,31 +176,15 @@ export async function upsertProfile({
   projectId,
   isExternal,
 }: IServiceUpsertProfile) {
-  const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM profiles WHERE id = ${escape(id)} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
-  );
-
-  await ch.insert({
-    table: 'profiles',
-    format: 'JSONEachRow',
-    clickhouse_settings: {
-      date_time_input_format: 'best_effort',
-    },
-    values: [
-      {
-        id,
-        first_name: firstName ?? profile?.first_name ?? '',
-        last_name: lastName ?? profile?.last_name ?? '',
-        email: email ?? profile?.email ?? '',
-        avatar: avatar ?? profile?.avatar ?? '',
-        properties: toDots({
-          ...(profile?.properties ?? {}),
-          ...(properties ?? {}),
-        }),
-        project_id: projectId ?? profile?.project_id ?? '',
-        created_at: new Date(),
-        is_external: isExternal,
-      },
-    ],
+  return profileBuffer.insert({
+    id,
+    first_name: firstName!,
+    last_name: lastName!,
+    email: email!,
+    avatar: avatar!,
+    properties: properties as Record<string, string | undefined>,
+    project_id: projectId,
+    created_at: formatClickhouseDate(new Date()),
+    is_external: isExternal,
   });
 }

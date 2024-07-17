@@ -5,7 +5,7 @@ import { getEvents } from '@openpanel/db';
 import LiveEvents from './live-events';
 
 type Props = {
-  projectId?: string;
+  projectId: string;
   limit?: number;
 };
 const RealtimeLiveEventsServer = async ({ projectId, limit = 30 }: Props) => {

@@ -5,8 +5,13 @@ import type { FastifyPluginCallback } from 'fastify';
 const liveRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.route({
     method: 'GET',
+    url: '/visitors/test/:projectId',
+    handler: controller.testVisitors,
+  });
+  fastify.route({
+    method: 'GET',
     url: '/events/test/:projectId',
-    handler: controller.test,
+    handler: controller.testEvents,
   });
 
   fastify.register(fastifyWS);

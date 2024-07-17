@@ -5,6 +5,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { generateDeviceId } from '@openpanel/common';
 import { getSalts } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
+import { redis } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
 export async function postEvent(
@@ -63,7 +64,6 @@ export async function postEvent(
   }
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
-  const origin = request.headers.origin!;
   const projectId = request.client?.projectId;
 
   if (!projectId) {
@@ -84,19 +84,15 @@ export async function postEvent(
     ip,
     ua,
   });
-  // TODO: Remove after 2024-09-26
-  const currentDeviceIdDeprecated = generateDeviceId({
-    salt: salts.current,
-    origin,
-    ip,
-    ua,
-  });
-  const previousDeviceIdDeprecated = generateDeviceId({
-    salt: salts.previous,
-    origin,
-    ip,
-    ua,
-  });
+
+  // this will ensure that we don't have multiple events creating sessions
+  const locked = await redis.set(
+    `request:priority:${currentDeviceId}-${previousDeviceId}`,
+    'locked',
+    'EX',
+    10,
+    'NX'
+  );
 
   eventsQueue.add('event', {
     type: 'incomingEvent',
@@ -105,13 +101,15 @@ export async function postEvent(
       headers: {
         ua,
       },
-      event: request.body,
+      event: {
+        ...request.body,
+        // Dont rely on the client for the timestamp
+        timestamp: new Date().toISOString(),
+      },
       geo,
       currentDeviceId,
       previousDeviceId,
-      // TODO: Remove after 2024-09-26
-      currentDeviceIdDeprecated,
-      previousDeviceIdDeprecated,
+      priority: locked === 'OK',
     },
   });
 

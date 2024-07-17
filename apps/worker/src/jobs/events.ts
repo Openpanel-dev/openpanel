@@ -1,7 +1,7 @@
 import type { Job } from 'bullmq';
 import { escape } from 'sqlstring';
 
-import { chQuery, createEvent, db } from '@openpanel/db';
+import { chQuery, db } from '@openpanel/db';
 import type {
   EventsQueuePayload,
   EventsQueuePayloadCreateSessionEnd,
@@ -15,22 +15,6 @@ export async function eventsJob(job: Job<EventsQueuePayload>) {
   switch (job.data.type) {
     case 'incomingEvent': {
       return await incomingEvent(job as Job<EventsQueuePayloadIncomingEvent>);
-    }
-    case 'createEvent': {
-      if (job.attemptsStarted > 1 && job.data.payload.duration < 0) {
-        job.data.payload.duration = 0;
-      }
-      const createdEvent = await createEvent(job.data.payload);
-      try {
-        await updateEventsCount(job.data.payload.projectId);
-      } catch (e) {
-        if (e instanceof Error) {
-          job.log(`Failed to update events count: ${e.message}`);
-        } else {
-          job.log(`Failed to update events count: Unknown issue`);
-        }
-      }
-      return createdEvent;
     }
     case 'createSessionEnd': {
       return await createSessionEnd(

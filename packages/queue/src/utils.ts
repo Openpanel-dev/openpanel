@@ -24,7 +24,7 @@ export async function findJobByPrefix<T>(
   async function getJob(index: number) {
     if (index >= filtered.length) return null;
 
-    const key = filtered[index]?.replace(/^bull:events:/, '');
+    const key = filtered[index]?.replace(/^bull:(\w+):/, '');
     // return new Promise((resolve) => )
     if (key) {
       const job = await queue.getJob(key);
