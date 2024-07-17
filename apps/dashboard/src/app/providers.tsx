@@ -64,7 +64,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
     >
       <OpenpanelProvider
         url="https://op.coderax.se/api"
-        clientId="d32780cb-1c60-4a1b-bb5a-ffc11973255e"
+        clientId="301c6dc1-424c-4bc3-9886-a8beab09b615"
         profileId={userId || undefined}
         trackScreenViews
         trackOutgoingLinks
