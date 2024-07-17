@@ -111,24 +111,6 @@ export function wsVisitors(
   });
 }
 
-export function wsEvents(connection: { socket: WebSocket }) {
-  redisSub.subscribe('event:saved');
-
-  const message = (channel: string, message: string) => {
-    const event = getSuperJson<IServiceCreateEventPayload>(message);
-    if (event) {
-      connection.socket.send(superjson.stringify(transformMinimalEvent(event)));
-    }
-  };
-
-  redisSub.on('message', message);
-
-  connection.socket.on('close', () => {
-    redisSub.unsubscribe('event:saved');
-    redisSub.off('message', message);
-  });
-}
-
 export async function wsProjectEvents(
   connection: {
     socket: WebSocket;
@@ -139,11 +121,19 @@ export async function wsProjectEvents(
     };
     Querystring: {
       token?: string;
+      type?: string;
     };
   }>
 ) {
   const { params, query } = req;
   const { token } = query;
+  const type = query.type || 'saved';
+  if (!['saved', 'received'].includes(type)) {
+    connection.socket.send('Invalid type');
+    connection.socket.close();
+    return;
+  }
+  const subscribeToEvent = `event:${type}`;
   const decoded = validateClerkJwt(token);
   const userId = decoded?.sub;
   const access = await getProjectAccess({
@@ -151,7 +141,7 @@ export async function wsProjectEvents(
     projectId: params.projectId,
   });
 
-  redisSub.subscribe('event:saved');
+  redisSub.subscribe(subscribeToEvent);
 
   const message = async (channel: string, message: string) => {
     const event = getSuperJson<IServiceCreateEventPayload>(message);
@@ -173,7 +163,7 @@ export async function wsProjectEvents(
   redisSub.on('message', message as any);
 
   connection.socket.on('close', () => {
-    redisSub.unsubscribe('event:saved');
+    redisSub.unsubscribe(subscribeToEvent);
     redisSub.off('message', message as any);
   });
 }

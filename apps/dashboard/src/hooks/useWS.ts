@@ -24,10 +24,13 @@ export default function useWS<T>(
     .replace(/^http/, 'ws');
   const [baseUrl, setBaseUrl] = useState(`${ws}${path}`);
   const [token, setToken] = useState<string | null>(null);
-  const socketUrl = useMemo(
-    () => (token ? `${baseUrl}?token=${token}` : baseUrl),
-    [baseUrl, token]
-  );
+  const socketUrl = useMemo(() => {
+    const parseUrl = new URL(baseUrl);
+    if (token) {
+      parseUrl.searchParams.set('token', token);
+    }
+    return parseUrl.toString();
+  }, [baseUrl, token]);
 
   const debouncedOnMessage = useMemo(() => {
     if (options?.debounce) {

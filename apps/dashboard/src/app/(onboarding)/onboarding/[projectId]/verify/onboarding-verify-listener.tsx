@@ -26,7 +26,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
     _events ?? []
   );
   useWS<IServiceCreateEventPayload>(
-    `/live/events/${client?.projectId}`,
+    `/live/events/${client?.projectId}?type=received`,
     (data) => {
       setEvents((prev) => [...prev, data]);
       onVerified(true);
