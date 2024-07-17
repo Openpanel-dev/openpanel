@@ -1,7 +1,7 @@
 import type { ResponseJSON } from '@clickhouse/client';
 import { createClient } from '@clickhouse/client';
 
-export const ch = createClient({
+export const originalCh = createClient({
   url: process.env.CLICKHOUSE_URL,
   username: process.env.CLICKHOUSE_USER,
   password: process.env.CLICKHOUSE_PASSWORD,
@@ -9,6 +9,53 @@ export const ch = createClient({
   max_open_connections: 10,
   keep_alive: {
     enabled: true,
+    idle_socket_ttl: 5000,
+  },
+  compression: {
+    request: true,
+  },
+});
+
+export const ch = new Proxy(originalCh, {
+  get(target, property, receiver) {
+    if (property === 'insert' || property === 'query') {
+      return async (...args: any[]) => {
+        try {
+          // First attempt
+          if (property in target) {
+            // @ts-expect-error
+            return await target[property](...args);
+          }
+        } catch (error: unknown) {
+          if (
+            error instanceof Error &&
+            error.message.includes('socket hang up')
+          ) {
+            console.error(
+              `Caught socket hang up error on ${property.toString()}, retrying once.`
+            );
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            try {
+              // Retry once
+              if (property in target) {
+                // @ts-expect-error
+                return await target[property](...args);
+              }
+            } catch (retryError) {
+              console.error(
+                `Retry failed for ${property.toString()}:`,
+                retryError
+              );
+              throw retryError; // Rethrow or handle as needed
+            }
+          } else {
+            // Handle other errors or rethrow them
+            throw error;
+          }
+        }
+      };
+    }
+    return Reflect.get(target, property, receiver);
   },
 });
 

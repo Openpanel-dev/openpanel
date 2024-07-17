@@ -6,28 +6,42 @@ import { Worker } from 'bullmq';
 import express from 'express';
 
 import { connection, eventsQueue } from '@openpanel/queue';
-import { cronQueue } from '@openpanel/queue/src/queues';
+import { cronQueue, sessionsQueue } from '@openpanel/queue/src/queues';
 
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
+import { sessionsJob } from './jobs/sessions';
 
 const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
-serverAdapter.setBasePath('/');
+serverAdapter.setBasePath(process.env.SELF_HOSTED ? '/worker' : '/');
 const app = express();
 
 const workerOptions: WorkerOptions = {
-  connection,
+  connection: {
+    ...connection,
+    enableReadyCheck: false,
+    maxRetriesPerRequest: null,
+    enableOfflineQueue: true,
+  },
   concurrency: parseInt(process.env.CONCURRENCY || '1', 10),
 };
 
 async function start() {
-  new Worker(eventsQueue.name, eventsJob, workerOptions);
-
-  new Worker(cronQueue.name, cronJob, workerOptions);
+  const eventsWorker = new Worker(eventsQueue.name, eventsJob, workerOptions);
+  const sessionsWorker = new Worker(
+    sessionsQueue.name,
+    sessionsJob,
+    workerOptions
+  );
+  const cronWorker = new Worker(cronQueue.name, cronJob, workerOptions);
 
   createBullBoard({
-    queues: [new BullMQAdapter(eventsQueue), new BullMQAdapter(cronQueue)],
+    queues: [
+      new BullMQAdapter(eventsQueue),
+      new BullMQAdapter(sessionsQueue),
+      new BullMQAdapter(cronQueue),
+    ],
     serverAdapter: serverAdapter,
   });
 
@@ -37,9 +51,61 @@ async function start() {
     console.log(`For the UI, open http://localhost:${PORT}/`);
   });
 
-  const repeatableJobs = await cronQueue.getRepeatableJobs();
+  function workerLogger(worker: string, type: string, err?: Error) {
+    console.log(`Worker ${worker} -> ${type}`);
+    if (err) {
+      console.error(err);
+    }
+  }
 
-  console.log(repeatableJobs);
+  const workers = [sessionsWorker, eventsWorker, cronWorker];
+  workers.forEach((worker) => {
+    worker.on('error', (err) => {
+      workerLogger(worker.name, 'error', err);
+    });
+
+    worker.on('closed', () => {
+      workerLogger(worker.name, 'closed');
+    });
+
+    worker.on('ready', () => {
+      workerLogger(worker.name, 'ready');
+    });
+  });
+
+  async function exitHandler(evtOrExitCodeOrError: number | string | Error) {
+    try {
+      await eventsWorker.close();
+      await sessionsWorker.close();
+      await cronWorker.close();
+    } catch (e) {
+      console.error('EXIT HANDLER ERROR', e);
+    }
+
+    process.exit(isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError);
+  }
+
+  [
+    'beforeExit',
+    'uncaughtException',
+    'unhandledRejection',
+    'SIGHUP',
+    'SIGINT',
+    'SIGQUIT',
+    'SIGILL',
+    'SIGTRAP',
+    'SIGABRT',
+    'SIGBUS',
+    'SIGFPE',
+    'SIGUSR1',
+    'SIGSEGV',
+    'SIGUSR2',
+    'SIGTERM',
+  ].forEach((evt) =>
+    process.on(evt, (evt) => {
+      exitHandler(evt);
+    })
+  );
 
   await cronQueue.add(
     'salt',
@@ -55,6 +121,43 @@ async function start() {
       },
     }
   );
+
+  await cronQueue.add(
+    'flush',
+    {
+      type: 'flushEvents',
+      payload: undefined,
+    },
+    {
+      jobId: 'flushEvents',
+      repeat: {
+        every: process.env.BATCH_INTERVAL
+          ? parseInt(process.env.BATCH_INTERVAL, 10)
+          : 1000 * 10,
+      },
+    }
+  );
+
+  await cronQueue.add(
+    'flush',
+    {
+      type: 'flushProfiles',
+      payload: undefined,
+    },
+    {
+      jobId: 'flushProfiles',
+      repeat: {
+        every: process.env.BATCH_INTERVAL
+          ? parseInt(process.env.BATCH_INTERVAL, 10)
+          : 1000 * 10,
+      },
+    }
+  );
+
+  const repeatableJobs = await cronQueue.getRepeatableJobs();
+
+  console.log('Repeatable jobs:');
+  console.log(repeatableJobs);
 }
 
 start();

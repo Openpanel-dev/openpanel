@@ -1,32 +1,15 @@
-# Dockerfile that builds the web app only
+ARG NODE_VERSION=20
 
-FROM --platform=linux/amd64 node:20-slim AS base
+FROM --platform=linux/amd64 node:${NODE_VERSION}-slim AS base
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
-
-ARG CLICKHOUSE_DB 
-ENV CLICKHOUSE_DB=$CLICKHOUSE_DB
-
-ARG CLICKHOUSE_PASSWORD 
-ENV CLICKHOUSE_PASSWORD=$CLICKHOUSE_PASSWORD
-
-ARG CLICKHOUSE_URL 
-ENV CLICKHOUSE_URL=$CLICKHOUSE_URL
-
-ARG CLICKHOUSE_USER 
-ENV CLICKHOUSE_USER=$CLICKHOUSE_USER
-
-ARG REDIS_URL
-ENV REDIS_URL=$REDIS_URL
 
 ENV PNPM_HOME="/pnpm"
 
 ENV PATH="$PNPM_HOME:$PATH"
 
 RUN corepack enable
-
-ARG NODE_VERSION=20
 
 RUN apt update \
     && apt install -y curl \
@@ -49,6 +32,7 @@ COPY packages/common/package.json packages/common/package.json
 COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/package.json
+COPY patches patches
 
 # BUILD
 FROM base AS build
@@ -57,7 +41,7 @@ WORKDIR /app/apps/worker
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 WORKDIR  /app
-COPY apps apps
+COPY apps/worker apps/worker
 COPY packages packages
 COPY tooling tooling
 RUN pnpm db:codegen

@@ -1,5 +1,5 @@
 import { getClientIp, parseIp } from '@/utils/parseIp';
-import { isUserAgentSet, parseUserAgent } from '@/utils/parseUserAgent';
+import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr } from 'ramda';
 
@@ -29,7 +29,7 @@ export async function updateProfile(
     properties: {
       ...(properties ?? {}),
       ...(ip ? geo : {}),
-      ...(isUserAgentSet(ua) ? uaInfo : {}),
+      ...uaInfo,
     },
     ...rest,
   });

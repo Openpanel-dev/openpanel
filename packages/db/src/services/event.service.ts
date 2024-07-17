@@ -1,12 +1,12 @@
 import { omit, uniq } from 'ramda';
 import { escape } from 'sqlstring';
-import superjson from 'superjson';
 import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import { redis, redisPub } from '@openpanel/redis';
+import { redis } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
+import { eventBuffer } from '../buffers';
 import {
   ch,
   chQuery,
@@ -17,7 +17,7 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import { getProfileById, getProfiles, upsertProfile } from './profile.service';
+import { getProfiles, upsertProfile } from './profile.service';
 import type { IServiceProfile } from './profile.service';
 
 export interface IClickhouseEvent {
@@ -226,17 +226,14 @@ export async function createEvent(
     payload.profileId = payload.deviceId;
   }
   console.log(
-    `create event ${payload.name} for deviceId: ${payload.deviceId} profileId ${payload.profileId}`
+    `create event ${payload.name} for [deviceId]: ${payload.deviceId} [profileId]: ${payload.profileId} [projectId]: ${payload.projectId} [path]: ${payload.path}`
   );
 
-  const exists = await getProfileById(payload.profileId, payload.projectId);
-  if (!exists && payload.profileId !== '') {
+  if (payload.profileId !== '') {
     await upsertProfile({
       id: String(payload.profileId),
-      isExternal: false,
+      isExternal: payload.profileId !== payload.deviceId,
       projectId: payload.projectId,
-      firstName: '',
-      lastName: '',
       properties: {
         path: payload.path,
         country: payload.country,
@@ -287,25 +284,9 @@ export async function createEvent(
     referrer_type: payload.referrerType ?? '',
   };
 
-  const res = await ch.insert({
-    table: 'events',
-    values: [event],
-    format: 'JSONEachRow',
-    clickhouse_settings: {
-      date_time_input_format: 'best_effort',
-    },
-  });
-
-  redisPub.publish('event', superjson.stringify(transformEvent(event)));
-  redis.set(
-    `live:event:${event.project_id}:${event.profile_id}`,
-    '',
-    'EX',
-    60 * 5
-  );
+  await eventBuffer.insert(event);
 
   return {
-    ...res,
     document: event,
   };
 }
@@ -448,4 +429,28 @@ export function getConversionEventNames(projectId: string) {
       conversion: true,
     },
   });
+}
+
+export async function getLastScreenViewFromProfileId({
+  profileId,
+  projectId,
+}: {
+  profileId: string;
+  projectId: string;
+}) {
+  const eventInBuffer = await eventBuffer.find(
+    (item) => item.event.profile_id === profileId
+  );
+
+  if (eventInBuffer) {
+    return eventInBuffer;
+  }
+
+  const [eventInDb] = profileId
+    ? await getEvents(
+        `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`
+      )
+    : [];
+
+  return eventInDb || null;
 }

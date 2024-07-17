@@ -5,8 +5,6 @@ import { verifyPassword } from '@openpanel/common';
 import type { Client, IServiceClient } from '@openpanel/db';
 import { ClientType, db } from '@openpanel/db';
 
-import { logger } from './logger';
-
 const cleanDomain = (domain: string) =>
   domain
     .replace('www.', '')

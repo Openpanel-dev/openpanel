@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.2",
-    "@clickhouse/client": "^1.0.1",
+    "@clickhouse/client": "^1.2.0",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
     "@openpanel/redis": "workspace:*",

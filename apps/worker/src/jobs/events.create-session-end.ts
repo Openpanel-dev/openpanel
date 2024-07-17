@@ -1,23 +1,26 @@
 import type { Job } from 'bullmq';
 
 import { getTime } from '@openpanel/common';
-import { createEvent, getEvents } from '@openpanel/db';
+import { createEvent, eventBuffer, getEvents } from '@openpanel/db';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue/src/queues';
 
 export async function createSessionEnd(
   job: Job<EventsQueuePayloadCreateSessionEnd>
 ) {
   const payload = job.data.payload;
+  const eventsInBuffer = await eventBuffer.findMany(
+    (item) => item.event.session_id === payload.sessionId
+  );
 
   const sql = `
   SELECT * FROM events 
   WHERE 
-    device_id = '${payload.deviceId}' 
+    session_id = '${payload.sessionId}' 
     AND created_at >= (
       SELECT created_at 
       FROM events
       WHERE 
-        device_id = '${payload.deviceId}' 
+        session_id = '${payload.sessionId}' 
         AND name = 'session_start'
       ORDER BY created_at DESC
       LIMIT 1
@@ -25,7 +28,11 @@ export async function createSessionEnd(
   ORDER BY created_at DESC
 `;
   job.log(sql);
-  const events = await getEvents(sql);
+  const eventsInDb = await getEvents(sql);
+  // sort last inserted first
+  const events = [...eventsInBuffer, ...eventsInDb].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   events.map((event, index) => {
     job.log(
@@ -64,7 +71,7 @@ export async function createSessionEnd(
     },
     name: 'session_end',
     duration: sessionDuration,
-    path: lastEvent.path,
+    path: screenViews[0]?.path ?? '',
     createdAt: new Date(getTime(lastEvent?.createdAt) + 100),
   });
 }

@@ -1,16 +1,49 @@
-import type { WebhookEvent } from '@clerk/nextjs/server';
+import type { WebhookEvent } from '@clerk/fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { pathOr } from 'ramda';
+import { Webhook } from 'svix';
 
 import { AccessLevel, db } from '@openpanel/db';
 
-export const dynamic = 'force-dynamic';
+if (!process.env.CLERK_SIGNING_SECRET) {
+  throw new Error('CLERK_SIGNING_SECRET is required');
+}
 
-export async function POST(request: Request) {
-  const payload: WebhookEvent = await request.json();
+const wh = new Webhook(process.env.CLERK_SIGNING_SECRET);
+
+function verify(body: any, headers: FastifyRequest['headers']) {
+  try {
+    const svix_id = headers['svix-id'] as string;
+    const svix_timestamp = headers['svix-timestamp'] as string;
+    const svix_signature = headers['svix-signature'] as string;
+
+    wh.verify(JSON.stringify(body), {
+      'svix-id': svix_id,
+      'svix-timestamp': svix_timestamp,
+      'svix-signature': svix_signature,
+    });
+
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+export async function clerkWebhook(
+  request: FastifyRequest<{
+    Body: WebhookEvent;
+  }>,
+  reply: FastifyReply
+) {
+  const payload = request.body;
+  const verified = verify(payload, request.headers);
+
+  if (!verified) {
+    return reply.send({ message: 'Invalid signature' });
+  }
 
   if (payload.type === 'user.created') {
     const email = payload.data.email_addresses[0]?.email_address;
-    const emails = payload.data.email_addresses.map((e) => e.email_address);
 
     if (!email) {
       return Response.json(
@@ -30,16 +63,14 @@ export async function POST(request: Request) {
 
     const memberships = await db.member.findMany({
       where: {
-        email: {
-          in: emails,
-        },
+        email,
         userId: null,
       },
     });
 
     for (const membership of memberships) {
       const access = pathOr<string[]>([], ['meta', 'access'], membership);
-      await db.$transaction([
+      db.$transaction([
         // Update the member to link it to the user
         // This will remove the item from invitations
         db.member.update({
@@ -92,6 +123,7 @@ export async function POST(request: Request) {
           deletedAt: new Date(),
           firstName: null,
           lastName: null,
+          email: `deleted+${payload.data.id}@openpanel.dev`,
         },
       }),
       db.projectAccess.deleteMany({
@@ -116,9 +148,5 @@ export async function POST(request: Request) {
     });
   }
 
-  return Response.json({ message: 'Webhook received!' });
-}
-
-export function GET() {
-  return Response.json({ message: 'Hello World!' });
+  reply.send({ success: true });
 }
