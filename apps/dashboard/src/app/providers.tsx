@@ -62,13 +62,15 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       defaultTheme="light"
       disableTransitionOnChange
     >
-      <OpenpanelProvider
-        url="https://op.coderax.se/api"
-        clientId="301c6dc1-424c-4bc3-9886-a8beab09b615"
-        profileId={userId || undefined}
-        trackScreenViews
-        trackOutgoingLinks
-      />
+      {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
+        <OpenpanelProvider
+          url="https://op.coderax.se/api"
+          clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
+          profileId={userId || undefined}
+          trackScreenViews
+          trackOutgoingLinks
+        />
+      )}
       <ReduxProvider store={storeRef.current}>
         <api.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
