@@ -31,8 +31,15 @@ declare module 'fastify' {
 
 async function withTimings<T>(promise: Promise<T>) {
   const time = performance.now();
-  const res = await promise;
-  return [round(performance.now() - time, 2), res] as const;
+  try {
+    const data = await promise;
+    return {
+      time: round(performance.now() - time, 2),
+      data,
+    } as const;
+  } catch (e) {
+    return null;
+  }
 }
 
 const port = parseInt(process.env.API_PORT || '3000', 10);
@@ -91,44 +98,37 @@ const startServer = async () => {
       reply.send({ name: 'openpanel sdk api' });
     });
     fastify.get('/healthcheck', async (request, reply) => {
-      const redisRes = await withTimings(redis.keys('*')).catch(
-        (e: Error) => e
-      );
-      const dbRes = await withTimings(db.project.findFirst()).catch(
-        (e: Error) => e
-      );
-      const queueRes = await withTimings(eventsQueue.getCompleted()).catch(
-        (e: Error) => e
-      );
-      const chRes = await withTimings(
-        chQuery('SELECT * FROM events LIMIT 1')
-      ).catch((e: Error) => e);
+      const redisRes = await withTimings(redis.keys('*'));
+      const dbRes = await withTimings(db.project.findFirst());
+      const queueRes = await withTimings(eventsQueue.getCompleted());
+      const chRes = await withTimings(chQuery('SELECT * FROM events LIMIT 1'));
+      const status = redisRes && dbRes && queueRes && chRes ? 200 : 500;
 
-      reply.send({
-        redis: Array.isArray(redisRes)
+      reply.status(status).send({
+        redis: redisRes
           ? {
-              ok: redisRes[1].length ? true : false,
-              time: `${redisRes[0]}ms`,
+              ok: !!redisRes.data.length,
+              time: `${redisRes.time}ms`,
             }
-          : redisRes,
-        db: Array.isArray(dbRes)
+          : null,
+        db: dbRes
           ? {
-              ok: dbRes[1] ? true : false,
-              time: `${dbRes[0]}ms`,
+              ok: !!dbRes.data,
+              time: `${dbRes.time}ms`,
             }
-          : dbRes,
-        queue: Array.isArray(queueRes)
+          : null,
+        queue: queueRes
           ? {
-              ok: queueRes[1].length ? true : false,
-              time: `${queueRes[0]}ms`,
+              ok: !!queueRes.data,
+              time: `${queueRes.time}ms`,
             }
-          : queueRes,
-        ch: Array.isArray(chRes)
+          : null,
+        ch: chRes
           ? {
-              ok: chRes[1].length ? true : false,
-              time: `${chRes[0]}ms`,
+              ok: !!chRes.data,
+              time: `${chRes.time}ms`,
             }
-          : chRes,
+          : null,
       });
     });
     if (process.env.NODE_ENV === 'production') {
