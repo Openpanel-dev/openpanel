@@ -1,4 +1,4 @@
-ARG NODE_VERSION=20
+ARG NODE_VERSION=20.15.1
 
 FROM --platform=linux/amd64 node:${NODE_VERSION}-slim AS base
 

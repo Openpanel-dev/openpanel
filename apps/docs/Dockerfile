@@ -6,7 +6,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 
 RUN corepack enable
 
-ARG NODE_VERSION=20
+ARG NODE_VERSION=20.15.1
 
 RUN apt update \
     && apt install -y curl \
