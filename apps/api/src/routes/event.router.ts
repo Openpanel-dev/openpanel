@@ -1,6 +1,6 @@
 import { isBot } from '@/bots';
 import * as controller from '@/controllers/event.controller';
-import { validateSdkRequest } from '@/utils/auth';
+import { SdkAuthError, validateSdkRequest } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
 
@@ -18,7 +18,9 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
     ) => {
       try {
         const client = await validateSdkRequest(req.headers).catch((error) => {
-          logger.error(error, 'Failed to validate sdk request');
+          if (!(error instanceof SdkAuthError)) {
+            logger.error(error, 'Failed to validate sdk request');
+          }
           return null;
         });
         if (!client?.projectId) {

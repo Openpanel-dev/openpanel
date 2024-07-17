@@ -11,7 +11,7 @@ const cleanDomain = (domain: string) =>
     .replace(/https?:\/\//, '')
     .replace(/\/$/, '');
 
-class SdkAuthError extends Error {
+export class SdkAuthError extends Error {
   payload: {
     clientId?: string;
     clientSecret?: string;
