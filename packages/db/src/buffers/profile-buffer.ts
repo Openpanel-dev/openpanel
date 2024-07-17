@@ -13,6 +13,7 @@ import type {
   Find,
   FindMany,
   OnCompleted,
+  OnInsert,
   ProcessQueue,
   QueueItem,
 } from './buffer';
@@ -27,6 +28,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
     });
   }
 
+  public onInsert?: OnInsert<IClickhouseProfile> | undefined;
   public onCompleted?: OnCompleted<IClickhouseProfile> | undefined;
 
   public processQueue: ProcessQueue<IClickhouseProfile> = async (queue) => {

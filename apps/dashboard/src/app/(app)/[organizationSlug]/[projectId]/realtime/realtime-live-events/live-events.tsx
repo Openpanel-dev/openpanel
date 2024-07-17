@@ -12,14 +12,14 @@ import type {
 
 type Props = {
   events: (IServiceEventMinimal | IServiceCreateEventPayload)[];
-  projectId?: string;
+  projectId: string;
   limit: number;
 };
 
 const RealtimeLiveEvents = ({ events, projectId, limit }: Props) => {
   const [state, setState] = useState(events ?? []);
   useWS<IServiceEventMinimal | IServiceCreateEventPayload>(
-    projectId ? `/live/events/${projectId}` : '/live/events',
+    `/live/events/${projectId}`,
     (event) => {
       setState((p) => [event, ...p].slice(0, limit));
     }

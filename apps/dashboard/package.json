@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "rm -rf .next && pnpm with-env next dev --turbo",
+    "dev": "rm -rf .next && pnpm with-env next dev",
     "testing": "pnpm dev",
     "build": "next build",
     "start": "next start",

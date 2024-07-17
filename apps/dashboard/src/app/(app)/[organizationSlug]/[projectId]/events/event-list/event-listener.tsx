@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
+import { useDebounceVal } from '@/hooks/useDebounceVal';
 import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
 import dynamic from 'next/dynamic';
@@ -22,11 +22,13 @@ const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
 export default function EventListener() {
   const router = useRouter();
   const { projectId } = useAppParams();
-  const [counter, setCounter] = useState(0);
+  const counter = useDebounceVal(0, 1000, {
+    maxWait: 5000,
+  });
 
   useWS<IServiceEventMinimal>(`/live/events/${projectId}`, (event) => {
     if (event?.name) {
-      setCounter((prev) => prev + 1);
+      counter.set((prev) => prev + 1);
     }
   });
 
@@ -35,7 +37,7 @@ export default function EventListener() {
       <TooltipTrigger asChild>
         <button
           onClick={() => {
-            setCounter(0);
+            counter.set(0);
             router.refresh();
           }}
           className="flex h-8 items-center gap-2 rounded border border-border bg-card px-3 text-sm font-medium leading-none"
@@ -52,7 +54,7 @@ export default function EventListener() {
               )}
             ></div>
           </div>
-          {counter === 0 ? (
+          {counter.debounced === 0 ? (
             'Listening'
           ) : (
             <>
@@ -61,11 +63,10 @@ export default function EventListener() {
                 transitions={(index) => ({
                   type: 'spring',
                   duration: index + 0.3,
-
                   damping: 10,
                   stiffness: 200,
                 })}
-                animateToNumber={counter}
+                animateToNumber={counter.debounced}
                 locale="en"
               />
               new events
@@ -74,7 +75,9 @@ export default function EventListener() {
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        {counter === 0 ? 'Listening to new events' : 'Click to refresh'}
+        {counter.debounced === 0
+          ? 'Listening to new events'
+          : 'Click to refresh'}
       </TooltipContent>
     </Tooltip>
   );

@@ -14,6 +14,7 @@ import type {
   Find,
   FindMany,
   OnCompleted,
+  OnInsert,
   ProcessQueue,
   QueueItem,
 } from './buffer';
@@ -34,19 +35,27 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     });
   }
 
-  public onCompleted?: OnCompleted<IClickhouseEvent> | undefined = async (
+  public onInsert?: OnInsert<IClickhouseEvent> | undefined = (event) => {
+    redisPub.publish(
+      'event:received',
+      SuperJSON.stringify(transformEvent(event))
+    );
+    this.redis.setex(
+      `live:event:${event.project_id}:${event.profile_id}`,
+      '',
+      60 * 5
+    );
+  };
+
+  public onCompleted?: OnCompleted<IClickhouseEvent> | undefined = (
     savedEvents
   ) => {
-    const multi = redis.multi();
     for (const event of savedEvents) {
-      redisPub.publish('event', SuperJSON.stringify(transformEvent(event)));
-      multi.setex(
-        `live:event:${event.project_id}:${event.profile_id}`,
-        '',
-        60 * 5
+      redisPub.publish(
+        'event:saved',
+        SuperJSON.stringify(transformEvent(event))
       );
     }
-    await multi.exec();
 
     return savedEvents.map((event) => event.id);
   };
@@ -156,7 +165,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     });
 
     if (itemsToStalled.size > 0) {
-      const multi = redis.multi();
+      const multi = this.redis.multi();
       for (const item of itemsToStalled) {
         multi.rpush(this.getKey('stalled'), JSON.stringify(item.event));
       }

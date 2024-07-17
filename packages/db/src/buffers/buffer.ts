@@ -7,6 +7,8 @@ export type QueueItem<T> = {
   index: number;
 };
 
+export type OnInsert<T> = (data: T) => unknown;
+
 export type OnCompleted<T> =
   | ((data: T[]) => Promise<unknown[]>)
   | ((data: T[]) => unknown[]);
@@ -29,6 +31,7 @@ export abstract class RedisBuffer<T> {
   public redis: Redis;
 
   // abstract methods
+  public abstract onInsert?: OnInsert<T>;
   public abstract onCompleted?: OnCompleted<T>;
   public abstract processQueue: ProcessQueue<T>;
   public abstract find: Find<T, unknown>;
@@ -49,6 +52,7 @@ export abstract class RedisBuffer<T> {
   }
 
   public async insert(value: T) {
+    this.onInsert?.(value);
     await this.redis.rpush(this.getKey(), JSON.stringify(value));
 
     const length = await this.redis.llen(this.getKey());

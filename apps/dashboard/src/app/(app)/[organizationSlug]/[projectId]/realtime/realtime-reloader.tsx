@@ -12,12 +12,21 @@ const RealtimeReloader = ({ projectId }: Props) => {
   const client = useQueryClient();
   const router = useRouter();
 
-  useWS<number>(`/live/visitors/${projectId}`, (value) => {
-    router.refresh();
-    client.refetchQueries({
-      type: 'active',
-    });
-  });
+  useWS<number>(
+    `/live/events/${projectId}`,
+    () => {
+      router.refresh();
+      client.refetchQueries({
+        type: 'active',
+      });
+    },
+    {
+      debounce: {
+        maxWait: 15000,
+        delay: 15000,
+      },
+    }
+  );
 
   return null;
 };
