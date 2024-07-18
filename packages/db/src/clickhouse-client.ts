@@ -7,9 +7,10 @@ export const originalCh = createClient({
   password: process.env.CLICKHOUSE_PASSWORD,
   database: process.env.CLICKHOUSE_DB,
   max_open_connections: 10,
+  request_timeout: 10000,
   keep_alive: {
     enabled: true,
-    idle_socket_ttl: 5000,
+    idle_socket_ttl: 8000,
   },
   compression: {
     request: true,
@@ -29,10 +30,11 @@ export const ch = new Proxy(originalCh, {
         } catch (error: unknown) {
           if (
             error instanceof Error &&
-            error.message.includes('socket hang up')
+            (error.message.includes('socket hang up') ||
+              error.message.includes('Timeout error'))
           ) {
-            console.error(
-              `Caught socket hang up error on ${property.toString()}, retrying once.`
+            console.info(
+              `Caught ${error.message} error on ${property.toString()}, retrying once.`
             );
             await new Promise((resolve) => setTimeout(resolve, 500));
             try {

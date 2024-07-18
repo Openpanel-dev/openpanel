@@ -29,7 +29,7 @@ const getError = (e: unknown) => {
       'Name: ' + e.name,
       'Message: ' + e.message,
       'Stack: ' + e.stack,
-      'Cause: ' + e.cause,
+      'Cause: ' + (e.cause ? String(e.cause) : ''),
     ].join('\n');
   }
   return 'Unknown error';
