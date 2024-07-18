@@ -23,6 +23,18 @@ export type FindMany<T, R = unknown> = (
   callback: (item: QueueItem<T>) => boolean
 ) => Promise<R[]>;
 
+const getError = (e: unknown) => {
+  if (e instanceof Error) {
+    return [
+      'Name: ' + e.name,
+      'Message: ' + e.message,
+      'Stack: ' + e.stack,
+      'Cause: ' + e.cause,
+    ].join('\n');
+  }
+  return 'Unknown error';
+};
+
 export abstract class RedisBuffer<T> {
   // constructor
   public prefix = 'op:buffer';
@@ -98,7 +110,7 @@ export abstract class RedisBuffer<T> {
         );
         const timestamp = new Date().getTime();
         await this.redis.hset(this.getKey(`failed:${timestamp}`), {
-          error: e instanceof Error ? e.message : 'Unknown error',
+          error: getError(e),
           data: JSON.stringify(queue.map((item) => item.event)),
           retries: 0,
         });
