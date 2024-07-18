@@ -64,7 +64,6 @@ function AllProviders({ children }: { children: React.ReactNode }) {
     >
       {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
         <OpenpanelProvider
-          url="https://op.coderax.se/api"
           clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
           profileId={userId || undefined}
           trackScreenViews
