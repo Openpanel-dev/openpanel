@@ -2,7 +2,7 @@ import type { ResponseJSON } from '@clickhouse/client';
 import { createClient } from '@clickhouse/client';
 
 export const TABLE_NAMES = {
-  events: 'events',
+  events: 'events_v2',
   profiles: 'profiles',
 };
 
