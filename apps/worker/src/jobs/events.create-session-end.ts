@@ -1,7 +1,12 @@
 import type { Job } from 'bullmq';
 
 import { getTime } from '@openpanel/common';
-import { createEvent, eventBuffer, getEvents } from '@openpanel/db';
+import {
+  createEvent,
+  eventBuffer,
+  getEvents,
+  TABLE_NAMES,
+} from '@openpanel/db';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
 export async function createSessionEnd(
@@ -13,12 +18,12 @@ export async function createSessionEnd(
   );
 
   const sql = `
-  SELECT * FROM events 
+  SELECT * FROM ${TABLE_NAMES.events} 
   WHERE 
     session_id = '${payload.sessionId}' 
     AND created_at >= (
       SELECT created_at 
-      FROM events
+      FROM ${TABLE_NAMES.events}
       WHERE 
         session_id = '${payload.sessionId}' 
         AND name = 'session_start'

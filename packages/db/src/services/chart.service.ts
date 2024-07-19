@@ -6,7 +6,7 @@ import type {
   IGetChartDataInput,
 } from '@openpanel/validation';
 
-import { formatClickhouseDate } from '../clickhouse-client';
+import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
 export function getChartSql({
@@ -94,7 +94,7 @@ export function getChartSql({
 
   if (event.segment === 'one_event_per_user') {
     sb.from = `(
-      SELECT DISTINCT ON (profile_id) * from events WHERE ${join(
+      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} WHERE ${join(
         sb.where,
         ' AND '
       )}

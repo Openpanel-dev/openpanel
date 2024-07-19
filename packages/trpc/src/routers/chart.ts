@@ -3,7 +3,7 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import { average, max, min, round, slug, sum } from '@openpanel/common';
-import { chQuery, createSqlBuilder, db } from '@openpanel/db';
+import { chQuery, createSqlBuilder, db, TABLE_NAMES } from '@openpanel/db';
 import { zChartInput } from '@openpanel/validation';
 import type {
   FinalChart,
@@ -17,7 +17,6 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import {
   getChart,
   getChartPrevStartEndDate,
-  getChartSeries,
   getChartStartEndDate,
   getFunnelData,
   getFunnelStep,
@@ -28,7 +27,7 @@ export const chartRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId } }) => {
       const events = await chQuery<{ name: string }>(
-        `SELECT DISTINCT name FROM events WHERE project_id = ${escape(projectId)}`
+        `SELECT DISTINCT name FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)}`
       );
 
       return [
@@ -43,7 +42,7 @@ export const chartRouter = createTRPCRouter({
     .input(z.object({ event: z.string().optional(), projectId: z.string() }))
     .query(async ({ input: { projectId, event } }) => {
       const events = await chQuery<{ keys: string[] }>(
-        `SELECT distinct mapKeys(properties) as keys from events where ${
+        `SELECT distinct mapKeys(properties) as keys from ${TABLE_NAMES.events} where ${
           event && event !== '*' ? `name = ${escape(event)} AND ` : ''
         } project_id = ${escape(projectId)};`
       );

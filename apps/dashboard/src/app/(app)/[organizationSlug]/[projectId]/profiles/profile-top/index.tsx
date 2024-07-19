@@ -7,7 +7,7 @@ import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
 import { escape } from 'sqlstring';
 
-import { chQuery, getProfiles } from '@openpanel/db';
+import { chQuery, getProfiles, TABLE_NAMES } from '@openpanel/db';
 
 interface Props {
   projectId: string;
@@ -18,7 +18,7 @@ async function ProfileTopServer({ organizationSlug, projectId }: Props) {
   // Days since last event from users
   // group by days
   const res = await chQuery<{ profile_id: string; count: number }>(
-    `SELECT profile_id, count(*) as count from events where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT 50`
+    `SELECT profile_id, count(*) as count from ${TABLE_NAMES.events} where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT 50`
   );
   const profiles = await getProfiles(res.map((r) => r.profile_id));
   const list = res.map((item) => {

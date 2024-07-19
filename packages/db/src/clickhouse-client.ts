@@ -1,6 +1,11 @@
 import type { ResponseJSON } from '@clickhouse/client';
 import { createClient } from '@clickhouse/client';
 
+export const TABLE_NAMES = {
+  events: 'events',
+  profiles: 'profiles',
+};
+
 export const originalCh = createClient({
   url: process.env.CLICKHOUSE_URL,
   username: process.env.CLICKHOUSE_USER,

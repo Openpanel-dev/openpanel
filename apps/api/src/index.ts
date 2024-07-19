@@ -7,7 +7,7 @@ import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
 
 import { round } from '@openpanel/common';
-import { chQuery, db } from '@openpanel/db';
+import { chQuery, db, TABLE_NAMES } from '@openpanel/db';
 import type { IServiceClient } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
 import { redis, redisPub } from '@openpanel/redis';
@@ -101,7 +101,9 @@ const startServer = async () => {
       const redisRes = await withTimings(redis.keys('*'));
       const dbRes = await withTimings(db.project.findFirst());
       const queueRes = await withTimings(eventsQueue.getCompleted());
-      const chRes = await withTimings(chQuery('SELECT * FROM events LIMIT 1'));
+      const chRes = await withTimings(
+        chQuery(`SELECT * FROM ${TABLE_NAMES.events} LIMIT 1`)
+      );
       const status = redisRes && dbRes && queueRes && chRes ? 200 : 500;
 
       reply.status(status).send({

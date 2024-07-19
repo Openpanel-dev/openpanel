@@ -10,6 +10,7 @@ import {
   getEvents,
   getLiveVisitors,
   getProfileById,
+  TABLE_NAMES,
   transformMinimalEvent,
 } from '@openpanel/db';
 import { redis, redisPub, redisSub } from '@openpanel/redis';
@@ -28,8 +29,7 @@ export async function testVisitors(
   reply: FastifyReply
 ) {
   const events = await getEvents(
-    `SELECT * FROM events LIMIT 500`
-    // `SELECT * FROM events WHERE name = 'screen_view' LIMIT 500`
+    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`
   );
   const event = events[Math.floor(Math.random() * events.length)];
   if (!event) {
@@ -55,8 +55,7 @@ export async function testEvents(
   reply: FastifyReply
 ) {
   const events = await getEvents(
-    `SELECT * FROM events LIMIT 500`
-    // `SELECT * FROM events WHERE name = 'screen_view' LIMIT 500`
+    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`
   );
   const event = events[Math.floor(Math.random() * events.length)];
   if (!event) {

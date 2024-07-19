@@ -1,7 +1,7 @@
 import { escape } from 'sqlstring';
 
 import type { IClickhouseEvent } from '@openpanel/db';
-import { chQuery, eventBuffer } from '@openpanel/db';
+import { chQuery, eventBuffer, TABLE_NAMES } from '@openpanel/db';
 import { sessionsQueue } from '@openpanel/queue/src/queues';
 import { redis } from '@openpanel/redis';
 
@@ -70,7 +70,7 @@ async function debugStalledEvents() {
 
   if (stalledEvents.length > 0) {
     const res = await chQuery(
-      `SELECT * FROM events WHERE id IN (${stalledEvents.map((item) => escape(JSON.parse(item).id)).join(',')})`
+      `SELECT * FROM ${TABLE_NAMES.events} WHERE id IN (${stalledEvents.map((item) => escape(JSON.parse(item).id)).join(',')})`
     );
 
     stalledEvents.forEach((item) => {

@@ -1,3 +1,5 @@
+import { TABLE_NAMES } from './clickhouse-client';
+
 export interface SqlBuilderObject {
   where: Record<string, string>;
   having: Record<string, string>;
@@ -15,7 +17,7 @@ export function createSqlBuilder() {
 
   const sb: SqlBuilderObject = {
     where: {},
-    from: 'events',
+    from: TABLE_NAMES.events,
     select: {},
     groupBy: {},
     orderBy: {},

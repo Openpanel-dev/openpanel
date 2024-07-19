@@ -34,6 +34,51 @@ CREATE TABLE IF NOT EXISTS openpanel.events (
 ORDER BY
   (project_id, created_at, profile_id) SETTINGS index_granularity = 8192;
 
+CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
+  `id` UUID DEFAULT generateUUIDv4(),
+  `name` String,
+  `device_id` String,
+  `profile_id` String,
+  `project_id` String,
+  `session_id` String,
+  `path` String,
+  `origin` String,
+  `referrer` String,
+  `referrer_name` String,
+  `referrer_type` String,
+  `duration` UInt64,
+  `properties` Map(String, String),
+  `created_at` DateTime64(3),
+  `country` String,
+  `city` String,
+  `region` String,
+  `longitude` Nullable(Float32),
+  `latitude` Nullable(Float32),
+  `os` String,
+  `os_version` String,
+  `browser` String,
+  `browser_version` String,
+  -- device: mobile/desktop/tablet
+  `device` String,
+  -- brand: (Samsung, OnePlus)
+  `brand` String,
+  -- model: (Samsung Galaxy, iPhone X)
+  `model` String
+) ENGINE = MergeTree() PARTITION BY toYYYYMM(created_at)
+ORDER BY
+  (project_id, created_at, profile_id) SETTINGS index_granularity = 8192;
+
+ALTER TABLE
+  events DROP COLUMN utm_source,
+  DROP COLUMN utm_medium,
+  DROP COLUMN utm_campaign,
+  DROP COLUMN utm_term,
+  DROP COLUMN utm_content,
+  DROP COLUMN sdk,
+  DROP COLUMN sdk_version,
+  DROP COLUMN client_type,
+  DROP COLUMN continent;
+
 CREATE TABLE IF NOT EXISTS openpanel.events_bots (
   `id` UUID DEFAULT generateUUIDv4(),
   `project_id` String,

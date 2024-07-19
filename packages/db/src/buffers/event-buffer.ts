@@ -4,7 +4,7 @@ import SuperJSON from 'superjson';
 import { deepMergeObjects } from '@openpanel/common';
 import { redis, redisPub } from '@openpanel/redis';
 
-import { ch } from '../clickhouse-client';
+import { ch, TABLE_NAMES } from '../clickhouse-client';
 import { transformEvent } from '../services/event.service';
 import type {
   IClickhouseEvent,
@@ -30,7 +30,7 @@ const sortOldestFirst = (
 export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
   constructor() {
     super({
-      table: 'events',
+      table: TABLE_NAMES.events,
       redis,
     });
   }
@@ -176,7 +176,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     }
 
     await ch.insert({
-      table: 'events',
+      table: TABLE_NAMES.events,
       values: Array.from(itemsToClickhouse).map((item) => item.event),
       format: 'JSONEachRow',
     });

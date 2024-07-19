@@ -12,6 +12,7 @@ import {
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
+  TABLE_NAMES,
 } from '../clickhouse-client';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -323,7 +324,7 @@ export async function getEventList({
   sb.where.projectId = `project_id = ${escape(projectId)}`;
 
   if (profileId) {
-    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM events WHERE profile_id = ${escape(profileId)} group by did)`;
+    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} group by did)`;
   }
 
   if (startDate && endDate) {
@@ -448,7 +449,7 @@ export async function getLastScreenViewFromProfileId({
 
   const [eventInDb] = profileId
     ? await getEvents(
-        `SELECT * FROM events WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`
       )
     : [];
 

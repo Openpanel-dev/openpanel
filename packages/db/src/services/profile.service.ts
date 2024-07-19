@@ -4,7 +4,11 @@ import { toObject } from '@openpanel/common';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { profileBuffer } from '../buffers';
-import { chQuery, formatClickhouseDate } from '../clickhouse-client';
+import {
+  chQuery,
+  formatClickhouseDate,
+  TABLE_NAMES,
+} from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
 export type IProfileMetrics = {
@@ -18,19 +22,19 @@ export type IProfileMetrics = {
 export function getProfileMetrics(profileId: string, projectId: string) {
   return chQuery<IProfileMetrics>(`
     WITH lastSeen AS (
-      SELECT max(created_at) as lastSeen FROM events WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT max(created_at) as lastSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
     ),
     firstSeen AS (
-      SELECT min(created_at) as firstSeen FROM events WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT min(created_at) as firstSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
     ),
     screenViews AS (
-      SELECT count(*) as screenViews FROM events WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT count(*) as screenViews FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
     ),
     sessions AS (
-      SELECT count(*) as sessions FROM events WHERE name = 'session_start' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
     ),
     duration AS (
-      SELECT avg(duration) as durationAvg, quantilesExactInclusive(0.9)(duration)[1] as durationP90 FROM events WHERE name = 'session_end' AND duration != 0 AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT avg(duration) as durationAvg, quantilesExactInclusive(0.9)(duration)[1] as durationP90 FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND duration != 0 AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
     )
     SELECT lastSeen, firstSeen, screenViews, sessions, durationAvg, durationP90 FROM lastSeen, firstSeen, screenViews,sessions, duration
   `).then((data) => data[0]!);

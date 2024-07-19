@@ -1,6 +1,6 @@
 import { ALink } from '@/components/ui/button';
 
-import { chQuery } from '@openpanel/db';
+import { chQuery, TABLE_NAMES } from '@openpanel/db';
 
 import AnimatedText from './animated-text';
 import { Heading1, Lead2 } from './copy';
@@ -15,7 +15,7 @@ function shortNumber(num: number) {
 
 export async function Hero() {
   const projects = await chQuery<{ project_id: string; count: number }>(
-    'SELECT project_id, count(*) as count from events GROUP by project_id order by count()'
+    `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`
   );
   const projectCount = projects.length;
   const eventCount = projects.reduce((acc, { count }) => acc + count, 0);

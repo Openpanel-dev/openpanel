@@ -34,6 +34,7 @@ import {
   getChartSql,
   getEventFiltersWhereClause,
   getProfiles,
+  TABLE_NAMES,
 } from '@openpanel/db';
 import type {
   FinalChart,
@@ -293,7 +294,7 @@ export async function getFunnelData({
   const innerSql = `SELECT
     session_id,
     windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
-  FROM events
+  FROM ${TABLE_NAMES.events}
   WHERE 
     project_id = ${escape(projectId)} AND 
     created_at >= '${formatClickhouseDate(startDate)}' AND 
@@ -306,7 +307,7 @@ export async function getFunnelData({
   const [funnelRes, sessionRes] = await Promise.all([
     chQuery<{ level: number; count: number }>(sql),
     chQuery<{ count: number }>(
-      `SELECT count(name) as count FROM events WHERE project_id = ${escape(projectId)} AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
+      `SELECT count(name) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
     ),
   ]);
 
@@ -409,7 +410,7 @@ export async function getFunnelStep({
   const innerSql = `SELECT
     session_id,
     windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
-  FROM events
+  FROM ${TABLE_NAMES.events}
   WHERE 
     project_id = ${escape(projectId)} AND 
     created_at >= '${formatClickhouseDate(startDate)}' AND 
@@ -421,7 +422,7 @@ export async function getFunnelStep({
     SELECT 
       DISTINCT e.profile_id as id
     FROM sessions s
-    JOIN events e ON s.session_id = e.session_id
+    JOIN ${TABLE_NAMES.events} e ON s.session_id = e.session_id
     WHERE 
       s.level = ${step} AND
       e.project_id = ${escape(projectId)} AND 

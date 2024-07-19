@@ -1,6 +1,6 @@
 import { escape } from 'sqlstring';
 
-import { chQuery } from '../clickhouse-client';
+import { chQuery, TABLE_NAMES } from '../clickhouse-client';
 
 type IGetWeekRetentionInput = {
   projectId: string;
@@ -15,7 +15,7 @@ WITH
       SELECT
           profile_id,
           max(toWeek(created_at)) AS last_seen
-      FROM events
+      FROM ${TABLE_NAMES.events}
       WHERE (project_id = ${escape(projectId)}) AND (profile_id != device_id)
       GROUP BY profile_id
   ),
@@ -24,7 +24,7 @@ WITH
       SELECT
           profile_id,
           min(toWeek(created_at)) AS first_seen
-      FROM events
+      FROM ${TABLE_NAMES.events}
       WHERE (project_id = ${escape(projectId)}) AND (profile_id != device_id)
       GROUP BY profile_id
   ),
@@ -79,8 +79,8 @@ export function getRetentionSeries({ projectId }: IGetWeekRetentionInput) {
       countDistinct(events.profile_id) AS active_users,
       countDistinct(future_events.profile_id) AS retained_users,
       (100 * (countDistinct(future_events.profile_id) / CAST(countDistinct(events.profile_id), 'float'))) AS retention
-    FROM events
-    LEFT JOIN events AS future_events ON 
+    FROM ${TABLE_NAMES.events} as events
+    LEFT JOIN ${TABLE_NAMES.events} AS future_events ON 
       events.profile_id = future_events.profile_id
       AND toStartOfWeek(events.created_at) = toStartOfWeek(future_events.created_at - toIntervalWeek(1))
       AND future_events.profile_id != future_events.device_id
@@ -140,7 +140,7 @@ export function getRetentionLastSeenSeries({
         SELECT
             max(created_at) AS last_active,
             profile_id
-        FROM events
+        FROM ${TABLE_NAMES.events}
         WHERE (project_id = ${escape(projectId)}) AND (device_id != profile_id)
         GROUP BY profile_id
     )
