@@ -113,6 +113,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     sessionId: uuid(),
     deviceId: currentDeviceId,
     profileId,
+    projectId,
   };
 
   const sessionEndJobId =

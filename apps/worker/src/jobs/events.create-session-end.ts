@@ -21,12 +21,14 @@ export async function createSessionEnd(
   SELECT * FROM ${TABLE_NAMES.events} 
   WHERE 
     session_id = '${payload.sessionId}' 
+    ${payload.projectId ? `AND project_id = '${payload.projectId}' ` : ''}
     AND created_at >= (
       SELECT created_at 
       FROM ${TABLE_NAMES.events}
       WHERE 
         session_id = '${payload.sessionId}' 
         AND name = 'session_start'
+        ${payload.projectId ? `AND project_id = '${payload.projectId}' ` : ''}
       ORDER BY created_at DESC
       LIMIT 1
     ) 

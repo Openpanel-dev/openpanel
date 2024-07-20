@@ -33,7 +33,7 @@ export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
   payload: Pick<
     IServiceCreateEventPayload,
-    'deviceId' | 'sessionId' | 'profileId'
+    'deviceId' | 'sessionId' | 'profileId' | 'projectId'
   >;
 }
 
