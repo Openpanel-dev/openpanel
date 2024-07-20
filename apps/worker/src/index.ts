@@ -15,6 +15,7 @@ import {
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
 import { sessionsJob } from './jobs/sessions';
+import { register } from './metrics';
 
 const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
@@ -50,6 +51,18 @@ async function start() {
   });
 
   app.use('/', serverAdapter.getRouter());
+
+  app.get('/metrics', (req, res) => {
+    res.set('Content-Type', register.contentType);
+    register
+      .metrics()
+      .then((metrics) => {
+        res.end(metrics);
+      })
+      .catch((error) => {
+        res.status(500).end(error);
+      });
+  });
 
   app.listen(PORT, () => {
     console.log(`For the UI, open http://localhost:${PORT}/`);
