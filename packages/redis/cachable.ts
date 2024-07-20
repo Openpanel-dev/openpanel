@@ -1,4 +1,4 @@
-import { redis } from './redis';
+import { getRedisCache } from './redis';
 
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
@@ -9,7 +9,7 @@ export function cacheable<T extends (...args: any) => any>(
   ): Promise<Awaited<ReturnType<T>>> {
     // JSON.stringify here is not bullet proof since ordering of object keys matters etc
     const key = `cachable:${fn.name}:${JSON.stringify(args)}`;
-    const cached = await redis.get(key);
+    const cached = await getRedisCache().get(key);
     if (cached) {
       try {
         return JSON.parse(cached);
@@ -20,7 +20,7 @@ export function cacheable<T extends (...args: any) => any>(
     const result = await fn(...(args as any));
 
     if (result !== undefined || result !== null) {
-      redis.setex(key, expire, JSON.stringify(result));
+      getRedisCache().setex(key, expire, JSON.stringify(result));
     }
 
     return result;

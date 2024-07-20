@@ -10,7 +10,7 @@ import { round } from '@openpanel/common';
 import { chQuery, db, TABLE_NAMES } from '@openpanel/db';
 import type { IServiceClient } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
-import { redis, redisPub } from '@openpanel/redis';
+import { getRedisCache, getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
@@ -98,7 +98,7 @@ const startServer = async () => {
       reply.send({ name: 'openpanel sdk api' });
     });
     fastify.get('/healthcheck', async (request, reply) => {
-      const redisRes = await withTimings(redis.keys('*'));
+      const redisRes = await withTimings(getRedisCache().keys('*'));
       const dbRes = await withTimings(db.project.findFirst());
       const queueRes = await withTimings(eventsQueue.getCompleted());
       const chRes = await withTimings(
@@ -150,7 +150,7 @@ const startServer = async () => {
     });
 
     // Notify when keys expires
-    redisPub.config('SET', 'notify-keyspace-events', 'Ex');
+    getRedisPub().config('SET', 'notify-keyspace-events', 'Ex');
   } catch (e) {
     logger.error(e, 'Failed to start server');
   }

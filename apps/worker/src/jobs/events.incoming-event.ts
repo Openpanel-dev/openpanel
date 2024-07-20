@@ -14,7 +14,7 @@ import type {
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
-import { redis } from '@openpanel/redis';
+import { getRedisQueue } from '@openpanel/redis';
 
 function noDateInFuture(eventDate: Date): Date {
   if (eventDate > new Date()) {
@@ -217,7 +217,9 @@ async function getSessionEnd({
   currentDeviceId: string;
   previousDeviceId: string;
 }) {
-  const sessionEndKeys = await redis.keys(`*:sessionEnd:${projectId}:*`);
+  const sessionEndKeys = await getRedisQueue().keys(
+    `*:sessionEnd:${projectId}:*`
+  );
 
   const sessionEndJobCurrentDeviceId = await findJobByPrefix(
     sessionsQueue,

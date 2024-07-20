@@ -5,7 +5,7 @@ import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
 
 import { createHash } from '@openpanel/common';
-import { redis } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
   url: string;
@@ -51,7 +51,7 @@ export async function getFavicon(
 ) {
   function sendBuffer(buffer: Buffer, cacheKey?: string) {
     if (cacheKey) {
-      redis.set(`favicon:${cacheKey}`, buffer.toString('base64'));
+      getRedisCache().set(`favicon:${cacheKey}`, buffer.toString('base64'));
     }
     reply.type('image/png');
     return reply.send(buffer);
@@ -65,7 +65,7 @@ export async function getFavicon(
 
   if (imageExtensions.find((ext) => url.endsWith(ext))) {
     const cacheKey = createHash(url, 32);
-    const cache = await redis.get(`favicon:${cacheKey}`);
+    const cache = await getRedisCache().get(`favicon:${cacheKey}`);
     if (cache) {
       return sendBuffer(Buffer.from(cache, 'base64'));
     }
@@ -76,7 +76,7 @@ export async function getFavicon(
   }
 
   const { hostname } = new URL(url);
-  const cache = await redis.get(`favicon:${hostname}`);
+  const cache = await getRedisCache().get(`favicon:${hostname}`);
 
   if (cache) {
     return sendBuffer(Buffer.from(cache, 'base64'));
@@ -104,9 +104,9 @@ export async function clearFavicons(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const keys = await redis.keys('favicon:*');
+  const keys = await getRedisCache().keys('favicon:*');
   for (const key of keys) {
-    await redis.del(key);
+    await getRedisCache().del(key);
   }
   return reply.status(404).send('OK');
 }

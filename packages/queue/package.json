@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@openpanel/db": "workspace:*",
+    "@openpanel/redis": "workspace:*",
     "bullmq": "^5.8.7"
   },
   "devDependencies": {

@@ -3,7 +3,7 @@ import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import { redis } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { eventBuffer } from '../buffers';
@@ -184,7 +184,7 @@ export function transformMinimalEvent(
 }
 
 export async function getLiveVisitors(projectId: string) {
-  const keys = await redis.keys(`live:event:${projectId}:*`);
+  const keys = await getRedisCache().keys(`live:event:${projectId}:*`);
   return keys.length;
 }
 

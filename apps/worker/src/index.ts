@@ -5,12 +5,8 @@ import type { WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 import express from 'express';
 
-import {
-  connection,
-  cronQueue,
-  eventsQueue,
-  sessionsQueue,
-} from '@openpanel/queue';
+import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
+import { getRedisQueue } from '@openpanel/redis';
 
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
@@ -23,12 +19,7 @@ serverAdapter.setBasePath(process.env.SELF_HOSTED ? '/worker' : '/');
 const app = express();
 
 const workerOptions: WorkerOptions = {
-  connection: {
-    ...connection,
-    enableReadyCheck: false,
-    maxRetriesPerRequest: null,
-    enableOfflineQueue: true,
-  },
+  connection: getRedisQueue(),
   concurrency: parseInt(process.env.CONCURRENCY || '1', 10),
 };
 

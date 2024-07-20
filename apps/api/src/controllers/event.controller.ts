@@ -1,11 +1,10 @@
-import { logger } from '@/utils/logger';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { generateDeviceId } from '@openpanel/common';
 import { getSalts } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
-import { redis } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
 export async function postEvent(
@@ -38,7 +37,7 @@ export async function postEvent(
   });
 
   // this will ensure that we don't have multiple events creating sessions
-  const locked = await redis.set(
+  const locked = await getRedisCache().set(
     `request:priority:${currentDeviceId}-${previousDeviceId}`,
     'locked',
     'EX',

@@ -1,7 +1,7 @@
 import { mergeDeepRight } from 'ramda';
 
 import { toDots } from '@openpanel/common';
-import { redis } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 
 import { ch, chQuery } from '../clickhouse-client';
 import type {
@@ -22,7 +22,7 @@ import { RedisBuffer } from './buffer';
 export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   constructor() {
     super({
-      redis,
+      redis: getRedisCache(),
       table: 'profiles',
       batchSize: 100,
     });

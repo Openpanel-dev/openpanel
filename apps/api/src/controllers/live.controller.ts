@@ -1,6 +1,5 @@
 import { validateClerkJwt } from '@/utils/auth';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { escape } from 'sqlstring';
 import superjson from 'superjson';
 import type * as WebSocket from 'ws';
 
@@ -13,7 +12,7 @@ import {
   TABLE_NAMES,
   transformMinimalEvent,
 } from '@openpanel/db';
-import { redis, redisPub, redisSub } from '@openpanel/redis';
+import { getRedisCache, getRedisPub, getRedisSub } from '@openpanel/redis';
 import { getProjectAccess } from '@openpanel/trpc';
 
 export function getLiveEventInfo(key: string) {
@@ -36,8 +35,8 @@ export async function testVisitors(
     return reply.status(404).send('No event found');
   }
   event.projectId = req.params.projectId;
-  redisPub.publish('event:received', superjson.stringify(event));
-  redis.set(
+  getRedisPub().publish('event:received', superjson.stringify(event));
+  getRedisCache().set(
     `live:event:${event.projectId}:${Math.random() * 1000}`,
     '',
     'EX',
@@ -61,7 +60,7 @@ export async function testEvents(
   if (!event) {
     return reply.status(404).send('No event found');
   }
-  redisPub.publish('event:saved', superjson.stringify(event));
+  getRedisPub().publish('event:saved', superjson.stringify(event));
   reply.status(202).send(event);
 }
 
@@ -77,8 +76,8 @@ export function wsVisitors(
 ) {
   const { params } = req;
 
-  redisSub.subscribe('event:received');
-  redisSub.psubscribe('__key*:expired');
+  getRedisSub().subscribe('event:received');
+  getRedisSub().psubscribe('__key*:expired');
 
   const message = (channel: string, message: string) => {
     if (channel === 'event:received') {
@@ -99,14 +98,14 @@ export function wsVisitors(
     }
   };
 
-  redisSub.on('message', message);
-  redisSub.on('pmessage', pmessage);
+  getRedisSub().on('message', message);
+  getRedisSub().on('pmessage', pmessage);
 
   connection.socket.on('close', () => {
-    redisSub.unsubscribe('event:saved');
-    redisSub.punsubscribe('__key*:expired');
-    redisSub.off('message', message);
-    redisSub.off('pmessage', pmessage);
+    getRedisSub().unsubscribe('event:saved');
+    getRedisSub().punsubscribe('__key*:expired');
+    getRedisSub().off('message', message);
+    getRedisSub().off('pmessage', pmessage);
   });
 }
 
@@ -140,7 +139,7 @@ export async function wsProjectEvents(
     projectId: params.projectId,
   });
 
-  redisSub.subscribe(subscribeToEvent);
+  getRedisSub().subscribe(subscribeToEvent);
 
   const message = async (channel: string, message: string) => {
     const event = getSuperJson<IServiceCreateEventPayload>(message);
@@ -159,10 +158,10 @@ export async function wsProjectEvents(
     }
   };
 
-  redisSub.on('message', message as any);
+  getRedisSub().on('message', message as any);
 
   connection.socket.on('close', () => {
-    redisSub.unsubscribe(subscribeToEvent);
-    redisSub.off('message', message as any);
+    getRedisSub().unsubscribe(subscribeToEvent);
+    getRedisSub().off('message', message as any);
   });
 }

@@ -3,11 +3,11 @@ import { escape } from 'sqlstring';
 import type { IClickhouseEvent } from '@openpanel/db';
 import { chQuery, eventBuffer, TABLE_NAMES } from '@openpanel/db';
 import { sessionsQueue } from '@openpanel/queue/src/queues';
-import { redis } from '@openpanel/redis';
+import { getRedisCache, getRedisQueue } from '@openpanel/redis';
 
 async function debugStalledEvents() {
-  const keys = await redis.keys('bull:sessions:sessionEnd*');
-  const delayedZRange = await redis.zrange(
+  const keys = await getRedisQueue().keys('bull:sessions:sessionEnd*');
+  const delayedZRange = await getRedisQueue().zrange(
     'bull:sessions:delayed',
     0,
     -1,
@@ -20,10 +20,14 @@ async function debugStalledEvents() {
       }
       return acc;
     },
-    [] as Record<string, number>
+    {} as Record<string, number>
   );
-  const opKeys = await redis.keys('op:*');
-  const stalledEvents = await redis.lrange('op:buffer:events:stalled', 0, -1);
+  const opKeys = await getRedisCache().keys('op:*');
+  const stalledEvents = await getRedisCache().lrange(
+    'op:buffer:events:stalled',
+    0,
+    -1
+  );
   // keys.forEach((key) => {
   //   console.log(key);
   // });
@@ -112,7 +116,14 @@ async function debugStalledEvents() {
   delayedJobs.sort((a, b) => a.timestamp + a.delay - (b.timestamp + b.delay));
   let delayedJobsCount = 0;
   delayedJobs.forEach((job) => {
-    const date = new Date(delayedValues[job.id]);
+    if (!job.id) {
+      return;
+    }
+    const timestamp = delayedValues[job.id];
+    if (!timestamp) {
+      return;
+    }
+    const date = new Date(timestamp);
     // if date is in the past
     // if (date.getTime() - 1000 * 60 * 5 < Date.now()) {
     if (date.getTime() < Date.now()) {

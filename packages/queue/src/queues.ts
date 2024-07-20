@@ -1,9 +1,8 @@
 import { Queue } from 'bullmq';
 
 import type { IServiceCreateEventPayload } from '@openpanel/db';
+import { getRedisQueue } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
-
-import { connection } from './connection';
 
 export interface EventsQueuePayloadIncomingEvent {
   type: 'incomingEvent';
@@ -63,21 +62,21 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushProfiles;
 
 export const eventsQueue = new Queue<EventsQueuePayload>('events', {
-  connection,
+  connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
   },
 });
 
 export const sessionsQueue = new Queue<SessionsQueuePayload>('sessions', {
-  connection,
+  connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
   },
 });
 
 export const cronQueue = new Queue<CronQueuePayload>('cron', {
-  connection,
+  connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
   },

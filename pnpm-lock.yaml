@@ -1008,6 +1008,9 @@ importers:
       '@openpanel/db':
         specifier: workspace:*
         version: link:../db
+      '@openpanel/redis':
+        specifier: workspace:*
+        version: link:../redis
       bullmq:
         specifier: ^5.8.7
         version: 5.8.7

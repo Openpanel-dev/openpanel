@@ -2,7 +2,7 @@ import { groupBy } from 'ramda';
 import SuperJSON from 'superjson';
 
 import { deepMergeObjects } from '@openpanel/common';
-import { redis, redisPub } from '@openpanel/redis';
+import { getRedisCache, getRedisPub } from '@openpanel/redis';
 
 import { ch, TABLE_NAMES } from '../clickhouse-client';
 import { transformEvent } from '../services/event.service';
@@ -31,12 +31,12 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
   constructor() {
     super({
       table: TABLE_NAMES.events,
-      redis,
+      redis: getRedisCache(),
     });
   }
 
   public onInsert?: OnInsert<IClickhouseEvent> | undefined = (event) => {
-    redisPub.publish(
+    getRedisPub().publish(
       'event:received',
       SuperJSON.stringify(transformEvent(event))
     );
@@ -54,7 +54,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     savedEvents
   ) => {
     for (const event of savedEvents) {
-      redisPub.publish(
+      getRedisPub().publish(
         'event:saved',
         SuperJSON.stringify(transformEvent(event))
       );

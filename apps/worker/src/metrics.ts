@@ -1,7 +1,7 @@
 import client from 'prom-client';
 
 import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
-import { redis } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 
 const Registry = client.Registry;
 
@@ -75,7 +75,7 @@ buffers.forEach((buffer) => {
       name: `buffer_${buffer}_count`,
       help: 'Number of users in the users array',
       async collect() {
-        const metric = await redis.llen(`op:buffer:${buffer}`);
+        const metric = await getRedisCache().llen(`op:buffer:${buffer}`);
         this.set(metric);
       },
     })
@@ -86,7 +86,9 @@ buffers.forEach((buffer) => {
       name: `buffer_${buffer}_stalled_count`,
       help: 'Number of users in the users array',
       async collect() {
-        const metric = await redis.llen(`op:buffer:${buffer}:stalled`);
+        const metric = await getRedisCache().llen(
+          `op:buffer:${buffer}:stalled`
+        );
         this.set(metric);
       },
     })

@@ -7,7 +7,6 @@ import type {
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
-import { redis } from '@openpanel/redis';
 
 import { createSessionEnd } from './events.create-session-end';
 import { incomingEvent } from './events.incoming-event';
