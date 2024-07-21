@@ -5,7 +5,7 @@ import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
-import { useDispatch } from '@/redux';
+import { useDispatch, useSelector } from '@/redux';
 import { api } from '@/trpc/client';
 import { SlidersHorizontal, Trash } from 'lucide-react';
 
@@ -26,12 +26,16 @@ interface FilterProps {
 
 export function FilterItem({ filter, event }: FilterProps) {
   const { projectId } = useAppParams();
+  const { range, startDate, endDate } = useSelector((state) => state.report);
   const getLabel = useMappings();
   const dispatch = useDispatch();
   const potentialValues = api.chart.values.useQuery({
     event: event.name,
     property: filter.name,
     projectId,
+    range,
+    startDate,
+    endDate,
   });
 
   const valuesCombobox =
@@ -90,7 +94,7 @@ export function FilterItem({ filter, event }: FilterProps) {
   return (
     <div
       key={filter.name}
-      className="shadow-def-200 px-4 py-2 shadow-[inset_6px_0_0] first:border-t"
+      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-200 first:border-t"
     >
       <div className="mb-2 flex items-center gap-2">
         <ColorSquare className="bg-emerald-500">

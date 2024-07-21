@@ -819,6 +819,9 @@ importers:
 
   packages/cli:
     dependencies:
+      '@openpanel/common':
+        specifier: workspace:*
+        version: link:../common
       arg:
         specifier: ^5.0.2
         version: 5.0.2

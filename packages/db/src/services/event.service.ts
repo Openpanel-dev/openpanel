@@ -21,6 +21,13 @@ import { getEventFiltersWhereClause } from './chart.service';
 import { getProfiles, upsertProfile } from './profile.service';
 import type { IServiceProfile } from './profile.service';
 
+export type IImportedEvent = Omit<
+  IClickhouseEvent,
+  'properties' | 'profile' | 'meta' | 'imported_at'
+> & {
+  properties: Record<string, unknown>;
+};
+
 export interface IClickhouseEvent {
   id: string;
   name: string;
@@ -34,7 +41,7 @@ export interface IClickhouseEvent {
   referrer_name: string;
   referrer_type: string;
   duration: number;
-  properties: Record<string, string | number | boolean>;
+  properties: Record<string, string | number | boolean | undefined | null>;
   created_at: string;
   country: string;
   city: string;
@@ -48,6 +55,7 @@ export interface IClickhouseEvent {
   device: string;
   brand: string;
   model: string;
+  imported_at: string | null;
 
   // They do not exist here. Just make ts happy for now
   profile?: IServiceProfile;
@@ -86,6 +94,7 @@ export function transformEvent(
     referrerType: event.referrer_type,
     profile: event.profile,
     meta: event.meta,
+    importedAt: event.imported_at ? new Date(event.imported_at) : null,
   };
 }
 
@@ -119,6 +128,7 @@ export interface IServiceCreateEventPayload {
   referrer: string | undefined;
   referrerName: string | undefined;
   referrerType: string | undefined;
+  importedAt: Date | null;
   profile: IServiceProfile | undefined;
   meta: EventMeta | undefined;
 }
@@ -221,7 +231,10 @@ export async function getEvents(
 }
 
 export async function createEvent(
-  payload: Omit<IServiceCreateEventPayload, 'id'>
+  payload: Omit<
+    IServiceCreateEventPayload,
+    'id' | 'importedAt' | 'profile' | 'meta'
+  >
 ) {
   if (!payload.profileId) {
     payload.profileId = payload.deviceId;
@@ -283,6 +296,7 @@ export async function createEvent(
     referrer: payload.referrer ?? '',
     referrer_name: payload.referrerName ?? '',
     referrer_type: payload.referrerType ?? '',
+    imported_at: null,
   };
 
   await eventBuffer.insert(event);

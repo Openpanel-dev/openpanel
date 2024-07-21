@@ -1,6 +1,5 @@
-import { useEffect } from 'react';
+import { differenceInCalendarMonths } from 'date-fns';
 import {
-  parseAsBoolean,
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
@@ -18,10 +17,6 @@ import { mapKeys } from '@openpanel/validation';
 const nuqsOptions = { history: 'push' } as const;
 
 export function useOverviewOptions() {
-  const [previous, setPrevious] = useQueryState(
-    'compare',
-    parseAsBoolean.withDefault(true).withOptions(nuqsOptions)
-  );
   const [startDate, setStartDate] = useQueryState(
     'start',
     parseAsString.withOptions(nuqsOptions)
@@ -47,8 +42,15 @@ export function useOverviewOptions() {
   );
 
   return {
-    previous,
-    setPrevious,
+    // Skip previous for ranges over 6 months (for performance reasons)
+    previous: !(
+      range === 'yearToDate' ||
+      range === 'lastYear' ||
+      (range === 'custom' &&
+        startDate &&
+        endDate &&
+        differenceInCalendarMonths(startDate, endDate) > 6)
+    ),
     range,
     setRange: (value: IChartRange | null) => {
       if (value !== 'custom') {

@@ -11,8 +11,8 @@ export const originalCh = createClient({
   username: process.env.CLICKHOUSE_USER,
   password: process.env.CLICKHOUSE_PASSWORD,
   database: process.env.CLICKHOUSE_DB,
-  max_open_connections: 10,
-  request_timeout: 10000,
+  max_open_connections: 30,
+  request_timeout: 30000,
   keep_alive: {
     enabled: true,
     idle_socket_ttl: 8000,
@@ -92,7 +92,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   };
 
   console.log(
-    `Query: (${Date.now() - start}ms, ${response.statistics?.elapsed}ms)`,
+    `Query: (${Date.now() - start}ms, ${response.statistics?.elapsed}ms), Rows: ${json.rows}`,
     query
   );
 

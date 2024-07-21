@@ -64,17 +64,16 @@ interface GetProfileListOptions {
 }
 
 export async function getProfiles(ids: string[]) {
-  if (ids.length === 0) {
+  const filteredIds = ids.filter((id) => id !== '');
+
+  if (filteredIds.length === 0) {
     return [];
   }
 
   const data = await chQuery<IClickhouseProfile>(
     `SELECT *
     FROM profiles FINAL 
-    WHERE id IN (${ids
-      .map((id) => escape(id))
-      .filter(Boolean)
-      .join(',')})
+    WHERE id IN (${filteredIds.map((id) => escape(id)).join(',')})
     `
   );
 
