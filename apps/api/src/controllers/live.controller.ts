@@ -4,7 +4,7 @@ import superjson from 'superjson';
 import type * as WebSocket from 'ws';
 
 import { getSuperJson } from '@openpanel/common';
-import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/db';
 import {
   getEvents,
   getLiveVisitors,
@@ -81,7 +81,7 @@ export function wsVisitors(
 
   const message = (channel: string, message: string) => {
     if (channel === 'event:received') {
-      const event = getSuperJson<IServiceCreateEventPayload>(message);
+      const event = getSuperJson<IServiceEvent>(message);
       if (event?.projectId === params.projectId) {
         getLiveVisitors(params.projectId).then((count) => {
           connection.socket.send(String(count));
@@ -142,7 +142,7 @@ export async function wsProjectEvents(
   getRedisSub().subscribe(subscribeToEvent);
 
   const message = async (channel: string, message: string) => {
-    const event = getSuperJson<IServiceCreateEventPayload>(message);
+    const event = getSuperJson<IServiceEvent>(message);
     if (event?.projectId === params.projectId) {
       const profile = await getProfileById(event.profileId, event.projectId);
       connection.socket.send(

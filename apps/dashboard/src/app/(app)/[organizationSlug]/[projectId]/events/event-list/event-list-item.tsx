@@ -9,15 +9,12 @@ import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
 
-import type {
-  IServiceCreateEventPayload,
-  IServiceEventMinimal,
-} from '@openpanel/db';
+import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/db';
 
 import { EventDetails } from './event-details';
 import { EventIcon } from './event-icon';
 
-type EventListItemProps = IServiceEventMinimal | IServiceCreateEventPayload;
+type EventListItemProps = IServiceEventMinimal | IServiceEvent;
 
 export function EventListItem(props: EventListItemProps) {
   const { organizationSlug, projectId } = useAppParams();

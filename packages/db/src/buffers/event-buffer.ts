@@ -8,7 +8,7 @@ import { ch, TABLE_NAMES } from '../clickhouse-client';
 import { transformEvent } from '../services/event.service';
 import type {
   IClickhouseEvent,
-  IServiceCreateEventPayload,
+  IServiceEvent,
 } from '../services/event.service';
 import type {
   Find,
@@ -187,22 +187,19 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     ];
   };
 
-  public findMany: FindMany<IClickhouseEvent, IServiceCreateEventPayload> =
-    async (callback) => {
-      return this.getQueue(-1)
-        .then((queue) => {
-          return queue
-            .filter(callback)
-            .map((item) => transformEvent(item.event));
-        })
-        .catch(() => {
-          return [];
-        });
-    };
-
-  public find: Find<IClickhouseEvent, IServiceCreateEventPayload> = async (
+  public findMany: FindMany<IClickhouseEvent, IServiceEvent> = async (
     callback
   ) => {
+    return this.getQueue(-1)
+      .then((queue) => {
+        return queue.filter(callback).map((item) => transformEvent(item.event));
+      })
+      .catch(() => {
+        return [];
+      });
+  };
+
+  public find: Find<IClickhouseEvent, IServiceEvent> = async (callback) => {
     return this.getQueue(-1)
       .then((queue) => {
         const match = queue.find(callback);

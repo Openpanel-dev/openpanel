@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 
-import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/db';
 import { getRedisQueue } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
@@ -26,12 +26,12 @@ export interface EventsQueuePayloadIncomingEvent {
 }
 export interface EventsQueuePayloadCreateEvent {
   type: 'createEvent';
-  payload: Omit<IServiceCreateEventPayload, 'id'>;
+  payload: Omit<IServiceEvent, 'id'>;
 }
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
   payload: Pick<
-    IServiceCreateEventPayload,
+    IServiceEvent,
     'deviceId' | 'sessionId' | 'profileId' | 'projectId'
   >;
 }

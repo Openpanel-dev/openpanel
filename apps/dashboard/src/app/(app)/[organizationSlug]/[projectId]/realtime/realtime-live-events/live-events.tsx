@@ -5,20 +5,17 @@ import { EventListItem } from '@/app/(app)/[organizationSlug]/[projectId]/events
 import useWS from '@/hooks/useWS';
 import { AnimatePresence, motion } from 'framer-motion';
 
-import type {
-  IServiceCreateEventPayload,
-  IServiceEventMinimal,
-} from '@openpanel/db';
+import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/db';
 
 type Props = {
-  events: (IServiceEventMinimal | IServiceCreateEventPayload)[];
+  events: (IServiceEventMinimal | IServiceEvent)[];
   projectId: string;
   limit: number;
 };
 
 const RealtimeLiveEvents = ({ events, projectId, limit }: Props) => {
   const [state, setState] = useState(events ?? []);
-  useWS<IServiceEventMinimal | IServiceCreateEventPayload>(
+  useWS<IServiceEventMinimal | IServiceEvent>(
     `/live/events/${projectId}`,
     (event) => {
       setState((p) => [event, ...p].slice(0, limit));

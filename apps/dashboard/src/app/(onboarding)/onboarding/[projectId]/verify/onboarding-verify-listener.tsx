@@ -10,22 +10,20 @@ import { CheckCircle2Icon, CheckIcon, Loader2 } from 'lucide-react';
 
 import type {
   IServiceClient,
-  IServiceCreateEventPayload,
+  IServiceEvent,
   IServiceProject,
 } from '@openpanel/db';
 
 type Props = {
   project: IServiceProject;
   client: IServiceClient | null;
-  events: IServiceCreateEventPayload[];
+  events: IServiceEvent[];
   onVerified: (verified: boolean) => void;
 };
 
 const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
-  const [events, setEvents] = useState<IServiceCreateEventPayload[]>(
-    _events ?? []
-  );
-  useWS<IServiceCreateEventPayload>(
+  const [events, setEvents] = useState<IServiceEvent[]>(_events ?? []);
+  useWS<IServiceEvent>(
     `/live/events/${client?.projectId}?type=received`,
     (data) => {
       setEvents((prev) => [...prev, data]);

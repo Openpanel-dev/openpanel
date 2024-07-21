@@ -62,9 +62,7 @@ export interface IClickhouseEvent {
   meta?: EventMeta;
 }
 
-export function transformEvent(
-  event: IClickhouseEvent
-): IServiceCreateEventPayload {
+export function transformEvent(event: IClickhouseEvent): IServiceEvent {
   return {
     id: event.id,
     name: event.name,
@@ -98,7 +96,12 @@ export function transformEvent(
   };
 }
 
-export interface IServiceCreateEventPayload {
+export type IServiceCreateEventPayload = Omit<
+  IServiceEvent,
+  'id' | 'importedAt' | 'profile' | 'meta'
+>;
+
+export interface IServiceEvent {
   id: string;
   name: string;
   deviceId: string;
@@ -169,7 +172,7 @@ function maskString(str: string, mask = '*') {
 }
 
 export function transformMinimalEvent(
-  event: IServiceCreateEventPayload
+  event: IServiceEvent
 ): IServiceEventMinimal {
   return {
     id: event.id,
@@ -201,7 +204,7 @@ export async function getLiveVisitors(projectId: string) {
 export async function getEvents(
   sql: string,
   options: GetEventsOptions = {}
-): Promise<IServiceCreateEventPayload[]> {
+): Promise<IServiceEvent[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
   if (options.profile) {
     const ids = events.map((e) => e.profile_id);
@@ -230,12 +233,7 @@ export async function getEvents(
   return events.map(transformEvent);
 }
 
-export async function createEvent(
-  payload: Omit<
-    IServiceCreateEventPayload,
-    'id' | 'importedAt' | 'profile' | 'meta'
-  >
-) {
+export async function createEvent(payload: IServiceCreateEventPayload) {
   if (!payload.profileId) {
     payload.profileId = payload.deviceId;
   }
