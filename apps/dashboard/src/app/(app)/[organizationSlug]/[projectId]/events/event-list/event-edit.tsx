@@ -15,7 +15,7 @@ import { cn } from '@/utils/cn';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
-import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/db';
 
 import {
   EventIconColors,
@@ -24,7 +24,7 @@ import {
 } from './event-icon';
 
 interface Props {
-  event: IServiceCreateEventPayload;
+  event: IServiceEvent;
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
@@ -106,7 +106,7 @@ export function EventEdit({ event, open, setOpen }: Props) {
                     setIcon(name);
                   }}
                   className={cn(
-                    'bg-def-200 inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md transition-all',
+                    'inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-def-200 transition-all',
                     name === selectedIcon
                       ? 'scale-110 ring-1 ring-black'
                       : '[&_svg]:opacity-50'

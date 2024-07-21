@@ -9,7 +9,7 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { isSameDay } from 'date-fns';
 import { GanttChartIcon } from 'lucide-react';
 
-import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/db';
 
 import { EventListItem } from './event-list-item';
 import EventListener from './event-listener';
@@ -20,7 +20,7 @@ function showDateHeader(a: Date, b?: Date) {
 }
 
 interface EventListProps {
-  data: IServiceCreateEventPayload[];
+  data: IServiceEvent[];
   count: number;
 }
 
@@ -63,7 +63,7 @@ function EventList({ data, count }: EventListProps) {
                   <div className="flex flex-row justify-between gap-2 [&:not(:first-child)]:mt-12">
                     {index === 0 ? <EventListener /> : <div />}
                     <div className="flex gap-2">
-                      <div className="bg-def-200 border-def-200 flex h-8 items-center gap-2 rounded border px-3 text-sm font-medium leading-none">
+                      <div className="flex h-8 items-center gap-2 rounded border border-def-200 bg-def-200 px-3 text-sm font-medium leading-none">
                         {item.createdAt.toLocaleDateString()}
                       </div>
                       {index === 0 && (

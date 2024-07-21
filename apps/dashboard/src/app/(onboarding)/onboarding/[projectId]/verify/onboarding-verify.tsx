@@ -6,10 +6,7 @@ import { LinkButton } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import Link from 'next/link';
 
-import type {
-  IServiceCreateEventPayload,
-  IServiceProjectWithClients,
-} from '@openpanel/db';
+import type { IServiceEvent, IServiceProjectWithClients } from '@openpanel/db';
 
 import OnboardingLayout, {
   OnboardingDescription,
@@ -18,7 +15,7 @@ import VerifyListener from './onboarding-verify-listener';
 
 type Props = {
   project: IServiceProjectWithClients;
-  events: IServiceCreateEventPayload[];
+  events: IServiceEvent[];
 };
 
 const Verify = ({ project, events }: Props) => {

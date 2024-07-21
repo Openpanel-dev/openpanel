@@ -16,12 +16,12 @@ import {
 } from '@/hooks/useEventQueryFilters';
 import { round } from 'mathjs';
 
-import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/db';
 
 import { EventEdit } from './event-edit';
 
 interface Props {
-  event: IServiceCreateEventPayload;
+  event: IServiceEvent;
   open: boolean;
   setOpen: Dispatch<SetStateAction<boolean>>;
 }
