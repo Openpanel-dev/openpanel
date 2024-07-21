@@ -100,7 +100,7 @@ export function Combobox<T extends string>({
         align={align}
         portal={portal}
       >
-        <Command>
+        <Command shouldFilter={false}>
           {searchable === true && (
             <CommandInput
               placeholder="Search item..."
@@ -125,7 +125,10 @@ export function Combobox<T extends string>({
           )}
           <VirtualList
             height={300}
-            data={items}
+            data={items.filter((item) => {
+              if (search === '') return true;
+              return item.label.toLowerCase().includes(search.toLowerCase());
+            })}
             itemHeight={32}
             itemKey="value"
             className="min-w-60"
