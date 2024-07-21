@@ -28,9 +28,14 @@ import type { ReportEventMoreProps } from './ReportEventMore';
 export function ReportEvents() {
   const previous = useSelector((state) => state.report.previous);
   const selectedEvents = useSelector((state) => state.report.events);
+  const input = useSelector((state) => state.report);
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
-  const eventNames = useEventNames(projectId);
+  const eventNames = useEventNames(projectId, {
+    startDate: input.startDate,
+    endDate: input.endDate,
+    range: input.range,
+  });
 
   const dispatchChangeEvent = useDebounceFn((event: IChartEvent) => {
     dispatch(changeEvent(event));
@@ -54,7 +59,7 @@ export function ReportEvents() {
       <div className="flex flex-col gap-4">
         {selectedEvents.map((event) => {
           return (
-            <div key={event.id} className="bg-def-100 rounded-lg border">
+            <div key={event.id} className="rounded-lg border bg-def-100">
               <div className="flex items-center gap-2 p-2">
                 <ColorSquare>{event.id}</ColorSquare>
                 <Combobox

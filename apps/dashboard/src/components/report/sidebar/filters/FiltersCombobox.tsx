@@ -1,6 +1,6 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
-import { useDispatch } from '@/redux';
+import { useDispatch, useSelector } from '@/redux';
 import { api } from '@/trpc/client';
 import { FilterIcon } from 'lucide-react';
 
@@ -14,12 +14,16 @@ interface FiltersComboboxProps {
 
 export function FiltersCombobox({ event }: FiltersComboboxProps) {
   const dispatch = useDispatch();
+  const { range, startDate, endDate } = useSelector((state) => state.report);
   const { projectId } = useAppParams();
 
   const query = api.chart.properties.useQuery(
     {
       event: event.name,
       projectId,
+      range,
+      startDate,
+      endDate,
     },
     {
       enabled: !!event.name,

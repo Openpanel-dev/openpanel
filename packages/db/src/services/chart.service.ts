@@ -125,33 +125,67 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
     }
 
     if (name.startsWith('properties.')) {
+      const propertyKey = name
+        .replace(/^properties\./, '')
+        .replace('.*.', '.%.');
+      const isWildcard = propertyKey.includes('%');
       const whereFrom = `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
         name.replace(/^properties\./, '').replace('.*.', '.%.')
       )})))`;
 
       switch (operator) {
         case 'is': {
-          where[id] = `arrayExists(x -> ${value
-            .map((val) => `x = ${escape(String(val).trim())}`)
-            .join(' OR ')}, ${whereFrom})`;
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map((val) => `x = ${escape(String(val).trim())}`)
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = `properties['${propertyKey}'] IN (${value
+              .map((val) => escape(String(val).trim()))
+              .join(', ')})`;
+          }
           break;
         }
         case 'isNot': {
-          where[id] = `arrayExists(x -> ${value
-            .map((val) => `x != ${escape(String(val).trim())}`)
-            .join(' OR ')}, ${whereFrom})`;
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map((val) => `x != ${escape(String(val).trim())}`)
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = `properties['${propertyKey}'] NOT IN (${value
+              .map((val) => escape(String(val).trim()))
+              .join(', ')})`;
+          }
           break;
         }
         case 'contains': {
-          where[id] = `arrayExists(x -> ${value
-            .map((val) => `x LIKE ${escape(`%${String(val).trim()}%`)}`)
-            .join(' OR ')}, ${whereFrom})`;
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map((val) => `x LIKE ${escape(`%${String(val).trim()}%`)}`)
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = value
+              .map(
+                (val) =>
+                  `properties['${propertyKey}'] LIKE ${escape(`%${String(val).trim()}%`)}`
+              )
+              .join(' OR ');
+          }
           break;
         }
         case 'doesNotContain': {
-          where[id] = `arrayExists(x -> ${value
-            .map((val) => `x NOT LIKE ${escape(`%${String(val).trim()}%`)}`)
-            .join(' OR ')}, ${whereFrom})`;
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map((val) => `x NOT LIKE ${escape(`%${String(val).trim()}%`)}`)
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = value
+              .map(
+                (val) =>
+                  `properties['${propertyKey}'] NOT LIKE ${escape(`%${String(val).trim()}%`)}`
+              )
+              .join(' OR ');
+          }
           break;
         }
       }

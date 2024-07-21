@@ -16,6 +16,7 @@ import { appRouter, createContext } from '@openpanel/trpc';
 
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
+import importRouter from './routes/import.router';
 import liveRouter from './routes/live.router';
 import miscRouter from './routes/misc.router';
 import profileRouter from './routes/profile.router';
@@ -91,6 +92,7 @@ const startServer = async () => {
     fastify.register(miscRouter, { prefix: '/misc' });
     fastify.register(exportRouter, { prefix: '/export' });
     fastify.register(webhookRouter, { prefix: '/webhook' });
+    fastify.register(importRouter, { prefix: '/import' });
     fastify.setErrorHandler((error) => {
       logger.error(error, 'Error in request');
     });

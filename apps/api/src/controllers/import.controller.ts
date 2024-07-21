@@ -1,14 +1,8 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { pathOr } from 'ramda';
-import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import type {
-  IClickhouseEvent,
-  IServiceCreateEventPayload,
-} from '@openpanel/db';
-import { ch, formatClickhouseDate } from '@openpanel/db';
-import type { PostEventPayload } from '@openpanel/sdk';
+import type { IClickhouseEvent } from '@openpanel/db';
+import { ch, formatClickhouseDate, TABLE_NAMES } from '@openpanel/db';
 
 export async function importEvents(
   request: FastifyRequest<{
@@ -16,24 +10,31 @@ export async function importEvents(
   }>,
   reply: FastifyReply
 ) {
-  console.log('HERE?!', request.body.length);
-
+  const importedAt = formatClickhouseDate(new Date());
   const values: IClickhouseEvent[] = request.body.map((event) => {
     return {
       ...event,
+      properties: toDots(event.properties),
       project_id: request.client?.projectId ?? '',
       created_at: formatClickhouseDate(event.created_at),
+      imported_at: importedAt,
     };
   });
 
-  const res = await ch.insert({
-    table: 'events',
-    values,
-    format: 'JSONEachRow',
-    clickhouse_settings: {
-      date_time_input_format: 'best_effort',
-    },
-  });
+  try {
+    const res = await ch.insert({
+      table: TABLE_NAMES.events,
+      values,
+      format: 'JSONEachRow',
+      clickhouse_settings: {
+        date_time_input_format: 'best_effort',
+      },
+    });
 
-  reply.send('OK');
+    console.log(res.summary?.written_rows, 'events imported');
+    reply.send('OK');
+  } catch (e) {
+    console.error(e);
+    reply.status(500).send('Error');
+  }
 }

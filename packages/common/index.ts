@@ -7,3 +7,4 @@ export * from './src/string';
 export * from './src/math';
 export * from './src/slug';
 export * from './src/fill-series';
+export * from './src/url';

@@ -1,11 +1,15 @@
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
 import { parseUserAgent } from '@/utils/parse-user-agent';
-import { isSameDomain, parsePath } from '@/utils/url';
 import type { Job } from 'bullmq';
 import { omit } from 'ramda';
 import { v4 as uuid } from 'uuid';
 
-import { getTime, toISOString } from '@openpanel/common';
+import {
+  getTime,
+  isSameDomain,
+  parsePath,
+  toISOString,
+} from '@openpanel/common';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
@@ -97,6 +101,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       referrerType: event?.referrerType ?? '',
       profile: undefined,
       meta: undefined,
+      importedAt: null,
     };
 
     return createEvent(payload);
@@ -170,8 +175,6 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     referrer: referrer?.url,
     referrerName: referrer?.name || utmReferrer?.name || '',
     referrerType: referrer?.type || utmReferrer?.type || '',
-    profile: undefined,
-    meta: undefined,
   };
 
   if (!sessionEnd) {
