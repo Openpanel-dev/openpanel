@@ -31,7 +31,6 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
   constructor() {
     super({
       table: TABLE_NAMES.events,
-      redis: getRedisCache(),
     });
   }
 
@@ -41,7 +40,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
       SuperJSON.stringify(transformEvent(event))
     );
     if (event.profile_id) {
-      this.redis.set(
+      getRedisCache().set(
         `live:event:${event.project_id}:${event.profile_id}`,
         '',
         'EX',
@@ -168,7 +167,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     });
 
     if (itemsToStalled.size > 0) {
-      const multi = this.redis.multi();
+      const multi = getRedisCache().multi();
       for (const item of itemsToStalled) {
         multi.rpush(this.getKey('stalled'), JSON.stringify(item.event));
       }

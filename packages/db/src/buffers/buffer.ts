@@ -1,4 +1,4 @@
-import type { Redis } from '@openpanel/redis';
+import { getRedisCache } from '@openpanel/redis';
 
 export const DELETE = '__DELETE__';
 
@@ -40,7 +40,6 @@ export abstract class RedisBuffer<T> {
   public prefix = 'op:buffer';
   public table: string;
   public batchSize?: number;
-  public redis: Redis;
 
   // abstract methods
   public abstract onInsert?: OnInsert<T>;
@@ -49,9 +48,8 @@ export abstract class RedisBuffer<T> {
   public abstract find: Find<T, unknown>;
   public abstract findMany: FindMany<T, unknown>;
 
-  constructor(options: { table: string; redis: Redis; batchSize?: number }) {
+  constructor(options: { table: string; batchSize?: number }) {
     this.table = options.table;
-    this.redis = options.redis;
     this.batchSize = options.batchSize;
   }
 
@@ -65,9 +63,9 @@ export abstract class RedisBuffer<T> {
 
   public async insert(value: T) {
     this.onInsert?.(value);
-    await this.redis.rpush(this.getKey(), JSON.stringify(value));
+    await getRedisCache().rpush(this.getKey(), JSON.stringify(value));
 
-    const length = await this.redis.llen(this.getKey());
+    const length = await getRedisCache().llen(this.getKey());
     if (this.batchSize && length >= this.batchSize) {
       this.flush();
     }
@@ -109,7 +107,7 @@ export abstract class RedisBuffer<T> {
           e
         );
         const timestamp = new Date().getTime();
-        await this.redis.hset(this.getKey(`failed:${timestamp}`), {
+        await getRedisCache().hset(this.getKey(`failed:${timestamp}`), {
           error: getError(e),
           data: JSON.stringify(queue.map((item) => item.event)),
           retries: 0,
@@ -121,7 +119,7 @@ export abstract class RedisBuffer<T> {
   }
 
   public async deleteIndexes(indexes: number[]) {
-    const multi = this.redis.multi();
+    const multi = getRedisCache().multi();
     indexes.forEach((index) => {
       multi.lset(this.getKey(), index, DELETE);
     });
@@ -130,7 +128,7 @@ export abstract class RedisBuffer<T> {
   }
 
   public async getQueue(limit: number): Promise<QueueItem<T>[]> {
-    const queue = await this.redis.lrange(this.getKey(), 0, limit);
+    const queue = await getRedisCache().lrange(this.getKey(), 0, limit);
     return queue
       .map((item, index) => ({
         event: this.transformQueueItem(item),

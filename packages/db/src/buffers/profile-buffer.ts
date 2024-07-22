@@ -22,7 +22,6 @@ import { RedisBuffer } from './buffer';
 export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   constructor() {
     super({
-      redis: getRedisCache(),
       table: 'profiles',
       batchSize: 100,
     });
