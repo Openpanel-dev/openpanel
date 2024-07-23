@@ -56,6 +56,11 @@ export const ch = new Proxy(originalCh, {
               throw retryError; // Rethrow or handle as needed
             }
           } else {
+            if (args[0].query) {
+              console.log('FAILED QUERY:');
+              console.log(args[0].query);
+            }
+
             // Handle other errors or rethrow them
             throw error;
           }

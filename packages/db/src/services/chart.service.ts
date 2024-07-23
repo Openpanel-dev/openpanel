@@ -16,6 +16,8 @@ export function getChartSql({
   startDate,
   endDate,
   projectId,
+  chartType,
+  limit,
 }: IGetChartDataInput) {
   const { sb, join, getWhere, getFrom, getSelect, getOrderBy, getGroupBy } =
     createSqlBuilder();
@@ -57,6 +59,17 @@ export function getChartSql({
 
   if (endDate) {
     sb.where.endDate = `created_at <= '${formatClickhouseDate(endDate)}'`;
+  }
+
+  if (breakdowns.length > 0 && limit) {
+    sb.where.bar = `(${breakdowns.map((b) => b.name).join(',')}) IN (
+      SELECT ${breakdowns.map((b) => b.name).join(',')}
+      FROM ${TABLE_NAMES.events}
+      ${getWhere()}
+      GROUP BY ${breakdowns.map((b) => b.name).join(',')}
+      ORDER BY count(*) DESC
+      LIMIT ${limit}
+    )`;
   }
 
   breakdowns.forEach((breakdown, index) => {
