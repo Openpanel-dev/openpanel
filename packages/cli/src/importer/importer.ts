@@ -1,15 +1,16 @@
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import readline from 'readline';
-import { glob } from 'glob';
+import zlib from 'zlib';
 import Progress from 'progress';
 import { assocPath, prop, uniqBy } from 'ramda';
 
-import { parsePath } from '@openpanel/common';
+import { isSameDomain, parsePath } from '@openpanel/common';
 import type { IImportedEvent } from '@openpanel/db';
 
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 30_000;
 const SLEEP_TIME = 20;
+const MAX_CONCURRENT_REQUESTS = 8;
 
 type IMixpanelEvent = {
   event: string;
@@ -179,6 +180,21 @@ function generateSessionEvents(events: IImportedEvent[]): Session[] {
 }
 
 function createEventObject(event: IMixpanelEvent): IImportedEvent {
+  const getReferrer = (referrer: string | undefined) => {
+    if (!referrer) {
+      return '';
+    }
+
+    if (referrer === '$direct') {
+      return '';
+    }
+
+    if (isSameDomain(referrer, event.properties.$current_url)) {
+      return '';
+    }
+
+    return referrer;
+  };
   const url = parsePath(event.properties.$current_url);
   return {
     profile_id: event.properties.distinct_id
@@ -203,7 +219,7 @@ function createEventObject(event: IMixpanelEvent): IImportedEvent {
     browser_version: event.properties.$browser_version
       ? String(event.properties.$browser_version)
       : '',
-    referrer: event.properties.$initial_referrer ?? '',
+    referrer: getReferrer(event.properties.$initial_referrer),
     referrer_type: event.properties.$search_engine ? 'search' : '',
     referrer_name: event.properties.$search_engine ?? '',
     device_id: event.properties.$device_id ?? '',
@@ -295,17 +311,33 @@ function processEvents(events: IImportedEvent[]): IImportedEvent[] {
   ];
 }
 
-async function sendBatchToAPI(batch: IImportedEvent[]) {
+async function sendBatchToAPI(
+  batch: IImportedEvent[],
+  {
+    apiUrl,
+    clientId,
+    clientSecret,
+  }: {
+    apiUrl: string;
+    clientId: string;
+    clientSecret: string;
+  }
+) {
   try {
-    const res = await fetch('http://localhost:3333/import/events', {
+    const res = await fetch(`${apiUrl}/import/events`, {
       method: 'POST',
       headers: {
+        'Content-Encoding': 'gzip',
         'Content-Type': 'application/json',
-        'openpanel-client-id': 'dd3db204-dcf6-49e2-9e82-de01cba7e585',
-        'openpanel-client-secret': 'sec_293b903816e327e10c9d',
+        'openpanel-client-id': clientId,
+        'openpanel-client-secret': clientSecret,
       },
-      body: JSON.stringify(batch),
+      body: zlib.gzipSync(JSON.stringify(batch)),
     });
+    if (!res.ok) {
+      console.log('Failed to send batch to API');
+      console.log(await res.text());
+    }
     await new Promise((resolve) => setTimeout(resolve, SLEEP_TIME));
   } catch (e) {
     console.log('sendBatchToAPI failed');
@@ -313,7 +345,17 @@ async function sendBatchToAPI(batch: IImportedEvent[]) {
   }
 }
 
-async function processFiles(files: string[]) {
+async function processFiles({
+  files,
+  apiUrl,
+  clientId,
+  clientSecret,
+}: {
+  files: string[];
+  apiUrl: string;
+  clientId: string;
+  clientSecret: string;
+}) {
   const progress = new Progress(
     'Processing (:current/:total) :file [:bar] :percent | :savedEvents saved events | :status',
     {
@@ -347,34 +389,57 @@ async function processFiles(files: string[]) {
         currentBatch = [];
       }
 
-      if (apiBatching.length >= 10) {
-        await Promise.all(apiBatching.map(sendBatchToAPI));
+      if (apiBatching.length >= MAX_CONCURRENT_REQUESTS) {
+        await Promise.all(
+          apiBatching.map((batch) =>
+            sendBatchToAPI(batch, {
+              apiUrl,
+              clientId,
+              clientSecret,
+            })
+          )
+        );
         apiBatching = [];
       }
     }
   }
 
   if (currentBatch.length > 0) {
-    await sendBatchToAPI(currentBatch);
+    await sendBatchToAPI(currentBatch, {
+      apiUrl,
+      clientId,
+      clientSecret,
+    });
     savedEvents += currentBatch.length;
     progress.render({ file: 'Complete', savedEvents, status: 'Complete' });
   }
 }
 
-export async function importFiles(matcher: string) {
-  const files = await glob([matcher], { root: '/' });
-
+export async function importFiles({
+  files,
+  apiUrl,
+  clientId,
+  clientSecret,
+}: {
+  files: string[];
+  apiUrl: string;
+  clientId: string;
+  clientSecret: string;
+}) {
   if (files.length === 0) {
     console.log('No files found');
     return;
   }
 
-  files.sort((a, b) => a.localeCompare(b));
-
   console.log(`Found ${files.length} files to process`);
 
   const startTime = Date.now();
-  await processFiles(files);
+  await processFiles({
+    files,
+    apiUrl,
+    clientId,
+    clientSecret,
+  });
   const endTime = Date.now();
 
   console.log(
