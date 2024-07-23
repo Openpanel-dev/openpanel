@@ -1,4 +1,6 @@
+import zlib from 'zlib';
 import { clerkPlugin } from '@clerk/fastify';
+import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
@@ -52,6 +54,45 @@ const startServer = async () => {
       maxParamLength: 15_000,
       bodyLimit: 1048576 * 500, // 500MB
     });
+
+    fastify.register(compress, {
+      global: false,
+      encodings: ['gzip', 'deflate'],
+    });
+
+    fastify.addContentTypeParser(
+      'application/json',
+      { parseAs: 'buffer' },
+      function (req, body, done) {
+        const isGzipped = req.headers['content-encoding'] === 'gzip';
+
+        if (isGzipped) {
+          zlib.gunzip(body, (err, decompressedBody) => {
+            console.log(
+              'decompressedBody',
+              decompressedBody.toString().slice(0, 100)
+            );
+            if (err) {
+              done(err);
+            } else {
+              try {
+                const json = JSON.parse(decompressedBody.toString());
+                done(null, json);
+              } catch (parseError) {
+                done(new Error('Invalid JSON'));
+              }
+            }
+          });
+        } else {
+          try {
+            const json = JSON.parse(body.toString());
+            done(null, json);
+          } catch (parseError) {
+            done(new Error('Invalid JSON'));
+          }
+        }
+      }
+    );
 
     await fastify.register(metricsPlugin, { endpoint: '/metrics' });
 

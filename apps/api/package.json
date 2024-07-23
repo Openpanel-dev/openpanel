@@ -13,6 +13,7 @@
   "dependencies": {
     "@baselime/pino-transport": "^0.1.5",
     "@clerk/fastify": "^1.0.0",
+    "@fastify/compress": "^7.0.3",
     "@fastify/cookie": "^9.3.1",
     "@fastify/cors": "^9.0.0",
     "@fastify/websocket": "^8.3.1",
