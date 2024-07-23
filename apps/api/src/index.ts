@@ -50,6 +50,7 @@ const startServer = async () => {
   try {
     const fastify = Fastify({
       maxParamLength: 15_000,
+      bodyLimit: 1048576 * 500, // 500MB
     });
 
     await fastify.register(metricsPlugin, { endpoint: '/metrics' });
