@@ -9,6 +9,19 @@ import type {
 import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
+function getPropertyKey(property: string) {
+  if (property.startsWith('properties.')) {
+    if (property.includes('*')) {
+      return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
+        property.replace(/^properties\./, '').replace('.*.', '.%.')
+      )})))`;
+    }
+    return `properties['${property.replace(/^properties\./, '')}']`;
+  }
+
+  return property;
+}
+
 export function getChartSql({
   event,
   breakdowns,
@@ -55,18 +68,28 @@ export function getChartSql({
 
   if (startDate) {
     sb.where.startDate = `created_at >= '${formatClickhouseDate(startDate)}'`;
+    // if (interval === 'minute' || interval === 'hour') {
+    //   sb.where.startDate = `created_at >= '${formatClickhouseDate(startDate)}'`;
+    // } else {
+    //   sb.where.startDate = `toDate(created_at) >= '${formatClickhouseDate(startDate, true)}'`;
+    // }
   }
 
   if (endDate) {
     sb.where.endDate = `created_at <= '${formatClickhouseDate(endDate)}'`;
+    // if (interval === 'minute' || interval === 'hour') {
+    //   sb.where.endDate = `created_at <= '${formatClickhouseDate(endDate)}'`;
+    // } else {
+    //   sb.where.endDate = `toDate(created_at) <= '${formatClickhouseDate(endDate, true)}'`;
+    // }
   }
 
   if (breakdowns.length > 0 && limit) {
-    sb.where.bar = `(${breakdowns.map((b) => b.name).join(',')}) IN (
-      SELECT ${breakdowns.map((b) => b.name).join(',')}
+    sb.where.bar = `(${breakdowns.map((b) => getPropertyKey(b.name)).join(',')}) IN (
+      SELECT ${breakdowns.map((b) => getPropertyKey(b.name)).join(',')}
       FROM ${TABLE_NAMES.events}
       ${getWhere()}
-      GROUP BY ${breakdowns.map((b) => b.name).join(',')}
+      GROUP BY ${breakdowns.map((b) => getPropertyKey(b.name)).join(',')}
       ORDER BY count(*) DESC
       LIMIT ${limit}
     )`;
@@ -74,14 +97,7 @@ export function getChartSql({
 
   breakdowns.forEach((breakdown, index) => {
     const key = `label_${index}`;
-    const value = breakdown.name.startsWith('properties.')
-      ? `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-          breakdown.name.replace(/^properties\./, '').replace('.*.', '.%.')
-        )})))`
-      : escape(breakdown.name);
-    sb.select[key] = breakdown.name.startsWith('properties.')
-      ? `arrayElement(${value}, 1) as ${key}`
-      : `${breakdown.name} as ${key}`;
+    sb.select[key] = `${getPropertyKey(breakdown.name)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
 
@@ -142,9 +158,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         .replace(/^properties\./, '')
         .replace('.*.', '.%.');
       const isWildcard = propertyKey.includes('%');
-      const whereFrom = `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-        name.replace(/^properties\./, '').replace('.*.', '.%.')
-      )})))`;
+      const whereFrom = getPropertyKey(name);
 
       switch (operator) {
         case 'is': {
@@ -153,7 +167,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x = ${escape(String(val).trim())}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = `properties['${propertyKey}'] IN (${value
+            where[id] = `${whereFrom} IN (${value
               .map((val) => escape(String(val).trim()))
               .join(', ')})`;
           }
@@ -165,7 +179,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x != ${escape(String(val).trim())}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = `properties['${propertyKey}'] NOT IN (${value
+            where[id] = `${whereFrom} NOT IN (${value
               .map((val) => escape(String(val).trim()))
               .join(', ')})`;
           }
@@ -180,7 +194,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
             where[id] = value
               .map(
                 (val) =>
-                  `properties['${propertyKey}'] LIKE ${escape(`%${String(val).trim()}%`)}`
+                  `${whereFrom} LIKE ${escape(`%${String(val).trim()}%`)}`
               )
               .join(' OR ');
           }
@@ -195,7 +209,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
             where[id] = value
               .map(
                 (val) =>
-                  `properties['${propertyKey}'] NOT LIKE ${escape(`%${String(val).trim()}%`)}`
+                  `${whereFrom} NOT LIKE ${escape(`%${String(val).trim()}%`)}`
               )
               .join(' OR ');
           }
