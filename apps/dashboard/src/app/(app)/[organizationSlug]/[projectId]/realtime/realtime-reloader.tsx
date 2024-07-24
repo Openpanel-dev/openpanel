@@ -15,10 +15,12 @@ const RealtimeReloader = ({ projectId }: Props) => {
   useWS<number>(
     `/live/events/${projectId}`,
     () => {
-      router.refresh();
-      client.refetchQueries({
-        type: 'active',
-      });
+      if (!document.hidden) {
+        router.refresh();
+        client.refetchQueries({
+          type: 'active',
+        });
+      }
     },
     {
       debounce: {
