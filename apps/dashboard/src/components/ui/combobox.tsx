@@ -124,7 +124,7 @@ export function Combobox<T extends string>({
             <CommandEmpty>Nothing selected</CommandEmpty>
           )}
           <VirtualList
-            height={300}
+            height={Math.min(items.length * 32, 300)}
             data={items.filter((item) => {
               if (search === '') return true;
               return item.label.toLowerCase().includes(search.toLowerCase());

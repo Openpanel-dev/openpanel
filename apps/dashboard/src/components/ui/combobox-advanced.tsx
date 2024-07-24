@@ -121,7 +121,12 @@ export function ComboboxAdvanced({
             value={inputValue}
             onValueChange={setInputValue}
           />
-          <VirtualList height={300} data={data} itemHeight={32} itemKey="value">
+          <VirtualList
+            height={Math.min(items.length * 32, 300)}
+            data={data}
+            itemHeight={32}
+            itemKey="value"
+          >
             {renderItem}
           </VirtualList>
         </Command>
