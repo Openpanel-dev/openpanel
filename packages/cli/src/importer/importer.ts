@@ -1,5 +1,7 @@
 import { randomUUID } from 'crypto';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import readline from 'readline';
 import zlib from 'zlib';
 import Progress from 'progress';
@@ -323,7 +325,7 @@ async function sendBatchToAPI(
     clientSecret: string;
   }
 ) {
-  try {
+  async function request() {
     const res = await fetch(`${apiUrl}/import/events`, {
       method: 'POST',
       headers: {
@@ -335,13 +337,28 @@ async function sendBatchToAPI(
       body: zlib.gzipSync(JSON.stringify(batch)),
     });
     if (!res.ok) {
-      console.log('Failed to send batch to API');
-      console.log(await res.text());
+      throw new Error(`Failed to send batch: ${await res.text()}`);
     }
     await new Promise((resolve) => setTimeout(resolve, SLEEP_TIME));
+  }
+
+  try {
+    await request();
   } catch (e) {
-    console.log('sendBatchToAPI failed');
-    throw e;
+    console.log('Error sending batch, retrying...');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      await request();
+    } catch (e) {
+      console.log('Error sending batch, skipping...');
+      fs.writeFileSync(
+        path.join(
+          os.tmpdir(),
+          `openpanel/failed-import-batch-${batch[0]?.created_at ? new Date(batch[0]?.created_at).toISOString() : Date.now()}.json`
+        ),
+        JSON.stringify(batch, null, 2)
+      );
+    }
   }
 }
 
