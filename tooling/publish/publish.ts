@@ -153,7 +153,7 @@ function main() {
           require: './dist/index.cjs',
         },
         version: nextVersion,
-        dependencies: Object.entries(restPkgJson.dependencies).reduce(
+        dependencies: Object.entries(restPkgJson.dependencies || {}).reduce(
           (acc, [depName, depVersion]) => {
             const dep = packages[depName];
             if (!dep) {
@@ -187,9 +187,21 @@ function main() {
     updatePackageJsonForRelease(dependent);
   });
 
+  const versionEnvs = dependents.map((dependent) => {
+    const { nextVersion } = packages[dependent]!;
+    const env = dependent
+      .replace(/@openpanel\//g, '')
+      .toUpperCase()
+      .replace(/\//g, '_')
+      .replace('-', '_');
+    return `--env.${env}_VERSION=${nextVersion}`;
+  });
+
+  console.log('versionEnvs', versionEnvs);
+
   dependents.forEach((dependent) => {
     console.log(`🔨 Building ${dependent}`);
-    execSync('pnpm build', {
+    execSync(`pnpm build ${versionEnvs.join(' ')}`, {
       cwd: workspacePath(packages[dependent]!.localPath),
     });
   });
@@ -202,14 +214,14 @@ function main() {
         cwd: workspacePath(packages[dependent]!.localPath),
       });
     });
+
+    // Restoring package.json
+    const filesToRestore = dependents
+      .map((dependent) => workspacePath(packages[dependent]!.localPath))
+      .join(' ');
+
+    execSync(`git checkout ${filesToRestore}`);
   }
-
-  // Restoring package.json
-  const filesToRestore = dependents
-    .map((dependent) => workspacePath(packages[dependent]!.localPath))
-    .join(' ');
-
-  execSync(`git checkout ${filesToRestore}`);
 
   // // Save new versions only 😈
   dependents.forEach((dependent) => {

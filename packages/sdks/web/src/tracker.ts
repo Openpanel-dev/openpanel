@@ -1,20 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-
-import { Openpanel } from './index';
-
-declare global {
-  interface Window {
-    op: {
-      q?: [string, ...any[]];
-      (method: string, ...args: any[]): void;
-    };
-  }
-}
+import { OpenPanel } from './index';
 
 ((window) => {
   if (window.op && 'q' in window.op) {
     const queue = window.op.q || [];
-    const op = new Openpanel(queue.shift()[1]);
+    // @ts-expect-error
+    const op = new OpenPanel(queue.shift()[1]);
     queue.forEach((item) => {
       if (item[0] in op) {
         // @ts-expect-error
@@ -23,13 +13,15 @@ declare global {
     });
 
     window.op = (t, ...args) => {
-      // @ts-expect-error
       const fn = op[t] ? op[t].bind(op) : undefined;
       if (typeof fn === 'function') {
+        // @ts-expect-error
         fn(...args);
       } else {
         console.warn(`op.js: ${t} is not a function`);
       }
     };
+
+    window.openpanel = op;
   }
 })(window);
