@@ -11,7 +11,7 @@ import {
   toISOString,
 } from '@openpanel/common';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
-import { createEvent } from '@openpanel/db';
+import { chQuery, createEvent, TABLE_NAMES } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
 import { eventsQueue, findJobByPrefix, sessionsQueue } from '@openpanel/queue';
 import type {
@@ -19,14 +19,6 @@ import type {
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
-
-function noDateInFuture(eventDate: Date): Date {
-  if (eventDate > new Date()) {
-    return new Date();
-  } else {
-    return eventDate;
-  }
-}
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 const SESSION_TIMEOUT = 1000 * 60 * 30;
@@ -54,8 +46,12 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     );
   };
 
-  const profileId = body.profileId ? String(body.profileId) : '';
-  const createdAt = noDateInFuture(new Date(body.timestamp));
+  // this will get the profileId from the alias table if it exists
+  const profileId = await getProfileId({
+    projectId,
+    profileId: body.profileId,
+  });
+  const createdAt = new Date(body.timestamp);
   const url = getProperty('__path');
   const { path, hash, query, origin } = parsePath(url);
   const referrer = isSameDomain(getProperty('__referrer'), url)
@@ -262,4 +258,30 @@ async function getSessionEnd({
 
   // Create session
   return null;
+}
+
+async function getProfileId({
+  profileId,
+  projectId,
+}: {
+  profileId: string | undefined;
+  projectId: string;
+}) {
+  if (!profileId) {
+    return '';
+  }
+
+  const res = await chQuery<{
+    alias: string;
+    profile_id: string;
+    project_id: string;
+  }>(
+    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`
+  );
+
+  if (res[0]) {
+    return res[0].profile_id;
+  }
+
+  return profileId;
 }

@@ -4,6 +4,7 @@ import { createClient } from '@clickhouse/client';
 export const TABLE_NAMES = {
   events: 'events_v2',
   profiles: 'profiles',
+  alias: 'profile_aliases',
 };
 
 export const originalCh = createClient({

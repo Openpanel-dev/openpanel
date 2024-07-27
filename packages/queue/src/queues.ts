@@ -2,13 +2,15 @@ import { Queue } from 'bullmq';
 
 import type { IServiceEvent } from '@openpanel/db';
 import { getRedisQueue } from '@openpanel/redis';
-import type { PostEventPayload } from '@openpanel/sdk';
+import type { TrackPayload } from '@openpanel/sdk';
 
 export interface EventsQueuePayloadIncomingEvent {
   type: 'incomingEvent';
   payload: {
     projectId: string;
-    event: PostEventPayload;
+    event: TrackPayload & {
+      timestamp: string;
+    };
     geo: {
       country: string | undefined;
       city: string | undefined;
