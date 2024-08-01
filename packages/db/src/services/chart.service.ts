@@ -114,11 +114,13 @@ export function getChartSql({
   }
 
   if (event.segment === 'property_sum' && event.property) {
-    sb.select.count = `sum(toFloat64OrNull(${getPropertyKey(event.property)})) as count`;
+    sb.select.count = `sum(toFloat64(${getPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'property_average' && event.property) {
-    sb.select.count = `avg(toFloat64OrNull(${getPropertyKey(event.property)})) as count`;
+    sb.select.count = `avg(toFloat64(${getPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'one_event_per_user') {
