@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect } from 'react';
 import Script from 'next/script';
 
 import type {
@@ -11,13 +13,27 @@ import type {
 } from '@openpanel/web';
 
 export * from '@openpanel/web';
-export { createNextRouteHandler } from './createNextRouteHandler';
 
 const CDN_URL = 'https://openpanel.dev/op.js';
 
-type OpenPanelComponentProps = OpenPanelOptions & {
+type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
   cdnUrl?: string;
+  filter?: string;
+};
+
+const stringify = (obj: unknown) => {
+  if (typeof obj === 'object' && obj !== null && obj !== undefined) {
+    const entries = Object.entries(obj).map(([key, value]) => {
+      if (key === 'filter') {
+        return `"${key}":${value}`;
+      }
+      return `"${key}":${JSON.stringify(value)}`;
+    });
+    return `{${entries.join(',')}}`;
+  }
+
+  return JSON.stringify(obj);
 };
 
 export function OpenPanelComponent({
@@ -51,7 +67,7 @@ export function OpenPanelComponent({
           __html: `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
           ${methods
             .map((method) => {
-              return `window.op('${method.name}', ${JSON.stringify(method.value)});`;
+              return `window.op('${method.name}', ${stringify(method.value)});`;
             })
             .join('\n')}`,
         }}
@@ -67,7 +83,7 @@ export function IdentifyComponent(props: IdentifyComponentProps) {
     <>
       <Script
         dangerouslySetInnerHTML={{
-          __html: `window.op('setProfile', ${JSON.stringify(props)});`,
+          __html: `window.op('identify', ${JSON.stringify(props)});`,
         }}
       />
     </>

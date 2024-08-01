@@ -1,13 +1,13 @@
 import { isBot } from '@/bots';
-import type { TrackHandlerPayload } from '@/controllers/track.controller';
 import { handler } from '@/controllers/track.controller';
 import { SdkAuthError, validateSdkRequest } from '@/utils/auth';
 import { logger } from '@/utils/logger';
 import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
 
 import { createBotEvent } from '@openpanel/db';
+import type { TrackHandlerPayload } from '@openpanel/sdk';
 
-const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
+const trackRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.addHook(
     'preHandler',
     async (
@@ -66,4 +66,4 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
   done();
 };
 
-export default eventRouter;
+export default trackRouter;

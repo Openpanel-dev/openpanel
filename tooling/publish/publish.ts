@@ -149,8 +149,20 @@ function main() {
         types: './dist/index.d.ts',
         files: ['dist'],
         exports: {
-          import: './dist/index.js',
-          require: './dist/index.cjs',
+          '.': {
+            import: './dist/index.js',
+            require: './dist/index.cjs',
+            types: './dist/index.d.ts',
+          },
+          ...(name === '@openpanel/nextjs'
+            ? {
+                './server': {
+                  import: './dist/server.js',
+                  require: './dist/server.cjs',
+                  types: './dist/server.d.ts',
+                },
+              }
+            : {}),
         },
         version: nextVersion,
         dependencies: Object.entries(restPkgJson.dependencies || {}).reduce(
@@ -213,6 +225,12 @@ function main() {
       execSync(`npm publish --access=public --registry ${registry}`, {
         cwd: workspacePath(packages[dependent]!.localPath),
       });
+
+      if (dependent === '@openpanel/web') {
+        execSync(
+          `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/tracker.js')}`
+        );
+      }
     });
 
     // Restoring package.json
@@ -221,17 +239,17 @@ function main() {
       .join(' ');
 
     execSync(`git checkout ${filesToRestore}`);
-  }
 
-  // // Save new versions only 😈
-  dependents.forEach((dependent) => {
-    const { nextVersion, localPath, ...restPkgJson } = packages[dependent]!;
-    console.log(`🚀 Saving ${dependent} (${nextVersion})`);
-    savePackageJson(workspacePath(`${localPath}/package.json`), {
-      ...restPkgJson,
-      version: nextVersion,
+    // // Save new versions only 😈
+    dependents.forEach((dependent) => {
+      const { nextVersion, localPath, ...restPkgJson } = packages[dependent]!;
+      console.log(`🚀 Saving ${dependent} (${nextVersion})`);
+      savePackageJson(workspacePath(`${localPath}/package.json`), {
+        ...restPkgJson,
+        version: nextVersion,
+      });
     });
-  });
+  }
 
   console.log('✅ All done!');
 }
