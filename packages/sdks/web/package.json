@@ -4,7 +4,6 @@
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "build-for-openpanel": "pnpm build && cp dist/src/tracker.global.js ../../../apps/public/public/tracker.js",
     "lint": "eslint .",
     "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
