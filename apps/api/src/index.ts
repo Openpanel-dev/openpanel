@@ -99,7 +99,6 @@ const startServer = async () => {
     fastify.register(cors, {
       origin: '*',
       credentials: true,
-      preflightContinue: true,
     });
 
     fastify.register((instance, opts, done) => {
