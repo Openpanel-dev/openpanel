@@ -228,7 +228,7 @@ function main() {
 
       if (dependent === '@openpanel/web') {
         execSync(
-          `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/tracker.js')}`
+          `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/op1.js')}`
         );
       }
     });

@@ -64,7 +64,7 @@ const Instructions = ({ framework, client }: Props) => {
       <div className="flex flex-col gap-4">
         <p>Copy the code below and insert it to you website</p>
         <Syntax
-          code={`<script src="https://openpanel.dev/op.js" defer async></script>
+          code={`<script src="https://openpanel.dev/op1.js" defer async></script>
 <script>
   window.op = window.op || function (...args) { (window.op.q = window.op.q || []).push(args); };
   window.op('ctor', {
@@ -252,13 +252,13 @@ app.listen(3000, () => {
 
         <strong>Create a instance</strong>
         <p>
-          Create a new instance of OpenpanelSdk. You can use this SDK in any JS
+          Create a new instance of OpenPanel. You can use this SDK in any JS
           environment. You should omit clientSecret if you use this on web!
         </p>
         <Syntax
-          code={`import { OpenpanelSdk } from '@openpanel/sdk';
+          code={`import { OpenPanel } from '@openpanel/sdk';
  
-const op = new OpenpanelSdk({
+const op = new OpenPanel({
   clientId: '${clientId}',
   // mostly for backend and apps that can't rely on CORS
   clientSecret: '${clientSecret}',
