@@ -67,7 +67,7 @@ export type OpenPanelOptions = {
   sdkVersion?: string;
   waitForProfile?: boolean;
   filter?: (payload: TrackHandlerPayload) => boolean;
-  disable?: boolean;
+  disabled?: boolean;
 };
 
 export class OpenPanel {
@@ -106,7 +106,7 @@ export class OpenPanel {
   }
 
   async send(payload: TrackHandlerPayload) {
-    if (this.options.disable) {
+    if (this.options.disabled) {
       return Promise.resolve();
     }
 

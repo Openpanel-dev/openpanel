@@ -18,7 +18,7 @@ import type {
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
-import { getRedisQueue } from '@openpanel/redis';
+import { cacheable, getRedisQueue } from '@openpanel/redis';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 const SESSION_TIMEOUT = 1000 * 60 * 30;
@@ -47,10 +47,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   };
 
   // this will get the profileId from the alias table if it exists
-  const profileId = await getProfileId({
-    projectId,
-    profileId: body.profileId,
-  });
+  const profileId = body.profileId ?? '';
   const createdAt = new Date(body.timestamp);
   const url = getProperty('__path');
   const { path, hash, query, origin } = parsePath(url);
@@ -258,30 +255,4 @@ async function getSessionEnd({
 
   // Create session
   return null;
-}
-
-async function getProfileId({
-  profileId,
-  projectId,
-}: {
-  profileId: string | undefined;
-  projectId: string;
-}) {
-  if (!profileId) {
-    return '';
-  }
-
-  const res = await chQuery<{
-    alias: string;
-    profile_id: string;
-    project_id: string;
-  }>(
-    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`
-  );
-
-  if (res[0]) {
-    return res[0].profile_id;
-  }
-
-  return profileId;
 }

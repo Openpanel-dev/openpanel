@@ -1,6 +1,7 @@
 import { escape } from 'sqlstring';
 
 import { toObject } from '@openpanel/common';
+import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { profileBuffer } from '../buffers';
@@ -191,3 +192,31 @@ export async function upsertProfile({
     is_external: isExternal,
   });
 }
+
+export async function getProfileId({
+  profileId,
+  projectId,
+}: {
+  profileId: string | undefined;
+  projectId: string;
+}) {
+  if (!profileId) {
+    return '';
+  }
+
+  const res = await chQuery<{
+    alias: string;
+    profile_id: string;
+    project_id: string;
+  }>(
+    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`
+  );
+
+  if (res[0]) {
+    return res[0].profile_id;
+  }
+
+  return profileId;
+}
+
+export const getProfileIdCached = cacheable(getProfileId, 60 * 30);

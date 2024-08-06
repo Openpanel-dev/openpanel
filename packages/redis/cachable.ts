@@ -2,7 +2,7 @@ import { getRedisCache } from './redis';
 
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
-  expire: number
+  expireInSec: number
 ) {
   return async function (
     ...args: Parameters<T>
@@ -20,7 +20,7 @@ export function cacheable<T extends (...args: any) => any>(
     const result = await fn(...(args as any));
 
     if (result !== undefined || result !== null) {
-      getRedisCache().setex(key, expire, JSON.stringify(result));
+      getRedisCache().setex(key, expireInSec, JSON.stringify(result));
     }
 
     return result;

@@ -7,7 +7,9 @@ import { assocPath, pathOr } from 'ramda';
 import { generateDeviceId } from '@openpanel/common';
 import {
   ch,
+  chQuery,
   getProfileById,
+  getProfileId,
   getSalts,
   TABLE_NAMES,
   upsertProfile,
@@ -31,6 +33,23 @@ export async function handler(
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const projectId = request.client?.projectId;
+  const profileId =
+    projectId && request.body.payload.profileId
+      ? await getProfileId({
+          projectId,
+          profileId: request.body.payload.profileId,
+        })
+      : undefined;
+
+  if (profileId) {
+    request.body.payload.profileId = profileId;
+  }
+
+  console.log(
+    '> Request',
+    request.body.type,
+    JSON.stringify(request.body.payload, null, 2)
+  );
 
   if (!projectId) {
     reply.status(400).send('missing origin');
