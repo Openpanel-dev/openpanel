@@ -6,7 +6,8 @@ import type {
 } from '@openpanel/sdk';
 import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 
-export * from '@openpanel/sdk';
+export type * from '@openpanel/sdk';
+export { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 
 export type OpenPanelOptions = OpenPanelBaseOptions & {
   trackOutgoingLinks?: boolean;
@@ -129,20 +130,20 @@ export class OpenPanel extends OpenPanelBase {
       const target = event.target as HTMLElement;
       const btn = target.closest('button');
       const anchor = target.closest('a');
-      const element = btn?.getAttribute('data-event')
+      const element = btn?.getAttribute('data-track')
         ? btn
-        : anchor?.getAttribute('data-event')
+        : anchor?.getAttribute('data-track')
           ? anchor
           : null;
       if (element) {
         const properties: Record<string, unknown> = {};
         for (const attr of element.attributes) {
-          if (attr.name.startsWith('data-') && attr.name !== 'data-event') {
+          if (attr.name.startsWith('data-') && attr.name !== 'data-track') {
             properties[toCamelCase(attr.name.replace(/^data-/, ''))] =
               attr.value;
           }
         }
-        const name = element.getAttribute('data-event');
+        const name = element.getAttribute('data-track');
         if (name) {
           super.track(name, properties);
         }

@@ -12,7 +12,7 @@ export default function App({ Component, pageProps }: AppProps) {
       </Head>
       <Component {...pageProps} />
       <Script
-        src="https://openpanel.dev/op.js"
+        src="https://openpanel.dev/op1.js"
         async
         defer
         strategy="afterInteractive"

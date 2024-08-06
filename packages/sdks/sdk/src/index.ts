@@ -67,12 +67,13 @@ export type OpenPanelOptions = {
   sdkVersion?: string;
   waitForProfile?: boolean;
   filter?: (payload: TrackHandlerPayload) => boolean;
+  disable?: boolean;
 };
 
 export class OpenPanel {
   api: Api;
   profileId?: string;
-  global?: Record<string, any>;
+  global?: Record<string, unknown>;
   queue: TrackHandlerPayload[] = [];
 
   constructor(public options: OpenPanelOptions) {
@@ -94,6 +95,7 @@ export class OpenPanel {
     });
   }
 
+  // placeholder for future use
   init() {
     // empty
   }
@@ -104,6 +106,10 @@ export class OpenPanel {
   }
 
   async send(payload: TrackHandlerPayload) {
+    if (this.options.disable) {
+      return Promise.resolve();
+    }
+
     if (this.options.filter && !this.options.filter(payload)) {
       return Promise.resolve();
     }
@@ -115,7 +121,7 @@ export class OpenPanel {
     return this.api.fetch('/track', payload);
   }
 
-  setGlobalProperties(properties: Record<string, any>) {
+  setGlobalProperties(properties: Record<string, unknown>) {
     this.global = {
       ...this.global,
       ...properties,
@@ -179,18 +185,18 @@ export class OpenPanel {
 
   clear() {
     this.profileId = undefined;
-    // session end?
+    // should we force a session end here?
   }
 
   flush() {
     this.queue.forEach((item) => {
       this.send({
         ...item,
-        // Not user why ts-expect-error is needed here
+        // Not sure why ts-expect-error is needed here
         // @ts-expect-error
         payload: {
           ...item.payload,
-          profileId: this.profileId,
+          profileId: item.payload.profileId ?? this.profileId,
         },
       });
     });

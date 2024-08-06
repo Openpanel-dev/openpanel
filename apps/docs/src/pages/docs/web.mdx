@@ -1,137 +1,48 @@
-import Link from 'next/link';
-import { Callout, Steps, Tabs } from 'nextra/components';
-import { DeviceIdWarning } from 'src/components/device-id-warning';
+import { Callout, Tabs, Steps } from 'nextra/components';
 import { PersonalDataWarning } from 'src/components/personal-data-warning';
-
-import SdkConfig from 'src/components/sdk-config.mdx';
+import CommonSdkConfig from 'src/components/common-sdk-config.mdx';
+import WebSdkConfig from 'src/components/web-sdk-config.mdx';
 
 # Web SDK
 
-This is a wrapper of <Link href="/docs/javascript">Javascript SDK</Link>. It's a simple way to use the Openpanel SDK in your web application.
+The OpenPanel Web SDK allows you to track user behavior on your website using a simple script tag. This guide provides instructions for installing and using the Web SDK in your project.
 
 ## Installation
 
 <Steps>
-### Install dependencies
+### Step 1: Install
 
 ```bash
-pnpm install @openpanel/web
+npm install @openpanel/web
 ```
 
-### Initialize
+### Step 2: Initialize
 
-```tsx
-import { Openpanel } from '@openpanel/web';
+```js filename="op.ts"
+import { OpenPanel } from '@openpanel/web';
 
-const op = new Openpanel({
-  clientId: '{YOUR_CLIENT_ID}',
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
   trackScreenViews: true,
-  // trackAttributes: true,
-  // trackOutgoingLinks: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
 });
 ```
 
-#### Config
+#### Options
 
-<SdkConfig />
+<CommonSdkConfig />
+<WebSdkConfig />
 
-### Ready!
+### Step 3: Usage
 
-You're now ready to use the library.
+```js filename="main.ts"
+import { op } from './op.js';
 
-```typescript
-// Sends an event with payload foo: bar
-op.event('my_event', { foo: 'bar' });
-
-// Identify with profile id
-op.setProfileId('123');
-
-// or with additional data
-op.setProfile({
-  profileId: '123',
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@openpanel.dev',
-});
-
-// Increment a property
-op.increment('app_opened'); // increment by 1
-op.increment('app_opened', 5); // increment by 5
-
-// Decrement a property
-op.decrement('app_opened'); // decrement by 1
-op.decrement('app_opened', 5); // decrement by 5
+op.track('my_event', { foo: 'bar' });
 ```
-
 </Steps>
 
 ## Usage
 
-### Track event
-
-```typescript
-op.event('my_event', { foo: 'bar' });
-```
-
-### Identify
-
-#### Set Profile Id
-
-Keep track of your users by identifying them with a unique id. This is a good features if you have things behind a login and want to track user behavior.
-
-<PersonalDataWarning />
-
-```typescript
-const profileId = '123';
-op.setProfileId(profileId);
-```
-
-#### Additional data
-
-This method does the same as `setProfileId` but also allows you to update the profile with additional data.
-
-<PersonalDataWarning />
-
-```typescript
-const profileId = '123';
-op.setProfile({
-  profileId,
-  // firstName?: string;
-  // lastName?: string;
-  // email?: string;
-  // avatar?: string;
-  // properties?: Record<string, unknown>;
-});
-```
-
-#### Increment property
-
-Increment a property on the profile.
-
-```typescript
-// Increment by 1
-op.increment('app_opened');
-
-// Increment by 5
-op.increment('app_opened', 5);
-```
-
-#### Decrement property
-
-Decrement a property on the profile.
-
-```typescript
-// Increment by 1
-op.decrement('app_opened');
-
-// Increment by 5
-op.decrement('app_opened', 5);
-```
-
-#### Clear / Logout
-
-Clear the profile id and all the data.
-
-```typescript
-op.clear();
-```
+Refer to the [Javascript SDK](/docs/javascript#usage) for usage instructions.

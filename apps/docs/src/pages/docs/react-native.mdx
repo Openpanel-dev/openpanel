@@ -3,7 +3,7 @@ import { Callout, Steps, Tabs } from 'nextra/components';
 import { DeviceIdWarning } from 'src/components/device-id-warning';
 import { PersonalDataWarning } from 'src/components/personal-data-warning';
 
-import SdkConfig from 'src/components/sdk-config.mdx';
+import CommonSdkConfig from 'src/components/common-sdk-config.mdx';
 
 # React-Native
 
@@ -15,8 +15,8 @@ import SdkConfig from 'src/components/sdk-config.mdx';
 We're dependent on `expo-application` for `buildNumber`, `versionNumber` (and `referrer` on android) and `expo-constants` to get the `user-agent`.
 
 ```bash
-pnpm install @openpanel/react-native
-npx expo install --pnpm expo-application expo-constants
+npm install @openpanel/react-native
+npx expo install expo-application expo-constants
 ```
 
 ### Initialize
@@ -30,40 +30,9 @@ const op = new Openpanel({
 });
 ```
 
-#### Config
+#### Options
 
-- `url` - The url of the openpanel API or your self-hosted instance
-- `clientId` - The client id of your application
-- `clientSecret` - The client secret of your application
-
-### Ready!
-
-You're now ready to use the library.
-
-```typescript
-// Sends an event with payload foo: bar
-op.event('my_event', { foo: 'bar' });
-
-// Identify with profile id
-op.setProfileId('123');
-
-// or with additional data
-op.setProfile({
-  profileId: '123',
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@openpanel.dev',
-});
-
-// Increment a property
-op.increment('app_opened'); // increment by 1
-op.increment('app_opened', 5); // increment by 5
-
-// Decrement a property
-op.decrement('app_opened'); // decrement by 1
-op.decrement('app_opened', 5); // decrement by 5
-```
-
+<CommonSdkConfig />
 </Steps>
 
 ## Usage
@@ -71,7 +40,7 @@ op.decrement('app_opened', 5); // decrement by 5
 ### Track event
 
 ```typescript
-op.event('my_event', { foo: 'bar' });
+op.track('my_event', { foo: 'bar' });
 ```
 
 ### Navigation / Screen views
@@ -139,65 +108,4 @@ op.event('my_event', { foo: 'bar' });
   </Tabs.Tab>
 </Tabs>
 
-### Identify
-
-#### Set Profile Id
-
-Keep track of your users by identifying them with a unique id. This is a good features if you have things behind a login and want to track user behavior.
-
-<PersonalDataWarning />
-
-```typescript
-const profileId = '123';
-op.setProfileId(profileId);
-```
-
-#### Additional data
-
-This method does the same as `setProfileId` but also allows you to update the profile with additional data.
-
-<PersonalDataWarning />
-
-```typescript
-const profileId = '123';
-op.setProfile({
-  profileId,
-  // firstName?: string;
-  // lastName?: string;
-  // email?: string;
-  // avatar?: string;
-  // properties?: Record<string, unknown>;
-});
-```
-
-#### Increment property
-
-Increment a property on the profile.
-
-```typescript
-// Increment by 1
-op.increment('app_opened');
-
-// Increment by 5
-op.increment('app_opened', 5);
-```
-
-#### Decrement property
-
-Decrement a property on the profile.
-
-```typescript
-// Increment by 1
-op.decrement('app_opened');
-
-// Increment by 5
-op.decrement('app_opened', 5);
-```
-
-#### Clear / Logout
-
-Clear the profile id and all the data.
-
-```typescript
-op.clear();
-```
+For more information on how to use the SDK, check out the [Javascript SDK](/docs/javascript#usage).

@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useEffect } from 'react';
+import React from 'react';
 import Script from 'next/script';
 
 import type {
@@ -14,7 +12,7 @@ import type {
 
 export * from '@openpanel/web';
 
-const CDN_URL = 'https://openpanel.dev/op.js';
+const CDN_URL = 'https://openpanel.dev/op1.js';
 
 type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;

@@ -3,7 +3,7 @@ import { Callout, Steps, Tabs } from 'nextra/components';
 import { DeviceIdWarning } from 'src/components/device-id-warning';
 import { PersonalDataWarning } from 'src/components/personal-data-warning';
 
-import SdkConfig from 'src/components/sdk-config.mdx';
+import CommonSdkConfig from 'src/components/common-sdk-config.mdx';
 
 # Express
 
@@ -43,7 +43,7 @@ app.use(
 
 app.get('/sign-up', (req, res) => {
   // track sign up events
-  req.op.event('sign-up', {
+  req.op.track('sign-up', {
     email: req.body.email,
   });
   res.send('Hello World');
@@ -54,10 +54,12 @@ app.listen(3000, () => {
 });
 ```
 
-### Config
+### Options
 
-- `clientId` - Your OpenPanel client ID.
-- `clientSecret` - Your OpenPanel client secret.
+<CommonSdkConfig />
+
+#### Express options
+
 - `trackRequest` - A function that returns `true` if the request should be tracked.
 - `getProfileId` - A function that returns the profile ID of the user making the request.
 
@@ -66,12 +68,12 @@ app.listen(3000, () => {
 If `req.op` is not typed you can extend the `Request` interface.
 
 ```ts
-import { OpenpanelSdk } from '@openpanel/express';
+import { OpenPanel } from '@openpanel/express';
 
 declare global {
   namespace Express {
     export interface Request {
-      op: OpenpanelSdk;
+      op: OpenPanel;
     }
   }
 }

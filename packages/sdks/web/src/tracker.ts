@@ -18,7 +18,7 @@ import { OpenPanel } from './index';
         // @ts-expect-error
         fn(...args);
       } else {
-        console.warn(`op.js: ${t} is not a function`);
+        console.warn(`OpenPanel: ${t} is not a function`);
       }
     };
 
