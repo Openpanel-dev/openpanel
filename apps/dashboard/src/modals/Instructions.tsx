@@ -64,16 +64,13 @@ const Instructions = ({ framework, client }: Props) => {
       <div className="flex flex-col gap-4">
         <p>Copy the code below and insert it to you website</p>
         <Syntax
-          code={`<script src="https://openpanel.dev/op1.js" defer async></script>
-<script>
-  window.op = window.op || function (...args) { (window.op.q = window.op.q || []).push(args); };
-  window.op('ctor', {
+          code={`window.op = window.op||function(...args){(window.op.q=window.op.q||[]).push(args);};
+  window.op('init', {
     clientId: '${clientId}',
     trackScreenViews: true,
     trackOutgoingLinks: true,
     trackAttributes: true,
-  });
-</script>`}
+  });`}
         />
         <Alert>
           <AlertDescription>
@@ -89,14 +86,14 @@ const Instructions = ({ framework, client }: Props) => {
       <div className="flex flex-col gap-4">
         <p>Install dependencies</p>
         <Syntax code={`pnpm install @openpanel/nextjs`} />
-        <p>Add OpenpanelProvider to your root layout</p>
+        <p>Add OpenPanelComponent to your root layout</p>
         <Syntax
-          code={`import { OpenpanelProvider } from '@openpanel/nextjs';
+          code={`import { OpenPanelComponent } from '@openpanel/nextjs';
  
  export default RootLayout({ children }) {
    return (
      <>
-       <OpenpanelProvider
+       <OpenPanelComponent
          clientId="${clientId}"
          trackScreenViews={true}
          trackAttributes={true}
@@ -114,10 +111,10 @@ const Instructions = ({ framework, client }: Props) => {
           track custom events.
         </p>
         <Syntax
-          code={`import { trackEvent } from '@openpanel/nextjs';
+          code={`import { useOpenPanel } from '@openpanel/nextjs';
  
 // Sends an event with payload foo: bar
-trackEvent('my_event', { foo: 'bar' });
+useOpenPanel().track('my_event', { foo: 'bar' });
 `}
         />
       </div>
@@ -182,19 +179,30 @@ $openpanel->event(
         <strong>Usage</strong>
         <p>Create a custom event called &quot;my_event&quot;.</p>
         <Syntax
-          code={`curl 'https://api.openpanel.dev/event' \\
+          code={`curl 'https://api.openpanel.dev/track' \\
   -H 'content-type: application/json' \\
   -H 'openpanel-client-id: ${clientId}' \\
   -H 'openpanel-client-secret: ${clientSecret}' \\
-  --data-raw '{"name":"my_event","properties":{"foo":"bar"},"timestamp":"2024-03-28T08:42:54.319Z"}'`}
+  --data-raw '{
+  "type": "track",
+  "payload": {
+    "name": "my_event",
+    "properties": {
+      "foo": "bar"
+    }
+  }
+}'`}
         />
         <p>The payload should be a JSON object with the following fields:</p>
         <ul className="list-inside list-disc">
-          <li>&quot;name&quot; (string): The name of the event.</li>
-          <li>&quot;properties&quot; (object): The properties of the event.</li>
           <li>
-            &quot;timestamp&quot; (string): The timestamp of the event in ISO
-            8601 format.
+            &quot;type&quot; (string): track | identify | alias | increment |
+            decrement
+          </li>
+          <li>&quot;payload.name&quot; (string): The name of the event.</li>
+          <li>
+            &quot;payload.properties&quot; (object): The properties of the
+            event.
           </li>
         </ul>
       </div>
@@ -230,7 +238,7 @@ app.use(
   
 app.get('/sign-up', (req, res) => {
   // track sign up events
-  req.op.event('sign-up', {
+  req.op.track('sign-up', {
     email: req.body.email,
   });
   res.send('Hello World');
@@ -269,13 +277,13 @@ const op = new OpenPanel({
           code={`import { op } from './openpanel';
           
 // Sends an event with payload foo: bar
-op.event('my_event', { foo: 'bar' });
+op.track('my_event', { foo: 'bar' });
   
 // Identify with profile id
-op.setProfileId('123');
+op.identify({ profileId: '123' });
   
 // or with additional data
-op.setProfile({
+op.identify({
   profileId: '123',
   firstName: 'John',
   lastName: 'Doe',
@@ -283,12 +291,12 @@ op.setProfile({
 });
   
 // Increment a property
-op.increment('app_opened'); // increment by 1
-op.increment('app_opened', 5); // increment by 5
+op.increment({ name: 'app_opened', profile_id: '123' }); // increment by 1
+op.increment({ name: 'app_opened', profile_id: '123', value: 5 }); // increment by 5
   
 // Decrement a property
-op.decrement('app_opened'); // decrement by 1
-op.decrement('app_opened', 5); // decrement by 5`}
+op.decrement({ name: 'app_opened', profile_id: '123' }); // decrement by 1
+op.decrement({ name: 'app_opened', profile_id: '123', value: 5 }); // decrement by 5`}
         />
       </div>
     );
@@ -309,9 +317,9 @@ npx expo install --pnpm expo-application expo-constants`}
           environment. You should omit clientSecret if you use this on web!
         </p>
         <Syntax
-          code={`import { Openpanel } from '@openpanel/react-native';
+          code={`import { OpenPanel } from '@openpanel/react-native';
  
-const op = new Openpanel({
+const op = new OpenPanel({
   clientId: '${clientId}',
   clientSecret: '${clientSecret}',
 });`}
@@ -321,13 +329,13 @@ const op = new Openpanel({
           code={`import { op } from './openpanel';
           
 // Sends an event with payload foo: bar
-op.event('my_event', { foo: 'bar' });
+op.track('my_event', { foo: 'bar' });
   
 // Identify with profile id
-op.setProfileId('123');
+op.identify({ profileId: '123' });
   
 // or with additional data
-op.setProfile({
+op.identify({
   profileId: '123',
   firstName: 'John',
   lastName: 'Doe',
@@ -335,12 +343,12 @@ op.setProfile({
 });
   
 // Increment a property
-op.increment('app_opened'); // increment by 1
-op.increment('app_opened', 5); // increment by 5
+op.increment({ name: 'app_opened', profile_id: '123' }); // increment by 1
+op.increment({ name: 'app_opened', profile_id: '123', value: 5 }); // increment by 5
   
 // Decrement a property
-op.decrement('app_opened'); // decrement by 1
-op.decrement('app_opened', 5); // decrement by 5`}
+op.decrement({ name: 'app_opened', profile_id: '123' }); // decrement by 1
+op.decrement({ name: 'app_opened', profile_id: '123', value: 5 }); // decrement by 5`}
         />
         <strong>Navigation</strong>
         <p>
