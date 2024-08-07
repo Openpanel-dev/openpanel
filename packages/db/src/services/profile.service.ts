@@ -6,6 +6,7 @@ import type { IChartEventFilter } from '@openpanel/validation';
 
 import { profileBuffer } from '../buffers';
 import {
+  ch,
   chQuery,
   formatClickhouseDate,
   TABLE_NAMES,
@@ -168,6 +169,29 @@ export function transformProfile({
     properties: toObject(profile.properties),
     createdAt: new Date(created_at),
   };
+}
+
+export async function createProfileAlias({
+  projectId,
+  alias,
+  profileId,
+}: {
+  projectId: string;
+  alias: string;
+  profileId: string;
+}) {
+  await ch.insert({
+    table: TABLE_NAMES.alias,
+    format: 'JSONEachRow',
+    values: [
+      {
+        projectId,
+        profile_id: profileId,
+        alias,
+        created_at: new Date(),
+      },
+    ],
+  });
 }
 
 export async function upsertProfile({

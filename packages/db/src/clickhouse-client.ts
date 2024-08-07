@@ -21,6 +21,9 @@ export const originalCh = createClient({
   compression: {
     request: true,
   },
+  clickhouse_settings: {
+    date_time_input_format: 'best_effort',
+  },
 });
 
 export const ch = new Proxy(originalCh, {

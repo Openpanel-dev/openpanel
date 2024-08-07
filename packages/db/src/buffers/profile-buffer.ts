@@ -78,9 +78,6 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
           is_external: item.event.is_external,
         };
       }),
-      clickhouse_settings: {
-        date_time_input_format: 'best_effort',
-      },
       format: 'JSONEachRow',
     });
     return queue.map((item) => item.index);
