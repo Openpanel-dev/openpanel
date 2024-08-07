@@ -47,7 +47,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   };
 
   // this will get the profileId from the alias table if it exists
-  const profileId = body.profileId ?? '';
+  const profileId = body.profileId ? String(body.profileId) : '';
   const createdAt = new Date(body.timestamp);
   const url = getProperty('__path');
   const { path, hash, query, origin } = parsePath(url);
