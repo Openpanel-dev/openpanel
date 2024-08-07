@@ -2,17 +2,14 @@ import type { GeoLocation } from '@/utils/parseIp';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { assocPath, pathOr } from 'ramda';
+import { assocPath, pathOr, pick } from 'ramda';
 
 import { generateDeviceId } from '@openpanel/common';
 import {
-  ch,
   createProfileAlias,
-  formatClickhouseDate,
   getProfileById,
   getProfileId,
   getSalts,
-  TABLE_NAMES,
   upsertProfile,
 } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
@@ -26,7 +23,17 @@ import type {
 } from '@openpanel/sdk';
 
 export function getStringHeaders(headers: FastifyRequest['headers']) {
-  return Object.entries(headers).reduce(
+  return Object.entries(
+    pick(
+      [
+        'user-agent',
+        'openpanel-sdk-name',
+        'openpanel-sdk-version',
+        'openpanel-client-id',
+      ],
+      headers
+    )
+  ).reduce(
     (acc, [key, value]) => ({
       ...acc,
       [key]: value ? String(value) : undefined,
