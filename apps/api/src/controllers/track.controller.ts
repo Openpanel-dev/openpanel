@@ -7,7 +7,8 @@ import { assocPath, pathOr } from 'ramda';
 import { generateDeviceId } from '@openpanel/common';
 import {
   ch,
-  chQuery,
+  createProfileAlias,
+  formatClickhouseDate,
   getProfileById,
   getProfileId,
   getSalts,
@@ -23,6 +24,16 @@ import type {
   IncrementPayload,
   TrackHandlerPayload,
 } from '@openpanel/sdk';
+
+export function getStringHeaders(headers: FastifyRequest['headers']) {
+  return Object.entries(headers).reduce(
+    (acc, [key, value]) => ({
+      ...acc,
+      [key]: value ? String(value) : undefined,
+    }),
+    {}
+  );
+}
 
 export async function handler(
   request: FastifyRequest<{
@@ -45,12 +56,6 @@ export async function handler(
     request.body.payload.profileId = profileId;
   }
 
-  console.log(
-    '> Request',
-    request.body.type,
-    JSON.stringify(request.body.payload, null, 2)
-  );
-
   if (!projectId) {
     reply.status(400).send('missing origin');
     return;
@@ -59,25 +64,29 @@ export async function handler(
   switch (request.body.type) {
     case 'track': {
       const [salts, geo] = await Promise.all([getSalts(), parseIp(ip)]);
-      const currentDeviceId = generateDeviceId({
-        salt: salts.current,
-        origin: projectId,
-        ip,
-        ua,
-      });
-      const previousDeviceId = generateDeviceId({
-        salt: salts.previous,
-        origin: projectId,
-        ip,
-        ua,
-      });
+      const currentDeviceId = ua
+        ? generateDeviceId({
+            salt: salts.current,
+            origin: projectId,
+            ip,
+            ua,
+          })
+        : '';
+      const previousDeviceId = ua
+        ? generateDeviceId({
+            salt: salts.previous,
+            origin: projectId,
+            ip,
+            ua,
+          })
+        : '';
       await track({
         payload: request.body.payload,
         currentDeviceId,
         previousDeviceId,
         projectId,
         geo,
-        ua,
+        headers: getStringHeaders(request.headers),
       });
       break;
     }
@@ -126,14 +135,14 @@ async function track({
   previousDeviceId,
   projectId,
   geo,
-  ua,
+  headers,
 }: {
   payload: TrackPayload;
   currentDeviceId: string;
   previousDeviceId: string;
   projectId: string;
   geo: GeoLocation;
-  ua: string;
+  headers: Record<string, string | undefined>;
 }) {
   // this will ensure that we don't have multiple events creating sessions
   const locked = await getRedisCache().set(
@@ -148,9 +157,7 @@ async function track({
     type: 'incomingEvent',
     payload: {
       projectId,
-      headers: {
-        ua,
-      },
+      headers,
       event: {
         ...payload,
         // Dont rely on the client for the timestamp
@@ -173,7 +180,7 @@ async function identify({
   payload: IdentifyPayload;
   projectId: string;
   geo: GeoLocation;
-  ua: string;
+  ua?: string;
 }) {
   const uaInfo = parseUserAgent(ua);
   await upsertProfile({
@@ -196,15 +203,10 @@ async function alias({
   payload: AliasPayload;
   projectId: string;
 }) {
-  await ch.insert({
-    table: TABLE_NAMES.alias,
-    values: [
-      {
-        projectId,
-        profile_id: payload.profileId,
-        alias: payload.alias,
-      },
-    ],
+  await createProfileAlias({
+    alias: payload.alias,
+    profileId: payload.profileId,
+    projectId,
   });
 }
 

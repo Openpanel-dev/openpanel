@@ -85,7 +85,7 @@ export class OpenPanel {
       defaultHeaders['openpanel-client-secret'] = options.clientSecret;
     }
 
-    defaultHeaders['openpanel-sdk'] = options.sdk || 'node';
+    defaultHeaders['openpanel-sdk-name'] = options.sdk || 'node';
     defaultHeaders['openpanel-sdk-version'] =
       options.sdkVersion || process.env.SDK_VERSION!;
 

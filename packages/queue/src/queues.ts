@@ -18,9 +18,7 @@ export interface EventsQueuePayloadIncomingEvent {
       longitude: number | undefined;
       latitude: number | undefined;
     };
-    headers: {
-      ua: string | undefined;
-    };
+    headers: Record<string, string | undefined>;
     currentDeviceId: string;
     previousDeviceId: string;
     priority: boolean;

@@ -11,14 +11,14 @@ import {
   toISOString,
 } from '@openpanel/common';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
-import { chQuery, createEvent, TABLE_NAMES } from '@openpanel/db';
+import { createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
 import { eventsQueue, findJobByPrefix, sessionsQueue } from '@openpanel/queue';
 import type {
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
-import { cacheable, getRedisQueue } from '@openpanel/redis';
+import { getRedisQueue } from '@openpanel/redis';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 const SESSION_TIMEOUT = 1000 * 60 * 30;
@@ -55,7 +55,10 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     ? null
     : parseReferrer(getProperty('__referrer'));
   const utmReferrer = getReferrerWithQuery(query);
-  const uaInfo = parseUserAgent(headers.ua);
+  const userAgent = headers['user-agent'];
+  const sdkName = headers['openpanel-sdk-name'];
+  const sdkVersion = headers['openpanel-sdk-version'];
+  const uaInfo = parseUserAgent(userAgent);
 
   if (uaInfo.isServer) {
     const event = await getLastScreenViewFromProfileId({
@@ -71,7 +74,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       projectId,
       properties: {
         ...omit(GLOBAL_PROPERTIES, properties),
-        user_agent: headers.ua,
+        user_agent: userAgent,
       },
       createdAt,
       country: event?.country || geo.country || '',
@@ -95,6 +98,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       profile: undefined,
       meta: undefined,
       importedAt: null,
+      sdkName,
+      sdkVersion,
     };
 
     return createEvent(payload);
@@ -168,6 +173,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     referrer: referrer?.url,
     referrerName: referrer?.name || utmReferrer?.name || '',
     referrerType: referrer?.type || utmReferrer?.type || '',
+    sdkName,
+    sdkVersion,
   };
 
   if (!sessionEnd) {
