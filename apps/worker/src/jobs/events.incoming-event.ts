@@ -11,7 +11,7 @@ import {
   toISOString,
 } from '@openpanel/common';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
-import { createEvent } from '@openpanel/db';
+import { createEvent, getProfileIdCached } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
 import { eventsQueue, findJobByPrefix, sessionsQueue } from '@openpanel/queue';
 import type {
@@ -47,7 +47,10 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   };
 
   // this will get the profileId from the alias table if it exists
-  const profileId = body.profileId ? String(body.profileId) : '';
+  const profileId = await getProfileIdCached({
+    profileId: body.profileId,
+    projectId,
+  });
   const createdAt = new Date(body.timestamp);
   const url = getProperty('__path');
   const { path, hash, query, origin } = parsePath(url);

@@ -180,6 +180,7 @@ export async function createProfileAlias({
   alias: string;
   profileId: string;
 }) {
+  await getProfileIdCached.clear({ profileId, projectId });
   await ch.insert({
     table: TABLE_NAMES.alias,
     format: 'JSONEachRow',
@@ -221,7 +222,7 @@ export async function getProfileId({
   profileId,
   projectId,
 }: {
-  profileId: string | undefined;
+  profileId: number | string | undefined;
   projectId: string;
 }) {
   if (!profileId) {
@@ -240,7 +241,7 @@ export async function getProfileId({
     return res[0].profile_id;
   }
 
-  return profileId;
+  return String(profileId);
 }
 
 export const getProfileIdCached = cacheable(getProfileId, 60 * 30);
