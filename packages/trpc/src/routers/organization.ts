@@ -29,10 +29,21 @@ export const organizationRouter = createTRPCRouter({
   inviteUser: protectedProcedure
     .input(zInviteUser)
     .mutation(async ({ input, ctx }) => {
-      const ticket = await clerkClient.invitations.createInvitation({
-        emailAddress: input.email,
-        notify: true,
+      const userExists = await db.user.findUnique({
+        where: {
+          email: input.email,
+        },
       });
+
+      let invitationId: string | undefined;
+
+      if (!userExists) {
+        const ticket = await clerkClient.invitations.createInvitation({
+          emailAddress: input.email,
+          notify: true,
+        });
+        invitationId = ticket.id;
+      }
 
       return db.member.create({
         data: {
@@ -42,7 +53,7 @@ export const organizationRouter = createTRPCRouter({
           invitedById: ctx.session.userId,
           meta: {
             access: input.access,
-            invitationId: ticket.id,
+            invitationId,
           },
         },
       });
