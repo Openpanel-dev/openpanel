@@ -2,13 +2,12 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/useAppParams';
 import { api } from '@/trpc/client';
-import { useUser } from '@clerk/nextjs';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { trackEvent } from '@openpanel/nextjs';
+import { useOpenPanel } from '@openpanel/nextjs';
 
 import { popModal } from '.';
 import { ModalContent } from './Modal/Container';
@@ -20,6 +19,7 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 const Testimonial = () => {
+  const op = useOpenPanel();
   const mutation = api.ticket.create.useMutation();
   const params = useAppParams();
   const form = useForm<IForm>({
@@ -27,7 +27,7 @@ const Testimonial = () => {
   });
   return (
     <ModalContent className="p-0">
-      <div className="bg-def-100 w-full rounded-t-lg border-b border-border p-4">
+      <div className="w-full rounded-t-lg border-b border-border bg-def-100 p-4">
         <h1 className="mb-2 text-2xl font-bold">Review time 🫶</h1>
         <p className="mb-2">
           Thank you so much for using Openpanel — it truly means a great deal to
@@ -51,7 +51,7 @@ const Testimonial = () => {
               },
             });
             toast.success('Thanks for your feedback 🚀');
-            trackEvent('testimonials_sent');
+            op.track('testimonials_sent');
             popModal();
           } catch (e) {
             toast.error('Something went wrong. Please try again later.');

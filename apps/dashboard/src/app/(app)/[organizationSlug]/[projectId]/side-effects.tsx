@@ -5,9 +5,10 @@ import { pushModal, useOnPushModal } from '@/modals';
 import { useUser } from '@clerk/nextjs';
 import { differenceInDays } from 'date-fns';
 
-import { trackEvent } from '@openpanel/nextjs';
+import { useOpenPanel } from '@openpanel/nextjs';
 
 export default function SideEffects() {
+  const op = useOpenPanel();
   const { user } = useUser();
   const accountAgeInDays = differenceInDays(
     new Date(),
@@ -30,7 +31,7 @@ export default function SideEffects() {
   useEffect(() => {
     if (showTestimonial) {
       pushModal('Testimonial');
-      trackEvent('testimonials_shown');
+      op.track('testimonials_shown');
     }
   }, [showTestimonial]);
 

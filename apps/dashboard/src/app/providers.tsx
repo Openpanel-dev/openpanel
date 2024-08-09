@@ -14,7 +14,7 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
 
-import { OpenpanelProvider } from '@openpanel/nextjs';
+import { OpenPanelComponent } from '@openpanel/nextjs';
 
 function AllProviders({ children }: { children: React.ReactNode }) {
   const { userId, getToken } = useAuth();
@@ -63,9 +63,10 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
-        <OpenpanelProvider
+        <OpenPanelComponent
           clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
           profileId={userId || undefined}
+          waitForProfile
           trackScreenViews
           trackOutgoingLinks
         />

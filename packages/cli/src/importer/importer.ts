@@ -237,6 +237,8 @@ function createEventObject(event: IMixpanelEvent): IImportedEvent {
     duration: 0,
     device: event.properties.$current_url ? '' : 'server',
     brand: '',
+    sdk_name: '',
+    sdk_version: '',
   };
 }
 
