@@ -64,13 +64,16 @@ const Instructions = ({ framework, client }: Props) => {
       <div className="flex flex-col gap-4">
         <p>Copy the code below and insert it to you website</p>
         <Syntax
-          code={`window.op = window.op||function(...args){(window.op.q=window.op.q||[]).push(args);};
+          code={`<script>
+  window.op = window.op||function(...args){(window.op.q=window.op.q||[]).push(args);};
   window.op('init', {
     clientId: '${clientId}',
     trackScreenViews: true,
     trackOutgoingLinks: true,
     trackAttributes: true,
-  });`}
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>`}
         />
         <Alert>
           <AlertDescription>
