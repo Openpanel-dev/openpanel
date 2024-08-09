@@ -7,6 +7,8 @@ import { eventsQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
+import { getStringHeaders } from './track.controller';
+
 export async function postEvent(
   request: FastifyRequest<{
     Body: PostEventPayload;
@@ -49,9 +51,7 @@ export async function postEvent(
     type: 'incomingEvent',
     payload: {
       projectId: request.projectId,
-      headers: {
-        ua,
-      },
+      headers: getStringHeaders(request.headers),
       event: {
         ...request.body,
         // Dont rely on the client for the timestamp

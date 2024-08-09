@@ -1,8 +1,10 @@
 CREATE DATABASE IF NOT EXISTS openpanel;
 
-CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
+CREATE TABLE openpanel.events_v2 (
   `id` UUID DEFAULT generateUUIDv4(),
   `name` String,
+  `sdk_name` String,
+  `sdk_version` String,
   `device_id` String,
   `profile_id` String,
   `project_id` String,
@@ -29,9 +31,9 @@ CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
   `model` String,
   `imported_at` Nullable(DateTime),
   INDEX idx_name name TYPE bloom_filter GRANULARITY 1,
-  INDEX idx_properties_bounce properties ['__bounce'] TYPE
-  set
-    (3) GRANULARITY 1
+  INDEX idx_properties_bounce properties ['__bounce'] TYPE set (3) GRANULARITY 1,
+  INDEX idx_origin origin TYPE bloom_filter(0.05) GRANULARITY 1,
+  INDEX idx_path path TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE = MergeTree PARTITION BY toYYYYMM(created_at)
 ORDER BY
   (project_id, toDate(created_at), profile_id, name) SETTINGS index_granularity = 8192;
@@ -59,6 +61,15 @@ CREATE TABLE IF NOT EXISTS openpanel.profiles (
 ) ENGINE = ReplacingMergeTree(created_at)
 ORDER BY
   (id) SETTINGS index_granularity = 8192;
+
+CREATE TABLE IF NOT EXISTS openpanel.profile_aliases (
+  `project_id` String,
+  `profile_id` String,
+  `alias` String,
+  `created_at` DateTime
+) ENGINE = MergeTree
+ORDER BY
+  (project_id, profile_id, alias) SETTINGS index_granularity = 8192;
 
 --- Materialized views (DAU)
 CREATE MATERIALIZED VIEW IF NOT EXISTS dau_mv ENGINE = AggregatingMergeTree() PARTITION BY toYYYYMMDD(date)

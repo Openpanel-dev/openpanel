@@ -26,9 +26,6 @@ export async function importEvents(
       table: TABLE_NAMES.events,
       values,
       format: 'JSONEachRow',
-      clickhouse_settings: {
-        date_time_input_format: 'best_effort',
-      },
     });
 
     console.log(res.summary?.written_rows, 'events imported');

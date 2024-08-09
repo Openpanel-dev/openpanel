@@ -3,6 +3,14 @@ import { useRouter } from 'next/router';
 import { useConfig } from 'nextra-theme-docs';
 
 export default {
+  banner: {
+    key: '1.0-release',
+    text: (
+      <a href="/docs/migration/beta-v1">
+        🎉 We have released v1. Read migration guide if needed!
+      </a>
+    ),
+  },
   logo: (
     <>
       <Image

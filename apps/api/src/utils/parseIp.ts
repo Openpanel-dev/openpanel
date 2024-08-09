@@ -11,7 +11,7 @@ interface RemoteIpLookupResponse {
   latitude: number | undefined;
 }
 
-interface GeoLocation {
+export interface GeoLocation {
   country: string | undefined;
   city: string | undefined;
   region: string | undefined;

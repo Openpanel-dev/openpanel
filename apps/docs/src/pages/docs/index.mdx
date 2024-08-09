@@ -1,9 +1,47 @@
-import { Card, Cards } from 'nextra/components';
+import { Callout, Card, Cards } from 'nextra/components';
 import { BrandLogo } from 'src/components/brand-logo';
 
-# Get started
+# Documentation
 
-Create an account on [Openpanel](https://openpanel.dev) and setup your first project (takes 2 minutes). You will get a `clientId` that you will use to initialize Openpanel in your app.
+The OpenPanel SDKs provide a set of core methods that allow you to track events, identify users, and more. Here's an overview of the key methods available in the SDKs.
+
+<Callout>
+  While all OpenPanel SDKs share a common set of core methods, some may have
+  syntax variations or additional methods specific to their environment. This
+  documentation provides an overview of the base methods and available SDKs.
+</Callout>
+
+## Core Methods
+
+### setGlobalProperties
+
+Sets global properties that will be included with every subsequent event.
+
+### track
+
+Tracks a custom event with the given name and optional properties.
+
+### identify
+
+Associates the current user with a unique identifier and optional traits.
+
+### alias
+
+Creates an alias for a user identifier.
+
+### increment
+
+Increments a numeric property for a user.
+
+### decrement
+
+Decrements a numeric property for a user.
+
+### clear
+
+Clears the current user identifier and ends the session.
+
+## Official SDKs
 
 <Cards>
   <Card
@@ -79,3 +117,7 @@ Create an account on [Openpanel](https://openpanel.dev) and setup your first pro
     {' '}
   </Card>
 </Cards>
+
+## Unofficial SDKs
+
+While not officially supported, the following community-contributed SDKs are available.

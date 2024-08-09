@@ -56,6 +56,8 @@ export interface IClickhouseEvent {
   brand: string;
   model: string;
   imported_at: string | null;
+  sdk_name: string;
+  sdk_version: string;
 
   // They do not exist here. Just make ts happy for now
   profile?: IServiceProfile;
@@ -93,6 +95,8 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     profile: event.profile,
     meta: event.meta,
     importedAt: event.imported_at ? new Date(event.imported_at) : null,
+    sdkName: event.sdk_name,
+    sdkVersion: event.sdk_version,
   };
 }
 
@@ -134,6 +138,8 @@ export interface IServiceEvent {
   importedAt: Date | null;
   profile: IServiceProfile | undefined;
   meta: EventMeta | undefined;
+  sdkName: string | undefined;
+  sdkVersion: string | undefined;
 }
 
 export interface IServiceEventMinimal {
@@ -295,6 +301,8 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     referrer_name: payload.referrerName ?? '',
     referrer_type: payload.referrerType ?? '',
     imported_at: null,
+    sdk_name: payload.sdkName ?? '',
+    sdk_version: payload.sdkVersion ?? '',
   };
 
   await eventBuffer.insert(event);

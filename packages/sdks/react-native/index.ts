@@ -2,28 +2,31 @@ import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 
-import type { OpenpanelSdkOptions, PostEventPayload } from '@openpanel/sdk';
-import { OpenpanelSdk } from '@openpanel/sdk';
+import type { OpenPanelOptions, TrackProperties } from '@openpanel/sdk';
+import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 
 export * from '@openpanel/sdk';
-export type OpenpanelOptions = OpenpanelSdkOptions;
 
-export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
-  constructor(options: OpenpanelOptions) {
-    super(options);
+export class OpenPanel extends OpenPanelBase {
+  constructor(public options: OpenPanelOptions) {
+    super({
+      ...options,
+      sdk: 'react-native',
+      sdkVersion: process.env.REACT_NATIVE_VERSION!,
+    });
 
-    this.api.headers['User-Agent'] = Constants.getWebViewUserAgentAsync();
+    this.api.addHeader('User-Agent', Constants.getWebViewUserAgentAsync());
 
     AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        this.setProperties();
+        this.setDefaultProperties();
       }
     });
 
-    this.setProperties();
+    this.setDefaultProperties();
   }
 
-  private async setProperties() {
+  private async setDefaultProperties() {
     this.setGlobalProperties({
       __version: Application.nativeApplicationVersion,
       __buildNumber: Application.nativeBuildVersion,
@@ -34,11 +37,8 @@ export class Openpanel extends OpenpanelSdk<OpenpanelOptions> {
     });
   }
 
-  public screenView(
-    route: string,
-    properties?: PostEventPayload['properties']
-  ): void {
-    super.event('screen_view', {
+  public screenView(route: string, properties?: TrackProperties): void {
+    super.track('screen_view', {
       ...properties,
       __path: route,
     });

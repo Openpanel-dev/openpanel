@@ -22,6 +22,7 @@ import importRouter from './routes/import.router';
 import liveRouter from './routes/live.router';
 import miscRouter from './routes/misc.router';
 import profileRouter from './routes/profile.router';
+import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
 import { logger, logInfo } from './utils/logger';
 
@@ -135,6 +136,7 @@ const startServer = async () => {
     fastify.register(exportRouter, { prefix: '/export' });
     fastify.register(webhookRouter, { prefix: '/webhook' });
     fastify.register(importRouter, { prefix: '/import' });
+    fastify.register(trackRouter, { prefix: '/track' });
     fastify.setErrorHandler((error) => {
       logger.error(error, 'Error in request');
     });

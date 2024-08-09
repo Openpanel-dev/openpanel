@@ -3,7 +3,8 @@ import { Callout, Steps, Tabs } from 'nextra/components';
 import { DeviceIdWarning } from 'src/components/device-id-warning';
 import { PersonalDataWarning } from 'src/components/personal-data-warning';
 
-import SdkConfig from 'src/components/sdk-config.mdx';
+import CommonSdkConfig from 'src/components/common-sdk-config.mdx';
+import WebSdkConfig from 'src/components/web-sdk-config.mdx';
 
 # Next.js
 
@@ -22,16 +23,15 @@ pnpm install @openpanel/nextjs
 
 ### Initialize
 
-Add `OpenpanelProvider` to your root layout component.
+Add `OpenpanelComponent` to your root layout component.
 
 ```tsx
-import { OpenpanelProvider } from '@openpanel/nextjs';
+import { OpenpanelComponent } from '@openpanel/nextjs';
 
 export default RootLayout({ children }) {
   return (
     <>
-      <OpenpanelProvider
-        url="https://api.openpanel.dev"
+      <OpenpanelComponent
         clientId="your-client-id"
         trackScreenViews={true}
         // trackAttributes={true}
@@ -45,176 +45,197 @@ export default RootLayout({ children }) {
 }
 ```
 
-#### Config
+#### Options
 
-<SdkConfig />
+<CommonSdkConfig />
+<WebSdkConfig />
 
-### Ready!
+##### NextJS options
 
-You're now ready to use the library.
+- `profileId` - If you have a user id, you can pass it here to identify the user
+- `cdnUrl` - The url to the OpenPanel SDK (default: `https://openpanel.dev/op1.js`)
+- `filter` - This is a function that will be called before tracking an event. If it returns false the event will not be tracked. [Read more](#filter)
 
-```typescript
-import {
-  decrement,
-  increment,
-  setProfile,
-  setProfileId,
-  trackEvent,
-} from '@openpanel/nextjs';
+##### `filter`
 
-// Sends an event with payload foo: bar
-trackEvent('my_event', { foo: 'bar' });
+This options needs to be a stringified function and cannot access any variables outside of the function.
 
-// Identify with profile id
-setProfileId('123');
+```tsx
+<OpenpanelComponent
+  clientId="your-client-id"
+  filter={`
+    function filter(event) {
+      return event.name !== 'my_event';
+    }
+  `}
+/>
+```
 
-// or with additional data
-setProfile({
-  profileId: '123',
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@openpanel.dev',
-});
+To take advantage of typescript you can do the following. _Note `toString`_
+```tsx /.toString();/
+import { type OpenPanelOptions } from '@openpanel/nextjs';
 
-// Increment a property
-increment('app_opened'); // increment by 1
-increment('app_opened', 5); // increment by 5
+const opFilter = ((event: TrackHandlerPayload) => {
+  return event.type === 'track' && event.payload.name === 'my_event';
+}).toString();
 
-// Decrement a property
-decrement('app_opened'); // decrement by 1
-decrement('app_opened', 5); // decrement by 5
+<OpenpanelComponent
+  clientId="your-client-id"
+  filter={opFilter}
+/>
 ```
 
 </Steps>
 
 ## Usage
 
-### Track event
+### Client components
 
-<Tabs items={['JS', 'window', 'HTML']}>
-  <Tabs.Tab>
-    ```typescript
-    import { trackEvent } from '@openpanel/nextjs';
-    trackEvent('my_event', { foo: 'bar' });
-    ```
-  </Tabs.Tab>
-  <Tabs.Tab>
-    ```javascript
-    window.op('event', 'my_event', { foo: 'bar' });
-    ```
-  </Tabs.Tab>
-  <Tabs.Tab>
-    For this to work you need to enable `trackAttributes` in the config.
-    ```html
-    <button data-event="my_event" data-foo="bar">Track event</button>
-    ```
-  </Tabs.Tab>
-</Tabs>
+For client components you can just use the `useOpenPanel` hook.
 
-### Identify
+```tsx
+import { useOpenPanel } from '@openpanel/nextjs';
 
-#### Set Profile Id
+function YourComponent() {
+  const op = useOpenPanel();
 
-Keep track of your users by identifying them with a unique id. This is a good features if you have things behind a login and want to track user behavior.
-
-<PersonalDataWarning />
-
-```typescript
-import { setProfileId } from '@openpanel/nextjs';
-
-const profileId = '123';
-setProfileId(profileId);
-```
-
-Or if you want to identify the user with a server component.
-
-```typescript
-import { SetProfileId } from '@openpanel/nextjs';
-
-export function Layout({ children }) {
-  return (
-    <>
-      <SetProfileId value={'123'} />
-      {children}
-    </>
-  )
+  return <button onClick={() => op.track('my_event', { foo: 'bar' })}>Trigger event</button>
 }
 ```
 
-#### Additional data
+### Server components
 
-This method does the same as `setProfileId` but also allows you to update the profile with additional data.
+Since you can't use hooks in server components, you need to create an instance of the SDK. This is exported from `@openpanel/nextjs`.
 
-<PersonalDataWarning />
+<Callout>Remember, your client secret is exposed here so do not use this on client side.</Callout>
 
-```typescript
-import { setProfile } from '@openpanel/nextjs';
+```tsx filename="utils/op.ts"
+import { Openpanel } from '@openpanel/nextjs';
 
-const profileId = '123';
-setProfile({
-  profileId,
-  // firstName?: string;
-  // lastName?: string;
-  // email?: string;
-  // avatar?: string;
-  // properties?: Record<string, unknown>;
+export const op = new Openpanel({
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+});
+
+// Now you can use `op` to track events
+op.track('my_event', { foo: 'bar' });
+```
+
+Refer to the [Javascript SDK](/docs/javascript#usage) for usage instructions.
+
+### Tracking Events
+
+You can track events with two different methods: by calling the `op.track( directly or by adding `data-track` attributes to your HTML elements.
+
+```ts filename="index.ts"
+useOpenPanel().track('my_event', { foo: 'bar' });
+```
+
+### Identifying Users
+
+To identify a user, call the `op.identify( method with a unique identifier.
+
+```js filename="index.js"
+useOpenPanel().identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
 });
 ```
 
-Or if you want to identify the user with a server component.
+#### For server components
 
-```typescript
-import { SetProfile } from '@openpanel/nextjs';
+For server components you can use the `IdentifyComponent` component which is exported from `@openpanel/nextjs`.
 
-export function Layout({ children }) {
+> This component is great if you have the user data available on the server side.
+
+```tsx filename="app/nested/layout.tsx"
+import { IdentifyComponent } from '@openpanel/nextjs';
+
+export default function Layout({ children }) {
+  const user = await getCurrentUser()
+
   return (
     <>
-      <SetProfile profileId={'12'} firstName={'Joe'} lastName={'Doe'} email={'joe.doe@openpanel.dev'} avatar={'https://image.com'} properties={{...}} />
+      <IdentifyComponent
+        profileId={user.id}
+        firstName={user.firstName}
+        lastName={user.lastName}
+        email={user.email}
+        properties={{
+          tier: 'premium',
+        }}
+      />
       {children}
     </>
   )
 }
 ```
 
-#### Increment property
 
-Increment a property on the profile.
+### Setting Global Properties
 
-```typescript
-import { increment } from '@openpanel/nextjs';
+To set properties that will be sent with every event:
 
-// Increment by 1
-increment('app_opened');
-
-// Increment by 5
-increment('app_opened', 5);
+```js filename="index.js"
+useOpenPanel().setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
 ```
 
-#### Decrement property
+### Creating Aliases
 
-Decrement a property on the profile.
+To create an alias for a user:
 
-```typescript
-import { decrement } from '@openpanel/nextjs';
-
-// Increment by 1
-decrement('app_opened');
-
-// Increment by 5
-decrement('app_opened', 5);
+```js filename="index.js"
+useOpenPanel().alias({
+  alias: 'a1',
+  profileId: '1'
+});
 ```
 
-#### Clear / Logout
+### Incrementing Properties
 
-Clear the profile id and all the data.
+To increment a numeric property on a user profile.
 
-```typescript
-import { clear } from '@openpanel/nextjs';
+- `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
 
-clear();
+```js filename="index.js"
+useOpenPanel().increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
 ```
 
-## Track server events
+### Decrementing Properties
+
+To decrement a numeric property on a user profile.
+
+- `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
+
+```js filename="index.js"
+useOpenPanel().decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### Clearing User Data
+
+To clear the current user's data:
+
+```js filename="index.js"
+useOpenPanel().clear()
+```
+
+## Server side
 
 If you want to track server-side events, you should create an instance of our Javascript SDK. It's exported from `@openpanel/nextjs`
 
@@ -256,25 +277,21 @@ export function GET() {
 }
 ```
 
-## Proxy events
+### Proxy events
 
 With `createNextRouteHandler` you can proxy your events through your server, this will ensure all events are tracked since there is a lot of adblockers that block requests to third party domains.
 
-```typescript
-// file: /app/api/op/[...op]/route.ts
-import { createNextRouteHandler } from '@openpanel/nextjs';
+```typescript filename="/app/api/op/route.ts"
+import { createNextRouteHandler } from '@openpanel/nextjs/server';
 
-export const { POST } = createNextRouteHandler({
-  clientId: '{YOUR_CLIENT_ID}',
-  clientSecret: '{YOUR_CLIENT_SECRET}',
-});
+export const POST = createNextRouteHandler();
 ```
 
-Remember to change the `url` in the `OpenpanelProvider` to your own server.
+Remember to change the `apiUrl` in the `OpenpanelComponent` to your own server.
 
-```tsx
-<OpenpanelProvider
-  url="/api/op" // <---
+```tsx {2}
+<OpenpanelComponent
+  apiUrl="/api/op"
   clientId="your-client-id"
   trackScreenViews={true}
 />

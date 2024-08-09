@@ -15,15 +15,16 @@
     "@openpanel/eslint-config": "workspace:*",
     "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "^20.14.12",
     "eslint": "^8.48.0",
     "prettier": "^3.0.3",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2"
   },
   "peerDependencies": {
-    "react-native": "0.73 - 0.74",
     "expo-application": "^5",
-    "expo-constants": "14 - 16"
+    "expo-constants": "14 - 16",
+    "react-native": "0.73 - 0.74"
   },
   "eslintConfig": {
     "root": true,

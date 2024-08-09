@@ -149,11 +149,23 @@ function main() {
         types: './dist/index.d.ts',
         files: ['dist'],
         exports: {
-          import: './dist/index.js',
-          require: './dist/index.cjs',
+          '.': {
+            import: './dist/index.js',
+            require: './dist/index.cjs',
+            types: './dist/index.d.ts',
+          },
+          ...(name === '@openpanel/nextjs'
+            ? {
+                './server': {
+                  import: './dist/server.js',
+                  require: './dist/server.cjs',
+                  types: './dist/server.d.ts',
+                },
+              }
+            : {}),
         },
         version: nextVersion,
-        dependencies: Object.entries(restPkgJson.dependencies).reduce(
+        dependencies: Object.entries(restPkgJson.dependencies || {}).reduce(
           (acc, [depName, depVersion]) => {
             const dep = packages[depName];
             if (!dep) {
@@ -187,9 +199,21 @@ function main() {
     updatePackageJsonForRelease(dependent);
   });
 
+  const versionEnvs = dependents.map((dependent) => {
+    const { nextVersion } = packages[dependent]!;
+    const env = dependent
+      .replace(/@openpanel\//g, '')
+      .toUpperCase()
+      .replace(/\//g, '_')
+      .replace('-', '_');
+    return `--env.${env}_VERSION=${nextVersion}`;
+  });
+
+  console.log('versionEnvs', versionEnvs);
+
   dependents.forEach((dependent) => {
     console.log(`🔨 Building ${dependent}`);
-    execSync('pnpm build', {
+    execSync(`pnpm build ${versionEnvs.join(' ')}`, {
       cwd: workspacePath(packages[dependent]!.localPath),
     });
   });
@@ -201,25 +225,31 @@ function main() {
       execSync(`npm publish --access=public --registry ${registry}`, {
         cwd: workspacePath(packages[dependent]!.localPath),
       });
+
+      if (dependent === '@openpanel/web') {
+        execSync(
+          `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/op1.js')}`
+        );
+      }
+    });
+
+    // Restoring package.json
+    const filesToRestore = dependents
+      .map((dependent) => workspacePath(packages[dependent]!.localPath))
+      .join(' ');
+
+    execSync(`git checkout ${filesToRestore}`);
+
+    // // Save new versions only 😈
+    dependents.forEach((dependent) => {
+      const { nextVersion, localPath, ...restPkgJson } = packages[dependent]!;
+      console.log(`🚀 Saving ${dependent} (${nextVersion})`);
+      savePackageJson(workspacePath(`${localPath}/package.json`), {
+        ...restPkgJson,
+        version: nextVersion,
+      });
     });
   }
-
-  // Restoring package.json
-  const filesToRestore = dependents
-    .map((dependent) => workspacePath(packages[dependent]!.localPath))
-    .join(' ');
-
-  execSync(`git checkout ${filesToRestore}`);
-
-  // // Save new versions only 😈
-  dependents.forEach((dependent) => {
-    const { nextVersion, localPath, ...restPkgJson } = packages[dependent]!;
-    console.log(`🚀 Saving ${dependent} (${nextVersion})`);
-    savePackageJson(workspacePath(`${localPath}/package.json`), {
-      ...restPkgJson,
-      version: nextVersion,
-    });
-  });
 
   console.log('✅ All done!');
 }

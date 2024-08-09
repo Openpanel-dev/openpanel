@@ -11,7 +11,7 @@ import {
   toISOString,
 } from '@openpanel/common';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
-import { createEvent } from '@openpanel/db';
+import { createEvent, getProfileIdCached } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
 import { eventsQueue, findJobByPrefix, sessionsQueue } from '@openpanel/queue';
 import type {
@@ -19,14 +19,6 @@ import type {
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
-
-function noDateInFuture(eventDate: Date): Date {
-  if (eventDate > new Date()) {
-    return new Date();
-  } else {
-    return eventDate;
-  }
-}
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 const SESSION_TIMEOUT = 1000 * 60 * 30;
@@ -54,15 +46,23 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     );
   };
 
+  // this will get the profileId from the alias table if it exists
+  // const profileId = await getProfileIdCached({
+  //   profileId: body.profileId,
+  //   projectId,
+  // });
   const profileId = body.profileId ? String(body.profileId) : '';
-  const createdAt = noDateInFuture(new Date(body.timestamp));
+  const createdAt = new Date(body.timestamp);
   const url = getProperty('__path');
   const { path, hash, query, origin } = parsePath(url);
   const referrer = isSameDomain(getProperty('__referrer'), url)
     ? null
     : parseReferrer(getProperty('__referrer'));
   const utmReferrer = getReferrerWithQuery(query);
-  const uaInfo = parseUserAgent(headers.ua);
+  const userAgent = headers['user-agent'];
+  const sdkName = headers['openpanel-sdk-name'];
+  const sdkVersion = headers['openpanel-sdk-version'];
+  const uaInfo = parseUserAgent(userAgent);
 
   if (uaInfo.isServer) {
     const event = await getLastScreenViewFromProfileId({
@@ -78,7 +78,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       projectId,
       properties: {
         ...omit(GLOBAL_PROPERTIES, properties),
-        user_agent: headers.ua,
+        user_agent: userAgent,
       },
       createdAt,
       country: event?.country || geo.country || '',
@@ -102,6 +102,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       profile: undefined,
       meta: undefined,
       importedAt: null,
+      sdkName,
+      sdkVersion,
     };
 
     return createEvent(payload);
@@ -175,6 +177,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     referrer: referrer?.url,
     referrerName: referrer?.name || utmReferrer?.name || '',
     referrerType: referrer?.type || utmReferrer?.type || '',
+    sdkName,
+    sdkVersion,
   };
 
   if (!sessionEnd) {

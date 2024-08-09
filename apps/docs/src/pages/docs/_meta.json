@@ -4,21 +4,22 @@
     "type": "separator",
     "title": "Frameworks"
   },
-  "script": "Script",
+  "script": "Web (Script Tag)",
+  "web": "Web (Module)",
   "nextjs": "Next.js",
   "react": "React",
   "react-native": "React-Native",
   "remix": "Remix",
   "vue": "Vue",
   "astro": "Astro",
-  "node": "Node (backend)",
+  "node": "Node",
   "express": "Express (backend)",
   "-- Others": {
     "type": "separator",
     "title": "Others"
   },
-  "javascript": "Javascript SDK",
-  "web": "Web SDK",
+  "javascript": "JavaScript",
   "api": "API",
-  "export": "Export"
+  "export": "Export",
+  "migration": "Migrations"
 }

@@ -2,59 +2,60 @@ import React from 'react';
 import Script from 'next/script';
 
 import type {
-  OpenpanelEventOptions,
-  OpenpanelOptions,
-  PostEventPayload,
-  UpdateProfilePayload,
+  DecrementPayload,
+  IdentifyPayload,
+  IncrementPayload,
+  OpenPanelMethodNames,
+  OpenPanelOptions,
+  TrackProperties,
 } from '@openpanel/web';
 
 export * from '@openpanel/web';
-export { createNextRouteHandler } from './createNextRouteHandler';
 
-const CDN_URL = 'https://openpanel.dev/op.js';
+const CDN_URL = 'https://openpanel.dev/op1.js';
 
-declare global {
-  interface Window {
-    op: {
-      q?: [string, ...any[]];
-      (method: OpenpanelMethods, ...args: any[]): void;
-    };
-  }
-}
-
-type OpenpanelMethods =
-  | 'ctor'
-  | 'event'
-  | 'setProfile'
-  | 'setProfileId'
-  | 'increment'
-  | 'decrement'
-  | 'clear';
-
-declare global {
-  interface window {
-    op: {
-      q?: [string, ...any[]];
-      (method: OpenpanelMethods, ...args: any[]): void;
-    };
-  }
-}
-
-type OpenpanelProviderProps = OpenpanelOptions & {
+type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
   cdnUrl?: string;
+  filter?: string;
 };
 
-export function OpenpanelProvider({
+const stringify = (obj: unknown) => {
+  if (typeof obj === 'object' && obj !== null && obj !== undefined) {
+    const entries = Object.entries(obj).map(([key, value]) => {
+      if (key === 'filter') {
+        return `"${key}":${value}`;
+      }
+      return `"${key}":${JSON.stringify(value)}`;
+    });
+    return `{${entries.join(',')}}`;
+  }
+
+  return JSON.stringify(obj);
+};
+
+export function OpenPanelComponent({
   profileId,
   cdnUrl,
   ...options
-}: OpenpanelProviderProps) {
-  const methods: { name: OpenpanelMethods; value: unknown }[] = [
-    { name: 'ctor', value: options },
+}: OpenPanelComponentProps) {
+  const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
+    {
+      name: 'init',
+      value: {
+        ...options,
+        sdk: 'nextjs',
+        sdkVersion: process.env.NEXTJS_VERSION!,
+      },
+    },
   ];
   if (profileId) {
-    methods.push({ name: 'setProfileId', value: profileId });
+    methods.push({
+      name: 'identify',
+      value: {
+        profileId,
+      },
+    });
   }
   return (
     <>
@@ -64,7 +65,7 @@ export function OpenpanelProvider({
           __html: `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
           ${methods
             .map((method) => {
-              return `window.op('${method.name}', ${JSON.stringify(method.value)});`;
+              return `window.op('${method.name}', ${stringify(method.value)});`;
             })
             .join('\n')}`,
         }}
@@ -73,71 +74,51 @@ export function OpenpanelProvider({
   );
 }
 
-interface SetProfileIdProps {
-  value?: string;
-}
+type IdentifyComponentProps = IdentifyPayload;
 
-export function SetProfileId({ value }: SetProfileIdProps) {
+export function IdentifyComponent(props: IdentifyComponentProps) {
   return (
     <>
       <Script
         dangerouslySetInnerHTML={{
-          __html: `window.op('setProfileId', '${value}');`,
+          __html: `window.op('identify', ${JSON.stringify(props)});`,
         }}
       />
     </>
   );
 }
 
-type SetProfileProps = UpdateProfilePayload;
-
-export function SetProfile(props: SetProfileProps) {
-  return (
-    <>
-      <Script
-        dangerouslySetInnerHTML={{
-          __html: `window.op('setProfile', ${JSON.stringify(props)});`,
-        }}
-      />
-    </>
-  );
+export function useOpenPanel() {
+  return {
+    track,
+    screenView,
+    identify,
+    increment,
+    decrement,
+    clear,
+  };
 }
 
-export function trackEvent(
-  name: string,
-  data?: PostEventPayload['properties']
-) {
-  window.op('event', name, data);
+function track(name: string, properties?: TrackProperties) {
+  window.op('track', name, properties);
 }
 
-export function trackScreenView(data?: PostEventPayload['properties']) {
-  trackEvent('screen_view', data);
+function screenView(properties: TrackProperties) {
+  track('screen_view', properties);
 }
 
-export function setProfile(data?: UpdateProfilePayload) {
-  window.op('setProfile', data);
+function identify(payload: IdentifyPayload) {
+  window.op('identify', payload);
 }
 
-export function setProfileId(profileId: string) {
-  window.op('setProfileId', profileId);
+function increment(payload: IncrementPayload) {
+  window.op('increment', payload);
 }
 
-export function increment(
-  property: string,
-  value: number,
-  options?: OpenpanelEventOptions
-) {
-  window.op('increment', property, value, options);
+function decrement(payload: DecrementPayload) {
+  window.op('decrement', payload);
 }
 
-export function decrement(
-  property: string,
-  value: number,
-  options?: OpenpanelEventOptions
-) {
-  window.op('decrement', property, value, options);
-}
-
-export function clear() {
+function clear() {
   window.op('clear');
 }

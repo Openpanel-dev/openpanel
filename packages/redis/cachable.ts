@@ -2,13 +2,38 @@ import { getRedisCache } from './redis';
 
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
-  expire: number
+  expireInSec: number
 ) {
-  return async function (
+  const cachePrefix = `cachable:${fn.name}`;
+  function stringify(obj: unknown): string {
+    if (obj === null) return 'null';
+    if (obj === undefined) return 'undefined';
+    if (typeof obj === 'boolean') return obj ? 'true' : 'false';
+    if (typeof obj === 'number') return String(obj);
+    if (typeof obj === 'string') return obj;
+    if (typeof obj === 'function') return obj.toString();
+
+    if (Array.isArray(obj)) {
+      return '[' + obj.map(stringify).join(',') + ']';
+    }
+
+    if (typeof obj === 'object') {
+      const pairs = Object.entries(obj)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${key}:${stringify(value)}`);
+      return pairs.join(':');
+    }
+
+    // Fallback for any other types
+    return String(obj);
+  }
+  const getKey = (...args: Parameters<T>) =>
+    `${cachePrefix}:${stringify(args)}`;
+  const cachedFn = async function (
     ...args: Parameters<T>
   ): Promise<Awaited<ReturnType<T>>> {
     // JSON.stringify here is not bullet proof since ordering of object keys matters etc
-    const key = `cachable:${fn.name}:${JSON.stringify(args)}`;
+    const key = getKey(...args);
     const cached = await getRedisCache().get(key);
     if (cached) {
       try {
@@ -20,9 +45,18 @@ export function cacheable<T extends (...args: any) => any>(
     const result = await fn(...(args as any));
 
     if (result !== undefined || result !== null) {
-      getRedisCache().setex(key, expire, JSON.stringify(result));
+      getRedisCache().setex(key, expireInSec, JSON.stringify(result));
     }
 
     return result;
   };
+
+  cachedFn.getKey = getKey;
+  cachedFn.clear = async function (...args: Parameters<T>) {
+    const key = getKey(...args);
+    console.log('[cachable] Clear', key);
+    return getRedisCache().del(key);
+  };
+
+  return cachedFn;
 }

@@ -4,6 +4,7 @@ import { createClient } from '@clickhouse/client';
 export const TABLE_NAMES = {
   events: 'events_v2',
   profiles: 'profiles',
+  alias: 'profile_aliases',
 };
 
 export const originalCh = createClient({
@@ -19,6 +20,9 @@ export const originalCh = createClient({
   },
   compression: {
     request: true,
+  },
+  clickhouse_settings: {
+    date_time_input_format: 'best_effort',
   },
 });
 
@@ -110,10 +114,13 @@ export async function chQuery<T extends Record<string, any>>(
   return (await chQueryWithMeta<T>(query)).data;
 }
 
-export function formatClickhouseDate(_date: Date | string, skipTime = false) {
+export function formatClickhouseDate(
+  _date: Date | string,
+  skipTime = false
+): string {
   const date = typeof _date === 'string' ? new Date(_date) : _date;
   if (skipTime) {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split('T')[0]!;
   }
   return date.toISOString().replace('T', ' ').replace(/Z+$/, '');
 }

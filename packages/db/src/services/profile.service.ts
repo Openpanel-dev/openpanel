@@ -1,10 +1,12 @@
 import { escape } from 'sqlstring';
 
 import { toObject } from '@openpanel/common';
+import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { profileBuffer } from '../buffers';
 import {
+  ch,
   chQuery,
   formatClickhouseDate,
   TABLE_NAMES,
@@ -169,6 +171,30 @@ export function transformProfile({
   };
 }
 
+export async function createProfileAlias({
+  projectId,
+  alias,
+  profileId,
+}: {
+  projectId: string;
+  alias: string;
+  profileId: string;
+}) {
+  await getProfileIdCached.clear({ profileId, projectId });
+  await ch.insert({
+    table: TABLE_NAMES.alias,
+    format: 'JSONEachRow',
+    values: [
+      {
+        projectId,
+        profile_id: profileId,
+        alias,
+        created_at: new Date(),
+      },
+    ],
+  });
+}
+
 export async function upsertProfile({
   id,
   firstName,
@@ -191,3 +217,31 @@ export async function upsertProfile({
     is_external: isExternal,
   });
 }
+
+export async function getProfileId({
+  profileId,
+  projectId,
+}: {
+  profileId: number | string | undefined;
+  projectId: string;
+}) {
+  if (!profileId) {
+    return '';
+  }
+
+  const res = await chQuery<{
+    alias: string;
+    profile_id: string;
+    project_id: string;
+  }>(
+    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`
+  );
+
+  if (res[0]) {
+    return res[0].profile_id;
+  }
+
+  return String(profileId);
+}
+
+export const getProfileIdCached = cacheable(getProfileId, 60 * 30);
