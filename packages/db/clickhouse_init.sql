@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS openpanel.profile_aliases (
   `created_at` DateTime
 ) ENGINE = MergeTree
 ORDER BY
-  (project_id, profile_id, alias) SETTINGS index_granularity = 8192;
+  (project_id, profile_id, alias, created_at) SETTINGS index_granularity = 8192;
 
 --- Materialized views (DAU)
 CREATE MATERIALIZED VIEW IF NOT EXISTS dau_mv ENGINE = AggregatingMergeTree() PARTITION BY toYYYYMMDD(date)
