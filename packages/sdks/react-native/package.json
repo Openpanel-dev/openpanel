@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/react-native",
-  "version": "0.0.11-beta",
+  "version": "1.0.0",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "0.0.9-beta"
+    "@openpanel/sdk": "1.0.0"
   },
   "devDependencies": {
     "@openpanel/eslint-config": "workspace:*",

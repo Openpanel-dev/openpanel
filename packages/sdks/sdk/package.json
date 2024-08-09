@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/sdk",
-  "version": "0.0.9-beta",
+  "version": "1.0.0",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
