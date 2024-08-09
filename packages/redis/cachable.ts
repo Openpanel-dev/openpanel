@@ -54,7 +54,6 @@ export function cacheable<T extends (...args: any) => any>(
   cachedFn.getKey = getKey;
   cachedFn.clear = async function (...args: Parameters<T>) {
     const key = getKey(...args);
-    console.log('[cachable] Clear', key);
     return getRedisCache().del(key);
   };
 
