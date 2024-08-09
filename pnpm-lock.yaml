@@ -193,7 +193,7 @@ importers:
         version: link:../../packages/db
       '@openpanel/nextjs':
         specifier: 1.0.0
-        version: link:../../packages/sdks/nextjs
+        version: 1.0.0(next@14.2.1)(react-dom@18.2.0)(react@18.2.0)
       '@openpanel/queue':
         specifier: workspace:^
         version: link:../../packages/queue
@@ -591,7 +591,7 @@ importers:
         version: link:../../packages/db
       '@openpanel/nextjs':
         specifier: 1.0.0
-        version: link:../../packages/sdks/nextjs
+        version: 1.0.0(next@14.2.1)(react-dom@18.2.0)(react@18.2.0)
       '@radix-ui/react-alert-dialog':
         specifier: ^1.0.5
         version: 1.0.5(@types/react-dom@18.2.19)(@types/react@18.2.56)(react-dom@18.2.0)(react@18.2.0)
@@ -1169,7 +1169,7 @@ importers:
     dependencies:
       '@openpanel/sdk':
         specifier: 1.0.0
-        version: link:../sdk
+        version: 1.0.0
       express:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.18.2
@@ -1209,7 +1209,7 @@ importers:
     dependencies:
       '@openpanel/web':
         specifier: 1.0.0
-        version: link:../web
+        version: 1.0.0
       next:
         specifier: ^12.0.0 || ^13.0.0 || ^14.0.0
         version: 14.1.0(react-dom@18.2.0)(react@18.2.0)
@@ -1249,7 +1249,7 @@ importers:
     dependencies:
       '@openpanel/sdk':
         specifier: 1.0.0
-        version: link:../sdk
+        version: 1.0.0
       expo-application:
         specifier: ^5
         version: 5.3.1(expo@50.0.7)
@@ -1316,7 +1316,7 @@ importers:
     dependencies:
       '@openpanel/sdk':
         specifier: 1.0.0
-        version: link:../sdk
+        version: 1.0.0
     devDependencies:
       '@openpanel/eslint-config':
         specifier: workspace:*
@@ -4893,6 +4893,29 @@ packages:
     dependencies:
       mkdirp: 1.0.4
       rimraf: 3.0.2
+    dev: false
+
+  /@openpanel/nextjs@1.0.0(next@14.2.1)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-c4x8WL1yf2cdUQnrhUFyU5oWI6OG1/uuTbEO1UdrX3Mzz0XgZ1NzWY5WUFRLgz7OHvS3vRPzEnFpMb3baD8/Mg==}
+    peerDependencies:
+      next: ^12.0.0 || ^13.0.0 || ^14.0.0
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@openpanel/web': 1.0.0
+      next: 14.2.1(@opentelemetry/api@1.8.0)(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
+  /@openpanel/sdk@1.0.0:
+    resolution: {integrity: sha512-FNmmfjdXoC/VHEjA+WkrQ4lyM5lxEmV7xDd57uj4E+lIS0sU3DLG2mV/dpS8AscnZbUvuMn3kPhiLCqYzuv/gg==}
+    dev: false
+
+  /@openpanel/web@1.0.0:
+    resolution: {integrity: sha512-ipY5hYWWrzPDwi1BtzyNn1d+Ly1gjujpmLvqO6oMKOhbNT8CwV9dIObZjyhzckaSMS8qYII9pLDIU1HCRysEDg==}
+    dependencies:
+      '@openpanel/sdk': 1.0.0
     dev: false
 
   /@opentelemetry/api-logs@0.50.0:
