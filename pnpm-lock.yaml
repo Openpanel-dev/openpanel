@@ -1168,8 +1168,8 @@ importers:
   packages/sdks/express:
     dependencies:
       '@openpanel/sdk':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.0.0-local
+        version: link:../sdk
       express:
         specifier: ^3.0.0 || ^4.0.0
         version: 4.18.2
@@ -1208,8 +1208,8 @@ importers:
   packages/sdks/nextjs:
     dependencies:
       '@openpanel/web':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.0.0-local
+        version: link:../web
       next:
         specifier: ^12.0.0 || ^13.0.0 || ^14.0.0
         version: 14.1.0(react-dom@18.2.0)(react@18.2.0)
@@ -1248,8 +1248,8 @@ importers:
   packages/sdks/react-native:
     dependencies:
       '@openpanel/sdk':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.0.0-local
+        version: link:../sdk
       expo-application:
         specifier: ^5
         version: 5.3.1(expo@50.0.7)
@@ -1315,8 +1315,8 @@ importers:
   packages/sdks/web:
     dependencies:
       '@openpanel/sdk':
-        specifier: 1.0.0
-        version: 1.0.0
+        specifier: 1.0.0-local
+        version: link:../sdk
     devDependencies:
       '@openpanel/eslint-config':
         specifier: workspace:*

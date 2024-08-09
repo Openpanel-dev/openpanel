@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "1.0.0"
+    "@openpanel/sdk": "1.0.0-local"
   },
   "devDependencies": {
     "@openpanel/eslint-config": "workspace:*",
