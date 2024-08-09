@@ -9,6 +9,8 @@ import { defaultMeta } from './meta';
 
 import '@/styles/globals.css';
 
+import Script from 'next/script';
+
 import { Navbar } from './navbar';
 
 export const metadata: Metadata = {
@@ -49,11 +51,15 @@ export default function RootLayout({
         {children}
         <Footer />
       </body>
-      <OpenpanelProvider
-        clientId="301c6dc1-424c-4bc3-9886-a8beab09b615"
-        trackAttributes
-        trackScreenViews
-        trackOutgoingLinks
+
+      <Script src={'https://openpanel.dev/op1.js'} async defer />
+      <Script
+        id="op1"
+        dangerouslySetInnerHTML={{
+          __html: `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
+          window.op('init', {"clientId":"301c6dc1-424c-4bc3-9886-a8beab09b615","sdk":"nextjs","sdkVersion":"1.0.0-beta","trackAttributes":true,"trackScreenViews":true,"trackOutgoingLinks":true});
+          `,
+        }}
       />
     </html>
   );
