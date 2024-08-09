@@ -28,9 +28,9 @@ export class OpenPanel extends OpenPanelBase {
 
   constructor(public options: OpenPanelOptions) {
     super({
-      ...options,
       sdk: 'web',
       sdkVersion: process.env.WEB_VERSION!,
+      ...options,
     });
 
     if (!this.isServer()) {
