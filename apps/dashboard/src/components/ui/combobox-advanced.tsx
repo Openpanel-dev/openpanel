@@ -7,7 +7,7 @@ import VirtualList from 'rc-virtual-list';
 import { useOnClickOutside } from 'usehooks-ts';
 
 import { Button } from './button';
-import { Checkbox } from './checkbox';
+import { Checkbox, DumpCheckbox } from './checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 type IValue = any;
@@ -61,7 +61,7 @@ export function ComboboxAdvanced({
         }}
         className={'flex cursor-pointer items-center gap-2'}
       >
-        <Checkbox checked={checked} className="pointer-events-none" />
+        <DumpCheckbox checked={checked} />
         {item?.label ?? item?.value}
       </CommandItem>
     );
@@ -99,7 +99,7 @@ export function ComboboxAdvanced({
         <Button
           variant={'outline'}
           onClick={() => setOpen((prev) => !prev)}
-          className={cn('h-min-10 h-auto', className)}
+          className={cn('h-auto min-h-10 py-2', className)}
         >
           <div className="flex w-full flex-wrap gap-1">
             {value.length === 0 && placeholder}
