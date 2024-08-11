@@ -11,7 +11,7 @@ import {
   toISOString,
 } from '@openpanel/common';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
-import { createEvent, getProfileIdCached } from '@openpanel/db';
+import { createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
 import { eventsQueue, findJobByPrefix, sessionsQueue } from '@openpanel/queue';
 import type {

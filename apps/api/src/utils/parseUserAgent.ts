@@ -23,7 +23,7 @@ export function parseUserAgent(ua?: string | null) {
   } as const;
 }
 
-const userAgentServerList: string[] = [
+const userAgentServerList = [
   // Node.js libraries
   'node',
   'node-fetch',
@@ -35,6 +35,8 @@ const userAgentServerList: string[] = [
   // Python libraries
   'python-requests',
   'python-urllib',
+  'aiohttp',
+  'python',
 
   // Ruby libraries
   'Faraday',
@@ -69,13 +71,13 @@ const userAgentServerList: string[] = [
 
 function isServer(userAgent: string) {
   const match = userAgentServerList.some((server) =>
-    userAgent.includes(server)
+    userAgent.toLowerCase().includes(server.toLowerCase())
   );
   if (match) {
     return true;
   }
 
-  return !!userAgent.match(/^[^\s]+\/[\d.]+$/);
+  return !!userAgent.match(/^([^\s]+\/[\d.]+\s*)+$/);
 }
 
 export function getDevice(ua: string) {
