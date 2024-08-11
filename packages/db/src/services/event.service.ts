@@ -459,6 +459,10 @@ export async function getLastScreenViewFromProfileId({
   profileId: string;
   projectId: string;
 }) {
+  if (!profileId) {
+    return null;
+  }
+
   const eventInBuffer = await eventBuffer.find(
     (item) => item.event.profile_id === profileId
   );
