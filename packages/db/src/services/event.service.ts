@@ -343,12 +343,25 @@ export async function getEventList({
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.where.projectId = `project_id = ${escape(projectId)}`;
 
+  // sb.select.id = 'id';
+  // sb.select.name = 'name';
+  // sb.select.deviceId = 'device_id';
+  // sb.select.profileId = 'profile_id';
+  // sb.select.projectId = 'project_id';
+  // sb.select.createdAt = 'created_at';
+  // sb.select.path = 'path';
+  // sb.select.duration = 'duration';
+  // sb.select.city = 'city';
+  // sb.select.country = 'country';
+  // sb.select.os = 'os';
+  // sb.select.browser = 'browser';
+
   if (profileId) {
     sb.where.deviceId = `device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} group by did)`;
   }
 
   if (startDate && endDate) {
-    sb.where.created_at = `created_at BETWEEN '${formatClickhouseDate(startDate)}' AND '${formatClickhouseDate(endDate)}'`;
+    sb.where.created_at = `toDate(created_at) BETWEEN '${formatClickhouseDate(startDate)}' AND '${formatClickhouseDate(endDate)}'`;
   }
 
   if (events && events.length > 0) {
@@ -369,7 +382,8 @@ export async function getEventList({
   //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
   // }
 
-  sb.orderBy.created_at = 'created_at DESC';
+  sb.orderBy.created_at =
+    'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
 
   return getEvents(getSql(), { profile, meta });
 }

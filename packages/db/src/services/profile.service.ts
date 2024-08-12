@@ -1,3 +1,4 @@
+import { uniq } from 'ramda';
 import { escape } from 'sqlstring';
 
 import { toObject } from '@openpanel/common';
@@ -66,7 +67,7 @@ interface GetProfileListOptions {
 }
 
 export async function getProfiles(ids: string[]) {
-  const filteredIds = ids.filter((id) => id !== '');
+  const filteredIds = uniq(ids.filter((id) => id !== ''));
 
   if (filteredIds.length === 0) {
     return [];
