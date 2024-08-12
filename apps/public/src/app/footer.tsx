@@ -43,7 +43,7 @@ export default function Footer() {
         <div className="h-px w-full bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]"></div>
         <div className="bg-blue-darker p-4">
           <div className="container">
-            <div className="flex flex-col gap-4 text-sm md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4  md:flex-row md:items-center md:justify-between">
               <Logo />
               <div className="flex flex-col gap-4 md:flex-row">
                 <Link className="hover:underline" href="/terms">

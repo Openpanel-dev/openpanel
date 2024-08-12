@@ -35,7 +35,7 @@ export default function OnboardingTroubleshoot() {
           </AlertDescription>
         </Alert>
       </div>
-      <p className="mt-4 text-sm">
+      <p className="mt-4 ">
         Still have issues? Join our{' '}
         <a href="https://go.openpanel.dev/discord" className="underline">
           discord channel

@@ -37,7 +37,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   return (
     <div
       className={cn(
-        'flex flex-col text-xs',
+        'flex flex-col text-sm',
         editMode ? 'card gap-2 p-4 text-base' : '-m-3 gap-1'
       )}
     >

@@ -83,7 +83,7 @@ export function ListReports({ reports }: ListReportsProps) {
                 <div>
                   <div className="font-medium">{report.name}</div>
                   {chartRange !== null && (
-                    <div className="mt-2 flex gap-2 text-sm">
+                    <div className="mt-2 flex gap-2 ">
                       <span
                         className={
                           range !== null || (startDate && endDate)

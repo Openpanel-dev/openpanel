@@ -6,6 +6,8 @@ import Providers from './providers';
 import '@/styles/globals.css';
 import '/node_modules/flag-icons/css/flag-icons.min.css';
 
+import { Inter } from 'next/font/google';
+
 export const metadata = {
   title: 'Overview - Openpanel.dev',
 };
@@ -17,6 +19,13 @@ export const viewport = {
   userScalable: 1,
 };
 
+const body = Inter({
+  display: 'swap',
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
+});
+
 export default function RootLayout({
   children,
 }: {
@@ -25,7 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={cn('grainy bg-def-100 min-h-screen font-sans antialiased')}
+        className={cn(
+          'grainy min-h-screen bg-def-100 font-sans text-base antialiased',
+          body.variable
+        )}
       >
         <NextTopLoader
           showSpinner={false}

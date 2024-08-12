@@ -1,7 +1,18 @@
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
-import { chQuery, convertClickhouseDateToJs, db } from '@openpanel/db';
+import {
+  chQuery,
+  convertClickhouseDateToJs,
+  db,
+  getEventList,
+  getEventsCount,
+} from '@openpanel/db';
+import {
+  zChartEvent,
+  zChartEventFilter,
+  zChartInput,
+} from '@openpanel/validation';
 
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
@@ -30,6 +41,24 @@ export const eventRouter = createTRPCRouter({
         update: { icon, color, conversion },
       });
     }),
+
+  events: publicProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        cursor: z.number().optional(),
+        limit: z.number().default(8),
+        profileId: z.string().optional(),
+        take: z.number().default(50),
+        events: z.array(z.string()).optional(),
+        filters: z.array(zChartEventFilter).default([]),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
+        meta: z.boolean().optional(),
+        profile: z.boolean().optional(),
+      })
+    )
+    .query(async ({ input }) => getEventList(input)),
 
   bots: publicProcedure
     .input(

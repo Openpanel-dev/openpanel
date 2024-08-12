@@ -61,7 +61,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
         <div className="flex w-full flex-wrap items-start justify-start">
           {res.map(renderItem)}
         </div>
-        <div className="text-center text-xs text-muted-foreground">DAYS</div>
+        <div className="text-center text-sm text-muted-foreground">DAYS</div>
       </WidgetBody>
     </Widget>
   );

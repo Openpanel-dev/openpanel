@@ -20,9 +20,9 @@ const Page = ({ children }: Props) => {
         </FullWidthNavbar>
         <div className="mx-auto w-full md:max-w-[95vw] lg:max-w-[80vw]">
           <div className="grid md:grid-cols-[25vw_1fr] lg:grid-cols-[20vw_1fr]">
-            <div className="max-w-screen bg-def-200 flex flex-col gap-4 overflow-hidden p-4 pr-0 md:bg-transparent md:py-14">
+            <div className="max-w-screen flex flex-col gap-4 overflow-hidden bg-def-200 p-4 pr-0 md:bg-transparent md:py-14">
               <div>
-                <div className="text-xs font-bold uppercase text-[#7b94ac]">
+                <div className="text-sm font-bold uppercase text-[#7b94ac]">
                   Welcome to Openpanel
                 </div>
                 <div className="text-xl font-medium leading-loose">

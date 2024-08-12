@@ -134,7 +134,7 @@
   }
 
   .card {
-    @apply border border-border bg-card;
+    @apply rounded-md border border-border bg-card;
   }
 }
 

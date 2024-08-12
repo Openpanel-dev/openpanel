@@ -33,20 +33,20 @@ function Tooltip({ payload }: any) {
     return null;
   }
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 text-sm shadow-xl">
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3  shadow-xl">
       <div className="flex justify-between gap-8">
         <div>{formatDate(new Date(date))}</div>
       </div>
       <div>
-        <div className="text-xs text-muted-foreground">Active Users</div>
+        <div className="text-sm text-muted-foreground">Active Users</div>
         <div className="text-lg font-semibold">{active_users}</div>
       </div>
       <div>
-        <div className="text-xs text-muted-foreground">Retained Users</div>
+        <div className="text-sm text-muted-foreground">Retained Users</div>
         <div className="text-lg font-semibold">{retained_users}</div>
       </div>
       <div>
-        <div className="text-xs text-muted-foreground">Retention</div>
+        <div className="text-sm text-muted-foreground">Retention</div>
         <div className="text-lg font-semibold">{round(retention, 2)}%</div>
       </div>
     </div>

@@ -25,7 +25,7 @@ export async function Hero() {
       <div className="container relative flex min-h-[700px] flex-col items-center gap-4 max-md:pt-32 md:h-screen md:flex-row md:gap-8">
         <div className="flex-1 max-md:text-center sm:min-w-[350px] lg:min-w-[400px]">
           <div className="mb-4 flex justify-center md:justify-start">
-            <div className="rounded-md border border-border p-1.5 px-4 text-sm font-medium">
+            <div className="rounded-md border border-border p-1.5 px-4  font-medium">
               FREE DURING BETA
             </div>
           </div>
@@ -66,7 +66,7 @@ export async function Hero() {
           </div>
           <div className="mt-8 flex justify-center gap-8 md:justify-start">
             <div>
-              <div className="text-sm uppercase text-muted-foreground">
+              <div className=" uppercase text-muted-foreground">
                 Collected events
               </div>
               <div className="font-serif text-3xl font-semibold">
@@ -74,7 +74,7 @@ export async function Hero() {
               </div>
             </div>
             <div>
-              <div className="text-sm uppercase text-muted-foreground">
+              <div className=" uppercase text-muted-foreground">
                 Active projects
               </div>
               <div className="font-serif text-3xl font-semibold">

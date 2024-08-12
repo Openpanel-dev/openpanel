@@ -72,7 +72,7 @@ export function ProfileList({ data, count, limit = 50 }: ProfileListProps) {
                       asChild
                       content={profile.createdAt.toLocaleString()}
                     >
-                      <div className="text-sm text-muted-foreground">
+                      <div className=" text-muted-foreground">
                         {profile.createdAt.toLocaleTimeString()}
                       </div>
                     </Tooltiper>

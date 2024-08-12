@@ -15,7 +15,7 @@ const ProfileMetrics = ({ data }: Props) => {
   return (
     <div className="flex flex-wrap gap-6 whitespace-nowrap md:justify-end md:text-right">
       <div>
-        <div className="text-xs font-medium text-muted-foreground">
+        <div className="text-sm font-medium text-muted-foreground">
           First seen
         </div>
         <div className="text-lg font-semibold">
@@ -23,7 +23,7 @@ const ProfileMetrics = ({ data }: Props) => {
         </div>
       </div>
       <div>
-        <div className="text-xs font-medium text-muted-foreground">
+        <div className="text-sm font-medium text-muted-foreground">
           Last seen
         </div>
         <div className="text-lg font-semibold">
@@ -31,7 +31,7 @@ const ProfileMetrics = ({ data }: Props) => {
         </div>
       </div>
       <div>
-        <div className="text-xs font-medium text-muted-foreground">
+        <div className="text-sm font-medium text-muted-foreground">
           Sessions
         </div>
         <div className="text-lg font-semibold">
@@ -39,7 +39,7 @@ const ProfileMetrics = ({ data }: Props) => {
         </div>
       </div>
       <div>
-        <div className="text-xs font-medium text-muted-foreground">
+        <div className="text-sm font-medium text-muted-foreground">
           Avg. Session
         </div>
         <div className="text-lg font-semibold">
@@ -47,7 +47,7 @@ const ProfileMetrics = ({ data }: Props) => {
         </div>
       </div>
       <div>
-        <div className="text-xs font-medium text-muted-foreground">
+        <div className="text-sm font-medium text-muted-foreground">
           P90. Session
         </div>
         <div className="text-lg font-semibold">
@@ -55,7 +55,7 @@ const ProfileMetrics = ({ data }: Props) => {
         </div>
       </div>
       <div>
-        <div className="text-xs font-medium text-muted-foreground">
+        <div className="text-sm font-medium text-muted-foreground">
           Page views
         </div>
         <div className="text-lg font-semibold">

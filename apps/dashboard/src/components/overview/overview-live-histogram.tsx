@@ -131,7 +131,7 @@ interface WrapperProps {
 function Wrapper({ children, count }: WrapperProps) {
   return (
     <div className="flex h-full flex-col">
-      <div className="relative mb-1 text-xs font-medium text-muted-foreground">
+      <div className="relative mb-1 text-sm font-medium text-muted-foreground">
         {count} unique vistors last 30 minutes
       </div>
       <div className="relative flex h-full w-full flex-1 items-end gap-1">

@@ -34,7 +34,7 @@ const SkipOnboarding = () => {
           });
         }
       }}
-      className="flex items-center gap-2 text-sm text-muted-foreground"
+      className="flex items-center gap-2  text-muted-foreground"
     >
       Skip onboarding
       <ChevronLastIcon size={16} />

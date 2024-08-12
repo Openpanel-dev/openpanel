@@ -95,7 +95,7 @@ function Item({
     <TableRow key={id}>
       <TableCell className="font-medium">
         <div>{[user?.firstName, user?.lastName].filter(Boolean).join(' ')}</div>
-        <div className="text-sm text-muted-foreground">{user?.email}</div>
+        <div className=" text-muted-foreground">{user?.email}</div>
       </TableCell>
       <TableCell>{role}</TableCell>
       <TableCell>

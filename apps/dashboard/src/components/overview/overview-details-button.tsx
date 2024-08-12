@@ -10,7 +10,7 @@ type Props = {
 const OverviewDetailsButton = ({ chart }: Props) => {
   return (
     <button
-      className="-mb-2 mt-5 flex w-full items-center justify-center gap-2 text-sm font-semibold"
+      className="-mb-2 mt-5 flex w-full items-center justify-center gap-2  font-semibold"
       onClick={() => {
         pushModal('OverviewChartDetails', {
           chart: chart,

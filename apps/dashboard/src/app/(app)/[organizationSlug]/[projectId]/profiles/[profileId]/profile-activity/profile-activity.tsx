@@ -52,7 +52,7 @@ const ProfileActivity = ({ data }: Props) => {
       <WidgetBody className="p-0">
         <div className="grid grid-cols-2">
           <div>
-            <div className="p-1 text-xs">
+            <div className="p-1 text-sm">
               {format(subMonths(startDate, 1), 'MMMM yyyy')}
             </div>
             <div className="grid grid-cols-7 gap-1 p-1">
@@ -78,7 +78,7 @@ const ProfileActivity = ({ data }: Props) => {
             </div>
           </div>
           <div>
-            <div className="p-1 text-xs">{format(startDate, 'MMMM yyyy')}</div>
+            <div className="p-1 text-sm">{format(startDate, 'MMMM yyyy')}</div>
             <div className="grid grid-cols-7 gap-1 p-1">
               {eachDayOfInterval({
                 start: startDate,

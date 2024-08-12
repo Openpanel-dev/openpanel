@@ -17,7 +17,7 @@ const CopyInput = ({ label, value, className }: Props) => {
       onClick={() => clipboard(value)}
     >
       {!!label && <Label>{label}</Label>}
-      <div className="flex items-center justify-between rounded border-input bg-def-200 p-2 px-3 font-mono text-sm">
+      <div className="font-mono flex items-center justify-between rounded border-input bg-def-200 p-2 px-3 ">
         {value}
         <CopyIcon size={16} />
       </div>

@@ -132,7 +132,7 @@ export function FunnelSteps({
                 </div>
                 {finalStep ? (
                   <div className={cn('flex flex-col items-center p-4')}>
-                    <div className="text-xs font-medium uppercase">
+                    <div className="text-sm font-medium uppercase">
                       Conversion
                     </div>
                     <div
@@ -143,13 +143,13 @@ export function FunnelSteps({
                     >
                       {round(step.percent, 1)}%
                     </div>
-                    <div className="mt-0 text-sm font-medium uppercase text-muted-foreground">
+                    <div className="mt-0  font-medium uppercase text-muted-foreground">
                       Converted {step.current} of {totalSessions} sessions
                     </div>
                   </div>
                 ) : (
                   <div className={cn('flex flex-col items-center p-4')}>
-                    <div className="text-xs font-medium uppercase">Dropoff</div>
+                    <div className="text-sm font-medium uppercase">Dropoff</div>
                     <div
                       className={cn(
                         'text-3xl font-bold uppercase',
@@ -158,7 +158,7 @@ export function FunnelSteps({
                     >
                       {round(step.dropoff.percent, 1)}%
                     </div>
-                    <div className="mt-0 text-sm font-medium uppercase text-muted-foreground">
+                    <div className="mt-0  font-medium uppercase text-muted-foreground">
                       Lost {step.dropoff.count} sessions
                     </div>
                   </div>

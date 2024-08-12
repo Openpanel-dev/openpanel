@@ -29,20 +29,20 @@ function Tooltip(props: any) {
     return null;
   }
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 text-sm shadow-xl">
-      <div className="text-xs text-muted-foreground">{payload.date}</div>
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3  shadow-xl">
+      <div className="text-sm text-muted-foreground">{payload.date}</div>
       <div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-sm text-muted-foreground">
           Monthly active users
         </div>
         <div className="text-lg font-semibold text-chart-2">{payload.mau}</div>
       </div>
       <div>
-        <div className="text-xs text-muted-foreground">Weekly active users</div>
+        <div className="text-sm text-muted-foreground">Weekly active users</div>
         <div className="text-lg font-semibold text-chart-1">{payload.wau}</div>
       </div>
       <div>
-        <div className="text-xs text-muted-foreground">Daily active users</div>
+        <div className="text-sm text-muted-foreground">Daily active users</div>
         <div className="text-lg font-semibold text-chart-0">{payload.dau}</div>
       </div>
     </div>

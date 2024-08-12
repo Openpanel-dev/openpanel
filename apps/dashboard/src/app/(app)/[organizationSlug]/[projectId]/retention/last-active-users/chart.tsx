@@ -23,15 +23,15 @@ function Tooltip(props: any) {
     return null;
   }
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 text-sm shadow-xl">
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3  shadow-xl">
       <div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-sm text-muted-foreground">
           Days since last seen
         </div>
         <div className="text-lg font-semibold">{payload.days}</div>
       </div>
       <div>
-        <div className="text-xs text-muted-foreground">Active users</div>
+        <div className="text-sm text-muted-foreground">Active users</div>
         <div className="text-lg font-semibold">{payload.users}</div>
       </div>
     </div>

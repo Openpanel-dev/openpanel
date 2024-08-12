@@ -52,13 +52,13 @@ export function EventListItem(props: EventListItemProps) {
 
   return (
     <>
-      {!isMinimal && (
+      {/* {!isMinimal && (
         <EventDetails
           event={props}
           open={isDetailsOpen}
           setOpen={setIsDetailsOpen}
         />
-      )}
+      )} */}
       <button
         onClick={() => {
           if (!isMinimal) {
@@ -72,7 +72,7 @@ export function EventListItem(props: EventListItemProps) {
         )}
       >
         <div>
-          <div className="flex items-center gap-4 text-left text-sm">
+          <div className="flex items-center gap-4 text-left ">
             <EventIcon
               size="sm"
               name={name}
@@ -100,14 +100,14 @@ export function EventListItem(props: EventListItemProps) {
                 e.stopPropagation();
               }}
               href={`/${organizationSlug}/${projectId}/profiles/${profile?.id}`}
-              className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted-foreground hover:underline"
+              className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap  text-muted-foreground hover:underline"
             >
               {getProfileName(profile)}
             </Link>
           </Tooltiper>
 
           <Tooltiper asChild content={createdAt.toLocaleString()}>
-            <div className="text-sm text-muted-foreground">
+            <div className=" text-muted-foreground">
               {createdAt.toLocaleTimeString()}
             </div>
           </Tooltiper>

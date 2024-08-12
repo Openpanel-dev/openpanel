@@ -106,7 +106,7 @@ export function ReportEvents() {
               </div>
 
               {/* Segment and Filter buttons */}
-              <div className="flex gap-2 p-2 pt-0 text-sm">
+              <div className="flex gap-2 p-2 pt-0 ">
                 <DropdownMenuComposed
                   onChange={(segment) => {
                     dispatch(
@@ -148,7 +148,7 @@ export function ReportEvents() {
                   ]}
                   label="Segment"
                 >
-                  <button className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-xs font-medium leading-none">
+                  <button className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none">
                     {event.segment === 'user' ? (
                       <>
                         <Users size={12} /> Unique users
@@ -216,7 +216,7 @@ export function ReportEvents() {
         />
       </div>
       <label
-        className="mt-4 flex cursor-pointer select-none items-center gap-2 text-sm font-medium"
+        className="mt-4 flex cursor-pointer select-none items-center gap-2  font-medium"
         htmlFor="previous"
       >
         <Checkbox

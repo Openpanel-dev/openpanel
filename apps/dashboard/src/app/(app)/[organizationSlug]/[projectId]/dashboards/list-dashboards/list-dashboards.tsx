@@ -90,7 +90,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                 >
                   <div>
                     <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-sm text-muted-foreground">
                       {format(item.updatedAt, 'HH:mm · MMM d')}
                     </div>
                   </div>
@@ -114,26 +114,26 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
 
                       return (
                         <div
-                          className="bg-def-200 flex flex-col rounded-xl p-4"
+                          className="flex flex-col rounded-xl bg-def-200 p-4"
                           key={report.id}
                         >
                           <Icon size={24} className="text-highlight" />
-                          <div className="mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                          <div className="mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm">
                             {report.name}
                           </div>
                         </div>
                       );
                     })}
                     {item.reports.length > 6 && (
-                      <div className="bg-def-200 flex flex-col rounded-xl p-4">
+                      <div className="flex flex-col rounded-xl bg-def-200 p-4">
                         <PlusIcon size={24} className="text-highlight" />
-                        <div className="mt-2 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-xs">
+                        <div className="mt-2 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
                           {item.reports.length - 5} more
                         </div>
                       </div>
                     )}
                   </div>
-                  {/* <span className="overflow-hidden text-ellipsis whitespace-nowrap text-sm text-muted-foreground">
+                  {/* <span className="overflow-hidden text-ellipsis whitespace-nowrap  text-muted-foreground">
                     <span className="mr-2 font-medium">
                       {item.reports.length} reports
                     </span>

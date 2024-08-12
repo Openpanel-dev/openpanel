@@ -40,7 +40,7 @@ export default function EventListener() {
             counter.set(0);
             router.refresh();
           }}
-          className="flex h-8 items-center gap-2 rounded border border-border bg-card px-3 text-sm font-medium leading-none"
+          className="flex h-8 items-center gap-2 rounded border border-border bg-card px-3 font-medium leading-none"
         >
           <div className="relative">
             <div

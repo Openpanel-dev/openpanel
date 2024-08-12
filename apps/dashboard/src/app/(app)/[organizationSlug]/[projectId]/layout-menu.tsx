@@ -42,7 +42,7 @@ function LinkWithIcon({
   return (
     <Link
       className={cn(
-        'text-text hover:bg-def-200 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-all transition-colors',
+        'text-text flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
         active && 'bg-def-200',
         className
       )}
@@ -144,7 +144,7 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
       )}
       {dashboards.length > 0 && (
         <div className="mt-8">
-          <div className="mb-2 text-sm font-medium">Your dashboards</div>
+          <div className="mb-2  font-medium">Your dashboards</div>
           <div className="flex flex-col gap-2">
             {dashboards.map((item) => (
               <LinkWithIcon

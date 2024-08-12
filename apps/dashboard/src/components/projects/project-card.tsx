@@ -23,7 +23,7 @@ function ProjectCard({ id, name, organizationSlug }: IServiceProject) {
           <ProjectChart id={id} />
         </Suspense>
       </div>
-      <div className="flex justify-end gap-4 text-sm">
+      <div className="flex justify-end gap-4 ">
         <Suspense>
           <ProjectMetrics id={id} />
         </Suspense>
