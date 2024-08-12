@@ -19,7 +19,26 @@ Sets global properties that will be included with every subsequent event.
 
 ### track
 
-Tracks a custom event with the given name and optional properties.
+Tracks a custom event with the given name and optional properties. 
+
+**Tips**
+
+You can identify the user directly with this method.
+
+```js filename="Example shown in JavaScript"
+track('your_event_name', {
+  foo: 'bar',
+  baz: 'qux',
+  // reserved property name
+  __identify: {
+    profileId: 'your_user_id', // required
+    email: 'your_user_email',
+    firstName: 'your_user_name',
+    lastName: 'your_user_name',
+    avatar: 'your_user_avatar',
+  }
+});
+```
 
 ### identify
 

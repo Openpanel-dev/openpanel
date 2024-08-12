@@ -2,13 +2,13 @@ import type { GeoLocation } from '@/utils/parseIp';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { assocPath, pathOr, pick } from 'ramda';
+import { assocPath, path, pathOr, pick } from 'ramda';
 
 import { generateDeviceId } from '@openpanel/common';
 import {
   createProfileAlias,
   getProfileById,
-  getProfileId,
+  getProfileIdCached,
   getSalts,
   upsertProfile,
 } from '@openpanel/db';
@@ -42,30 +42,51 @@ export function getStringHeaders(headers: FastifyRequest['headers']) {
   );
 }
 
+function getIdentity(body: TrackHandlerPayload): IdentifyPayload | undefined {
+  const identity = path<IdentifyPayload>(
+    ['properties', '__identify'],
+    body.payload
+  );
+
+  return (
+    identity ||
+    (body.payload.profileId
+      ? {
+          profileId: body.payload.profileId,
+        }
+      : undefined)
+  );
+}
+
 export async function handler(
   request: FastifyRequest<{
     Body: TrackHandlerPayload;
   }>,
   reply: FastifyReply
 ) {
-  const ip = getClientIp(request)!;
+  const ip =
+    path<string>(['properties', '__ip'], request.body.payload) ||
+    getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const projectId = request.client?.projectId;
-  const profileId =
-    projectId && request.body.payload.profileId
-      ? await getProfileId({
-          projectId,
-          profileId: request.body.payload.profileId,
-        })
-      : undefined;
-
-  if (profileId) {
-    request.body.payload.profileId = profileId;
-  }
 
   if (!projectId) {
     reply.status(400).send('missing origin');
     return;
+  }
+
+  const identity = getIdentity(request.body);
+  const profileId = identity?.profileId
+    ? await getProfileIdCached({
+        projectId,
+        profileId: identity?.profileId,
+      })
+    : undefined;
+
+  // We might get a profileId from the alias table
+  // If we do, we should use that instead of the one from the payload
+  if (profileId) {
+    request.body.payload.profileId = profileId;
   }
 
   switch (request.body.type) {
@@ -87,14 +108,32 @@ export async function handler(
             ua,
           })
         : '';
-      await track({
-        payload: request.body.payload,
-        currentDeviceId,
-        previousDeviceId,
-        projectId,
-        geo,
-        headers: getStringHeaders(request.headers),
-      });
+
+      const promises = [
+        track({
+          payload: request.body.payload,
+          currentDeviceId,
+          previousDeviceId,
+          projectId,
+          geo,
+          headers: getStringHeaders(request.headers),
+        }),
+      ];
+
+      // If we have more than one property in the identity object, we should identify the user
+      // Otherwise its only a profileId and we should not identify the user
+      if (identity && Object.keys(identity).length > 1) {
+        promises.push(
+          identify({
+            payload: identity,
+            projectId,
+            geo,
+            ua,
+          })
+        );
+      }
+
+      await Promise.all(promises);
       break;
     }
     case 'identify': {
