@@ -84,6 +84,7 @@ function EventList({ data, count }: EventListProps) {
             ))}
           </div>
           <Pagination
+            size="sm"
             className="mt-2"
             cursor={cursor}
             setCursor={setCursor}

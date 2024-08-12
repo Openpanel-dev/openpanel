@@ -20,17 +20,12 @@ const EventListServer = async ({
   filters,
   profileId,
 }: Props) => {
-  const [events, count] = await Promise.all([
+  const count = Infinity;
+  const [events] = await Promise.all([
     getEventList({
       cursor,
       projectId,
       take: 50,
-      events: eventNames,
-      filters,
-      profileId,
-    }),
-    getEventsCount({
-      projectId,
       events: eventNames,
       filters,
       profileId,
