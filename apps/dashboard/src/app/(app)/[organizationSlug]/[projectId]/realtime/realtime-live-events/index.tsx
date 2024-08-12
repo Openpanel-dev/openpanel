@@ -10,7 +10,7 @@ type Props = {
 };
 const RealtimeLiveEventsServer = async ({ projectId, limit = 30 }: Props) => {
   const events = await getEvents(
-    `SELECT * FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit}`,
+    `SELECT * FROM ${TABLE_NAMES.events} WHERE created_at > now() - INTERVAL 2 HOUR AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit}`,
     {
       profile: true,
     }
