@@ -4,7 +4,6 @@ import { ColorSquare } from '@/components/color-square';
 import { AutoSizer } from '@/components/react-virtualized-auto-sizer';
 import { Progress } from '@/components/ui/progress';
 import { Widget, WidgetBody } from '@/components/widget';
-import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
@@ -13,6 +12,7 @@ import { AlertCircleIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { Cell, Pie, PieChart } from 'recharts';
 
+import { alphabetIds } from '@openpanel/constants';
 import type { IChartInput } from '@openpanel/validation';
 
 import { useChartContext } from '../chart/ChartProvider';
@@ -109,7 +109,7 @@ export function FunnelSteps({
                       </Pie>
                     </PieChart>
                     <div
-                      className="absolute inset-0 flex items-center justify-center font-mono font-bold"
+                      className="font-mono absolute inset-0 flex items-center justify-center font-bold"
                       style={{
                         fontSize: width / 6,
                       }}
@@ -162,7 +162,7 @@ export function FunnelSteps({
             >
               <div className="relative flex flex-1 flex-col gap-2 pl-8">
                 <ColorSquare className="absolute left-0 top-0.5">
-                  {step.event.id}
+                  {alphabetIds[index]}
                 </ColorSquare>
                 <div className="font-semibold capitalize">
                   {step.event.displayName.replace(/_/g, ' ')}

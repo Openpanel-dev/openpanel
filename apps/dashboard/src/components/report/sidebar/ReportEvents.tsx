@@ -11,6 +11,7 @@ import { useEventNames } from '@/hooks/useEventNames';
 import { useDispatch, useSelector } from '@/redux';
 import { GanttChart, GanttChartIcon, Users } from 'lucide-react';
 
+import { alphabetIds } from '@openpanel/constants';
 import type { IChartEvent } from '@openpanel/validation';
 
 import {
@@ -57,11 +58,11 @@ export function ReportEvents() {
     <div>
       <h3 className="mb-2 font-medium">Events</h3>
       <div className="flex flex-col gap-4">
-        {selectedEvents.map((event) => {
+        {selectedEvents.map((event, index) => {
           return (
             <div key={event.id} className="rounded-lg border bg-def-100">
               <div className="flex items-center gap-2 p-2">
-                <ColorSquare>{event.id}</ColorSquare>
+                <ColorSquare>{alphabetIds[index]}</ColorSquare>
                 <Combobox
                   icon={GanttChartIcon}
                   className="flex-1"
@@ -84,7 +85,9 @@ export function ReportEvents() {
                 />
                 <Input
                   placeholder={
-                    event.name ? `${event.name} (${event.id})` : 'Display name'
+                    event.name
+                      ? `${event.name} (${alphabetIds[index]})`
+                      : 'Display name'
                   }
                   defaultValue={event.displayName}
                   onChange={(e) => {

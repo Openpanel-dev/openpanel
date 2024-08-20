@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from '@/redux';
 import { api } from '@/trpc/client';
 import { FilterIcon } from 'lucide-react';
 
+import { shortId } from '@openpanel/common';
 import type { IChartEvent } from '@openpanel/validation';
 
 import { changeEvent } from '../../reportSlice';
@@ -48,7 +49,7 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
             filters: [
               ...event.filters,
               {
-                id: Math.random().toString(36).substring(7),
+                id: shortId(),
                 name: value,
                 operator: 'is',
                 value: [],

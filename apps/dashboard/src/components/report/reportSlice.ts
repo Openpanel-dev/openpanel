@@ -8,6 +8,7 @@ import {
   startOfDay,
 } from 'date-fns';
 
+import { shortId } from '@openpanel/common';
 import {
   alphabetIds,
   getDefaultIntervalByDates,
@@ -91,7 +92,7 @@ export const reportSlice = createSlice({
     addEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
       state.dirty = true;
       state.events.push({
-        id: alphabetIds[state.events.length]!,
+        id: shortId(),
         ...action.payload,
       });
     },
@@ -129,7 +130,7 @@ export const reportSlice = createSlice({
     ) => {
       state.dirty = true;
       state.breakdowns.push({
-        id: alphabetIds[state.breakdowns.length]!,
+        id: shortId(),
         ...action.payload,
       });
     },
