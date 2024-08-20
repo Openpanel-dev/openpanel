@@ -13,12 +13,13 @@ import {
   subYears,
 } from 'date-fns';
 import * as mathjs from 'mathjs';
-import { pluck, repeat, reverse, uniq } from 'ramda';
+import { last, pluck, repeat, reverse, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 
 import {
   average,
   completeSerie,
+  getPreviousMetric,
   max,
   min,
   round,
@@ -26,7 +27,6 @@ import {
   sum,
 } from '@openpanel/common';
 import type { ISerieDataItem } from '@openpanel/common';
-import { alphabetIds } from '@openpanel/constants';
 import {
   chQuery,
   createSqlBuilder,
@@ -44,7 +44,6 @@ import type {
   IChartRange,
   IGetChartDataInput,
   IInterval,
-  PreviousValue,
 } from '@openpanel/validation';
 
 function getEventLegend(event: IChartEvent) {
@@ -304,12 +303,7 @@ export async function getFunnelData({
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC`;
 
-  const [funnelRes, sessionRes] = await Promise.all([
-    chQuery<{ level: number; count: number }>(sql),
-    chQuery<{ count: number }>(
-      `SELECT count(name) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND name = 'session_start' AND (created_at >= '${formatClickhouseDate(startDate)}') AND (created_at <= '${formatClickhouseDate(endDate)}')`
-    ),
-  ]);
+  const funnelRes = await chQuery<{ level: number; count: number }>(sql);
 
   if (funnelRes[0]?.level !== payload.events.length) {
     funnelRes.unshift({
@@ -318,7 +312,6 @@ export async function getFunnelData({
     });
   }
 
-  const totalSessions = sessionRes[0]?.count ?? 0;
   const filledFunnelRes = funnelRes.reduce(
     (acc, item, index) => {
       const diff =
@@ -346,6 +339,7 @@ export async function getFunnelData({
     [] as typeof funnelRes
   );
 
+  const totalSessions = last(filledFunnelRes)?.count ?? 0;
   const steps = reverse(filledFunnelRes)
     .filter((item) => item.level !== 0)
     .reduce(
@@ -662,38 +656,4 @@ export async function getChart(input: IChartInput) {
   }
 
   return final;
-}
-
-export function getPreviousMetric(
-  current: number,
-  previous: number | null
-): PreviousValue {
-  if (previous === null) {
-    return undefined;
-  }
-
-  const diff = round(
-    ((current > previous
-      ? current / previous
-      : current < previous
-        ? previous / current
-        : 0) -
-      1) *
-      100,
-    1
-  );
-
-  return {
-    diff:
-      Number.isNaN(diff) || !Number.isFinite(diff) || current === previous
-        ? null
-        : diff,
-    state:
-      current > previous
-        ? 'positive'
-        : current < previous
-          ? 'negative'
-          : 'neutral',
-    value: previous,
-  };
 }

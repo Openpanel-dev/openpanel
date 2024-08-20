@@ -5,19 +5,17 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
-import { ExternalLinkIcon, FilterIcon } from 'lucide-react';
 
 import { round } from '@openpanel/common';
 import { NOT_SET_VALUE } from '@openpanel/constants';
 
-import { PreviousDiffIndicatorText } from '../PreviousDiffIndicator';
+import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
 import { SerieIcon } from './SerieIcon';
 import { SerieName } from './SerieName';
@@ -73,9 +71,8 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                     <SerieName name={serie.names} />
                   </div>
                   <div className="flex flex-shrink-0 items-center justify-end gap-4">
-                    <PreviousDiffIndicatorText
+                    <PreviousDiffIndicator
                       {...serie.metrics.previous?.[metric]}
-                      className="text-xs font-medium"
                     />
                     {serie.metrics.previous?.[metric]?.value}
                     <div className="text-muted-foreground">

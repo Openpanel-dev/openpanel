@@ -26,7 +26,13 @@ const ChartContext = createContext<IChartContextType | null>(null);
 
 export function ChartProvider({ children, ...props }: IChartProviderProps) {
   return (
-    <ChartContext.Provider value={props}>{children}</ChartContext.Provider>
+    <ChartContext.Provider
+      value={
+        props.chartType === 'funnel' ? { ...props, previous: true } : props
+      }
+    >
+      {children}
+    </ChartContext.Provider>
   );
 }
 

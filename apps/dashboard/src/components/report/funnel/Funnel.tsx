@@ -2,20 +2,23 @@
 
 import { ColorSquare } from '@/components/color-square';
 import { AutoSizer } from '@/components/react-virtualized-auto-sizer';
+import { TooltipComplete } from '@/components/tooltip-complete';
 import { Progress } from '@/components/ui/progress';
 import { Widget, WidgetBody } from '@/components/widget';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
 import { getChartColor } from '@/utils/theme';
-import { AlertCircleIcon } from 'lucide-react';
+import { AlertCircleIcon, TrendingUp } from 'lucide-react';
 import { last } from 'ramda';
 import { Cell, Pie, PieChart } from 'recharts';
 
+import { getPreviousMetric } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type { IChartInput } from '@openpanel/validation';
 
 import { useChartContext } from '../chart/ChartProvider';
+import { PreviousDiffIndicator } from '../PreviousDiffIndicator';
 
 const findMostDropoffs = (
   steps: RouterOutputs['chart']['funnel']['current']['steps']
@@ -74,80 +77,43 @@ export function FunnelSteps({
   return withWidget(
     <div className="flex flex-col gap-4 @container">
       <div
-        className={cn(
-          'rounded-lg border border-border',
-          !editMode && 'border-0 p-0'
-        )}
+        className={cn('border border-border', !editMode && 'border-0 border-b')}
       >
         <div className="flex items-center gap-8 p-4">
-          <div className="hidden shrink-0 @xl:block @xl:w-36">
-            <AutoSizer disableHeight>
-              {({ width }) => {
-                const height = width;
-                return (
-                  <div className="relative" style={{ width, height }}>
-                    <PieChart width={width} height={height}>
-                      <Pie
-                        data={[
-                          {
-                            value: lastStep.percent,
-                            label: 'Conversion',
-                          },
-                          {
-                            value: 100 - lastStep.percent,
-                            label: 'Dropoff',
-                          },
-                        ]}
-                        innerRadius={height / 3}
-                        outerRadius={height / 2 - 10}
-                        isAnimationActive={false}
-                        nameKey="label"
-                        dataKey="value"
-                      >
-                        <Cell strokeWidth={0} className="fill-highlight" />
-                        <Cell strokeWidth={0} className="fill-def-200" />
-                      </Pie>
-                    </PieChart>
-                    <div
-                      className="font-mono absolute inset-0 flex items-center justify-center font-bold"
-                      style={{
-                        fontSize: width / 6,
-                      }}
-                    >
-                      <div>{round(lastStep.percent, 2)}%</div>
-                    </div>
-                  </div>
-                );
-              }}
-            </AutoSizer>
+          <div className="hidden shrink-0 gap-2 @xl:flex">
+            {steps.map((step) => {
+              return (
+                <div
+                  className="flex h-20 w-8 items-end overflow-hidden rounded bg-def-200"
+                  key={step.event.id}
+                >
+                  <div
+                    className="w-full bg-def-400"
+                    style={{ height: `${step.percent}%` }}
+                  ></div>
+                </div>
+              );
+            })}
           </div>
-          <div>
-            <div className="mb-1 text-xl font-semibold">Insights</div>
-            <div className="flex flex-wrap gap-4">
-              <InsightCard title="Converted">
-                <span className="font-bold">{lastStep.count}</span>
-                <span className="mx-2 text-muted-foreground">of</span>
-                <span className="text-muted-foreground">{totalSessions}</span>
-              </InsightCard>
-              <InsightCard
-                title={hasIncreased ? 'Trending up' : 'Trending down'}
-              >
-                <span className="font-bold">{round(lastStep.percent, 2)}%</span>
-                <span className="mx-2 text-muted-foreground">compared to</span>
-                <span className="text-muted-foreground">
-                  {round(prevLastStep.percent, 2)}%
-                </span>
-              </InsightCard>
-              <InsightCard title={'Most dropoffs'}>
+          <div className="flex flex-1 items-center gap-4">
+            <div className="flex flex-1 flex-col">
+              <div className="text-2xl">
                 <span className="font-bold">
-                  {mostDropoffs.event.displayName}
+                  {lastStep.count} of {totalSessions}
+                </span>{' '}
+                sessions{' '}
+              </div>
+              <div className="text-xl text-muted-foreground">
+                Last period:{' '}
+                <span className="font-semibold">
+                  {prevLastStep.count} of {previous.totalSessions}
                 </span>
-                <span className="mx-2 text-muted-foreground">lost</span>
-                <span className="text-muted-foreground">
-                  {mostDropoffs.dropoffCount} sessions
-                </span>
-              </InsightCard>
+              </div>
             </div>
+            <PreviousDiffIndicator
+              size="lg"
+              {...getPreviousMetric(lastStep.count, prevLastStep.count)}
+            />
           </div>
         </div>
       </div>
@@ -167,46 +133,113 @@ export function FunnelSteps({
                 <div className="font-semibold capitalize">
                   {step.event.displayName.replace(/_/g, ' ')}
                 </div>
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex flex-col">
-                    <span className="text-xs text-muted-foreground">
-                      Total:
-                    </span>
-                    <span className="font-semibold">{step.previousCount}</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-muted-foreground">
-                      Dropoff:
-                    </span>
-                    <span
-                      className={cn(
-                        'flex items-center gap-1 font-semibold',
-                        isMostDropoffs && 'text-red-600'
-                      )}
-                    >
-                      {isMostDropoffs && <AlertCircleIcon size={14} />}
-                      {step.dropoffCount}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-xs text-muted-foreground">
-                      Current:
-                    </span>
-                    <div>
-                      <span className="font-semibold">{step.count}</span>
-                      {/* <button
+                <div className="flex items-center gap-8 text-sm">
+                  <TooltipComplete
+                    disabled={!previous.steps[index]}
+                    content={
+                      <div className="flex gap-2">
+                        <span>
+                          Last period:{' '}
+                          <span className="font-semibold">
+                            {previous.steps[index]?.previousCount}
+                          </span>
+                        </span>
+                        <PreviousDiffIndicator
+                          {...getPreviousMetric(
+                            step.previousCount,
+                            previous.steps[index]?.previousCount
+                          )}
+                        />
+                      </div>
+                    }
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Total:
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-lg font-bold">
+                          {step.previousCount}
+                        </span>
+                      </div>
+                    </div>
+                  </TooltipComplete>
+                  <TooltipComplete
+                    disabled={!previous.steps[index]}
+                    content={
+                      <div className="flex gap-2">
+                        <span>
+                          Last period:{' '}
+                          <span className="font-semibold">
+                            {previous.steps[index]?.dropoffCount}
+                          </span>
+                        </span>
+                        <PreviousDiffIndicator
+                          inverted
+                          {...getPreviousMetric(
+                            step.dropoffCount,
+                            previous.steps[index]?.dropoffCount
+                          )}
+                        />
+                      </div>
+                    }
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Dropoff:
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <span
+                          className={cn(
+                            'flex items-center gap-1 text-lg font-bold',
+                            isMostDropoffs && 'text-rose-500'
+                          )}
+                        >
+                          {isMostDropoffs && <AlertCircleIcon size={14} />}
+                          {step.dropoffCount}
+                        </span>
+                      </div>
+                    </div>
+                  </TooltipComplete>
+                  <TooltipComplete
+                    disabled={!previous.steps[index]}
+                    content={
+                      <div className="flex gap-2">
+                        <span>
+                          Last period:{' '}
+                          <span className="font-semibold">
+                            {previous.steps[index]?.count}
+                          </span>
+                        </span>
+                        <PreviousDiffIndicator
+                          {...getPreviousMetric(
+                            step.count,
+                            previous.steps[index]?.count
+                          )}
+                        />
+                      </div>
+                    }
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-xs text-muted-foreground">
+                        Current:
+                      </span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-lg font-bold">{step.count}</span>
+                        {/* <button
                         className="ml-2 underline"
                         onClick={() =>
-                          pushModal('FunnelStepDetails', {
-                            ...input,
-                            step: index + 1,
+                        pushModal('FunnelStepDetails', {
+                          ...input,
+                          step: index + 1,
                           })
-                        }
-                      >
-                        Inspect
-                      </button> */}
+                          }
+                          >
+                          Inspect
+                          </button> */}
+                      </div>
                     </div>
-                  </div>
+                  </TooltipComplete>
                 </div>
               </div>
               <Progress

@@ -10,7 +10,7 @@ import type { IChartMetric } from '@openpanel/validation';
 
 import {
   getDiffIndicator,
-  PreviousDiffIndicatorText,
+  PreviousDiffIndicator,
 } from '../PreviousDiffIndicator';
 import { useChartContext } from './ChartProvider';
 import { SerieName } from './SerieName';
@@ -49,9 +49,9 @@ export function MetricCard({
   const graphColors = getDiffIndicator(
     previousIndicatorInverted,
     previous?.state,
-    'green',
-    'red',
-    'blue'
+    '#6ee7b7', // green
+    '#fda4af', // red
+    '#93c5fd' // blue
   );
 
   return (
@@ -64,7 +64,7 @@ export function MetricCard({
     >
       <div
         className={cn(
-          'pointer-events-none absolute -bottom-1 -left-1 -right-1 top-0 z-0 opacity-20 transition-opacity duration-300 group-hover:opacity-50',
+          'pointer-events-none absolute -bottom-1 -left-1 -right-1 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
           editMode && 'bottom-1'
         )}
       >
@@ -96,15 +96,14 @@ export function MetricCard({
               <SerieName name={serie.names} />
             </span>
           </div>
-          {/* <PreviousDiffIndicator {...serie.metrics.previous[metric]} /> */}
         </div>
         <div className="flex items-end justify-between">
           <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">
             {renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
           </div>
-          <PreviousDiffIndicatorText
+          <PreviousDiffIndicator
             {...previous}
-            className="mb-0.5 text-xs font-medium"
+            className="text-xs text-muted-foreground"
           />
         </div>
       </div>

@@ -9,3 +9,4 @@ export * from './src/slug';
 export * from './src/fill-series';
 export * from './src/url';
 export * from './src/id';
+export * from './src/get-previous-metric';

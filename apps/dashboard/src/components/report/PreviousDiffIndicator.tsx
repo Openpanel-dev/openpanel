@@ -1,6 +1,11 @@
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
-import { TrendingDownIcon, TrendingUpIcon } from 'lucide-react';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  TrendingDownIcon,
+  TrendingUpIcon,
+} from 'lucide-react';
 
 import { Badge } from '../ui/badge';
 import { useChartContext } from './chart/ChartProvider';
@@ -29,19 +34,24 @@ interface PreviousDiffIndicatorProps {
   state?: string | null | undefined;
   children?: React.ReactNode;
   inverted?: boolean;
+  className?: string;
+  size?: 'sm' | 'lg';
 }
 
 export function PreviousDiffIndicator({
   diff,
   state,
+  inverted,
+  size = 'sm',
   children,
+  className,
 }: PreviousDiffIndicatorProps) {
   const { previous, previousIndicatorInverted } = useChartContext();
   const variant = getDiffIndicator(
-    previousIndicatorInverted,
+    inverted ?? previousIndicatorInverted,
     state,
-    'success',
-    'destructive',
+    'bg-emerald-300',
+    'bg-rose-300',
     undefined
   );
   const number = useNumber();
@@ -52,62 +62,35 @@ export function PreviousDiffIndicator({
 
   const renderIcon = () => {
     if (state === 'positive') {
-      return <TrendingUpIcon size={15} />;
+      return <ArrowUpIcon strokeWidth={3} size={12} color="#000" />;
     }
     if (state === 'negative') {
-      return <TrendingDownIcon size={15} />;
+      return <ArrowDownIcon strokeWidth={3} size={12} color="#000" />;
     }
     return null;
   };
 
   return (
     <>
-      <Badge className="flex gap-1" variant={variant}>
-        {renderIcon()}
+      <div
+        className={cn(
+          'flex items-center gap-1 font-medium',
+          size === 'lg' && 'gap-2',
+          className
+        )}
+      >
+        <div
+          className={cn(
+            `flex size-4 items-center justify-center rounded-full`,
+            variant,
+            size === 'lg' && 'size-8'
+          )}
+        >
+          {renderIcon()}
+        </div>
         {number.format(diff)}%
-      </Badge>
+      </div>
       {children}
     </>
-  );
-}
-
-export function PreviousDiffIndicatorText({
-  diff,
-  state,
-  className,
-}: PreviousDiffIndicatorProps & { className?: string }) {
-  const { previous, previousIndicatorInverted } = useChartContext();
-  const number = useNumber();
-  if (diff === null || diff === undefined || previous === false) {
-    return null;
-  }
-
-  const renderIcon = () => {
-    if (state === 'positive') {
-      return <TrendingUpIcon size={15} />;
-    }
-    if (state === 'negative') {
-      return <TrendingDownIcon size={15} />;
-    }
-    return null;
-  };
-
-  return (
-    <div
-      className={cn([
-        'flex items-center gap-0.5',
-        getDiffIndicator(
-          previousIndicatorInverted,
-          state,
-          'text-emerald-600',
-          'text-red-600',
-          undefined
-        ),
-        className,
-      ])}
-    >
-      {renderIcon()}
-      {number.short(diff)}%
-    </div>
   );
 }
