@@ -13,7 +13,7 @@ interface ReportMetricChartProps {
 
 export function ReportMetricChart({ data }: ReportMetricChartProps) {
   const { editMode, metric, unit } = useChartContext();
-  const { series } = useVisibleSeries(data, editMode ? undefined : 2);
+  const { series } = useVisibleSeries(data, editMode ? 20 : 4);
   return (
     <div
       className={cn(
