@@ -292,7 +292,7 @@ export async function getFunnelData({
 
   const innerSql = `SELECT
     session_id,
-    windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+    windowFunnel(${ONE_DAY_IN_SECONDS}, 'strict_order')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM ${TABLE_NAMES.events}
   WHERE 
     project_id = ${escape(projectId)} AND 
@@ -301,7 +301,7 @@ export async function getFunnelData({
     name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
   GROUP BY session_id`;
 
-  const sql = `SELECT level, count() AS count FROM (${innerSql}) GROUP BY level ORDER BY level DESC`;
+  const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;
 
   const funnelRes = await chQuery<{ level: number; count: number }>(sql);
 
@@ -340,36 +340,34 @@ export async function getFunnelData({
   );
 
   const totalSessions = last(filledFunnelRes)?.count ?? 0;
-  const steps = reverse(filledFunnelRes)
-    .filter((item) => item.level !== 0)
-    .reduce(
-      (acc, item, index, list) => {
-        const prev = list[index - 1] ?? { count: totalSessions };
-        const event = payload.events[item.level - 1]!;
-        return [
-          ...acc,
-          {
-            event: {
-              ...event,
-              displayName: event.displayName ?? event.name,
-            },
-            count: item.count,
-            percent: (item.count / totalSessions) * 100,
-            dropoffCount: prev.count - item.count,
-            dropoffPercent: 100 - (item.count / prev.count) * 100,
-            previousCount: prev.count,
+  const steps = reverse(filledFunnelRes).reduce(
+    (acc, item, index, list) => {
+      const prev = list[index - 1] ?? { count: totalSessions };
+      const event = payload.events[item.level - 1]!;
+      return [
+        ...acc,
+        {
+          event: {
+            ...event,
+            displayName: event.displayName ?? event.name,
           },
-        ];
-      },
-      [] as {
-        event: IChartEvent & { displayName: string };
-        count: number;
-        percent: number;
-        dropoffCount: number;
-        dropoffPercent: number;
-        previousCount: number;
-      }[]
-    );
+          count: item.count,
+          percent: (item.count / totalSessions) * 100,
+          dropoffCount: prev.count - item.count,
+          dropoffPercent: 100 - (item.count / prev.count) * 100,
+          previousCount: prev.count,
+        },
+      ];
+    },
+    [] as {
+      event: IChartEvent & { displayName: string };
+      count: number;
+      percent: number;
+      dropoffCount: number;
+      dropoffPercent: number;
+      previousCount: number;
+    }[]
+  );
 
   return {
     totalSessions,
