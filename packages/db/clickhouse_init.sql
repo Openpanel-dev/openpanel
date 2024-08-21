@@ -91,7 +91,7 @@ SELECT
   uniqState(profile_id) as profile_id,
   project_id
 FROM
-  events
+  events_v2
 GROUP BY
   date,
   project_id;
