@@ -39,6 +39,7 @@ COPY packages/common/package.json packages/common/package.json
 COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/package.json
+COPY patches patches
 
 # BUILD
 FROM base AS build
