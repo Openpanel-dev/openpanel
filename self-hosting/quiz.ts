@@ -4,7 +4,7 @@ import path from 'path';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
 
-function writeCaddyfile(domainName: string) {
+function writeCaddyfile(domainName: string, basicAuthPassword: string) {
   const caddyfileTemplatePath = path.resolve(
     __dirname,
     'caddy',
@@ -16,6 +16,7 @@ function writeCaddyfile(domainName: string) {
     fs
       .readFileSync(caddyfileTemplatePath, 'utf-8')
       .replace('$DOMAIN_NAME', domainName)
+      .replace('$BASIC_AUTH_PASSWORD', basicAuthPassword)
   );
 }
 
@@ -330,6 +331,28 @@ async function initiateOnboarding() {
     },
   ]);
 
+  const basicAuth = await inquirer.prompt<{
+    password: string;
+  }>([
+    {
+      type: 'input',
+      name: 'password',
+      default: Math.random().toString(36).substr(2, 5),
+      message: 'Give a password for basic auth',
+      validate: (value) => {
+        if (!value) {
+          return 'Please enter a valid password';
+        }
+
+        if (value.length < 5) {
+          return 'Password should be atleast 5 characters';
+        }
+
+        return true;
+      },
+    },
+  ]);
+
   console.log('');
   console.log('Creating .env file...\n');
   writeEnvFile({
@@ -370,13 +393,16 @@ async function initiateOnboarding() {
   if (proxyResponse.proxy === 'Bring my own') {
     removeServiceFromDockerCompose('op-proxy');
   } else {
-    writeCaddyfile(domainNameResponse.domainName);
+    writeCaddyfile(domainNameResponse.domainName, basicAuth.password);
   }
 
   searchAndReplaceDockerCompose('$OP_WORKER_REPLICAS', cpus.CPUS);
 
   console.log(
     `Make sure that your webhook is pointing at ${domainNameResponse.domainName}/api/webhook/clerk\n`
+  );
+  console.log(
+    `To start OpenPanel enter "./start" inside openpanel/self-hosting\n`
   );
 }
 
