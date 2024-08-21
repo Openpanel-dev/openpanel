@@ -5,6 +5,16 @@ import bcrypt from 'bcrypt';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
 
+function generatePassword(length: number) {
+  const charset =
+    'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-@#$%&';
+  let password = '';
+  for (let i = 0, n = charset.length; i < length; ++i) {
+    password += charset.charAt(Math.floor(Math.random() * n));
+  }
+  return password;
+}
+
 function writeCaddyfile(domainName: string, basicAuthPassword: string) {
   const caddyfileTemplatePath = path.resolve(
     __dirname,
@@ -39,14 +49,15 @@ export interface DockerComposeFile {
 const stripTrailingSlash = (str: string) =>
   str.endsWith('/') ? str.slice(0, -1) : str;
 
-function searchAndReplaceDockerCompose(search: string, replace: string) {
+function searchAndReplaceDockerCompose(replacements: [string, string][]) {
   const dockerComposePath = path.resolve(__dirname, 'docker-compose.yml');
   const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
-
-  fs.writeFileSync(
-    dockerComposePath,
-    dockerComposeContent.replaceAll(search, replace)
+  const dockerComposeReplaced = replacements.reduce(
+    (acc, [search, replace]) => acc.replaceAll(search, replace),
+    dockerComposeContent
   );
+
+  fs.writeFileSync(dockerComposePath, dockerComposeReplaced);
 }
 
 function removeServiceFromDockerCompose(serviceName: string) {
@@ -338,7 +349,7 @@ async function initiateOnboarding() {
     {
       type: 'input',
       name: 'password',
-      default: Math.random().toString(36).substr(2, 5),
+      default: generatePassword(12),
       message: 'Give a password for basic auth',
       validate: (value) => {
         if (!value) {
@@ -356,15 +367,16 @@ async function initiateOnboarding() {
 
   console.log('');
   console.log('Creating .env file...\n');
+  const POSTGRES_PASSWORD = generatePassword(20);
   writeEnvFile({
     CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op-ch:8123',
     CLICKHOUSE_DB: envs.CLICKHOUSE_DB || 'openpanel',
     CLICKHOUSE_USER: envs.CLICKHOUSE_USER || 'openpanel',
-    CLICKHOUSE_PASSWORD: envs.CLICKHOUSE_PASSWORD || 'password',
+    CLICKHOUSE_PASSWORD: envs.CLICKHOUSE_PASSWORD || generatePassword(20),
     REDIS_URL: envs.REDIS_URL || 'redis://op-kv:6379',
     DATABASE_URL:
       envs.DATABASE_URL ||
-      'postgresql://postgres:postgres@op-db:5432/postgres?schema=public',
+      `postgresql://postgres:${POSTGRES_PASSWORD}@op-db:5432/postgres?schema=public`,
     DOMAIN_NAME: domainNameResponse.domainName,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       clerkResponse.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '',
@@ -397,7 +409,10 @@ async function initiateOnboarding() {
     writeCaddyfile(domainNameResponse.domainName, basicAuth.password);
   }
 
-  searchAndReplaceDockerCompose('$OP_WORKER_REPLICAS', cpus.CPUS);
+  searchAndReplaceDockerCompose([
+    ['$OP_WORKER_REPLICAS', cpus.CPUS],
+    ['${POSTGRES_PASSWORD}', POSTGRES_PASSWORD],
+  ]);
 
   console.log(
     `Make sure that your webhook is pointing at ${domainNameResponse.domainName}/api/webhook/clerk\n`
