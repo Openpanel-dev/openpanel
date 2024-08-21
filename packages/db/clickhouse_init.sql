@@ -1,5 +1,16 @@
 CREATE DATABASE IF NOT EXISTS openpanel;
 
+CREATE TABLE IF NOT EXISTS openpanel.self_hosting
+(
+    created_at Date,
+    domain String,
+    count UInt64
+)
+ENGINE = MergeTree()
+ORDER BY (domain, date)
+PARTITION BY toYYYYMM(date);
+
+
 CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
   `id` UUID DEFAULT generateUUIDv4(),
   `name` String,

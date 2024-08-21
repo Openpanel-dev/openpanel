@@ -5,6 +5,7 @@ import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
 
 import { createHash } from '@openpanel/common';
+import { ch, TABLE_NAMES } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
@@ -109,4 +110,38 @@ export async function clearFavicons(
     await getRedisCache().del(key);
   }
   return reply.status(404).send('OK');
+}
+
+export async function ping(
+  request: FastifyRequest<{
+    Body: {
+      domain: string;
+      count: number;
+    };
+  }>,
+  reply: FastifyReply
+) {
+  try {
+    await ch.insert({
+      table: TABLE_NAMES.self_hosting,
+      values: [
+        {
+          domain: request.body.domain,
+          count: request.body.count,
+          created_at: new Date(),
+        },
+      ],
+      format: 'JSONEachRow',
+    });
+    reply.status(200).send({
+      message: `Success`,
+      count: request.body.count,
+      domain: request.body.domain,
+    });
+  } catch (e) {
+    logger.error(e, 'Failed to insert ping');
+    reply.status(500).send({
+      error: 'Failed to insert ping',
+    });
+  }
 }

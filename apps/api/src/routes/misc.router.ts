@@ -3,6 +3,12 @@ import type { FastifyPluginCallback } from 'fastify';
 
 const miscRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.route({
+    method: 'POST',
+    url: '/ping',
+    handler: controller.ping,
+  });
+
+  fastify.route({
     method: 'GET',
     url: '/favicon',
     handler: controller.getFavicon,

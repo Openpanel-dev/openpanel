@@ -162,6 +162,22 @@ async function start() {
     }
   );
 
+  if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
+    await cronQueue.add(
+      'ping',
+      {
+        type: 'ping',
+        payload: undefined,
+      },
+      {
+        jobId: 'ping',
+        repeat: {
+          pattern: '0 0 * * *',
+        },
+      }
+    );
+  }
+
   const repeatableJobs = await cronQueue.getRepeatableJobs();
 
   console.log('Repeatable jobs:');

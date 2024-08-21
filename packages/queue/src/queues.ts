@@ -56,10 +56,15 @@ export type CronQueuePayloadFlushProfiles = {
   type: 'flushProfiles';
   payload: undefined;
 };
+export type CronQueuePayloadPing = {
+  type: 'ping';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
-  | CronQueuePayloadFlushProfiles;
+  | CronQueuePayloadFlushProfiles
+  | CronQueuePayloadPing;
 
 export const eventsQueue = new Queue<EventsQueuePayload>('events', {
   connection: getRedisQueue(),

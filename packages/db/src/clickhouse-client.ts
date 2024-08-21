@@ -5,6 +5,7 @@ export const TABLE_NAMES = {
   events: 'events_v2',
   profiles: 'profiles',
   alias: 'profile_aliases',
+  self_hosting: 'self_hosting',
 };
 
 export const originalCh = createClient({
