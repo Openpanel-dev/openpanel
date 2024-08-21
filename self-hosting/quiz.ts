@@ -261,7 +261,7 @@ async function initiateOnboarding() {
       name: 'proxy',
       message:
         'Do you already have a web service setup or would you like us to install Caddy with SSL?',
-      choices: ['Bring my own', 'Install Caddy with SSL'],
+      choices: ['Install Caddy with SSL', 'Bring my own'],
     },
   ]);
 
@@ -349,6 +349,11 @@ async function initiateOnboarding() {
   });
 
   console.log('Updating docker-compose.yml file...\n');
+  fs.copyFileSync(
+    path.resolve(__dirname, 'docker-compose.template.yml'),
+    path.resolve(__dirname, 'docker-compose.yml')
+  );
+
   if (envs.CLICKHOUSE_URL) {
     removeServiceFromDockerCompose('op-ch');
     removeServiceFromDockerCompose('op-ch-migrator');
@@ -369,11 +374,6 @@ async function initiateOnboarding() {
   }
 
   searchAndReplaceDockerCompose('$OP_WORKER_REPLICAS', cpus.CPUS);
-
-  fs.copyFileSync(
-    path.resolve(__dirname, 'docker-compose.template.yml'),
-    path.resolve(__dirname, 'docker-compose.yml')
-  );
 
   console.log(
     `Make sure that your webhook is pointing at ${domainNameResponse.domainName}/api/webhook/clerk\n`
