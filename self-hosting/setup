@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NODE_VERSION=nvm install 20.15.0
+NODE_VERSION=20.15.0
 
 # Function to install Node.js
 install_nvm_and_node() {
