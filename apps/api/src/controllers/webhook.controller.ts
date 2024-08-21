@@ -44,6 +44,7 @@ export async function clerkWebhook(
 
   if (payload.type === 'user.created') {
     const email = payload.data.email_addresses[0]?.email_address;
+    const emails = payload.data.email_addresses.map((e) => e.email_address);
 
     if (!email) {
       return Response.json(
@@ -63,14 +64,16 @@ export async function clerkWebhook(
 
     const memberships = await db.member.findMany({
       where: {
-        email,
+        email: {
+          in: emails,
+        },
         userId: null,
       },
     });
 
     for (const membership of memberships) {
       const access = pathOr<string[]>([], ['meta', 'access'], membership);
-      db.$transaction([
+      await db.$transaction([
         // Update the member to link it to the user
         // This will remove the item from invitations
         db.member.update({
@@ -123,7 +126,6 @@ export async function clerkWebhook(
           deletedAt: new Date(),
           firstName: null,
           lastName: null,
-          email: `deleted+${payload.data.id}@openpanel.dev`,
         },
       }),
       db.projectAccess.deleteMany({
