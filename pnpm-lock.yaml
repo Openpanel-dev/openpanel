@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@bull-board/api@5.21.0':
+    hash: 25udjn3ygs6h4rrgl46tnrqrn4
+    path: patches/@bull-board__api@5.21.0.patch
+
 importers:
 
   .:
@@ -730,10 +735,10 @@ importers:
         specifier: ^0.1.5
         version: 0.1.5
       '@bull-board/api':
-        specifier: ^5.21.0
+        specifier: 5.21.0
         version: 5.21.0(patch_hash=25udjn3ygs6h4rrgl46tnrqrn4)(@bull-board/ui@5.21.0)
       '@bull-board/express':
-        specifier: ^5.21.0
+        specifier: 5.21.0
         version: 5.21.0
       '@openpanel/common':
         specifier: workspace:*
@@ -1459,31 +1464,6 @@ importers:
       typescript:
         specifier: ^5.2.2
         version: 5.3.3
-
-  self-hosting:
-    dependencies:
-      '@types/inquirer':
-        specifier: ^9.0.7
-        version: 9.0.7
-      '@types/js-yaml':
-        specifier: ^4.0.9
-        version: 4.0.9
-      bcrypt:
-        specifier: ^5.1.1
-        version: 5.1.1
-      inquirer:
-        specifier: ^9.3.1
-        version: 9.3.6
-      jiti:
-        specifier: ^1.21.6
-        version: 1.21.6
-      js-yaml:
-        specifier: ^4.1.0
-        version: 4.1.0
-    devDependencies:
-      '@types/bcrypt':
-        specifier: ^5.0.2
-        version: 5.0.2
 
   tooling/eslint:
     dependencies:
@@ -7578,13 +7558,6 @@ packages:
     resolution: {integrity: sha512-D0CFMMtydbJAegzOyHjtiKPLlvnm3iTZyZRSZoLq2mRhDdmLfIWOCYPfQJ4cu2erKghU++QvjcUjp/5h7hESpA==}
     dev: true
 
-  /@types/inquirer@9.0.7:
-    resolution: {integrity: sha512-Q0zyBupO6NxGRZut/JdmqYKOnN95Eg5V8Csg3PGKkP+FnvsUZx1jAyK7fztIszxxMuoBA6E3KXWvdZVXIpx60g==}
-    dependencies:
-      '@types/through': 0.0.33
-      rxjs: 7.8.1
-    dev: false
-
   /@types/istanbul-lib-coverage@2.0.6:
     resolution: {integrity: sha512-2QF/t/auWm0lsy8XtKVPG19v3sSOQlJe/YHZgfjb/KBBHOGSV+J2q/S671rcq9uTBrLAXmZpqJiaQbMT+zNU1w==}
     dev: false
@@ -7780,12 +7753,6 @@ packages:
 
   /@types/stack-utils@2.0.3:
     resolution: {integrity: sha512-9aEbYZ3TbYMznPdcdr3SmIrLXwC/AKZXQeCf9Pgao5CKb8CyHuEX5jzWPTkvregvhRJHcpRO6BFoGW9ycaOkYw==}
-    dev: false
-
-  /@types/through@0.0.33:
-    resolution: {integrity: sha512-HsJ+z3QuETzP3cswwtzt2vEIiHBk/dCcHGhbmG5X3ecnwFD/lPrMpliGXxSCg03L9AhrdwA4Oz/qfspkDW+xGQ==}
-    dependencies:
-      '@types/node': 20.14.12
     dev: false
 
   /@types/ua-parser-js@0.7.39:
@@ -12930,11 +12897,6 @@ packages:
   /jiti@1.21.0:
     resolution: {integrity: sha512-gFqAIbuKyyso/3G2qhiO2OM6shY6EPP/R0+mkDbyspxKazh8BXDC5FiFsUjlczgdNz/vfra0da2y+aHrusLG/Q==}
     hasBin: true
-
-  /jiti@1.21.6:
-    resolution: {integrity: sha512-2yTgeWTWzMWkHu6Jp9NKgePDaYHbntiwvYuuJLbbN9vl7DC9DvXKOB2BC3ZZ92D3cvV/aflH0osDfwpHepQ53w==}
-    hasBin: true
-    dev: false
 
   /joi@17.12.1:
     resolution: {integrity: sha512-vtxmq+Lsc5SlfqotnfVjlViWfOL9nt/avKNbKYizwf6gsCfq9NYY/ceYRMFD8XDdrjJ9abJyScWmhmIiy+XRtQ==}
