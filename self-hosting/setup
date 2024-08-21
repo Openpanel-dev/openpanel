@@ -6,7 +6,10 @@ NODE_VERSION=20.15.0
 install_nvm_and_node() {
     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
     source ~/.bashrc
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
     nvm install $NODE_VERSION
+    nvm use $NODE_VERSION
 }
 
 # Function to install pnpm
@@ -15,8 +18,35 @@ install_pnpm() {
     npm install -g pnpm
 }
 
+# Function to install Docker
+install_docker() {
+    echo "Installing Docker..."
+    # Add Docker's official GPG key:
+    sudo apt-get update
+    sudo apt-get install -y ca-certificates curl gnupg
+    sudo install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+    # Add the repository to Apt sources:
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update
+
+    # Install Docker packages:
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+    # Add current user to docker group
+    sudo usermod -aG docker $USER
+    
+    echo "Docker installed successfully. You may need to log out and back in for group changes to take effect."
+}
+
 # Check if Node.js is installed
 if ! command -v node >/dev/null 2>&1; then
+    echo ""
     echo "Do you wish to automatically install Node.js version $NODE_VERSION using NVM? (yes/no)"
     read user_choice
 
@@ -31,6 +61,25 @@ if ! command -v node >/dev/null 2>&1; then
             exit 1;;
     esac
 fi
+
+# Check if Docker is installed
+if ! command -v docker >/dev/null 2>&1; then
+    echo ""
+    echo "Docker is not installed. Do you wish to install Docker? (yes/no)"
+    read docker_choice
+
+    case $docker_choice in
+        [Yy]* )
+            install_docker;;
+        [Nn]* )
+            echo "Skipping Docker installation.";;
+        * )
+            echo "Invalid input. Skipping Docker installation.";;
+    esac
+else
+    echo "Docker is already installed."
+fi
+
 
 # Check if pnpm is installed
 if ! command -v pnpm >/dev/null 2>&1; then
