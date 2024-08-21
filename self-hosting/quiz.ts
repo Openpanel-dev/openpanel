@@ -1,6 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import bcrypt from 'bcrypt';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
 
@@ -16,7 +17,7 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
     fs
       .readFileSync(caddyfileTemplatePath, 'utf-8')
       .replace('$DOMAIN_NAME', domainName)
-      .replace('$BASIC_AUTH_PASSWORD', basicAuthPassword)
+      .replace('$BASIC_AUTH_PASSWORD', bcrypt.hashSync(basicAuthPassword, 10))
   );
 }
 
