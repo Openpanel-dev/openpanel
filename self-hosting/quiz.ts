@@ -148,12 +148,12 @@ async function initiateOnboarding() {
     `Hey and welcome to Openpanel's self-hosting setup! 🚀\n`,
     `Before you continue, please make sure you have the following:`,
     `${T}1. Docker and Docker Compose installed on your machine.`,
-    `${T}2. A domain name that you can use for this setup and point it to this machine (REPLACE)`,
-    `${T}3. A Clerk.dev account`,
+    `${T}2. A domain name that you can use for this setup and point it to this machine's ip`,
+    `${T}3. A Clerk.com account`,
     `${T}${T}- If you don't have one, you can create one at https://clerk.dev`,
     `${T}${T}- We'll need NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, CLERK_SECRET_KEY, CLERK_SIGNING_SECRET`,
     `${T}${T}- Create a webhook pointing to https://your_domain/api/webhook/clerk\n`,
-    'For more information you can read our article on self-hosting at https://openpanel.dev/docs/self-hosting\n',
+    'For more information you can read our article on self-hosting at https://docs.openpanel.dev/docs/self-hosting\n',
   ];
 
   console.log(
