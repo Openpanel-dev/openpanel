@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS openpanel.self_hosting
     count UInt64
 )
 ENGINE = MergeTree()
-ORDER BY (domain, date)
-PARTITION BY toYYYYMM(date);
+ORDER BY (domain, created_at)
+PARTITION BY toYYYYMM(created_at);
 
 
 CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
