@@ -26,7 +26,7 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
     caddyfilePath,
     fs
       .readFileSync(caddyfileTemplatePath, 'utf-8')
-      .replaceAll('$DOMAIN_NAME', domainName)
+      .replaceAll('$DOMAIN_NAME', domainName.replace(/https?:\/\//, ''))
       .replaceAll(
         '$BASIC_AUTH_PASSWORD',
         bcrypt.hashSync(basicAuthPassword, 10)

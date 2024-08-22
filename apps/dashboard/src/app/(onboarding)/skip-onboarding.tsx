@@ -16,9 +16,8 @@ const SkipOnboarding = () => {
     res.refetch();
   }, [pathname]);
 
-  console.log(res.data);
-
   if (!pathname.startsWith('/onboarding')) return null;
+
   return (
     <button
       onClick={() => {
@@ -29,7 +28,9 @@ const SkipOnboarding = () => {
             title: 'Skip onboarding?',
             text: 'Are you sure you want to skip onboarding? Since you do not have any projects, you will be logged out.',
             onConfirm() {
-              auth.signOut();
+              auth.signOut().then(() => {
+                router.refresh();
+              });
             },
           });
         }
