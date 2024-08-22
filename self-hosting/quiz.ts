@@ -97,6 +97,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
 }
 
 function writeEnvFile(envs: {
+  POSTGRES_PASSWORD: string | undefined;
   CLICKHOUSE_URL: string;
   CLICKHOUSE_DB: string;
   CLICKHOUSE_USER: string;
@@ -112,7 +113,7 @@ function writeEnvFile(envs: {
   const envPath = path.resolve(__dirname, '.env');
   const envTemplate = fs.readFileSync(envTemplatePath, 'utf-8');
 
-  const newEnvFile = envTemplate
+  let newEnvFile = envTemplate
     .replace('$CLICKHOUSE_URL', envs.CLICKHOUSE_URL)
     .replace('$CLICKHOUSE_DB', envs.CLICKHOUSE_DB)
     .replace('$CLICKHOUSE_USER', envs.CLICKHOUSE_USER)
@@ -131,6 +132,10 @@ function writeEnvFile(envs: {
     )
     .replace('$CLERK_SECRET_KEY', envs.CLERK_SECRET_KEY)
     .replace('$CLERK_SIGNING_SECRET', envs.CLERK_SIGNING_SECRET);
+
+  if (envs.POSTGRES_PASSWORD) {
+    newEnvFile += `\nPOSTGRES_PASSWORD=${envs.POSTGRES_PASSWORD}`;
+  }
 
   fs.writeFileSync(
     envPath,
@@ -369,6 +374,7 @@ async function initiateOnboarding() {
   console.log('Creating .env file...\n');
   const POSTGRES_PASSWORD = generatePassword(20);
   writeEnvFile({
+    POSTGRES_PASSWORD: envs.DATABASE_URL ? undefined : POSTGRES_PASSWORD,
     CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op-ch:8123',
     CLICKHOUSE_DB: envs.CLICKHOUSE_DB || 'openpanel',
     CLICKHOUSE_USER: envs.CLICKHOUSE_USER || 'openpanel',
@@ -409,10 +415,7 @@ async function initiateOnboarding() {
     writeCaddyfile(domainNameResponse.domainName, basicAuth.password);
   }
 
-  searchAndReplaceDockerCompose([
-    ['$OP_WORKER_REPLICAS', cpus.CPUS],
-    ['${POSTGRES_PASSWORD}', POSTGRES_PASSWORD],
-  ]);
+  searchAndReplaceDockerCompose([['$OP_WORKER_REPLICAS', cpus.CPUS]]);
 
   console.log(
     `Make sure that your webhook is pointing at ${domainNameResponse.domainName}/api/webhook/clerk\n`
