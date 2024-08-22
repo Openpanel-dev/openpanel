@@ -17,7 +17,7 @@ import { register } from './metrics';
 
 const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
-serverAdapter.setBasePath(process.env.SELF_HOSTED ? '/worker' : '/');
+serverAdapter.setBasePath('/');
 const app = express();
 
 const workerOptions: WorkerOptions = {
@@ -185,19 +185,23 @@ async function start() {
   console.log('Repeatable jobs:');
   console.log(repeatableJobs);
 
-  getSalts().catch(async () => {
-    console.log('Creating salts for the first time');
-    await db.salt.create({
-      data: {
-        salt: generateSalt(),
-        createdAt: new Date(new Date().getTime() - 1000 * 60 * 60 * 24),
-      },
-    });
-    await db.salt.create({
-      data: {
-        salt: generateSalt(),
-      },
-    });
+  getSalts().catch(async (error) => {
+    if (error instanceof Error && error.message === 'No salt found') {
+      console.log('Creating salts for the first time');
+      await db.salt.create({
+        data: {
+          salt: generateSalt(),
+          createdAt: new Date(new Date().getTime() - 1000 * 60 * 60 * 24),
+        },
+      });
+      await db.salt.create({
+        data: {
+          salt: generateSalt(),
+        },
+      });
+    } else {
+      console.log('Error getting salts', error);
+    }
   });
 }
 

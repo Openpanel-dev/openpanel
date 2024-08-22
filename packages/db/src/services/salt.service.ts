@@ -27,7 +27,7 @@ export async function getSalts() {
   }
 
   if (!prev) {
-    throw new Error('No previous salt found');
+    throw new Error('No salt found');
   }
 
   return {

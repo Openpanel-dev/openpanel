@@ -1,16 +1,19 @@
 $DOMAIN_NAME {
     encode gzip
-
-    handle_path /worker* {
-        basicauth {
-            admin $BASIC_AUTH_PASSWORD
-        }
-        reverse_proxy op-worker:3000
-    }
     
     handle_path /api* {
         reverse_proxy op-api:3000
     }
 
     reverse_proxy /* op-dashboard:3000
+}
+
+worker.$DOMAIN_NAME {
+    encode gzip
+
+    basicauth {
+        admin $BASIC_AUTH_PASSWORD
+    }
+
+    reverse_proxy op-worker:3000
 }
