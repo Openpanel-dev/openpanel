@@ -11,7 +11,7 @@ $DOMAIN_NAME {
 worker.$DOMAIN_NAME {
     encode gzip
 
-    basicauth {
+    basic_auth {
         admin $BASIC_AUTH_PASSWORD
     }
 
