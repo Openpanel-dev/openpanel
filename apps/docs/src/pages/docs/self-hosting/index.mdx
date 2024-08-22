@@ -75,3 +75,35 @@ You'll also need to add a webhook to your domain. We listen on some events from 
 - `organizationMembership.deleted`
 - `user.updated`
 - `user.deleted`
+
+## Good to know
+
+When self-hosting you'll need to provide your api url when initializing the SDK.
+
+The path should be `/api` and the domain should be your domain.
+
+```html filename="index.html" {4}
+<script>
+  window.op = window.op||function(...args){(window.op.q=window.op.q||[]).push(args);};
+  window.op('init', {
+    apiUrl: 'https://your-domain.com/api',
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+```js filename="op.ts" {4}
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  apiUrl: 'https://your-domain.com/api',
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
