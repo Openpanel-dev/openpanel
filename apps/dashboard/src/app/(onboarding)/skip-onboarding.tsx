@@ -28,9 +28,8 @@ const SkipOnboarding = () => {
             title: 'Skip onboarding?',
             text: 'Are you sure you want to skip onboarding? Since you do not have any projects, you will be logged out.',
             onConfirm() {
-              auth.signOut().then(() => {
-                router.refresh();
-              });
+              auth.signOut();
+              router.replace(process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL);
             },
           });
         }
