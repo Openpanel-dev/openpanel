@@ -411,7 +411,7 @@ async function initiateOnboarding() {
 
   searchAndReplaceDockerCompose([
     ['$OP_WORKER_REPLICAS', cpus.CPUS],
-    ['${POSTGRES_PASSWORD}', `"${POSTGRES_PASSWORD}"`],
+    ['${POSTGRES_PASSWORD}', POSTGRES_PASSWORD],
   ]);
 
   console.log(
