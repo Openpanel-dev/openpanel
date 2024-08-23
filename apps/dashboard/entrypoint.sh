@@ -21,7 +21,7 @@ for key in $variables_to_replace; do
                 ;;
         esac
         # Run the replacement
-        find /app -type f \( -name "*.js" -o -name "*.html" \) -not -path "*/node_modules/*" | while read -r file; do
+        find /app -type f \( -name "*.js" -o -name "*.html" \) | while read -r file; do
             if grep -q "$placeholder" "$file"; then
                 echo "    - Replacing in file: $file"
                 sed -i "s|$placeholder|$value|g" "$file"

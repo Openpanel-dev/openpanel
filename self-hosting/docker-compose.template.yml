@@ -113,9 +113,6 @@ services:
       dockerfile: apps/dashboard/Dockerfile
       args:
         - DATABASE_URL=${DATABASE_URL}
-        - NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-        - NEXT_PUBLIC_DASHBOARD_URL=${NEXT_PUBLIC_DASHBOARD_URL}
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     restart: always
     depends_on:
       - op-db
