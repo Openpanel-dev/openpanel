@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "rm -rf .next && pnpm with-env next dev",
     "testing": "pnpm dev",
-    "build": "next build",
+    "build": "pnpm with-env next build",
     "start": "next start",
     "lint": "eslint .",
     "format": "prettier --check \"**/*.{tsx,mjs,ts,md,json}\"",
