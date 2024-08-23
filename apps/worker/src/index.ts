@@ -5,8 +5,7 @@ import type { WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 import express from 'express';
 
-import { generateSalt } from '@openpanel/common';
-import { db, getSalts } from '@openpanel/db';
+import { createInitialSalts } from '@openpanel/db';
 import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
@@ -185,24 +184,7 @@ async function start() {
   console.log('Repeatable jobs:');
   console.log(repeatableJobs);
 
-  getSalts().catch(async (error) => {
-    if (error instanceof Error && error.message === 'No salt found') {
-      console.log('Creating salts for the first time');
-      await db.salt.create({
-        data: {
-          salt: generateSalt(),
-          createdAt: new Date(new Date().getTime() - 1000 * 60 * 60 * 24),
-        },
-      });
-      await db.salt.create({
-        data: {
-          salt: generateSalt(),
-        },
-      });
-    } else {
-      console.log('Error getting salts', error);
-    }
-  });
+  await createInitialSalts();
 }
 
 start();

@@ -46,8 +46,11 @@ install_docker() {
 
 # Check if Node.js is installed
 if ! command -v node >/dev/null 2>&1; then
-    echo ""
+    echo "********************************************************************************"
+    echo "********************************************************************************"
     echo "Do you wish to automatically install Node.js version $NODE_VERSION using NVM? (yes/no)"
+    echo "********************************************************************************"
+    echo "********************************************************************************"
     read user_choice
 
     case $user_choice in
@@ -64,8 +67,11 @@ fi
 
 # Check if Docker is installed
 if ! command -v docker >/dev/null 2>&1; then
-    echo ""
+    echo "********************************************************************************"
+    echo "********************************************************************************"
     echo "Docker is not installed. Do you wish to install Docker? (yes/no)"
+    echo "********************************************************************************"
+    echo "********************************************************************************"
     read docker_choice
 
     case $docker_choice in
