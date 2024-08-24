@@ -1,0 +1,48 @@
+#!/bin/bash
+
+APP=$1
+VERSION=$2
+
+if [ -z "$APP" ]; then
+    echo "Please provide an app name as an argument."
+    echo "Usage: $0 <app_name> <version>"
+    exit 1
+fi
+
+# Check if version is provided
+if [ -z "$VERSION" ]; then
+    echo "Please provide a version number as an argument."
+    echo "Usage: $0 $APP <version>"
+    exit 1
+fi
+
+# Function to build an image
+build_image() {
+    local app=$1
+    local image_name="lindesvard/openpanel-$app"
+    
+    echo "Building $image_name:$VERSION"
+    
+    docker build \
+        -t "$image_name:$VERSION" \
+        -t "$image_name:latest" \
+        --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+        -f "apps/$app/Dockerfile" .
+    
+    if [ $? -ne 0 ]; then
+        echo "Failed to build $image_name:$VERSION"
+        exit 1
+    fi
+    
+    echo "Successfully built $image_name:$VERSION"
+}
+
+if [ "$APP" == "all" ]; then
+    build_image "dashboard"
+    build_image "worker"
+    build_image "api"
+    echo "All images have been built successfully."
+else
+    build_image $APP
+    echo "$APP image have been built successfully."
+fi

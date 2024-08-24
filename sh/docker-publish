@@ -1,0 +1,40 @@
+#!/bin/bash
+
+APP=$1
+VERSION=$2
+
+if [ -z "$APP" ]; then
+    echo "Please provide an app name as an argument."
+    echo "Usage: $0 <app_name> <version>"
+    exit 1
+fi
+
+# Check if version is provided
+if [ -z "$VERSION" ]; then
+    echo "Please provide a version number as an argument."
+    echo "Usage: $0 $APP <version>"
+    exit 1
+fi
+
+# Function to push an image
+push_image() {
+    local app=$1
+    local image_name="lindesvard/openpanel-$app"
+    
+    echo "Pushing $image_name:$VERSION"
+    docker push "$image_name:$VERSION"
+    
+    echo "Pushing $image_name:latest"
+    docker push "$image_name:latest"
+}
+
+# Push each image
+if [ "$APP" == "all" ]; then
+    push_image "dashboard"
+    push_image "worker"
+    push_image "api"
+    echo "All images have been pushed successfully."
+else
+    push_image $APP
+    echo "$APP image have been pushed successfully."
+fi

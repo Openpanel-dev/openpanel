@@ -31,6 +31,10 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
         '$BASIC_AUTH_PASSWORD',
         bcrypt.hashSync(basicAuthPassword, 10)
       )
+      .replaceAll(
+        '$SSL_CONFIG',
+        domainName.includes('localhost:443') ? '\n\ttls internal' : ''
+      )
   );
 }
 
@@ -421,10 +425,28 @@ async function initiateOnboarding() {
   searchAndReplaceDockerCompose([['$OP_WORKER_REPLICAS', cpus.CPUS]]);
 
   console.log(
-    `Make sure that your webhook is pointing at ${domainNameResponse.domainName}/api/webhook/clerk\n`
-  );
-  console.log(
-    `To start OpenPanel enter "./start" inside openpanel/self-hosting\n`
+    [
+      '======================================================================',
+      'Here are some good things to know before you continue:',
+      '',
+      `1. Make sure that your webhook is pointing at ${domainNameResponse.domainName}/api/webhook/clerk`,
+      '',
+      '2. Commands:',
+      '\t- ./start (example: ./start)',
+      '\t- ./stop (example: ./stop)',
+      '\t- ./logs (example: ./logs)',
+      '\t- ./rebuild (example: ./rebuild op-dashboard)',
+      '',
+      '3. Danger zone!',
+      '\t- ./danger_wipe_everything (example: ./danger_wipe_everything)',
+      '',
+      '4. More about self-hosting: https://docs.openpanel.dev/docs/self-hosting',
+      '======================================================================',
+      '',
+      `Start OpenPanel with "./start" inside the self-hosting directory`,
+      '',
+      '',
+    ].join('\n')
   );
 }
 

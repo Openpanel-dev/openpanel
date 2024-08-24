@@ -92,11 +92,7 @@ services:
       "
 
   op-api:
-    build:
-      context: ..
-      dockerfile: apps/api/Dockerfile
-      args:
-        - DATABASE_URL=${DATABASE_URL}
+    image: lindesvard/openpanel-api:latest
     restart: always
     command: sh -c "sleep 10 && pnpm -r run migrate:deploy && pnpm start"
     depends_on:
@@ -108,11 +104,7 @@ services:
       - .env
 
   op-dashboard:
-    build:
-      context: ..
-      dockerfile: apps/dashboard/Dockerfile
-      args:
-        - DATABASE_URL=${DATABASE_URL}
+    image: lindesvard/openpanel-dashboard:latest
     restart: always
     depends_on:
       - op-db
@@ -122,11 +114,7 @@ services:
       - .env
 
   op-worker:
-    build:
-      context: ..
-      dockerfile: apps/worker/Dockerfile
-      args:
-        - DATABASE_URL=${DATABASE_URL}
+    image: lindesvard/openpanel-worker:latest
     restart: always
     depends_on:
       - op-db
