@@ -16,33 +16,39 @@ if [ -z "$VERSION" ]; then
     exit 1
 fi
 
-# Function to build an image
+# Ensure Docker Buildx is available and set up a builder
+docker buildx create --use --name multi-arch-builder || true
+
+# Function to build a multi-architecture image
 build_image() {
     local app=$1
     local image_name="lindesvard/openpanel-$app"
     
-    echo "Building $image_name:$VERSION"
+    echo "Building multi-architecture image for $image_name:$VERSION"
     
-    docker build \
+    docker buildx build \
+        --platform linux/amd64,linux/arm64 \
         -t "$image_name:$VERSION" \
         -t "$image_name:latest" \
         --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
-        -f "apps/$app/Dockerfile" .
+        -f "apps/$app/Dockerfile" \
+        --push \
+        .
     
     if [ $? -ne 0 ]; then
         echo "Failed to build $image_name:$VERSION"
         exit 1
     fi
     
-    echo "Successfully built $image_name:$VERSION"
+    echo "Successfully built and pushed multi-architecture image for $image_name:$VERSION"
 }
 
 if [ "$APP" == "all" ]; then
     build_image "dashboard"
     build_image "worker"
     build_image "api"
-    echo "All images have been built successfully."
+    echo "All multi-architecture images have been built and pushed successfully."
 else
     build_image $APP
-    echo "$APP image have been built successfully."
+    echo "Multi-architecture image for $APP has been built and pushed successfully."
 fi
