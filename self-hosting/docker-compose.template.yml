@@ -35,9 +35,18 @@ services:
     restart: always
     volumes:
       - kv-data:/data
-    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+    command:
+      [
+        'redis-server',
+        '--requirepass',
+        '${REDIS_PASSWORD}',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
     ports:
       - 6378:6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
 
   op-geo:
     image: observabilitystack/geoip-api:latest
