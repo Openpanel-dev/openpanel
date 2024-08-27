@@ -8,8 +8,8 @@ services:
       - '80:80'
       - '443:443'
     volumes:
-      - caddy-data:/data
-      - caddy-config:/config
+      - op-proxy-data:/data
+      - op-proxy-config:/config
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
     depends_on:
       - op-dashboard
@@ -19,7 +19,7 @@ services:
     image: postgres:14-alpine
     restart: always
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - op-db-data:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD
     healthcheck:
@@ -34,7 +34,7 @@ services:
     image: redis:7.2.5-alpine
     restart: always
     volumes:
-      - kv-data:/data
+      - op-kv-data:/data
     command:
       [
         'redis-server',
@@ -56,8 +56,8 @@ services:
     image: clickhouse/clickhouse-server:23.3.7.5-alpine
     restart: always
     volumes:
-      - ch-data:/var/lib/clickhouse
-      - ch-logs:/var/log/clickhouse-server
+      - op-ch-data:/var/lib/clickhouse
+      - op-ch-logs:/var/log/clickhouse-server
       - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml:ro
       - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
     environment:
@@ -136,15 +136,15 @@ services:
       replicas: $OP_WORKER_REPLICAS
 
 volumes:
-  db-data:
+  op-db-data:
     driver: local
-  kv-data:
+  op-kv-data:
     driver: local
-  ch-data:
+  op-ch-data:
     driver: local
-  ch-logs:
+  op-ch-logs:
     driver: local
-  caddy-data:
+  op-proxy-data:
     driver: local
-  caddy-config:
+  op-proxy-config:
     driver: local

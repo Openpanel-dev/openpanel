@@ -50,7 +50,7 @@ export interface DockerComposeFile {
       depends_on: string[];
     }
   >;
-  volumes: Record<string, unknown>;
+  volumes?: Record<string, unknown>;
 }
 
 const stripTrailingSlash = (str: string) =>
@@ -69,11 +69,7 @@ function searchAndReplaceDockerCompose(replacements: [string, string][]) {
 
 function removeServiceFromDockerCompose(serviceName: string) {
   const dockerComposePath = path.resolve(__dirname, 'docker-compose.yml');
-  const dockerTemplatePath = path.resolve(
-    __dirname,
-    'docker-compose.template.yml'
-  );
-  const dockerComposeContent = fs.readFileSync(dockerTemplatePath, 'utf-8');
+  const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
 
   // Parse the YAML file
   const dockerCompose = yaml.load(dockerComposeContent) as DockerComposeFile;
@@ -87,6 +83,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
     // return;
   }
 
+  // filter depends_on
   Object.keys(dockerCompose.services).forEach((service) => {
     if (dockerCompose.services[service]?.depends_on) {
       // @ts-expect-error
@@ -95,6 +92,17 @@ function removeServiceFromDockerCompose(serviceName: string) {
       ].depends_on.filter((dep) => dep !== serviceName);
     }
   });
+
+  // filter volumes
+  Object.keys(dockerCompose.volumes ?? {}).forEach((volume) => {
+    if (dockerCompose.volumes && volume.startsWith(serviceName)) {
+      delete dockerCompose.volumes[volume];
+    }
+  });
+
+  if (Object.keys(dockerCompose.volumes ?? {}).length === 0) {
+    delete dockerCompose.volumes;
+  }
 
   // Convert the object back to YAML
   const newYaml = yaml.dump(dockerCompose, {
@@ -105,6 +113,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
 
 function writeEnvFile(envs: {
   POSTGRES_PASSWORD: string | undefined;
+  REDIS_PASSWORD: string | undefined;
   CLICKHOUSE_URL: string;
   CLICKHOUSE_DB: string;
   CLICKHOUSE_USER: string;
@@ -194,6 +203,7 @@ async function initiateOnboarding() {
       type: 'input',
       name: 'domainName',
       message: "What's the domain name you want to use?",
+      default: process.env.DEBUG ? 'http://localhost' : undefined,
       prefix: '🌐',
       validate: (value) => {
         if (value.startsWith('http://') || value.startsWith('https://')) {
@@ -225,22 +235,25 @@ async function initiateOnboarding() {
         type: 'input',
         name: 'CLICKHOUSE_URL',
         message: 'Enter your ClickHouse URL:',
+        default: process.env.DEBUG ? 'http://clickhouse:8123' : undefined,
       },
       {
         type: 'input',
         name: 'CLICKHOUSE_DB',
         message: 'Enter your ClickHouse DB name:',
-        default: 'openpanel',
+        default: process.env.DEBUG ? 'db_openpanel' : undefined,
       },
       {
         type: 'input',
         name: 'CLICKHOUSE_USER',
         message: 'Enter your ClickHouse user name:',
+        default: process.env.DEBUG ? 'user_openpanel' : undefined,
       },
       {
         type: 'input',
         name: 'CLICKHOUSE_PASSWORD',
         message: 'Enter your ClickHouse password:',
+        default: process.env.DEBUG ? 'ch_password' : undefined,
       },
     ]);
 
@@ -256,6 +269,7 @@ async function initiateOnboarding() {
         type: 'input',
         name: 'REDIS_URL',
         message: 'Enter your Redis URL:',
+        default: process.env.DEBUG ? 'redis://redis:6379' : undefined,
       },
     ]);
     envs = {
@@ -270,6 +284,9 @@ async function initiateOnboarding() {
         type: 'input',
         name: 'DATABASE_URL',
         message: 'Enter your Database URL:',
+        default: process.env.DEBUG
+          ? 'postgresql://postgres:postgres@postgres:5432/postgres?schema=public'
+          : undefined,
       },
     ]);
     envs = {
@@ -297,6 +314,7 @@ async function initiateOnboarding() {
       type: 'input',
       name: 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
       message: 'Enter your Clerk Publishable Key:',
+      default: process.env.DEBUG ? 'pk_test_1234567890' : undefined,
       validate: (value) => {
         if (value.startsWith('pk_live_') || value.startsWith('pk_test_')) {
           return true;
@@ -309,6 +327,7 @@ async function initiateOnboarding() {
       type: 'input',
       name: 'CLERK_SECRET_KEY',
       message: 'Enter your Clerk Secret Key:',
+      default: process.env.DEBUG ? 'sk_test_1234567890' : undefined,
       validate: (value) => {
         if (value.startsWith('sk_live_') || value.startsWith('sk_test_')) {
           return true;
@@ -321,6 +340,7 @@ async function initiateOnboarding() {
       type: 'input',
       name: 'CLERK_SIGNING_SECRET',
       message: 'Enter your Clerk Signing Secret:',
+      default: process.env.DEBUG ? 'whsec_1234567890' : undefined,
       validate: (value) => {
         if (value.startsWith('whsec_')) {
           return true;
@@ -380,8 +400,11 @@ async function initiateOnboarding() {
   console.log('');
   console.log('Creating .env file...\n');
   const POSTGRES_PASSWORD = generatePassword(20);
+  const REDIS_PASSWORD = generatePassword(20);
+
   writeEnvFile({
     POSTGRES_PASSWORD: envs.DATABASE_URL ? undefined : POSTGRES_PASSWORD,
+    REDIS_PASSWORD: envs.REDIS_URL ? undefined : REDIS_PASSWORD,
     CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op-ch:8123',
     CLICKHOUSE_DB: envs.CLICKHOUSE_DB || 'openpanel',
     CLICKHOUSE_USER: envs.CLICKHOUSE_USER || 'openpanel',
