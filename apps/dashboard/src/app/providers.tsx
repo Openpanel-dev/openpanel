@@ -62,14 +62,14 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       defaultTheme="light"
       disableTransitionOnChange
     >
-      <OpenPanelComponent
-        apiUrl="http://localhost:3333"
-        clientId={'75479ffd-645b-43d2-a33a-2111a6f5ee00'}
-        trackScreenViews
-        trackOutgoingLinks
-        trackAttributes
-      />
-
+      {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
+        <OpenPanelComponent
+          clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
+          trackScreenViews
+          trackOutgoingLinks
+          trackAttributes
+        />
+      )}
       <ReduxProvider store={storeRef.current}>
         <api.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
