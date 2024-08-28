@@ -69,6 +69,12 @@ const eventsScheme = z.object({
   end: z.coerce.string().optional(),
   page: z.coerce.number().optional().default(1),
   limit: z.coerce.number().optional().default(50),
+  includes: z
+    .preprocess(
+      (arg) => (typeof arg === 'string' ? [arg] : arg),
+      z.array(z.string())
+    )
+    .optional(),
 });
 
 export async function events(
@@ -103,7 +109,7 @@ export async function events(
     cursor,
     take,
     meta: false,
-    profile: true,
+    profile: query.data.includes?.includes('profile'),
   };
 
   const [data, totalCount] = await Promise.all([

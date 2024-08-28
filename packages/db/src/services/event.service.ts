@@ -361,7 +361,7 @@ export async function getEventList({
   }
 
   if (startDate && endDate) {
-    sb.where.created_at = `toDate(created_at) BETWEEN '${formatClickhouseDate(startDate)}' AND '${formatClickhouseDate(endDate)}'`;
+    sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
   }
 
   if (events && events.length > 0) {
@@ -403,7 +403,7 @@ export async function getEventsCount({
   }
 
   if (startDate && endDate) {
-    sb.where.created_at = `created_at BETWEEN '${formatClickhouseDate(startDate)}' AND '${formatClickhouseDate(endDate)}'`;
+    sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
   }
 
   if (events && events.length > 0) {
