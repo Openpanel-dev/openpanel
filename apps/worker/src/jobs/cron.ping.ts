@@ -6,7 +6,7 @@ export async function ping() {
   );
 
   if (typeof res?.count === 'number') {
-    const response = await fetch('https://api.openpanel.com/misc/ping', {
+    const response = await fetch('https://api.openpanel.dev/misc/ping', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

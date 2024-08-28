@@ -5,7 +5,7 @@ import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
 
 import { createHash } from '@openpanel/common';
-import { ch, TABLE_NAMES } from '@openpanel/db';
+import { ch, formatClickhouseDate, TABLE_NAMES } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
@@ -128,7 +128,7 @@ export async function ping(
         {
           domain: request.body.domain,
           count: request.body.count,
-          created_at: new Date(),
+          created_at: formatClickhouseDate(new Date(), true),
         },
       ],
       format: 'JSONEachRow',
