@@ -66,8 +66,12 @@ Openpanel is a simple analytics tool for logging events on web, apps and backend
 - tRPC - will probably migrate this to server actions
 - Clerk - for authentication
 
-## Self hosting
+## Self-hosting
 
-I'll fill out this section when we're out of beta (might be sooner than that).
+OpenPanel can be self-hosted and we have tried to make it as simple as possible.
 
-But it will probably be a CapRover recipe and Docker Compose scheme.
+You can find the how to [here](https://docs.openpanel.dev/docs/self-hosting)
+
+**Give us a star if you like it!**
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Openpanel-dev/openpanel&type=Date)](https://star-history.com/#Openpanel-dev/openpanel&Date)

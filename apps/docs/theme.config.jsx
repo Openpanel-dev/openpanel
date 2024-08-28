@@ -19,7 +19,7 @@ export default {
         height="32"
         width="32"
       />
-      <strong style={{ marginLeft: '8px' }}>openpanel</strong>
+      <strong style={{ marginLeft: '8px' }}>OpenPanel</strong>
     </>
   ),
   head: () => {

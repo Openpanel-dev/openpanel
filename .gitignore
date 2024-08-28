@@ -9,6 +9,7 @@ dump-*
 # Logs
 
 logs
+!self-hosting/logs
 _.log
 npm-debug.log_
 yarn-debug.log*

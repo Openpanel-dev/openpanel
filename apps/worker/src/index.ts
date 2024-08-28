@@ -5,6 +5,7 @@ import type { WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 import express from 'express';
 
+import { createInitialSalts } from '@openpanel/db';
 import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
@@ -15,7 +16,7 @@ import { register } from './metrics';
 
 const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
-serverAdapter.setBasePath(process.env.SELF_HOSTED ? '/worker' : '/');
+serverAdapter.setBasePath('/');
 const app = express();
 
 const workerOptions: WorkerOptions = {
@@ -162,10 +163,28 @@ async function start() {
     }
   );
 
+  if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
+    await cronQueue.add(
+      'ping',
+      {
+        type: 'ping',
+        payload: undefined,
+      },
+      {
+        jobId: 'ping',
+        repeat: {
+          pattern: '0 0 * * *',
+        },
+      }
+    );
+  }
+
   const repeatableJobs = await cronQueue.getRepeatableJobs();
 
   console.log('Repeatable jobs:');
   console.log(repeatableJobs);
+
+  await createInitialSalts();
 }
 
 start();

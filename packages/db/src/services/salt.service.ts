@@ -1,3 +1,5 @@
+import { generateSalt } from '@openpanel/common';
+
 import { db } from '../prisma-client';
 
 export async function getCurrentSalt() {
@@ -27,11 +29,52 @@ export async function getSalts() {
   }
 
   if (!prev) {
-    throw new Error('No previous salt found');
+    throw new Error('No salt found');
   }
 
   return {
     current: curr.salt,
     previous: prev.salt,
   };
+}
+
+export async function createInitialSalts() {
+  const MAX_RETRIES = 5;
+  const BASE_DELAY = 1000; // 1 second
+  const createSaltsWithRetry = async (retryCount = 0): Promise<void> => {
+    try {
+      await getSalts();
+    } catch (error) {
+      if (error instanceof Error && error.message === 'No salt found') {
+        console.log('Creating salts for the first time');
+        await db.salt.create({
+          data: {
+            salt: generateSalt(),
+            createdAt: new Date(new Date().getTime() - 1000 * 60 * 60 * 24),
+          },
+        });
+        await db.salt.create({
+          data: {
+            salt: generateSalt(),
+          },
+        });
+      } else {
+        console.log('Error getting salts', error);
+        if (retryCount < MAX_RETRIES) {
+          const delay = BASE_DELAY * Math.pow(2, retryCount);
+          console.log(
+            `Retrying in ${delay}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return createSaltsWithRetry(retryCount + 1);
+        } else {
+          throw new Error(
+            `Failed to create salts after ${MAX_RETRIES} attempts`
+          );
+        }
+      }
+    }
+  };
+
+  await createSaltsWithRetry();
 }

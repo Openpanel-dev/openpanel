@@ -1,0 +1,150 @@
+version: '3'
+
+services:
+  op-proxy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - op-proxy-data:/data
+      - op-proxy-config:/config
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - op-dashboard
+      - op-api
+
+  op-db:
+    image: postgres:14-alpine
+    restart: always
+    volumes:
+      - op-db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - 5431:5432
+
+  op-kv:
+    image: redis:7.2.5-alpine
+    restart: always
+    volumes:
+      - op-kv-data:/data
+    command:
+      [
+        'redis-server',
+        '--requirepass',
+        '${REDIS_PASSWORD}',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    ports:
+      - 6378:6379
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+
+  op-geo:
+    image: observabilitystack/geoip-api:latest
+    restart: always
+
+  op-ch:
+    image: clickhouse/clickhouse-server:23.3.7.5-alpine
+    restart: always
+    volumes:
+      - op-ch-data:/var/lib/clickhouse
+      - op-ch-logs:/var/log/clickhouse-server
+      - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml:ro
+      - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
+    environment:
+      - CLICKHOUSE_DB
+      - CLICKHOUSE_USER
+      - CLICKHOUSE_PASSWORD
+    healthcheck:
+      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    ports:
+      - 8999:9000
+      - 8122:8123
+
+  op-ch-migrator:
+    image: clickhouse/clickhouse-server:23.3.7.5-alpine
+    depends_on:
+      - op-ch
+    volumes:
+      - ../packages/db/clickhouse_init.sql:/migrations/clickhouse_init.sql
+    environment:
+      - CLICKHOUSE_DB
+      - CLICKHOUSE_USER
+      - CLICKHOUSE_PASSWORD
+    entrypoint: /bin/sh -c
+    command: >
+      "
+      echo 'Waiting for ClickHouse to start...';
+      while ! clickhouse-client --host op-ch --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --query 'SELECT 1;' 2>/dev/null; do
+        echo 'ClickHouse is unavailable - sleeping 1s...';
+        sleep 1;
+      done;
+
+      echo 'ClickHouse started. Running migrations...';
+      clickhouse-client --host op-ch --database=$CLICKHOUSE_DB --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --queries-file /migrations/clickhouse_init.sql;
+      "
+
+  op-api:
+    image: lindesvard/openpanel-api:latest
+    restart: always
+    command: sh -c "sleep 10 && pnpm -r run migrate:deploy && pnpm start"
+    depends_on:
+      - op-db
+      - op-ch
+      - op-kv
+      - op-geo
+    env_file:
+      - .env
+
+  op-dashboard:
+    image: lindesvard/openpanel-dashboard:latest
+    restart: always
+    depends_on:
+      - op-db
+      - op-ch
+      - op-kv
+    env_file:
+      - .env
+
+  op-worker:
+    image: lindesvard/openpanel-worker:latest
+    restart: always
+    depends_on:
+      - op-db
+      - op-ch
+      - op-kv
+    env_file:
+      - .env
+    deploy:
+      mode: replicated
+      replicas: $OP_WORKER_REPLICAS
+
+volumes:
+  op-db-data:
+    driver: local
+  op-kv-data:
+    driver: local
+  op-ch-data:
+    driver: local
+  op-ch-logs:
+    driver: local
+  op-proxy-data:
+    driver: local
+  op-proxy-config:
+    driver: local

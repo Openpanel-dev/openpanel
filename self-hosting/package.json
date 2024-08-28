@@ -1,0 +1,22 @@
+{
+  "name": "@openpanel/self-hosting",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/inquirer": "^9.0.7",
+    "@types/js-yaml": "^4.0.9",
+    "bcrypt": "^5.1.1",
+    "inquirer": "^9.3.1",
+    "jiti": "^1.21.6",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2"
+  }
+}

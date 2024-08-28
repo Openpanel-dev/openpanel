@@ -1,6 +1,6 @@
 ARG NODE_VERSION=20.15.1
 
-FROM --platform=linux/amd64 node:${NODE_VERSION}-slim AS base
+FROM node:${NODE_VERSION}-slim AS base
 
 ENV SKIP_ENV_VALIDATION="1"
 
@@ -11,17 +11,15 @@ ARG ENABLE_INSTRUMENTATION_HOOK
 ENV ENABLE_INSTRUMENTATION_HOOK=$ENABLE_INSTRUMENTATION_HOOK
 
 ENV PNPM_HOME="/pnpm"
-
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN corepack enable
+# Install necessary dependencies for prisma
+RUN apt-get update && apt-get install -y \
+    openssl \
+    libssl3 \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt update \
-    && apt install -y curl \
-    && curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o n \
-    && bash n $NODE_VERSION \
-    && rm n \
-    && npm install -g n
+RUN corepack enable
 
 WORKDIR /app
 
@@ -39,14 +37,14 @@ COPY packages/common/package.json packages/common/package.json
 COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/package.json
+COPY patches patches
 
 # BUILD
 FROM base AS build
 
-WORKDIR /app/apps/dashboard
+WORKDIR /app
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-WORKDIR  /app
 COPY apps/dashboard apps/dashboard
 COPY packages packages
 COPY tooling tooling
@@ -57,48 +55,44 @@ WORKDIR /app/apps/dashboard
 # Will be replaced on runtime
 ENV NEXT_PUBLIC_DASHBOARD_URL="__NEXT_PUBLIC_DASHBOARD_URL__"
 ENV NEXT_PUBLIC_API_URL="__NEXT_PUBLIC_API_URL__"
-# Check entrypoint for this little fellow
 ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_eW9sby5jb20k"
+# Does not need to be replaced
+ENV NEXT_PUBLIC_CLERK_SIGN_IN_URL="/login"
+ENV NEXT_PUBLIC_CLERK_SIGN_UP_URL="/register"
+ENV NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/"
+ENV NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/"
 
 RUN pnpm run build
 
-# PROD
-FROM base AS prod
-
-WORKDIR /app/apps/dashboard
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
-
-# FINAL
+# RUNNER
 FROM base AS runner
 
-COPY --from=build /app/package.json /app/package.json
-COPY --from=prod /app/node_modules /app/node_modules
-# Apps
-COPY --from=build /app/apps/dashboard /app/apps/dashboard
-# Apps node_modules
-COPY --from=prod /app/apps/dashboard/node_modules /app/apps/dashboard/node_modules
-# Packages
-COPY --from=build /app/packages/db /app/packages/db
-COPY --from=build /app/packages/redis /app/packages/redis
-COPY --from=build /app/packages/common /app/packages/common
-COPY --from=build /app/packages/queue /app/packages/queue
-COPY --from=build /app/packages/constants /app/packages/constants
-COPY --from=build /app/packages/validation /app/packages/validation
-COPY --from=build /app/packages/sdks/sdk /app/packages/sdks/sdk
-# Packages node_modules
-COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
-COPY --from=prod /app/packages/redis/node_modules /app/packages/redis/node_modules
-COPY --from=prod /app/packages/common/node_modules /app/packages/common/node_modules
-COPY --from=prod /app/packages/validation/node_modules /app/packages/validation/node_modules
-COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modules
+WORKDIR /app
 
-RUN pnpm db:codegen
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-WORKDIR /app/apps/dashboard
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Set the correct permission for prerender cache
+RUN mkdir .next
+RUN chown nextjs:nodejs .next
+
+# Set the correct permissions for the entire /app directory
+COPY --from=build --chown=nextjs:nodejs /app/apps/dashboard/.next/standalone ./
+COPY --from=build --chown=nextjs:nodejs /app/apps/dashboard/.next/static ./apps/dashboard/.next/static
+COPY --from=build --chown=nextjs:nodejs /app/apps/dashboard/public ./apps/dashboard/public
+
+# Copy and set permissions for the entrypoint script
+COPY --from=build --chown=nextjs:nodejs /app/apps/dashboard/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+USER nextjs
 
 EXPOSE 3000
 
-# CMD ["pnpm", "start"]
-COPY --from=build /app/apps/dashboard/entrypoint.sh /usr/bin/
-RUN chmod +x /usr/bin/entrypoint.sh
-ENTRYPOINT ["entrypoint.sh", "pnpm", "start"]
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+ENTRYPOINT [ "/app/entrypoint.sh", "node", "/app/apps/dashboard/server.js"]

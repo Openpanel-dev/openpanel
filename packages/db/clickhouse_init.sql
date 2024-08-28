@@ -1,6 +1,17 @@
 CREATE DATABASE IF NOT EXISTS openpanel;
 
-CREATE TABLE openpanel.events_v2 (
+CREATE TABLE IF NOT EXISTS openpanel.self_hosting
+(
+    created_at Date,
+    domain String,
+    count UInt64
+)
+ENGINE = MergeTree()
+ORDER BY (domain, created_at)
+PARTITION BY toYYYYMM(created_at);
+
+
+CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
   `id` UUID DEFAULT generateUUIDv4(),
   `name` String,
   `sdk_name` String,
@@ -80,7 +91,7 @@ SELECT
   uniqState(profile_id) as profile_id,
   project_id
 FROM
-  events
+  events_v2
 GROUP BY
   date,
   project_id;

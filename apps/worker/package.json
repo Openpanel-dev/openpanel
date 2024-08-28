@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@baselime/pino-transport": "^0.1.5",
-    "@bull-board/api": "^5.21.0",
-    "@bull-board/express": "^5.21.0",
+    "@bull-board/api": "5.21.0",
+    "@bull-board/express": "5.21.0",
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/logger": "workspace:*",

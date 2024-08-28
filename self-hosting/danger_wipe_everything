@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Set the project name if it's not the directory name
+# COMPOSE_PROJECT_NAME=your_project_name
+
+# Use the directory name as the project name if not set
+PROJECT_NAME=${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)")}
+
+echo "Cleaning up Docker resources for project: $PROJECT_NAME"
+
+# Stop and remove containers, networks, and volumes
+echo "Stopping and removing containers, networks, and volumes..."
+docker-compose down --volumes --remove-orphans
+
+# Remove any remaining project-specific volumes
+echo "Removing any remaining project volumes..."
+project_volumes=$(docker volume ls --filter name="$PROJECT_NAME" -q)
+if [ -n "$project_volumes" ]; then
+    docker volume rm $project_volumes
+fi
+
+# Remove project-specific images
+echo "Removing project-specific images..."
+project_images=$(docker-compose config --images)
+if [ -n "$project_images" ]; then
+    docker rmi $project_images
+fi
+
+# Remove any dangling images
+echo "Removing dangling images..."
+docker image prune -f
+
+# Remove any dangling volumes
+echo "Removing dangling volumes..."
+docker volume prune -f
+
+echo "Cleanup complete. All project containers, images, volumes, and related resources have been removed."
+
+# List remaining containers, images, and volumes
+echo "Remaining containers:"
+docker ps -a
+echo "Remaining images:"
+docker images
+echo "Remaining volumes:"
+docker volume ls

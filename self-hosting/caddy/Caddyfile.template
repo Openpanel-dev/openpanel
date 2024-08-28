@@ -1,0 +1,19 @@
+$DOMAIN_NAME {$SSL_CONFIG
+    encode gzip
+    
+    handle_path /api* {
+        reverse_proxy op-api:3000
+    }
+
+    reverse_proxy /* op-dashboard:3000
+}
+
+worker.$DOMAIN_NAME {$SSL_CONFIG
+    encode gzip
+
+    basic_auth {
+        admin $BASIC_AUTH_PASSWORD
+    }
+
+    reverse_proxy op-worker:3000
+}

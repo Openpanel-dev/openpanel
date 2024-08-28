@@ -1,25 +1,6 @@
 {
   "index": "Get Started",
-  "-- Frameworks": {
-    "type": "separator",
-    "title": "Frameworks"
-  },
-  "script": "Web (Script Tag)",
-  "web": "Web (Module)",
-  "nextjs": "Next.js",
-  "react": "React",
-  "react-native": "React-Native",
-  "remix": "Remix",
-  "vue": "Vue",
-  "astro": "Astro",
-  "node": "Node",
-  "express": "Express (backend)",
-  "-- Others": {
-    "type": "separator",
-    "title": "Others"
-  },
-  "javascript": "JavaScript",
-  "api": "API",
-  "export": "Export",
-  "migration": "Migrations"
+  "sdks": "SDKs",
+  "migration": "Migrations",
+  "self-hosting": "Self-hosting"
 }

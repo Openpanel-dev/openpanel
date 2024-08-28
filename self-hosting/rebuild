@@ -1,0 +1,6 @@
+#!/bin/bash
+
+NAME=$1
+
+docker compose build $NAME
+docker compose up -d --no-deps --force-recreate $NAME

@@ -182,7 +182,7 @@ $openpanel->event(
         <strong>Usage</strong>
         <p>Create a custom event called &quot;my_event&quot;.</p>
         <Syntax
-          code={`curl 'https://api.openpanel.dev/track' \\
+          code={`curl '${process.env.NEXT_PUBLIC_API_URL}/track' \\
   -H 'content-type: application/json' \\
   -H 'openpanel-client-id: ${clientId}' \\
   -H 'openpanel-client-secret: ${clientSecret}' \\
