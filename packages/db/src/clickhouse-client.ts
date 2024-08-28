@@ -1,5 +1,8 @@
 import type { ResponseJSON } from '@clickhouse/client';
 import { createClient } from '@clickhouse/client';
+import { escape } from 'sqlstring';
+
+import type { IInterval } from '@openpanel/validation';
 
 export const TABLE_NAMES = {
   events: 'events_v2',
@@ -124,6 +127,22 @@ export function formatClickhouseDate(
     return date.toISOString().split('T')[0]!;
   }
   return date.toISOString().replace('T', ' ').replace(/Z+$/, '');
+}
+
+export function toDate(str: string, interval?: IInterval) {
+  if (!interval || interval === 'minute' || interval === 'hour') {
+    if (str.match(/\d{4}-\d{2}-\d{2}/)) {
+      return escape(str);
+    }
+
+    return str;
+  }
+
+  if (str.match(/\d{4}-\d{2}-\d{2}/)) {
+    return `toDate(${escape(str)})`;
+  }
+
+  return `toDate(${str})`;
 }
 
 export function convertClickhouseDateToJs(date: string) {

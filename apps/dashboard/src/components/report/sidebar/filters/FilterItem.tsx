@@ -26,7 +26,9 @@ interface FilterProps {
 
 export function FilterItem({ filter, event }: FilterProps) {
   const { projectId } = useAppParams();
-  const { range, startDate, endDate } = useSelector((state) => state.report);
+  const { range, startDate, endDate, interval } = useSelector(
+    (state) => state.report
+  );
   const getLabel = useMappings();
   const dispatch = useDispatch();
   const potentialValues = api.chart.values.useQuery({
@@ -34,6 +36,7 @@ export function FilterItem({ filter, event }: FilterProps) {
     property: filter.name,
     projectId,
     range,
+    interval,
     startDate,
     endDate,
   });

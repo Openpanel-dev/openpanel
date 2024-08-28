@@ -16,9 +16,14 @@ import type { ReportEventMoreProps } from './ReportEventMore';
 export function ReportBreakdowns() {
   const { projectId } = useAppParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
+  const interval = useSelector((state) => state.report.interval);
+  const range = useSelector((state) => state.report.range);
+
   const dispatch = useDispatch();
   const propertiesQuery = api.chart.properties.useQuery({
     projectId,
+    range,
+    interval,
   });
   const propertiesCombobox = (propertiesQuery.data ?? []).map((item) => ({
     value: item,

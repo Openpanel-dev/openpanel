@@ -1,22 +1,16 @@
-import { subMonths } from 'date-fns';
 import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
-import { average, max, min, round, slug, sum } from '@openpanel/common';
 import {
   chQuery,
   createSqlBuilder,
   db,
   formatClickhouseDate,
   TABLE_NAMES,
+  toDate,
 } from '@openpanel/db';
-import { zChartInput, zRange } from '@openpanel/validation';
-import type {
-  FinalChart,
-  IChartInput,
-  PreviousValue,
-} from '@openpanel/validation';
+import { zChartInput, zRange, zTimeInterval } from '@openpanel/validation';
 
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
@@ -34,7 +28,8 @@ export const chartRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-        range: zRange.default('30d'),
+        range: zRange,
+        interval: zTimeInterval,
         startDate: z.string().nullish(),
         endDate: z.string().nullish(),
       })
@@ -42,7 +37,7 @@ export const chartRouter = createTRPCRouter({
     .query(async ({ input: { projectId, ...input } }) => {
       const { startDate, endDate } = getChartStartEndDate(input);
       const events = await chQuery<{ name: string }>(
-        `SELECT DISTINCT name FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND created_at BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}');`
+        `SELECT DISTINCT name FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND ${toDate('created_at', input.interval)} BETWEEN ${toDate(formatClickhouseDate(startDate), input.interval)} AND ${toDate(formatClickhouseDate(endDate), input.interval)};`
       );
 
       return [
@@ -58,7 +53,8 @@ export const chartRouter = createTRPCRouter({
       z.object({
         event: z.string().optional(),
         projectId: z.string(),
-        range: zRange.default('30d'),
+        range: zRange,
+        interval: zTimeInterval,
         startDate: z.string().nullish(),
         endDate: z.string().nullish(),
       })
@@ -69,7 +65,7 @@ export const chartRouter = createTRPCRouter({
         `SELECT distinct mapKeys(properties) as keys from ${TABLE_NAMES.events} where ${
           event && event !== '*' ? `name = ${escape(event)} AND ` : ''
         } project_id = ${escape(projectId)} AND
-        created_at BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}');`
+        ${toDate('created_at', input.interval)} BETWEEN ${toDate(formatClickhouseDate(startDate), input.interval)} AND ${toDate(formatClickhouseDate(endDate), input.interval)};`
       );
 
       const properties = events
@@ -111,7 +107,8 @@ export const chartRouter = createTRPCRouter({
         event: z.string(),
         property: z.string(),
         projectId: z.string(),
-        range: zRange.default('30d'),
+        range: zRange,
+        interval: zTimeInterval,
         startDate: z.string().nullish(),
         endDate: z.string().nullish(),
       })
@@ -137,7 +134,7 @@ export const chartRouter = createTRPCRouter({
         sb.select.values = `distinct ${property} as values`;
       }
 
-      sb.where.date = `created_at BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
+      sb.where.date = `${toDate('created_at', input.interval)} BETWEEN ${toDate(formatClickhouseDate(startDate), input.interval)} AND ${toDate(formatClickhouseDate(endDate), input.interval)};`;
 
       const events = await chQuery<{ values: string[] }>(getSql());
 

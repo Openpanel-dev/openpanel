@@ -20,6 +20,8 @@ import type {
   IChartEventFilterValue,
 } from '@openpanel/validation';
 
+import { useOverviewOptions } from '../useOverviewOptions';
+
 export interface OverviewFiltersDrawerContentProps {
   projectId: string;
   nuqsOptions?: NuqsOptions;
@@ -33,10 +35,11 @@ export function OverviewFiltersDrawerContent({
   enableEventsFilter,
   mode,
 }: OverviewFiltersDrawerContentProps) {
+  const { interval, range } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
-  const eventNames = useEventNames(projectId);
-  const eventProperties = useEventProperties(projectId);
+  const eventNames = useEventNames({ projectId, interval, range });
+  const eventProperties = useEventProperties({ projectId, interval, range });
   const profileProperties = useProfileProperties(projectId);
   const properties = mode === 'events' ? eventProperties : profileProperties;
 
@@ -113,11 +116,14 @@ export function FilterOptionEvent({
     operator: IChartEventFilterOperator
   ) => void;
 }) {
-  const values = useEventValues(
+  const { interval, range } = useOverviewOptions();
+  const values = useEventValues({
     projectId,
-    filter.name === 'path' ? 'screen_view' : 'session_start',
-    filter.name
-  );
+    event: filter.name === 'path' ? 'screen_view' : 'session_start',
+    property: filter.name,
+    interval,
+    range,
+  });
 
   return (
     <div className="flex items-center gap-2">

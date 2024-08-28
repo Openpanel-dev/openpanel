@@ -6,7 +6,11 @@ import type {
   IGetChartDataInput,
 } from '@openpanel/validation';
 
-import { formatClickhouseDate, TABLE_NAMES } from '../clickhouse-client';
+import {
+  formatClickhouseDate,
+  TABLE_NAMES,
+  toDate,
+} from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
 function getPropertyKey(property: string) {
@@ -67,21 +71,11 @@ export function getChartSql({
   sb.groupBy.date = 'date';
 
   if (startDate) {
-    sb.where.startDate = `created_at >= '${formatClickhouseDate(startDate)}'`;
-    // if (interval === 'minute' || interval === 'hour') {
-    //   sb.where.startDate = `created_at >= '${formatClickhouseDate(startDate)}'`;
-    // } else {
-    //   sb.where.startDate = `toDate(created_at) >= '${formatClickhouseDate(startDate, true)}'`;
-    // }
+    sb.where.startDate = `${toDate('created_at', interval)} >= ${toDate(formatClickhouseDate(startDate), interval)}`;
   }
 
   if (endDate) {
-    sb.where.endDate = `created_at <= '${formatClickhouseDate(endDate)}'`;
-    // if (interval === 'minute' || interval === 'hour') {
-    //   sb.where.endDate = `created_at <= '${formatClickhouseDate(endDate)}'`;
-    // } else {
-    //   sb.where.endDate = `toDate(created_at) <= '${formatClickhouseDate(endDate, true)}'`;
-    // }
+    sb.where.endDate = `${toDate('created_at', interval)} <= ${toDate(formatClickhouseDate(endDate), interval)}`;
   }
 
   if (breakdowns.length > 0 && limit) {

@@ -1,15 +1,8 @@
 import { api } from '@/trpc/client';
 
 export function useEventValues(
-  projectId: string,
-  event: string,
-  property: string
+  params: Parameters<typeof api.chart.values.useQuery>[0]
 ) {
-  const query = api.chart.values.useQuery({
-    projectId: projectId,
-    event,
-    property,
-  });
-
+  const query = api.chart.values.useQuery(params);
   return query.data?.values ?? [];
 }

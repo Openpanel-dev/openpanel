@@ -1,6 +1,6 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
-import { useDispatch } from '@/redux';
+import { useDispatch, useSelector } from '@/redux';
 import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { DatabaseIcon } from 'lucide-react';
@@ -18,11 +18,14 @@ export function EventPropertiesCombobox({
 }: EventPropertiesComboboxProps) {
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
-
+  const range = useSelector((state) => state.report.range);
+  const interval = useSelector((state) => state.report.interval);
   const query = api.chart.properties.useQuery(
     {
       event: event.name,
       projectId,
+      range,
+      interval,
     },
     {
       enabled: !!event.name,

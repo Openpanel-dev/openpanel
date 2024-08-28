@@ -29,13 +29,18 @@ import type { ReportEventMoreProps } from './ReportEventMore';
 export function ReportEvents() {
   const previous = useSelector((state) => state.report.previous);
   const selectedEvents = useSelector((state) => state.report.events);
-  const input = useSelector((state) => state.report);
+  const startDate = useSelector((state) => state.report.startDate);
+  const endDate = useSelector((state) => state.report.endDate);
+  const range = useSelector((state) => state.report.range);
+  const interval = useSelector((state) => state.report.interval);
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
-  const eventNames = useEventNames(projectId, {
-    startDate: input.startDate,
-    endDate: input.endDate,
-    range: input.range,
+  const eventNames = useEventNames({
+    projectId,
+    startDate,
+    endDate,
+    range,
+    interval,
   });
 
   const dispatchChangeEvent = useDebounceFn((event: IChartEvent) => {

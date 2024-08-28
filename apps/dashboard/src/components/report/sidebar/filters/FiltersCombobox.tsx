@@ -15,7 +15,10 @@ interface FiltersComboboxProps {
 
 export function FiltersCombobox({ event }: FiltersComboboxProps) {
   const dispatch = useDispatch();
-  const { range, startDate, endDate } = useSelector((state) => state.report);
+  const interval = useSelector((state) => state.report.interval);
+  const range = useSelector((state) => state.report.range);
+  const startDate = useSelector((state) => state.report.startDate);
+  const endDate = useSelector((state) => state.report.endDate);
   const { projectId } = useAppParams();
 
   const query = api.chart.properties.useQuery(
@@ -23,6 +26,7 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
       event: event.name,
       projectId,
       range,
+      interval,
       startDate,
       endDate,
     },
