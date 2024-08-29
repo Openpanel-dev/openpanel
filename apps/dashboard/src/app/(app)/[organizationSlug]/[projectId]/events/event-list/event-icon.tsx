@@ -21,7 +21,6 @@ const variants = cva('flex shrink-0 items-center justify-center rounded-full', {
 type EventIconProps = VariantProps<typeof variants> & {
   name: string;
   meta?: EventMeta;
-  projectId: string;
   className?: string;
 };
 

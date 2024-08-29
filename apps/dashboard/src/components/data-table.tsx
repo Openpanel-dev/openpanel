@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/utils/cn';
 import {
   flexRender,
   getCoreRowModel,
@@ -19,6 +20,20 @@ import {
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
+}
+
+export function TableButtons({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('mb-2 flex flex-wrap items-center gap-2', className)}>
+      {children}
+    </div>
+  );
 }
 
 export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {

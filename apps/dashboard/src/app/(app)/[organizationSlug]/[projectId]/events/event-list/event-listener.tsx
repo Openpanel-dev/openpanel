@@ -6,11 +6,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
-import { useDebounceVal } from '@/hooks/useDebounceVal';
+import { useDebounceState } from '@/hooks/useDebounceState';
 import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
 
 import type { IServiceEventMinimal } from '@openpanel/db';
 
@@ -19,10 +18,13 @@ const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
   loading: () => <div>0</div>,
 });
 
-export default function EventListener() {
-  const router = useRouter();
+export default function EventListener({
+  onRefresh,
+}: {
+  onRefresh: () => void;
+}) {
   const { projectId } = useAppParams();
-  const counter = useDebounceVal(0, 1000, {
+  const counter = useDebounceState(0, 1000, {
     maxWait: 5000,
   });
 
@@ -38,7 +40,7 @@ export default function EventListener() {
         <button
           onClick={() => {
             counter.set(0);
-            router.refresh();
+            onRefresh();
           }}
           className="flex h-8 items-center gap-2 rounded border border-border bg-card px-3 font-medium leading-none"
         >

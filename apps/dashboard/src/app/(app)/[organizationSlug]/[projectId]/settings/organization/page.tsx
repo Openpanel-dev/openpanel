@@ -51,10 +51,7 @@ export default async function Page({
 
   return (
     <>
-      <PageLayout
-        title={organization.name}
-        organizationSlug={organizationSlug}
-      />
+      <PageLayout title={organization.name} />
       {hasAccess ? (
         <div className="grid gap-8 p-4 lg:grid-cols-2">
           <EditOrganization organization={organization} />

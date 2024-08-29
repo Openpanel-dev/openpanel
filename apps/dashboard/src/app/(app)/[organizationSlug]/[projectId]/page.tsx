@@ -1,4 +1,3 @@
-import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import ServerLiveCounter from '@/components/overview/live-counter';
@@ -10,7 +9,6 @@ import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 
 import OverviewMetrics from '../../../../components/overview/overview-metrics';
-import { StickyBelowHeader } from './layout-sticky-below-header';
 import { OverviewReportRange } from './overview-sticky-header';
 
 interface PageProps {
@@ -20,14 +18,11 @@ interface PageProps {
   };
 }
 
-export default function Page({
-  params: { organizationSlug, projectId },
-}: PageProps) {
+export default function Page({ params: { projectId } }: PageProps) {
   return (
     <>
-      <PageLayout title="Overview" organizationSlug={organizationSlug} />
-      <StickyBelowHeader>
-        <div className="flex justify-between gap-2 p-4">
+      <div className="col gap-2 p-4">
+        <div className="flex justify-between gap-2">
           <div className="flex gap-2">
             <OverviewReportRange />
             <OverviewFiltersDrawer projectId={projectId} mode="events" />
@@ -38,8 +33,8 @@ export default function Page({
           </div>
         </div>
         <OverviewFiltersButtons />
-      </StickyBelowHeader>
-      <div className="grid grid-cols-6 gap-4 p-4">
+      </div>
+      <div className="grid grid-cols-6 gap-4 p-4 pt-0">
         <OverviewMetrics projectId={projectId} />
         <OverviewTopSources projectId={projectId} />
         <OverviewTopPages projectId={projectId} />

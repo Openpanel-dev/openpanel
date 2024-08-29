@@ -17,7 +17,7 @@ type Props = {
 const Retention = ({ params: { projectId, organizationSlug } }: Props) => {
   return (
     <>
-      <PageLayout title="Retention" organizationSlug={organizationSlug} />
+      <PageLayout title="Retention" />
       <div className="flex flex-col gap-8 p-8">
         <Alert>
           <AlertCircleIcon size={18} />

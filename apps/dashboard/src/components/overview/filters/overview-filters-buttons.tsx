@@ -23,7 +23,7 @@ export function OverviewFiltersButtons({
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   if (filters.length === 0 && events.length === 0) return null;
   return (
-    <div className={cn('flex flex-wrap gap-2 px-4 pb-4', className)}>
+    <div className={cn('flex flex-wrap gap-2', className)}>
       {events.map((event) => (
         <Button
           key={event}
@@ -32,7 +32,7 @@ export function OverviewFiltersButtons({
           icon={X}
           onClick={() => setEvents((p) => p.filter((e) => e !== event))}
         >
-          <strong>{event}</strong>
+          <strong className="font-semibold">{event}</strong>
         </Button>
       ))}
       {filters.map((filter) => {
@@ -49,7 +49,7 @@ export function OverviewFiltersButtons({
             onClick={() => setFilter(filter.name, filter.value[0], 'is')}
           >
             <span className="mr-1">{getPropertyLabel(filter.name)} is</span>
-            <strong>{filter.value[0]}</strong>
+            <strong className="font-semibold">{filter.value[0]}</strong>
           </Button>
         );
       })}

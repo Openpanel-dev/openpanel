@@ -6,23 +6,13 @@ import { getUserById } from '@openpanel/db';
 import EditProfile from './edit-profile';
 import { Logout } from './logout';
 
-interface PageProps {
-  params: {
-    organizationSlug: string;
-  };
-}
-export default async function Page({
-  params: { organizationSlug },
-}: PageProps) {
+export default async function Page() {
   const { userId } = auth();
   const profile = await getUserById(userId!);
 
   return (
     <>
-      <PageLayout
-        title={profile.lastName}
-        organizationSlug={organizationSlug}
-      />
+      <PageLayout title={profile.lastName} />
       <div className="flex flex-col gap-4 p-4">
         <EditProfile profile={profile} />
         <Logout />

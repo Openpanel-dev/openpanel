@@ -1,6 +1,6 @@
 import { cn } from '@/utils/cn';
 
-const padding = 'p-4 md:p-8';
+const padding = 'p-4 lg:p-8';
 
 export const Padding = ({
   className,

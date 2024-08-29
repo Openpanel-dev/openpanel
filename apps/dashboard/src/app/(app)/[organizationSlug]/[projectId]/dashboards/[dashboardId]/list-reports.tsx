@@ -31,15 +31,16 @@ import {
   getDefaultIntervalByRange,
   timeWindows,
 } from '@openpanel/constants';
-import type { getReportsByDashboardId } from '@openpanel/db';
+import type { getReportsByDashboardId, IServiceDashboard } from '@openpanel/db';
 
 import { OverviewReportRange } from '../../overview-sticky-header';
 
 interface ListReportsProps {
   reports: Awaited<ReturnType<typeof getReportsByDashboardId>>;
+  dashboard: IServiceDashboard;
 }
 
-export function ListReports({ reports }: ListReportsProps) {
+export function ListReports({ reports, dashboard }: ListReportsProps) {
   const router = useRouter();
   const params = useAppParams<{ dashboardId: string }>();
   const { range, startDate, endDate } = useOverviewOptions();
@@ -52,24 +53,27 @@ export function ListReports({ reports }: ListReportsProps) {
   });
   return (
     <>
-      <StickyBelowHeader className="flex items-center justify-between p-4">
-        <OverviewReportRange />
-        <Button
-          icon={PlusIcon}
-          onClick={() => {
-            router.push(
-              `/${params.organizationSlug}/${
-                params.projectId
-              }/reports?${new URLSearchParams({
-                dashboardId: params.dashboardId,
-              }).toString()}`
-            );
-          }}
-        >
-          <span className="max-sm:hidden">Create report</span>
-          <span className="sm:hidden">Report</span>
-        </Button>
-      </StickyBelowHeader>
+      <div className="row items-center justify-between">
+        <h1 className="text-3xl font-semibold">{dashboard.name}</h1>
+        <div className="flex items-center justify-end gap-2">
+          <OverviewReportRange />
+          <Button
+            icon={PlusIcon}
+            onClick={() => {
+              router.push(
+                `/${params.organizationSlug}/${
+                  params.projectId
+                }/reports?${new URLSearchParams({
+                  dashboardId: params.dashboardId,
+                }).toString()}`
+              );
+            }}
+          >
+            <span className="max-sm:hidden">Create report</span>
+            <span className="sm:hidden">Report</span>
+          </Button>
+        </div>
+      </div>
       <div className="mx-auto flex max-w-3xl flex-col gap-8 p-4 md:p-8">
         {reports.map((report) => {
           const chartRange = report.range;

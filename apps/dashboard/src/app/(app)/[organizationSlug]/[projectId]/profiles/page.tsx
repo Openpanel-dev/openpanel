@@ -28,7 +28,7 @@ export default function Page({
 }: PageProps) {
   return (
     <>
-      <PageLayout title="Profiles" organizationSlug={organizationSlug} />
+      <PageLayout title="Profiles" />
       <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
         <ProfileListServer
           projectId={projectId}

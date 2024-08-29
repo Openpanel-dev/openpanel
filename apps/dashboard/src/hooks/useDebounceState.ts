@@ -7,7 +7,7 @@ interface DebouncedState<T> {
   set: React.Dispatch<React.SetStateAction<T>>;
 }
 
-export function useDebounceVal<T>(
+export function useDebounceState<T>(
   initialValue: T,
   delay = 500,
   options?: Parameters<typeof debounce>[2]

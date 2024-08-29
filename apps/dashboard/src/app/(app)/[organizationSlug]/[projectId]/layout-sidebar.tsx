@@ -1,30 +1,34 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Logo } from '@/components/logo';
-import { buttonVariants } from '@/components/ui/button';
+import { LogoSquare } from '@/components/logo';
+import SettingsToggle from '@/components/settings-toggle';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import { Rotate as Hamburger } from 'hamburger-react';
-import { PlusIcon } from 'lucide-react';
-import Link from 'next/link';
+import { MenuIcon, XIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
-import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
+import type {
+  getProjectsByOrganizationSlug,
+  IServiceDashboards,
+  IServiceOrganization,
+} from '@openpanel/db';
 
 import LayoutMenu from './layout-menu';
-import LayoutOrganizationSelector from './layout-organization-selector';
+import LayoutProjectSelector from './layout-project-selector';
 
 interface LayoutSidebarProps {
   organizations: IServiceOrganization[];
   dashboards: IServiceDashboards;
   organizationSlug: string;
   projectId: string;
+  projects: Awaited<ReturnType<typeof getProjectsByOrganizationSlug>>;
 }
 export function LayoutSidebar({
   organizations,
   dashboards,
-  organizationSlug,
-  projectId,
+  projects,
 }: LayoutSidebarProps) {
   const [active, setActive] = useState(false);
   const pathname = usePathname();
@@ -52,12 +56,22 @@ export function LayoutSidebar({
         )}
       >
         <div className="absolute -right-12 flex h-16 items-center lg:hidden">
-          <Hamburger toggled={active} onToggle={setActive} size={20} />
+          <Button
+            size="icon"
+            onClick={() => setActive((p) => !p)}
+            variant={'outline'}
+          >
+            {active ? <XIcon size={16} /> : <MenuIcon size={16} />}
+          </Button>
         </div>
-        <div className="flex h-16 shrink-0 items-center border-b border-border px-4">
-          <Link href="/">
-            <Logo />
-          </Link>
+        <div className="flex h-16 shrink-0 items-center gap-4 border-b border-border px-4">
+          <LogoSquare className="max-h-8" />
+          <LayoutProjectSelector
+            align="start"
+            projects={projects}
+            organizations={organizations}
+          />
+          <SettingsToggle />
         </div>
         <div className="flex flex-grow flex-col gap-2 overflow-auto p-4">
           <LayoutMenu dashboards={dashboards} />
@@ -66,16 +80,6 @@ export function LayoutSidebar({
         </div>
         <div className="fixed bottom-0 left-0 right-0">
           <div className="h-8 w-full bg-gradient-to-t from-card to-card/0"></div>
-          <div className="flex flex-col gap-2 bg-card p-4 pt-0">
-            <Link
-              className={cn('flex gap-2', buttonVariants())}
-              href={`/${organizationSlug}/${projectId}/reports`}
-            >
-              <PlusIcon size={16} />
-              Create a report
-            </Link>
-            <LayoutOrganizationSelector organizations={organizations} />
-          </div>
         </div>
       </div>
     </>

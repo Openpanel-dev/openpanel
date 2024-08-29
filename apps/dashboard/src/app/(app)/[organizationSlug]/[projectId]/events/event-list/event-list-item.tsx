@@ -1,17 +1,16 @@
 'use client';
 
-import { useState } from 'react';
 import { SerieIcon } from '@/components/report/chart/SerieIcon';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useNumber } from '@/hooks/useNumerFormatter';
+import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
 
 import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/db';
 
-import { EventDetails } from './event-details';
 import { EventIcon } from './event-icon';
 
 type EventListItemProps = IServiceEventMinimal | IServiceEvent;
@@ -20,7 +19,6 @@ export function EventListItem(props: EventListItemProps) {
   const { organizationSlug, projectId } = useAppParams();
   const { createdAt, name, path, duration, meta } = props;
   const profile = 'profile' in props ? props.profile : null;
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   const number = useNumber();
 
@@ -52,17 +50,12 @@ export function EventListItem(props: EventListItemProps) {
 
   return (
     <>
-      {/* {!isMinimal && (
-        <EventDetails
-          event={props}
-          open={isDetailsOpen}
-          setOpen={setIsDetailsOpen}
-        />
-      )} */}
       <button
         onClick={() => {
           if (!isMinimal) {
-            setIsDetailsOpen(true);
+            pushModal('EventDetails', {
+              id: props.id,
+            });
           }
         }}
         className={cn(
@@ -73,12 +66,7 @@ export function EventListItem(props: EventListItemProps) {
       >
         <div>
           <div className="flex items-center gap-4 text-left ">
-            <EventIcon
-              size="sm"
-              name={name}
-              meta={meta}
-              projectId={projectId}
-            />
+            <EventIcon size="sm" name={name} meta={meta} />
             <span>
               <span className="font-medium">{renderName()}</span>
               {'  '}

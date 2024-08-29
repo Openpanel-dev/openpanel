@@ -1,22 +1,19 @@
 'use client';
 
 import { useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
+import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { useUser } from '@clerk/nextjs';
 import {
-  BookmarkIcon,
-  BuildingIcon,
-  CogIcon,
   GanttChartIcon,
   Globe2Icon,
-  KeySquareIcon,
   LayoutPanelTopIcon,
-  UserIcon,
-  UserSearchIcon,
+  PlusIcon,
+  ScanEyeIcon,
   UsersIcon,
   WallpaperIcon,
-  WarehouseIcon,
 } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 import Link from 'next/link';
@@ -60,7 +57,6 @@ interface LayoutMenuProps {
 export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
   const { user } = useUser();
 
-  const pathname = usePathname();
   const params = useAppParams();
   const hasProjectId =
     params.projectId &&
@@ -104,59 +100,39 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
         href={`/${params.organizationSlug}/${projectId}/events`}
       />
       <LinkWithIcon
-        icon={UserSearchIcon}
-        label="Retention"
-        href={`/${params.organizationSlug}/${projectId}/retention`}
-      />
-      <LinkWithIcon
         icon={UsersIcon}
         label="Profiles"
         href={`/${params.organizationSlug}/${projectId}/profiles`}
       />
       <LinkWithIcon
-        icon={CogIcon}
-        label="Settings"
-        href={`/${params.organizationSlug}/${projectId}/settings/organization`}
+        icon={ScanEyeIcon}
+        label="Retention"
+        href={`/${params.organizationSlug}/${projectId}/retention`}
       />
-      {pathname?.includes('/settings/') && (
-        <div className="flex flex-col gap-1 pl-7">
-          <LinkWithIcon
-            icon={BuildingIcon}
-            label="Organization"
-            href={`/${params.organizationSlug}/${projectId}/settings/organization`}
-          />
-          <LinkWithIcon
-            icon={WarehouseIcon}
-            label="Projects"
-            href={`/${params.organizationSlug}/${projectId}/settings/projects`}
-          />
-          <LinkWithIcon
-            icon={UserIcon}
-            label="Profile (yours)"
-            href={`/${params.organizationSlug}/${projectId}/settings/profile`}
-          />
-          <LinkWithIcon
-            icon={BookmarkIcon}
-            label="References"
-            href={`/${params.organizationSlug}/${projectId}/settings/references`}
-          />
+
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="text-muted-foreground">Your dashboards</div>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={() => pushModal('AddDashboard')}
+          >
+            <PlusIcon size={16} />
+          </Button>
         </div>
-      )}
-      {dashboards.length > 0 && (
-        <div className="mt-8">
-          <div className="mb-2  font-medium">Your dashboards</div>
-          <div className="flex flex-col gap-2">
-            {dashboards.map((item) => (
-              <LinkWithIcon
-                key={item.id}
-                icon={LayoutPanelTopIcon}
-                label={item.name}
-                href={`/${item.organizationSlug}/${item.projectId}/dashboards/${item.id}`}
-              />
-            ))}
-          </div>
+        <div className="flex flex-col gap-2">
+          {dashboards.map((item) => (
+            <LinkWithIcon
+              key={item.id}
+              icon={LayoutPanelTopIcon}
+              label={item.name}
+              href={`/${item.organizationSlug}/${item.projectId}/dashboards/${item.id}`}
+            />
+          ))}
         </div>
-      )}
+      </div>
     </>
   );
 }

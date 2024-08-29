@@ -7,7 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useDebounceVal } from '@/hooks/useDebounceVal';
+import { useDebounceState } from '@/hooks/useDebounceState';
 import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
@@ -28,7 +28,7 @@ const FIFTEEN_SECONDS = 1000 * 30;
 
 export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
   const client = useQueryClient();
-  const counter = useDebounceVal(data, 1000, {
+  const counter = useDebounceState(data, 1000, {
     maxWait: 5000,
   });
   const lastRefresh = useRef(Date.now());

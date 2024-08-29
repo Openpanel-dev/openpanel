@@ -24,7 +24,7 @@ export default async function Page({
 
   return (
     <>
-      <PageLayout title="References" organizationSlug={organizationSlug} />
+      <PageLayout title="References" />
       <ListReferences data={references} />
     </>
   );

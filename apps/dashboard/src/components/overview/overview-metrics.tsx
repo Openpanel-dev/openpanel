@@ -192,7 +192,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 
   return (
     <>
-      <div className="relative -top-0.5 col-span-6 -m-4 mb-0 md:m-0">
+      <div className="relative -top-0.5 col-span-6 -m-4 mb-0 mt-0 md:m-0">
         <div className="card mb-2 grid grid-cols-4">
           {reports.map((report, index) => (
             <button

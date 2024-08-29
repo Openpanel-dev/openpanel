@@ -1,3 +1,4 @@
+import { TRPCError } from '@trpc/server';
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
@@ -6,7 +7,9 @@ import {
   convertClickhouseDateToJs,
   db,
   getEventList,
+  getEvents,
   getEventsCount,
+  TABLE_NAMES,
 } from '@openpanel/db';
 import {
   zChartEvent,
@@ -42,7 +45,29 @@ export const eventRouter = createTRPCRouter({
       });
     }),
 
-  events: publicProcedure
+  byId: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        projectId: z.string(),
+      })
+    )
+    .query(async ({ input: { id, projectId } }) => {
+      const res = await getEvents(
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE id = ${escape(id)} AND project_id = ${escape(projectId)};`
+      );
+
+      if (!res?.[0]) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Event not found',
+        });
+      }
+
+      return res[0];
+    }),
+
+  events: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -59,6 +84,32 @@ export const eventRouter = createTRPCRouter({
       })
     )
     .query(async ({ input }) => getEventList(input)),
+  conversions: publicProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      })
+    )
+    .query(async ({ input: { projectId } }) => {
+      const conversions = await db.eventMeta.findMany({
+        where: {
+          projectId,
+          conversion: true,
+        },
+      });
+
+      if (conversions.length === 0) {
+        return [];
+      }
+
+      return getEvents(
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND name IN (${conversions.map((c) => escape(c.name)).join(', ')}) ORDER BY created_at DESC LIMIT 20;`,
+        {
+          profile: true,
+          meta: true,
+        }
+      );
+    }),
 
   bots: publicProcedure
     .input(

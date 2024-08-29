@@ -7,6 +7,7 @@ import { ChevronLeftIcon, FullscreenIcon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useDebounce } from 'usehooks-ts';
 
+import { Button } from './ui/button';
 import { Tooltiper } from './ui/tooltip';
 
 type Props = {
@@ -37,18 +38,21 @@ export const Fullscreen = (props: Props) => {
 };
 
 export const FullscreenOpen = () => {
-  const [, setIsFullscreen] = useFullscreen();
+  const [fullscreen, setIsFullscreen] = useFullscreen();
+  if (fullscreen) {
+    return null;
+  }
   return (
     <Tooltiper content="Toggle fullscreen" asChild>
-      <button
-        className="flex items-center gap-2"
+      <Button
+        variant="outline"
+        size="icon"
         onClick={() => {
           setIsFullscreen((p) => !p);
         }}
       >
-        <FullscreenIcon />
-        Realtime
-      </button>
+        <FullscreenIcon className="size-4" />
+      </Button>
     </Tooltiper>
   );
 };

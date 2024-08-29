@@ -6,6 +6,7 @@ import {
   getDashboardsByProjectId,
 } from '@openpanel/db';
 
+import LayoutContent from './layout-content';
 import { LayoutSidebar } from './layout-sidebar';
 import SideEffects from './side-effects';
 
@@ -46,9 +47,15 @@ export default async function AppLayout({
   return (
     <div id="dashboard">
       <LayoutSidebar
-        {...{ organizationSlug, projectId, organizations, dashboards }}
+        {...{
+          organizationSlug,
+          projectId,
+          organizations,
+          projects,
+          dashboards,
+        }}
       />
-      <div className="transition-all lg:pl-72">{children}</div>
+      <LayoutContent>{children}</LayoutContent>
       <SideEffects />
     </div>
   );
