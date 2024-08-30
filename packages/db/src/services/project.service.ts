@@ -63,6 +63,9 @@ export async function getCurrentProjects(organizationSlug: string) {
       where: {
         organizationSlug,
       },
+      orderBy: {
+        eventsCount: 'desc',
+      },
     }),
     db.member.findMany({
       where: {
@@ -73,6 +76,7 @@ export async function getCurrentProjects(organizationSlug: string) {
     db.projectAccess.findMany({
       where: {
         userId: session.userId,
+        organizationId: organizationSlug,
       },
     }),
   ]);
