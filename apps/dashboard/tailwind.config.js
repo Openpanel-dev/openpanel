@@ -68,8 +68,8 @@ const config = {
   ],
   theme: {
     fontFamily: {
-      sans: ['var(--font-sans)'],
-      serif: ['var(--font-serif)'],
+      sans: ['var(--font-geist-sans)'],
+      mono: ['var(--font-geist-mono)'],
     },
     fontSize: {
       xs: ['10px', '10px'],

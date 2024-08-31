@@ -8,14 +8,9 @@ import {
   db,
   getEventList,
   getEvents,
-  getEventsCount,
   TABLE_NAMES,
 } from '@openpanel/db';
-import {
-  zChartEvent,
-  zChartEventFilter,
-  zChartInput,
-} from '@openpanel/validation';
+import { zChartEventFilter } from '@openpanel/validation';
 
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';

@@ -14,7 +14,7 @@ export const formatNumber =
       return 'N/A';
     }
     return new Intl.NumberFormat(locale, {
-      maximumSignificantDigits: 20,
+      maximumSignificantDigits: 3,
     }).format(value);
   };
 

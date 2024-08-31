@@ -75,8 +75,6 @@ export function LayoutSidebar({
         </div>
         <div className="flex flex-grow flex-col gap-2 overflow-auto p-4">
           <LayoutMenu dashboards={dashboards} />
-          {/* Placeholder for LayoutOrganizationSelector */}
-          <div className="block h-32 shrink-0"></div>
         </div>
         <div className="fixed bottom-0 left-0 right-0">
           <div className="h-8 w-full bg-gradient-to-t from-card to-card/0"></div>

@@ -75,7 +75,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {dashboards.map((item) => {
           const visibleReports = item.reports.slice(
             0,
@@ -88,7 +88,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                   href={`/${organizationSlug}/${projectId}/dashboards/${item.id}`}
                   className="flex flex-col p-4 @container"
                 >
-                  <div>
+                  <div className="col gap-2">
                     <div className="font-medium">{item.name}</div>
                     <div className="text-sm text-muted-foreground">
                       {format(item.updatedAt, 'HH:mm · MMM d')}
@@ -96,8 +96,8 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                   </div>
                   <div
                     className={cn(
-                      'mt-4 grid gap-4',
-                      'grid-cols-2 @xs:grid-cols-3 @lg:grid-cols-4'
+                      'mt-4 grid gap-2',
+                      'grid-cols-1 @sm:grid-cols-2'
                     )}
                   >
                     {visibleReports.map((report) => {
@@ -114,20 +114,20 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
 
                       return (
                         <div
-                          className="flex flex-col rounded-xl bg-def-200 p-4"
+                          className="row items-center gap-2 rounded-md bg-def-200 p-4 py-2"
                           key={report.id}
                         >
-                          <Icon size={24} className="text-highlight" />
-                          <div className="mt-2 w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm">
+                          <Icon size={24} />
+                          <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
                             {report.name}
                           </div>
                         </div>
                       );
                     })}
                     {item.reports.length > 6 && (
-                      <div className="flex flex-col rounded-xl bg-def-200 p-4">
-                        <PlusIcon size={24} className="text-highlight" />
-                        <div className="mt-2 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
+                      <div className="row items-center gap-2 rounded-md bg-def-100 p-4 py-2">
+                        <PlusIcon size={24} />
+                        <div className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm">
                           {item.reports.length - 5} more
                         </div>
                       </div>

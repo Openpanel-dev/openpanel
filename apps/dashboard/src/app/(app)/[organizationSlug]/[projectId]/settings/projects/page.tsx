@@ -1,4 +1,5 @@
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
+import { Padding } from '@/components/ui/padding';
 
 import {
   getClientsByOrganizationSlug,
@@ -22,9 +23,8 @@ export default async function Page({
   ]);
 
   return (
-    <>
-      <PageLayout title="Projects" />
+    <Padding>
       <ListProjects projects={projects} clients={clients} />
-    </>
+    </Padding>
   );
 }

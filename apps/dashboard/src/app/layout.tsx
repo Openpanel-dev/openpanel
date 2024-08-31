@@ -6,7 +6,8 @@ import Providers from './providers';
 import '@/styles/globals.css';
 import '/node_modules/flag-icons/css/flag-icons.min.css';
 
-import { Inter } from 'next/font/google';
+import { GeistMono } from 'geist/font/mono';
+import { GeistSans } from 'geist/font/sans';
 
 export const metadata = {
   title: 'Overview - Openpanel.dev',
@@ -19,13 +20,6 @@ export const viewport = {
   userScalable: 1,
 };
 
-const body = Inter({
-  display: 'swap',
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-sans',
-});
-
 export default function RootLayout({
   children,
 }: {
@@ -36,7 +30,8 @@ export default function RootLayout({
       <body
         className={cn(
           'grainy min-h-screen bg-def-100 font-sans text-base antialiased',
-          body.variable
+          GeistSans.variable,
+          GeistMono.variable
         )}
       >
         <NextTopLoader

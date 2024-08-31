@@ -93,7 +93,12 @@ export function WidgetButtons({
     >
       {Children.map(children, (child, index) => {
         return (
-          <div className={cn('flex', slice < index ? hidden : 'opacity-100')}>
+          <div
+            className={cn(
+              'flex [&_button]:leading-normal',
+              slice < index ? hidden : 'opacity-100'
+            )}
+          >
             {child}
           </div>
         );
@@ -120,6 +125,24 @@ export function WidgetButtons({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+    </div>
+  );
+}
+
+export function WidgetFooter({
+  className,
+  children,
+  ...props
+}: WidgetHeadProps) {
+  return (
+    <div
+      className={cn(
+        'flex rounded-b-md border-t bg-def-100 p-2  py-1',
+        className
+      )}
+      {...props}
+    >
+      {children}
     </div>
   );
 }

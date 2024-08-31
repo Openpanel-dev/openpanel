@@ -9,6 +9,7 @@ import {
   getEvents,
   getLiveVisitors,
   getProfileById,
+  getProfileByIdCached,
   TABLE_NAMES,
   transformMinimalEvent,
 } from '@openpanel/db';
@@ -144,7 +145,10 @@ export async function wsProjectEvents(
   const message = async (channel: string, message: string) => {
     const event = getSuperJson<IServiceEvent>(message);
     if (event?.projectId === params.projectId) {
-      const profile = await getProfileById(event.profileId, event.projectId);
+      const profile = await getProfileByIdCached(
+        event.profileId,
+        event.projectId
+      );
       connection.socket.send(
         superjson.stringify(
           access

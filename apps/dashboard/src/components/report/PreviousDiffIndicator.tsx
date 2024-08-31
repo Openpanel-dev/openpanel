@@ -62,10 +62,10 @@ export function PreviousDiffIndicator({
 
   const renderIcon = () => {
     if (state === 'positive') {
-      return <ArrowUpIcon strokeWidth={3} size={12} color="#000" />;
+      return <ArrowUpIcon strokeWidth={3} size={10} color="#000" />;
     }
     if (state === 'negative') {
-      return <ArrowDownIcon strokeWidth={3} size={12} color="#000" />;
+      return <ArrowDownIcon strokeWidth={3} size={10} color="#000" />;
     }
     return null;
   };
@@ -74,7 +74,7 @@ export function PreviousDiffIndicator({
     <>
       <div
         className={cn(
-          'flex items-center gap-1 font-medium',
+          'font-mono flex items-center gap-1 font-medium',
           size === 'lg' && 'gap-2',
           className
         )}

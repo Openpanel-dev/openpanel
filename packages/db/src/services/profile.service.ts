@@ -1,4 +1,4 @@
-import { uniq } from 'ramda';
+import { omit, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 
 import { toObject } from '@openpanel/common';
@@ -58,6 +58,8 @@ export async function getProfileById(id: string, projectId: string) {
 
   return transformProfile(profile);
 }
+
+export const getProfileByIdCached = cacheable(getProfileById, 60 * 30);
 
 interface GetProfileListOptions {
   projectId: string;
@@ -122,6 +124,7 @@ export type IServiceProfile = Omit<
   createdAt: Date;
   isExternal: boolean;
   properties: Record<string, unknown> & {
+    region?: string;
     country?: string;
     city?: string;
     os?: string;
@@ -130,6 +133,10 @@ export type IServiceProfile = Omit<
     browser_version?: string;
     referrer_name?: string;
     referrer_type?: string;
+    device?: string;
+    brand?: string;
+    model?: string;
+    referrer?: string;
   };
 };
 
@@ -167,7 +174,10 @@ export function transformProfile({
     firstName: first_name,
     lastName: last_name,
     isExternal: profile.is_external,
-    properties: toObject(profile.properties),
+    properties: omit(
+      ['browserVersion', 'osVersion'],
+      toObject(profile.properties)
+    ),
     createdAt: new Date(created_at),
   };
 }

@@ -13,7 +13,7 @@ import { LazyChart } from '../report/chart/LazyChart';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
 import OverviewDetailsButton from './overview-details-button';
-import { WidgetButtons, WidgetHead } from './overview-widget';
+import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
@@ -143,10 +143,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
-          <div className="title">
-            {widget.title}
-            <OverviewChartToggle {...{ chartType, setChartType }} />
-          </div>
+          <div className="title">{widget.title}</div>
           <WidgetButtons>
             {widgets.map((w) => (
               <button
@@ -180,8 +177,11 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
               }
             }}
           />
-          <OverviewDetailsButton chart={widget.chart} />
         </WidgetBody>
+        <WidgetFooter>
+          <OverviewDetailsButton chart={widget.chart} />
+          <OverviewChartToggle {...{ chartType, setChartType }} />
+        </WidgetFooter>
       </Widget>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>

@@ -78,9 +78,9 @@ export function useColumns() {
       cell({ row }) {
         const { country, city } = row.original;
         return (
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="inline-flex min-w-full flex-none items-center gap-2">
             <SerieIcon name={country} />
-            <span className="truncate">{city}</span>
+            <span>{city}</span>
           </div>
         );
       },
@@ -91,9 +91,9 @@ export function useColumns() {
       cell({ row }) {
         const { os } = row.original;
         return (
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="flex min-w-full items-center gap-2">
             <SerieIcon name={os} />
-            <span className="truncate">{os}</span>
+            <span>{os}</span>
           </div>
         );
       },
@@ -104,9 +104,9 @@ export function useColumns() {
       cell({ row }) {
         const { browser } = row.original;
         return (
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="inline-flex min-w-full flex-none items-center gap-2">
             <SerieIcon name={browser} />
-            <span className="truncate">{browser}</span>
+            <span>{browser}</span>
           </div>
         );
       },

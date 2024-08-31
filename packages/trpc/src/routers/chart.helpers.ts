@@ -27,6 +27,7 @@ import {
   sum,
 } from '@openpanel/common';
 import type { ISerieDataItem } from '@openpanel/common';
+import { alphabetIds } from '@openpanel/constants';
 import {
   chQuery,
   createSqlBuilder,
@@ -523,7 +524,11 @@ export async function getChart(input: IChartInput) {
     uniq(pluck('name', input.events)).length !==
       pluck('name', input.events).length && series.length > 1;
   const final: FinalChart = {
-    series: series.map((serie) => {
+    series: series.map((serie, index) => {
+      const eventIndex = input.events.findIndex(
+        (event) => event.id === serie.event.id
+      );
+      const alphaId = alphabetIds[eventIndex];
       const previousSerie = previousSeries?.find(
         (prevSerie) => getSerieId(prevSerie) === getSerieId(serie)
       );
@@ -541,10 +546,7 @@ export async function getChart(input: IChartInput) {
       return {
         id: getSerieId(serie),
         names: includeEventName
-          ? [
-              `(${event.id || event.name}) ${serie.name[0]}`,
-              ...serie.name.slice(1),
-            ]
+          ? [`(${alphaId}) ${serie.name[0]}`, ...serie.name.slice(1)]
           : serie.name,
         event,
         metrics: {

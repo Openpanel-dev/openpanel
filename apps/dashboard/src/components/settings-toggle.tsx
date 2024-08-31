@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuSub,
@@ -13,11 +14,10 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CheckIcon, MoreHorizontalIcon } from 'lucide-react';
+import { CheckIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { ProjectLink } from './links';
-import { Command, CommandInput } from './ui/command';
 
 interface Props {
   className?: string;
@@ -35,6 +35,16 @@ export default function SettingsToggle({ className }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-56">
+        <DropdownMenuItem asChild>
+          <ProjectLink href="/reports">
+            Create report
+            <DropdownMenuShortcut>
+              <PlusIcon className="h-4 w-4" />
+            </DropdownMenuShortcut>
+          </ProjectLink>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>Settings</DropdownMenuLabel>
         <DropdownMenuItem asChild>
           <ProjectLink href="/settings/organization">Organization</ProjectLink>
         </DropdownMenuItem>

@@ -6,22 +6,23 @@ import { Button } from '@/components/ui/button';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { GanttChartIcon } from 'lucide-react';
 
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceProfile } from '@openpanel/db';
 
 import { useColumns } from './columns';
 
+type CommonProps = {
+  type?: 'profiles' | 'power-users';
+  query: UseQueryResult<IServiceProfile[]>;
+};
 type Props =
-  | {
-      query: UseQueryResult<IServiceEvent[]>;
-    }
-  | {
-      query: UseQueryResult<IServiceEvent[]>;
+  | CommonProps
+  | (CommonProps & {
       cursor: number;
       setCursor: Dispatch<SetStateAction<number>>;
-    };
+    });
 
-export const EventsTable = ({ query, ...props }: Props) => {
-  const columns = useColumns();
+export const ProfilesTable = ({ type, query, ...props }: Props) => {
+  const columns = useColumns(type);
   const { data, isFetching, isLoading } = query;
 
   if (isLoading) {
@@ -38,8 +39,8 @@ export const EventsTable = ({ query, ...props }: Props) => {
 
   if (data?.length === 0) {
     return (
-      <FullPageEmptyState title="No events here" icon={GanttChartIcon}>
-        <p>Could not find any events</p>
+      <FullPageEmptyState title="No profiles here" icon={GanttChartIcon}>
+        <p>Could not find any profiles</p>
         {'cursor' in props && props.cursor !== 0 && (
           <Button
             className="mt-8"

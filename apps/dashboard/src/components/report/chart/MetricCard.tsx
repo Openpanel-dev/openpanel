@@ -89,21 +89,21 @@ export function MetricCard({
           )}
         </AutoSizer>
       </div>
-      <div className="relative">
+      <div className="col relative gap-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2 text-left font-semibold">
-            <span className="overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-2 text-left">
+            <span className="truncate text-muted-foreground">
               <SerieName name={serie.names} />
             </span>
           </div>
         </div>
         <div className="flex items-end justify-between">
-          <div className="overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-bold">
+          <div className="font-mono truncate text-3xl font-bold">
             {renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
           </div>
           <PreviousDiffIndicator
             {...previous}
-            className="text-xs text-muted-foreground"
+            className="text-sm text-muted-foreground"
           />
         </div>
       </div>

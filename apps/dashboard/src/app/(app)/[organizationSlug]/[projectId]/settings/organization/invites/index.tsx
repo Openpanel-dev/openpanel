@@ -1,6 +1,9 @@
+import { TableButtons } from '@/components/data-table';
+import { InvitesTable } from '@/components/settings/invites';
+
 import { getInvites, getProjectsByOrganizationSlug } from '@openpanel/db';
 
-import Invites from './invites';
+import CreateInvite from './create-invite';
 
 interface Props {
   organizationSlug: string;
@@ -12,7 +15,14 @@ const InvitesServer = async ({ organizationSlug }: Props) => {
     getProjectsByOrganizationSlug(organizationSlug),
   ]);
 
-  return <Invites invites={invites} projects={projects} />;
+  return (
+    <div>
+      <TableButtons>
+        <CreateInvite projects={projects} />
+      </TableButtons>
+      <InvitesTable data={invites} projects={projects} />
+    </div>
+  );
 };
 
 export default InvitesServer;

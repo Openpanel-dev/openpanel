@@ -1,8 +1,11 @@
 import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { PageTabs, PageTabsLink } from '@/components/page-tabs';
+import { Padding } from '@/components/ui/padding';
 import { auth } from '@clerk/nextjs/server';
 import { ShieldAlertIcon } from 'lucide-react';
 import { notFound } from 'next/navigation';
+import { parseAsStringEnum } from 'nuqs';
 
 import { db } from '@openpanel/db';
 
@@ -14,11 +17,16 @@ interface PageProps {
   params: {
     organizationSlug: string;
   };
+  searchParams: Record<string, string>;
 }
 
 export default async function Page({
   params: { organizationSlug },
+  searchParams,
 }: PageProps) {
+  const tab = parseAsStringEnum(['org', 'members', 'invites'])
+    .withDefault('org')
+    .parseServerSide(searchParams.tab);
   const session = auth();
   const organization = await db.organization.findUnique({
     where: {
@@ -49,27 +57,36 @@ export default async function Page({
 
   const hasAccess = member?.role === 'org:admin';
 
+  if (!hasAccess) {
+    return (
+      <FullPageEmptyState icon={ShieldAlertIcon} title="No access">
+        You do not have access to this page. You need to be an admin of this
+        organization to access this page.
+      </FullPageEmptyState>
+    );
+  }
+
   return (
-    <>
-      <PageLayout title={organization.name} />
-      {hasAccess ? (
-        <div className="grid gap-8 p-4 lg:grid-cols-2">
-          <EditOrganization organization={organization} />
-          <div className="col-span-2">
-            <MembersServer organizationSlug={organizationSlug} />
-          </div>
-          <div className="col-span-2">
-            <InvitesServer organizationSlug={organizationSlug} />
-          </div>
-        </div>
-      ) : (
-        <>
-          <FullPageEmptyState icon={ShieldAlertIcon} title="No access">
-            You do not have access to this page. You need to be an admin of this
-            organization to access this page.
-          </FullPageEmptyState>
-        </>
+    <Padding>
+      <PageTabs className="mb-4">
+        <PageTabsLink href={`?tab=org`} isActive={tab === 'org'}>
+          Organization
+        </PageTabsLink>
+        <PageTabsLink href={`?tab=members`} isActive={tab === 'members'}>
+          Members
+        </PageTabsLink>
+        <PageTabsLink href={`?tab=invites`} isActive={tab === 'invites'}>
+          Invites
+        </PageTabsLink>
+      </PageTabs>
+
+      {tab === 'org' && <EditOrganization organization={organization} />}
+      {tab === 'members' && (
+        <MembersServer organizationSlug={organizationSlug} />
       )}
-    </>
+      {tab === 'invites' && (
+        <InvitesServer organizationSlug={organizationSlug} />
+      )}
+    </Padding>
   );
 }

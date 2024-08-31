@@ -1,4 +1,5 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { Padding } from '@/components/ui/padding';
 import withSuspense from '@/hocs/with-suspense';
 
 import { getDashboardsByProjectId } from '@openpanel/db';
@@ -14,10 +15,10 @@ const ListDashboardsServer = async ({ projectId }: Props) => {
   const dashboards = await getDashboardsByProjectId(projectId);
 
   return (
-    <div>
-      {dashboards.length > 0 && <HeaderDashboards />}
+    <Padding>
+      <HeaderDashboards />
       <ListDashboards dashboards={dashboards} />;
-    </div>
+    </Padding>
   );
 };
 

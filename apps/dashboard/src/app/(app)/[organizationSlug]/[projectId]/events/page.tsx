@@ -1,4 +1,4 @@
-import { PageTabs, PageTabsItem } from '@/components/page-tabs';
+import { PageTabs, PageTabsLink } from '@/components/page-tabs';
 import { Padding } from '@/components/ui/padding';
 import { parseAsStringEnum } from 'nuqs';
 
@@ -27,18 +27,18 @@ export default function Page({
       <Padding>
         <div className="mb-4">
           <PageTabs>
-            <PageTabsItem href={`?tab=events`} isActive={tab === 'events'}>
+            <PageTabsLink href={`?tab=events`} isActive={tab === 'events'}>
               Events
-            </PageTabsItem>
-            <PageTabsItem
+            </PageTabsLink>
+            <PageTabsLink
               href={`?tab=conversions`}
               isActive={tab === 'conversions'}
             >
               Conversions
-            </PageTabsItem>
-            <PageTabsItem href={`?tab=charts`} isActive={tab === 'charts'}>
+            </PageTabsLink>
+            <PageTabsLink href={`?tab=charts`} isActive={tab === 'charts'}>
               Charts
-            </PageTabsItem>
+            </PageTabsLink>
           </PageTabs>
         </div>
         {tab === 'events' && <Events projectId={projectId} />}

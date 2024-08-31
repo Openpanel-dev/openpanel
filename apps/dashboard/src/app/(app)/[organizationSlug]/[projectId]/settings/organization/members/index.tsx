@@ -1,6 +1,6 @@
-import { getMembers, getProjectsByOrganizationSlug } from '@openpanel/db';
+import { MembersTable } from '@/components/settings/members';
 
-import Members from './members';
+import { getMembers, getProjectsByOrganizationSlug } from '@openpanel/db';
 
 interface Props {
   organizationSlug: string;
@@ -12,7 +12,7 @@ const MembersServer = async ({ organizationSlug }: Props) => {
     getProjectsByOrganizationSlug(organizationSlug),
   ]);
 
-  return <Members members={members} projects={projects} />;
+  return <MembersTable data={members} projects={projects} />;
 };
 
 export default MembersServer;

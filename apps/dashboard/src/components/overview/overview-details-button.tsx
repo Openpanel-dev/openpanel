@@ -3,22 +3,25 @@ import { ScanEyeIcon } from 'lucide-react';
 
 import type { IChartProps } from '@openpanel/validation';
 
+import { Button } from '../ui/button';
+
 type Props = {
   chart: IChartProps;
 };
 
 const OverviewDetailsButton = ({ chart }: Props) => {
   return (
-    <button
-      className="-mb-2 mt-5 flex w-full items-center justify-center gap-2  font-semibold"
+    <Button
+      size="icon"
+      variant="ghost"
       onClick={() => {
         pushModal('OverviewChartDetails', {
           chart: chart,
         });
       }}
     >
-      <ScanEyeIcon size={18} /> Details
-    </button>
+      <ScanEyeIcon size={18} />
+    </Button>
   );
 };
 

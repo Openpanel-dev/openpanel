@@ -1,50 +1,45 @@
-import { Suspense } from 'react';
-import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
-import { eventQueryFiltersParser } from '@/hooks/useEventQueryFilters';
-import { parseAsInteger } from 'nuqs';
+import { PageTabs, PageTabsLink } from '@/components/page-tabs';
+import { Padding } from '@/components/ui/padding';
+import { parseAsStringEnum } from 'nuqs';
 
-import LastActiveUsersServer from '../retention/last-active-users';
-import ProfileListServer from './profile-list';
-import ProfileTopServer from './profile-top';
+import PowerUsers from './power-users';
+import Profiles from './profiles';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
     projectId: string;
+    organizationSlug: string;
   };
-  searchParams: {
-    f?: string;
-    cursor?: string;
-  };
+  searchParams: Record<string, string>;
 }
 
-const nuqsOptions = {
-  shallow: false,
-};
-
 export default function Page({
-  params: { organizationSlug, projectId },
-  searchParams: { cursor, f },
+  params: { projectId },
+  searchParams,
 }: PageProps) {
+  const tab = parseAsStringEnum(['profiles', 'power-users'])
+    .withDefault('profiles')
+    .parseServerSide(searchParams.tab);
+
   return (
     <>
-      <PageLayout title="Profiles" />
-      <div className="grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
-        <ProfileListServer
-          projectId={projectId}
-          cursor={parseAsInteger.parseServerSide(cursor ?? '') ?? undefined}
-          filters={
-            eventQueryFiltersParser.parseServerSide(f ?? '') ?? undefined
-          }
-        />
-        <div className="flex flex-col gap-4">
-          <LastActiveUsersServer projectId={projectId} />
-          <ProfileTopServer
-            projectId={projectId}
-            organizationSlug={organizationSlug}
-          />
+      <Padding>
+        <div className="mb-4">
+          <PageTabs>
+            <PageTabsLink href={`?tab=profiles`} isActive={tab === 'profiles'}>
+              Profiles
+            </PageTabsLink>
+            <PageTabsLink
+              href={`?tab=power-users`}
+              isActive={tab === 'power-users'}
+            >
+              Power users
+            </PageTabsLink>
+          </PageTabs>
         </div>
-      </div>
+        {tab === 'profiles' && <Profiles projectId={projectId} />}
+        {tab === 'power-users' && <PowerUsers projectId={projectId} />}
+      </Padding>
     </>
   );
 }

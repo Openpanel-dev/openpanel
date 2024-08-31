@@ -53,7 +53,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
   });
   return (
     <>
-      <div className="row items-center justify-between">
+      <div className="row mb-4 items-center justify-between">
         <h1 className="text-3xl font-semibold">{dashboard.name}</h1>
         <div className="flex items-center justify-end gap-2">
           <OverviewReportRange />
@@ -74,7 +74,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
           </Button>
         </div>
       </div>
-      <div className="mx-auto flex max-w-3xl flex-col gap-8 p-4 md:p-8">
+      <div className="flex max-w-6xl flex-col gap-8">
         {reports.map((report) => {
           const chartRange = report.range;
           return (

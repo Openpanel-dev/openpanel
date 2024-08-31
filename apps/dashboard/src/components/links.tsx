@@ -5,7 +5,11 @@ import Link from 'next/link';
 export function ProjectLink({
   children,
   ...props
-}: LinkProps & { children: React.ReactNode; className?: string }) {
+}: LinkProps & {
+  children: React.ReactNode;
+  className?: string;
+  title?: string;
+}) {
   const { organizationSlug, projectId } = useAppParams();
   if (typeof props.href === 'string') {
     return (

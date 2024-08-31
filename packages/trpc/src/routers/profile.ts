@@ -2,7 +2,13 @@ import { flatten, map, pipe, prop, sort, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { z } from 'zod';
 
-import { chQuery, createSqlBuilder } from '@openpanel/db';
+import {
+  chQuery,
+  createSqlBuilder,
+  getProfileList,
+  getProfiles,
+  TABLE_NAMES,
+} from '@openpanel/db';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -26,6 +32,46 @@ export const profileRouter = createTRPCRouter({
         sort<string>((a, b) => a.length - b.length),
         uniq
       )(properties);
+    }),
+
+  list: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        cursor: z.number().optional(),
+        take: z.number().default(50),
+        // filters: z.array(zChartEventFilter).default([]),
+      })
+    )
+    .query(async ({ input: { projectId, cursor, take } }) => {
+      return getProfileList({ projectId, cursor, take });
+    }),
+
+  powerUsers: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        cursor: z.number().optional(),
+        take: z.number().default(50),
+        // filters: z.array(zChartEventFilter).default([]),
+      })
+    )
+    .query(async ({ input: { projectId, cursor, take } }) => {
+      const res = await chQuery<{ profile_id: string; count: number }>(
+        `SELECT profile_id, count(*) as count from ${TABLE_NAMES.events} where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT ${take} ${cursor ? `OFFSET ${cursor * take}` : ''}`
+      );
+      const profiles = await getProfiles(res.map((r) => r.profile_id));
+      return (
+        res
+          .map((item) => {
+            return {
+              count: item.count,
+              ...(profiles.find((p) => p.id === item.profile_id)! ?? {}),
+            };
+          })
+          // Make sure we return actual profiles
+          .filter((item) => item.id)
+      );
     }),
 
   values: protectedProcedure
