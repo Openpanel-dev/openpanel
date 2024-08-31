@@ -32,7 +32,7 @@ index 3e5a2e61c9600459678fda0e29397faee7db9a1e..6cf94ac4384d86d99f292c8f296d4b95
 +            return []
 +        }
 +        const client = await this.queue.client
-+        const scores = await client.zmscore(this.getDelayedScoreName(), jobs.map(job => job.id))
++        const scores = await client.zmscore(this.getDelayedScoreName(), jobs.filter(job => job && typeof job === 'object').map(job => job.id))
 +        const delays = jobs.map((_, i) => scores[i] !== null ? scores[i] / 0x1000 : null)
 +        return jobs.map((job, i) => this.transformJob(job, delays[i]))
      }
