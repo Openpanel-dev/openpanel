@@ -88,7 +88,7 @@ export default function FunnelStepDetails(props: Props) {
                     asChild
                     content={profile.createdAt.toLocaleString()}
                   >
-                    <div className="text-sm text-muted-foreground">
+                    <div className=" text-muted-foreground">
                       {profile.createdAt.toLocaleTimeString()}
                     </div>
                   </Tooltiper>

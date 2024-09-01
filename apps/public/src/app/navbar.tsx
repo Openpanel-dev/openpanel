@@ -23,7 +23,7 @@ export function Navbar({ darkText = false, className }: Props) {
     >
       <div className="container flex items-center justify-between py-4">
         <Logo className="max-sm:[&_span]:hidden" />
-        <nav className="flex gap-4 text-sm">
+        <nav className="flex gap-4 ">
           {pathname !== '/' && <Link href="/">Home</Link>}
           <Link href="/#pricing" data-event="click_pricing">
             Pricing

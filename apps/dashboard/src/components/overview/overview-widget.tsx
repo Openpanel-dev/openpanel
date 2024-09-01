@@ -85,7 +85,7 @@ export function WidgetButtons({
     <div
       ref={container}
       className={cn(
-        '-mb-px -mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-xs [&_button]:opacity-50',
+        '-mb-px -mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-sm [&_button]:opacity-50',
         className
       )}
       style={{ gap }}
@@ -93,7 +93,12 @@ export function WidgetButtons({
     >
       {Children.map(children, (child, index) => {
         return (
-          <div className={cn('flex', slice < index ? hidden : 'opacity-100')}>
+          <div
+            className={cn(
+              'flex [&_button]:leading-normal',
+              slice < index ? hidden : 'opacity-100'
+            )}
+          >
             {child}
           </div>
         );
@@ -120,6 +125,24 @@ export function WidgetButtons({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+    </div>
+  );
+}
+
+export function WidgetFooter({
+  className,
+  children,
+  ...props
+}: WidgetHeadProps) {
+  return (
+    <div
+      className={cn(
+        'flex rounded-b-md border-t bg-def-100 p-2  py-1',
+        className
+      )}
+      {...props}
+    >
+      {children}
     </div>
   );
 }

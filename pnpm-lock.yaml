@@ -323,6 +323,9 @@ importers:
       framer-motion:
         specifier: ^11.0.28
         version: 11.0.28(react-dom@18.2.0)(react@18.2.0)
+      geist:
+        specifier: ^1.3.1
+        version: 1.3.1(next@14.2.1)
       hamburger-react:
         specifier: ^2.5.0
         version: 2.5.0(react@18.2.0)
@@ -11686,6 +11689,14 @@ packages:
       string-width: 4.2.3
       strip-ansi: 6.0.1
       wide-align: 1.1.5
+    dev: false
+
+  /geist@1.3.1(next@14.2.1):
+    resolution: {integrity: sha512-Q4gC1pBVPN+D579pBaz0TRRnGA4p9UK6elDY/xizXdFk/g4EKR5g0I+4p/Kj6gM0SajDBZ/0FvDV9ey9ud7BWw==}
+    peerDependencies:
+      next: '>=13.2.0'
+    dependencies:
+      next: 14.2.1(@opentelemetry/api@1.8.0)(react-dom@18.2.0)(react@18.2.0)
     dev: false
 
   /gensync@1.0.0-beta.2:

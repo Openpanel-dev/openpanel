@@ -73,7 +73,7 @@ const Verify = ({ project, events }: Props) => {
           {!verified && (
             <Link
               href={`/${project.organizationSlug}/${project.id}`}
-              className="text-sm text-muted-foreground underline"
+              className=" text-muted-foreground underline"
             >
               Skip for now
             </Link>

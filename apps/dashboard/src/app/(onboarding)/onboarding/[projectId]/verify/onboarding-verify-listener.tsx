@@ -61,7 +61,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
       <div className="flex items-center gap-2 text-2xl capitalize">
         {client?.name}
       </div>
-      <div className="mt-2 text-xs font-semibold text-muted-foreground">
+      <div className="mt-2 text-sm font-semibold text-muted-foreground">
         Connection status: {renderBadge()}
       </div>
 
@@ -81,13 +81,13 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
           {isConnected ? (
             <div className="flex flex-col-reverse">
               {events.length > 5 && (
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-2 ">
                   <CheckIcon size={14} />{' '}
                   <span>{events.length - 5} more events</span>
                 </div>
               )}
               {events.slice(-5).map((event, index) => (
-                <div key={index} className="flex items-center gap-2 text-sm">
+                <div key={index} className="flex items-center gap-2 ">
                   <CheckIcon size={14} />{' '}
                   <span className="font-medium">{event.name}</span>{' '}
                   <span className="ml-auto text-emerald-800">
@@ -97,7 +97,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
               ))}
             </div>
           ) : (
-            <div className="text-sm">
+            <div className="">
               Verify that your events works before submitting any changes to App
               Store/Google Play
             </div>
@@ -105,7 +105,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
         </div>
       </div>
 
-      <div className="mt-2 text-xs text-muted-foreground">
+      <div className="mt-2 text-sm text-muted-foreground">
         You can{' '}
         <button
           className="underline"

@@ -18,23 +18,19 @@ type Props = {
     projectId: string;
   };
 };
-export default function Page({
-  params: { projectId, organizationSlug },
-}: Props) {
+export default function Page({ params: { projectId } }: Props) {
   return (
     <>
-      <PageLayout
-        title={<FullscreenOpen />}
-        {...{ projectId, organizationSlug }}
-      />
       <Fullscreen>
         <FullscreenClose />
         <RealtimeReloader projectId={projectId} />
         <Suspense>
           <RealtimeMap projectId={projectId} />
         </Suspense>
-        <div className="relative z-10 grid min-h-[calc(100vh-theme(spacing.16))] items-start gap-4 overflow-hidden p-8 md:grid-cols-3">
-          <div className="card bg-card/80 p-4">
+
+        <div className="row relative z-10 min-h-screen items-start gap-4 overflow-hidden p-8">
+          <FullscreenOpen />
+          <div className="card min-w-52 bg-card/80 p-4 md:min-w-80">
             <RealtimeLiveHistogram projectId={projectId} />
           </div>
           <div className="col-span-2">

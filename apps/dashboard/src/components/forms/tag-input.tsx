@@ -112,7 +112,7 @@ const TagInput = ({
             data-tag={tag}
             key={tag}
             className={cn(
-              'inline-flex items-center gap-2 rounded bg-def-200 px-2 py-1 text-sm',
+              'inline-flex items-center gap-2 rounded bg-def-200 px-2 py-1 ',
               isMarkedForDeletion &&
                 i === value.length - 1 &&
                 'bg-destructive-foreground ring-2 ring-destructive/50 ring-offset-1',
@@ -136,7 +136,7 @@ const TagInput = ({
       <input
         ref={inputRef}
         placeholder={`${placeholder} ↵`}
-        className="min-w-20 flex-1 py-1 text-sm focus-visible:outline-none"
+        className="min-w-20 flex-1 py-1  focus-visible:outline-none"
         value={inputValue}
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}

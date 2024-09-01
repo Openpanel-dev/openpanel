@@ -42,7 +42,7 @@ export function ReportChartTooltip({
   const hidden = sorted.slice(limit);
 
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 text-sm shadow-xl">
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3  shadow-xl">
       {visible.map((item, index) => {
         // If we have a <Cell /> component, payload can be nested
         const payload = item.payload.payload ?? item.payload;
@@ -65,20 +65,22 @@ export function ReportChartTooltip({
                 className="w-[3px] rounded-full"
                 style={{ background: data.color }}
               />
-              <div className="flex flex-1 flex-col">
+              <div className="col flex-1 gap-1">
                 <div className="flex items-center gap-1">
                   <SerieIcon name={data.names} />
                   <SerieName name={data.names} />
                 </div>
-                <div className="flex justify-between gap-8">
-                  <div>{number.formatWithUnit(data.count, unit)}</div>
-
-                  <div className="flex gap-1">
-                    <PreviousDiffIndicator {...data.previous}>
-                      {!!data.previous &&
-                        `(${number.formatWithUnit(data.previous.value, unit)})`}
-                    </PreviousDiffIndicator>
+                <div className="font-mono flex justify-between gap-8 font-medium">
+                  <div className="row gap-1">
+                    {number.formatWithUnit(data.count, unit)}
+                    {!!data.previous && (
+                      <span className="text-muted-foreground">
+                        ({number.formatWithUnit(data.previous.value, unit)})
+                      </span>
+                    )}
                   </div>
+
+                  <PreviousDiffIndicator {...data.previous} />
                 </div>
               </div>
             </div>

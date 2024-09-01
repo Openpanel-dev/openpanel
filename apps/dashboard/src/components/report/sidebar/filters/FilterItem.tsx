@@ -103,7 +103,7 @@ export function FilterItem({ filter, event }: FilterProps) {
         <ColorSquare className="bg-emerald-500">
           <SlidersHorizontal size={10} />
         </ColorSquare>
-        <div className="flex flex-1 text-sm">
+        <div className="flex flex-1 ">
           <RenderDots truncate>{filter.name}</RenderDots>
         </div>
         <Button variant="ghost" size="sm" onClick={removeFilter}>

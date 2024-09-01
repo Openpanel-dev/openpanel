@@ -31,12 +31,13 @@ export default function AddDashboard() {
 
   const mutation = api.dashboard.create.useMutation({
     onError: handleError,
-    onSuccess() {
-      router.refresh();
+    onSuccess(res) {
+      router.push(`/${organizationSlug}/${projectId}/dashboards/${res.id}`);
       toast('Success', {
         description: 'Dashboard created.',
       });
       popModal();
+      router.refresh();
     },
   });
 

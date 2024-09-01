@@ -59,9 +59,9 @@ const Steps = ({ className }: Props) => {
   const currentIndex = steps.findIndex((i) => i.status === 'current');
   return (
     <div className="relative">
-      <div className="bg-def-200 absolute bottom-4 left-4 top-4 w-px"></div>
+      <div className="absolute bottom-4 left-4 top-4 w-px bg-def-200"></div>
       <div
-        className="bg-highlight absolute left-4 top-4 w-px"
+        className="absolute left-4 top-4 w-px bg-highlight"
         style={{
           height: `calc(${((currentIndex + 1) / steps.length) * 100}% - 3.5rem)`,
         }}
@@ -86,17 +86,17 @@ const Steps = ({ className }: Props) => {
           >
             <div
               className={cn(
-                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm text-white'
+                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full  text-white'
               )}
             >
               <div
                 className={cn(
-                  'bg-highlight absolute inset-0 z-0 rounded-full',
+                  'absolute inset-0 z-0 rounded-full bg-highlight',
                   step.status === 'pending' && 'bg-def-400'
                 )}
               ></div>
               {step.status === 'current' && (
-                <div className="bg-highlight absolute inset-1 z-0 animate-ping-slow rounded-full"></div>
+                <div className="absolute inset-1 z-0 animate-ping-slow rounded-full bg-highlight"></div>
               )}
               <div className="relative">
                 {step.status === 'completed' && <CheckCheckIcon size={14} />}
@@ -109,7 +109,7 @@ const Steps = ({ className }: Props) => {
               </div>
             </div>
 
-            <div className="text-sm font-medium">{step.name}</div>
+            <div className=" font-medium">{step.name}</div>
           </div>
         ))}
       </div>

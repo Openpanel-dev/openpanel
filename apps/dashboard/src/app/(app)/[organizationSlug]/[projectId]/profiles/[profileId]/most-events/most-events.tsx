@@ -18,12 +18,12 @@ const MostEvents = ({ data }: Props) => {
         {data.slice(0, 5).map((item) => (
           <div key={item.name} className="relative px-3 py-2">
             <div
-              className="bg-def-200 absolute bottom-0 left-0 top-0 rounded"
+              className="absolute bottom-0 left-0 top-0 rounded bg-def-200"
               style={{
                 width: `${(item.count / max) * 100}%`,
               }}
             ></div>
-            <div className="relative flex justify-between text-sm">
+            <div className="relative flex justify-between ">
               <div>{item.name}</div>
               <div>{item.count}</div>
             </div>

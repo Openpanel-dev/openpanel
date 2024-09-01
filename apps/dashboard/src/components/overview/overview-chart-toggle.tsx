@@ -13,7 +13,7 @@ export function OverviewChartToggle({ chartType, setChartType }: Props) {
   return (
     <Button
       size={'icon'}
-      variant={'outline'}
+      variant={'ghost'}
       onClick={() => {
         setChartType((p) => (p === 'linear' ? 'bar' : 'linear'));
       }}

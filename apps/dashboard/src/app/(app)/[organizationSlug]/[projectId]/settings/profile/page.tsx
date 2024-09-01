@@ -1,32 +1,18 @@
-import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
+import { Padding } from '@/components/ui/padding';
 import { auth } from '@clerk/nextjs/server';
 
 import { getUserById } from '@openpanel/db';
 
 import EditProfile from './edit-profile';
-import { Logout } from './logout';
 
-interface PageProps {
-  params: {
-    organizationSlug: string;
-  };
-}
-export default async function Page({
-  params: { organizationSlug },
-}: PageProps) {
+export default async function Page() {
   const { userId } = auth();
   const profile = await getUserById(userId!);
 
   return (
-    <>
-      <PageLayout
-        title={profile.lastName}
-        organizationSlug={organizationSlug}
-      />
-      <div className="flex flex-col gap-4 p-4">
-        <EditProfile profile={profile} />
-        <Logout />
-      </div>
-    </>
+    <Padding>
+      <h1 className="mb-4 text-2xl font-bold">Profile</h1>
+      <EditProfile profile={profile} />
+    </Padding>
   );
 }

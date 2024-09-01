@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Padding } from '@/components/ui/padding';
 import { AlertCircleIcon } from 'lucide-react';
 
-import PageLayout from '../page-layout';
 import LastActiveUsersServer from './last-active-users';
 import RollingActiveUsers from './rolling-active-users';
 import UsersRetentionSeries from './users-retention-series';
@@ -9,16 +9,15 @@ import WeeklyCohortsServer from './weekly-cohorts';
 
 type Props = {
   params: {
-    organizationSlug: string;
     projectId: string;
   };
 };
 
-const Retention = ({ params: { projectId, organizationSlug } }: Props) => {
+const Retention = ({ params: { projectId } }: Props) => {
   return (
-    <>
-      <PageLayout title="Retention" organizationSlug={organizationSlug} />
-      <div className="flex flex-col gap-8 p-8">
+    <Padding>
+      <h1 className="mb-4 text-3xl font-semibold">Retention</h1>
+      <div className="flex max-w-6xl flex-col gap-8">
         <Alert>
           <AlertCircleIcon size={18} />
           <AlertTitle>Experimental feature</AlertTitle>
@@ -59,7 +58,7 @@ const Retention = ({ params: { projectId, organizationSlug } }: Props) => {
         <UsersRetentionSeries projectId={projectId} />
         <WeeklyCohortsServer projectId={projectId} />
       </div>
-    </>
+    </Padding>
   );
 };
 

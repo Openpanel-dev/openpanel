@@ -15,7 +15,7 @@ const ConnectBackend = ({ client }: Props) => {
         <ServerIcon />
         Backend
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2  text-muted-foreground">
         Pick a framework below to get started.
       </p>
       <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -30,7 +30,7 @@ const ConnectBackend = ({ client }: Props) => {
             className="flex items-center gap-4 rounded-md border p-2 py-2 text-left"
             key={framework.name}
           >
-            <div className="bg-def-200 h-10 w-10 rounded-md p-2">
+            <div className="h-10 w-10 rounded-md bg-def-200 p-2">
               <img
                 className="h-full w-full object-contain"
                 src={framework.logo}
@@ -43,7 +43,7 @@ const ConnectBackend = ({ client }: Props) => {
           </button>
         ))}
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
+      <p className="mt-2 text-sm text-muted-foreground">
         Missing a framework?{' '}
         <a
           href="mailto:hello@openpanel.dev"

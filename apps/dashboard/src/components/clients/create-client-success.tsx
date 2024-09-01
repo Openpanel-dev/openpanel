@@ -16,7 +16,7 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
         <div className="w-full">
           <CopyInput label="Secret" value={secret} />
           {cors && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-sm text-muted-foreground">
               You will only need the secret if you want to send server events.
             </p>
           )}
@@ -25,7 +25,7 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
       {cors && (
         <div className="text-left">
           <Label>CORS settings</Label>
-          <div className="flex items-center justify-between rounded border-input bg-def-200 p-2 px-3 font-mono text-sm">
+          <div className="font-mono flex items-center justify-between rounded border-input bg-def-200 p-2 px-3 ">
             {cors}
           </div>
         </div>

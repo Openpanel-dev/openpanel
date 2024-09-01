@@ -15,7 +15,7 @@ export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
   return (
     <Component
       className={cn(
-        'group flex min-w-0 max-w-full divide-x self-start overflow-hidden rounded-md border border-border text-xs font-medium transition-transform',
+        'group flex min-w-0 max-w-full divide-x self-start overflow-hidden rounded-md border border-border text-sm font-medium transition-transform',
         clickable && 'hover:-translate-y-0.5'
       )}
       {...{ href, onClick }}
@@ -23,7 +23,7 @@ export function KeyValue({ href, onClick, name, value }: KeyValueProps) {
       <div className="bg-black/5 p-1 px-2 capitalize">{name}</div>
       <div
         className={cn(
-          'overflow-hidden text-ellipsis whitespace-nowrap bg-card p-1 px-2 font-mono text-highlight',
+          'font-mono overflow-hidden text-ellipsis whitespace-nowrap bg-card p-1 px-2 text-highlight',
           clickable && 'group-hover:underline'
         )}
       >

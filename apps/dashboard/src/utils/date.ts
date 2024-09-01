@@ -39,6 +39,13 @@ export function formatDateTime(date: Date) {
   }).format(date);
 }
 
+export function formatTime(date: Date) {
+  return new Intl.DateTimeFormat(getLocale(), {
+    hour: 'numeric',
+    minute: 'numeric',
+  }).format(date);
+}
+
 TimeAgo.addDefaultLocale(en);
 const ta = new TimeAgo(getLocale());
 

@@ -1,8 +1,6 @@
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { Padding } from '@/components/ui/padding';
 import withSuspense from '@/hocs/with-suspense';
-import type { LucideIcon } from 'lucide-react';
-import { Loader2Icon } from 'lucide-react';
 
 import { getDashboardsByProjectId } from '@openpanel/db';
 
@@ -16,7 +14,12 @@ interface Props {
 const ListDashboardsServer = async ({ projectId }: Props) => {
   const dashboards = await getDashboardsByProjectId(projectId);
 
-  return <ListDashboards dashboards={dashboards} />;
+  return (
+    <Padding>
+      <HeaderDashboards />
+      <ListDashboards dashboards={dashboards} />;
+    </Padding>
+  );
 };
 
 export default withSuspense(ListDashboardsServer, FullPageLoadingState);

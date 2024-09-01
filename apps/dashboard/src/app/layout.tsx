@@ -6,6 +6,9 @@ import Providers from './providers';
 import '@/styles/globals.css';
 import '/node_modules/flag-icons/css/flag-icons.min.css';
 
+import { GeistMono } from 'geist/font/mono';
+import { GeistSans } from 'geist/font/sans';
+
 export const metadata = {
   title: 'Overview - Openpanel.dev',
 };
@@ -25,7 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={cn('grainy bg-def-100 min-h-screen font-sans antialiased')}
+        className={cn(
+          'grainy min-h-screen bg-def-100 font-sans text-base antialiased',
+          GeistSans.variable,
+          GeistMono.variable
+        )}
       >
         <NextTopLoader
           showSpinner={false}

@@ -15,6 +15,7 @@ import {
   endOfMonth,
   format,
   formatISO,
+  isSameMonth,
   startOfMonth,
   subMonths,
 } from 'date-fns';
@@ -43,19 +44,72 @@ const ProfileActivity = ({ data }: Props) => {
           <Button
             variant="outline"
             size="icon"
+            disabled={isSameMonth(startDate, new Date())}
             onClick={() => setStartDate(addMonths(startDate, 1))}
           >
             <ChevronRightIcon size={14} />
           </Button>
         </div>
       </WidgetHead>
-      <WidgetBody className="p-0">
-        <div className="grid grid-cols-2">
+      <WidgetBody>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div>
-            <div className="p-1 text-xs">
+            <div className="mb-2 text-sm">
+              {format(subMonths(startDate, 3), 'MMMM yyyy')}
+            </div>
+            <div className="-m-1 grid grid-cols-7 gap-1 p-1">
+              {eachDayOfInterval({
+                start: startOfMonth(subMonths(startDate, 3)),
+                end: endOfMonth(subMonths(startDate, 3)),
+              }).map((date) => {
+                const hit = data.find((item) =>
+                  item.date.includes(
+                    formatISO(date, { representation: 'date' })
+                  )
+                );
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={cn(
+                      'aspect-square w-full rounded',
+                      hit ? 'bg-highlight' : 'bg-def-200'
+                    )}
+                  ></div>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <div className="mb-2 text-sm">
+              {format(subMonths(startDate, 2), 'MMMM yyyy')}
+            </div>
+            <div className="-m-1 grid grid-cols-7 gap-1 p-1">
+              {eachDayOfInterval({
+                start: startOfMonth(subMonths(startDate, 2)),
+                end: endOfMonth(subMonths(startDate, 2)),
+              }).map((date) => {
+                const hit = data.find((item) =>
+                  item.date.includes(
+                    formatISO(date, { representation: 'date' })
+                  )
+                );
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={cn(
+                      'aspect-square w-full rounded',
+                      hit ? 'bg-highlight' : 'bg-def-200'
+                    )}
+                  ></div>
+                );
+              })}
+            </div>
+          </div>
+          <div>
+            <div className="mb-2 text-sm">
               {format(subMonths(startDate, 1), 'MMMM yyyy')}
             </div>
-            <div className="grid grid-cols-7 gap-1 p-1">
+            <div className="-m-1 grid grid-cols-7 gap-1 p-1">
               {eachDayOfInterval({
                 start: startOfMonth(subMonths(startDate, 1)),
                 end: endOfMonth(subMonths(startDate, 1)),
@@ -78,8 +132,8 @@ const ProfileActivity = ({ data }: Props) => {
             </div>
           </div>
           <div>
-            <div className="p-1 text-xs">{format(startDate, 'MMMM yyyy')}</div>
-            <div className="grid grid-cols-7 gap-1 p-1">
+            <div className="mb-2 text-sm">{format(startDate, 'MMMM yyyy')}</div>
+            <div className="-m-1 grid grid-cols-7 gap-1 p-1">
               {eachDayOfInterval({
                 start: startDate,
                 end: endDate,

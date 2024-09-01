@@ -20,7 +20,7 @@ export const WidgetTableHead = ({
   return (
     <thead
       className={cn(
-        'bg-def-100 text-def-1000 sticky top-0 z-10 border-b border-border text-sm [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium',
+        'text-def-1000 sticky top-0 z-10 border-b border-border bg-def-100  [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium',
         className
       )}
     >
@@ -49,7 +49,7 @@ export function WidgetTable<T>({
           {data.map((item) => (
             <tr
               key={keyExtractor(item)}
-              className="border-b border-border text-right text-sm last:border-0 [&_td:first-child]:text-left [&_td]:p-4"
+              className="border-b border-border text-right  last:border-0 [&_td:first-child]:text-left [&_td]:p-4"
             >
               {columns.map((column) => (
                 <td key={column.name}>{column.render(item)}</td>

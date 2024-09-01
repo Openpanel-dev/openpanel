@@ -99,7 +99,7 @@ const Map = ({ markers }: Props) => {
     <div
       className={cn(
         'fixed bottom-0 left-0 right-0 top-0',
-        !isFullscreen && 'top-16 lg:left-72'
+        !isFullscreen && 'lg:left-72'
       )}
       ref={ref}
     >
@@ -123,8 +123,8 @@ const Map = ({ markers }: Props) => {
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
-                      fill={theme.theme === 'dark' ? '#0f0f0f' : '#F0F4F9'}
-                      stroke={theme.theme === 'dark' ? '#262626' : '#DDE3E9'}
+                      fill={theme.theme === 'dark' ? '#000' : '#e5eef6'}
+                      stroke={theme.theme === 'dark' ? '#333' : '#bcccda'}
                       pointerEvents={'none'}
                     />
                   ))

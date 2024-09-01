@@ -17,6 +17,12 @@ export async function eventsJob(job: Job<EventsQueuePayload>) {
       return await incomingEvent(job as Job<EventsQueuePayloadIncomingEvent>);
     }
     case 'createSessionEnd': {
+      try {
+        await updateEventsCount(job.data.payload.projectId);
+      } catch (e) {
+        job.log('Failed to update count');
+      }
+
       return await createSessionEnd(
         job as Job<EventsQueuePayloadCreateSessionEnd>
       );

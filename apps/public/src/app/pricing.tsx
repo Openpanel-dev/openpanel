@@ -53,7 +53,7 @@ export function Pricing() {
                 className="border-blue-dark relative flex flex-col gap-1 rounded-lg border bg-white p-6"
               >
                 {item.hint && (
-                  <div className="absolute right-2 top-2 flex items-center gap-2 rounded bg-blue-600 px-2 py-1 text-xs text-white">
+                  <div className="absolute right-2 top-2 flex items-center gap-2 rounded bg-blue-600 px-2 py-1 text-sm text-white">
                     <StarIcon size={12} />
                     {item.hint}
                   </div>

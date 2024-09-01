@@ -52,7 +52,7 @@ const CheckboxInput = React.forwardRef<
     )}
   >
     <Checkbox ref={ref} {...props} className="relative top-0.5" />
-    <div className="text-sm font-medium">{props.children}</div>
+    <div className=" font-medium">{props.children}</div>
   </label>
 ));
 CheckboxInput.displayName = 'CheckboxInput';

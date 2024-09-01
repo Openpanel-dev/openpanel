@@ -1,4 +1,4 @@
-import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
+import { Padding } from '@/components/ui/padding';
 import { notFound } from 'next/navigation';
 
 import { getDashboardById, getReportsByDashboardId } from '@openpanel/db';
@@ -14,7 +14,7 @@ interface PageProps {
 }
 
 export default async function Page({
-  params: { organizationSlug, projectId, dashboardId },
+  params: { projectId, dashboardId },
 }: PageProps) {
   const [dashboard, reports] = await Promise.all([
     getDashboardById(dashboardId, projectId),
@@ -26,9 +26,8 @@ export default async function Page({
   }
 
   return (
-    <>
-      <PageLayout title={dashboard.name} organizationSlug={organizationSlug} />
-      <ListReports reports={reports} />
-    </>
+    <Padding>
+      <ListReports reports={reports} dashboard={dashboard} />
+    </Padding>
   );
 }

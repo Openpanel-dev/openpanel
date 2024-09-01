@@ -83,7 +83,7 @@ export function RealtimeLiveHistogram({
         {staticArray.map((percent, i) => (
           <div
             key={i}
-            className="flex-1 animate-pulse rounded-md bg-def-200"
+            className="flex-1 animate-pulse rounded bg-def-200"
             style={{ height: `${percent}%` }}
           />
         ))}
@@ -103,7 +103,7 @@ export function RealtimeLiveHistogram({
             <TooltipTrigger asChild>
               <div
                 className={cn(
-                  'flex-1 rounded-md transition-all ease-in-out hover:scale-110',
+                  'flex-1 rounded transition-all ease-in-out hover:scale-110',
                   minute.count === 0 ? 'bg-def-200' : 'bg-highlight'
                 )}
                 style={{
@@ -138,11 +138,11 @@ const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
 function Wrapper({ children, count }: WrapperProps) {
   return (
     <div className="flex flex-col">
-      <div className="p-4">
+      <div className="col gap-2 p-4">
         <div className="font-medium text-muted-foreground">
           Unique vistors last 30 minutes
         </div>
-        <div className="text-6xl font-bold">
+        <div className="font-mono text-6xl font-bold">
           <AnimatedNumbers
             includeComma
             transitions={(index) => ({

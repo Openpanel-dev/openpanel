@@ -1,77 +1,50 @@
-import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
-import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
-import {
-  eventQueryFiltersParser,
-  eventQueryNamesFilter,
-} from '@/hooks/useEventQueryFilters';
-import { parseAsInteger } from 'nuqs';
+import { PageTabs, PageTabsLink } from '@/components/page-tabs';
+import { Padding } from '@/components/ui/padding';
+import { parseAsStringEnum } from 'nuqs';
 
-import { StickyBelowHeader } from '../layout-sticky-below-header';
-import { EventsPerDayChart } from './charts/events-per-day-chart';
-import EventConversionsListServer from './event-conversions-list';
-import EventListServer from './event-list';
+import Charts from './charts';
+import Conversions from './conversions';
+import Events from './events';
 
 interface PageProps {
   params: {
     projectId: string;
     organizationSlug: string;
   };
-  searchParams: {
-    events?: string;
-    cursor?: string;
-    f?: string;
-  };
+  searchParams: Record<string, string>;
 }
 
-const nuqsOptions = {
-  shallow: false,
-};
-
 export default function Page({
-  params: { projectId, organizationSlug },
+  params: { projectId },
   searchParams,
 }: PageProps) {
-  const cursor =
-    parseAsInteger.parseServerSide(searchParams.cursor ?? '') ?? undefined;
-  const filters =
-    eventQueryFiltersParser.parseServerSide(searchParams.f ?? '') ?? undefined;
-  const eventNames =
-    eventQueryNamesFilter.parseServerSide(searchParams.events) ?? undefined;
+  const tab = parseAsStringEnum(['events', 'conversions', 'charts'])
+    .withDefault('events')
+    .parseServerSide(searchParams.tab);
 
   return (
     <>
-      <PageLayout title="Events" organizationSlug={organizationSlug} />
-      <StickyBelowHeader className="flex justify-between p-4">
-        <OverviewFiltersDrawer
-          mode="events"
-          projectId={projectId}
-          nuqsOptions={nuqsOptions}
-          enableEventsFilter
-        />
-        <OverviewFiltersButtons
-          className="justify-end p-0"
-          nuqsOptions={nuqsOptions}
-        />
-      </StickyBelowHeader>
-      <div className="grid gap-4 p-4 md:grid-cols-2">
-        <div>
-          <EventListServer
-            projectId={projectId}
-            cursor={cursor}
-            filters={filters}
-            eventNames={eventNames}
-          />
+      <Padding>
+        <div className="mb-4">
+          <PageTabs>
+            <PageTabsLink href={`?tab=events`} isActive={tab === 'events'}>
+              Events
+            </PageTabsLink>
+            <PageTabsLink
+              href={`?tab=conversions`}
+              isActive={tab === 'conversions'}
+            >
+              Conversions
+            </PageTabsLink>
+            <PageTabsLink href={`?tab=charts`} isActive={tab === 'charts'}>
+              Charts
+            </PageTabsLink>
+          </PageTabs>
         </div>
-        <div className="flex flex-col gap-4">
-          <EventsPerDayChart
-            projectId={projectId}
-            events={eventNames}
-            filters={filters}
-          />
-          <EventConversionsListServer projectId={projectId} />
-        </div>
-      </div>
+        {tab === 'events' && <Events projectId={projectId} />}
+        {tab === 'conversions' && <Conversions projectId={projectId} />}
+        {tab === 'charts' && <Charts projectId={projectId} />}
+      </Padding>
     </>
   );
 }

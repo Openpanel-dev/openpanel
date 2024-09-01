@@ -134,7 +134,19 @@
   }
 
   .card {
-    @apply border border-border bg-card;
+    @apply rounded-md border border-border bg-card;
+  }
+
+  .center-center {
+    @apply flex items-center justify-center text-center;
+  }
+
+  .col {
+    @apply flex flex-col;
+  }
+
+  .row {
+    @apply flex flex-row;
   }
 }
 

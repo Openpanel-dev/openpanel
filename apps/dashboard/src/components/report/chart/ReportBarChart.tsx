@@ -37,7 +37,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
   return (
     <div
       className={cn(
-        'flex flex-col text-xs',
+        'flex flex-col text-sm',
         editMode ? 'card gap-2 p-4 text-base' : '-m-3 gap-1'
       )}
     >
@@ -60,9 +60,9 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                   : {})}
               >
                 <div
-                  className="absolute bottom-0 left-0 top-0 rounded bg-def-200"
+                  className="absolute bottom-0.5 left-1 right-1 top-0.5 rounded bg-def-200"
                   style={{
-                    width: `${(serie.metrics.sum / maxCount) * 100}%`,
+                    width: `calc(${(serie.metrics.sum / maxCount) * 100}% - 8px)`,
                   }}
                 />
                 <div className="relative z-10 flex w-full flex-1 items-center gap-4 overflow-hidden px-3 py-2">
@@ -70,7 +70,7 @@ export function ReportBarChart({ data }: ReportBarChartProps) {
                     <SerieIcon name={serie.names[0]} />
                     <SerieName name={serie.names} />
                   </div>
-                  <div className="flex flex-shrink-0 items-center justify-end gap-4">
+                  <div className="font-mono flex flex-shrink-0 items-center justify-end gap-4">
                     <PreviousDiffIndicator
                       {...serie.metrics.previous?.[metric]}
                     />

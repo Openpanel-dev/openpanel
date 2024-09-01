@@ -80,19 +80,19 @@ const ProfileCharts = ({ profileId, projectId }: Props) => {
 
   return (
     <>
-      <Widget className="col-span-3 w-full">
+      <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
           <span className="title">Page views</span>
         </WidgetHead>
-        <WidgetBody className="flex gap-2">
+        <WidgetBody>
           <ChartRoot {...pageViewsChart} />
         </WidgetBody>
       </Widget>
-      <Widget className="col-span-3 w-full">
+      <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
           <span className="title">Events per day</span>
         </WidgetHead>
-        <WidgetBody className="flex gap-2">
+        <WidgetBody>
           <ChartRoot {...eventsChart} />
         </WidgetBody>
       </Widget>

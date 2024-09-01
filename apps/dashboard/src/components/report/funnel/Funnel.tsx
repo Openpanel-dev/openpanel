@@ -1,17 +1,14 @@
 'use client';
 
 import { ColorSquare } from '@/components/color-square';
-import { AutoSizer } from '@/components/react-virtualized-auto-sizer';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { Progress } from '@/components/ui/progress';
 import { Widget, WidgetBody } from '@/components/widget';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { round } from '@/utils/math';
 import { getChartColor } from '@/utils/theme';
-import { AlertCircleIcon, TrendingUp } from 'lucide-react';
+import { AlertCircleIcon } from 'lucide-react';
 import { last } from 'ramda';
-import { Cell, Pie, PieChart } from 'recharts';
 
 import { getPreviousMetric } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
@@ -40,7 +37,7 @@ function InsightCard({
 }) {
   return (
     <div className="flex flex-col rounded-lg border border-border p-4 py-3">
-      <span className="text-sm">{title}</span>
+      <span className="">{title}</span>
       <div className="whitespace-nowrap text-lg">{children}</div>
     </div>
   );

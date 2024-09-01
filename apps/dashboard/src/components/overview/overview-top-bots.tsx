@@ -32,7 +32,7 @@ const OverviewTopBots = ({ projectId }: Props) => {
     <>
       <div className="-m-4">
         <WidgetTable
-          className="max-w-full [&_td:first-child]:w-full [&_th]:text-xs [&_tr]:text-xs"
+          className="max-w-full [&_td:first-child]:w-full [&_th]:text-sm [&_tr]:text-sm"
           data={data}
           keyExtractor={(item) => item.id}
           columns={[

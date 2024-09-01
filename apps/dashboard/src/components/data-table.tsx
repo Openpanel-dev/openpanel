@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/utils/cn';
 import {
   flexRender,
   getCoreRowModel,
@@ -7,18 +8,25 @@ import {
 } from '@tanstack/react-table';
 import type { ColumnDef } from '@tanstack/react-table';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './ui/table';
+import { Grid, GridBody, GridCell, GridHeader, GridRow } from './grid-table';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
+}
+
+export function TableButtons({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('mb-2 flex flex-wrap items-center gap-2', className)}>
+      {children}
+    </div>
+  );
 }
 
 export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
@@ -29,47 +37,45 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
   });
 
   return (
-    <Table>
-      <TableHeader>
+    <Grid columns={columns.length}>
+      <GridHeader>
         {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => {
-              return (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
-                </TableHead>
-              );
-            })}
-          </TableRow>
+          <GridRow key={headerGroup.id}>
+            {headerGroup.headers.map((header) => (
+              <GridCell key={header.id} isHeader>
+                {header.isPlaceholder
+                  ? null
+                  : flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+              </GridCell>
+            ))}
+          </GridRow>
         ))}
-      </TableHeader>
-      <TableBody>
+      </GridHeader>
+      <GridBody>
         {table.getRowModel().rows?.length ? (
           table.getRowModel().rows.map((row) => (
-            <TableRow
+            <GridRow
               key={row.id}
               data-state={row.getIsSelected() && 'selected'}
             >
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
+                <GridCell key={cell.id}>
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </TableCell>
+                </GridCell>
               ))}
-            </TableRow>
+            </GridRow>
           ))
         ) : (
-          <TableRow>
-            <TableCell colSpan={columns.length} className="h-24 text-center">
-              No results.
-            </TableCell>
-          </TableRow>
+          <GridRow>
+            <GridCell colSpan={columns.length}>
+              <div className="h-24 text-center">No results.</div>
+            </GridCell>
+          </GridRow>
         )}
-      </TableBody>
-    </Table>
+      </GridBody>
+    </Grid>
   );
 }

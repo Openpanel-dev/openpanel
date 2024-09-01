@@ -49,7 +49,7 @@ export default async function Page({
             href="https://openpanel.dev?utm_source=openpanel.dev&utm_medium=share"
             className="flex flex-col items-end text-lg font-medium"
           >
-            <span className="text-xs">POWERED BY</span>
+            <span className="text-sm">POWERED BY</span>
             <span>openpanel.dev</span>
           </a>
         </div>

@@ -13,7 +13,7 @@ const Progress = React.forwardRef<
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
-      'bg-def-200 relative h-4 w-full min-w-16 overflow-hidden rounded shadow-sm',
+      'relative h-4 w-full min-w-16 overflow-hidden rounded bg-def-200 shadow-sm',
       size == 'sm' && 'h-2',
       size == 'lg' && 'h-8',
       className
@@ -28,7 +28,7 @@ const Progress = React.forwardRef<
       }}
     />
     {value && size != 'sm' && (
-      <div className="z-5 absolute bottom-0 top-0 flex items-center px-2 text-xs font-semibold">
+      <div className="z-5 absolute bottom-0 top-0 flex items-center px-2 text-sm font-semibold">
         <div>{round(value, 2)}%</div>
       </div>
     )}

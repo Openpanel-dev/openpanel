@@ -14,6 +14,9 @@ const Loading = () => (
 );
 
 const modals = {
+  EventDetails: dynamic(() => import('./event-details'), {
+    loading: Loading,
+  }),
   EditProject: dynamic(() => import('./EditProject'), {
     loading: Loading,
   }),

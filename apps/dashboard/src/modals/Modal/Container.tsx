@@ -33,7 +33,7 @@ export function ModalHeader({
     <div className={cn('mb-6 flex justify-between', className)}>
       <div>
         <div className="mt-0.5 font-medium">{title}</div>
-        {!!text && <div className="text-sm text-muted-foreground">{text}</div>}
+        {!!text && <div className=" text-muted-foreground">{text}</div>}
       </div>
       {onClose !== false && (
         <Button

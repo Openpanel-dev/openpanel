@@ -43,7 +43,7 @@ export function ProfileAvatar({
           size === 'lg'
             ? 'text-lg'
             : size === 'sm'
-              ? 'text-xs'
+              ? 'text-sm'
               : size === 'xs'
                 ? 'text-[8px]'
                 : 'text-base',

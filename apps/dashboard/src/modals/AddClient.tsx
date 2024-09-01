@@ -230,7 +230,7 @@ export default function AddClient(props: Props) {
                         ]}
                         placeholder="Select a project"
                       />
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {field.value === 'write' &&
                           'Write: Is the default client type and is used for ingestion of data'}
                         {field.value === 'read' &&

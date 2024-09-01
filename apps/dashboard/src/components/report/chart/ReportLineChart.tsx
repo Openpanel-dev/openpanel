@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback } from 'react';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
@@ -10,23 +10,18 @@ import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { isSameDay, isSameHour, isSameMonth } from 'date-fns';
-import { SplineIcon } from 'lucide-react';
-import { last, pathOr } from 'ramda';
+import { last } from 'ramda';
 import {
   Area,
   CartesianGrid,
   ComposedChart,
   Legend,
   Line,
-  LineChart,
   ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
-
-import type { IServiceReference } from '@openpanel/db';
-import type { IChartLineType, IInterval } from '@openpanel/validation';
 
 import { getYAxisWidth } from './chart-utils';
 import { useChartContext } from './ChartProvider';

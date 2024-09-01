@@ -77,17 +77,6 @@ export function Pagination({
         disabled={isNextDisabled}
         icon={ChevronRightIcon}
       />
-
-      {size === 'base' && (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setCursor(lastCursor)}
-          disabled={isNextDisabled}
-          className="max-sm:hidden"
-          icon={ChevronsRightIcon}
-        />
-      )}
     </div>
   );
 }

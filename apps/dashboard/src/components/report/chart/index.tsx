@@ -48,6 +48,7 @@ interface ChartRootShortcutProps {
   chartType?: IChartProps['chartType'];
   interval?: IChartProps['interval'];
   events: IChartProps['events'];
+  breakdowns?: IChartProps['breakdowns'];
 }
 
 export const ChartRootShortcut = ({
@@ -57,12 +58,13 @@ export const ChartRootShortcut = ({
   chartType = 'linear',
   interval = 'day',
   events,
+  breakdowns,
 }: ChartRootShortcutProps) => {
   return (
     <ChartRoot
       projectId={projectId}
       range={range}
-      breakdowns={[]}
+      breakdowns={breakdowns ?? []}
       previous={previous}
       chartType={chartType}
       interval={interval}
