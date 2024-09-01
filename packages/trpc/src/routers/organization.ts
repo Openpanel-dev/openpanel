@@ -29,12 +29,9 @@ export const organizationRouter = createTRPCRouter({
   inviteUser: protectedProcedure
     .input(zInviteUser)
     .mutation(async ({ input, ctx }) => {
-      const userExists = await db.user.findFirst({
+      const userExists = await db.user.findUnique({
         where: {
-          email: {
-            equals: input.email,
-            mode: 'insensitive',
-          },
+          email: input.email,
         },
       });
 
