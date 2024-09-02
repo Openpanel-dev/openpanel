@@ -20,7 +20,7 @@
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",
     "@openpanel/db": "workspace:^",
-    "@openpanel/nextjs": "1.0.0",
+    "@openpanel/nextjs": "1.0.1",
     "@openpanel/queue": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",
     "@openpanel/validation": "workspace:^",
