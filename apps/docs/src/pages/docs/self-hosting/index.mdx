@@ -11,6 +11,7 @@ This is a simple guide how to get started with OpenPanel on your own VPS.
 ### Prerequisites
 
 - VPS of any kind (only tested on Ubuntu 24.04)
+  - 🙋‍♂️ This should work on any system if you have pre-installed docker, node and pnpm
 - [Clerk.com](https://clerk.com) account (they have a free tier)
 
 ### Quickstart
@@ -39,12 +40,19 @@ The setup script will do 3 things
 3. Execute a node script that will ask some questions about your setup
 4. After this is done you'll need to point a webhook inside Clerk (https://your-domain.com/api/webhook/clerk)
 
-> Setup takes 5-10 minutes depending on your VPS. It'll build all the docker images.
+> Setup takes 1-2 minutes depending on your VPS
 
 ```bash
 cd openpanel/self-hosting
 ./setup
 ```
+
+⚠️ If the `./setup` script fails to run, you can do it manually.
+
+1. Install docker
+2. Install node
+3. Install pnpm
+4. Run the `npx jiti ./quiz.ts` script inside the self-hosting folder
 
 ### Start 🚀
 
