@@ -181,8 +181,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     await createEvent({
       ...payload,
       name: 'session_start',
-      // @ts-expect-error
-      createdAt: toISOString(getTime(payload.createdAt) - 100),
+      createdAt: new Date(getTime(payload.createdAt) - 100),
     });
   }
 

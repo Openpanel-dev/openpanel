@@ -1,4 +1,5 @@
 import type { Job } from 'bullmq';
+import { last } from 'ramda';
 
 import { getTime } from '@openpanel/common';
 import {
@@ -58,12 +59,26 @@ export async function createSessionEnd(
     return acc + event.duration;
   }, 0);
 
-  const sessionStart = events.find((event) => event.name === 'session_start');
+  let sessionStart = events.find((event) => event.name === 'session_start');
   const lastEvent = events[0];
   const screenViews = events.filter((event) => event.name === 'screen_view');
 
   if (!sessionStart) {
-    throw new Error('Failed to find a session_start');
+    const firstScreenView = last(screenViews);
+
+    if (!firstScreenView) {
+      throw new Error('Could not found session_start or any screen_view');
+    }
+
+    job.log('Creating session_start since it was not found');
+
+    sessionStart = {
+      ...firstScreenView,
+      name: 'session_start',
+      createdAt: new Date(getTime(firstScreenView.createdAt) - 100),
+    };
+
+    await createEvent(sessionStart);
   }
 
   if (!lastEvent) {
