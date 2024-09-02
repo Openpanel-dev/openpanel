@@ -2,6 +2,7 @@ import { ALink } from '@/components/ui/button';
 
 import { chQuery, TABLE_NAMES } from '@openpanel/db';
 
+import { cacheable } from '../../../../packages/redis';
 import AnimatedText from './animated-text';
 import { Heading1, Lead2 } from './copy';
 
@@ -13,10 +14,16 @@ function shortNumber(num: number) {
   if (num >= 1e12) return +(num / 1e12).toFixed(1) + 'T';
 }
 
-export async function Hero() {
+const getProjectsWithCount = cacheable(async () => {
   const projects = await chQuery<{ project_id: string; count: number }>(
     `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`
   );
+
+  return projects;
+}, 60 * 10);
+
+export async function Hero() {
+  const projects = await getProjectsWithCount();
   const projectCount = projects.length;
   const eventCount = projects.reduce((acc, { count }) => acc + count, 0);
   return (

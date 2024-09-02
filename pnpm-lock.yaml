@@ -6,7 +6,7 @@ settings:
 
 patchedDependencies:
   '@bull-board/api@5.21.0':
-    hash: 25udjn3ygs6h4rrgl46tnrqrn4
+    hash: 2tcfhzw2ff463lkb7lih3qz7qq
     path: patches/@bull-board__api@5.21.0.patch
 
 importers:
@@ -739,7 +739,7 @@ importers:
         version: 0.1.5
       '@bull-board/api':
         specifier: 5.21.0
-        version: 5.21.0(patch_hash=25udjn3ygs6h4rrgl46tnrqrn4)(@bull-board/ui@5.21.0)
+        version: 5.21.0(patch_hash=2tcfhzw2ff463lkb7lih3qz7qq)(@bull-board/ui@5.21.0)
       '@bull-board/express':
         specifier: 5.21.0
         version: 5.21.0
@@ -3112,7 +3112,7 @@ packages:
     resolution: {integrity: sha512-s3jaWicZd0pkP0jf5ysyHUI/RE7MHos6qlToFcGWXVp+ykHOy77OUMrfbgJ9it2C5bow7OIQwYYaHjk9XlBQ2A==}
     dev: false
 
-  /@bull-board/api@5.21.0(patch_hash=25udjn3ygs6h4rrgl46tnrqrn4)(@bull-board/ui@5.21.0):
+  /@bull-board/api@5.21.0(patch_hash=2tcfhzw2ff463lkb7lih3qz7qq)(@bull-board/ui@5.21.0):
     resolution: {integrity: sha512-27tjptwgRgP1G5jT+POjiZZOP3LgdIM4XdfEWfa6t5E0CYImL4EjmdiFo5lhbHhYKZ842VhIpHuNcPk8nY3K9A==}
     peerDependencies:
       '@bull-board/ui': 5.21.0
@@ -3125,7 +3125,7 @@ packages:
   /@bull-board/express@5.21.0:
     resolution: {integrity: sha512-iBPBJq8KYebYrN4YvdSvEfOxjYYJfWycilAfNDSikyI3rJKOBRq34BmDnQj6Jn1ytssBb+vvZ35+bCSbbhFB3w==}
     dependencies:
-      '@bull-board/api': 5.21.0(patch_hash=25udjn3ygs6h4rrgl46tnrqrn4)(@bull-board/ui@5.21.0)
+      '@bull-board/api': 5.21.0(patch_hash=2tcfhzw2ff463lkb7lih3qz7qq)(@bull-board/ui@5.21.0)
       '@bull-board/ui': 5.21.0
       ejs: 3.1.10
       express: 4.19.2
@@ -3136,7 +3136,7 @@ packages:
   /@bull-board/ui@5.21.0:
     resolution: {integrity: sha512-eH8QQwIHgCXxNEmlg9EZr3fSvno/bdbgBGfSQO5s9c9n9eDEaKX46ambKSPvgFPtwSdiV1AYQEa/3fGSebVIxg==}
     dependencies:
-      '@bull-board/api': 5.21.0(patch_hash=25udjn3ygs6h4rrgl46tnrqrn4)(@bull-board/ui@5.21.0)
+      '@bull-board/api': 5.21.0(patch_hash=2tcfhzw2ff463lkb7lih3qz7qq)(@bull-board/ui@5.21.0)
     dev: false
 
   /@canvas/image-data@1.0.0:
