@@ -137,8 +137,13 @@ const startServer = async () => {
     fastify.register(webhookRouter, { prefix: '/webhook' });
     fastify.register(importRouter, { prefix: '/import' });
     fastify.register(trackRouter, { prefix: '/track' });
-    fastify.setErrorHandler((error) => {
-      logger.error(error, 'Error in request');
+    fastify.setErrorHandler((error, request, reply) => {
+      logger.error(error, 'Error in request', {
+        url: request.url,
+        method: request.method,
+        headers: request.headers,
+      });
+      reply.status(500).send('Internal server error');
     });
     fastify.get('/', (_request, reply) => {
       reply.send({ name: 'openpanel sdk api' });
