@@ -36,7 +36,7 @@ const Retention = ({ params: { projectId } }: Props) => {
               </a>{' '}
               or{' '}
               <a
-                href="https://twitter.com/CarlLindesvard"
+                href="https://x.com/OpenPanelDev"
                 className="font-medium underline"
               >
                 X/Twitter
