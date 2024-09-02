@@ -74,12 +74,13 @@ const loadPackages = (
       const pkgJson = JSON.parse(
         fs.readFileSync(pkgPath, 'utf-8')
       ) as PackageJson;
+      const version = pkgJson.version.replace(/-local$/, '');
       return [
         pkgJson.name,
         {
           ...pkgJson,
-          version: pkgJson.version.replace(/-local$/, ''),
-          nextVersion: getNextVersion(pkgJson.version, releaseType),
+          version: version,
+          nextVersion: getNextVersion(version, releaseType),
           localPath: `./packages/sdks/${sdk}`,
         },
       ];
@@ -200,6 +201,8 @@ const restoreAndUpdateLocal = (
   const filesToRestore = dependents
     .map((dep) => workspacePath(packages[dep]!.localPath))
     .join(' ');
+  console.log(`git checkout ${filesToRestore}`);
+
   execSync(`git checkout ${filesToRestore}`);
 
   dependents.forEach((dep) => {
@@ -263,6 +266,7 @@ function main() {
     );
   }
 
+  const originalPackages = loadPackages(args['--type'] as ReleaseType);
   const packages = loadPackages(args['--type'] as ReleaseType);
   const target = packages[args['--name']];
 
@@ -290,7 +294,7 @@ function main() {
     };
 
     publishPackages(packages, dependents, config);
-    restoreAndUpdateLocal(packages, dependents);
+    restoreAndUpdateLocal(originalPackages, dependents);
   }
 
   console.log('✅ All done!');
