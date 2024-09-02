@@ -107,7 +107,8 @@ const findDependents = (
 
 const updatePackageJsonForRelease = (
   packages: Record<string, PackageInfo>,
-  name: string
+  name: string,
+  dependents: string[]
 ): void => {
   const { nextVersion, localPath, ...restPkgJson } = packages[name]!;
   const newPkgJson: PackageJson = {
@@ -139,7 +140,10 @@ const updatePackageJsonForRelease = (
       Object.entries(restPkgJson.dependencies || {}).map(
         ([depName, depVersion]) => [
           depName,
-          packages[depName]?.nextVersion || depVersion,
+          dependents.includes(depName)
+            ? packages[depName]?.nextVersion ||
+              depVersion.replace(/-local$/, '')
+            : depVersion.replace(/-local$/, ''),
         ]
       )
     ),
@@ -280,7 +284,7 @@ function main() {
     console.log(
       `📦 ${dep} · Old Version: ${packages[dep]!.version} · Next Version: ${packages[dep]!.nextVersion}`
     );
-    updatePackageJsonForRelease(packages, dep);
+    updatePackageJsonForRelease(packages, dep, dependents);
   });
 
   buildPackages(packages, dependents);

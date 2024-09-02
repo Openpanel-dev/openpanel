@@ -192,8 +192,8 @@ importers:
         specifier: workspace:^
         version: link:../../packages/db
       '@openpanel/nextjs':
-        specifier: 1.0.0
-        version: 1.0.0(next@14.2.1)(react-dom@18.2.0)(react@18.2.0)
+        specifier: 1.0.3
+        version: 1.0.3(next@14.2.1)(react-dom@18.2.0)(react@18.2.0)
       '@openpanel/queue':
         specifier: workspace:^
         version: link:../../packages/queue
@@ -4903,6 +4903,19 @@ packages:
 
   /@openpanel/nextjs@1.0.0(next@14.2.1)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-c4x8WL1yf2cdUQnrhUFyU5oWI6OG1/uuTbEO1UdrX3Mzz0XgZ1NzWY5WUFRLgz7OHvS3vRPzEnFpMb3baD8/Mg==}
+    peerDependencies:
+      next: ^12.0.0 || ^13.0.0 || ^14.0.0
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@openpanel/web': 1.0.0
+      next: 14.2.1(@opentelemetry/api@1.8.0)(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
+  /@openpanel/nextjs@1.0.3(next@14.2.1)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-Fu6hG8rm4rT7IudYL/o7RSBzZZ3L2AWyxzba/eDDxaYjrPMsoGZl5CC/VOrp27WePua49bduS/mq+oIp4RgR5g==}
     peerDependencies:
       next: ^12.0.0 || ^13.0.0 || ^14.0.0
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
