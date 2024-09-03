@@ -169,7 +169,9 @@ const buildPackages = (
 
   dependents.forEach((dep) => {
     console.log(`🔨 Building ${dep}`);
-    execSync(`pnpm build ${versionEnvs.join(' ')}`, {
+    const cmd = `pnpm build ${versionEnvs.join(' ')}`;
+    console.log(`  Running: ${cmd}`);
+    execSync(cmd, {
       cwd: workspacePath(packages[dep]!.localPath),
     });
   });
