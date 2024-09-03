@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { db } from '@openpanel/db';
 import { zInviteUser } from '@openpanel/validation';
 
+import { getOrganizationAccess, getOrganizationAccessCached } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const organizationRouter = createTRPCRouter({
@@ -15,7 +17,16 @@ export const organizationRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       return db.organization.update({
         where: {
           id: input.id,
@@ -29,6 +40,15 @@ export const organizationRouter = createTRPCRouter({
   inviteUser: protectedProcedure
     .input(zInviteUser)
     .mutation(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationSlug,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       const email = input.email.toLowerCase();
       const userExists = await db.user.findFirst({
         where: {
@@ -68,12 +88,22 @@ export const organizationRouter = createTRPCRouter({
         memberId: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const member = await db.member.findUniqueOrThrow({
         where: {
           id: input.memberId,
         },
       });
+
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: member.organizationId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       const invitationId = pathOr<string | undefined>(
         undefined,
         ['meta', 'invitationId'],
@@ -107,6 +137,15 @@ export const organizationRouter = createTRPCRouter({
         throw new Error('You cannot remove yourself from the organization');
       }
 
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       await db.$transaction([
         db.member.deleteMany({
           where: {
@@ -131,7 +170,16 @@ export const organizationRouter = createTRPCRouter({
         access: z.array(z.string()),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId,
+        organizationId: input.organizationSlug,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       return db.$transaction([
         db.projectAccess.deleteMany({
           where: {

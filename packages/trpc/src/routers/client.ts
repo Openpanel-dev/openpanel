@@ -5,6 +5,8 @@ import { hashPassword, stripTrailingSlash } from '@openpanel/common';
 import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
 
+import { getClientAccess } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const clientRouter = createTRPCRouter({
@@ -17,7 +19,16 @@ export const clientRouter = createTRPCRouter({
         crossDomain: z.boolean().optional(),
       })
     )
-    .mutation(({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getClientAccess({
+        userId: ctx.session.userId,
+        clientId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this client');
+      }
+
       return db.client.update({
         where: {
           id: input.id,
@@ -66,7 +77,16 @@ export const clientRouter = createTRPCRouter({
         id: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getClientAccess({
+        userId: ctx.session.userId,
+        clientId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this client');
+      }
+
       await db.client.delete({
         where: {
           id: input.id,

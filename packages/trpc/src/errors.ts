@@ -5,3 +5,9 @@ export const TRPCAccessError = (message: string) =>
     code: 'UNAUTHORIZED',
     message,
   });
+
+export const TRPCNotFoundError = (message: string) =>
+  new TRPCError({
+    code: 'NOT_FOUND',
+    message,
+  });

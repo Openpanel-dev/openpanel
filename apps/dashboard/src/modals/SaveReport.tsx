@@ -114,7 +114,6 @@ export default function SaveReport({ report }: SaveReportProps) {
                     dashboardMutation.mutate({
                       projectId,
                       name: value,
-                      organizationSlug,
                     });
                   }}
                 />

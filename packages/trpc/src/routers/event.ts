@@ -27,18 +27,20 @@ export const eventRouter = createTRPCRouter({
         conversion: z.boolean().optional(),
       })
     )
-    .mutation(({ input: { projectId, name, icon, color, conversion } }) => {
-      return db.eventMeta.upsert({
-        where: {
-          name_projectId: {
-            name,
-            projectId,
+    .mutation(
+      async ({ input: { projectId, name, icon, color, conversion } }) => {
+        return db.eventMeta.upsert({
+          where: {
+            name_projectId: {
+              name,
+              projectId,
+            },
           },
-        },
-        create: { projectId, name, icon, color, conversion },
-        update: { icon, color, conversion },
-      });
-    }),
+          create: { projectId, name, icon, color, conversion },
+          update: { icon, color, conversion },
+        });
+      }
+    ),
 
   byId: protectedProcedure
     .input(
@@ -78,8 +80,10 @@ export const eventRouter = createTRPCRouter({
         profile: z.boolean().optional(),
       })
     )
-    .query(async ({ input }) => getEventList(input)),
-  conversions: publicProcedure
+    .query(async ({ input }) => {
+      return getEventList(input);
+    }),
+  conversions: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),

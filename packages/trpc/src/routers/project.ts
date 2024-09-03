@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { db, getId, getProjectsByOrganizationSlug } from '@openpanel/db';
 
+import { getProjectAccess } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const projectRouter = createTRPCRouter({
@@ -23,7 +25,16 @@ export const projectRouter = createTRPCRouter({
         name: z.string(),
       })
     )
-    .mutation(({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       return db.project.update({
         where: {
           id: input.id,
@@ -56,7 +67,16 @@ export const projectRouter = createTRPCRouter({
         id: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       await db.project.delete({
         where: {
           id: input.id,

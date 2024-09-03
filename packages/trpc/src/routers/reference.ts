@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { db, getReferences } from '@openpanel/db';
 import { zCreateReference, zRange } from '@openpanel/validation';
 
+import { getProjectAccess } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { getChartStartEndDate } from './chart.helpers';
 
@@ -23,7 +25,22 @@ export const referenceRouter = createTRPCRouter({
     ),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input: { id } }) => {
+    .mutation(async ({ input: { id }, ctx }) => {
+      const reference = await db.reference.findUniqueOrThrow({
+        where: {
+          id,
+        },
+      });
+
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: reference.projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       return db.reference.delete({
         where: {
           id,
