@@ -23,15 +23,15 @@ pnpm install @openpanel/nextjs
 
 ### Initialize
 
-Add `OpenpanelComponent` to your root layout component.
+Add `OpenPanelComponent` to your root layout component.
 
 ```tsx
-import { OpenpanelComponent } from '@openpanel/nextjs';
+import { OpenPanelComponent } from '@openpanel/nextjs';
 
 export default RootLayout({ children }) {
   return (
     <>
-      <OpenpanelComponent
+      <OpenPanelComponent
         clientId="your-client-id"
         trackScreenViews={true}
         // trackAttributes={true}
@@ -61,7 +61,7 @@ export default RootLayout({ children }) {
 This options needs to be a stringified function and cannot access any variables outside of the function.
 
 ```tsx
-<OpenpanelComponent
+<OpenPanelComponent
   clientId="your-client-id"
   filter={`
     function filter(event) {
@@ -79,7 +79,7 @@ const opFilter = ((event: TrackHandlerPayload) => {
   return event.type === 'track' && event.payload.name === 'my_event';
 }).toString();
 
-<OpenpanelComponent
+<OpenPanelComponent
   clientId="your-client-id"
   filter={opFilter}
 />
@@ -287,10 +287,10 @@ import { createNextRouteHandler } from '@openpanel/nextjs/server';
 export const POST = createNextRouteHandler();
 ```
 
-Remember to change the `apiUrl` in the `OpenpanelComponent` to your own server.
+Remember to change the `apiUrl` in the `OpenPanelComponent` to your own server.
 
 ```tsx {2}
-<OpenpanelComponent
+<OpenPanelComponent
   apiUrl="/api/op"
   clientId="your-client-id"
   trackScreenViews={true}
