@@ -28,6 +28,15 @@ export type IImportedEvent = Omit<
   properties: Record<string, unknown>;
 };
 
+export type IServicePage = {
+  path: string;
+  count: number;
+  project_id: string;
+  first_seen: string;
+  title: string;
+  origin: string;
+};
+
 export interface IClickhouseEvent {
   id: string;
   name: string;
@@ -492,4 +501,31 @@ export async function getLastScreenViewFromProfileId({
     : [];
 
   return eventInDb || null;
+}
+
+export async function getTopPages({
+  projectId,
+  cursor,
+  take,
+  search,
+}: {
+  projectId: string;
+  cursor?: number;
+  take: number;
+  search?: string;
+}) {
+  const res = await chQuery<IServicePage>(`
+    SELECT path, count(*) as count, project_id, first_value(created_at) as first_seen, max(properties['__title']) as title, origin
+    FROM events_v2 
+    WHERE name = 'screen_view' 
+    AND  project_id = ${escape(projectId)} 
+    AND created_at > now() - INTERVAL 30 DAY 
+    ${search ? `AND path LIKE '%${search}%'` : ''}
+    GROUP BY path, project_id, origin
+    ORDER BY count desc 
+    LIMIT ${take} 
+    OFFSET ${Math.max(0, (cursor ?? 0) * take)}
+  `);
+
+  return res;
 }

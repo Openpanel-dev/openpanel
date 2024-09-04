@@ -45,7 +45,11 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
     endDate,
     range,
     lineType,
+    aspectRatio,
+    hideXAxis,
+    hideYAxis,
   } = useChartContext();
+  const dataLength = data.series[0]?.data?.length || 0;
   const references = api.reference.getChartReferences.useQuery(
     {
       projectId,
@@ -120,11 +124,10 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
   }, [series]);
 
   const isAreaStyle = series.length === 1;
-
   return (
     <>
-      <div className={cn(editMode && 'card p-4')}>
-        <ResponsiveContainer>
+      <div className={cn('w-full', editMode && 'card p-4')}>
+        <ResponsiveContainer aspectRatio={aspectRatio}>
           {({ width, height }) => (
             <ComposedChart width={width} height={height} data={rechartData}>
               <CartesianGrid
@@ -149,7 +152,7 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
                 />
               ))}
               <YAxis
-                width={getYAxisWidth(data.metrics.max)}
+                width={hideYAxis ? 0 : getYAxisWidth(data.metrics.max)}
                 fontSize={12}
                 axisLine={false}
                 tickLine={false}
@@ -164,6 +167,7 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
               )}
               <Tooltip content={<ReportChartTooltip />} />
               <XAxis
+                height={hideXAxis ? 0 : undefined}
                 axisLine={false}
                 fontSize={12}
                 dataKey="timestamp"
@@ -212,7 +216,7 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
                       )}
                     </defs>
                     <Line
-                      dot={isAreaStyle}
+                      dot={isAreaStyle && dataLength <= 8}
                       type={lineType}
                       name={serie.id}
                       isAnimationActive={false}

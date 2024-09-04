@@ -9,6 +9,7 @@ import { useUser } from '@clerk/nextjs';
 import {
   GanttChartIcon,
   Globe2Icon,
+  LayersIcon,
   LayoutPanelTopIcon,
   PlusIcon,
   ScanEyeIcon,
@@ -88,6 +89,11 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
         icon={LayoutPanelTopIcon}
         label="Dashboards"
         href={`/${params.organizationSlug}/${projectId}/dashboards`}
+      />
+      <LinkWithIcon
+        icon={LayersIcon}
+        label="Pages"
+        href={`/${params.organizationSlug}/${projectId}/pages`}
       />
       <LinkWithIcon
         icon={Globe2Icon}

@@ -9,7 +9,7 @@ export function PageTabs({
   className?: string;
 }) {
   return (
-    <div className={cn('overflow-x-auto', className)}>
+    <div className={cn('h-7 overflow-x-auto', className)}>
       <div className="flex gap-4 whitespace-nowrap text-3xl font-semibold">
         {children}
       </div>

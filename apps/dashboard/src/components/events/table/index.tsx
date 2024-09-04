@@ -3,8 +3,10 @@ import { DataTable } from '@/components/data-table';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
+import { TableSkeleton } from '@/components/ui/table';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { GanttChartIcon } from 'lucide-react';
+import { column } from 'mathjs';
 
 import type { IServiceEvent } from '@openpanel/db';
 
@@ -25,15 +27,7 @@ export const EventsTable = ({ query, ...props }: Props) => {
   const { data, isFetching, isLoading } = query;
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-      </div>
-    );
+    return <TableSkeleton cols={columns.length} />;
   }
 
   if (data?.length === 0) {

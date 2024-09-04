@@ -17,7 +17,7 @@ const ListDashboardsServer = async ({ projectId }: Props) => {
   return (
     <Padding>
       <HeaderDashboards />
-      <ListDashboards dashboards={dashboards} />;
+      <ListDashboards dashboards={dashboards} />
     </Padding>
   );
 };

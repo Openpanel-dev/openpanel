@@ -6,6 +6,9 @@ import type { LucideIcon } from 'lucide-react';
 import type { IChartProps, IChartSerie } from '@openpanel/validation';
 
 export interface IChartContextType extends IChartProps {
+  hideXAxis?: boolean;
+  hideYAxis?: boolean;
+  aspectRatio?: number;
   editMode?: boolean;
   hideID?: boolean;
   onClick?: (item: IChartSerie) => void;

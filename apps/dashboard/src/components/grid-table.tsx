@@ -60,7 +60,7 @@ export const GridCell: React.FC<
 }) => (
   <Component
     className={cn(
-      'flex h-12 items-center whitespace-nowrap px-4 align-middle shadow-[0_0_0_0.5px] shadow-border',
+      'flex min-h-12 items-center whitespace-nowrap px-4 align-middle shadow-[0_0_0_0.5px] shadow-border',
       isHeader && 'h-10 bg-def-100 font-semibold text-muted-foreground',
       colSpan && `col-span-${colSpan}`,
       className

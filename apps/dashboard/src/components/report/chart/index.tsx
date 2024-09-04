@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import * as Portal from '@radix-ui/react-portal';
 
 import type { IChartProps } from '@openpanel/validation';
 
@@ -24,14 +25,18 @@ export function ChartRoot(props: IChartContextType) {
     return props.chartType === 'metric' ? (
       <MetricCardLoading />
     ) : (
-      <ChartLoading />
+      <ChartLoading aspectRatio={props.aspectRatio} />
     );
   }
 
   return (
     <Suspense
       fallback={
-        props.chartType === 'metric' ? <MetricCardLoading /> : <ChartLoading />
+        props.chartType === 'metric' ? (
+          <MetricCardLoading />
+        ) : (
+          <ChartLoading aspectRatio={props.aspectRatio} />
+        )
       }
     >
       <ChartProvider {...props}>
@@ -49,9 +54,13 @@ interface ChartRootShortcutProps {
   interval?: IChartProps['interval'];
   events: IChartProps['events'];
   breakdowns?: IChartProps['breakdowns'];
+  lineType?: IChartProps['lineType'];
+  hideXAxis?: boolean;
+  aspectRatio?: number;
 }
 
 export const ChartRootShortcut = ({
+  hideXAxis,
   projectId,
   range = '7d',
   previous = false,
@@ -59,19 +68,25 @@ export const ChartRootShortcut = ({
   interval = 'day',
   events,
   breakdowns,
+  aspectRatio,
+  lineType = 'monotone',
 }: ChartRootShortcutProps) => {
   return (
-    <ChartRoot
-      projectId={projectId}
-      range={range}
-      breakdowns={breakdowns ?? []}
-      previous={previous}
-      chartType={chartType}
-      interval={interval}
-      name="Random"
-      lineType="bump"
-      metric="sum"
-      events={events}
-    />
+    <Portal.Root>
+      <ChartRoot
+        projectId={projectId}
+        range={range}
+        breakdowns={breakdowns ?? []}
+        previous={previous}
+        chartType={chartType}
+        interval={interval}
+        name="Random"
+        lineType={lineType}
+        metric="sum"
+        events={events}
+        aspectRatio={aspectRatio}
+        hideXAxis={hideXAxis}
+      />
+    </Portal.Root>
   );
 };

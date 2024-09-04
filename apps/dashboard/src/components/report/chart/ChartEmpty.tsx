@@ -1,8 +1,8 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { cn } from '@/utils/cn';
 
 import { useChartContext } from './ChartProvider';
 import { MetricCardEmpty } from './MetricCard';
+import { ResponsiveContainer } from './ResponsiveContainer';
 
 export function ChartEmpty() {
   const { editMode, chartType } = useChartContext();
@@ -20,12 +20,10 @@ export function ChartEmpty() {
   }
 
   return (
-    <div
-      className={
-        'flex aspect-video max-h-[300px] min-h-[200px] w-full items-center justify-center'
-      }
-    >
-      No data
-    </div>
+    <ResponsiveContainer>
+      <div className={'flex h-full w-full items-center justify-center'}>
+        No data
+      </div>
+    </ResponsiveContainer>
   );
 }

@@ -1,15 +1,20 @@
 import { cn } from '@/utils/cn';
 
+import { ResponsiveContainer } from './ResponsiveContainer';
+
 interface ChartLoadingProps {
   className?: string;
+  aspectRatio?: number;
 }
-export function ChartLoading({ className }: ChartLoadingProps) {
+export function ChartLoading({ className, aspectRatio }: ChartLoadingProps) {
   return (
-    <div
-      className={cn(
-        'bg-def-200 aspect-video max-h-[300px] min-h-[200px] w-full animate-pulse rounded',
-        className
-      )}
-    />
+    <ResponsiveContainer aspectRatio={aspectRatio}>
+      <div
+        className={cn(
+          'h-full w-full animate-pulse rounded bg-def-200',
+          className
+        )}
+      />
+    </ResponsiveContainer>
   );
 }

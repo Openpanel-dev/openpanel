@@ -8,6 +8,7 @@ import {
   db,
   getEventList,
   getEvents,
+  getTopPages,
   TABLE_NAMES,
 } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
@@ -69,7 +70,6 @@ export const eventRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         cursor: z.number().optional(),
-        limit: z.number().default(8),
         profileId: z.string().optional(),
         take: z.number().default(50),
         events: z.array(z.string()).optional(),
@@ -164,5 +164,18 @@ export const eventRouter = createTRPCRouter({
         })),
         count: counts[0]?.count ?? 0,
       };
+    }),
+
+  pages: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        cursor: z.number().optional(),
+        take: z.number().default(20),
+        search: z.string().optional(),
+      })
+    )
+    .query(async ({ input }) => {
+      return getTopPages(input);
     }),
 });

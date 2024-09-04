@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { db } from '@openpanel/db';
 import { zInviteUser } from '@openpanel/validation';
 
-import { getOrganizationAccess, getOrganizationAccessCached } from '../access';
+import { getOrganizationAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
