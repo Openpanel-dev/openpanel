@@ -1,5 +1,6 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
+import { useEventProperties } from '@/hooks/useEventProperties';
 import { useDispatch, useSelector } from '@/redux';
 import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -20,7 +21,7 @@ export function EventPropertiesCombobox({
   const { projectId } = useAppParams();
   const range = useSelector((state) => state.report.range);
   const interval = useSelector((state) => state.report.interval);
-  const query = api.chart.properties.useQuery(
+  const properties = useEventProperties(
     {
       event: event.name,
       projectId,
@@ -30,9 +31,7 @@ export function EventPropertiesCombobox({
     {
       enabled: !!event.name,
     }
-  );
-
-  const properties = (query.data ?? []).map((item) => ({
+  ).map((item) => ({
     label: item,
     value: item,
   }));
