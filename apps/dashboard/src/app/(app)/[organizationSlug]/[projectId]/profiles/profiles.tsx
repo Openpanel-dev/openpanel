@@ -1,6 +1,9 @@
 'use client';
 
+import { TableButtons } from '@/components/data-table';
 import { ProfilesTable } from '@/components/profiles/table';
+import { Input } from '@/components/ui/input';
+import { useDebounceValue } from '@/hooks/useDebounceValue';
 import { api } from '@/trpc/client';
 import { parseAsInteger, useQueryState } from 'nuqs';
 
@@ -14,12 +17,17 @@ const Events = ({ projectId }: Props) => {
     'cursor',
     parseAsInteger.withDefault(0)
   );
+  const [search, setSearch] = useQueryState('search', {
+    defaultValue: '',
+    shallow: true,
+  });
+  const debouncedSearch = useDebounceValue(search, 500);
   const query = api.profile.list.useQuery(
     {
       cursor,
       projectId,
       take: 50,
-      // filters,
+      search: debouncedSearch,
     },
     {
       keepPreviousData: true,
@@ -28,6 +36,13 @@ const Events = ({ projectId }: Props) => {
 
   return (
     <div>
+      <TableButtons>
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search profiles"
+        />
+      </TableButtons>
       <ProfilesTable query={query} cursor={cursor} setCursor={setCursor} />
     </div>
   );

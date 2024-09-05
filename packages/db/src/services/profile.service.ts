@@ -66,6 +66,7 @@ interface GetProfileListOptions {
   take: number;
   cursor?: number;
   filters?: IChartEventFilter[];
+  search?: string;
 }
 
 export async function getProfiles(ids: string[]) {
@@ -90,6 +91,7 @@ export async function getProfileList({
   cursor,
   projectId,
   filters,
+  search,
 }: GetProfileListOptions) {
   const { sb, getSql } = createSqlBuilder();
   sb.from = 'profiles FINAL';
@@ -98,6 +100,13 @@ export async function getProfileList({
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
+  if (search) {
+    if (search.includes('@')) {
+      sb.where.email = `email ILIKE '%${search}%'`;
+    } else {
+      sb.where.first_name = `first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%'`;
+    }
+  }
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
 }
@@ -107,7 +116,7 @@ export async function getProfileListCount({
   filters,
 }: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
   const { sb, getSql } = createSqlBuilder();
-  sb.from = 'profiles FINAL';
+  sb.from = 'profiles';
   sb.select.count = 'count(id) as count';
   sb.where.project_id = `project_id = ${escape(projectId)}`;
   sb.groupBy.project_id = 'project_id';
