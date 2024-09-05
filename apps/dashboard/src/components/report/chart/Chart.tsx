@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/trpc/client';
 import debounce from 'lodash.debounce';
+import isEqual from 'lodash.isequal';
 
 import type { IChartProps } from '@openpanel/validation';
 
@@ -18,94 +19,51 @@ import { ReportPieChart } from './ReportPieChart';
 
 export type ReportChartProps = IChartProps;
 
+const pluckChartContext = (context: IChartProps) => ({
+  chartType: context.chartType,
+  interval: context.interval,
+  breakdowns: context.breakdowns,
+  range: context.range,
+  previous: context.previous,
+  formula: context.formula,
+  metric: context.metric,
+  projectId: context.projectId,
+  startDate: context.startDate,
+  endDate: context.endDate,
+  limit: context.limit,
+  offset: context.offset,
+  events: context.events.map((event) => ({
+    ...event,
+    filters: event.filters?.filter((filter) => filter.value.length > 0),
+  })),
+});
+
+// TODO: Quick hack to avoid re-fetching
+//       Will refactor the entire chart component soon anyway...
 function useChartData() {
-  const {
-    interval,
-    events,
-    breakdowns,
-    chartType,
-    range,
-    previous,
-    formula,
-    metric,
-    projectId,
-    startDate,
-    endDate,
-    limit,
-    offset,
-  } = useChartContext();
-
-  const [debouncedParams, setDebouncedParams] = useState({
-    interval,
-    events,
-    breakdowns,
-    chartType,
-    range,
-    previous,
-    formula,
-    metric,
-    projectId,
-    startDate,
-    endDate,
-    limit,
-    offset,
-  });
-
-  const debouncedSetParams = useMemo(
-    () => debounce(setDebouncedParams, 500),
-    []
-  );
+  const context = useChartContext();
+  const [params, setParams] = useState(() => pluckChartContext(context));
+  const debouncedSetParams = useMemo(() => debounce(setParams, 500), []);
 
   useEffect(() => {
-    debouncedSetParams({
-      interval,
-      events: events.map((event) => ({
-        ...event,
-        filters: event.filters?.filter((filter) => filter.value.length > 0),
-      })),
-      breakdowns,
-      chartType,
-      range,
-      previous,
-      formula,
-      metric,
-      projectId,
-      startDate,
-      endDate,
-      limit,
-      offset,
-    });
+    const newParams = pluckChartContext(context);
+    if (!isEqual(newParams, params)) {
+      debouncedSetParams(newParams);
+    }
     return () => {
       debouncedSetParams.cancel();
     };
-  }, [
-    interval,
-    events,
-    breakdowns,
-    chartType,
-    range,
-    previous,
-    formula,
-    metric,
-    projectId,
-    startDate,
-    endDate,
-    limit,
-    offset,
-    debouncedSetParams,
-  ]);
+  }, [context, params, debouncedSetParams]);
 
-  const [data] = api.chart.chart.useSuspenseQuery(debouncedParams, {
+  return api.chart.chart.useSuspenseQuery(params, {
     keepPreviousData: true,
     staleTime: 1000 * 60 * 1,
   });
-
-  return data;
 }
 
 export function Chart() {
   const { chartType } = useChartContext();
-  const data = useChartData();
+  const [data] = useChartData();
 
   if (data.series.length === 0) {
     return <ChartEmpty />;

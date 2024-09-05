@@ -181,4 +181,24 @@ export const eventRouter = createTRPCRouter({
     .query(async ({ input }) => {
       return getTopPages(input);
     }),
+
+  origin: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      })
+    )
+    .query(async ({ input }) => {
+      const res = await chQuery<{ origin: string }>(
+        `SELECT DISTINCT origin FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(
+          input.projectId
+        )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY ORDER BY origin ASC`
+      );
+
+      return res.sort((a, b) =>
+        a.origin
+          .replace(/https?:\/\//, '')
+          .localeCompare(b.origin.replace(/https?:\/\//, ''))
+      );
+    }),
 });

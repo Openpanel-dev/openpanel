@@ -12,7 +12,7 @@ import {
 import { useProfileProperties } from '@/hooks/useProfileProperties';
 import { useProfileValues } from '@/hooks/useProfileValues';
 import { usePropertyValues } from '@/hooks/usePropertyValues';
-import { XIcon } from 'lucide-react';
+import { GlobeIcon, XIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
 import type {
@@ -22,6 +22,7 @@ import type {
 } from '@openpanel/validation';
 
 import { useOverviewOptions } from '../useOverviewOptions';
+import { OriginFilter } from './origin-filter';
 
 export interface OverviewFiltersDrawerContentProps {
   projectId: string;
@@ -52,6 +53,7 @@ export function OverviewFiltersDrawerContent({
 
       <div className="mt-8 flex flex-col rounded-md border bg-def-100">
         <div className="flex flex-col gap-4 p-4">
+          <OriginFilter />
           {enableEventsFilter && (
             <ComboboxAdvanced
               className="w-full"
@@ -106,10 +108,8 @@ export function OverviewFiltersDrawerContent({
                 startDate={startDate}
                 endDate={endDate}
               />
-            ) : (
-              /* TODO: Implement profile filters */
-              null
-            );
+            ) : /* TODO: Implement profile filters */
+            null;
           })}
       </div>
     </div>
