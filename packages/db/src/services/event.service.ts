@@ -1,9 +1,9 @@
-import { omit, uniq } from 'ramda';
+import { mergeDeepRight, omit, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import { getRedisCache } from '@openpanel/redis';
+import { cacheable, getRedisCache } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { eventBuffer } from '../buffers';
@@ -103,7 +103,7 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     referrerType: event.referrer_type,
     profile: event.profile,
     meta: event.meta,
-    importedAt: event.imported_at ? new Date(event.imported_at) : null,
+    importedAt: event.imported_at ? new Date(event.imported_at) : undefined,
     sdkName: event.sdk_name,
     sdkVersion: event.sdk_version,
   };
@@ -144,12 +144,16 @@ export interface IServiceEvent {
   referrer: string | undefined;
   referrerName: string | undefined;
   referrerType: string | undefined;
-  importedAt: Date | null;
+  importedAt: Date | undefined;
   profile: IServiceProfile | undefined;
   meta: EventMeta | undefined;
   sdkName: string | undefined;
   sdkVersion: string | undefined;
 }
+
+type SelectHelper<T> = {
+  [K in keyof T]?: boolean;
+};
 
 export interface IServiceEventMinimal {
   id: string;
@@ -330,8 +334,7 @@ export interface GetEventListOptions {
   filters?: IChartEventFilter[];
   startDate?: Date;
   endDate?: Date;
-  meta?: boolean;
-  profile?: boolean;
+  select?: SelectHelper<IServiceEvent>;
 }
 
 export async function getEventList({
@@ -343,27 +346,118 @@ export async function getEventList({
   filters,
   startDate,
   endDate,
-  meta = true,
-  profile = true,
+  select: incomingSelect,
 }: GetEventListOptions) {
   const { sb, getSql, join } = createSqlBuilder();
 
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.where.projectId = `project_id = ${escape(projectId)}`;
+  const select = mergeDeepRight(
+    {
+      id: true,
+      name: true,
+      deviceId: true,
+      profileId: true,
+      projectId: true,
+      createdAt: true,
+      path: true,
+      duration: true,
+      city: true,
+      country: true,
+      os: true,
+      browser: true,
+    },
+    incomingSelect ?? {}
+  );
 
-  sb.select.id = 'id';
-  sb.select.name = 'name';
-  sb.select.deviceId = 'device_id';
-  sb.select.profileId = 'profile_id';
-  sb.select.projectId = 'project_id';
-  sb.select.createdAt = 'created_at';
-  sb.select.path = 'path';
-  sb.select.duration = 'duration';
-  sb.select.city = 'city';
-  sb.select.country = 'country';
-  sb.select.os = 'os';
-  sb.select.browser = 'browser';
+  if (select.id) {
+    sb.select.id = 'id';
+  }
+  if (select.name) {
+    sb.select.name = 'name';
+  }
+  if (select.deviceId) {
+    sb.select.deviceId = 'device_id';
+  }
+  if (select.profileId) {
+    sb.select.profileId = 'profile_id';
+  }
+  if (select.projectId) {
+    sb.select.projectId = 'project_id';
+  }
+  if (select.sessionId) {
+    sb.select.sessionId = 'session_id';
+  }
+  if (select.properties) {
+    sb.select.properties = 'properties';
+  }
+  if (select.createdAt) {
+    sb.select.createdAt = 'created_at';
+  }
+  if (select.country) {
+    sb.select.country = 'country';
+  }
+  if (select.city) {
+    sb.select.city = 'city';
+  }
+  if (select.region) {
+    sb.select.region = 'region';
+  }
+  if (select.longitude) {
+    sb.select.longitude = 'longitude';
+  }
+  if (select.latitude) {
+    sb.select.latitude = 'latitude';
+  }
+  if (select.os) {
+    sb.select.os = 'os';
+  }
+  if (select.osVersion) {
+    sb.select.osVersion = 'os_version';
+  }
+  if (select.browser) {
+    sb.select.browser = 'browser';
+  }
+  if (select.browserVersion) {
+    sb.select.browserVersion = 'browser_version';
+  }
+  if (select.device) {
+    sb.select.device = 'device';
+  }
+  if (select.brand) {
+    sb.select.brand = 'brand';
+  }
+  if (select.model) {
+    sb.select.model = 'model';
+  }
+  if (select.duration) {
+    sb.select.duration = 'duration';
+  }
+  if (select.path) {
+    sb.select.path = 'path';
+  }
+  if (select.origin) {
+    sb.select.origin = 'origin';
+  }
+  if (select.referrer) {
+    sb.select.referrer = 'referrer';
+  }
+  if (select.referrerName) {
+    sb.select.referrerName = 'referrer_name';
+  }
+  if (select.referrerType) {
+    sb.select.referrerType = 'referrer_type';
+  }
+  if (select.importedAt) {
+    sb.select.importedAt = 'imported_at';
+  }
+  if (select.sdkName) {
+    sb.select.sdkName = 'sdk_name';
+  }
+  if (select.sdkVersion) {
+    sb.select.sdkVersion = 'sdk_version';
+  }
 
   if (profileId) {
     sb.where.deviceId = `device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} group by did)`;
@@ -394,9 +488,13 @@ export async function getEventList({
   sb.orderBy.created_at =
     'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
 
-  return getEvents(getSql(), { profile, meta });
+  return getEvents(getSql(), {
+    profile: select.profile ?? true,
+    meta: select.meta ?? true,
+  });
 }
 
+export const getEventsCountCached = cacheable(getEventsCount, 60 * 60);
 export async function getEventsCount({
   projectId,
   profileId,

@@ -3,7 +3,12 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import type { GetEventListOptions } from '@openpanel/db';
-import { ClientType, db, getEventList, getEventsCount } from '@openpanel/db';
+import {
+  ClientType,
+  db,
+  getEventList,
+  getEventsCountCached,
+} from '@openpanel/db';
 import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
 import { zChartInput } from '@openpanel/validation';
 
@@ -108,13 +113,19 @@ export async function events(
     endDate: query.data.end ? new Date(query.data.end) : undefined,
     cursor,
     take,
-    meta: false,
-    profile: query.data.includes?.includes('profile'),
+    select: {
+      profile: false,
+      meta: false,
+      ...query.data.includes?.reduce(
+        (acc, key) => ({ ...acc, [key]: true }),
+        {}
+      ),
+    },
   };
 
   const [data, totalCount] = await Promise.all([
     getEventList(options),
-    getEventsCount(options),
+    getEventsCountCached(options),
   ]);
 
   reply.send({

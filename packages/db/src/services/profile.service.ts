@@ -76,7 +76,7 @@ export async function getProfiles(ids: string[]) {
   }
 
   const data = await chQuery<IClickhouseProfile>(
-    `SELECT *
+    `SELECT id, first_name, last_name, email, avatar, is_external
     FROM profiles FINAL 
     WHERE id IN (${filteredIds.map((id) => escape(id)).join(',')})
     `
@@ -174,10 +174,9 @@ export function transformProfile({
     firstName: first_name,
     lastName: last_name,
     isExternal: profile.is_external,
-    properties: omit(
-      ['browserVersion', 'osVersion'],
-      toObject(profile.properties)
-    ),
+    properties: profile.properties
+      ? omit(['browserVersion', 'osVersion'], toObject(profile.properties))
+      : {},
     createdAt: new Date(created_at),
   };
 }
