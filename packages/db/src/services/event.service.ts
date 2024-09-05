@@ -618,7 +618,7 @@ export async function getTopPages({
     WHERE name = 'screen_view' 
     AND  project_id = ${escape(projectId)} 
     AND created_at > now() - INTERVAL 30 DAY 
-    ${search ? `AND path LIKE '%${search}%'` : ''}
+    ${search ? `AND path ILIKE '%${search}%'` : ''}
     GROUP BY path, project_id, origin
     ORDER BY count desc 
     LIMIT ${take} 
