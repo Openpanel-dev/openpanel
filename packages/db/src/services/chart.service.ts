@@ -176,9 +176,13 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x = ${escape(String(val).trim())}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = `${whereFrom} IN (${value
-              .map((val) => escape(String(val).trim()))
-              .join(', ')})`;
+            if (value.length === 1) {
+              where[id] = `${whereFrom} = ${escape(String(value[0]).trim())}`;
+            } else {
+              where[id] = `${whereFrom} IN (${value
+                .map((val) => escape(String(val).trim()))
+                .join(', ')})`;
+            }
           }
           break;
         }
@@ -188,9 +192,13 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x != ${escape(String(val).trim())}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = `${whereFrom} NOT IN (${value
-              .map((val) => escape(String(val).trim()))
-              .join(', ')})`;
+            if (value.length === 1) {
+              where[id] = `${whereFrom} != ${escape(String(value[0]).trim())}`;
+            } else {
+              where[id] = `${whereFrom} NOT IN (${value
+                .map((val) => escape(String(val).trim()))
+                .join(', ')})`;
+            }
           }
           break;
         }
@@ -270,15 +278,23 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
     } else {
       switch (operator) {
         case 'is': {
-          where[id] = `${name} IN (${value
-            .map((val) => escape(String(val).trim()))
-            .join(', ')})`;
+          if (value.length === 1) {
+            where[id] = `${name} = ${escape(String(value[0]).trim())}`;
+          } else {
+            where[id] = `${name} IN (${value
+              .map((val) => escape(String(val).trim()))
+              .join(', ')})`;
+          }
           break;
         }
         case 'isNot': {
-          where[id] = `${name} NOT IN (${value
-            .map((val) => escape(String(val).trim()))
-            .join(', ')})`;
+          if (value.length === 1) {
+            where[id] = `${name} != ${escape(String(value[0]).trim())}`;
+          } else {
+            where[id] = `${name} NOT IN (${value
+              .map((val) => escape(String(val).trim()))
+              .join(', ')})`;
+          }
           break;
         }
         case 'contains': {
