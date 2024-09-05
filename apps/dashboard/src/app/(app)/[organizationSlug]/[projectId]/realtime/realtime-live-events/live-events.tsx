@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { EventListItem } from '@/app/(app)/[organizationSlug]/[projectId]/events/event-list/event-list-item';
+import { EventListItem } from '@/components/events/event-list-item';
 import useWS from '@/hooks/useWS';
 import { AnimatePresence, motion } from 'framer-motion';
 

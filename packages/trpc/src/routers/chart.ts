@@ -7,7 +7,6 @@ import {
   createSqlBuilder,
   db,
   formatClickhouseDate,
-  getPropertyKey,
   getSelectPropertyKey,
   TABLE_NAMES,
   toDate,

@@ -1,6 +1,7 @@
 'use client';
 
 import { TableButtons } from '@/components/data-table';
+import EventListener from '@/components/events/event-listener';
 import { EventsTable } from '@/components/events/table';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
@@ -11,8 +12,6 @@ import {
 import { api } from '@/trpc/client';
 import { Loader2Icon } from 'lucide-react';
 import { parseAsInteger, useQueryState } from 'nuqs';
-
-import EventListener from './event-list/event-listener';
 
 type Props = {
   projectId: string;

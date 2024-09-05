@@ -52,7 +52,10 @@ export const eventRouter = createTRPCRouter({
     )
     .query(async ({ input: { id, projectId } }) => {
       const res = await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE id = ${escape(id)} AND project_id = ${escape(projectId)};`
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE id = ${escape(id)} AND project_id = ${escape(projectId)};`,
+        {
+          meta: true,
+        }
       );
 
       if (!res?.[0]) {
