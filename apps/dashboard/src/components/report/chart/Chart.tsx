@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/trpc/client';
+import debounce from 'lodash.debounce';
 
 import type { IChartProps } from '@openpanel/validation';
 
@@ -16,7 +18,7 @@ import { ReportPieChart } from './ReportPieChart';
 
 export type ReportChartProps = IChartProps;
 
-export function Chart() {
+function useChartData() {
   const {
     interval,
     events,
@@ -32,26 +34,78 @@ export function Chart() {
     limit,
     offset,
   } = useChartContext();
-  const [data] = api.chart.chart.useSuspenseQuery(
-    {
+
+  const [debouncedParams, setDebouncedParams] = useState({
+    interval,
+    events,
+    breakdowns,
+    chartType,
+    range,
+    previous,
+    formula,
+    metric,
+    projectId,
+    startDate,
+    endDate,
+    limit,
+    offset,
+  });
+
+  const debouncedSetParams = useMemo(
+    () => debounce(setDebouncedParams, 500),
+    []
+  );
+
+  useEffect(() => {
+    debouncedSetParams({
       interval,
-      chartType,
-      events,
+      events: events.map((event) => ({
+        ...event,
+        filters: event.filters?.filter((filter) => filter.value.length > 0),
+      })),
       breakdowns,
+      chartType,
       range,
-      startDate,
-      endDate,
-      projectId,
       previous,
       formula,
       metric,
+      projectId,
+      startDate,
+      endDate,
       limit,
       offset,
-    },
-    {
-      keepPreviousData: true,
-    }
-  );
+    });
+    return () => {
+      debouncedSetParams.cancel();
+    };
+  }, [
+    interval,
+    events,
+    breakdowns,
+    chartType,
+    range,
+    previous,
+    formula,
+    metric,
+    projectId,
+    startDate,
+    endDate,
+    limit,
+    offset,
+    debouncedSetParams,
+  ]);
+
+  const [data] = api.chart.chart.useSuspenseQuery(debouncedParams, {
+    keepPreviousData: true,
+    staleTime: 1000 * 60 * 1,
+  });
+
+  return data;
+}
+
+export function Chart() {
+  const { chartType } = useChartContext();
+  const data = useChartData();
 
   if (data.series.length === 0) {
     return <ChartEmpty />;

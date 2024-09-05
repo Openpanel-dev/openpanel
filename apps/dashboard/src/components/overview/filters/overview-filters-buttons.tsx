@@ -46,10 +46,10 @@ export function OverviewFiltersButtons({
             size="sm"
             variant="outline"
             icon={X}
-            onClick={() => setFilter(filter.name, filter.value[0], 'is')}
+            onClick={() => setFilter(filter.name, [], 'is')}
           >
             <span className="mr-1">{getPropertyLabel(filter.name)} is</span>
-            <strong className="font-semibold">{filter.value[0]}</strong>
+            <strong className="font-semibold">{filter.value.join(', ')}</strong>
           </Button>
         );
       })}

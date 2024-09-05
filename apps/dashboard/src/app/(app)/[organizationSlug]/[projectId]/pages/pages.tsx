@@ -39,7 +39,7 @@ export function Pages({ projectId }: { projectId: string }) {
     <>
       <TableButtons>
         <Input
-          placeholder="Serch path"
+          placeholder="Search path"
           value={search ?? ''}
           onChange={(e) => {
             setSearch(e.target.value);

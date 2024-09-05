@@ -1,7 +1,7 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
+import { useEventProperties } from '@/hooks/useEventProperties';
 import { useDispatch, useSelector } from '@/redux';
-import { api } from '@/trpc/client';
 import { FilterIcon } from 'lucide-react';
 
 import { shortId } from '@openpanel/common';
@@ -21,7 +21,7 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
   const endDate = useSelector((state) => state.report.endDate);
   const { projectId } = useAppParams();
 
-  const query = api.chart.properties.useQuery(
+  const properties = useEventProperties(
     {
       event: event.name,
       projectId,
@@ -35,17 +35,15 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
     }
   );
 
-  const properties = (query.data ?? []).map((item) => ({
-    label: item,
-    value: item,
-  }));
-
   return (
     <Combobox
       searchable
       placeholder="Select a filter"
       value=""
-      items={properties}
+      items={properties.map((item) => ({
+        label: item,
+        value: item,
+      }))}
       onChange={(value) => {
         dispatch(
           changeEvent({

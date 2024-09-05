@@ -7,6 +7,8 @@ import {
   createSqlBuilder,
   db,
   formatClickhouseDate,
+  getPropertyKey,
+  getSelectPropertyKey,
   TABLE_NAMES,
   toDate,
 } from '@openpanel/db';
@@ -126,14 +128,7 @@ export const chartRouter = createTRPCRouter({
       if (event !== '*') {
         sb.where.event = `name = ${escape(event)}`;
       }
-      if (property.startsWith('properties.')) {
-        sb.select.values = `distinct arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-          property.replace(/^properties\./, '').replace('.*.', '.%.')
-        )}))) as values`;
-      } else {
-        sb.select.values = `distinct ${property} as values`;
-      }
-
+      sb.select.values = `distinct ${getSelectPropertyKey(property)} as values`;
       sb.where.date = `${toDate('created_at', input.interval)} BETWEEN ${toDate(formatClickhouseDate(startDate), input.interval)} AND ${toDate(formatClickhouseDate(endDate), input.interval)};`;
 
       const events = await chQuery<{ values: string[] }>(getSql());

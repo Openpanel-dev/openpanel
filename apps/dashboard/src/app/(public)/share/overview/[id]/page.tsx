@@ -59,7 +59,6 @@ export default async function Page({
           <div className="flex justify-between gap-2 p-4">
             <div className="flex gap-2">
               <OverviewReportRange />
-              {/* <OverviewFiltersDrawer projectId={projectId} mode="events" /> */}
             </div>
             <div className="flex gap-2">
               <ServerLiveCounter projectId={projectId} />

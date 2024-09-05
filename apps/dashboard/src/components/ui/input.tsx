@@ -10,12 +10,13 @@ const inputVariant = cva(
   {
     variants: {
       size: {
-        default: 'h-8 px-3 py-2 ',
+        sm: 'h-8 px-3 py-2 ',
+        default: 'h-10 px-3 py-2 ',
         large: 'h-12 px-4 py-3 text-lg',
       },
     },
     defaultVariants: {
-      size: 'default',
+      size: 'sm',
     },
   }
 );

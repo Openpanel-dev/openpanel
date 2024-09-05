@@ -1,3 +1,4 @@
+import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
@@ -8,9 +9,9 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
-import { useEventValues } from '@/hooks/useEventValues';
 import { useProfileProperties } from '@/hooks/useProfileProperties';
 import { useProfileValues } from '@/hooks/useProfileValues';
+import { usePropertyValues } from '@/hooks/usePropertyValues';
 import { XIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
@@ -35,7 +36,7 @@ export function OverviewFiltersDrawerContent({
   enableEventsFilter,
   mode,
 }: OverviewFiltersDrawerContentProps) {
-  const { interval, range } = useOverviewOptions();
+  const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
   const eventNames = useEventNames({ projectId, interval, range });
@@ -49,54 +50,65 @@ export function OverviewFiltersDrawerContent({
         <SheetTitle>Overview filters</SheetTitle>
       </SheetHeader>
 
-      <div className="flex flex-col gap-4">
-        {enableEventsFilter && (
-          <ComboboxAdvanced
+      <div className="mt-8 flex flex-col rounded-md border bg-def-100">
+        <div className="flex flex-col gap-4 p-4">
+          {enableEventsFilter && (
+            <ComboboxAdvanced
+              className="w-full"
+              value={event}
+              onChange={setEvent}
+              // First items is * which is only used for report editing
+              items={eventNames.slice(1).map((item) => ({
+                label: item.name,
+                value: item.name,
+              }))}
+              placeholder="Select event"
+            />
+          )}
+          <Combobox
             className="w-full"
-            value={event}
-            onChange={setEvent}
-            // First items is * which is only used for report editing
-            items={eventNames.slice(1).map((item) => ({
-              label: item.name,
-              value: item.name,
-            }))}
-            placeholder="Select event"
+            onChange={(value) => {
+              setFilter(value, [], 'is');
+            }}
+            value=""
+            placeholder="Filter by property"
+            label="What do you want to filter by?"
+            items={properties
+              .filter((item) => item !== 'name')
+              .map((item) => ({
+                label: item,
+                value: item,
+              }))}
+            searchable
+            size="lg"
           />
-        )}
-        <Combobox
-          className="w-full"
-          onChange={(value) => {
-            setFilter(value, '');
-          }}
-          value=""
-          placeholder="Filter by property"
-          label="What do you want to filter by?"
-          items={properties.map((item) => ({
-            label: item,
-            value: item,
-          }))}
-          searchable
-        />
-      </div>
-
-      <div className="mt-8 flex flex-col gap-4">
+        </div>
         {filters
           .filter((filter) => filter.value[0] !== null)
           .map((filter) => {
             return mode === 'events' ? (
-              <FilterOptionEvent
+              <PureFilterItem
+                className="border-t p-4 first:border-0"
+                eventName="screen_view"
                 key={filter.name}
-                projectId={projectId}
-                setFilter={setFilter}
-                {...filter}
+                filter={filter}
+                range={range}
+                interval={interval}
+                onRemove={() => {
+                  setFilter(filter.name, [], filter.operator);
+                }}
+                onChangeValue={(value) => {
+                  setFilter(filter.name, value, filter.operator);
+                }}
+                onChangeOperator={(operator) => {
+                  setFilter(filter.name, filter.value, operator);
+                }}
+                startDate={startDate}
+                endDate={endDate}
               />
             ) : (
-              <FilterOptionProfile
-                key={filter.name}
-                projectId={projectId}
-                setFilter={setFilter}
-                {...filter}
-              />
+              /* TODO: Implement profile filters */
+              null
             );
           })}
       </div>
@@ -117,7 +129,7 @@ export function FilterOptionEvent({
   ) => void;
 }) {
   const { interval, range } = useOverviewOptions();
-  const values = useEventValues({
+  const values = usePropertyValues({
     projectId,
     event: filter.name === 'path' ? 'screen_view' : 'session_start',
     property: filter.name,

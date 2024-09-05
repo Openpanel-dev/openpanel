@@ -7,9 +7,9 @@ import {
   useQueryState,
 } from 'nuqs';
 
-const nuqsOptions = { history: 'push' } as const;
+import type { IChartEventFilterOperator } from '@openpanel/validation';
 
-type Operator = 'is' | 'isNot' | 'contains' | 'doesNotContain';
+const nuqsOptions = { history: 'push' } as const;
 
 export const eventQueryFiltersParser = createParser({
   parse: (query: string) => {
@@ -22,8 +22,10 @@ export const eventQueryFiltersParser = createParser({
         return {
           id: key!,
           name: key!,
-          operator: (operator ?? 'is') as Operator,
-          value: [decodeURIComponent(value!)],
+          operator: (operator ?? 'is') as IChartEventFilterOperator,
+          value: value
+            ? value.split('|').map((v) => decodeURIComponent(v))
+            : [],
         };
       }) ?? []
     );
@@ -32,7 +34,7 @@ export const eventQueryFiltersParser = createParser({
     return value
       .map(
         (filter) =>
-          `${filter.id},${filter.operator},${encodeURIComponent(filter.value[0] ?? '')}`
+          `${filter.id},${filter.operator},${filter.value.map((v) => encodeURIComponent(v.trim())).join('|')}`
       )
       .join(';');
   },
@@ -50,23 +52,36 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
   const setFilter = useCallback(
     (
       name: string,
-      value: string | number | boolean | undefined | null,
-      operator: Operator = 'is'
+      value:
+        | string
+        | number
+        | boolean
+        | undefined
+        | null
+        | (string | number | boolean | undefined | null)[],
+      operator: IChartEventFilterOperator = 'is'
     ) => {
       setFilters((prev) => {
         const exists = prev.find((filter) => filter.name === name);
-        if (exists) {
-          // If same value is already set, remove the filter
-          if (exists.value[0] === value) {
-            return prev.filter((filter) => filter.name !== name);
-          }
+        const arrValue = Array.isArray(value) ? value : [value];
+        const newValue = value ? arrValue.map(String) : [];
 
+        // If nothing changes remove it
+        if (
+          newValue.length === 0 &&
+          exists?.value.length === 0 &&
+          exists.operator === operator
+        ) {
+          return prev.filter((filter) => filter.name !== name);
+        }
+
+        if (exists) {
           return prev.map((filter) => {
             if (filter.name === name) {
               return {
                 ...filter,
                 operator,
-                value: [String(value)],
+                value: newValue,
               };
             }
             return filter;
@@ -79,7 +94,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
             id: name,
             name,
             operator,
-            value: [String(value)],
+            value: newValue,
           },
         ];
       });

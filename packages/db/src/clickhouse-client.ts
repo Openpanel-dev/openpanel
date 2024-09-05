@@ -43,7 +43,8 @@ export const ch = new Proxy(originalCh, {
         } catch (error: unknown) {
           if (
             error instanceof Error &&
-            (error.message.includes('socket hang up') ||
+            (error.message.includes('Connect') ||
+              error.message.includes('socket hang up') ||
               error.message.includes('Timeout error'))
           ) {
             console.info(
@@ -65,8 +66,7 @@ export const ch = new Proxy(originalCh, {
             }
           } else {
             if (args[0].query) {
-              console.log('FAILED QUERY:');
-              console.log(args[0].query);
+              console.log('FAILED QUERY:', args[0].query);
             }
 
             // Handle other errors or rethrow them

@@ -13,11 +13,26 @@ import {
 } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
-function getPropertyKey(property: string) {
+export function transformPropertyKey(property: string) {
+  if (property.startsWith('properties.')) {
+    if (property.includes('*')) {
+      return property
+        .replace(/^properties\./, '')
+        .replace('.*.', '.%.')
+        .replace(/\[\*\]$/, '.%')
+        .replace(/\[\*\].?/, '.%.');
+    }
+    return `properties['${property.replace(/^properties\./, '')}']`;
+  }
+
+  return property;
+}
+
+export function getSelectPropertyKey(property: string) {
   if (property.startsWith('properties.')) {
     if (property.includes('*')) {
       return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-        property.replace(/^properties\./, '').replace('.*.', '.%.')
+        transformPropertyKey(property)
       )})))`;
     }
     return `properties['${property.replace(/^properties\./, '')}']`;
@@ -79,11 +94,11 @@ export function getChartSql({
   }
 
   if (breakdowns.length > 0 && limit) {
-    sb.where.bar = `(${breakdowns.map((b) => getPropertyKey(b.name)).join(',')}) IN (
-      SELECT ${breakdowns.map((b) => getPropertyKey(b.name)).join(',')}
+    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}) IN (
+      SELECT ${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}
       FROM ${TABLE_NAMES.events}
       ${getWhere()}
-      GROUP BY ${breakdowns.map((b) => getPropertyKey(b.name)).join(',')}
+      GROUP BY ${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}
       ORDER BY count(*) DESC
       LIMIT ${limit}
     )`;
@@ -91,7 +106,7 @@ export function getChartSql({
 
   breakdowns.forEach((breakdown, index) => {
     const key = `label_${index}`;
-    sb.select[key] = `${getPropertyKey(breakdown.name)} as ${key}`;
+    sb.select[key] = `${getSelectPropertyKey(breakdown.name)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
 
@@ -108,13 +123,13 @@ export function getChartSql({
   }
 
   if (event.segment === 'property_sum' && event.property) {
-    sb.select.count = `sum(toFloat64(${getPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getPropertyKey(event.property)} IS NOT NULL`;
+    sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'property_average' && event.property) {
-    sb.select.count = `avg(toFloat64(${getPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getPropertyKey(event.property)} IS NOT NULL`;
+    sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'one_event_per_user') {
@@ -150,11 +165,9 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
     }
 
     if (name.startsWith('properties.')) {
-      const propertyKey = name
-        .replace(/^properties\./, '')
-        .replace('.*.', '.%.');
+      const propertyKey = getSelectPropertyKey(name);
       const isWildcard = propertyKey.includes('%');
-      const whereFrom = getPropertyKey(name);
+      const whereFrom = getSelectPropertyKey(name);
 
       switch (operator) {
         case 'is': {
@@ -211,6 +224,48 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           }
           break;
         }
+        case 'startsWith': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map((val) => `x LIKE ${escape(`${String(val).trim()}%`)}`)
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = value
+              .map(
+                (val) => `${whereFrom} LIKE ${escape(`${String(val).trim()}%`)}`
+              )
+              .join(' OR ');
+          }
+          break;
+        }
+        case 'endsWith': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map((val) => `x LIKE ${escape(`%${String(val).trim()}`)}`)
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = value
+              .map(
+                (val) => `${whereFrom} LIKE ${escape(`%${String(val).trim()}`)}`
+              )
+              .join(' OR ');
+          }
+          break;
+        }
+        case 'regex': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map((val) => `match(x, ${escape(String(val).trim())})`)
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = value
+              .map(
+                (val) => `match(${whereFrom}, ${escape(String(val).trim())})`
+              )
+              .join(' OR ');
+          }
+          break;
+        }
       }
     } else {
       switch (operator) {
@@ -237,6 +292,24 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
             .map(
               (val) => `${name} NOT LIKE ${escape(`%${String(val).trim()}%`)}`
             )
+            .join(' OR ');
+          break;
+        }
+        case 'startsWith': {
+          where[id] = value
+            .map((val) => `${name} LIKE ${escape(`${String(val).trim()}%`)}`)
+            .join(' OR ');
+          break;
+        }
+        case 'endsWith': {
+          where[id] = value
+            .map((val) => `${name} LIKE ${escape(`%${String(val).trim()}`)}`)
+            .join(' OR ');
+          break;
+        }
+        case 'regex': {
+          where[id] = value
+            .map((val) => `match(${name}, ${escape(String(val).trim())})`)
             .join(' OR ');
           break;
         }

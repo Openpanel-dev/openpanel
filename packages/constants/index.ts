@@ -67,6 +67,9 @@ export const operators = {
   isNot: 'Is not',
   contains: 'Contains',
   doesNotContain: 'Not contains',
+  startsWith: 'Starts with',
+  endsWith: 'Ends with',
+  regex: 'Regex',
 } as const;
 
 export const chartTypes = {

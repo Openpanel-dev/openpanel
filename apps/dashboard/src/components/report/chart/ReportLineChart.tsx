@@ -58,7 +58,7 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
       range,
     },
     {
-      staleTime: 1000 * 60 * 5,
+      staleTime: 1000 * 60 * 10,
     }
   );
   const formatDate = useFormatDateInterval(interval);
@@ -134,7 +134,7 @@ export function ReportLineChart({ data }: ReportLineChartProps) {
                 strokeDasharray="3 3"
                 horizontal={true}
                 vertical={false}
-                className="stroke-def-200"
+                className="stroke-border"
               />
               {references.data?.map((ref) => (
                 <ReferenceLine
