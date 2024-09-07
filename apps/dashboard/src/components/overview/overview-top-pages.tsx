@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
-import { ExternalLinkIcon, FilterIcon } from 'lucide-react';
+import { ExternalLinkIcon, FilterIcon, Globe2Icon } from 'lucide-react';
+import { parseAsBoolean, useQueryState } from 'nuqs';
 
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
 import { LazyChart } from '../report/chart/LazyChart';
+import { Button } from '../ui/button';
 import { Tooltiper } from '../ui/tooltip';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
@@ -26,7 +28,11 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
     useOverviewOptions();
   const [chartType, setChartType] = useState<IChartType>('bar');
   const [filters, setFilter] = useEventQueryFilters();
+  const [domain, setDomain] = useQueryState('d', parseAsBoolean);
   const renderSerieName = (names: string[]) => {
+    if (domain) {
+      return names.join('');
+    }
     return (
       <Tooltiper content={names.join('')} side="left" className="text-left">
         {names[1] || NOT_SET_VALUE}
@@ -198,6 +204,16 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           <WidgetFooter>
             <OverviewDetailsButton chart={widget.chart} />
             <OverviewChartToggle {...{ chartType, setChartType }} />
+            <div className="flex-1"></div>
+            <Button
+              variant={'ghost'}
+              onClick={() => {
+                setDomain((p) => !p);
+              }}
+              icon={Globe2Icon}
+            >
+              {domain ? 'Hide domain' : 'Show domain'}
+            </Button>
           </WidgetFooter>
         )}
       </Widget>
