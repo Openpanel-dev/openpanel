@@ -72,21 +72,19 @@ export const ChartRootShortcut = ({
   lineType = 'monotone',
 }: ChartRootShortcutProps) => {
   return (
-    <Portal.Root>
-      <ChartRoot
-        projectId={projectId}
-        range={range}
-        breakdowns={breakdowns ?? []}
-        previous={previous}
-        chartType={chartType}
-        interval={interval}
-        name="Random"
-        lineType={lineType}
-        metric="sum"
-        events={events}
-        aspectRatio={aspectRatio}
-        hideXAxis={hideXAxis}
-      />
-    </Portal.Root>
+    <ChartRoot
+      projectId={projectId}
+      range={range}
+      breakdowns={breakdowns ?? []}
+      previous={previous}
+      chartType={chartType}
+      interval={interval}
+      name="Random"
+      lineType={lineType}
+      metric="sum"
+      events={events}
+      aspectRatio={aspectRatio}
+      hideXAxis={hideXAxis}
+    />
   );
 };
