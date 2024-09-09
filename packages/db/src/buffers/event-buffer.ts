@@ -1,4 +1,4 @@
-import { groupBy } from 'ramda';
+import { groupBy, omit, pick } from 'ramda';
 import SuperJSON from 'superjson';
 
 import { deepMergeObjects } from '@openpanel/common';
@@ -92,7 +92,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
           });
 
         const event = deepMergeObjects<IClickhouseEvent>(
-          lastEventWithData?.event || {},
+          omit(['properties', 'duration'], lastEventWithData?.event || {}),
           item.event
         );
 
