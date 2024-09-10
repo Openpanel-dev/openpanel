@@ -7,8 +7,14 @@ apt-get install -y --no-install-recommends \
 ca-certificates \
 openssl \
 libssl3 \
+curl \
+netcat-openbsd \
 && apt-get clean && \
 rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL \
+    https://raw.githubusercontent.com/pressly/goose/master/install.sh |\
+    sh 
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL

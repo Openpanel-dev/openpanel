@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  op-db:
+    image: postgres:14-alpine
+    restart: always
+    volumes:
+      - ./tmp/op-db-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+  op-kv:
+    image: redis:7.2.5-alpine
+    restart: always
+    volumes:
+      - ./tmp/op-kv-data:/data
+    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+    ports:
+      - 6379:6379
+
+  op-geo:
+    image: observabilitystack/geoip-api:latest
+    restart: always
+    ports:
+      - 8080:8080
+
+  op-ch:
+    image: clickhouse/clickhouse-server:24.3.2-alpine
+    restart: always
+    volumes:
+      - ./tmp/op-ch-data:/var/lib/clickhouse
+      - ./tmp/op-ch-logs:/var/log/clickhouse-server
+      - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml:ro
+      - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    ports:
+      - 9000:9000
+      - 8123:8123

@@ -20,50 +20,41 @@ services:
     restart: always
     volumes:
       - op-db-data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 5s
       retries: 5
-    ports:
-      - 5431:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    # Uncomment to expose ports
+    # ports:
+    #   - 5432:5432
 
   op-kv:
     image: redis:7.2.5-alpine
     restart: always
     volumes:
       - op-kv-data:/data
-    command:
-      [
-        'redis-server',
-        '--requirepass',
-        '${REDIS_PASSWORD}',
-        '--maxmemory-policy',
-        'noeviction',
-      ]
-    ports:
-      - 6378:6379
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+    # Uncomment to expose ports
+    # ports:
+    #   - 6379:6379
 
   op-geo:
     image: observabilitystack/geoip-api:latest
     restart: always
 
   op-ch:
-    image: clickhouse/clickhouse-server:23.3.7.5-alpine
+    image: clickhouse/clickhouse-server:24.3.2-alpine
     restart: always
     volumes:
       - op-ch-data:/var/lib/clickhouse
       - op-ch-logs:/var/log/clickhouse-server
       - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml:ro
       - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
-    environment:
-      - CLICKHOUSE_DB
-      - CLICKHOUSE_USER
-      - CLICKHOUSE_PASSWORD
+      - ./clickhouse/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
       test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
       interval: 10s
@@ -73,37 +64,34 @@ services:
       nofile:
         soft: 262144
         hard: 262144
-    ports:
-      - 8999:9000
-      - 8122:8123
-
-  op-ch-migrator:
-    image: clickhouse/clickhouse-server:23.3.7.5-alpine
-    depends_on:
-      - op-ch
-    volumes:
-      - ../packages/db/clickhouse_init.sql:/migrations/clickhouse_init.sql
-    environment:
-      - CLICKHOUSE_DB
-      - CLICKHOUSE_USER
-      - CLICKHOUSE_PASSWORD
-    entrypoint: /bin/sh -c
-    command: >
-      "
-      echo 'Waiting for ClickHouse to start...';
-      while ! clickhouse-client --host op-ch --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --query 'SELECT 1;' 2>/dev/null; do
-        echo 'ClickHouse is unavailable - sleeping 1s...';
-        sleep 1;
-      done;
-
-      echo 'ClickHouse started. Running migrations...';
-      clickhouse-client --host op-ch --database=$CLICKHOUSE_DB --user=$CLICKHOUSE_USER --password=$CLICKHOUSE_PASSWORD --queries-file /migrations/clickhouse_init.sql;
-      "
+    # Uncomment to expose ports
+    # ports:
+    #   - 9000:9000
+    #   - 8123:8123
 
   op-api:
     image: lindesvard/openpanel-api:latest
     restart: always
-    command: sh -c "sleep 10 && pnpm -r run migrate:deploy && pnpm start"
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL to be ready...'
+        while ! nc -z op-db 5432; do
+          sleep 1
+        done
+        echo 'PostgreSQL is ready'
+
+        # Add wait for ClickHouse
+        echo 'Waiting for ClickHouse to be ready...'
+        while ! nc -z op-ch 8123; do
+          sleep 1
+        done
+        echo 'ClickHouse is ready'
+
+        echo 'Running migrations...'
+        pnpm -r run migrate:deploy
+
+        pnpm start
+      "
     depends_on:
       - op-db
       - op-ch
@@ -116,9 +104,7 @@ services:
     image: lindesvard/openpanel-dashboard:latest
     restart: always
     depends_on:
-      - op-db
-      - op-ch
-      - op-kv
+      - op-api
     env_file:
       - .env
 
@@ -126,9 +112,7 @@ services:
     image: lindesvard/openpanel-worker:latest
     restart: always
     depends_on:
-      - op-db
-      - op-ch
-      - op-kv
+      - op-api
     env_file:
       - .env
     deploy:

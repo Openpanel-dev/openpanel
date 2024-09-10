@@ -9,13 +9,12 @@ export const TABLE_NAMES = {
   profiles: 'profiles',
   alias: 'profile_aliases',
   self_hosting: 'self_hosting',
+  events_bots: 'events_bots',
+  dau_mv: 'dau_mv',
 };
 
 export const originalCh = createClient({
   url: process.env.CLICKHOUSE_URL,
-  username: process.env.CLICKHOUSE_USER,
-  password: process.env.CLICKHOUSE_PASSWORD,
-  database: process.env.CLICKHOUSE_DB,
   max_open_connections: 30,
   request_timeout: 30000,
   keep_alive: {

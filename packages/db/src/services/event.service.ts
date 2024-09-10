@@ -225,23 +225,24 @@ export async function getEvents(
   options: GetEventsOptions = {}
 ): Promise<IServiceEvent[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
-  if (options.profile) {
+  const projectId = events[0]?.project_id;
+  if (options.profile && projectId) {
     const ids = events.map((e) => e.profile_id);
-    const profiles = await getProfiles(ids);
+    const profiles = await getProfiles(ids, projectId);
 
     for (const event of events) {
       event.profile = profiles.find((p) => p.id === event.profile_id);
     }
   }
 
-  if (options.meta) {
+  if (options.meta && projectId) {
     const names = uniq(events.map((e) => e.name));
     const metas = await db.eventMeta.findMany({
       where: {
         name: {
           in: names,
         },
-        projectId: events[0]?.project_id,
+        projectId,
       },
       select: options.meta === true ? undefined : options.meta,
     });

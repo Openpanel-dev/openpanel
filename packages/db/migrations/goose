@@ -1,0 +1,11 @@
+#!/bin/bash
+
+
+if [ -z "$CLICKHOUSE_URL" ]; then
+  echo "CLICKHOUSE_URL is not set"
+  exit 1
+fi
+
+export GOOSE_DBSTRING=$CLICKHOUSE_URL
+
+goose clickhouse --dir ./migrations $@
