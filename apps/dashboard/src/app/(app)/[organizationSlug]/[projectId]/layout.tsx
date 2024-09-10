@@ -13,22 +13,22 @@ import SideEffects from './side-effects';
 interface AppLayoutProps {
   children: React.ReactNode;
   params: {
-    organizationSlug: string;
+    organizationId: string;
     projectId: string;
   };
 }
 
 export default async function AppLayout({
   children,
-  params: { organizationSlug, projectId },
+  params: { organizationId, projectId },
 }: AppLayoutProps) {
   const [organizations, projects, dashboards] = await Promise.all([
     getCurrentOrganizations(),
-    getCurrentProjects(organizationSlug),
+    getCurrentProjects(organizationId),
     getDashboardsByProjectId(projectId),
   ]);
 
-  if (!organizations.find((item) => item.id === organizationSlug)) {
+  if (!organizations.find((item) => item.id === organizationId)) {
     return (
       <FullPageEmptyState title="Not found" className="min-h-screen">
         The organization you were looking for could not be found.
@@ -48,7 +48,7 @@ export default async function AppLayout({
     <div id="dashboard">
       <LayoutSidebar
         {...{
-          organizationSlug,
+          organizationId,
           projectId,
           organizations,
           projects,

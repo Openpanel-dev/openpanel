@@ -30,7 +30,7 @@ type IForm = z.infer<typeof validator>;
 
 export default function SaveReport({ report }: SaveReportProps) {
   const router = useRouter();
-  const { organizationSlug, projectId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const searchParams = useSearchParams();
   const dashboardId = searchParams?.get('dashboardId') ?? undefined;
 
@@ -42,7 +42,7 @@ export default function SaveReport({ report }: SaveReportProps) {
       });
       popModal();
       router.push(
-        `/${organizationSlug}/${projectId}/reports/${
+        `/${organizationId}/${projectId}/reports/${
           res.id
         }?${searchParams?.toString()}`,
       );

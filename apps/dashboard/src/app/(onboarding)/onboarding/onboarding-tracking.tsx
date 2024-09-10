@@ -100,7 +100,7 @@ const Tracking = ({
           {organizations.length > 0 ? (
             <Controller
               control={form.control}
-              name="organizationSlug"
+              name="organizationId"
               render={({ field, formState }) => {
                 return (
                   <div>
@@ -109,7 +109,7 @@ const Tracking = ({
                       className="w-full"
                       placeholder="Select workspace"
                       icon={Building}
-                      error={formState.errors.organizationSlug?.message}
+                      error={formState.errors.organizationId?.message}
                       value={field.value}
                       items={
                         organizations

@@ -38,7 +38,7 @@ async function getProjectId(
 
     const project = await db.project.findUnique({
       where: {
-        organizationId: request.client?.organizationSlug,
+        organizationId: request.client?.organizationId,
         id: projectId,
       },
     });

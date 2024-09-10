@@ -8,7 +8,6 @@ import Profiles from './profiles';
 interface PageProps {
   params: {
     projectId: string;
-    organizationSlug: string;
   };
   searchParams: Record<string, string>;
 }

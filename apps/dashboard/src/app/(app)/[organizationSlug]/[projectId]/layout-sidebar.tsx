@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import type {
   IServiceDashboards,
   IServiceOrganization,
-  getProjectsByOrganizationSlug,
+  getProjectsByOrganizationId,
 } from '@openpanel/db';
 
 import LayoutMenu from './layout-menu';
@@ -20,9 +20,8 @@ import LayoutProjectSelector from './layout-project-selector';
 interface LayoutSidebarProps {
   organizations: IServiceOrganization[];
   dashboards: IServiceDashboards;
-  organizationSlug: string;
   projectId: string;
-  projects: Awaited<ReturnType<typeof getProjectsByOrganizationSlug>>;
+  projects: Awaited<ReturnType<typeof getProjectsByOrganizationId>>;
 }
 export function LayoutSidebar({
   organizations,

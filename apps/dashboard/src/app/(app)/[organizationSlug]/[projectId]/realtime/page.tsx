@@ -13,7 +13,6 @@ import RealtimeReloader from './realtime-reloader';
 
 type Props = {
   params: {
-    organizationSlug: string;
     projectId: string;
   };
 };

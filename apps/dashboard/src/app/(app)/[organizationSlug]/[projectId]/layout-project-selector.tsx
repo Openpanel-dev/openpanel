@@ -14,11 +14,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
-import { cn } from '@/utils/cn';
 import {
   Building2Icon,
   CheckIcon,
-  ChevronsUpDown,
   ChevronsUpDownIcon,
   PlusIcon,
 } from 'lucide-react';
@@ -27,12 +25,12 @@ import { useState } from 'react';
 
 import type {
   getCurrentOrganizations,
-  getProjectsByOrganizationSlug,
+  getProjectsByOrganizationId,
 } from '@openpanel/db';
 import Link from 'next/link';
 
 interface LayoutProjectSelectorProps {
-  projects: Awaited<ReturnType<typeof getProjectsByOrganizationSlug>>;
+  projects: Awaited<ReturnType<typeof getProjectsByOrganizationId>>;
   organizations?: Awaited<ReturnType<typeof getCurrentOrganizations>>;
   align?: 'start' | 'end';
 }
@@ -42,22 +40,22 @@ export default function LayoutProjectSelector({
   align = 'start',
 }: LayoutProjectSelectorProps) {
   const router = useRouter();
-  const { organizationSlug, projectId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const pathname = usePathname() || '';
   const [open, setOpen] = useState(false);
 
   const changeProject = (newProjectId: string) => {
-    if (organizationSlug && projectId) {
+    if (organizationId && projectId) {
       const split = pathname
         .replace(
-          `/${organizationSlug}/${projectId}`,
-          `/${organizationSlug}/${newProjectId}`,
+          `/${organizationId}/${projectId}`,
+          `/${organizationId}/${newProjectId}`,
         )
         .split('/');
       // slicing here will remove everything after /{orgId}/{projectId}/dashboards [slice here] /xxx/xxx/xxx
       router.push(split.slice(0, 4).join('/'));
     } else {
-      router.push(`/${organizationSlug}/${newProjectId}`);
+      router.push(`/${organizationId}/${newProjectId}`);
     }
   };
 
@@ -102,7 +100,7 @@ export default function LayoutProjectSelector({
           ))}
           {projects.length > 10 && (
             <DropdownMenuItem asChild>
-              <Link href={`/${organizationSlug}`}>All projects</Link>
+              <Link href={`/${organizationId}`}>All projects</Link>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
@@ -126,7 +124,7 @@ export default function LayoutProjectSelector({
                   onClick={() => changeOrganization(organization.id)}
                 >
                   {organization.name}
-                  {organization.id === organizationSlug && (
+                  {organization.id === organizationId && (
                     <DropdownMenuShortcut>
                       <CheckIcon size={16} />
                     </DropdownMenuShortcut>

@@ -46,7 +46,7 @@ export const clientRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         projectId: z.string(),
-        organizationSlug: z.string(),
+        organizationId: z.string(),
         cors: z.string().nullable(),
         crossDomain: z.boolean().optional(),
         type: z.enum(['read', 'write', 'root']).optional(),
@@ -55,8 +55,7 @@ export const clientRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
       const data: Prisma.ClientCreateArgs['data'] = {
-        organizationSlug: input.organizationSlug,
-        organizationId: input.organizationSlug,
+        organizationId: input.organizationId,
         projectId: input.projectId,
         name: input.name,
         type: input.type ?? 'write',

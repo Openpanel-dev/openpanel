@@ -60,7 +60,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
             icon={PlusIcon}
             onClick={() => {
               router.push(
-                `/${params.organizationSlug}/${
+                `/${params.organizationId}/${
                   params.projectId
                 }/reports?${new URLSearchParams({
                   dashboardId: params.dashboardId,
@@ -79,7 +79,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
           return (
             <div className="card" key={report.id}>
               <Link
-                href={`/${params.organizationSlug}/${params.projectId}/reports/${report.id}`}
+                href={`/${params.organizationId}/${params.projectId}/reports/${report.id}`}
                 className="flex items-center justify-between border-b border-border p-4 leading-none [&_svg]:hover:opacity-100"
                 shallow
               >
@@ -163,7 +163,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
             <Button
               onClick={() =>
                 router.push(
-                  `/${params.organizationSlug}/${
+                  `/${params.organizationId}/${
                     params.projectId
                   }/reports?${new URLSearchParams({
                     dashboardId: params.dashboardId,

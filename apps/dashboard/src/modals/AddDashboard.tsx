@@ -19,7 +19,7 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function AddDashboard() {
-  const { projectId, organizationSlug } = useAppParams();
+  const { projectId, organizationId } = useAppParams();
   const router = useRouter();
 
   const { register, handleSubmit, formState } = useForm<IForm>({
@@ -32,7 +32,7 @@ export default function AddDashboard() {
   const mutation = api.dashboard.create.useMutation({
     onError: handleError,
     onSuccess(res) {
-      router.push(`/${organizationSlug}/${projectId}/dashboards/${res.id}`);
+      router.push(`/${organizationId}/${projectId}/dashboards/${res.id}`);
       toast('Success', {
         description: 'Dashboard created.',
       });

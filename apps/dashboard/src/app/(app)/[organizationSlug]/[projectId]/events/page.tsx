@@ -9,7 +9,6 @@ import Events from './events';
 interface PageProps {
   params: {
     projectId: string;
-    organizationSlug: string;
   };
   searchParams: Record<string, string>;
 }

@@ -1,15 +1,15 @@
 import { MembersTable } from '@/components/settings/members';
 
-import { getMembers, getProjectsByOrganizationSlug } from '@openpanel/db';
+import { getMembers, getProjectsByOrganizationId } from '@openpanel/db';
 
 interface Props {
-  organizationSlug: string;
+  organizationId: string;
 }
 
-const MembersServer = async ({ organizationSlug }: Props) => {
+const MembersServer = async ({ organizationId }: Props) => {
   const [members, projects] = await Promise.all([
-    getMembers(organizationSlug),
-    getProjectsByOrganizationSlug(organizationSlug),
+    getMembers(organizationId),
+    getProjectsByOrganizationId(organizationId),
   ]);
 
   return <MembersTable data={members} projects={projects} />;

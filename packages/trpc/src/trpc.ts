@@ -88,17 +88,6 @@ const enforceAccess = t.middleware(async ({ ctx, next, rawInput }) => {
     }
   }
 
-  if (has('organizationSlug', rawInput)) {
-    const access = await getOrganizationAccessCached({
-      userId: ctx.session.userId!,
-      organizationId: rawInput.organizationSlug as string,
-    });
-
-    if (!access) {
-      throw TRPCAccessError('You do not have access to this organization');
-    }
-  }
-
   return next();
 });
 

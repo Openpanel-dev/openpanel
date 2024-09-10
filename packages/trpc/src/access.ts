@@ -12,7 +12,7 @@ export async function getProjectAccess({
   try {
     // Check if user has access to the project
     const project = await getProjectById(projectId);
-    if (!project?.organizationSlug) {
+    if (!project?.organizationId) {
       return false;
     }
 
@@ -20,12 +20,12 @@ export async function getProjectAccess({
       db.projectAccess.findMany({
         where: {
           userId,
-          organizationId: project.organizationSlug,
+          organizationId: project.organizationId,
         },
       }),
       db.member.findFirst({
         where: {
-          organizationId: project.organizationSlug,
+          organizationId: project.organizationId,
           userId,
         },
       }),

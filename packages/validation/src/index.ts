@@ -88,13 +88,13 @@ export const zReportInput = zChartInput.extend({
 
 export const zInviteUser = z.object({
   email: z.string().email(),
-  organizationSlug: z.string(),
+  organizationId: z.string(),
   role: z.enum(['org:admin', 'org:member']),
   access: z.array(z.string()),
 });
 
 export const zShareOverview = z.object({
-  organizationSlug: z.string(),
+  organizationId: z.string(),
   projectId: z.string(),
   password: z.string().nullable(),
   public: z.boolean(),
@@ -110,7 +110,7 @@ export const zCreateReference = z.object({
 export const zOnboardingProject = z
   .object({
     organization: z.string().optional(),
-    organizationSlug: z.string().optional(),
+    organizationId: z.string().optional(),
     project: z.string().min(3),
     domain: z.string().url().or(z.literal('').or(z.null())),
     website: z.boolean(),
@@ -118,7 +118,7 @@ export const zOnboardingProject = z
     backend: z.boolean(),
   })
   .superRefine((data, ctx) => {
-    if (!data.organization && !data.organizationSlug) {
+    if (!data.organization && !data.organizationId) {
       ctx.addIssue({
         code: 'custom',
         message: 'Organization is required',
@@ -127,7 +127,7 @@ export const zOnboardingProject = z
       ctx.addIssue({
         code: 'custom',
         message: 'Organization is required',
-        path: ['organizationSlug'],
+        path: ['organizationId'],
       });
     }
 

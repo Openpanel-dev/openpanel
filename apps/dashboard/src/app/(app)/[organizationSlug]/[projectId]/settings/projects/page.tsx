@@ -1,25 +1,22 @@
-import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
 import { Padding } from '@/components/ui/padding';
 
 import {
-  getClientsByOrganizationSlug,
-  getProjectsByOrganizationSlug,
+  getClientsByOrganizationId,
+  getProjectsByOrganizationId,
 } from '@openpanel/db';
 
 import ListProjects from './list-projects';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
+    organizationId: string;
   };
 }
 
-export default async function Page({
-  params: { organizationSlug },
-}: PageProps) {
+export default async function Page({ params: { organizationId } }: PageProps) {
   const [projects, clients] = await Promise.all([
-    getProjectsByOrganizationSlug(organizationSlug),
-    getClientsByOrganizationSlug(organizationSlug),
+    getProjectsByOrganizationId(organizationId),
+    getClientsByOrganizationId(organizationId),
   ]);
 
   return (

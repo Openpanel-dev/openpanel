@@ -183,12 +183,10 @@ async function createMock(file: string) {
     await db.project.create({
       data: {
         organizationId: 'openpanel-dev',
-        organizationSlug: 'openpanel-dev',
         name: project.domain,
         clients: {
           create: {
             organizationId: 'openpanel-dev',
-            organizationSlug: 'openpanel-dev',
             name: project.domain,
             secret: await hashPassword('secret'),
             id: project.clientId,
