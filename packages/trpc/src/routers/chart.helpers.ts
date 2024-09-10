@@ -430,7 +430,10 @@ export async function getFunnelStep({
     id: string;
   }>(profileIdsQuery);
 
-  return getProfiles(res.map((r) => r.id));
+  return getProfiles(
+    res.map((r) => r.id),
+    projectId
+  );
 }
 
 export async function getChartSerie(payload: IGetChartDataInput) {

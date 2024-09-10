@@ -151,12 +151,12 @@ export const eventRouter = createTRPCRouter({
           path: string;
           created_at: string;
         }>(
-          `SELECT * FROM events_bots WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`
+          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`
         ),
         chQuery<{
           count: number;
         }>(
-          `SELECT count(*) as count FROM events_bots WHERE project_id = ${escape(projectId)}`
+          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)}`
         ),
       ]);
 

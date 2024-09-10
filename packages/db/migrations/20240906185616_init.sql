@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS openpanel;
-
-CREATE TABLE IF NOT EXISTS openpanel.self_hosting
+-- +goose Up
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS self_hosting
 (
     created_at Date,
     domain String,
@@ -9,9 +9,10 @@ CREATE TABLE IF NOT EXISTS openpanel.self_hosting
 ENGINE = MergeTree()
 ORDER BY (domain, created_at)
 PARTITION BY toYYYYMM(created_at);
+-- +goose StatementEnd
 
-
-CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS events_v2 (
   `id` UUID DEFAULT generateUUIDv4(),
   `name` String,
   `sdk_name` String,
@@ -48,20 +49,25 @@ CREATE TABLE IF NOT EXISTS openpanel.events_v2 (
 ) ENGINE = MergeTree PARTITION BY toYYYYMM(created_at)
 ORDER BY
   (project_id, toDate(created_at), profile_id, name) SETTINGS index_granularity = 8192;
+-- +goose StatementEnd
 
-CREATE TABLE IF NOT EXISTS openpanel.events_bots (
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS events_bots (
   `id` UUID DEFAULT generateUUIDv4(),
   `project_id` String,
   `name` String,
   `type` String,
   `path` String,
-  `created_at` DateTime64(3),
+  `created_at` DateTime64(3)
 ) ENGINE MergeTree
 ORDER BY
   (project_id, created_at) SETTINGS index_granularity = 8192;
+-- +goose StatementEnd
 
-CREATE TABLE IF NOT EXISTS openpanel.profiles (
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS profiles (
   `id` String,
+  `is_external` Bool,
   `first_name` String,
   `last_name` String,
   `email` String,
@@ -72,8 +78,10 @@ CREATE TABLE IF NOT EXISTS openpanel.profiles (
 ) ENGINE = ReplacingMergeTree(created_at)
 ORDER BY
   (id) SETTINGS index_granularity = 8192;
+-- +goose StatementEnd
 
-CREATE TABLE IF NOT EXISTS openpanel.profile_aliases (
+-- +goose StatementBegin
+CREATE TABLE IF NOT EXISTS profile_aliases (
   `project_id` String,
   `profile_id` String,
   `alias` String,
@@ -81,8 +89,9 @@ CREATE TABLE IF NOT EXISTS openpanel.profile_aliases (
 ) ENGINE = MergeTree
 ORDER BY
   (project_id, profile_id, alias, created_at) SETTINGS index_granularity = 8192;
+-- +goose StatementEnd
 
---- Materialized views (DAU)
+-- +goose StatementBegin
 CREATE MATERIALIZED VIEW IF NOT EXISTS dau_mv ENGINE = AggregatingMergeTree() PARTITION BY toYYYYMMDD(date)
 ORDER BY
   (project_id, date) POPULATE AS
@@ -95,3 +104,9 @@ FROM
 GROUP BY
   date,
   project_id;
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+SELECT 'down SQL query';
+-- +goose StatementEnd

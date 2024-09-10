@@ -121,7 +121,7 @@ export function getRollingActiveUsers({
       FROM
       (
           SELECT *
-          FROM dau_mv
+          FROM ${TABLE_NAMES.dau_mv}
           WHERE project_id = ${escape(projectId)}
       )
       ARRAY JOIN range(${days}) AS n

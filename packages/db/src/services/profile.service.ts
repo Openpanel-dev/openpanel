@@ -69,7 +69,7 @@ interface GetProfileListOptions {
   search?: string;
 }
 
-export async function getProfiles(ids: string[]) {
+export async function getProfiles(ids: string[], projectId: string) {
   const filteredIds = uniq(ids.filter((id) => id !== ''));
 
   if (filteredIds.length === 0) {
@@ -78,8 +78,10 @@ export async function getProfiles(ids: string[]) {
 
   const data = await chQuery<IClickhouseProfile>(
     `SELECT id, first_name, last_name, email, avatar, is_external
-    FROM profiles FINAL 
-    WHERE id IN (${filteredIds.map((id) => escape(id)).join(',')})
+    FROM ${TABLE_NAMES.profiles} FINAL 
+    WHERE 
+      project_id = ${escape(projectId)} AND
+      id IN (${filteredIds.map((id) => escape(id)).join(',')})
     `
   );
 
@@ -94,18 +96,14 @@ export async function getProfileList({
   search,
 }: GetProfileListOptions) {
   const { sb, getSql } = createSqlBuilder();
-  sb.from = 'profiles FINAL';
+  sb.from = `${TABLE_NAMES.profiles} FINAL`;
   sb.select.all = '*';
   sb.where.project_id = `project_id = ${escape(projectId)}`;
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
   if (search) {
-    if (search.includes('@')) {
-      sb.where.email = `email ILIKE '%${search}%'`;
-    } else {
-      sb.where.first_name = `first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%'`;
-    }
+    sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
   }
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
