@@ -7,8 +7,9 @@
   "packageManager": "pnpm@8.7.6",
   "module": "index.ts",
   "scripts": {
-    "up": "docker compose up",
-    "down": "docker compose down",
+    "dock:up": "docker compose up -d",
+    "dock:down": "docker compose down",
+    "dock:ch": "docker compose exec -it op-ch clickhouse-client -d openpanel",
     "db:codegen": "pnpm -r --filter db run codegen",
     "codegen": "pnpm db:codegen",
     "migrate": "pnpm -r --filter db run migrate",

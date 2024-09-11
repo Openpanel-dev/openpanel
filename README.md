@@ -79,7 +79,7 @@ You can find the how to [here](https://docs.openpanel.dev/docs/self-hosting)
 ## Development
 
 ```bash
-pnpm docker
+pnpm dock:up
 pnpm codegen
 pnpm migrate:deploy # once to setup the db
 pnpm dev
