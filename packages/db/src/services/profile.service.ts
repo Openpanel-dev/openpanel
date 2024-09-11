@@ -77,7 +77,7 @@ export async function getProfiles(ids: string[], projectId: string) {
   }
 
   const data = await chQuery<IClickhouseProfile>(
-    `SELECT id, first_name, last_name, email, avatar, is_external
+    `SELECT id, first_name, last_name, email, avatar, is_external, properties, created_at
     FROM ${TABLE_NAMES.profiles} FINAL 
     WHERE 
       project_id = ${escape(projectId)} AND

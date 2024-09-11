@@ -26,8 +26,6 @@ type Props =
 
 export const ProfilesTable = memo(
   ({ type, query, ...props }: Props) => {
-    console.log('re-render');
-
     const columns = useColumns(type);
     const { data, isFetching, isLoading } = query;
 
