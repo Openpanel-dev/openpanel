@@ -1,4 +1,4 @@
-import { ChartRootShortcut } from '@/components/report/chart';
+import { ReportChartShortcut } from '@/components/report-chart/shortcut';
 import { KeyValue } from '@/components/ui/key-value';
 import { useAppParams } from '@/hooks/useAppParams';
 import {
@@ -193,7 +193,7 @@ export default function EventDetails({ id }: Props) {
                 Show all
               </button>
             </div>
-            <ChartRootShortcut
+            <ReportChartShortcut
               projectId={event.projectId}
               chartType="histogram"
               events={[

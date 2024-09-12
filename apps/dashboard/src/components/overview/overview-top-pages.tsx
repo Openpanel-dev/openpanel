@@ -9,7 +9,7 @@ import { parseAsBoolean, useQueryState } from 'nuqs';
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
-import { LazyChart } from '../report/chart/LazyChart';
+import { ReportChart } from '../report-chart';
 import { Button } from '../ui/button';
 import { Tooltiper } from '../ui/tooltip';
 import { Widget, WidgetBody } from '../widget';
@@ -31,6 +31,10 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
   const [domain, setDomain] = useQueryState('d', parseAsBoolean);
   const renderSerieName = (names: string[]) => {
     if (domain) {
+      if (names[0] === NOT_SET_VALUE) {
+        return names[1];
+      }
+
       return names.join('');
     }
     return (
@@ -44,108 +48,120 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       title: 'Top pages',
       btn: 'Top pages',
       chart: {
-        renderSerieName,
-        limit: 10,
-        projectId,
-        startDate,
-        endDate,
-        events: [
-          {
-            segment: 'event',
-            filters,
-            id: 'A',
-            name: 'screen_view',
-          },
-        ],
-        breakdowns: [
-          {
-            id: 'A',
-            name: 'origin',
-          },
-          {
-            id: 'B',
-            name: 'path',
-          },
-        ],
-        chartType,
-        lineType: 'monotone',
-        interval,
-        name: 'Top pages',
-        range,
-        previous,
-        metric: 'sum',
+        options: {
+          renderSerieName,
+        },
+        report: {
+          limit: 10,
+          projectId,
+          startDate,
+          endDate,
+          events: [
+            {
+              segment: 'event',
+              filters,
+              id: 'A',
+              name: 'screen_view',
+            },
+          ],
+          breakdowns: [
+            {
+              id: 'A',
+              name: 'origin',
+            },
+            {
+              id: 'B',
+              name: 'path',
+            },
+          ],
+          chartType,
+          lineType: 'monotone',
+          interval,
+          name: 'Top pages',
+          range,
+          previous,
+          metric: 'sum',
+        },
       },
     },
     entries: {
       title: 'Entry Pages',
       btn: 'Entries',
       chart: {
-        renderSerieName,
-        limit: 10,
-        projectId,
-        startDate,
-        endDate,
-        events: [
-          {
-            segment: 'event',
-            filters,
-            id: 'A',
-            name: 'session_start',
-          },
-        ],
-        breakdowns: [
-          {
-            id: 'A',
-            name: 'origin',
-          },
-          {
-            id: 'B',
-            name: 'path',
-          },
-        ],
-        chartType,
-        lineType: 'monotone',
-        interval,
-        name: 'Entry Pages',
-        range,
-        previous,
-        metric: 'sum',
+        options: {
+          renderSerieName,
+        },
+        report: {
+          limit: 10,
+          projectId,
+          startDate,
+          endDate,
+          events: [
+            {
+              segment: 'event',
+              filters,
+              id: 'A',
+              name: 'session_start',
+            },
+          ],
+          breakdowns: [
+            {
+              id: 'A',
+              name: 'origin',
+            },
+            {
+              id: 'B',
+              name: 'path',
+            },
+          ],
+          chartType,
+          lineType: 'monotone',
+          interval,
+          name: 'Entry Pages',
+          range,
+          previous,
+          metric: 'sum',
+        },
       },
     },
     exits: {
       title: 'Exit Pages',
       btn: 'Exits',
       chart: {
-        renderSerieName,
-        limit: 10,
-        projectId,
-        startDate,
-        endDate,
-        events: [
-          {
-            segment: 'event',
-            filters,
-            id: 'A',
-            name: 'session_end',
-          },
-        ],
-        breakdowns: [
-          {
-            id: 'A',
-            name: 'origin',
-          },
-          {
-            id: 'B',
-            name: 'path',
-          },
-        ],
-        chartType,
-        lineType: 'monotone',
-        interval,
-        name: 'Exit Pages',
-        range,
-        previous,
-        metric: 'sum',
+        options: {
+          renderSerieName,
+        },
+        report: {
+          limit: 10,
+          projectId,
+          startDate,
+          endDate,
+          events: [
+            {
+              segment: 'event',
+              filters,
+              id: 'A',
+              name: 'session_end',
+            },
+          ],
+          breakdowns: [
+            {
+              id: 'A',
+              name: 'origin',
+            },
+            {
+              id: 'B',
+              name: 'path',
+            },
+          ],
+          chartType,
+          lineType: 'monotone',
+          interval,
+          name: 'Exit Pages',
+          range,
+          previous,
+          metric: 'sum',
+        },
       },
     },
     bot: {
@@ -177,32 +193,37 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           {widget.key === 'bot' ? (
             <OverviewTopBots projectId={projectId} />
           ) : (
-            <LazyChart
-              hideID
-              {...widget.chart}
-              previous={false}
-              dropdownMenuContent={(serie) => [
-                {
-                  title: 'Visit page',
-                  icon: ExternalLinkIcon,
-                  onClick: () => {
-                    window.open(serie.names.join(''), '_blank');
+            <ReportChart
+              options={{
+                hideID: true,
+                dropdownMenuContent: (serie) => [
+                  {
+                    title: 'Visit page',
+                    icon: ExternalLinkIcon,
+                    onClick: () => {
+                      window.open(serie.names.join(''), '_blank');
+                    },
                   },
-                },
-                {
-                  title: 'Set filter',
-                  icon: FilterIcon,
-                  onClick: () => {
-                    setFilter('path', serie.names[1]);
+                  {
+                    title: 'Set filter',
+                    icon: FilterIcon,
+                    onClick: () => {
+                      setFilter('path', serie.names[1]);
+                    },
                   },
-                },
-              ]}
+                ],
+                ...widget.chart.options,
+              }}
+              report={{
+                ...widget.chart.report,
+                previous: false,
+              }}
             />
           )}
         </WidgetBody>
-        {widget.chart?.name && (
+        {widget.chart?.report?.name && (
           <WidgetFooter>
-            <OverviewDetailsButton chart={widget.chart} />
+            <OverviewDetailsButton chart={widget.chart.report} />
             <OverviewChartToggle {...{ chartType, setChartType }} />
             <div className="flex-1"></div>
             <Button

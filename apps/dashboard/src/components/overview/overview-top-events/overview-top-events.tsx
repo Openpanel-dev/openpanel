@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LazyChart } from '@/components/report/chart/LazyChart';
+import { ReportChart } from '@/components/report-chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
@@ -31,70 +31,74 @@ export default function OverviewTopEvents({
       title: 'Top events',
       btn: 'Your',
       chart: {
-        limit: 10,
-        projectId,
-        startDate,
-        endDate,
-        events: [
-          {
-            segment: 'event',
-            filters: [
-              ...filters,
-              {
-                id: 'ex_session',
-                name: 'name',
-                operator: 'isNot',
-                value: ['session_start', 'session_end', 'screen_view'],
-              },
-            ],
-            id: 'A',
-            name: '*',
-          },
-        ],
-        breakdowns: [
-          {
-            id: 'A',
-            name: 'name',
-          },
-        ],
-        chartType,
-        lineType: 'monotone',
-        interval: interval,
-        name: 'Your top events',
-        range: range,
-        previous: previous,
-        metric: 'sum',
+        report: {
+          limit: 10,
+          projectId,
+          startDate,
+          endDate,
+          events: [
+            {
+              segment: 'event',
+              filters: [
+                ...filters,
+                {
+                  id: 'ex_session',
+                  name: 'name',
+                  operator: 'isNot',
+                  value: ['session_start', 'session_end', 'screen_view'],
+                },
+              ],
+              id: 'A',
+              name: '*',
+            },
+          ],
+          breakdowns: [
+            {
+              id: 'A',
+              name: 'name',
+            },
+          ],
+          chartType,
+          lineType: 'monotone',
+          interval: interval,
+          name: 'Your top events',
+          range: range,
+          previous: previous,
+          metric: 'sum',
+        },
       },
     },
     all: {
       title: 'Top events',
       btn: 'All',
       chart: {
-        limit: 10,
-        projectId,
-        startDate,
-        endDate,
-        events: [
-          {
-            segment: 'event',
-            filters: [...filters],
-            id: 'A',
-            name: '*',
-          },
-        ],
-        breakdowns: [
-          {
-            id: 'A',
-            name: 'name',
-          },
-        ],
-        chartType,
-        lineType: 'monotone',
-        interval: interval,
-        name: 'All top events',
-        range: range,
-        previous: previous,
-        metric: 'sum',
+        report: {
+          limit: 10,
+          projectId,
+          startDate,
+          endDate,
+          events: [
+            {
+              segment: 'event',
+              filters: [...filters],
+              id: 'A',
+              name: '*',
+            },
+          ],
+          breakdowns: [
+            {
+              id: 'A',
+              name: 'name',
+            },
+          ],
+          chartType,
+          lineType: 'monotone',
+          interval: interval,
+          name: 'All top events',
+          range: range,
+          previous: previous,
+          metric: 'sum',
+        },
       },
     },
     conversions: {
@@ -102,39 +106,41 @@ export default function OverviewTopEvents({
       btn: 'Conversions',
       hide: conversions.length === 0,
       chart: {
-        limit: 10,
-        projectId,
-        startDate,
-        endDate,
-        events: [
-          {
-            segment: 'event',
-            filters: [
-              ...filters,
-              {
-                id: 'conversion',
-                name: 'name',
-                operator: 'is',
-                value: conversions,
-              },
-            ],
-            id: 'A',
-            name: '*',
-          },
-        ],
-        breakdowns: [
-          {
-            id: 'A',
-            name: 'name',
-          },
-        ],
-        chartType,
-        lineType: 'monotone',
-        interval: interval,
-        name: 'Conversions',
-        range: range,
-        previous: previous,
-        metric: 'sum',
+        report: {
+          limit: 10,
+          projectId,
+          startDate,
+          endDate,
+          events: [
+            {
+              segment: 'event',
+              filters: [
+                ...filters,
+                {
+                  id: 'conversion',
+                  name: 'name',
+                  operator: 'is',
+                  value: conversions,
+                },
+              ],
+              id: 'A',
+              name: '*',
+            },
+          ],
+          breakdowns: [
+            {
+              id: 'A',
+              name: 'name',
+            },
+          ],
+          chartType,
+          lineType: 'monotone',
+          interval: interval,
+          name: 'Conversions',
+          range: range,
+          previous: previous,
+          metric: 'sum',
+        },
       },
     },
   });
@@ -159,10 +165,16 @@ export default function OverviewTopEvents({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <LazyChart hideID {...widget.chart} previous={false} />
+          <ReportChart
+            options={{ hideID: true }}
+            report={{
+              ...widget.chart.report,
+              previous: false,
+            }}
+          />
         </WidgetBody>
         <WidgetFooter>
-          <OverviewDetailsButton chart={widget.chart} />
+          <OverviewDetailsButton chart={widget.chart.report} />
           <OverviewChartToggle {...{ chartType, setChartType }} />
         </WidgetFooter>
       </Widget>

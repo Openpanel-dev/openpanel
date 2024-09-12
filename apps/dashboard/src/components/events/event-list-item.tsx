@@ -1,6 +1,5 @@
 'use client';
 
-import { SerieIcon } from '@/components/report/chart/SerieIcon';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useNumber } from '@/hooks/useNumerFormatter';
@@ -11,6 +10,7 @@ import Link from 'next/link';
 
 import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/db';
 
+import { SerieIcon } from '../report-chart/common/serie-icon';
 import { EventIcon } from './event-icon';
 
 type EventListItemProps = IServiceEventMinimal | IServiceEvent;

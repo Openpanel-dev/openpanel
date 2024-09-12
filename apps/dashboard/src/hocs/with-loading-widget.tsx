@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
 import { Widget, WidgetHead } from '@/components/widget';
 import { cn } from '@/utils/cn';
 
@@ -21,7 +20,7 @@ const withLoadingWidget = <P,>(Component: React.ComponentType<P>) => {
             <WidgetHead>
               <span className="title">Loading...</span>
             </WidgetHead>
-            <ChartLoading />
+            <div className="aspect-video animate-pulse rounded bg-def-100" />
           </Widget>
         }
       >

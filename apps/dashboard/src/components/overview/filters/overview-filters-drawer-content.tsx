@@ -12,7 +12,7 @@ import {
 import { useProfileProperties } from '@/hooks/useProfileProperties';
 import { useProfileValues } from '@/hooks/useProfileValues';
 import { usePropertyValues } from '@/hooks/usePropertyValues';
-import { GlobeIcon, XIcon } from 'lucide-react';
+import { XIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
 import type {

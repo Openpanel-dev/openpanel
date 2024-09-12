@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { LazyChart } from '@/components/report/chart/LazyChart';
+import { ReportChart } from '@/components/report-chart';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
 import isEqual from 'lodash.isequal';
@@ -71,41 +71,46 @@ export const PagesTable = memo(
                     index === data.length - 1 && 'rounded-br-md'
                   )}
                 >
-                  <LazyChart
-                    hideYAxis
-                    hideXAxis
-                    className="w-full"
-                    lineType="linear"
-                    breakdowns={[]}
-                    name="screen_view"
-                    metric="sum"
-                    range="30d"
-                    interval="day"
-                    previous
-                    aspectRatio={0.15}
-                    chartType="linear"
-                    projectId={item.project_id}
-                    events={[
-                      {
-                        id: 'A',
-                        name: 'screen_view',
-                        segment: 'event',
-                        filters: [
-                          {
-                            id: 'path',
-                            name: 'path',
-                            value: [item.path],
-                            operator: 'is',
-                          },
-                          {
-                            id: 'origin',
-                            name: 'origin',
-                            value: [item.origin],
-                            operator: 'is',
-                          },
-                        ],
-                      },
-                    ]}
+                  <ReportChart
+                    options={{
+                      hideID: true,
+                      hideXAxis: true,
+                      hideYAxis: true,
+                      aspectRatio: 0.15,
+                    }}
+                    report={{
+                      lineType: 'linear',
+                      breakdowns: [],
+                      name: 'screen_view',
+                      metric: 'sum',
+                      range: '30d',
+                      interval: 'day',
+                      previous: true,
+
+                      chartType: 'linear',
+                      projectId: item.project_id,
+                      events: [
+                        {
+                          id: 'A',
+                          name: 'screen_view',
+                          segment: 'event',
+                          filters: [
+                            {
+                              id: 'path',
+                              name: 'path',
+                              value: [item.path],
+                              operator: 'is',
+                            },
+                            {
+                              id: 'origin',
+                              name: 'origin',
+                              value: [item.origin],
+                              operator: 'is',
+                            },
+                          ],
+                        },
+                      ],
+                    }}
                   />
                 </div>
               </div>

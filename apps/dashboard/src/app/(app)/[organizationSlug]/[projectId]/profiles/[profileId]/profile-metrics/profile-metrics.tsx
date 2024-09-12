@@ -18,7 +18,7 @@ function Card({ title, value }: { title: string; value: string }) {
   return (
     <div className="col gap-2 p-4 ring-[0.5px] ring-border">
       <div className="text-muted-foreground">{title}</div>
-      <div className="font-mono truncate text-2xl font-bold">{value}</div>
+      <div className="truncate font-mono text-2xl font-bold">{value}</div>
     </div>
   );
 }
@@ -27,7 +27,7 @@ function Info({ title, value }: { title: string; value: string }) {
   return (
     <div className="col gap-2">
       <div className="capitalize text-muted-foreground">{title}</div>
-      <div className="font-mono truncate">{value || '-'}</div>
+      <div className="truncate font-mono">{value || '-'}</div>
     </div>
   );
 }
@@ -40,7 +40,7 @@ const ProfileMetrics = ({ data, profile }: Props) => {
   const number = useNumber();
   return (
     <div className="@container">
-      <div className="grid grid-cols-2 overflow-hidden whitespace-nowrap  rounded-md border bg-background @xl:grid-cols-3 @4xl:grid-cols-6">
+      <div className="grid grid-cols-2 overflow-hidden whitespace-nowrap rounded-md border bg-background @xl:grid-cols-3 @4xl:grid-cols-6">
         <div className="col-span-2 @xl:col-span-3 @4xl:col-span-6">
           <div className="row border-b">
             <button

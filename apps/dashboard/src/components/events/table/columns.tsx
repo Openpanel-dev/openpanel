@@ -1,6 +1,6 @@
 import { EventIcon } from '@/components/events/event-icon';
 import { ProjectLink } from '@/components/links';
-import { SerieIcon } from '@/components/report/chart/SerieIcon';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { pushModal } from '@/modals';
