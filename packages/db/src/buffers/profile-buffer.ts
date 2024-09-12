@@ -3,7 +3,7 @@ import { mergeDeepRight } from 'ramda';
 import { toDots } from '@openpanel/common';
 import { getRedisCache } from '@openpanel/redis';
 
-import { ch, chQuery } from '../clickhouse-client';
+import { ch, chQuery, TABLE_NAMES } from '../clickhouse-client';
 import type {
   IClickhouseProfile,
   IServiceProfile,
@@ -22,7 +22,7 @@ import { RedisBuffer } from './buffer';
 export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   constructor() {
     super({
-      table: 'profiles',
+      table: TABLE_NAMES.profiles,
       batchSize: 100,
     });
   }
@@ -56,7 +56,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
     );
 
     await ch.insert({
-      table: 'profiles',
+      table: TABLE_NAMES.profiles,
       values: cleanedQueue.map((item) => {
         const profile = profiles.find(
           (p) =>

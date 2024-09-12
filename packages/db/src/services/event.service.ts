@@ -6,7 +6,7 @@ import { toDots } from '@openpanel/common';
 import { cacheable, getRedisCache } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
-import { eventBuffer } from '../buffers';
+import { botBuffer, eventBuffer } from '../buffers';
 import {
   ch,
   chQuery,
@@ -36,6 +36,26 @@ export type IServicePage = {
   title: string;
   origin: string;
 };
+
+export interface IClickhouseBotEvent {
+  id: string;
+  name: string;
+  type: string;
+  project_id: string;
+  path: string;
+  created_at: string;
+}
+
+export interface IServiceBotEvent {
+  id: string;
+  name: string;
+  type: string;
+  projectId: string;
+  path: string;
+  createdAt: Date;
+}
+
+export type IServiceCreateBotEventPayload = Omit<IServiceBotEvent, 'id'>;
 
 export interface IClickhouseEvent {
   id: string;
@@ -535,33 +555,20 @@ export async function getEventsCount({
   return res[0]?.count ?? 0;
 }
 
-interface CreateBotEventPayload {
-  name: string;
-  type: string;
-  path: string;
-  projectId: string;
-  createdAt: Date;
-}
-
 export function createBotEvent({
   name,
   type,
   projectId,
   createdAt,
   path,
-}: CreateBotEventPayload) {
-  return ch.insert({
-    table: 'events_bots',
-    format: 'JSONEachRow',
-    values: [
-      {
-        name,
-        type,
-        project_id: projectId,
-        path,
-        created_at: formatClickhouseDate(createdAt),
-      },
-    ],
+}: IServiceCreateBotEventPayload) {
+  return botBuffer.insert({
+    id: uuid(),
+    name,
+    type,
+    project_id: projectId,
+    path,
+    created_at: formatClickhouseDate(createdAt),
   });
 }
 

@@ -1,5 +1,12 @@
 import { getRedisCache } from '@openpanel/redis';
 
+const logger = {
+  debug: (...args: unknown[]) => console.log('[DEBUG]', ...args),
+  info: (...args: unknown[]) => console.log('[INFO]', ...args),
+  warn: (...args: unknown[]) => console.log('[WARN]', ...args),
+  error: (...args: unknown[]) => console.log('[ERROR]', ...args),
+};
+
 export const DELETE = '__DELETE__';
 
 export type QueueItem<T> = {
@@ -66,7 +73,14 @@ export abstract class RedisBuffer<T> {
     await getRedisCache().rpush(this.getKey(), JSON.stringify(value));
 
     const length = await getRedisCache().llen(this.getKey());
+    logger.debug(
+      `Inserted item into buffer ${this.table}. Current length: ${length}`
+    );
+
     if (this.batchSize && length >= this.batchSize) {
+      logger.info(
+        `Buffer ${this.table} reached batch size (${this.batchSize}). Flushing...`
+      );
       this.flush();
     }
   }
@@ -76,11 +90,11 @@ export abstract class RedisBuffer<T> {
       const queue = await this.getQueue(this.batchSize || -1);
 
       if (queue.length === 0) {
-        return {
-          count: 0,
-          data: [],
-        };
+        logger.debug(`Flush called on empty buffer ${this.table}`);
+        return { count: 0, data: [] };
       }
+
+      logger.info(`Flushing ${queue.length} items from buffer ${this.table}`);
 
       try {
         const indexes = await this.processQueue(queue);
@@ -91,19 +105,19 @@ export abstract class RedisBuffer<T> {
 
         if (this.onCompleted) {
           const res = await this.onCompleted(data);
-          return {
-            count: res.length,
-            data: res,
-          };
+          logger.info(
+            `Completed processing ${res.length} items from buffer ${this.table}`
+          );
+          return { count: res.length, data: res };
         }
 
-        return {
-          count: indexes.length,
-          data: indexes,
-        };
+        logger.info(
+          `Processed ${indexes.length} items from buffer ${this.table}`
+        );
+        return { count: indexes.length, data: indexes };
       } catch (e) {
-        console.log(
-          `[${this.getKey()}] Failed to processQueue while flushing:`,
+        logger.error(
+          `Failed to process queue while flushing buffer ${this.table}:`,
           e
         );
         const timestamp = new Date().getTime();
@@ -112,9 +126,15 @@ export abstract class RedisBuffer<T> {
           data: JSON.stringify(queue.map((item) => item.event)),
           retries: 0,
         });
+        logger.warn(
+          `Stored ${queue.length} failed items in ${this.getKey(`failed:${timestamp}`)}`
+        );
       }
     } catch (e) {
-      console.log(`[${this.getKey()}] Failed to getQueue while flushing:`, e);
+      logger.error(
+        `Failed to get queue while flushing buffer ${this.table}:`,
+        e
+      );
     }
   }
 
@@ -125,22 +145,26 @@ export abstract class RedisBuffer<T> {
     });
     multi.lrem(this.getKey(), 0, DELETE);
     await multi.exec();
+    logger.debug(`Deleted ${indexes.length} items from buffer ${this.table}`);
   }
 
   public async getQueue(limit: number): Promise<QueueItem<T>[]> {
     const queue = await getRedisCache().lrange(this.getKey(), 0, limit);
-    return queue
+    const result = queue
       .map((item, index) => ({
         event: this.transformQueueItem(item),
         index,
       }))
       .filter((item): item is QueueItem<T> => item.event !== null);
+    logger.debug(`Retrieved ${result.length} items from buffer ${this.table}`);
+    return result;
   }
 
   private transformQueueItem(item: string): T | null {
     try {
       return JSON.parse(item);
     } catch (e) {
+      logger.warn(`Failed to parse item in buffer ${this.table}:`, e);
       return null;
     }
   }

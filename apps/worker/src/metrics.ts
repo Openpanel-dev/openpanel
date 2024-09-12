@@ -67,7 +67,7 @@ queues.forEach((queue) => {
 });
 
 // Buffer
-const buffers = ['events_v2', 'profiles'];
+const buffers = ['events_v2', 'profiles', 'events_bots'];
 
 buffers.forEach((buffer) => {
   register.registerMetric(

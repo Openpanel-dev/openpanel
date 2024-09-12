@@ -54,6 +54,7 @@ const startServer = async () => {
     const fastify = Fastify({
       maxParamLength: 15_000,
       bodyLimit: 1048576 * 500, // 500MB
+      logger,
     });
 
     fastify.register(compress, {
