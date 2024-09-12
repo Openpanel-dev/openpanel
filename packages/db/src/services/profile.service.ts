@@ -49,7 +49,7 @@ export async function getProfileById(id: string, projectId: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM profiles WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
+    `SELECT * FROM ${TABLE_NAMES.profiles} WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
   );
 
   if (!profile) {

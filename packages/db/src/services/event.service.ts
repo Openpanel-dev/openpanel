@@ -622,7 +622,7 @@ export async function getTopPages({
 }) {
   const res = await chQuery<IServicePage>(`
     SELECT path, count(*) as count, project_id, first_value(created_at) as first_seen, max(properties['__title']) as title, origin
-    FROM events_v2 
+    FROM ${TABLE_NAMES.events} 
     WHERE name = 'screen_view' 
     AND  project_id = ${escape(projectId)} 
     AND created_at > now() - INTERVAL 30 DAY 

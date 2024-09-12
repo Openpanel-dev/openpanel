@@ -4,7 +4,7 @@ import superjson from 'superjson';
 export function toDots(
   obj: Record<string, unknown>,
   path = ''
-): Record<string, number | string | boolean> {
+): Record<string, string> {
   return Object.entries(obj).reduce((acc, [key, value]) => {
     if (typeof value === 'object' && value !== null) {
       return {
