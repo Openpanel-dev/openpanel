@@ -66,7 +66,8 @@ export const useXAxisProps = (
     interval === 'auto' ? 'day' : interval
   );
   return {
-    height: hide ? 0 : undefined,
+    height: hide ? 0 : 14,
+    tickSize: 10,
     axisLine: false,
     dataKey: 'timestamp',
     scale: 'utc',

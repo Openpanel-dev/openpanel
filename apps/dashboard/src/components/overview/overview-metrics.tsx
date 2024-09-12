@@ -220,10 +220,16 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
         <div className="card col-span-6 p-4">
           <ReportChart
             key={selectedMetric.id}
-            options={{ hideID: true, maxDomain: selectedMetric.maxDomain }}
+            options={{
+              hideID: true,
+              maxDomain: selectedMetric.maxDomain,
+              aspectRatio: 0.2,
+              hideLegend: true,
+            }}
             report={{
               ...selectedMetric,
               chartType: 'linear',
+              lineType: 'linear',
             }}
           />
         </div>
