@@ -94,7 +94,7 @@ export async function Hero() {
           <div className="absolute inset-0 flex rounded-2xl ring-8 ring-slate-300">
             <div className="absolute inset-0 w-full animate-pulse overflow-hidden rounded-2xl bg-slate-100" />
             <iframe
-              src="https://dashboard.openpanel.dev/share/overview/zef2XC?header=0"
+              src="https://dashboard.openpanel.dev/share/overview/zef2XC?header=0&range=30d"
               className="relative z-10 h-[max(90vh,650px)] w-full rounded-2xl"
               title="Openpanel Dashboard"
               scrolling="no"
