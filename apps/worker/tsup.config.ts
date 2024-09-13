@@ -5,6 +5,7 @@ const options: Options = {
   clean: true,
   entry: ['src/index.ts'],
   noExternal: [/^@openpanel\/.*$/u, /^@\/.*$/u],
+  external: ['@hyperdx/node-opentelemetry', 'winston'],
   sourcemap: true,
   splitting: false,
 };
