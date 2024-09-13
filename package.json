@@ -23,11 +23,13 @@
     "typecheck": "pnpm -r typecheck"
   },
   "dependencies": {
+    "@hyperdx/node-opentelemetry": "^0.8.1",
     "@openpanel/prettier-config": "^0.1.0",
     "dotenv-cli": "^7.3.0",
     "prettier": "^3.0.3",
     "semver": "^7.5.4",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "winston": "^3.14.2"
   },
   "prettier": "@openpanel/prettier-config",
   "pnpm": {

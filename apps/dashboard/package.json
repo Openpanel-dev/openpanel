@@ -16,7 +16,6 @@
     "@clerk/nextjs": "^5.0.12",
     "@clickhouse/client": "^1.2.0",
     "@hookform/resolvers": "^3.3.4",
-    "@hyperdx/browser": "^0.21.1",
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",
