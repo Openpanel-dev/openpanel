@@ -8,7 +8,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@baselime/pino-transport": "^0.1.5",
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1"
   },
