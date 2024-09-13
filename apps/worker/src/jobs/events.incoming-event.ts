@@ -183,15 +183,15 @@ function getSessionEndWithPriority(
   return async (args) => {
     const res = await getSessionEnd(args);
 
+    if (count > 10) {
+      throw new Error('Failed to get session end');
+    }
+
     // if we get simultaneous requests we want to avoid race conditions with getting the session end
     // one of the events will get priority and the other will wait for the first to finish
     if (res === null && priority === false) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       return getSessionEndWithPriority(priority, count + 1)(args);
-    }
-
-    if (count > 10) {
-      throw new Error('Failed to get session end');
     }
 
     return res;
