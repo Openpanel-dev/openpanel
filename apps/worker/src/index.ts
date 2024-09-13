@@ -13,6 +13,7 @@ import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
 import { sessionsJob } from './jobs/sessions';
 import { register } from './metrics';
+import { logger } from './utils/logger';
 
 const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
@@ -60,25 +61,40 @@ async function start() {
     console.log(`For the UI, open http://localhost:${PORT}/`);
   });
 
-  function workerLogger(worker: string, type: string, err?: Error) {
-    console.log(`Worker ${worker} -> ${type}`);
-    if (err) {
-      console.error(err);
-    }
-  }
-
   const workers = [sessionsWorker, eventsWorker, cronWorker];
   workers.forEach((worker) => {
-    worker.on('error', (err) => {
-      workerLogger(worker.name, 'error', err);
+    worker.on('error', (error) => {
+      logger.error('worker error', {
+        worker: worker.name,
+        error,
+      });
     });
 
     worker.on('closed', () => {
-      workerLogger(worker.name, 'closed');
+      logger.info('worker closed', {
+        worker: worker.name,
+      });
     });
 
     worker.on('ready', () => {
-      workerLogger(worker.name, 'ready');
+      logger.info('worker ready', {
+        worker: worker.name,
+      });
+    });
+
+    worker.on('failed', (job) => {
+      logger.error('job failed', {
+        worker: worker.name,
+        data: job?.data,
+        error: job?.failedReason,
+        options: job?.opts,
+      });
+    });
+
+    worker.on('ioredis:close', () => {
+      logger.error('worker closed due to ioredis:close', {
+        worker: worker.name,
+      });
     });
   });
 
@@ -88,7 +104,10 @@ async function start() {
       await sessionsWorker.close();
       await cronWorker.close();
     } catch (e) {
-      console.error('EXIT HANDLER ERROR', e);
+      logger.error('exit handler error', {
+        code: evtOrExitCodeOrError,
+        error: e,
+      });
     }
 
     process.exit(isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError);

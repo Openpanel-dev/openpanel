@@ -5,10 +5,12 @@ import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
+import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
 import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
+import { path } from 'ramda';
 
-import { round } from '@openpanel/common';
+import { generateId, round } from '@openpanel/common';
 import { chQuery, db, TABLE_NAMES } from '@openpanel/db';
 import type { IServiceClient } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
@@ -24,7 +26,7 @@ import miscRouter from './routes/misc.router';
 import profileRouter from './routes/profile.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
-import { logger, logInfo } from './utils/logger';
+import { logger } from './utils/logger';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -49,12 +51,70 @@ async function withTimings<T>(promise: Promise<T>) {
 const port = parseInt(process.env.API_PORT || '3000', 10);
 
 const startServer = async () => {
-  logInfo('Starting server');
+  logger.info('Starting server');
   try {
     const fastify = Fastify({
       maxParamLength: 15_000,
       bodyLimit: 1048576 * 500, // 500MB
-      logger,
+      logger: logger as unknown as FastifyBaseLogger,
+      disableRequestLogging: true,
+      genReqId: (req) =>
+        req.headers['request-id']
+          ? String(req.headers['request-id'])
+          : generateId(),
+    });
+
+    const getTrpcInput = (
+      request: FastifyRequest
+    ): Record<string, unknown> | undefined => {
+      const input = path(['query', 'input'], request);
+      try {
+        return typeof input === 'string' ? JSON.parse(input).json : input;
+      } catch (e) {
+        return undefined;
+      }
+    };
+
+    // add header to request if it does not exist
+    fastify.addHook('onRequest', (request, reply, done) => {
+      if (!request.headers['request-id']) {
+        request.headers['request-id'] = request.id;
+      }
+      done();
+    });
+
+    fastify.addHook('onRequest', (request, reply, done) => {
+      if (request.url.includes('trpc')) {
+        request.log.info('request incoming', {
+          url: request.url.split('?')[0],
+          method: request.method,
+          input: getTrpcInput(request),
+        });
+      } else {
+        request.log.info('request incoming', {
+          url: request.url,
+          method: request.method,
+        });
+      }
+      done();
+    });
+
+    fastify.addHook('onResponse', (request, reply, done) => {
+      if (request.url.includes('trpc')) {
+        request.log.info('request done', {
+          url: request.url.split('?')[0],
+          method: request.method,
+          input: getTrpcInput(request),
+          responseTime: reply.elapsedTime,
+        });
+      } else {
+        request.log.info('request done', {
+          url: request.url,
+          method: request.method,
+          responseTime: reply.elapsedTime,
+        });
+      }
+      done();
     });
 
     fastify.register(compress, {
@@ -117,12 +177,13 @@ const startServer = async () => {
         trpcOptions: {
           router: appRouter,
           createContext: createContext,
-          onError(error: unknown) {
-            if (error instanceof Error) {
-              logger.error(error, error.message);
-            } else if (error && typeof error === 'object' && 'error' in error) {
-              logger.error(error.error, 'Unknown error trpc error');
-            }
+          onError(ctx) {
+            ctx.req.log.error('trpc error', {
+              error: ctx.error,
+              path: ctx.path,
+              input: ctx.input,
+              type: ctx.type,
+            });
           },
         } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
       });
@@ -139,11 +200,7 @@ const startServer = async () => {
     fastify.register(importRouter, { prefix: '/import' });
     fastify.register(trackRouter, { prefix: '/track' });
     fastify.setErrorHandler((error, request, reply) => {
-      logger.error(error, 'Error in request', {
-        url: request.url,
-        method: request.method,
-        headers: request.headers,
-      });
+      request.log.error('request error', { error });
       reply.status(500).send('Internal server error');
     });
     fastify.get('/', (_request, reply) => {
@@ -185,12 +242,26 @@ const startServer = async () => {
           : null,
       });
     });
+    fastify.get('/healthcheck/queue', async (request, reply) => {
+      const count = await eventsQueue.getWaitingCount();
+      if (count > 40) {
+        reply.status(500).send({
+          ok: false,
+          count,
+        });
+      } else {
+        reply.status(200).send({
+          ok: true,
+          count,
+        });
+      }
+    });
     if (process.env.NODE_ENV === 'production') {
       for (const signal of ['SIGINT', 'SIGTERM']) {
-        process.on(signal, (err) => {
-          logger.fatal(err, `uncaught exception detected ${signal}`);
-          fastify.close().then((err) => {
-            process.exit(err ? 1 : 0);
+        process.on(signal, (error) => {
+          logger.error(`uncaught exception detected ${signal}`, error);
+          fastify.close().then((error) => {
+            process.exit(error ? 1 : 0);
           });
         });
       }
@@ -203,8 +274,8 @@ const startServer = async () => {
 
     // Notify when keys expires
     getRedisPub().config('SET', 'notify-keyspace-events', 'Ex');
-  } catch (e) {
-    logger.error(e, 'Failed to start server');
+  } catch (error) {
+    logger.error('Failed to start server', error);
   }
 };
 

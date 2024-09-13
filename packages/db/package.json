@@ -19,6 +19,7 @@
     "@clickhouse/client": "^1.2.0",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
+    "@openpanel/logger": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@prisma/client": "^5.1.1",

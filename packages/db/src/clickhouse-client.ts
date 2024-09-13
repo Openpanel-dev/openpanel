@@ -2,7 +2,10 @@ import type { ResponseJSON } from '@clickhouse/client';
 import { createClient } from '@clickhouse/client';
 import { escape } from 'sqlstring';
 
+import { createLogger } from '@openpanel/logger';
 import type { IInterval } from '@openpanel/validation';
+
+const logger = createLogger({ name: 'clickhouse' });
 
 export const TABLE_NAMES = {
   events: 'events_v2',
@@ -33,6 +36,10 @@ export const ch = new Proxy(originalCh, {
   get(target, property, receiver) {
     if (property === 'insert' || property === 'query') {
       return async (...args: any[]) => {
+        const childLogger = logger.child({
+          query: args[0].query,
+          property,
+        });
         try {
           // First attempt
           if (property in target) {
@@ -46,27 +53,26 @@ export const ch = new Proxy(originalCh, {
               error.message.includes('socket hang up') ||
               error.message.includes('Timeout error'))
           ) {
-            console.info(
-              `Caught ${error.message} error on ${property.toString()}, retrying once.`
-            );
+            childLogger.error(`Captured error`, {
+              error,
+            });
             await new Promise((resolve) => setTimeout(resolve, 500));
             try {
               // Retry once
+              childLogger.info(`Retrying query`);
               if (property in target) {
                 // @ts-expect-error
                 return await target[property](...args);
               }
             } catch (retryError) {
-              console.error(
-                `Retry failed for ${property.toString()}:`,
-                retryError
-              );
+              logger.error(`Retry failed`, retryError);
               throw retryError; // Rethrow or handle as needed
             }
           } else {
-            if (args[0].query) {
-              console.log('FAILED QUERY:', args[0].query);
-            }
+            logger.error('query failed', {
+              ...args[0],
+              error,
+            });
 
             // Handle other errors or rethrow them
             throw error;
@@ -103,10 +109,12 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
     }),
   };
 
-  console.log(
-    `Query: (${Date.now() - start}ms, ${response.statistics?.elapsed}ms), Rows: ${json.rows}`,
-    query
-  );
+  logger.info('query info', {
+    query,
+    rows: json.rows,
+    stats: response.statistics,
+    elapsed: Date.now() - start,
+  });
 
   return response;
 }

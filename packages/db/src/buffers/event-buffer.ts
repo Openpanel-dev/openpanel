@@ -1,4 +1,4 @@
-import { groupBy, omit, pick } from 'ramda';
+import { groupBy, omit } from 'ramda';
 import SuperJSON from 'superjson';
 
 import { deepMergeObjects } from '@openpanel/common';

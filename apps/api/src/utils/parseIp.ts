@@ -51,8 +51,8 @@ export async function parseIp(ip?: string): Promise<GeoLocation> {
       longitude: res.longitude,
       latitude: res.latitude,
     };
-  } catch (e) {
-    logger.error('Failed to fetch geo location for ip', e);
+  } catch (error) {
+    logger.error('Failed to fetch geo location for ip', { error });
     return geo;
   }
 }

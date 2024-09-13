@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
 import makeStore from '@/redux';
 import { api } from '@/trpc/client';
 import { ClerkProvider, useAuth } from '@clerk/nextjs';
+import HyperDX from '@hyperdx/browser';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
@@ -17,7 +18,7 @@ import superjson from 'superjson';
 import { OpenPanelComponent } from '@openpanel/nextjs';
 
 function AllProviders({ children }: { children: React.ReactNode }) {
-  const { userId, getToken } = useAuth();
+  const { getToken } = useAuth();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -55,6 +56,19 @@ function AllProviders({ children }: { children: React.ReactNode }) {
     // Create the store instance the first time this renders
     storeRef.current = makeStore();
   }
+
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_HYPERDX_API_KEY) {
+      HyperDX.init({
+        apiKey: process.env.NEXT_PUBLIC_HYPERDX_API_KEY,
+        service: 'dashboard-browser',
+        tracePropagationTargets: [/api.openpanel.dev/i], // Set to link traces from frontend to backend requests
+        advancedNetworkCapture: true,
+        consoleCapture: true,
+        captureConsole: true,
+      });
+    }
+  }, []);
 
   return (
     <ThemeProvider

@@ -28,8 +28,6 @@
     "fastify-metrics": "^11.0.0",
     "ico-to-png": "^0.2.1",
     "jsonwebtoken": "^9.0.2",
-    "pino": "^8.17.2",
-    "pino-pretty": "^10.3.1",
     "ramda": "^0.29.1",
     "request-ip": "^3.3.0",
     "sharp": "^0.33.2",
