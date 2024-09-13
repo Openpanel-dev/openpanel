@@ -8,8 +8,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "pino": "^8.17.2",
-    "pino-pretty": "^10.3.1"
+    "@hyperdx/node-opentelemetry": "^0.8.1",
+    "winston": "^3.14.2"
   },
   "devDependencies": {
     "@openpanel/eslint-config": "workspace:*",

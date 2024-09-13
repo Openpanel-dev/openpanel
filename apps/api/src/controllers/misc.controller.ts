@@ -37,8 +37,11 @@ async function getImageBuffer(url: string) {
       })
       .png()
       .toBuffer();
-  } catch (e) {
-    logger.error(e, `Failed to get image from url ${url}`);
+  } catch (error) {
+    logger.error(`Failed to get image from url`, {
+      error,
+      url,
+    });
   }
 }
 
@@ -138,8 +141,10 @@ export async function ping(
       count: request.body.count,
       domain: request.body.domain,
     });
-  } catch (e) {
-    logger.error(e, 'Failed to insert ping');
+  } catch (error) {
+    request.log.error('Failed to insert ping', {
+      error,
+    });
     reply.status(500).send({
       error: 'Failed to insert ping',
     });

@@ -21,7 +21,7 @@ const trackRouter: FastifyPluginCallback = (fastify, opts, done) => {
           if (error instanceof SdkAuthError) {
             return reply.status(401).send(error.message);
           }
-          logger.error(error, 'Failed to validate sdk request');
+          logger.error('Failed to validate sdk request', { error });
           return reply.status(401).send('Unknown validation error');
         });
 
@@ -50,8 +50,8 @@ const trackRouter: FastifyPluginCallback = (fastify, opts, done) => {
 
           reply.status(202).send('OK');
         }
-      } catch (e) {
-        logger.error(e, 'Failed to create bot event');
+      } catch (error) {
+        logger.error('Failed to create bot event', { error });
         reply.status(401).send();
         return;
       }
