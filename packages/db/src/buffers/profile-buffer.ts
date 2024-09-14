@@ -24,6 +24,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
     super({
       table: TABLE_NAMES.profiles,
       batchSize: 100,
+      disableAutoFlush: true,
     });
   }
 

@@ -42,6 +42,7 @@ export abstract class RedisBuffer<T> {
   public table: string;
   public batchSize?: number;
   public logger: ReturnType<typeof createLogger>;
+  public disableAutoFlush?: boolean;
 
   // abstract methods
   public abstract onInsert?: OnInsert<T>;
@@ -50,9 +51,14 @@ export abstract class RedisBuffer<T> {
   public abstract find: Find<T, unknown>;
   public abstract findMany: FindMany<T, unknown>;
 
-  constructor(options: { table: string; batchSize?: number }) {
+  constructor(options: {
+    table: string;
+    batchSize?: number;
+    disableAutoFlush?: boolean;
+  }) {
     this.table = options.table;
     this.batchSize = options.batchSize;
+    this.disableAutoFlush = options.disableAutoFlush;
     this.logger = createLogger({ name: `buffer` }).child({
       table: this.table,
     });
@@ -75,7 +81,7 @@ export abstract class RedisBuffer<T> {
       `Inserted item into buffer ${this.table}. Current length: ${length}`
     );
 
-    if (this.batchSize && length >= this.batchSize) {
+    if (!this.disableAutoFlush && this.batchSize && length >= this.batchSize) {
       this.logger.info(
         `Buffer ${this.table} reached batch size (${this.batchSize}). Flushing...`
       );

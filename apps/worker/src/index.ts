@@ -175,9 +175,7 @@ async function start() {
     {
       jobId: 'flushProfiles',
       repeat: {
-        every: process.env.BATCH_INTERVAL
-          ? parseInt(process.env.BATCH_INTERVAL, 10)
-          : 1000 * 10,
+        every: 2 * 1000,
       },
     }
   );
@@ -200,8 +198,7 @@ async function start() {
 
   const repeatableJobs = await cronQueue.getRepeatableJobs();
 
-  console.log('Repeatable jobs:');
-  console.log(repeatableJobs);
+  logger.info('Repeatable jobs', { repeatableJobs });
 
   await createInitialSalts();
 }
