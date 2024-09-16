@@ -14,7 +14,7 @@ const trackRouter: FastifyPluginCallback = (fastify, opts, done) => {
       req: FastifyRequest<{
         Body: TrackHandlerPayload;
       }>,
-      reply
+      reply,
     ) => {
       try {
         const client = await validateSdkRequest(req.headers).catch((error) => {
@@ -55,7 +55,7 @@ const trackRouter: FastifyPluginCallback = (fastify, opts, done) => {
         reply.status(401).send();
         return;
       }
-    }
+    },
   );
 
   fastify.route({

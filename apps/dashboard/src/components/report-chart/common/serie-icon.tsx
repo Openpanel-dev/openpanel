@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { LucideIcon, LucideProps } from 'lucide-react';
 import {
   ActivityIcon,
@@ -15,6 +14,7 @@ import {
   TabletIcon,
   TvIcon,
 } from 'lucide-react';
+import { useMemo } from 'react';
 
 import { NOT_SET_VALUE } from '@openpanel/constants';
 
@@ -30,9 +30,13 @@ function getProxyImage(url: string) {
 }
 
 const createImageIcon = (url: string) => {
-  return function (_props: LucideProps) {
-    return <img className="max-h-4 rounded-[2px] object-contain" src={url} />;
-  } as LucideIcon;
+  return ((_props: LucideProps) => (
+    <img
+      alt="serie icon"
+      className="max-h-4 rounded-[2px] object-contain"
+      src={url}
+    />
+  )) as LucideIcon;
 };
 
 const mapper: Record<string, LucideIcon> = {
@@ -60,7 +64,7 @@ const mapper: Record<string, LucideIcon> = {
       ...acc,
       [key]: createImageIcon(getProxyImage(value)),
     }),
-    {}
+    {},
   ),
 
   ...flags,

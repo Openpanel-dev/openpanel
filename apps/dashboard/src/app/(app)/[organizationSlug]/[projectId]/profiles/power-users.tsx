@@ -12,7 +12,7 @@ type Props = {
 const Events = ({ projectId }: Props) => {
   const [cursor, setCursor] = useQueryState(
     'cursor',
-    parseAsInteger.withDefault(0)
+    parseAsInteger.withDefault(0),
   );
   const query = api.profile.powerUsers.useQuery(
     {
@@ -23,7 +23,7 @@ const Events = ({ projectId }: Props) => {
     },
     {
       keepPreviousData: true,
-    }
+    },
   );
 
   return (

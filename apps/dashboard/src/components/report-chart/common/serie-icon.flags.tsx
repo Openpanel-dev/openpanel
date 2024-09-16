@@ -1,13 +1,11 @@
 import type { LucideIcon, LucideProps } from 'lucide-react';
 
 const createFlagIcon = (url: string) => {
-  return function (_props: LucideProps) {
-    return (
-      <span
-        className={`fi !block aspect-[1.33] overflow-hidden rounded-[2px] fi-${url}`}
-      ></span>
-    );
-  } as LucideIcon;
+  return ((_props: LucideProps) => (
+    <span
+      className={`fi !block aspect-[1.33] overflow-hidden rounded-[2px] fi-${url}`}
+    />
+  )) as LucideIcon;
 };
 
 const data = {

@@ -51,23 +51,23 @@ export function ChartSSR({
         >
           <defs>
             <linearGradient
-              id={`gradient`}
+              id={'gradient'}
               x1="0"
               y1="0"
               x2="0"
               y2="100%"
               gradientUnits="userSpaceOnUse"
             >
-              <stop offset="0%" stopColor={'blue'} stopOpacity={0.2}></stop>
-              <stop offset="50%" stopColor={'blue'} stopOpacity={0.05}></stop>
-              <stop offset="100%" stopColor={'blue'} stopOpacity={0}></stop>
+              <stop offset="0%" stopColor={'blue'} stopOpacity={0.2} />
+              <stop offset="50%" stopColor={'blue'} stopOpacity={0.05} />
+              <stop offset="100%" stopColor={'blue'} stopOpacity={0} />
             </linearGradient>
           </defs>
           {/* Gradient area */}
           {pathArea && (
             <path
               d={pathArea}
-              fill={`url(#gradient)`}
+              fill={'url(#gradient)'}
               vectorEffect="non-scaling-stroke"
             />
           )}

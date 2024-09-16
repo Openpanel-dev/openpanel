@@ -31,7 +31,7 @@ export function handleError(error: TRPCClientErrorBase<any>) {
 }
 
 export function handleErrorToastOptions(options: ExternalToast) {
-  return function (error: TRPCClientErrorBase<any>) {
+  return (error: TRPCClientErrorBase<any>) => {
     toast('Error', {
       description: error.message,
       ...options,

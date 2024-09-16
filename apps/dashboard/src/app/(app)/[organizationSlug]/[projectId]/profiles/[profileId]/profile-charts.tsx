@@ -1,8 +1,8 @@
 'use client';
 
-import { memo } from 'react';
 import { ReportChart } from '@/components/report-chart';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { memo } from 'react';
 
 import type { IChartProps } from '@openpanel/validation';
 

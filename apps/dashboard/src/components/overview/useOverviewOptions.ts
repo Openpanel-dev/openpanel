@@ -19,17 +19,17 @@ const nuqsOptions = { history: 'push' } as const;
 export function useOverviewOptions() {
   const [startDate, setStartDate] = useQueryState(
     'start',
-    parseAsString.withOptions(nuqsOptions)
+    parseAsString.withOptions(nuqsOptions),
   );
   const [endDate, setEndDate] = useQueryState(
     'end',
-    parseAsString.withOptions(nuqsOptions)
+    parseAsString.withOptions(nuqsOptions),
   );
   const [range, setRange] = useQueryState(
     'range',
     parseAsStringEnum(mapKeys(timeWindows))
       .withDefault('7d')
-      .withOptions(nuqsOptions)
+      .withOptions(nuqsOptions),
   );
 
   const interval =
@@ -38,7 +38,7 @@ export function useOverviewOptions() {
 
   const [metric, setMetric] = useQueryState(
     'metric',
-    parseAsInteger.withDefault(0).withOptions(nuqsOptions)
+    parseAsInteger.withDefault(0).withOptions(nuqsOptions),
   );
 
   return {

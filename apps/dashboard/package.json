@@ -7,8 +7,6 @@
     "testing": "pnpm dev",
     "build": "pnpm with-env next build",
     "start": "next start",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{tsx,mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },
@@ -76,7 +74,7 @@
     "lucide-react": "^0.331.0",
     "mathjs": "^12.3.2",
     "mitt": "^3.0.1",
-    "next": "~14.2.1",
+    "next": "14.2.1",
     "next-auth": "^4.24.5",
     "next-themes": "^0.2.1",
     "nextjs-toploader": "^1.6.11",
@@ -112,8 +110,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/trpc": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/bcrypt": "^5.0.2",
@@ -127,26 +123,9 @@
     "@types/react-simple-maps": "^3.0.4",
     "@types/react-syntax-highlighter": "^15.5.11",
     "@types/sqlstring": "^2.3.2",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
     "autoprefixer": "^10.4.17",
-    "eslint": "^8.56.0",
     "postcss": "^8.4.35",
-    "prettier": "^3.2.5",
-    "prettier-plugin-tailwindcss": "^0.5.11",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.3.3"
-  },
-  "ct3aMetadata": {
-    "initVersion": "7.21.0"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base",
-      "@openpanel/eslint-config/react",
-      "@openpanel/eslint-config/nextjs"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

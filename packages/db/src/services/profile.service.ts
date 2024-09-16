@@ -7,10 +7,10 @@ import type { IChartEventFilter } from '@openpanel/validation';
 
 import { profileBuffer } from '../buffers';
 import {
+  TABLE_NAMES,
   ch,
   chQuery,
   formatClickhouseDate,
-  TABLE_NAMES,
 } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
@@ -49,7 +49,7 @@ export async function getProfileById(id: string, projectId: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM ${TABLE_NAMES.profiles} WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
+    `SELECT * FROM ${TABLE_NAMES.profiles} WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`,
   );
 
   if (!profile) {
@@ -82,7 +82,7 @@ export async function getProfiles(ids: string[], projectId: string) {
     WHERE 
       project_id = ${escape(projectId)} AND
       id IN (${filteredIds.map((id) => escape(id)).join(',')})
-    `
+    `,
   );
 
   return data.map(transformProfile);
@@ -251,7 +251,7 @@ export async function getProfileId({
     profile_id: string;
     project_id: string;
   }>(
-    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`
+    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`,
   );
 
   if (res[0]) {

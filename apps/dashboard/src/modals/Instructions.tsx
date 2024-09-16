@@ -88,7 +88,7 @@ const Instructions = ({ framework, client }: Props) => {
     return (
       <div className="flex flex-col gap-4">
         <p>Install dependencies</p>
-        <Syntax code={`pnpm install @openpanel/nextjs`} />
+        <Syntax code={'pnpm install @openpanel/nextjs'} />
         <p>Add OpenPanelComponent to your root layout</p>
         <Syntax
           code={`import { OpenPanelComponent } from '@openpanel/nextjs';
@@ -128,7 +128,7 @@ useOpenPanel().track('my_event', { foo: 'bar' });
     return (
       <div className="flex flex-col gap-4">
         <p>Install dependencies</p>
-        <Syntax code={`composer require bleckert/openpanel-laravel`} />
+        <Syntax code={'composer require bleckert/openpanel-laravel'} />
         <p>Add environment variables</p>
         <Syntax
           code={`OPENPANEL_CLIENT_ID=${clientId}
@@ -164,6 +164,7 @@ $openpanel->event(
               href="https://twitter.com/tbleckert"
               target="_blank"
               className="underline"
+              rel="noreferrer"
             >
               @tbleckert
             </a>{' '}
@@ -216,7 +217,7 @@ $openpanel->event(
     return (
       <div className="flex flex-col gap-4">
         <strong>Install dependencies</strong>
-        <Syntax code={`npm install @openpanel/express`} />
+        <Syntax code={'npm install @openpanel/express'} />
 
         <strong>Usage</strong>
         <p>Connect the middleware to your app.</p>
@@ -259,7 +260,7 @@ app.listen(3000, () => {
     return (
       <div className="flex flex-col gap-4">
         <strong>Install dependencies</strong>
-        <Syntax code={`pnpm install @openpanel/sdk`} />
+        <Syntax code={'pnpm install @openpanel/sdk'} />
 
         <strong>Create a instance</strong>
         <p>
@@ -360,6 +361,7 @@ op.decrement({ name: 'app_opened', profile_id: '123', value: 5 }); // decrement 
             href="https://github.com/Openpanel-dev/examples/tree/main/expo-app"
             target="_blank"
             className="underline"
+            rel="noreferrer"
           >
             example app
           </a>{' '}

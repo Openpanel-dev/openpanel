@@ -3,13 +3,13 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import {
+  TABLE_NAMES,
   chQuery,
   convertClickhouseDateToJs,
   db,
   getEventList,
   getEvents,
   getTopPages,
-  TABLE_NAMES,
 } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
 
@@ -26,7 +26,7 @@ export const eventRouter = createTRPCRouter({
         icon: z.string().optional(),
         color: z.string().optional(),
         conversion: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(
       async ({ input: { projectId, name, icon, color, conversion } }) => {
@@ -40,7 +40,7 @@ export const eventRouter = createTRPCRouter({
           create: { projectId, name, icon, color, conversion },
           update: { icon, color, conversion },
         });
-      }
+      },
     ),
 
   byId: protectedProcedure
@@ -48,14 +48,14 @@ export const eventRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         projectId: z.string(),
-      })
+      }),
     )
     .query(async ({ input: { id, projectId } }) => {
       const res = await getEvents(
         `SELECT * FROM ${TABLE_NAMES.events} WHERE id = ${escape(id)} AND project_id = ${escape(projectId)};`,
         {
           meta: true,
-        }
+        },
       );
 
       if (!res?.[0]) {
@@ -81,7 +81,7 @@ export const eventRouter = createTRPCRouter({
         endDate: z.date().optional(),
         meta: z.boolean().optional(),
         profile: z.boolean().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return getEventList(input);
@@ -90,7 +90,7 @@ export const eventRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-      })
+      }),
     )
     .query(async ({ input: { projectId } }) => {
       const conversions = await db.eventMeta.findMany({
@@ -109,7 +109,7 @@ export const eventRouter = createTRPCRouter({
         {
           profile: true,
           meta: true,
-        }
+        },
       );
     }),
 
@@ -119,7 +119,7 @@ export const eventRouter = createTRPCRouter({
         projectId: z.string(),
         cursor: z.number().optional(),
         limit: z.number().default(8),
-      })
+      }),
     )
     .query(async ({ input: { projectId, cursor, limit }, ctx }) => {
       if (ctx.session.userId) {
@@ -151,12 +151,12 @@ export const eventRouter = createTRPCRouter({
           path: string;
           created_at: string;
         }>(
-          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`
+          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`,
         ),
         chQuery<{
           count: number;
         }>(
-          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)}`
+          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)}`,
         ),
       ]);
 
@@ -176,7 +176,7 @@ export const eventRouter = createTRPCRouter({
         cursor: z.number().optional(),
         take: z.number().default(20),
         search: z.string().optional(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       return getTopPages(input);
@@ -186,19 +186,19 @@ export const eventRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-      })
+      }),
     )
     .query(async ({ input }) => {
       const res = await chQuery<{ origin: string }>(
         `SELECT DISTINCT origin FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(
-          input.projectId
-        )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY ORDER BY origin ASC`
+          input.projectId,
+        )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY ORDER BY origin ASC`,
       );
 
       return res.sort((a, b) =>
         a.origin
           .replace(/https?:\/\//, '')
-          .localeCompare(b.origin.replace(/https?:\/\//, ''))
+          .localeCompare(b.origin.replace(/https?:\/\//, '')),
       );
     }),
 });

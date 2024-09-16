@@ -30,7 +30,7 @@ import {
   getDefaultIntervalByRange,
   timeWindows,
 } from '@openpanel/constants';
-import type { getReportsByDashboardId, IServiceDashboard } from '@openpanel/db';
+import type { IServiceDashboard, getReportsByDashboardId } from '@openpanel/db';
 
 import { OverviewReportRange } from '../../overview-sticky-header';
 
@@ -64,7 +64,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
                   params.projectId
                 }/reports?${new URLSearchParams({
                   dashboardId: params.dashboardId,
-                }).toString()}`
+                }).toString()}`,
               );
             }}
           >
@@ -163,7 +163,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
                     params.projectId
                   }/reports?${new URLSearchParams({
                     dashboardId: params.dashboardId,
-                  }).toString()}`
+                  }).toString()}`,
                 )
               }
               className="mt-14"

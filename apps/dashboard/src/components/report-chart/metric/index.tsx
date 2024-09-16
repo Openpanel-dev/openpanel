@@ -29,10 +29,10 @@ export function ReportMetricChart() {
 export function Loading() {
   return (
     <div className="flex h-[78px] flex-col justify-between p-4">
-      <div className="h-3 w-1/2 animate-pulse rounded bg-def-200"></div>
+      <div className="h-3 w-1/2 animate-pulse rounded bg-def-200" />
       <div className="row items-end justify-between">
-        <div className="h-6 w-1/3 animate-pulse rounded bg-def-200"></div>
-        <div className="h-3 w-1/5 animate-pulse rounded bg-def-200"></div>
+        <div className="h-6 w-1/3 animate-pulse rounded bg-def-200" />
+        <div className="h-3 w-1/5 animate-pulse rounded bg-def-200" />
       </div>
     </div>
   );

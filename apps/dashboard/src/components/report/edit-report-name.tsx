@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { PencilIcon } from 'lucide-react';
+import { useState } from 'react';
 
 type Props = {
   name?: string;
@@ -23,7 +23,7 @@ const EditReportName = ({ name }: Props) => {
     window.dispatchEvent(
       new CustomEvent('report-name-change', {
         detail: newName === '' ? name : newName,
-      })
+      }),
     );
 
     setIsEditing(false);
@@ -33,8 +33,6 @@ const EditReportName = ({ name }: Props) => {
     return (
       <div className="flex">
         <input
-          // eslint-disable-next-line jsx-a11y/no-autofocus
-          autoFocus
           type="text"
           value={newName}
           onKeyDown={(e) => {
@@ -53,6 +51,7 @@ const EditReportName = ({ name }: Props) => {
 
   return (
     <button
+      type="button"
       className="flex cursor-pointer select-none items-center gap-2"
       onClick={() => setIsEditing(true)}
     >

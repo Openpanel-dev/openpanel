@@ -51,6 +51,7 @@ export function EventListItem(props: EventListItemProps) {
   return (
     <>
       <button
+        type="button"
         onClick={() => {
           if (!isMinimal) {
             pushModal('EventDetails', {
@@ -61,7 +62,7 @@ export function EventListItem(props: EventListItemProps) {
         className={cn(
           'card hover:bg-light-background flex w-full items-center justify-between rounded-lg p-4 transition-colors',
           meta?.conversion &&
-            `bg-${meta.color}-50 dark:bg-${meta.color}-900 hover:bg-${meta.color}-100 dark:hover:bg-${meta.color}-700`
+            `bg-${meta.color}-50 dark:bg-${meta.color}-900 hover:bg-${meta.color}-100 dark:hover:bg-${meta.color}-700`,
         )}
       >
         <div>

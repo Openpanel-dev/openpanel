@@ -1,7 +1,7 @@
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { generateDeviceId } from '@openpanel/common';
+import { generateDeviceId } from '@openpanel/common/server';
 import { getSalts } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
@@ -13,7 +13,7 @@ export async function postEvent(
   request: FastifyRequest<{
     Body: PostEventPayload;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
@@ -44,7 +44,7 @@ export async function postEvent(
     'locked',
     'EX',
     10,
-    'NX'
+    'NX',
   );
 
   eventsQueue.add('event', {

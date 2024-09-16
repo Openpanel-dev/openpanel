@@ -1,12 +1,12 @@
 'use client';
 
-import * as React from 'react';
 import { cn } from '@/utils/cn';
 import { Slot } from '@radix-ui/react-slot';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
+import * as React from 'react';
 
 const buttonVariants = cva(
   'inline-flex flex-shrink-0 items-center justify-center whitespace-nowrap rounded-md  font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -35,7 +35,7 @@ const buttonVariants = cva(
       variant: 'default',
       size: 'default',
     },
-  }
+  },
 );
 
 export interface ButtonProps
@@ -59,10 +59,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       ...props
     },
-    ref
+    ref,
   ) => {
     const Comp = asChild ? Slot : 'button';
-    const Icon = loading ? Loader2 : icon ?? null;
+    const Icon = loading ? Loader2 : (icon ?? null);
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
@@ -76,7 +76,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </Comp>
     );
-  }
+  },
 );
 Button.displayName = 'Button';
 Button.defaultProps = {

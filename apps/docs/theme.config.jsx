@@ -42,7 +42,7 @@ export default {
           content={domain.replace('https://', '')}
         />
         <meta name="twitter:url" content={domain} />
-        <meta name="og:type" content={`site`} />
+        <meta name="og:type" content={'site'} />
         <meta name="og:url" content={canonicalUrl} />
         <meta name="og:title" content={`${title} - Openpanel Docs`} />
         <meta property="og:description" content={description} />
@@ -75,7 +75,7 @@ export default {
         <a
           href="https://twitter.com/CarlLindesvard"
           target="_blank"
-          rel="nofollow"
+          rel="noreferrer nofollow"
         >
           Carl
         </a>

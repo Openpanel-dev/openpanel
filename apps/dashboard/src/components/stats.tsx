@@ -12,7 +12,7 @@ export function Stats({
       <div
         className={cn(
           'grid overflow-hidden rounded border bg-background @xl:grid-cols-3 @4xl:grid-cols-6',
-          className
+          className,
         )}
         {...props}
       />

@@ -1,6 +1,6 @@
-import { AppState, Platform } from 'react-native';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
+import { AppState, Platform } from 'react-native';
 
 import type { OpenPanelOptions, TrackProperties } from '@openpanel/sdk';
 import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';

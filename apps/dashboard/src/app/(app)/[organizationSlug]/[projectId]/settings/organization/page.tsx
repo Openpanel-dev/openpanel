@@ -52,7 +52,7 @@ export default async function Page({
   }
 
   const member = organization.members.find(
-    (member) => member.userId === session.userId
+    (member) => member.userId === session.userId,
   );
 
   const hasAccess = member?.role === 'org:admin';
@@ -69,13 +69,13 @@ export default async function Page({
   return (
     <Padding>
       <PageTabs className="mb-4">
-        <PageTabsLink href={`?tab=org`} isActive={tab === 'org'}>
+        <PageTabsLink href={'?tab=org'} isActive={tab === 'org'}>
           Organization
         </PageTabsLink>
-        <PageTabsLink href={`?tab=members`} isActive={tab === 'members'}>
+        <PageTabsLink href={'?tab=members'} isActive={tab === 'members'}>
           Members
         </PageTabsLink>
-        <PageTabsLink href={`?tab=invites`} isActive={tab === 'invites'}>
+        <PageTabsLink href={'?tab=invites'} isActive={tab === 'invites'}>
           Invites
         </PageTabsLink>
       </PageTabs>

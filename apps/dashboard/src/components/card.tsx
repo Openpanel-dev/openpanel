@@ -21,7 +21,7 @@ export function Card({ children, hover, className }: CardProps) {
       className={cn(
         'card relative',
         hover && 'transition-all hover:-translate-y-0.5',
-        className
+        className,
       )}
     >
       {children}

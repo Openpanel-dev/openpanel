@@ -27,16 +27,16 @@ export default function Page({
       <Padding>
         <div className="mb-4">
           <PageTabs>
-            <PageTabsLink href={`?tab=events`} isActive={tab === 'events'}>
+            <PageTabsLink href={'?tab=events'} isActive={tab === 'events'}>
               Events
             </PageTabsLink>
             <PageTabsLink
-              href={`?tab=conversions`}
+              href={'?tab=conversions'}
               isActive={tab === 'conversions'}
             >
               Conversions
             </PageTabsLink>
-            <PageTabsLink href={`?tab=charts`} isActive={tab === 'charts'}>
+            <PageTabsLink href={'?tab=charts'} isActive={tab === 'charts'}>
               Charts
             </PageTabsLink>
           </PageTabs>

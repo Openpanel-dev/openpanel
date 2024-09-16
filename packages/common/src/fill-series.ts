@@ -84,7 +84,7 @@ export function completeSerie(
   data: ISerieDataItem[],
   _startDate: string,
   _endDate: string,
-  interval: IInterval
+  interval: IInterval,
 ) {
   const startDate = parseISO(_startDate);
   const endDate = parseISO(_endDate);

@@ -15,7 +15,7 @@ type Props = {
 const Events = ({ projectId }: Props) => {
   const [cursor, setCursor] = useQueryState(
     'cursor',
-    parseAsInteger.withDefault(0)
+    parseAsInteger.withDefault(0),
   );
   const [search, setSearch] = useQueryState('search', {
     defaultValue: '',
@@ -31,7 +31,7 @@ const Events = ({ projectId }: Props) => {
     },
     {
       keepPreviousData: true,
-    }
+    },
   );
 
   return (

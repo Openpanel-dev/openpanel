@@ -5,7 +5,7 @@ export type Coordinate = {
 
 export function haversineDistance(
   coord1: Coordinate,
-  coord2: Coordinate
+  coord2: Coordinate,
 ): number {
   const R = 6371; // Earth's radius in kilometers
   const lat1Rad = coord1.lat * (Math.PI / 180);
@@ -25,7 +25,7 @@ export function haversineDistance(
 }
 
 export function findFarthestPoints(
-  coordinates: Coordinate[]
+  coordinates: Coordinate[],
 ): [Coordinate, Coordinate] {
   if (coordinates.length < 2) {
     throw new Error('At least two coordinates are required');
@@ -80,12 +80,12 @@ function cross(o: Coordinate, a: Coordinate, b: Coordinate): number {
 
 // convex hull
 export function getOuterMarkers(coordinates: Coordinate[]): Coordinate[] {
-  coordinates = coordinates.sort(sortCoordinates);
+  const sorted = coordinates.sort(sortCoordinates);
 
-  if (coordinates.length <= 3) return coordinates;
+  if (sorted.length <= 3) return sorted;
 
   const lower: Coordinate[] = [];
-  for (const coord of coordinates) {
+  for (const coord of sorted) {
     while (
       lower.length >= 2 &&
       cross(lower[lower.length - 2]!, lower[lower.length - 1]!, coord) <= 0
@@ -99,15 +99,11 @@ export function getOuterMarkers(coordinates: Coordinate[]): Coordinate[] {
   for (let i = coordinates.length - 1; i >= 0; i--) {
     while (
       upper.length >= 2 &&
-      cross(
-        upper[upper.length - 2]!,
-        upper[upper.length - 1]!,
-        coordinates[i]!
-      ) <= 0
+      cross(upper[upper.length - 2]!, upper[upper.length - 1]!, sorted[i]!) <= 0
     ) {
       upper.pop();
     }
-    upper.push(coordinates[i]!);
+    upper.push(sorted[i]!);
   }
 
   upper.pop();
@@ -148,22 +144,22 @@ export function calculateCentroid(polygon: Coordinate[]): Coordinate {
 }
 
 export function calculateGeographicMidpoint(
-  coordinate: Coordinate[]
+  coordinate: Coordinate[],
 ): Coordinate {
-  let minLat = Infinity,
-    maxLat = -Infinity,
-    minLong = Infinity,
-    maxLong = -Infinity;
+  let minLat = Number.POSITIVE_INFINITY;
+  let maxLat = Number.NEGATIVE_INFINITY;
+  let minLong = Number.POSITIVE_INFINITY;
+  let maxLong = Number.NEGATIVE_INFINITY;
 
-  coordinate.forEach(({ lat, long }) => {
+  for (const { lat, long } of coordinate) {
     if (lat < minLat) minLat = lat;
     if (lat > maxLat) maxLat = lat;
     if (long < minLong) minLong = long;
     if (long > maxLong) maxLong = long;
-  });
+  }
 
   // Handling the wrap around the international date line
-  let midLong;
+  let midLong: number;
   if (maxLong > minLong) {
     midLong = (maxLong + minLong) / 2;
   } else {
@@ -211,7 +207,7 @@ export function clusterCoordinates(coordinates: Coordinate[], radius = 25) {
             long: center.long + cur.long / cluster.members.length,
           };
         },
-        { lat: 0, long: 0 }
+        { lat: 0, long: 0 },
       );
 
       clusters.push(cluster);

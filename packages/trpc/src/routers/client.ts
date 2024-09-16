@@ -1,10 +1,11 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { z } from 'zod';
 
-import { hashPassword, stripTrailingSlash } from '@openpanel/common';
+import { stripTrailingSlash } from '@openpanel/common';
 import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
 
+import { hashPassword } from '@openpanel/common/server';
 import { getClientAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -17,7 +18,7 @@ export const clientRouter = createTRPCRouter({
         name: z.string(),
         cors: z.string().nullable(),
         crossDomain: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getClientAccess({
@@ -49,7 +50,7 @@ export const clientRouter = createTRPCRouter({
         cors: z.string().nullable(),
         crossDomain: z.boolean().optional(),
         type: z.enum(['read', 'write', 'root']).optional(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
@@ -75,7 +76,7 @@ export const clientRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getClientAccess({

@@ -21,10 +21,10 @@ import {
   removeEvent,
 } from '../reportSlice';
 import { EventPropertiesCombobox } from './EventPropertiesCombobox';
-import { FiltersCombobox } from './filters/FiltersCombobox';
-import { FiltersList } from './filters/FiltersList';
 import { ReportEventMore } from './ReportEventMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
+import { FiltersCombobox } from './filters/FiltersCombobox';
+import { FiltersList } from './filters/FiltersList';
 
 export function ReportEvents() {
   const previous = useSelector((state) => state.report.previous);
@@ -79,7 +79,7 @@ export function ReportEvents() {
                         ...event,
                         name: value,
                         filters: [],
-                      })
+                      }),
                     );
                   }}
                   items={eventNames.map((item) => ({
@@ -113,7 +113,7 @@ export function ReportEvents() {
                       changeEvent({
                         ...event,
                         segment,
-                      })
+                      }),
                     );
                   }}
                   items={[
@@ -148,7 +148,10 @@ export function ReportEvents() {
                   ]}
                   label="Segment"
                 >
-                  <button className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none">
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
+                  >
                     {event.segment === 'user' ? (
                       <>
                         <Users size={12} /> Unique users
@@ -205,7 +208,7 @@ export function ReportEvents() {
                 name: value,
                 segment: 'event',
                 filters: [],
-              })
+              }),
             );
           }}
           items={eventNames.map((item) => ({

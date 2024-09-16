@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import {
   InputOTP,
   InputOTPGroup,
@@ -9,6 +8,7 @@ import {
 import { getClerkError } from '@/utils/clerk-error';
 import { useSignUp } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { popModal } from '.';
@@ -51,7 +51,7 @@ export default function VerifyEmail({ email }: Props) {
             const completeSignUp = await signUp.attemptEmailAddressVerification(
               {
                 code,
-              }
+              },
             );
 
             if (completeSignUp.status !== 'complete') {

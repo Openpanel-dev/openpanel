@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
@@ -10,6 +9,8 @@ import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
+import type React from 'react';
+import { useRef, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
@@ -28,7 +29,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: false,
           },
         },
-      })
+      }),
   );
   const [trpcClient] = useState(() =>
     api.createClient({
@@ -47,7 +48,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
           },
         }),
       ],
-    })
+    }),
   );
 
   const storeRef = useRef<AppStore>();

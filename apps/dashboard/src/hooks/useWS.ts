@@ -1,8 +1,8 @@
 'use client';
 
-import { use, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import debounce from 'lodash.debounce';
+import { use, useEffect, useMemo, useState } from 'react';
 import useWebSocket from 'react-use-websocket';
 
 import { getSuperJson } from '@openpanel/common';
@@ -16,7 +16,7 @@ type UseWSOptions = {
 export default function useWS<T>(
   path: string,
   onMessage: (event: T) => void,
-  options?: UseWSOptions
+  options?: UseWSOptions,
 ) {
   const auth = useAuth();
   const ws = String(process.env.NEXT_PUBLIC_API_URL)

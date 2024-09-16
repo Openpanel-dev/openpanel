@@ -15,7 +15,7 @@ export const ticketRouter = createTRPCRouter({
         subject: z.string(),
         body: z.string(),
         meta: z.record(z.string(), z.unknown()),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       if (!API_KEY) {

@@ -79,7 +79,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
         {dashboards.map((item) => {
           const visibleReports = item.reports.slice(
             0,
-            item.reports.length > 6 ? 5 : 6
+            item.reports.length > 6 ? 5 : 6,
           );
           return (
             <Card key={item.id} hover>
@@ -97,7 +97,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                   <div
                     className={cn(
                       'mt-4 grid gap-2',
-                      'grid-cols-1 @sm:grid-cols-2'
+                      'grid-cols-1 @sm:grid-cols-2',
                     )}
                   >
                     {visibleReports.map((report) => {
@@ -145,6 +145,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
               <CardActions>
                 <CardActionsItem className="w-full" asChild>
                   <button
+                    type="button"
                     onClick={() => {
                       pushModal('EditDashboard', item);
                     }}
@@ -155,6 +156,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                 </CardActionsItem>
                 <CardActionsItem className="w-full text-destructive" asChild>
                   <button
+                    type="button"
                     onClick={() => {
                       deletion.mutate({
                         id: item.id,

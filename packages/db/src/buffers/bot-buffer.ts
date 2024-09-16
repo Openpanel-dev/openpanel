@@ -1,4 +1,4 @@
-import { ch, TABLE_NAMES } from '../clickhouse-client';
+import { TABLE_NAMES, ch } from '../clickhouse-client';
 import type { IClickhouseBotEvent } from '../services/event.service';
 import type {
   Find,

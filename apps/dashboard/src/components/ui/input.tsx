@@ -1,9 +1,9 @@
 'use client';
 
-import * as React from 'react';
 import { cn } from '@/utils/cn';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
+import * as React from 'react';
 
 const inputVariant = cva(
   'file: flex w-full rounded-md border border-input bg-card ring-offset-background file:border-0 file:bg-transparent file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50',
@@ -18,7 +18,7 @@ const inputVariant = cva(
     defaultVariants: {
       size: 'sm',
     },
-  }
+  },
 );
 
 export type InputProps = VariantProps<typeof inputVariant> &
@@ -35,13 +35,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         type={type}
         className={cn(
           inputVariant({ size, className }),
-          !!error && 'border-destructive'
+          !!error && 'border-destructive',
         )}
         ref={ref}
         {...props}
       />
     );
-  }
+  },
 );
 Input.displayName = 'Input';
 

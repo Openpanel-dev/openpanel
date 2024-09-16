@@ -16,6 +16,7 @@ export default function Syntax({ code }: SyntaxProps) {
   return (
     <div className="group relative">
       <button
+        type="button"
         className="absolute right-1 top-1 rounded bg-card p-2 opacity-0 transition-opacity group-hover:opacity-100"
         onClick={() => {
           clipboard(code);

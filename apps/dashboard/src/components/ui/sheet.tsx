@@ -1,11 +1,11 @@
 'use client';
 
-import * as React from 'react';
 import { cn } from '@/utils/cn';
 import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
 import { XIcon } from 'lucide-react';
+import * as React from 'react';
 
 const Sheet = SheetPrimitive.Root;
 
@@ -22,7 +22,7 @@ const SheetOverlay = React.forwardRef<
   <SheetPrimitive.Overlay
     className={cn(
       'fixed inset-0 z-50 bg-black/20  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-      className
+      className,
     )}
     {...props}
     ref={ref}
@@ -46,7 +46,7 @@ const sheetVariants = cva(
     defaultVariants: {
       side: 'right',
     },
-  }
+  },
 );
 
 interface SheetContentProps
@@ -88,7 +88,7 @@ const SheetHeader = ({
   <div
     className={cn(
       'relative -m-6 mb-6 flex justify-between rounded-t-lg border-b bg-def-100 p-6',
-      className
+      className,
     )}
     {...props}
     style={{
@@ -97,7 +97,7 @@ const SheetHeader = ({
       backgroundRepeat: 'repeat',
     }}
   >
-    <div className="absolute inset-0 bg-gradient-to-r from-def-100/95 to-def-100/80"></div>
+    <div className="absolute inset-0 bg-gradient-to-r from-def-100/95 to-def-100/80" />
     <div className="row relative w-full items-start justify-between">
       {children}
     </div>
@@ -112,7 +112,7 @@ const SheetFooter = ({
   <div
     className={cn(
       'mt-auto flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
-      className
+      className,
     )}
     {...props}
   />

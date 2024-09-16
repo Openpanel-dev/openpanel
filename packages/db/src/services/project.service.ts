@@ -87,7 +87,7 @@ export async function getCurrentProjects(organizationSlug: string) {
 
   if (access.length > 0) {
     return projects.filter((project) =>
-      access.some((a) => a.projectId === project.id)
+      access.some((a) => a.projectId === project.id),
     );
   }
 

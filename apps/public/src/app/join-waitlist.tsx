@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn } from '@/utils/cn';
+import { useEffect, useState } from 'react';
 
 interface JoinWaitlistProps {
   className?: string;
@@ -66,7 +66,7 @@ export function JoinWaitlist({ className }: JoinWaitlistProps) {
             placeholder="Enter your email"
             className={cn(
               'text-blue-darker h-12 w-full rounded-md border border-slate-100 bg-white px-4 shadow-sm outline-none ring-black focus:ring-1',
-              className
+              className,
             )}
             value={value}
             onChange={(e) => setValue(e.target.value)}

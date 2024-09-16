@@ -11,8 +11,8 @@ const Page = ({ children }: Props) => {
   return (
     <>
       <div className="fixed inset-0 hidden md:grid md:grid-cols-[30vw_1fr] lg:grid-cols-[30vw_1fr]">
-        <div className=""></div>
-        <div className="border-l border-border bg-card"></div>
+        <div className="" />
+        <div className="border-l border-border bg-card" />
       </div>
       <div className="relative min-h-screen bg-card md:bg-transparent">
         <FullWidthNavbar>

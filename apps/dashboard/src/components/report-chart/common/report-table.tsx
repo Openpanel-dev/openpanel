@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Pagination, usePagination } from '@/components/pagination';
 import { Stats, StatsCard } from '@/components/stats';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +17,7 @@ import { useSelector } from '@/redux';
 import { getPropertyLabel } from '@/translations/properties';
 import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
+import type * as React from 'react';
 
 import { PreviousDiffIndicator } from './previous-diff-indicator';
 import { SerieName } from './serie-name';
@@ -45,9 +45,8 @@ export function ReportTable({
     setVisibleSeries((prev) => {
       if (checked) {
         return [...prev, name];
-      } else {
-        return prev.filter((item) => item !== name);
       }
+      return prev.filter((item) => item !== name);
     });
   }
 
@@ -77,7 +76,7 @@ export function ReportTable({
           <TableBody className="bg-def-100">
             {paginate(data.series).map((serie, index) => {
               const checked = !!visibleSeries.find(
-                (item) => item.id === serie.id
+                (item) => item.id === serie.id,
               );
 
               return (

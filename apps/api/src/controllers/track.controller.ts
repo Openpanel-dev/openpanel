@@ -2,9 +2,9 @@ import type { GeoLocation } from '@/utils/parseIp';
 import { getClientIp, parseIp } from '@/utils/parseIp';
 import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { assocPath, path, pathOr, pick } from 'ramda';
+import { path, assocPath, pathOr, pick } from 'ramda';
 
-import { generateDeviceId } from '@openpanel/common';
+import { generateDeviceId } from '@openpanel/common/server';
 import {
   createProfileAlias,
   getProfileById,
@@ -31,21 +31,21 @@ export function getStringHeaders(headers: FastifyRequest['headers']) {
         'openpanel-sdk-version',
         'openpanel-client-id',
       ],
-      headers
-    )
+      headers,
+    ),
   ).reduce(
     (acc, [key, value]) => ({
       ...acc,
       [key]: value ? String(value) : undefined,
     }),
-    {}
+    {},
   );
 }
 
 function getIdentity(body: TrackHandlerPayload): IdentifyPayload | undefined {
   const identity = path<IdentifyPayload>(
     ['properties', '__identify'],
-    body.payload
+    body.payload,
   );
 
   return (
@@ -62,7 +62,7 @@ export async function handler(
   request: FastifyRequest<{
     Body: TrackHandlerPayload;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const ip =
     path<string>(['properties', '__ip'], request.body.payload) ||
@@ -129,7 +129,7 @@ export async function handler(
             projectId,
             geo,
             ua,
-          })
+          }),
         );
       }
 
@@ -196,7 +196,7 @@ async function track({
     'locked',
     'EX',
     10,
-    'NX'
+    'NX',
   );
 
   eventsQueue.add('event', {
@@ -269,19 +269,19 @@ async function increment({
     throw new Error('Not found');
   }
 
-  const parsed = parseInt(
+  const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10
+    10,
   );
 
-  if (isNaN(parsed)) {
+  if (Number.isNaN(parsed)) {
     throw new Error('Not number');
   }
 
   profile.properties = assocPath(
     property.split('.'),
     parsed + (value || 1),
-    profile.properties
+    profile.properties,
   );
 
   await upsertProfile({
@@ -305,19 +305,19 @@ async function decrement({
     throw new Error('Not found');
   }
 
-  const parsed = parseInt(
+  const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10
+    10,
   );
 
-  if (isNaN(parsed)) {
+  if (Number.isNaN(parsed)) {
     throw new Error('Not number');
   }
 
   profile.properties = assocPath(
     property.split('.'),
     parsed - (value || 1),
-    profile.properties
+    profile.properties,
   );
 
   await upsertProfile({

@@ -10,7 +10,7 @@ import {
 } from '@openpanel/constants';
 
 export function objectToZodEnums<K extends string>(
-  obj: Record<K, any>
+  obj: Record<K, any>,
 ): [K, ...K[]] {
   const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
   return [firstKey!, ...otherKeys];
@@ -139,12 +139,12 @@ export const zOnboardingProject = z
       data.app === false &&
       data.backend === false
     ) {
-      ['app', 'backend', 'website'].forEach((key) => {
+      for (const key of ['app', 'backend', 'website']) {
         ctx.addIssue({
           code: 'custom',
           message: 'At least one type must be selected',
           path: [key],
         });
-      });
+      }
     }
   });

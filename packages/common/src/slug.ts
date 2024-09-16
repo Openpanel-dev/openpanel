@@ -9,7 +9,7 @@ const slugify = (str: string) => {
       .replace('Å', 'A')
       .replace('Ä', 'A')
       .replace('Ö', 'O'),
-    { lower: true, strict: true, trim: true }
+    { lower: true, strict: true, trim: true },
   );
 };
 

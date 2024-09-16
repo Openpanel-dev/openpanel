@@ -6,7 +6,7 @@ import { round } from './math';
 
 export function getPreviousMetric(
   current: number,
-  previous: number | null | undefined
+  previous: number | null | undefined,
 ): PreviousValue {
   if (isNil(previous)) {
     return undefined;
@@ -20,7 +20,7 @@ export function getPreviousMetric(
         : 0) -
       1) *
       100,
-    1
+    1,
   );
 
   return {

@@ -60,7 +60,7 @@ export function ReportBreakdowns() {
                       changeBreakdown({
                         ...item,
                         name: value,
-                      })
+                      }),
                     );
                   }}
                   items={properties}
@@ -80,7 +80,7 @@ export function ReportBreakdowns() {
             dispatch(
               addBreakdown({
                 name: value,
-              })
+              }),
             );
           }}
           items={properties}

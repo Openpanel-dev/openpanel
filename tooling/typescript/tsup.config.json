@@ -1,11 +1,6 @@
 {
-  "entry": [
-    "index.ts"
-  ],
-  "format": [
-    "cjs",
-    "esm"
-  ],
+  "entry": ["index.ts"],
+  "format": ["cjs", "esm"],
   "dts": true,
   "splitting": false,
   "sourcemap": false,

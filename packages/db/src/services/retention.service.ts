@@ -1,6 +1,6 @@
 import { escape } from 'sqlstring';
 
-import { chQuery, TABLE_NAMES } from '../clickhouse-client';
+import { TABLE_NAMES, chQuery } from '../clickhouse-client';
 
 type IGetWeekRetentionInput = {
   projectId: string;

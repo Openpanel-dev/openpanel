@@ -6,8 +6,6 @@
     "testing": "WORKER_PORT=9999 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsup",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,24 +25,13 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/express": "^4.17.21",
     "@types/ramda": "^0.29.6",
     "@types/sqlstring": "^2.3.2",
     "@types/ua-parser-js": "^0.7.39",
     "@types/uuid": "^9.0.8",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

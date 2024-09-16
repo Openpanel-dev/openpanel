@@ -1,6 +1,6 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import bcrypt from 'bcrypt';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
@@ -19,7 +19,7 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
   const caddyfileTemplatePath = path.resolve(
     __dirname,
     'caddy',
-    'Caddyfile.template'
+    'Caddyfile.template',
   );
   const caddyfilePath = path.resolve(__dirname, 'caddy', 'Caddyfile');
   fs.writeFileSync(
@@ -29,12 +29,12 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
       .replaceAll('$DOMAIN_NAME', domainName.replace(/https?:\/\//, ''))
       .replaceAll(
         '$BASIC_AUTH_PASSWORD',
-        bcrypt.hashSync(basicAuthPassword, 10)
+        bcrypt.hashSync(basicAuthPassword, 10),
       )
       .replaceAll(
         '$SSL_CONFIG',
-        domainName.includes('localhost:443') ? '\n\ttls internal' : ''
-      )
+        domainName.includes('localhost:443') ? '\n\ttls internal' : '',
+      ),
   );
 }
 
@@ -61,7 +61,7 @@ function searchAndReplaceDockerCompose(replacements: [string, string][]) {
   const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
   const dockerComposeReplaced = replacements.reduce(
     (acc, [search, replace]) => acc.replaceAll(search, replace),
-    dockerComposeContent
+    dockerComposeContent,
   );
 
   fs.writeFileSync(dockerComposePath, dockerComposeReplaced);
@@ -75,7 +75,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
   const dockerCompose = yaml.load(dockerComposeContent) as DockerComposeFile;
 
   // Remove the service
-  if (dockerCompose.services && dockerCompose.services[serviceName]) {
+  if (dockerCompose.services[serviceName]) {
     delete dockerCompose.services[serviceName];
     console.log(`Service '${serviceName}' has been removed.`);
   } else {
@@ -124,7 +124,7 @@ function writeEnvFile(envs: {
   const envPath = path.resolve(__dirname, '.env');
   const envTemplate = fs.readFileSync(envTemplatePath, 'utf-8');
 
-  let newEnvFile = envTemplate
+  const newEnvFile = envTemplate
     .replace('$CLICKHOUSE_URL', envs.CLICKHOUSE_URL)
     .replace('$REDIS_URL', envs.REDIS_URL)
     .replace('$DATABASE_URL', envs.DATABASE_URL)
@@ -132,11 +132,11 @@ function writeEnvFile(envs: {
     .replace('$NEXT_PUBLIC_DASHBOARD_URL', stripTrailingSlash(envs.DOMAIN_NAME))
     .replace(
       '$NEXT_PUBLIC_API_URL',
-      `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`
+      `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`,
     )
     .replace(
       '$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
-      envs.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+      envs.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     )
     .replace('$CLERK_SECRET_KEY', envs.CLERK_SECRET_KEY)
     .replace('$CLERK_SIGNING_SECRET', envs.CLERK_SIGNING_SECRET);
@@ -148,7 +148,7 @@ function writeEnvFile(envs: {
       .filter((line) => {
         return !line.includes('=""');
       })
-      .join('\n')
+      .join('\n'),
   );
 }
 
@@ -166,7 +166,7 @@ async function initiateOnboarding() {
     "With that said let's get started! 🤠",
     '',
     `Hey and welcome to Openpanel's self-hosting setup! 🚀\n`,
-    `Before you continue, please make sure you have the following:`,
+    'Before you continue, please make sure you have the following:',
     `${T}1. Docker and Docker Compose installed on your machine.`,
     `${T}2. A domain name that you can use for this setup and point it to this machine's ip`,
     `${T}3. A Clerk.com account`,
@@ -177,11 +177,11 @@ async function initiateOnboarding() {
   ];
 
   console.log(
-    '******************************************************************************\n'
+    '******************************************************************************\n',
   );
   console.log(message.join('\n'));
   console.log(
-    '\n******************************************************************************'
+    '\n******************************************************************************',
   );
 
   // Domain name
@@ -332,7 +332,7 @@ async function initiateOnboarding() {
       default: os.cpus().length,
       message: 'How many CPUs do you have?',
       validate: (value) => {
-        const parsed = parseInt(value, 10);
+        const parsed = Number.parseInt(value, 10);
 
         if (Number.isNaN(parsed)) {
           return 'Please enter a valid number';
@@ -377,7 +377,7 @@ async function initiateOnboarding() {
     REDIS_URL: envs.REDIS_URL || 'redis://op-kv:6379',
     DATABASE_URL:
       envs.DATABASE_URL ||
-      `postgresql://postgres:postgres@op-db:5432/postgres?schema=public`,
+      'postgresql://postgres:postgres@op-db:5432/postgres?schema=public',
     DOMAIN_NAME: domainNameResponse.domainName,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       clerkResponse.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '',
@@ -388,7 +388,7 @@ async function initiateOnboarding() {
   console.log('Updating docker-compose.yml file...\n');
   fs.copyFileSync(
     path.resolve(__dirname, 'docker-compose.template.yml'),
-    path.resolve(__dirname, 'docker-compose.yml')
+    path.resolve(__dirname, 'docker-compose.yml'),
   );
 
   if (envs.CLICKHOUSE_URL) {
@@ -434,7 +434,7 @@ async function initiateOnboarding() {
       `Start OpenPanel with "./start" inside the self-hosting directory`,
       '',
       '',
-    ].join('\n')
+    ].join('\n'),
   );
 }
 

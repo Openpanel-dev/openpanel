@@ -1,6 +1,5 @@
 'use client';
 
-import { useRef, useState } from 'react';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import {
   Tooltip,
@@ -12,6 +11,7 @@ import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 export interface LiveCounterProps {
@@ -34,7 +34,7 @@ export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
   const lastRefresh = useRef(Date.now());
 
   useWS<number>(`/live/visitors/${projectId}`, (value) => {
-    if (!isNaN(value)) {
+    if (!Number.isNaN(value)) {
       counter.set(value);
       if (Date.now() - lastRefresh.current > FIFTEEN_SECONDS) {
         lastRefresh.current = Date.now();
@@ -57,13 +57,13 @@ export default function LiveCounter({ data = 0, projectId }: LiveCounterProps) {
           <div
             className={cn(
               'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all',
-              counter.debounced === 0 && 'bg-destructive opacity-0'
+              counter.debounced === 0 && 'bg-destructive opacity-0',
             )}
           />
           <div
             className={cn(
               'absolute left-0 top-0 h-3 w-3 rounded-full bg-emerald-500 transition-all',
-              counter.debounced === 0 && 'bg-destructive'
+              counter.debounced === 0 && 'bg-destructive',
             )}
           />
         </div>

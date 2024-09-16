@@ -6,11 +6,11 @@ import type * as WebSocket from 'ws';
 import { getSuperJson } from '@openpanel/common';
 import type { IServiceEvent } from '@openpanel/db';
 import {
+  TABLE_NAMES,
   getEvents,
   getLiveVisitors,
   getProfileById,
   getProfileByIdCached,
-  TABLE_NAMES,
   transformMinimalEvent,
 } from '@openpanel/db';
 import { getRedisCache, getRedisPub, getRedisSub } from '@openpanel/redis';
@@ -26,10 +26,10 @@ export async function testVisitors(
       projectId: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const events = await getEvents(
-    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`
+    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`,
   );
   const event = events[Math.floor(Math.random() * events.length)];
   if (!event) {
@@ -41,7 +41,7 @@ export async function testVisitors(
     `live:event:${event.projectId}:${Math.random() * 1000}`,
     '',
     'EX',
-    10
+    10,
   );
   reply.status(202).send(event);
 }
@@ -52,10 +52,10 @@ export async function testEvents(
       projectId: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const events = await getEvents(
-    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`
+    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`,
   );
   const event = events[Math.floor(Math.random() * events.length)];
   if (!event) {
@@ -73,7 +73,7 @@ export function wsVisitors(
     Params: {
       projectId: string;
     };
-  }>
+  }>,
 ) {
   const { params } = req;
 
@@ -122,7 +122,7 @@ export async function wsProjectEvents(
       token?: string;
       type?: string;
     };
-  }>
+  }>,
 ) {
   const { params, query } = req;
   const { token } = query;
@@ -147,7 +147,7 @@ export async function wsProjectEvents(
     if (event?.projectId === params.projectId) {
       const profile = await getProfileByIdCached(
         event.profileId,
-        event.projectId
+        event.projectId,
       );
       connection.socket.send(
         superjson.stringify(
@@ -156,8 +156,8 @@ export async function wsProjectEvents(
                 ...event,
                 profile,
               }
-            : transformMinimalEvent(event)
-        )
+            : transformMinimalEvent(event),
+        ),
       );
     }
   };

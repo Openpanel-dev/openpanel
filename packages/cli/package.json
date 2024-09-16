@@ -7,8 +7,6 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -23,23 +21,12 @@
   },
   "devDependencies": {
     "@openpanel/db": "workspace:^",
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/sdk": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "^20.14.10",
     "@types/progress": "^2.0.7",
     "@types/ramda": "^0.30.1",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

@@ -7,8 +7,8 @@ import type {
 } from '@openpanel/validation';
 
 import {
-  formatClickhouseDate,
   TABLE_NAMES,
+  formatClickhouseDate,
   toDate,
 } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
@@ -32,7 +32,7 @@ export function getSelectPropertyKey(property: string) {
   if (property.startsWith('properties.')) {
     if (property.includes('*')) {
       return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-        transformPropertyKey(property)
+        transformPropertyKey(property),
       )})))`;
     }
     return `properties['${property.replace(/^properties\./, '')}']`;
@@ -64,7 +64,7 @@ export function getChartSql({
     sb.select.label_0 = `'*' as label_0`;
   }
 
-  sb.select.count = `count(*) as count`;
+  sb.select.count = 'count(*) as count';
   switch (interval) {
     case 'minute': {
       sb.select.date = `toStartOfMinute(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
@@ -111,15 +111,16 @@ export function getChartSql({
   });
 
   if (event.segment === 'user') {
-    sb.select.count = `countDistinct(profile_id) as count`;
+    sb.select.count = 'countDistinct(profile_id) as count';
   }
 
   if (event.segment === 'session') {
-    sb.select.count = `countDistinct(session_id) as count`;
+    sb.select.count = 'countDistinct(session_id) as count';
   }
 
   if (event.segment === 'user_average') {
-    sb.select.count = `COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count`;
+    sb.select.count =
+      'COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count';
   }
 
   if (event.segment === 'property_sum' && event.property) {
@@ -136,7 +137,7 @@ export function getChartSql({
     sb.from = `(
       SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} WHERE ${join(
         sb.where,
-        ' AND '
+        ' AND ',
       )}
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
@@ -157,9 +158,9 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
 
     if (name === 'has_profile') {
       if (value.includes('true')) {
-        where[id] = `profile_id != device_id`;
+        where[id] = 'profile_id != device_id';
       } else {
-        where[id] = `profile_id = device_id`;
+        where[id] = 'profile_id = device_id';
       }
       return;
     }
@@ -211,7 +212,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
             where[id] = value
               .map(
                 (val) =>
-                  `${whereFrom} LIKE ${escape(`%${String(val).trim()}%`)}`
+                  `${whereFrom} LIKE ${escape(`%${String(val).trim()}%`)}`,
               )
               .join(' OR ');
           }
@@ -226,7 +227,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
             where[id] = value
               .map(
                 (val) =>
-                  `${whereFrom} NOT LIKE ${escape(`%${String(val).trim()}%`)}`
+                  `${whereFrom} NOT LIKE ${escape(`%${String(val).trim()}%`)}`,
               )
               .join(' OR ');
           }
@@ -240,7 +241,8 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           } else {
             where[id] = value
               .map(
-                (val) => `${whereFrom} LIKE ${escape(`${String(val).trim()}%`)}`
+                (val) =>
+                  `${whereFrom} LIKE ${escape(`${String(val).trim()}%`)}`,
               )
               .join(' OR ');
           }
@@ -254,7 +256,8 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           } else {
             where[id] = value
               .map(
-                (val) => `${whereFrom} LIKE ${escape(`%${String(val).trim()}`)}`
+                (val) =>
+                  `${whereFrom} LIKE ${escape(`%${String(val).trim()}`)}`,
               )
               .join(' OR ');
           }
@@ -268,7 +271,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           } else {
             where[id] = value
               .map(
-                (val) => `match(${whereFrom}, ${escape(String(val).trim())})`
+                (val) => `match(${whereFrom}, ${escape(String(val).trim())})`,
               )
               .join(' OR ');
           }
@@ -306,7 +309,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'doesNotContain': {
           where[id] = value
             .map(
-              (val) => `${name} NOT LIKE ${escape(`%${String(val).trim()}%`)}`
+              (val) => `${name} NOT LIKE ${escape(`%${String(val).trim()}%`)}`,
             )
             .join(' OR ');
           break;

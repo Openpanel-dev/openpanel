@@ -19,7 +19,7 @@ export default clerkMiddleware(
   },
   {
     debug: !!process.env.CLERK_DEBUG,
-  }
+  },
 );
 
 export const config = {

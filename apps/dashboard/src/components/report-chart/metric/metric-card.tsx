@@ -9,8 +9,8 @@ import { Area, AreaChart } from 'recharts';
 import type { IChartMetric } from '@openpanel/validation';
 
 import {
-  getDiffIndicator,
   PreviousDiffIndicator,
+  getDiffIndicator,
 } from '../common/previous-diff-indicator';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
@@ -54,7 +54,7 @@ export function MetricCard({
     previous?.state,
     '#6ee7b7', // green
     '#fda4af', // red
-    '#93c5fd' // blue
+    '#93c5fd', // blue
   );
 
   return (
@@ -64,7 +64,7 @@ export function MetricCard({
     >
       <div
         className={cn(
-          'pointer-events-none absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100'
+          'pointer-events-none absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
         )}
       >
         <AutoSizer>

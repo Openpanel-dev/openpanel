@@ -39,6 +39,7 @@ export function CreateClientSuccess({ id, secret, cors }: Props) {
             target="_blank"
             href="https://docs.openpanel.dev"
             className="underline"
+            rel="noreferrer"
           >
             documentation
           </a>{' '}

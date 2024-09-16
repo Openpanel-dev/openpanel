@@ -15,7 +15,7 @@ export const organizationRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getOrganizationAccess({
@@ -86,7 +86,7 @@ export const organizationRouter = createTRPCRouter({
     .input(
       z.object({
         memberId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const member = await db.member.findUniqueOrThrow({
@@ -107,7 +107,7 @@ export const organizationRouter = createTRPCRouter({
       const invitationId = pathOr<string | undefined>(
         undefined,
         ['meta', 'invitationId'],
-        member
+        member,
       );
 
       if (invitationId) {
@@ -130,7 +130,7 @@ export const organizationRouter = createTRPCRouter({
       z.object({
         organizationId: z.string(),
         userId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       if (ctx.session.userId === input.userId) {
@@ -168,7 +168,7 @@ export const organizationRouter = createTRPCRouter({
         userId: z.string(),
         organizationSlug: z.string(),
         access: z.array(z.string()),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getOrganizationAccess({

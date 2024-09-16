@@ -27,7 +27,7 @@ const RealtimeReloader = ({ projectId }: Props) => {
         maxWait: 15000,
         delay: 15000,
       },
-    }
+    },
   );
 
   return null;

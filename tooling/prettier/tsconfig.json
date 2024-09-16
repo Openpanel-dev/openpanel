@@ -1,9 +1,0 @@
-{
-  "extends": "@openpanel/tsconfig/base.json",
-  "compilerOptions": {
-    "checkJs": false,
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
-  },
-  "include": ["."],
-  "exclude": ["node_modules"]
-}

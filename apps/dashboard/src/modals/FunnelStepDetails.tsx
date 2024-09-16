@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
 import { Pagination } from '@/components/pagination';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
@@ -13,6 +12,7 @@ import { api } from '@/trpc/client';
 import { getProfileName } from '@/utils/getters';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 import type { IChartInput } from '@openpanel/validation';
 
@@ -47,7 +47,7 @@ export default function FunnelStepDetails(props: Props) {
   return (
     <DialogContent className="p-0">
       <div className="p-4">
-        <ModalHeader title="Profiles"></ModalHeader>
+        <ModalHeader title="Profiles" />
         <Pagination
           count={data.length}
           take={50}

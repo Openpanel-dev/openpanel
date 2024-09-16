@@ -1,16 +1,17 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import type { z } from 'zod';
 
-import { hashPassword, stripTrailingSlash } from '@openpanel/common';
+import { stripTrailingSlash } from '@openpanel/common';
 import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
 import type { ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
+import { hashPassword } from '@openpanel/common/server';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 async function createOrGetOrganization(
   input: z.infer<typeof zOnboardingProject>,
-  userId: string
+  userId: string,
 ) {
   if (input.organizationSlug) {
     return await getOrganizationBySlug(input.organizationSlug);

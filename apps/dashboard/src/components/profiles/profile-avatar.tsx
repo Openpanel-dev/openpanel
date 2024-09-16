@@ -47,7 +47,7 @@ export function ProfileAvatar({
               : size === 'xs'
                 ? 'text-[8px]'
                 : 'text-base',
-          'bg-def-200 text-muted-foreground'
+          'bg-def-200 text-muted-foreground',
         )}
       >
         {firstName?.at(0) ?? '🫣'}

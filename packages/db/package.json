@@ -9,8 +9,6 @@
     "migrate:deploy:db": "pnpm with-env prisma migrate deploy",
     "migrate:deploy:ch": "pnpm goose up",
     "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:ch",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },
@@ -29,23 +27,12 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "^18.16.0",
     "@types/ramda": "^0.29.6",
     "@types/sqlstring": "^2.3.2",
     "@types/uuid": "^9.0.8",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
     "prisma": "^5.1.1",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

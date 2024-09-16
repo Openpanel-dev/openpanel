@@ -30,7 +30,11 @@ const config = {
   typescript: { ignoreBuildErrors: true },
   experimental: {
     // Avoid "Critical dependency: the request of a dependency is an expression"
-    serverComponentsExternalPackages: ['bullmq', 'ioredis'],
+    serverComponentsExternalPackages: [
+      'bullmq',
+      'ioredis',
+      '@hyperdx/node-opentelemetry',
+    ],
     instrumentationHook: !!process.env.ENABLE_INSTRUMENTATION_HOOK,
   },
   /**

@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import type { Options as NuqsOptions } from 'nuqs';
 import {
   createParser,
@@ -6,6 +5,7 @@ import {
   parseAsString,
   useQueryState,
 } from 'nuqs';
+import { useCallback } from 'react';
 
 import type { IChartEventFilterOperator } from '@openpanel/validation';
 
@@ -34,7 +34,7 @@ export const eventQueryFiltersParser = createParser({
     return value
       .map(
         (filter) =>
-          `${filter.id},${filter.operator},${filter.value.map((v) => encodeURIComponent(v.trim())).join('|')}`
+          `${filter.id},${filter.operator},${filter.value.map((v) => encodeURIComponent(v.trim())).join('|')}`,
       )
       .join(';');
   },
@@ -46,7 +46,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
     eventQueryFiltersParser.withDefault([]).withOptions({
       ...nuqsOptions,
       ...options,
-    })
+    }),
   );
 
   const setFilter = useCallback(
@@ -59,7 +59,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
         | undefined
         | null
         | (string | number | boolean | undefined | null)[],
-      operator: IChartEventFilterOperator = 'is'
+      operator: IChartEventFilterOperator = 'is',
     ) => {
       setFilters((prev) => {
         const exists = prev.find((filter) => filter.name === name);
@@ -99,14 +99,14 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
         ];
       });
     },
-    [setFilters]
+    [setFilters],
   );
 
   return [filters, setFilter, setFilters] as const;
 }
 
 export const eventQueryNamesFilter = parseAsArrayOf(parseAsString).withDefault(
-  []
+  [],
 );
 
 export function useEventQueryNamesFilter(options: NuqsOptions = {}) {

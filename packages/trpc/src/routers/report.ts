@@ -13,7 +13,7 @@ export const reportRouter = createTRPCRouter({
       z.object({
         report: zReportInput.omit({ projectId: true }),
         dashboardId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input: { report, dashboardId }, ctx }) => {
       const dashboard = await db.dashboard.findUniqueOrThrow({
@@ -52,7 +52,7 @@ export const reportRouter = createTRPCRouter({
       z.object({
         reportId: z.string(),
         report: zReportInput.omit({ projectId: true }),
-      })
+      }),
     )
     .mutation(async ({ input: { report, reportId }, ctx }) => {
       const dbReport = await db.report.findUniqueOrThrow({
@@ -91,7 +91,7 @@ export const reportRouter = createTRPCRouter({
     .input(
       z.object({
         reportId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input: { reportId }, ctx }) => {
       const report = await db.report.findUniqueOrThrow({

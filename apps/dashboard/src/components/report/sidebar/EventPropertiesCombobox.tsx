@@ -30,7 +30,7 @@ export function EventPropertiesCombobox({
     },
     {
       enabled: !!event.name,
-    }
+    },
   ).map((item) => ({
     label: item,
     value: item,
@@ -47,14 +47,15 @@ export function EventPropertiesCombobox({
           changeEvent({
             ...event,
             property: value,
-          })
+          }),
         );
       }}
     >
       <button
+        type="button"
         className={cn(
           'flex items-center gap-1 rounded-md border border-border p-1 px-2 text-sm font-medium leading-none',
-          !event.property && 'border-destructive text-destructive'
+          !event.property && 'border-destructive text-destructive',
         )}
       >
         <DatabaseIcon size={12} />{' '}

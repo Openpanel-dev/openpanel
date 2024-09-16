@@ -8,7 +8,7 @@ export function useProfileValues(projectId: string, property: string) {
     },
     {
       staleTime: 1000 * 60 * 10,
-    }
+    },
   );
 
   return query.data?.values ?? [];

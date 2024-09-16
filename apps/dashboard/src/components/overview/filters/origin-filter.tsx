@@ -16,7 +16,7 @@ export function OriginFilter() {
     },
     {
       staleTime: 1000 * 60 * 60,
-    }
+    },
   );
 
   if (!data || data.length === 0) {
@@ -32,7 +32,7 @@ export function OriginFilter() {
             variant="outline"
             icon={GlobeIcon}
             className={cn(
-              originFilter?.value.includes(item.origin) && 'border-foreground'
+              originFilter?.value.includes(item.origin) && 'border-foreground',
             )}
             onClick={() => setFilter('origin', [item.origin], 'is')}
           >

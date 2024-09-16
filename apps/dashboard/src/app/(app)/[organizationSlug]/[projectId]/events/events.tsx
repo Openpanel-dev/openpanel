@@ -23,7 +23,7 @@ const Events = ({ projectId, profileId }: Props) => {
   const [eventNames] = useEventQueryNamesFilter();
   const [cursor, setCursor] = useQueryState(
     'cursor',
-    parseAsInteger.withDefault(0)
+    parseAsInteger.withDefault(0),
   );
   const query = api.event.events.useQuery(
     {
@@ -36,7 +36,7 @@ const Events = ({ projectId, profileId }: Props) => {
     },
     {
       keepPreviousData: true,
-    }
+    },
   );
 
   return (

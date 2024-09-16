@@ -1,4 +1,4 @@
-import { generateSalt } from '@openpanel/common';
+import { generateSalt } from '@openpanel/common/server';
 import { db, getCurrentSalt } from '@openpanel/db';
 
 export async function salt() {

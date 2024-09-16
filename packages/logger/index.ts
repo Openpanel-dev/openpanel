@@ -22,7 +22,7 @@ export function createLogger({ name }: { name: string }): ILogger {
       HyperDX.getWinstonTransport(logLevel, {
         detectResources: true,
         service,
-      })
+      }),
     );
   }
 
@@ -34,7 +34,7 @@ export function createLogger({ name }: { name: string }): ILogger {
     // Add ISO levels of logging from PINO
     levels: Object.assign(
       { fatal: 0, warn: 4, trace: 7 },
-      winston.config.syslog.levels
+      winston.config.syslog.levels,
     ),
   });
 

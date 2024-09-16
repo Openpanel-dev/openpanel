@@ -17,7 +17,7 @@ import { PreviousDiffIndicator } from '../common/previous-diff-indicator';
 import { useReportChartContext } from '../context';
 
 const findMostDropoffs = (
-  steps: RouterOutputs['chart']['funnel']['current']['steps']
+  steps: RouterOutputs['chart']['funnel']['current']['steps'],
 ) => {
   return steps.reduce((acc, step) => {
     if (step.dropoffCount > acc.dropoffCount) {
@@ -58,7 +58,7 @@ export function Chart({
       <div
         className={cn(
           'border border-border',
-          !isEditMode && 'border-0 border-b'
+          !isEditMode && 'border-0 border-b',
         )}
       >
         <div className="flex items-center gap-8 p-4">
@@ -72,7 +72,7 @@ export function Chart({
                   <div
                     className="w-full bg-def-400"
                     style={{ height: `${step.percent}%` }}
-                  ></div>
+                  />
                 </div>
               );
             })}
@@ -129,7 +129,7 @@ export function Chart({
                         <PreviousDiffIndicator
                           {...getPreviousMetric(
                             step.previousCount,
-                            previous.steps[index]?.previousCount
+                            previous.steps[index]?.previousCount,
                           )}
                         />
                       </div>
@@ -160,7 +160,7 @@ export function Chart({
                           inverted
                           {...getPreviousMetric(
                             step.dropoffCount,
-                            previous.steps[index]?.dropoffCount
+                            previous.steps[index]?.dropoffCount,
                           )}
                         />
                       </div>
@@ -174,7 +174,7 @@ export function Chart({
                         <span
                           className={cn(
                             'flex items-center gap-1 text-lg font-bold',
-                            isMostDropoffs && 'text-rose-500'
+                            isMostDropoffs && 'text-rose-500',
                           )}
                         >
                           {isMostDropoffs && <AlertCircleIcon size={14} />}
@@ -196,7 +196,7 @@ export function Chart({
                         <PreviousDiffIndicator
                           {...getPreviousMetric(
                             step.count,
-                            previous.steps[index]?.count
+                            previous.steps[index]?.count,
                           )}
                         />
                       </div>
@@ -208,7 +208,7 @@ export function Chart({
                       </span>
                       <div className="flex items-center gap-4">
                         <span className="text-lg font-bold">{step.count}</span>
-                        {/* <button
+                        {/* <button type="button"
                         className="ml-2 underline"
                         onClick={() =>
                         pushModal('FunnelStepDetails', {
@@ -234,6 +234,6 @@ export function Chart({
           );
         })}
       </div>
-    </div>
+    </div>,
   );
 }

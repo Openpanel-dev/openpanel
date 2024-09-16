@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, Trash } from 'lucide-react';
+import * as React from 'react';
 
 export interface ReportBreakdownMoreProps {
   onClick: (action: 'remove') => void;

@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -22,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Filter, MoreHorizontal, Tags, Trash } from 'lucide-react';
+import * as React from 'react';
 
 const labels = [
   'feature',

@@ -22,7 +22,7 @@ export function Dot({ className, size = 8, animated }: DotProps) {
     <div
       className={cn(
         'relative',
-        filterCn(['bg-', 'animate-', 'group-hover/row'], className)
+        filterCn(['bg-', 'animate-', 'group-hover/row'], className),
       )}
       style={style}
     >
@@ -30,14 +30,14 @@ export function Dot({ className, size = 8, animated }: DotProps) {
         className={cn(
           'absolute !m-0  rounded-full',
           animated !== false && 'animate-ping',
-          className
+          className,
         )}
         style={style}
       />
       <div
         className={cn(
           'absolute !m-0 rounded-full',
-          filterCn(['animate-', 'group-hover/row'], className)
+          filterCn(['animate-', 'group-hover/row'], className),
         )}
         style={style}
       />

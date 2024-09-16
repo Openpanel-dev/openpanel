@@ -1,7 +1,7 @@
-import { forwardRef } from 'react';
 import { cn } from '@/utils/cn';
 import { slug } from '@/utils/slug';
 import type { LucideIcon } from 'lucide-react';
+import { forwardRef } from 'react';
 import type { ControllerRenderProps } from 'react-hook-form';
 
 import { Switch } from '../ui/switch';
@@ -17,7 +17,7 @@ type Props = {
 export const CheckboxItem = forwardRef<HTMLButtonElement, Props>(
   (
     { label, description, Icon, children, onChange, value, disabled, error },
-    ref
+    ref,
   ) => {
     const id = slug(label);
     return (
@@ -25,7 +25,7 @@ export const CheckboxItem = forwardRef<HTMLButtonElement, Props>(
         <label
           className={cn(
             'flex items-center gap-4 px-4 py-6 transition-colors hover:bg-def-200',
-            disabled && 'cursor-not-allowed opacity-50'
+            disabled && 'cursor-not-allowed opacity-50',
           )}
           htmlFor={id}
         >
@@ -48,7 +48,7 @@ export const CheckboxItem = forwardRef<HTMLButtonElement, Props>(
         {children}
       </div>
     );
-  }
+  },
 );
 
 CheckboxItem.displayName = 'CheckboxItem';

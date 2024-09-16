@@ -72,36 +72,36 @@ const Chart = ({ data }: Props) => {
                 offset="0%"
                 stopColor={getChartColor(0)}
                 stopOpacity={0.8}
-              ></stop>
+              />
               <stop
                 offset="100%"
                 stopColor={getChartColor(0)}
                 stopOpacity={0.1}
-              ></stop>
+              />
             </linearGradient>
             <linearGradient id="wau" x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="0%"
                 stopColor={getChartColor(1)}
                 stopOpacity={0.8}
-              ></stop>
+              />
               <stop
                 offset="100%"
                 stopColor={getChartColor(1)}
                 stopOpacity={0.1}
-              ></stop>
+              />
             </linearGradient>
             <linearGradient id="mau" x1="0" y1="0" x2="0" y2="1">
               <stop
                 offset="0%"
                 stopColor={getChartColor(2)}
                 stopOpacity={0.8}
-              ></stop>
+              />
               <stop
                 offset="100%"
                 stopColor={getChartColor(2)}
                 stopOpacity={0.1}
-              ></stop>
+              />
             </linearGradient>
           </defs>
 
@@ -111,21 +111,21 @@ const Chart = ({ data }: Props) => {
             dataKey="dau"
             stroke={getChartColor(0)}
             strokeWidth={2}
-            fill={`url(#dau)`}
+            fill={'url(#dau)'}
             isAnimationActive={false}
           />
           <Area
             dataKey="wau"
             stroke={getChartColor(1)}
             strokeWidth={2}
-            fill={`url(#wau)`}
+            fill={'url(#wau)'}
             isAnimationActive={false}
           />
           <Area
             dataKey="mau"
             stroke={getChartColor(2)}
             strokeWidth={2}
-            fill={`url(#mau)`}
+            fill={'url(#mau)'}
             isAnimationActive={false}
           />
           <XAxis {...xAxisProps} dataKey="date" />

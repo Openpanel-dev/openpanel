@@ -14,7 +14,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
       req: FastifyRequest<{
         Body: PostEventPayload;
       }>,
-      reply
+      reply,
     ) => {
       try {
         const client = await validateSdkRequest(req.headers).catch((error) => {
@@ -51,7 +51,7 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
         reply.status(401).send();
         return;
       }
-    }
+    },
   );
 
   fastify.route({

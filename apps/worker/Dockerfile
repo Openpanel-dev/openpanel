@@ -29,8 +29,6 @@ COPY packages/queue/package.json ./packages/queue/
 COPY packages/logger/package.json ./packages/logger/
 COPY packages/common/package.json ./packages/common/
 COPY packages/constants/package.json ./packages/constants/
-# Patches
-COPY patches ./patches
 
 # BUILD
 FROM base AS build

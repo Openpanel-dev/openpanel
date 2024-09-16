@@ -1,9 +1,9 @@
-import { randomUUID } from 'crypto';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import readline from 'readline';
-import zlib from 'zlib';
+import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import readline from 'node:readline';
+import zlib from 'node:zlib';
 import Progress from 'progress';
 import { assocPath, prop, uniqBy } from 'ramda';
 
@@ -37,17 +37,17 @@ function stripMixpanelProperties(obj: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(obj).filter(
       ([key]) =>
-        !key.match(/^(\$|mp_)/) && !['time', 'distinct_id'].includes(key)
-    )
+        !key.match(/^(\$|mp_)/) && !['time', 'distinct_id'].includes(key),
+    ),
   );
 }
 
 async function* parseJsonStream(
-  fileStream: fs.ReadStream
+  fileStream: fs.ReadStream,
 ): AsyncGenerator<any, void, unknown> {
   const rl = readline.createInterface({
     input: fileStream,
-    crlfDelay: Infinity,
+    crlfDelay: Number.POSITIVE_INFINITY,
   });
 
   let buffer = '';
@@ -100,7 +100,7 @@ function generateSessionEvents(events: IImportedEvent[]): Session[] {
 
   events.sort(
     (a, b) =>
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
 
   for (const event of events) {
@@ -172,7 +172,7 @@ function generateSessionEvents(events: IImportedEvent[]): Session[] {
       sessionList = sessionList.filter(
         (session) =>
           session.sessionId !== deviceSession?.sessionId &&
-          session.sessionId !== profileSession?.sessionId
+          session.sessionId !== profileSession?.sessionId,
       );
       sessionList.push(unifiedSession);
     }
@@ -201,7 +201,7 @@ function createEventObject(event: IMixpanelEvent): IImportedEvent {
   return {
     profile_id: event.properties.distinct_id
       ? String(event.properties.distinct_id).replace(/^\$device:/, '')
-      : event.properties.$device_id ?? '',
+      : (event.properties.$device_id ?? ''),
     name: event.event,
     created_at: new Date(event.properties.time * 1000).toISOString(),
     properties: {
@@ -284,7 +284,7 @@ function processEvents(events: IImportedEvent[]): IImportedEvent[] {
         ...session.firstEvent,
         id: randomUUID(),
         created_at: new Date(
-          new Date(session.firstEvent.created_at).getTime() - 1000
+          new Date(session.firstEvent.created_at).getTime() - 1000,
         ).toISOString(),
         session_id: session.sessionId,
         name: 'session_start',
@@ -292,19 +292,19 @@ function processEvents(events: IImportedEvent[]): IImportedEvent[] {
       ...uniqBy(
         prop('id'),
         session.events.map((event) =>
-          assocPath(['session_id'], session.sessionId, event)
-        )
+          assocPath(['session_id'], session.sessionId, event),
+        ),
       ),
       session.lastEvent && {
         ...session.lastEvent,
         id: randomUUID(),
         created_at: new Date(
-          new Date(session.lastEvent.created_at).getTime() + 1000
+          new Date(session.lastEvent.created_at).getTime() + 1000,
         ).toISOString(),
         session_id: session.sessionId,
         name: 'session_end',
       },
-    ].filter((item): item is IImportedEvent => !!item)
+    ].filter((item): item is IImportedEvent => !!item),
   );
 
   return [
@@ -325,7 +325,7 @@ async function sendBatchToAPI(
     apiUrl: string;
     clientId: string;
     clientSecret: string;
-  }
+  },
 ) {
   async function request() {
     const res = await fetch(`${apiUrl}/import/events`, {
@@ -356,9 +356,9 @@ async function sendBatchToAPI(
       fs.writeFileSync(
         path.join(
           os.tmpdir(),
-          `openpanel/failed-import-batch-${batch[0]?.created_at ? new Date(batch[0]?.created_at).toISOString() : Date.now()}.json`
+          `openpanel/failed-import-batch-${batch[0]?.created_at ? new Date(batch[0]?.created_at).toISOString() : Date.now()}.json`,
         ),
-        JSON.stringify(batch, null, 2)
+        JSON.stringify(batch, null, 2),
       );
     }
   }
@@ -380,7 +380,7 @@ async function processFiles({
     {
       total: files.length,
       width: 20,
-    }
+    },
   );
   let savedEvents = 0;
   let currentBatch: IImportedEvent[] = [];
@@ -415,8 +415,8 @@ async function processFiles({
               apiUrl,
               clientId,
               clientSecret,
-            })
-          )
+            }),
+          ),
         );
         apiBatching = [];
       }
@@ -462,6 +462,6 @@ export async function importFiles({
   const endTime = Date.now();
 
   console.log(
-    `\nProcessing completed in ${(endTime - startTime) / 1000} seconds`
+    `\nProcessing completed in ${(endTime - startTime) / 1000} seconds`,
   );
 }

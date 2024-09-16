@@ -21,6 +21,7 @@ const ConnectBackend = ({ client }: Props) => {
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {frameworks.backend.map((framework) => (
           <button
+            type="button"
             onClick={() =>
               pushModal('Instructions', {
                 framework,

@@ -21,7 +21,7 @@ export const WidgetTableHead = ({
     <thead
       className={cn(
         'text-def-1000 sticky top-0 z-10 border-b border-border bg-def-100  [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium',
-        className
+        className,
       )}
     >
       {children}

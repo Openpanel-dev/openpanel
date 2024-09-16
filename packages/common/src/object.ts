@@ -3,7 +3,7 @@ import superjson from 'superjson';
 
 export function toDots(
   obj: Record<string, unknown>,
-  path = ''
+  path = '',
 ): Record<string, string> {
   return Object.entries(obj).reduce((acc, [key, value]) => {
     if (typeof value === 'object' && value !== null) {
@@ -26,7 +26,7 @@ export function toDots(
 }
 
 export function toObject(
-  obj: Record<string, string | undefined>
+  obj: Record<string, string | undefined>,
 ): Record<string, unknown> {
   let result: Record<string, unknown> = {};
   Object.entries(obj).forEach(([key, value]) => {

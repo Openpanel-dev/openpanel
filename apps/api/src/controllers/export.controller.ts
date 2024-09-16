@@ -19,7 +19,7 @@ async function getProjectId(
       projectId?: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   let projectId = request.query.projectId || request.query.project_id;
 
@@ -77,7 +77,7 @@ const eventsScheme = z.object({
   includes: z
     .preprocess(
       (arg) => (typeof arg === 'string' ? [arg] : arg),
-      z.array(z.string())
+      z.array(z.string()),
     )
     .optional(),
 });
@@ -86,7 +86,7 @@ export async function events(
   request: FastifyRequest<{
     Querystring: z.infer<typeof eventsScheme>;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const query = eventsScheme.safeParse(request.query);
 
@@ -118,7 +118,7 @@ export async function events(
       meta: false,
       ...query.data.includes?.reduce(
         (acc, key) => ({ ...acc, [key]: true }),
-        {}
+        {},
       ),
     },
   };
@@ -154,7 +154,7 @@ export async function charts(
   request: FastifyRequest<{
     Querystring: Record<string, string>;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const query = chartSchemeFull.safeParse(parseQueryString(request.query));
 

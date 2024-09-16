@@ -3,11 +3,11 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import {
+  TABLE_NAMES,
   chQuery,
   createSqlBuilder,
   getProfileList,
   getProfiles,
-  TABLE_NAMES,
 } from '@openpanel/db';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -17,7 +17,7 @@ export const profileRouter = createTRPCRouter({
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId } }) => {
       const events = await chQuery<{ keys: string[] }>(
-        `SELECT distinct mapKeys(properties) as keys from ${TABLE_NAMES.profiles} where project_id = ${escape(projectId)};`
+        `SELECT distinct mapKeys(properties) as keys from ${TABLE_NAMES.profiles} where project_id = ${escape(projectId)};`,
       );
 
       const properties = events
@@ -30,7 +30,7 @@ export const profileRouter = createTRPCRouter({
 
       return pipe(
         sort<string>((a, b) => a.length - b.length),
-        uniq
+        uniq,
       )(properties);
     }),
 
@@ -42,7 +42,7 @@ export const profileRouter = createTRPCRouter({
         take: z.number().default(50),
         search: z.string().optional(),
         // filters: z.array(zChartEventFilter).default([]),
-      })
+      }),
     )
     .query(async ({ input: { projectId, cursor, take, search } }) => {
       return getProfileList({ projectId, cursor, take, search });
@@ -55,15 +55,15 @@ export const profileRouter = createTRPCRouter({
         cursor: z.number().optional(),
         take: z.number().default(50),
         // filters: z.array(zChartEventFilter).default([]),
-      })
+      }),
     )
     .query(async ({ input: { projectId, cursor, take } }) => {
       const res = await chQuery<{ profile_id: string; count: number }>(
-        `SELECT profile_id, count(*) as count from ${TABLE_NAMES.events} where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT ${take} ${cursor ? `OFFSET ${cursor * take}` : ''}`
+        `SELECT profile_id, count(*) as count from ${TABLE_NAMES.events} where profile_id != '' and project_id = ${escape(projectId)} group by profile_id order by count() DESC LIMIT ${take} ${cursor ? `OFFSET ${cursor * take}` : ''}`,
       );
       const profiles = await getProfiles(
         res.map((r) => r.profile_id),
-        projectId
+        projectId,
       );
       return (
         res
@@ -83,7 +83,7 @@ export const profileRouter = createTRPCRouter({
       z.object({
         property: z.string(),
         projectId: z.string(),
-      })
+      }),
     )
     .query(async ({ input: { property, projectId } }) => {
       const { sb, getSql } = createSqlBuilder();
@@ -91,7 +91,7 @@ export const profileRouter = createTRPCRouter({
       sb.where.project_id = `project_id = ${escape(projectId)}`;
       if (property.startsWith('properties.')) {
         sb.select.values = `distinct arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-          property.replace(/^properties\./, '').replace('.*.', '.%.')
+          property.replace(/^properties\./, '').replace('.*.', '.%.'),
         )}))) as values`;
       } else {
         sb.select.values = `${property} as values`;
@@ -103,7 +103,7 @@ export const profileRouter = createTRPCRouter({
         (data: typeof profiles) => map(prop('values'), data),
         flatten,
         uniq,
-        sort((a, b) => a.length - b.length)
+        sort((a, b) => a.length - b.length),
       )(profiles);
 
       return {

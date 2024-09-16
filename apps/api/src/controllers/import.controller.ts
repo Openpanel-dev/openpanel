@@ -2,13 +2,13 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { toDots } from '@openpanel/common';
 import type { IClickhouseEvent } from '@openpanel/db';
-import { ch, formatClickhouseDate, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, ch, formatClickhouseDate } from '@openpanel/db';
 
 export async function importEvents(
   request: FastifyRequest<{
     Body: IClickhouseEvent[];
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const importedAt = formatClickhouseDate(new Date());
   const values: IClickhouseEvent[] = request.body.map((event) => {

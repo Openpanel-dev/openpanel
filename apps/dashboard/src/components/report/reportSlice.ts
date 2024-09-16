@@ -100,11 +100,11 @@ export const reportSlice = createSlice({
       state,
       action: PayloadAction<{
         id?: string;
-      }>
+      }>,
     ) => {
       state.dirty = true;
       state.events = state.events.filter(
-        (event) => event.id !== action.payload.id
+        (event) => event.id !== action.payload.id,
       );
     },
     changeEvent: (state, action: PayloadAction<IChartEvent>) => {
@@ -126,7 +126,7 @@ export const reportSlice = createSlice({
     // Breakdowns
     addBreakdown: (
       state,
-      action: PayloadAction<Omit<IChartBreakdown, 'id'>>
+      action: PayloadAction<Omit<IChartBreakdown, 'id'>>,
     ) => {
       state.dirty = true;
       state.breakdowns.push({
@@ -138,11 +138,11 @@ export const reportSlice = createSlice({
       state,
       action: PayloadAction<{
         id?: string;
-      }>
+      }>,
     ) => {
       state.dirty = true;
       state.breakdowns = state.breakdowns.filter(
-        (event) => event.id !== action.payload.id
+        (event) => event.id !== action.payload.id,
       );
     },
     changeBreakdown: (state, action: PayloadAction<IChartBreakdown>) => {
@@ -193,7 +193,7 @@ export const reportSlice = createSlice({
       action: PayloadAction<{
         startDate: string;
         endDate: string;
-      }>
+      }>,
     ) => {
       state.dirty = true;
       state.startDate = formatISO(startOfDay(action.payload.startDate));
@@ -215,7 +215,7 @@ export const reportSlice = createSlice({
 
       const interval = getDefaultIntervalByDates(
         state.startDate,
-        state.endDate
+        state.endDate,
       );
       if (interval) {
         state.interval = interval;
@@ -229,7 +229,7 @@ export const reportSlice = createSlice({
 
       const interval = getDefaultIntervalByDates(
         state.startDate,
-        state.endDate
+        state.endDate,
       );
       if (interval) {
         state.interval = interval;

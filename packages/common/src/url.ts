@@ -1,5 +1,5 @@
 export function parseSearchParams(
-  params: URLSearchParams
+  params: URLSearchParams,
 ): Record<string, string> | undefined {
   const result: Record<string, string> = {};
   for (const [key, value] of params.entries()) {
@@ -39,7 +39,7 @@ export function parsePath(path?: string): {
 
 export function isSameDomain(
   url1: string | undefined,
-  url2: string | undefined
+  url2: string | undefined,
 ) {
   if (!url1 || !url2) {
     return false;

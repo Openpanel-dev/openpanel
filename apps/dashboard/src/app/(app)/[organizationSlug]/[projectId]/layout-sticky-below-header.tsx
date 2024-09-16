@@ -13,7 +13,7 @@ export function StickyBelowHeader({
     <div
       className={cn(
         'top-0 z-20 border-b border-border bg-card md:sticky',
-        className
+        className,
       )}
     >
       {children}

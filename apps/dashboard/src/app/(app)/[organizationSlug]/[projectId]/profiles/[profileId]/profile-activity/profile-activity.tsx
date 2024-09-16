@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Widget,
@@ -20,6 +19,7 @@ import {
   subMonths,
 } from 'date-fns';
 import { ActivityIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { useState } from 'react';
 
 type Props = {
   data: { count: number; date: string }[];
@@ -64,17 +64,17 @@ const ProfileActivity = ({ data }: Props) => {
               }).map((date) => {
                 const hit = data.find((item) =>
                   item.date.includes(
-                    formatISO(date, { representation: 'date' })
-                  )
+                    formatISO(date, { representation: 'date' }),
+                  ),
                 );
                 return (
                   <div
                     key={date.toISOString()}
                     className={cn(
                       'aspect-square w-full rounded',
-                      hit ? 'bg-highlight' : 'bg-def-200'
+                      hit ? 'bg-highlight' : 'bg-def-200',
                     )}
-                  ></div>
+                  />
                 );
               })}
             </div>
@@ -90,17 +90,17 @@ const ProfileActivity = ({ data }: Props) => {
               }).map((date) => {
                 const hit = data.find((item) =>
                   item.date.includes(
-                    formatISO(date, { representation: 'date' })
-                  )
+                    formatISO(date, { representation: 'date' }),
+                  ),
                 );
                 return (
                   <div
                     key={date.toISOString()}
                     className={cn(
                       'aspect-square w-full rounded',
-                      hit ? 'bg-highlight' : 'bg-def-200'
+                      hit ? 'bg-highlight' : 'bg-def-200',
                     )}
-                  ></div>
+                  />
                 );
               })}
             </div>
@@ -116,17 +116,17 @@ const ProfileActivity = ({ data }: Props) => {
               }).map((date) => {
                 const hit = data.find((item) =>
                   item.date.includes(
-                    formatISO(date, { representation: 'date' })
-                  )
+                    formatISO(date, { representation: 'date' }),
+                  ),
                 );
                 return (
                   <div
                     key={date.toISOString()}
                     className={cn(
                       'aspect-square w-full rounded',
-                      hit ? 'bg-highlight' : 'bg-def-200'
+                      hit ? 'bg-highlight' : 'bg-def-200',
                     )}
-                  ></div>
+                  />
                 );
               })}
             </div>
@@ -140,17 +140,17 @@ const ProfileActivity = ({ data }: Props) => {
               }).map((date) => {
                 const hit = data.find((item) =>
                   item.date.includes(
-                    formatISO(date, { representation: 'date' })
-                  )
+                    formatISO(date, { representation: 'date' }),
+                  ),
                 );
                 return (
                   <div
                     key={date.toISOString()}
                     className={cn(
                       'aspect-square w-full rounded',
-                      hit ? 'bg-highlight' : 'bg-def-200'
+                      hit ? 'bg-highlight' : 'bg-def-200',
                     )}
-                  ></div>
+                  />
                 );
               })}
             </div>

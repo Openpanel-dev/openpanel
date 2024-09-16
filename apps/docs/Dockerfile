@@ -21,7 +21,6 @@ COPY package.json package.json
 COPY pnpm-lock.yaml pnpm-lock.yaml
 COPY pnpm-workspace.yaml pnpm-workspace.yaml
 COPY apps/docs/package.json apps/docs/package.json
-COPY patches patches
 
 # BUILD
 FROM base AS build

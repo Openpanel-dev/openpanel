@@ -3,19 +3,19 @@ import { last } from 'ramda';
 
 import { getTime } from '@openpanel/common';
 import {
+  TABLE_NAMES,
   createEvent,
   eventBuffer,
   getEvents,
-  TABLE_NAMES,
 } from '@openpanel/db';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
 export async function createSessionEnd(
-  job: Job<EventsQueuePayloadCreateSessionEnd>
+  job: Job<EventsQueuePayloadCreateSessionEnd>,
 ) {
   const payload = job.data.payload;
   const eventsInBuffer = await eventBuffer.findMany(
-    (item) => item.event.session_id === payload.sessionId
+    (item) => item.event.session_id === payload.sessionId,
   );
 
   const sql = `
@@ -39,7 +39,7 @@ export async function createSessionEnd(
   const eventsInDb = await getEvents(sql);
   // sort last inserted first
   const events = [...eventsInBuffer, ...eventsInDb].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
   events.map((event, index) => {
@@ -51,7 +51,7 @@ export async function createSessionEnd(
         `DeviceId: ${event.deviceId}`,
         `Profile: ${event.profileId}`,
         `Path: ${event.path}`,
-      ].join('\n')
+      ].join('\n'),
     );
   });
 

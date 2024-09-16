@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import arg from 'arg';
 import { glob } from 'glob';
 
@@ -17,7 +17,7 @@ export default async function importer() {
     },
     {
       permissive: true,
-    }
+    },
   );
 
   if (!args['--glob']) {
@@ -40,7 +40,7 @@ export default async function importer() {
 
   const files = allFiles.slice(
     args['--from'] ?? 0,
-    args['--to'] ?? Number.MAX_SAFE_INTEGER
+    args['--to'] ?? Number.MAX_SAFE_INTEGER,
   );
 
   if (args['--dry-run']) {

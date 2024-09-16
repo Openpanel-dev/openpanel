@@ -4,8 +4,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
 
-import { createHash } from '@openpanel/common';
-import { ch, formatClickhouseDate, TABLE_NAMES } from '@openpanel/db';
+import { createHash } from '@openpanel/common/server';
+import { TABLE_NAMES, ch, formatClickhouseDate } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
@@ -38,7 +38,7 @@ async function getImageBuffer(url: string) {
       .png()
       .toBuffer();
   } catch (error) {
-    logger.error(`Failed to get image from url`, {
+    logger.error('Failed to get image from url', {
       error,
       url,
     });
@@ -51,7 +51,7 @@ export async function getFavicon(
   request: FastifyRequest<{
     Querystring: GetFaviconParams;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   function sendBuffer(buffer: Buffer, cacheKey?: string) {
     if (cacheKey) {
@@ -95,7 +95,7 @@ export async function getFavicon(
   }
 
   const buffer = await getImageBuffer(
-    'https://www.iconsdb.com/icons/download/orange/warning-128.png'
+    'https://www.iconsdb.com/icons/download/orange/warning-128.png',
   );
   if (buffer && buffer.byteLength > 0) {
     return sendBuffer(buffer, hostname);
@@ -106,7 +106,7 @@ export async function getFavicon(
 
 export async function clearFavicons(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const keys = await getRedisCache().keys('favicon:*');
   for (const key of keys) {
@@ -122,7 +122,7 @@ export async function ping(
       count: number;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   try {
     await ch.insert({
@@ -137,7 +137,7 @@ export async function ping(
       format: 'JSONEachRow',
     });
     reply.status(200).send({
-      message: `Success`,
+      message: 'Success',
       count: request.body.count,
       domain: request.body.domain,
     });

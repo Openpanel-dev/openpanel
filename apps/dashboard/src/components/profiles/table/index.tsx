@@ -1,5 +1,3 @@
-import { memo } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
 import { DataTable } from '@/components/data-table';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Pagination } from '@/components/pagination';
@@ -8,6 +6,8 @@ import { TableSkeleton } from '@/components/ui/table';
 import type { UseQueryResult } from '@tanstack/react-query';
 import isEqual from 'lodash.isequal';
 import { GanttChartIcon } from 'lucide-react';
+import { memo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import type { IServiceProfile } from '@openpanel/db';
 
@@ -58,7 +58,7 @@ export const ProfilesTable = memo(
             className="mt-2"
             setCursor={props.setCursor}
             cursor={props.cursor}
-            count={Infinity}
+            count={Number.POSITIVE_INFINITY}
             take={50}
             loading={isFetching}
           />
@@ -68,7 +68,7 @@ export const ProfilesTable = memo(
   },
   (prevProps, nextProps) => {
     return isEqual(prevProps.query.data, nextProps.query.data);
-  }
+  },
 );
 
 ProfilesTable.displayName = 'ProfilesTable';

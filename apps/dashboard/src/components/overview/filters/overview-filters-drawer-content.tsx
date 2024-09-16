@@ -125,7 +125,7 @@ export function FilterOptionEvent({
   setFilter: (
     name: string,
     value: IChartEventFilterValue,
-    operator: IChartEventFilterOperator
+    operator: IChartEventFilterOperator,
   ) => void;
 }) {
   const { interval, range } = useOverviewOptions();
@@ -172,7 +172,7 @@ export function FilterOptionProfile({
   setFilter: (
     name: string,
     value: IChartEventFilterValue,
-    operator: IChartEventFilterOperator
+    operator: IChartEventFilterOperator,
   ) => void;
 }) {
   const values = useProfileValues(projectId, filter.name);

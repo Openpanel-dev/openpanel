@@ -155,7 +155,7 @@ export const metrics = {
 } as const;
 
 export function isMinuteIntervalEnabledByRange(
-  range: keyof typeof timeWindows
+  range: keyof typeof timeWindows,
 ) {
   return range === '30min' || range === 'lastHour';
 }
@@ -165,13 +165,15 @@ export function isHourIntervalEnabledByRange(range: keyof typeof timeWindows) {
 }
 
 export function getDefaultIntervalByRange(
-  range: keyof typeof timeWindows
+  range: keyof typeof timeWindows,
 ): keyof typeof intervals {
   if (range === '30min' || range === 'lastHour') {
     return 'minute';
-  } else if (range === 'today') {
+  }
+  if (range === 'today') {
     return 'hour';
-  } else if (
+  }
+  if (
     range === '7d' ||
     range === '30d' ||
     range === 'lastMonth' ||
@@ -184,12 +186,13 @@ export function getDefaultIntervalByRange(
 
 export function getDefaultIntervalByDates(
   startDate: string | null,
-  endDate: string | null
+  endDate: string | null,
 ): null | keyof typeof intervals {
   if (startDate && endDate) {
     if (isSameDay(startDate, endDate)) {
       return 'hour';
-    } else if (isSameMonth(startDate, endDate)) {
+    }
+    if (isSameMonth(startDate, endDate)) {
       return 'day';
     }
     return 'month';
