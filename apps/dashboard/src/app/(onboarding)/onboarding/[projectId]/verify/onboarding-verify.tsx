@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { ButtonContainer } from '@/components/button-container';
 import { LinkButton } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import Link from 'next/link';
+import { useState } from 'react';
 
 import type { IServiceEvent, IServiceProjectWithClients } from '@openpanel/db';
 
@@ -84,7 +84,7 @@ const Verify = ({ project, events }: Props) => {
             size="lg"
             className={cn(
               'min-w-28 self-start',
-              !verified && 'pointer-events-none select-none opacity-20'
+              !verified && 'pointer-events-none select-none opacity-20',
             )}
           >
             Your dashboard

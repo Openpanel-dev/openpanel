@@ -69,18 +69,16 @@ export function OverviewLiveHistogram({
   const liveCount = countRes.data?.series[0]?.metrics?.sum ?? 0;
 
   if (res.isInitialLoading || countRes.isInitialLoading) {
-    // prettier-ignore
     const staticArray = [
-      10, 25, 30, 45, 20, 5, 55, 18, 40, 12,
-      50, 35, 8, 22, 38, 42, 15, 28, 52, 5,
-      48, 14, 32, 58, 7, 19, 33, 56, 24, 5
+      10, 25, 30, 45, 20, 5, 55, 18, 40, 12, 50, 35, 8, 22, 38, 42, 15, 28, 52,
+      5, 48, 14, 32, 58, 7, 19, 33, 56, 24, 5,
     ];
 
     return (
       <Wrapper count={0}>
         {staticArray.map((percent, i) => (
           <div
-            key={i}
+            key={i as number}
             className="flex-1 animate-pulse rounded-t bg-def-200"
             style={{ height: `${percent}%` }}
           />
@@ -102,7 +100,7 @@ export function OverviewLiveHistogram({
               <div
                 className={cn(
                   'flex-1 rounded-t transition-all ease-in-out hover:scale-110',
-                  minute.count === 0 ? 'bg-def-200' : 'bg-highlight'
+                  minute.count === 0 ? 'bg-def-200' : 'bg-highlight',
                 )}
                 style={{
                   height:

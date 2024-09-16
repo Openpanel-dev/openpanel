@@ -106,7 +106,7 @@ export default function EditClient({
                           }
                           return `https://${trimmed}`;
                         })
-                        .join(',')
+                        .join(','),
                     );
                   }}
                 />

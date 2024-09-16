@@ -1,8 +1,8 @@
-import { useRef, useState } from 'react';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { isNil } from 'ramda';
+import { useRef, useState } from 'react';
 import type { AxisDomain } from 'recharts/types/util/types';
 
 import type { IInterval } from '@openpanel/validation';
@@ -60,10 +60,10 @@ export const useXAxisProps = (
   } = {
     hide: false,
     interval: 'auto',
-  }
+  },
 ) => {
   const formatDate = useFormatDateInterval(
-    interval === 'auto' ? 'day' : interval
+    interval === 'auto' ? 'day' : interval,
   );
   return {
     height: hide ? 0 : 14,

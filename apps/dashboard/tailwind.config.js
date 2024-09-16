@@ -45,7 +45,7 @@ const config = {
   darkMode: 'class',
   safelist: [
     ...colors.flatMap((color) =>
-      ['text', 'bg'].map((prefix) => `${prefix}-chart-${color}`)
+      ['text', 'bg'].map((prefix) => `${prefix}-chart-${color}`),
     ),
     ...twColors.flatMap((color) => {
       return twColorVariants.flatMap((variant) => {

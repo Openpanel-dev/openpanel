@@ -1,5 +1,5 @@
-import { forwardRef } from 'react';
 import { BanIcon, InfoIcon } from 'lucide-react';
+import { forwardRef } from 'react';
 
 import { Input } from '../ui/input';
 import type { InputProps } from '../ui/input';
@@ -57,7 +57,7 @@ export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
         <Input ref={ref} id={props.label} {...props} />
       </WithLabel>
     );
-  }
+  },
 );
 
 InputWithLabel.displayName = 'InputWithLabel';

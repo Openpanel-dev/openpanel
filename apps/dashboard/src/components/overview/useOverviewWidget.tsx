@@ -9,14 +9,14 @@ export function useOverviewWidget<T extends string>(
   widgets: Record<
     T,
     { title: string; btn: string; chart: ReportChartProps; hide?: boolean }
-  >
+  >,
 ) {
   const keys = Object.keys(widgets) as T[];
   const [widget, setWidget] = useQueryState<T>(
     key,
     parseAsStringEnum(keys)
       .withDefault(keys[0]!)
-      .withOptions({ history: 'push' })
+      .withOptions({ history: 'push' }),
   );
   return [
     {

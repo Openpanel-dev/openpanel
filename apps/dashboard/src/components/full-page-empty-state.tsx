@@ -19,7 +19,7 @@ export function FullPageEmptyState({
     <div
       className={cn(
         'flex items-center justify-center p-4 text-center',
-        className
+        className,
       )}
     >
       <div className="flex w-full max-w-xl flex-col items-center justify-center p-8">

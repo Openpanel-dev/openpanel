@@ -1,4 +1,4 @@
-import zlib from 'zlib';
+import zlib from 'node:zlib';
 import { clerkPlugin } from '@clerk/fastify';
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
@@ -11,7 +11,7 @@ import metricsPlugin from 'fastify-metrics';
 import { path } from 'ramda';
 
 import { generateId, round } from '@openpanel/common';
-import { chQuery, db, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, chQuery, db } from '@openpanel/db';
 import type { IServiceClient } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
 import { getRedisCache, getRedisPub } from '@openpanel/redis';
@@ -48,7 +48,7 @@ async function withTimings<T>(promise: Promise<T>) {
   }
 }
 
-const port = parseInt(process.env.API_PORT || '3000', 10);
+const port = Number.parseInt(process.env.API_PORT || '3000', 10);
 
 const startServer = async () => {
   logger.info('Starting server');
@@ -65,7 +65,7 @@ const startServer = async () => {
     });
 
     const getTrpcInput = (
-      request: FastifyRequest
+      request: FastifyRequest,
     ): Record<string, unknown> | undefined => {
       const input = path(['query', 'input'], request);
       try {
@@ -125,14 +125,14 @@ const startServer = async () => {
     fastify.addContentTypeParser(
       'application/json',
       { parseAs: 'buffer' },
-      function (req, body, done) {
+      (req, body, done) => {
         const isGzipped = req.headers['content-encoding'] === 'gzip';
 
         if (isGzipped) {
           zlib.gunzip(body, (err, decompressedBody) => {
             console.log(
               'decompressedBody',
-              decompressedBody.toString().slice(0, 100)
+              decompressedBody.toString().slice(0, 100),
             );
             if (err) {
               done(err);
@@ -153,7 +153,7 @@ const startServer = async () => {
             done(new Error('Invalid JSON'));
           }
         }
-      }
+      },
     );
 
     await fastify.register(metricsPlugin, { endpoint: '/metrics' });
@@ -211,7 +211,7 @@ const startServer = async () => {
       const dbRes = await withTimings(db.project.findFirst());
       const queueRes = await withTimings(eventsQueue.getCompleted());
       const chRes = await withTimings(
-        chQuery(`SELECT * FROM ${TABLE_NAMES.events} LIMIT 1`)
+        chQuery(`SELECT * FROM ${TABLE_NAMES.events} LIMIT 1`),
       );
       const status = redisRes && dbRes && queueRes && chRes ? 200 : 500;
 

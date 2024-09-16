@@ -8,11 +8,11 @@ import type { IChartEventFilter } from '@openpanel/validation';
 
 import { botBuffer, eventBuffer } from '../buffers';
 import {
+  TABLE_NAMES,
   ch,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
-  TABLE_NAMES,
 } from '../clickhouse-client';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -211,7 +211,7 @@ function maskString(str: string, mask = '*') {
 }
 
 export function transformMinimalEvent(
-  event: IServiceEvent
+  event: IServiceEvent,
 ): IServiceEventMinimal {
   return {
     id: event.id,
@@ -242,7 +242,7 @@ export async function getLiveVisitors(projectId: string) {
 
 export async function getEvents(
   sql: string,
-  options: GetEventsOptions = {}
+  options: GetEventsOptions = {},
 ): Promise<IServiceEvent[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
   const projectId = events[0]?.project_id;
@@ -278,7 +278,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     payload.profileId = payload.deviceId;
   }
   console.log(
-    `create event ${payload.name} for [deviceId]: ${payload.deviceId} [profileId]: ${payload.profileId} [projectId]: ${payload.projectId} [path]: ${payload.path}`
+    `create event ${payload.name} for [deviceId]: ${payload.deviceId} [profileId]: ${payload.profileId} [projectId]: ${payload.projectId} [path]: ${payload.path}`,
   );
 
   if (payload.profileId !== '') {
@@ -389,7 +389,7 @@ export async function getEventList({
       os: true,
       browser: true,
     },
-    incomingSelect ?? {}
+    incomingSelect ?? {},
   );
 
   if (select.id) {
@@ -491,7 +491,7 @@ export async function getEventList({
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((event) => escape(event)),
-      ','
+      ',',
     )})`;
   }
 
@@ -537,7 +537,7 @@ export async function getEventsCount({
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((event) => escape(event)),
-      ','
+      ',',
     )})`;
   }
 
@@ -549,7 +549,7 @@ export async function getEventsCount({
   }
 
   const res = await chQuery<{ count: number }>(
-    getSql().replace('*', 'count(*) as count')
+    getSql().replace('*', 'count(*) as count'),
   );
 
   return res[0]?.count ?? 0;
@@ -593,7 +593,7 @@ export async function getLastScreenViewFromProfileId({
   }
 
   const eventInBuffer = await eventBuffer.find(
-    (item) => item.event.profile_id === profileId
+    (item) => item.event.profile_id === profileId,
   );
 
   if (eventInBuffer) {
@@ -602,7 +602,7 @@ export async function getLastScreenViewFromProfileId({
 
   const [eventInDb] = profileId
     ? await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`,
       )
     : [];
 

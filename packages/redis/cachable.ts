@@ -2,7 +2,7 @@ import { getRedisCache } from './redis';
 
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
-  expireInSec: number
+  expireInSec: number,
 ) {
   const cachePrefix = `cachable:${fn.name}`;
   function stringify(obj: unknown): string {
@@ -14,7 +14,7 @@ export function cacheable<T extends (...args: any) => any>(
     if (typeof obj === 'function') return obj.toString();
 
     if (Array.isArray(obj)) {
-      return '[' + obj.map(stringify).join(',') + ']';
+      return `[${obj.map(stringify).join(',')}]`;
     }
 
     if (typeof obj === 'object') {
@@ -29,9 +29,9 @@ export function cacheable<T extends (...args: any) => any>(
   }
   const getKey = (...args: Parameters<T>) =>
     `${cachePrefix}:${stringify(args)}`;
-  const cachedFn = async function (
+  const cachedFn = async (
     ...args: Parameters<T>
-  ): Promise<Awaited<ReturnType<T>>> {
+  ): Promise<Awaited<ReturnType<T>>> => {
     // JSON.stringify here is not bullet proof since ordering of object keys matters etc
     const key = getKey(...args);
     const cached = await getRedisCache().get(key);
@@ -52,7 +52,7 @@ export function cacheable<T extends (...args: any) => any>(
   };
 
   cachedFn.getKey = getKey;
-  cachedFn.clear = async function (...args: Parameters<T>) {
+  cachedFn.clear = async (...args: Parameters<T>) => {
     const key = getKey(...args);
     return getRedisCache().del(key);
   };

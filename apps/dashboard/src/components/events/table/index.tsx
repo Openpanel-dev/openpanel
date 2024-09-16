@@ -1,4 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react';
 import { DataTable } from '@/components/data-table';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Pagination } from '@/components/pagination';
@@ -7,6 +6,7 @@ import { TableSkeleton } from '@/components/ui/table';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { GanttChartIcon } from 'lucide-react';
 import { column } from 'mathjs';
+import type { Dispatch, SetStateAction } from 'react';
 
 import type { IServiceEvent } from '@openpanel/db';
 
@@ -55,7 +55,7 @@ export const EventsTable = ({ query, ...props }: Props) => {
           className="mt-2"
           setCursor={props.setCursor}
           cursor={props.cursor}
-          count={Infinity}
+          count={Number.POSITIVE_INFINITY}
           take={50}
           loading={isFetching}
         />

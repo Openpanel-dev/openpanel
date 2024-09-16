@@ -4,28 +4,15 @@
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@openpanel/sdk": "1.0.0-local"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "^20.14.12",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

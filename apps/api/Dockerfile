@@ -38,9 +38,6 @@ COPY packages/constants/package.json packages/constants/
 COPY packages/validation/package.json packages/validation/
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/
 
-# Patches
-COPY patches patches
-
 # BUILD
 FROM base AS build
 

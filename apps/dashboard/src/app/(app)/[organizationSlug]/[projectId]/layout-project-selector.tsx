@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import {
@@ -24,6 +23,7 @@ import {
   PlusIcon,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import type {
   getCurrentOrganizations,
@@ -50,7 +50,7 @@ export default function LayoutProjectSelector({
       const split = pathname
         .replace(
           `/${organizationSlug}/${projectId}`,
-          `/${organizationSlug}/${newProjectId}`
+          `/${organizationSlug}/${newProjectId}`,
         )
         .split('/');
       // slicing here will remove everything after /{orgId}/{projectId}/dashboards [slice here] /xxx/xxx/xxx

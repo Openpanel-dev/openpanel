@@ -197,10 +197,11 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
         <div className="card mb-2 grid grid-cols-4 overflow-hidden rounded-md">
           {reports.map((report, index) => (
             <button
-              key={index}
+              type="button"
+              key={report.id}
               className={cn(
                 'col-span-2 flex-1 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
-                index === metric && 'bg-def-100'
+                index === metric && 'bg-def-100',
               )}
               onClick={() => {
                 setMetric(index);
@@ -211,7 +212,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           ))}
           <div
             className={cn(
-              'col-span-4 min-h-16 flex-1 p-4 pb-0 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-2'
+              'col-span-4 min-h-16 flex-1 p-4 pb-0 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-2',
             )}
           >
             <OverviewLiveHistogram projectId={projectId} />

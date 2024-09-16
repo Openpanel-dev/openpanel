@@ -17,7 +17,7 @@ const Cell = ({ value, ratio }: { value: number; ratio: number }) => {
       <div
         className="absolute inset-0 z-0 bg-highlight"
         style={{ opacity: ratio }}
-      ></div>
+      />
       <div className="relative z-10">{value}</div>
     </td>
   );
@@ -39,7 +39,7 @@ const WeeklyCohortsServer = async ({ projectId }: Props) => {
       row.period_7,
       row.period_8,
       row.period_9,
-    ])
+    ]),
   );
 
   const calculateRatio = (currentValue: number) =>
@@ -47,7 +47,7 @@ const WeeklyCohortsServer = async ({ projectId }: Props) => {
       ? 0
       : Math.max(
           0.1,
-          Math.min(1, (currentValue - minValue) / (maxValue - minValue))
+          Math.min(1, (currentValue - minValue) / (maxValue - minValue)),
         );
 
   return (

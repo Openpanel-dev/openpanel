@@ -44,7 +44,7 @@ export default function SaveReport({ report }: SaveReportProps) {
       router.push(
         `/${organizationSlug}/${projectId}/reports/${
           res.id
-        }?${searchParams?.toString()}`
+        }?${searchParams?.toString()}`,
       );
     },
   });

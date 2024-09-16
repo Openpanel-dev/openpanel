@@ -6,8 +6,6 @@
     "testing": "API_PORT=3333 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsup",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -40,8 +38,6 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/sdk": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/jsonwebtoken": "^9.0.6",
@@ -51,16 +47,7 @@
     "@types/ua-parser-js": "^0.7.39",
     "@types/uuid": "^9.0.8",
     "@types/ws": "^8.5.10",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

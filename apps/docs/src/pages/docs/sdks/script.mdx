@@ -36,13 +36,13 @@ Just insert this snippet and replace `YOUR_CLIENT_ID` with your client id.
 You can track events with two different methods: by calling the `window.op('track')` directly or by adding `data-track` attributes to your HTML elements.
 
 ```html filename="index.html"
-<button onclick="window.op('track', 'my_event', { foo: 'bar' })">
+<button type="button" onclick="window.op('track', 'my_event', { foo: 'bar' })">
   Track event
 </button>
 ```
 
 ```html filename="index.html"
-<button data-track="my_event" data-foo="bar">Track event</button>
+<button type="button" data-track="my_event" data-foo="bar">Track event</button>
 ```
 
 ### Identifying Users

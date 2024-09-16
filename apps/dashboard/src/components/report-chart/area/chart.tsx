@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useCallback } from 'react';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import { api } from '@/trpc/client';
@@ -9,6 +8,7 @@ import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { isSameDay, isSameHour, isSameMonth } from 'date-fns';
 import { last } from 'ramda';
+import React, { useCallback } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -57,7 +57,7 @@ export function Chart({ data }: Props) {
     },
     {
       staleTime: 1000 * 60 * 10,
-    }
+    },
   );
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(series);
@@ -73,7 +73,7 @@ export function Chart({ data }: Props) {
     id: string,
     col1: string,
     col2: string,
-    percentChange: number
+    percentChange: number,
   ) => (
     <linearGradient id={id} x1="0" y1="0" x2="100%" y2="0">
       <stop offset="0%" stopColor={col1} />
@@ -177,29 +177,25 @@ export function Chart({ data }: Props) {
                         x2="0"
                         y2="1"
                       >
-                        <stop
-                          offset="0%"
-                          stopColor={color}
-                          stopOpacity={0.8}
-                        ></stop>
+                        <stop offset="0%" stopColor={color} stopOpacity={0.8} />
                         <stop
                           offset="100%"
                           stopColor={color}
                           stopOpacity={0.1}
-                        ></stop>
+                        />
                       </linearGradient>
                     )}
                     {gradientTwoColors(
                       `hideAllButLastInterval_${serie.id}`,
                       'rgba(0,0,0,0)',
                       color,
-                      lastIntervalPercent
+                      lastIntervalPercent,
                     )}
                     {gradientTwoColors(
                       `hideJustLastInterval_${serie.id}`,
                       color,
                       'rgba(0,0,0,0)',
-                      lastIntervalPercent
+                      lastIntervalPercent,
                     )}
                   </defs>
                   <Line

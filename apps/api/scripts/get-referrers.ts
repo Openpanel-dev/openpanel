@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 function transform(data: any) {
   const obj: Record<string, unknown> = {};
@@ -22,7 +22,7 @@ async function main() {
   // Get document, or throw exception on error
   try {
     const data = await fetch(
-      'https://s3-eu-west-1.amazonaws.com/snowplow-hosted-assets/third-party/referer-parser/referers-latest.json'
+      'https://s3-eu-west-1.amazonaws.com/snowplow-hosted-assets/third-party/referer-parser/referers-latest.json',
     ).then((res) => res.json());
 
     fs.writeFileSync(
@@ -34,11 +34,11 @@ async function main() {
         `// The orginal referers.yml is based on Piwik's SearchEngines.php and Socials.php, copyright 2012 Matthieu Aubry and available under the GNU General Public License v3.`,
         '',
         `const referrers: Record<string, { type: string, name: string }> = ${JSON.stringify(
-          transform(data)
+          transform(data),
         )} as const;`,
         'export default referrers;',
       ].join('\n'),
-      'utf-8'
+      'utf-8',
     );
   } catch (e) {
     console.log(e);

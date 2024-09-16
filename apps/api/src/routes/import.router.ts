@@ -15,11 +15,14 @@ const importRouter: FastifyPluginCallback = (fastify, opts, done) => {
           error: 'Unauthorized',
           message: 'Client ID seems to be malformed',
         });
-      } else if (e instanceof Error) {
+      }
+
+      if (e instanceof Error) {
         return reply
           .status(401)
           .send({ error: 'Unauthorized', message: e.message });
       }
+
       return reply
         .status(401)
         .send({ error: 'Unauthorized', message: 'Unexpected error' });

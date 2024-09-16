@@ -21,7 +21,7 @@ export function Chart({ data }: Props) {
     <div
       className={cn(
         'grid grid-cols-1 gap-4',
-        isEditMode && 'md:grid-cols-2 lg:grid-cols-3'
+        isEditMode && 'md:grid-cols-2 lg:grid-cols-3',
       )}
     >
       {series.map((serie) => {

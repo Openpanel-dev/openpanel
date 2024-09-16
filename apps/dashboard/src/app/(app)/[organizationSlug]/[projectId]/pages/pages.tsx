@@ -15,7 +15,7 @@ export function Pages({ projectId }: { projectId: string }) {
   const take = 20;
   const [cursor, setCursor] = useQueryState(
     'cursor',
-    parseAsInteger.withDefault(0)
+    parseAsInteger.withDefault(0),
   );
   const [search, setSearch] = useQueryState('search', {
     defaultValue: '',
@@ -31,7 +31,7 @@ export function Pages({ projectId }: { projectId: string }) {
     },
     {
       keepPreviousData: true,
-    }
+    },
   );
   const data = query.data ?? [];
 
@@ -56,7 +56,7 @@ export function Pages({ projectId }: { projectId: string }) {
         className="mt-2"
         setCursor={setCursor}
         cursor={cursor}
-        count={Infinity}
+        count={Number.POSITIVE_INFINITY}
         take={take}
         loading={query.isFetching}
       />

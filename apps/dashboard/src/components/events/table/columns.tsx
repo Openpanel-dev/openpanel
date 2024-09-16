@@ -52,6 +52,7 @@ export function useColumns() {
           <div className="flex items-center gap-2">
             <TooltipComplete content="Click to edit" side="left">
               <button
+                type="button"
                 className="transition-transform hover:scale-105"
                 onClick={() => {
                   pushModal('EditEvent', {
@@ -68,6 +69,7 @@ export function useColumns() {
             </TooltipComplete>
             <span className="flex gap-2">
               <button
+                type="button"
                 onClick={() => {
                   pushModal('EventDetails', {
                     id: row.original.id,

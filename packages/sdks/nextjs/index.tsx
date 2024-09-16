@@ -1,5 +1,5 @@
-import React from 'react';
 import Script from 'next/script';
+import React from 'react';
 
 import type {
   DecrementPayload,
@@ -100,7 +100,7 @@ export function useOpenPanel() {
 }
 
 function track(name: string, properties?: TrackProperties) {
-  window.op && window.op('track', name, properties);
+  window.op?.('track', name, properties);
 }
 
 function screenView(properties: TrackProperties) {
@@ -108,11 +108,11 @@ function screenView(properties: TrackProperties) {
 }
 
 function identify(payload: IdentifyPayload) {
-  window.op && window.op('identify', payload);
+  window.op?.('identify', payload);
 }
 
 function increment(payload: IncrementPayload) {
-  window.op && window.op('increment', payload);
+  window.op?.('increment', payload);
 }
 
 function decrement(payload: DecrementPayload) {
@@ -120,5 +120,5 @@ function decrement(payload: DecrementPayload) {
 }
 
 function clear() {
-  window.op && window.op('clear');
+  window.op?.('clear');
 }

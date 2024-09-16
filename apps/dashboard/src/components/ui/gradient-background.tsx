@@ -14,7 +14,7 @@ export function GradientBackground({
     <div
       className={cn(
         'from-def-200 rounded-md bg-gradient-to-tr to-white',
-        className
+        className,
       )}
       {...props}
     >

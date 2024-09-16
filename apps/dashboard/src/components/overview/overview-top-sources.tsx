@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
+import { useState } from 'react';
 
 import type { IChartType } from '@openpanel/validation';
 
@@ -301,6 +301,7 @@ export default function OverviewTopSources({
           <WidgetButtons>
             {widgets.map((w) => (
               <button
+                type="button"
                 key={w.key}
                 onClick={() => setWidget(w.key)}
                 className={cn(w.key === widget.key && 'active')}

@@ -1,10 +1,10 @@
-import React from 'react';
 import { useRechartDataModel } from '@/hooks/useRechartDataModel';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor, theme } from '@/utils/theme';
 import { useTheme } from 'next-themes';
+import React from 'react';
 import {
   Bar,
   BarChart,

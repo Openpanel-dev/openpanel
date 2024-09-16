@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { ReportChart } from '@/components/report-chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
+import { useState } from 'react';
 
 import type { IChartType } from '@openpanel/validation';
 
@@ -155,6 +155,7 @@ export default function OverviewTopEvents({
               .filter((item) => item.hide !== true)
               .map((w) => (
                 <button
+                  type="button"
                   key={w.key}
                   onClick={() => setWidget(w.key)}
                   className={cn(w.key === widget.key && 'active')}

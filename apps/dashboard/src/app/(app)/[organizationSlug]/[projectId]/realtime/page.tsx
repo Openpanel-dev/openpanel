@@ -1,10 +1,10 @@
-import { Suspense } from 'react';
 import {
   Fullscreen,
   FullscreenClose,
   FullscreenOpen,
 } from '@/components/fullscreen-toggle';
 import { ReportChart } from '@/components/report-chart';
+import { Suspense } from 'react';
 
 import RealtimeMap from './map';
 import RealtimeLiveEventsServer from './realtime-live-events';

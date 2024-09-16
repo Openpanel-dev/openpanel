@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
 import { useVisibleSeries } from '@/hooks/useVisibleSeries';
 import type { IChartData } from '@/trpc/client';
 import { theme } from '@/utils/theme';
+import { useMemo } from 'react';
 import WorldMap from 'react-svg-worldmap';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
@@ -23,7 +23,7 @@ export function Chart({ data }: Props) {
         country: s.names[0]?.toLowerCase() ?? '',
         value: s.metrics[metric],
       })),
-    [series, metric]
+    [series, metric],
   );
 
   return (

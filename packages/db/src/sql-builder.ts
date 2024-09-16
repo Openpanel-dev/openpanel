@@ -27,16 +27,16 @@ export function createSqlBuilder() {
   };
 
   const getWhere = () =>
-    Object.keys(sb.where).length ? 'WHERE ' + join(sb.where, ' AND ') : '';
+    Object.keys(sb.where).length ? `WHERE ${join(sb.where, ' AND ')}` : '';
   const getHaving = () =>
-    Object.keys(sb.having).length ? 'HAVING ' + join(sb.having, ' AND ') : '';
+    Object.keys(sb.having).length ? `HAVING ${join(sb.having, ' AND ')}` : '';
   const getFrom = () => `FROM ${sb.from}`;
   const getSelect = () =>
-    'SELECT ' + (Object.keys(sb.select).length ? join(sb.select, ', ') : '*');
+    `SELECT ${Object.keys(sb.select).length ? join(sb.select, ', ') : '*'}`;
   const getGroupBy = () =>
-    Object.keys(sb.groupBy).length ? 'GROUP BY ' + join(sb.groupBy, ', ') : '';
+    Object.keys(sb.groupBy).length ? `GROUP BY ${join(sb.groupBy, ', ')}` : '';
   const getOrderBy = () =>
-    Object.keys(sb.orderBy).length ? 'ORDER BY ' + join(sb.orderBy, ', ') : '';
+    Object.keys(sb.orderBy).length ? `ORDER BY ${join(sb.orderBy, ', ')}` : '';
   const getLimit = () => (sb.limit ? `LIMIT ${sb.limit}` : '');
   const getOffset = () => (sb.offset ? `OFFSET ${sb.offset}` : '');
 

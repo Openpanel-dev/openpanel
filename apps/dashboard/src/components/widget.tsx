@@ -10,7 +10,7 @@ export function WidgetHead({ children, className }: WidgetHeadProps) {
     <div
       className={cn(
         'border-b border-border p-4 [&_.title]:whitespace-nowrap [&_.title]:font-medium',
-        className
+        className,
       )}
     >
       {children}
@@ -33,7 +33,7 @@ export function WidgetTitle({
       className={cn(
         'relative flex items-center gap-4',
         className,
-        !!Icon && 'pl-12'
+        !!Icon && 'pl-12',
       )}
     >
       {Icon && (

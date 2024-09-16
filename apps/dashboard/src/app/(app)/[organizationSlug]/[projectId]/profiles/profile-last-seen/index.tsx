@@ -7,7 +7,7 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { cn } from '@/utils/cn';
 import { escape } from 'sqlstring';
 
-import { chQuery, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, chQuery } from '@openpanel/db';
 
 interface Props {
   projectId: string;
@@ -21,7 +21,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
   // Days since last event from users
   // group by days
   const res = await chQuery<Row>(
-    `SELECT age('days',created_at, now()) as days, count(distinct profile_id) as count FROM ${TABLE_NAMES.events} where project_id = ${escape(projectId)} group by days order by days ASC LIMIT 51`
+    `SELECT age('days',created_at, now()) as days, count(distinct profile_id) as count FROM ${TABLE_NAMES.events} where project_id = ${escape(projectId)} group by days order by days ASC LIMIT 51`,
   );
 
   const maxValue = Math.max(...res.map((x) => x.count));
@@ -29,7 +29,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
   const calculateRatio = (currentValue: number) =>
     Math.max(
       0.1,
-      Math.min(1, (currentValue - minValue) / (maxValue - minValue))
+      Math.min(1, (currentValue - minValue) / (maxValue - minValue)),
     );
 
   const renderItem = (item: Row) => (
@@ -41,7 +41,7 @@ export default async function ProfileLastSeenServer({ projectId }: Props) {
             style={{
               opacity: calculateRatio(item.count),
             }}
-          ></div>
+          />
         </TooltipTrigger>
         <TooltipContent>
           {item.count} profiles last seen{' '}

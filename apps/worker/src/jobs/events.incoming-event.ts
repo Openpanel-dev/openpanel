@@ -128,7 +128,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       {
         delay: SESSION_END_TIMEOUT,
         jobId: sessionEndJobId,
-      }
+      },
     );
   }
 
@@ -178,7 +178,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
 
 function getSessionEndWithPriority(
   priority: boolean,
-  count = 0
+  count = 0,
 ): typeof getSessionEnd {
   return async (args) => {
     const res = await getSessionEnd(args);
@@ -208,13 +208,13 @@ async function getSessionEnd({
   previousDeviceId: string;
 }) {
   const sessionEndKeys = await getRedisQueue().keys(
-    `*:sessionEnd:${projectId}:*`
+    `*:sessionEnd:${projectId}:*`,
   );
 
   const sessionEndJobCurrentDeviceId = await findJobByPrefix(
     sessionsQueue,
     sessionEndKeys,
-    `sessionEnd:${projectId}:${currentDeviceId}:`
+    `sessionEnd:${projectId}:${currentDeviceId}:`,
   );
   if (sessionEndJobCurrentDeviceId) {
     return { deviceId: currentDeviceId, job: sessionEndJobCurrentDeviceId };
@@ -223,7 +223,7 @@ async function getSessionEnd({
   const sessionEndJobPreviousDeviceId = await findJobByPrefix(
     sessionsQueue,
     sessionEndKeys,
-    `sessionEnd:${projectId}:${previousDeviceId}:`
+    `sessionEnd:${projectId}:${previousDeviceId}:`,
   );
   if (sessionEndJobPreviousDeviceId) {
     return { deviceId: previousDeviceId, job: sessionEndJobPreviousDeviceId };

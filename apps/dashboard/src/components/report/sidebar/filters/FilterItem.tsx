@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
 import { ColorSquare } from '@/components/color-square';
+import { RenderDots } from '@/components/ui/RenderDots';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { usePropertyValues } from '@/hooks/usePropertyValues';
 import { useDispatch, useSelector } from '@/redux';
 import { AnimatePresence, motion } from 'framer-motion';
 import { RefreshCcwIcon, SlidersHorizontal, Trash } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { operators } from '@openpanel/constants';
 import type {
@@ -41,31 +41,31 @@ interface PureFilterProps {
   onRemove: (filter: IChartEventFilter) => void;
   onChangeValue: (
     value: IChartEventFilterValue[],
-    filter: IChartEventFilter
+    filter: IChartEventFilter,
   ) => void;
   onChangeOperator: (
     operator: IChartEventFilterOperator,
-    filter: IChartEventFilter
+    filter: IChartEventFilter,
   ) => void;
   className?: string;
 }
 
 export function FilterItem({ filter, event }: FilterProps) {
   const { range, startDate, endDate, interval } = useSelector(
-    (state) => state.report
+    (state) => state.report,
   );
   const onRemove = ({ id }: IChartEventFilter) => {
     dispatch(
       changeEvent({
         ...event,
         filters: event.filters.filter((item) => item.id !== id),
-      })
+      }),
     );
   };
 
   const onChangeValue = (
     value: IChartEventFilterValue[],
-    { id }: IChartEventFilter
+    { id }: IChartEventFilter,
   ) => {
     dispatch(
       changeEvent({
@@ -80,13 +80,13 @@ export function FilterItem({ filter, event }: FilterProps) {
 
           return item;
         }),
-      })
+      }),
     );
   };
 
   const onChangeOperator = (
     operator: IChartEventFilterOperator,
-    { id }: IChartEventFilter
+    { id }: IChartEventFilter,
   ) => {
     dispatch(
       changeEvent({
@@ -102,7 +102,7 @@ export function FilterItem({ filter, event }: FilterProps) {
 
           return item;
         }),
-      })
+      }),
     );
   };
 

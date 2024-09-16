@@ -3,7 +3,7 @@ import { mergeDeepRight } from 'ramda';
 import { toDots } from '@openpanel/common';
 import { getRedisCache } from '@openpanel/redis';
 
-import { ch, chQuery, TABLE_NAMES } from '../clickhouse-client';
+import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';
 import type {
   IClickhouseProfile,
   IServiceProfile,
@@ -35,13 +35,13 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
     const cleanedQueue = this.combineQueueItems(queue);
     const redisProfiles = await this.getCachedProfiles(cleanedQueue);
     const dbProfiles = await this.fetchDbProfiles(
-      cleanedQueue.filter((_, index) => !redisProfiles[index])
+      cleanedQueue.filter((_, index) => !redisProfiles[index]),
     );
 
     const values = this.createProfileValues(
       cleanedQueue,
       redisProfiles,
-      dbProfiles
+      dbProfiles,
     );
 
     if (values.length > 0) {
@@ -55,7 +55,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   private matchPartialObject(
     full: any,
     partial: any,
-    options: { ignore: string[] }
+    options: { ignore: string[] },
   ): boolean {
     if (typeof partial !== 'object' || partial === null) {
       return partial === full;
@@ -78,7 +78,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   }
 
   private combineQueueItems(
-    queue: QueueItem<IClickhouseProfile>[]
+    queue: QueueItem<IClickhouseProfile>[],
   ): QueueItem<IClickhouseProfile>[] {
     const itemsToClickhouse = new Map<string, QueueItem<IClickhouseProfile>>();
 
@@ -92,11 +92,11 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   }
 
   private async getCachedProfiles(
-    cleanedQueue: QueueItem<IClickhouseProfile>[]
+    cleanedQueue: QueueItem<IClickhouseProfile>[],
   ): Promise<(IClickhouseProfile | null)[]> {
     const redisCache = getRedisCache();
     const keys = cleanedQueue.map(
-      (item) => `profile:${item.event.project_id}:${item.event.id}`
+      (item) => `profile:${item.event.project_id}:${item.event.id}`,
     );
     const cachedProfiles = await redisCache.mget(...keys);
     return cachedProfiles.map((profile) => {
@@ -109,7 +109,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   }
 
   private async fetchDbProfiles(
-    cleanedQueue: QueueItem<IClickhouseProfile>[]
+    cleanedQueue: QueueItem<IClickhouseProfile>[],
   ): Promise<IClickhouseProfile[]> {
     if (cleanedQueue.length === 0) {
       return [];
@@ -122,21 +122,21 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
         WHERE 
             (id, project_id) IN (${cleanedQueue.map((item) => `('${item.event.id}', '${item.event.project_id}')`).join(',')})
         ORDER BY
-            created_at DESC`
+            created_at DESC`,
     );
   }
 
   private createProfileValues(
     cleanedQueue: QueueItem<IClickhouseProfile>[],
     redisProfiles: (IClickhouseProfile | null)[],
-    dbProfiles: IClickhouseProfile[]
+    dbProfiles: IClickhouseProfile[],
   ): IClickhouseProfile[] {
     return cleanedQueue
       .map((item, index) => {
         const cachedProfile = redisProfiles[index];
         const dbProfile = dbProfiles.find(
           (p) =>
-            p.id === item.event.id && p.project_id === item.event.project_id
+            p.id === item.event.id && p.project_id === item.event.project_id,
         );
         const profile = cachedProfile || dbProfile;
 
@@ -150,7 +150,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
             },
             {
               ignore: ['created_at'],
-            }
+            },
           )
         ) {
           console.log('Ignoring profile', item.event.id);
@@ -182,14 +182,14 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
       multi.setex(
         `profile:${value.project_id}:${value.id}`,
         60 * 30, // 30 minutes
-        JSON.stringify(value)
+        JSON.stringify(value),
       );
     });
     await multi.exec();
   }
 
   private async insertIntoClickhouse(
-    values: IClickhouseProfile[]
+    values: IClickhouseProfile[],
   ): Promise<void> {
     await ch.insert({
       table: TABLE_NAMES.profiles,
@@ -199,7 +199,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   }
 
   public findMany: FindMany<IClickhouseProfile, IServiceProfile> = async (
-    callback
+    callback,
   ) => {
     return this.getQueue(-1)
       .then((queue) => {

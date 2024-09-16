@@ -158,7 +158,7 @@ export default function EventDetails({ id }: Props) {
                       setFilter(
                         `properties.${item.name}`,
                         item.value ? String(item.value) : '',
-                        'is'
+                        'is',
                       );
                     }}
                   />
@@ -184,6 +184,7 @@ export default function EventDetails({ id }: Props) {
             <div className="mb-2 flex justify-between  font-medium">
               <div>Similar events</div>
               <button
+                type="button"
                 className="text-muted-foreground hover:underline"
                 onClick={() => {
                   setEvents([event.name]);

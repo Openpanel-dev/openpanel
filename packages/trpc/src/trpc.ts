@@ -1,5 +1,5 @@
 import { getAuth } from '@clerk/fastify';
-import { initTRPC, TRPCError } from '@trpc/server';
+import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { has } from 'ramda';
 import superjson from 'superjson';
@@ -21,10 +21,9 @@ export function createContext({ req, res }: CreateFastifyContextOptions) {
       options: {
         maxAge: number;
         path: string;
-      }
+      },
     ) => {
       // @ts-ignore
-      // eslint-disable-next-line
       res.setCookie(key, value, options);
     },
   };

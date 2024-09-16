@@ -4,7 +4,7 @@ import NextTopLoader from 'nextjs-toploader';
 import Providers from './providers';
 
 import '@/styles/globals.css';
-import '/node_modules/flag-icons/css/flag-icons.min.css';
+import 'flag-icons/css/flag-icons.min.css';
 
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
@@ -31,7 +31,7 @@ export default function RootLayout({
         className={cn(
           'grainy min-h-screen bg-def-100 font-sans text-base antialiased',
           GeistSans.variable,
-          GeistMono.variable
+          GeistMono.variable,
         )}
       >
         <NextTopLoader

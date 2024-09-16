@@ -1,11 +1,11 @@
 'use client';
 
-import { memo } from 'react';
 import { ReportChart } from '@/components/report-chart';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { cn } from '@/utils/cn';
 import isEqual from 'lodash.isequal';
 import { ExternalLinkIcon } from 'lucide-react';
+import { memo } from 'react';
 
 import type { IServicePage } from '@openpanel/db';
 
@@ -38,7 +38,7 @@ export const PagesTable = memo(
                   className={cn(
                     cell,
                     'center-center font-mono text-lg font-semibold',
-                    index === data.length - 1 && 'rounded-bl-md'
+                    index === data.length - 1 && 'rounded-bl-md',
                   )}
                 >
                   {number.short(item.count)}
@@ -46,7 +46,7 @@ export const PagesTable = memo(
                 <div
                   className={cn(
                     cell,
-                    'flex w-80 flex-col justify-center gap-2 text-left'
+                    'flex w-80 flex-col justify-center gap-2 text-left',
                   )}
                 >
                   <span className="truncate font-medium">{item.title}</span>
@@ -68,7 +68,7 @@ export const PagesTable = memo(
                   className={cn(
                     cell,
                     'p-1',
-                    index === data.length - 1 && 'rounded-br-md'
+                    index === data.length - 1 && 'rounded-br-md',
                   )}
                 >
                   <ReportChart
@@ -122,7 +122,7 @@ export const PagesTable = memo(
   },
   (prevProps, nextProps) => {
     return isEqual(prevProps.data, nextProps.data);
-  }
+  },
 );
 
 PagesTable.displayName = 'PagesTable';

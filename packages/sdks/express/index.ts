@@ -7,7 +7,6 @@ import { OpenPanel } from '@openpanel/sdk';
 export * from '@openpanel/sdk';
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     export interface Request {
       op: OpenPanel;

@@ -3,7 +3,7 @@ import {
   randomBytes,
   scrypt,
   timingSafeEqual,
-} from 'crypto';
+} from 'node:crypto';
 
 export function generateSalt() {
   return randomBytes(16).toString('hex');
@@ -16,7 +16,7 @@ export function generateSalt() {
  */
 export async function hashPassword(
   password: string,
-  keyLength = 32
+  keyLength = 32,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     // generate random 16 bytes long salt - recommended by NodeJS Docs
@@ -38,7 +38,7 @@ export async function hashPassword(
 export async function verifyPassword(
   password: string,
   hash: string,
-  keyLength = 32
+  keyLength = 32,
 ): Promise<boolean> {
   return new Promise((resolve, reject) => {
     const [salt, hashKey] = hash.split('.');

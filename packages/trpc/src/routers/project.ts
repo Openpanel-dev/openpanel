@@ -11,7 +11,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         organizationSlug: z.string().nullable(),
-      })
+      }),
     )
     .query(async ({ input: { organizationSlug } }) => {
       if (organizationSlug === null) return [];
@@ -23,7 +23,7 @@ export const projectRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getProjectAccess({
@@ -49,7 +49,7 @@ export const projectRouter = createTRPCRouter({
       z.object({
         name: z.string().min(1),
         organizationSlug: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input: { name, organizationSlug } }) => {
       return db.project.create({
@@ -65,7 +65,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getProjectAccess({

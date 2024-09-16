@@ -11,7 +11,7 @@ interface PackageJson {
   version: string;
   dependencies?: Record<string, string>;
   devDependencies?: Record<string, string>;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface PackageInfo extends PackageJson {
@@ -60,7 +60,7 @@ const getNextVersion = (version: string, type: ReleaseType): string => {
 
 // Core functions
 const loadPackages = (
-  releaseType: ReleaseType
+  releaseType: ReleaseType,
 ): Record<string, PackageInfo> => {
   const sdksPath = workspacePath('./packages/sdks');
   const sdks = fs
@@ -72,7 +72,7 @@ const loadPackages = (
     sdks.map((sdk) => {
       const pkgPath = path.join(sdksPath, sdk, 'package.json');
       const pkgJson = JSON.parse(
-        fs.readFileSync(pkgPath, 'utf-8')
+        fs.readFileSync(pkgPath, 'utf-8'),
       ) as PackageJson;
       const version = pkgJson.version.replace(/-local$/, '');
       return [
@@ -84,22 +84,22 @@ const loadPackages = (
           localPath: `./packages/sdks/${sdk}`,
         },
       ];
-    })
+    }),
   );
 };
 
 const findDependents = (
   packages: Record<string, PackageInfo>,
-  targetName: string
+  targetName: string,
 ): string[] => {
   const dependents = new Set([targetName]);
   const findDeps = (name: string) => {
-    Object.entries(packages).forEach(([pkgName, pkg]) => {
+    for (const [pkgName, pkg] of Object.entries(packages)) {
       if (pkg.dependencies?.[name] && !dependents.has(pkgName)) {
         dependents.add(pkgName);
         findDeps(pkgName);
       }
-    });
+    }
   };
   findDeps(targetName);
   return Array.from(dependents);
@@ -108,7 +108,7 @@ const findDependents = (
 const updatePackageJsonForRelease = (
   packages: Record<string, PackageInfo>,
   name: string,
-  dependents: string[]
+  dependents: string[],
 ): void => {
   const { nextVersion, localPath, ...restPkgJson } = packages[name]!;
   const newPkgJson: PackageJson = {
@@ -144,8 +144,8 @@ const updatePackageJsonForRelease = (
             ? packages[depName]?.nextVersion ||
               depVersion.replace(/-local$/, '')
             : depVersion.replace(/-local$/, ''),
-        ]
-      )
+        ],
+      ),
     ),
   };
 
@@ -157,7 +157,7 @@ const updatePackageJsonForRelease = (
 
 const buildPackages = (
   packages: Record<string, PackageInfo>,
-  dependents: string[]
+  dependents: string[],
 ): void => {
   const versionEnvs = dependents.map((dep) => {
     const envName = dep
@@ -167,26 +167,26 @@ const buildPackages = (
     return `--env.${envName}_VERSION=${packages[dep]!.nextVersion}`;
   });
 
-  dependents.forEach((dep) => {
+  for (const dep of dependents) {
     console.log(`🔨 Building ${dep}`);
     const cmd = `pnpm build ${versionEnvs.join(' ')}`;
     console.log(`  Running: ${cmd}`);
     execSync(cmd, {
       cwd: workspacePath(packages[dep]!.localPath),
     });
-  });
+  }
 };
 
 const publishPackages = (
   packages: Record<string, PackageInfo>,
   dependents: string[],
-  config: PublishConfig
+  config: PublishConfig,
 ): void => {
   if (config.test) {
     execSync('rm -rf ~/.local/share/verdaccio/storage/@openpanel');
   }
 
-  dependents.forEach((dep) => {
+  for (const dep of dependents) {
     console.log(`🚀 Publishing ${dep} to ${config.registry}`);
     execSync(`npm publish --access=public --registry ${config.registry}`, {
       cwd: workspacePath(packages[dep]!.localPath),
@@ -194,15 +194,15 @@ const publishPackages = (
 
     if (dep === '@openpanel/web') {
       execSync(
-        `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/op1.js')}`
+        `cp ${workspacePath('packages/sdks/web/dist/src/tracker.global.js')} ${workspacePath('./apps/public/public/op1.js')}`,
       );
     }
-  });
+  }
 };
 
 const restoreAndUpdateLocal = (
   packages: Record<string, PackageInfo>,
-  dependents: string[]
+  dependents: string[],
 ): void => {
   const filesToRestore = dependents
     .map((dep) => workspacePath(packages[dep]!.localPath))
@@ -211,7 +211,7 @@ const restoreAndUpdateLocal = (
 
   execSync(`git checkout ${filesToRestore}`);
 
-  dependents.forEach((dep) => {
+  for (const dep of dependents) {
     const { nextVersion, localPath, ...restPkgJson } = packages[dep]!;
     console.log(`🚀 Updating ${dep} (${nextVersion}-local)`);
 
@@ -227,8 +227,8 @@ const restoreAndUpdateLocal = (
               : packages[depName]
                 ? `${packages[depName]!.version}-local`
                 : depVersion,
-          ]
-        )
+          ],
+        ),
       ),
       devDependencies: Object.fromEntries(
         Object.entries(restPkgJson.devDependencies || {}).map(
@@ -239,13 +239,13 @@ const restoreAndUpdateLocal = (
               : packages[depName]
                 ? `${packages[depName]!.version}-local`
                 : depVersion,
-          ]
-        )
+          ],
+        ),
       ),
     };
 
     savePackageJson(workspacePath(`${localPath}/package.json`), updatedPkgJson);
-  });
+  }
 };
 
 function main() {
@@ -268,7 +268,7 @@ function main() {
 
   if (!RELEASE_TYPES.includes(args['--type'] as ReleaseType)) {
     return exit(
-      `Invalid release type. Valid types are: ${RELEASE_TYPES.join(', ')}`
+      `Invalid release type. Valid types are: ${RELEASE_TYPES.join(', ')}`,
     );
   }
 
@@ -282,12 +282,12 @@ function main() {
 
   const dependents = findDependents(packages, target.name);
 
-  dependents.forEach((dep) => {
+  for (const dep of dependents) {
     console.log(
-      `📦 ${dep} · Old Version: ${packages[dep]!.version} · Next Version: ${packages[dep]!.nextVersion}`
+      `📦 ${dep} · Old Version: ${packages[dep]!.version} · Next Version: ${packages[dep]!.nextVersion}`,
     );
     updatePackageJsonForRelease(packages, dep, dependents);
-  });
+  }
 
   buildPackages(packages, dependents);
 

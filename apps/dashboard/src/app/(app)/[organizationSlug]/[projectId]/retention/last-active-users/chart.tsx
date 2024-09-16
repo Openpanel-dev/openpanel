@@ -55,12 +55,12 @@ const Chart = ({ data }: Props) => {
                 offset="0%"
                 stopColor={getChartColor(0)}
                 stopOpacity={0.8}
-              ></stop>
+              />
               <stop
                 offset="100%"
                 stopColor={getChartColor(0)}
                 stopOpacity={0.1}
-              ></stop>
+              />
             </linearGradient>
           </defs>
 
@@ -70,7 +70,7 @@ const Chart = ({ data }: Props) => {
             dataKey="users"
             stroke={getChartColor(0)}
             strokeWidth={2}
-            fill={`url(#bg)`}
+            fill={'url(#bg)'}
             isAnimationActive={false}
           />
           <XAxis

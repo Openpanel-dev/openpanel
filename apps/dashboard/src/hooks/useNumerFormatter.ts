@@ -46,7 +46,7 @@ export function useNumber() {
     },
     formatWithUnit: (
       value: number | null | undefined,
-      unit?: string | null
+      unit?: string | null,
     ) => {
       if (isNil(value)) {
         return 'N/A';

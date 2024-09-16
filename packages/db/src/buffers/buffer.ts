@@ -17,20 +17,20 @@ export type OnCompleted<T> =
 export type ProcessQueue<T> = (data: QueueItem<T>[]) => Promise<number[]>;
 
 export type Find<T, R = unknown> = (
-  callback: (item: QueueItem<T>) => boolean
+  callback: (item: QueueItem<T>) => boolean,
 ) => Promise<R | null>;
 
 export type FindMany<T, R = unknown> = (
-  callback: (item: QueueItem<T>) => boolean
+  callback: (item: QueueItem<T>) => boolean,
 ) => Promise<R[]>;
 
 const getError = (e: unknown) => {
   if (e instanceof Error) {
     return [
-      'Name: ' + e.name,
-      'Message: ' + e.message,
-      'Stack: ' + e.stack,
-      'Cause: ' + (e.cause ? String(e.cause) : ''),
+      `Name: ${e.name}`,
+      `Message: ${e.message}`,
+      `Stack: ${e.stack}`,
+      `Cause: ${e.cause ? String(e.cause) : ''}`,
     ].join('\n');
   }
   return 'Unknown error';
@@ -59,13 +59,13 @@ export abstract class RedisBuffer<T> {
     this.table = options.table;
     this.batchSize = options.batchSize;
     this.disableAutoFlush = options.disableAutoFlush;
-    this.logger = createLogger({ name: `buffer` }).child({
+    this.logger = createLogger({ name: 'buffer' }).child({
       table: this.table,
     });
   }
 
   public getKey(name?: string) {
-    const key = this.prefix + ':' + this.table;
+    const key = `${this.prefix}:${this.table}`;
     if (name) {
       return `${key}:${name}`;
     }
@@ -78,12 +78,12 @@ export abstract class RedisBuffer<T> {
 
     const length = await getRedisCache().llen(this.getKey());
     this.logger.debug(
-      `Inserted item into buffer ${this.table}. Current length: ${length}`
+      `Inserted item into buffer ${this.table}. Current length: ${length}`,
     );
 
     if (!this.disableAutoFlush && this.batchSize && length >= this.batchSize) {
       this.logger.info(
-        `Buffer ${this.table} reached batch size (${this.batchSize}). Flushing...`
+        `Buffer ${this.table} reached batch size (${this.batchSize}). Flushing...`,
       );
       this.flush();
     }
@@ -99,7 +99,7 @@ export abstract class RedisBuffer<T> {
       }
 
       this.logger.info(
-        `Flushing ${queue.length} items from buffer ${this.table}`
+        `Flushing ${queue.length} items from buffer ${this.table}`,
       );
 
       try {
@@ -112,19 +112,19 @@ export abstract class RedisBuffer<T> {
         if (this.onCompleted) {
           const res = await this.onCompleted(data);
           this.logger.info(
-            `Completed processing ${res.length} items from buffer ${this.table}`
+            `Completed processing ${res.length} items from buffer ${this.table}`,
           );
           return { count: res.length, data: res };
         }
 
         this.logger.info(
-          `Processed ${indexes.length} items from buffer ${this.table}`
+          `Processed ${indexes.length} items from buffer ${this.table}`,
         );
         return { count: indexes.length, data: indexes };
       } catch (e) {
         this.logger.error(
           `Failed to process queue while flushing buffer ${this.table}:`,
-          e
+          e,
         );
         const timestamp = new Date().getTime();
         await getRedisCache().hset(this.getKey(`failed:${timestamp}`), {
@@ -133,13 +133,13 @@ export abstract class RedisBuffer<T> {
           retries: 0,
         });
         this.logger.warn(
-          `Stored ${queue.length} failed items in ${this.getKey(`failed:${timestamp}`)}`
+          `Stored ${queue.length} failed items in ${this.getKey(`failed:${timestamp}`)}`,
         );
       }
     } catch (e) {
       this.logger.error(
         `Failed to get queue while flushing buffer ${this.table}:`,
-        e
+        e,
       );
     }
   }
@@ -152,7 +152,7 @@ export abstract class RedisBuffer<T> {
     multi.lrem(this.getKey(), 0, DELETE);
     await multi.exec();
     this.logger.debug(
-      `Deleted ${indexes.length} items from buffer ${this.table}`
+      `Deleted ${indexes.length} items from buffer ${this.table}`,
     );
   }
 
@@ -165,7 +165,7 @@ export abstract class RedisBuffer<T> {
       }))
       .filter((item): item is QueueItem<T> => item.event !== null);
     this.logger.debug(
-      `Retrieved ${result.length} items from buffer ${this.table}`
+      `Retrieved ${result.length} items from buffer ${this.table}`,
     );
     return result;
   }

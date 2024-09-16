@@ -38,6 +38,7 @@ export default function EventListener({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
+          type="button"
           onClick={() => {
             counter.set(0);
             onRefresh();
@@ -47,14 +48,14 @@ export default function EventListener({
           <div className="relative">
             <div
               className={cn(
-                'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all'
+                'h-3 w-3 animate-ping rounded-full bg-emerald-500 opacity-100 transition-all',
               )}
-            ></div>
+            />
             <div
               className={cn(
-                'absolute left-0 top-0 h-3 w-3 rounded-full bg-emerald-500 transition-all'
+                'absolute left-0 top-0 h-3 w-3 rounded-full bg-emerald-500 transition-all',
               )}
-            ></div>
+            />
           </div>
           {counter.debounced === 0 ? (
             'Listening'

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   EventIconColors,
   EventIconMapper,
@@ -15,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { UndoIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { popModal } from '.';
@@ -96,6 +96,7 @@ export default function EditEvent({ id }: Props) {
               <div className={iconGrid}>
                 {Object.entries(EventIconMapper).map(([name, Icon]) => (
                   <button
+                    type="button"
                     key={name}
                     onClick={() => {
                       setIcon(name);
@@ -105,7 +106,7 @@ export default function EditEvent({ id }: Props) {
                       'inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-def-200 transition-all',
                       name === selectedIcon
                         ? 'scale-110 ring-1 ring-black'
-                        : '[&_svg]:opacity-50'
+                        : '[&_svg]:opacity-50',
                     )}
                   >
                     <Icon size={16} />
@@ -123,7 +124,7 @@ export default function EditEvent({ id }: Props) {
             >
               <div className="row mb-4 items-center justify-between">
                 <div className="font-medium leading-none">Pick a color</div>
-                <button onClick={() => setStep('icon')}>
+                <button type="button" onClick={() => setStep('icon')}>
                   <Badge variant="muted">
                     Select icon
                     <UndoIcon className="ml-1 h-3 w-3" />
@@ -133,6 +134,7 @@ export default function EditEvent({ id }: Props) {
               <div className={iconGrid}>
                 {EventIconColors.map((color) => (
                   <button
+                    type="button"
                     key={color}
                     onClick={() => {
                       setColor(color);
@@ -140,7 +142,7 @@ export default function EditEvent({ id }: Props) {
                     className={cn(
                       'flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md transition-all',
                       color === selectedColor ? 'ring-1 ring-black' : '',
-                      getBg(color)
+                      getBg(color),
                     )}
                   >
                     {SelectedIcon ? (

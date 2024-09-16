@@ -44,7 +44,7 @@ export default function ListProjects({ projects, clients }: ListProjectsProps) {
         <Accordion type="single" collapsible className="-mx-4">
           {projects.map((project) => {
             const pClients = clients.filter(
-              (client) => client.projectId === project.id
+              (client) => client.projectId === project.id,
             );
             return (
               <AccordionItem
@@ -61,7 +61,7 @@ export default function ListProjects({ projects, clients }: ListProjectsProps) {
                         : 'No clients created yet'}
                     </span>
                   </div>
-                  <div className="mx-4"></div>
+                  <div className="mx-4" />
                 </AccordionTrigger>
                 <AccordionContent className="px-4">
                   <ProjectActions {...project} />
@@ -91,6 +91,7 @@ export default function ListProjects({ projects, clients }: ListProjectsProps) {
                       );
                     })}
                     <button
+                      type="button"
                       onClick={() => {
                         pushModal('AddClient', {
                           projectId: project.id,

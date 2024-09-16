@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import { cn } from '@/utils/cn';
 import { Slot } from '@radix-ui/react-slot';
 import { cva } from 'class-variance-authority';
@@ -8,6 +7,7 @@ import type { VariantProps } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import * as React from 'react';
 
 const buttonVariants = cva(
   'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
@@ -35,7 +35,7 @@ const buttonVariants = cva(
       variant: 'default',
       size: 'sm',
     },
-  }
+  },
 );
 
 export interface ButtonProps
@@ -61,10 +61,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       responsive,
       ...props
     },
-    ref
+    ref,
   ) => {
     const Comp = asChild ? Slot : 'button';
-    const Icon = loading ? Loader2 : icon ?? null;
+    const Icon = loading ? Loader2 : (icon ?? null);
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
@@ -78,7 +78,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
               'h-4 w-4 flex-shrink-0',
               loading && 'animate-spin',
               size !== 'icon' && responsive && 'mr-0 sm:mr-2',
-              size !== 'icon' && !responsive && 'mr-2'
+              size !== 'icon' && !responsive && 'mr-2',
             )}
           />
         )}
@@ -89,7 +89,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </Comp>
     );
-  }
+  },
 );
 Button.displayName = 'Button';
 Button.defaultProps = {
@@ -122,9 +122,9 @@ const LinkButton = React.forwardRef<
       href,
       ...props
     },
-    ref
+    ref,
   ) => {
-    const Icon = loading ? Loader2 : icon ?? null;
+    const Icon = loading ? Loader2 : (icon ?? null);
     return (
       <Link
         href={href}
@@ -138,7 +138,7 @@ const LinkButton = React.forwardRef<
             className={cn(
               'mr-2 h-4 w-4 flex-shrink-0',
               responsive && 'mr-0 sm:mr-2',
-              loading && 'animate-spin'
+              loading && 'animate-spin',
             )}
           />
         )}
@@ -149,7 +149,7 @@ const LinkButton = React.forwardRef<
         )}
       </Link>
     );
-  }
+  },
 );
 LinkButton.displayName = 'LinkButton';
 

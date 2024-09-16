@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import useWS from '@/hooks/useWS';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { timeAgo } from '@/utils/date';
 import { CheckCircle2Icon, CheckIcon, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 import type {
   IServiceClient,
@@ -28,7 +28,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
     (data) => {
       setEvents((prev) => [...prev, data]);
       onVerified(true);
-    }
+    },
   );
 
   const isConnected = events.length > 0;
@@ -70,7 +70,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
           'my-6 flex gap-6 rounded-xl p-4 md:p-6',
           isConnected
             ? 'bg-emerald-100 dark:bg-emerald-700'
-            : 'bg-blue-100 dark:bg-blue-700'
+            : 'bg-blue-100 dark:bg-blue-700',
         )}
       >
         {renderIcon()}
@@ -87,7 +87,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
                 </div>
               )}
               {events.slice(-5).map((event, index) => (
-                <div key={index} className="flex items-center gap-2 ">
+                <div key={event.id} className="flex items-center gap-2 ">
                   <CheckIcon size={14} />{' '}
                   <span className="font-medium">{event.name}</span>{' '}
                   <span className="ml-auto text-emerald-800">
@@ -108,6 +108,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
       <div className="mt-2 text-sm text-muted-foreground">
         You can{' '}
         <button
+          type="button"
           className="underline"
           onClick={() => {
             pushModal('OnboardingTroubleshoot', {

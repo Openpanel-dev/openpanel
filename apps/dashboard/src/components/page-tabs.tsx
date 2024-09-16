@@ -30,7 +30,7 @@ export function PageTabsLink({
     <Link
       className={cn(
         'inline-block opacity-100 transition-transform hover:translate-y-[-1px]',
-        isActive ? 'opacity-100' : 'opacity-50'
+        isActive ? 'opacity-100' : 'opacity-50',
       )}
       href={href}
     >
@@ -50,9 +50,10 @@ export function PageTabsItem({
 }) {
   return (
     <button
+      type="button"
       className={cn(
         'inline-block opacity-100 transition-transform hover:translate-y-[-1px]',
-        isActive ? 'opacity-100' : 'opacity-50'
+        isActive ? 'opacity-100' : 'opacity-50',
       )}
       onClick={onClick}
     >

@@ -53,19 +53,19 @@ export const ch = new Proxy(originalCh, {
               error.message.includes('socket hang up') ||
               error.message.includes('Timeout error'))
           ) {
-            childLogger.error(`Captured error`, {
+            childLogger.error('Captured error', {
               error,
             });
             await new Promise((resolve) => setTimeout(resolve, 500));
             try {
               // Retry once
-              childLogger.info(`Retrying query`);
+              childLogger.info('Retrying query');
               if (property in target) {
                 // @ts-expect-error
                 return await target[property](...args);
               }
             } catch (retryError) {
-              logger.error(`Retry failed`, retryError);
+              logger.error('Retry failed', retryError);
               throw retryError; // Rethrow or handle as needed
             }
           } else {
@@ -85,7 +85,7 @@ export const ch = new Proxy(originalCh, {
 });
 
 export async function chQueryWithMeta<T extends Record<string, any>>(
-  query: string
+  query: string,
 ): Promise<ResponseJSON<T>> {
   const start = Date.now();
   const res = await ch.query({
@@ -102,7 +102,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
           ...acc,
           [key]:
             item[key] && meta?.type.includes('Int')
-              ? parseFloat(item[key] as string)
+              ? Number.parseFloat(item[key] as string)
               : item[key],
         };
       }, {} as T);
@@ -120,14 +120,14 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
 }
 
 export async function chQuery<T extends Record<string, any>>(
-  query: string
+  query: string,
 ): Promise<T[]> {
   return (await chQueryWithMeta<T>(query)).data;
 }
 
 export function formatClickhouseDate(
   _date: Date | string,
-  skipTime = false
+  skipTime = false,
 ): string {
   const date = typeof _date === 'string' ? new Date(_date) : _date;
   if (skipTime) {
@@ -153,5 +153,5 @@ export function toDate(str: string, interval?: IInterval) {
 }
 
 export function convertClickhouseDateToJs(date: string) {
-  return new Date(date.replace(' ', 'T') + 'Z');
+  return new Date(`${date.replace(' ', 'T')}Z`);
 }

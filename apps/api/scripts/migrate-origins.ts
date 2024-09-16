@@ -1,8 +1,8 @@
-import { ch, chQuery, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, ch, chQuery } from '@openpanel/db';
 
 async function main() {
   const projects = await chQuery(
-    `SELECT distinct project_id FROM ${TABLE_NAMES.events} ORDER BY project_id`
+    `SELECT distinct project_id FROM ${TABLE_NAMES.events} ORDER BY project_id`,
   );
   const withOrigin = [];
 
@@ -10,10 +10,10 @@ async function main() {
     try {
       const [eventWithOrigin, eventWithoutOrigin] = await Promise.all([
         await chQuery(
-          `SELECT * FROM ${TABLE_NAMES.events} WHERE origin != '' AND project_id = '${project.project_id}' ORDER BY created_at DESC LIMIT 1`
+          `SELECT * FROM ${TABLE_NAMES.events} WHERE origin != '' AND project_id = '${project.project_id}' ORDER BY created_at DESC LIMIT 1`,
         ),
         await chQuery(
-          `SELECT * FROM ${TABLE_NAMES.events} WHERE origin = '' AND project_id = '${project.project_id}' AND path != '' ORDER BY created_at DESC LIMIT 1`
+          `SELECT * FROM ${TABLE_NAMES.events} WHERE origin = '' AND project_id = '${project.project_id}' AND path != '' ORDER BY created_at DESC LIMIT 1`,
         ),
       ]);
 
@@ -22,7 +22,7 @@ async function main() {
         console.log(`- Origin: ${eventWithOrigin[0].origin}`);
         withOrigin.push(project.project_id);
         const events = await chQuery(
-          `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = '${project.project_id}' AND path != '' AND origin = ''`
+          `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = '${project.project_id}' AND path != '' AND origin = ''`,
         );
         console.log(`🤠🤠🤠🤠 Will update ${events[0]?.count} events`);
         await ch.command({
@@ -35,20 +35,20 @@ async function main() {
 
       if (!eventWithOrigin[0] && eventWithoutOrigin[0]) {
         console.log(
-          `😧 Project ${project.project_id} has no events with origin (last event ${eventWithoutOrigin[0].created_at})`
+          `😧 Project ${project.project_id} has no events with origin (last event ${eventWithoutOrigin[0].created_at})`,
         );
         console.log('- NO ORIGIN');
       }
 
       if (!eventWithOrigin[0] && !eventWithoutOrigin[0]) {
         console.log(
-          `🔥 WARNING: Project ${project.project_id} has no events at all?!?!?!`
+          `🔥 WARNING: Project ${project.project_id} has no events at all?!?!?!`,
         );
       }
 
       if (eventWithOrigin[0] && !eventWithoutOrigin[0]) {
         console.log(
-          `✅ Project ${project.project_id} has all events with origin!!!`
+          `✅ Project ${project.project_id} has all events with origin!!!`,
         );
       }
       console.log('');

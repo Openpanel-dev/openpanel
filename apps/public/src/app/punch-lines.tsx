@@ -130,7 +130,7 @@ const items = [
 export function PunchLines() {
   return (
     <div className="bg-blue-darker relative py-32">
-      <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
+      <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]" />
       <div className="relative">
         <Heading2 className="mb-16 text-center text-white">
           Not convinced?
@@ -147,7 +147,7 @@ export function PunchLines() {
                   <div
                     className={cn(
                       'mb-4 flex h-14 w-14 items-center justify-center rounded-full',
-                      item.color
+                      item.color,
                     )}
                     style={{ background: item.color }}
                   >

@@ -27,6 +27,6 @@ export function useFormatDateInterval(interval: IInterval) {
   return (date: Date | string) =>
     formatDateInterval(
       interval,
-      typeof date === 'string' ? new Date(date) : date
+      typeof date === 'string' ? new Date(date) : date,
     );
 }

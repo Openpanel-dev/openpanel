@@ -13,6 +13,7 @@ type Props = {
 const CopyInput = ({ label, value, className }: Props) => {
   return (
     <button
+      type="button"
       className={cn('w-full text-left', className)}
       onClick={() => clipboard(value)}
     >

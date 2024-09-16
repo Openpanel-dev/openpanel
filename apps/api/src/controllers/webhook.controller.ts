@@ -33,7 +33,7 @@ export async function clerkWebhook(
   request: FastifyRequest<{
     Body: WebhookEvent;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const payload = request.body;
   const verified = verify(payload, request.headers);
@@ -49,7 +49,7 @@ export async function clerkWebhook(
     if (!email) {
       return Response.json(
         { message: 'No email address found' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

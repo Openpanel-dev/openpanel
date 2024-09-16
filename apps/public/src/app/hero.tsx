@@ -1,6 +1,6 @@
 import { ALink } from '@/components/ui/button';
 
-import { chQuery, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, chQuery } from '@openpanel/db';
 
 import { cacheable } from '../../../../packages/redis';
 import AnimatedText from './animated-text';
@@ -8,15 +8,15 @@ import { Heading1, Lead2 } from './copy';
 
 function shortNumber(num: number) {
   if (num < 1e3) return num;
-  if (num >= 1e3 && num < 1e6) return +(num / 1e3).toFixed(1) + 'K';
-  if (num >= 1e6 && num < 1e9) return +(num / 1e6).toFixed(1) + 'M';
-  if (num >= 1e9 && num < 1e12) return +(num / 1e9).toFixed(1) + 'B';
-  if (num >= 1e12) return +(num / 1e12).toFixed(1) + 'T';
+  if (num >= 1e3 && num < 1e6) return `${+(num / 1e3).toFixed(1)}K`;
+  if (num >= 1e6 && num < 1e9) return `${+(num / 1e6).toFixed(1)}M`;
+  if (num >= 1e9 && num < 1e12) return `${+(num / 1e9).toFixed(1)}B`;
+  if (num >= 1e12) return `${+(num / 1e12).toFixed(1)}T`;
 }
 
 const getProjectsWithCount = cacheable(async () => {
   const projects = await chQuery<{ project_id: string; count: number }>(
-    `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`
+    `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`,
   );
 
   return projects;
@@ -28,7 +28,7 @@ export async function Hero() {
   const eventCount = projects.reduce((acc, { count }) => acc + count, 0);
   return (
     <div className="relative overflow-hidden">
-      {/* <div className="bg-blue-50 w-2/5 h-full absolute top-0 right-0"></div> */}
+      {/* <div className="bg-blue-50 w-2/5 h-full absolute top-0 right-0"/> */}
       <div className="container relative flex min-h-[700px] flex-col items-center gap-4 max-md:pt-32 md:h-screen md:flex-row md:gap-8">
         <div className="flex-1 max-md:text-center sm:min-w-[350px] lg:min-w-[400px]">
           <div className="mb-4 flex justify-center md:justify-start">

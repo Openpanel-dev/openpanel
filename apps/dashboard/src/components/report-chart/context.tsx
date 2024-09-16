@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react';
 import isEqual from 'lodash.isequal';
 import type { LucideIcon } from 'lucide-react';
+import { createContext, useContext, useEffect, useState } from 'react';
 
 import type {
   IChartInput,
@@ -46,14 +46,14 @@ export const useReportChartContext = () => {
   const ctx = useContext(context);
   if (!ctx) {
     throw new Error(
-      'useReportChartContext must be used within a ReportChartProvider'
+      'useReportChartContext must be used within a ReportChartProvider',
     );
   }
   return ctx;
 };
 
 export const useSelectReportChartContext = <T,>(
-  selector: (ctx: ReportChartContextType) => T
+  selector: (ctx: ReportChartContextType) => T,
 ) => {
   const ctx = useReportChartContext();
   const [state, setState] = useState(selector(ctx));

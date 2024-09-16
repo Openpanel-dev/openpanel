@@ -39,7 +39,7 @@ function useSteps(path: string) {
   ];
 
   const matchIndex = steps.findLastIndex((step) =>
-    path.match(new RegExp(step.match))
+    path.match(new RegExp(step.match)),
   );
 
   return steps.map((step, index) => {
@@ -59,17 +59,17 @@ const Steps = ({ className }: Props) => {
   const currentIndex = steps.findIndex((i) => i.status === 'current');
   return (
     <div className="relative">
-      <div className="absolute bottom-4 left-4 top-4 w-px bg-def-200"></div>
+      <div className="absolute bottom-4 left-4 top-4 w-px bg-def-200" />
       <div
         className="absolute left-4 top-4 w-px bg-highlight"
         style={{
           height: `calc(${((currentIndex + 1) / steps.length) * 100}% - 3.5rem)`,
         }}
-      ></div>
+      />
       <div
         className={cn(
           'relative flex gap-4 overflow-hidden md:-ml-3 md:flex-col md:gap-8',
-          className
+          className,
         )}
       >
         {steps.map((step, index) => (
@@ -80,32 +80,31 @@ const Steps = ({ className }: Props) => {
                 'rounded-xl border border-border bg-card',
               step.status === 'completed' &&
                 index !== currentIndex - 1 &&
-                'max-md:hidden'
+                'max-md:hidden',
             )}
             key={step.name}
           >
             <div
               className={cn(
-                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full  text-white'
+                'relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full  text-white',
               )}
             >
               <div
                 className={cn(
                   'absolute inset-0 z-0 rounded-full bg-highlight',
-                  step.status === 'pending' && 'bg-def-400'
+                  step.status === 'pending' && 'bg-def-400',
                 )}
-              ></div>
+              />
               {step.status === 'current' && (
-                <div className="absolute inset-1 z-0 animate-ping-slow rounded-full bg-highlight"></div>
+                <div className="absolute inset-1 z-0 animate-ping-slow rounded-full bg-highlight" />
               )}
               <div className="relative">
                 {step.status === 'completed' && <CheckCheckIcon size={14} />}
                 {/* {step.status === 'current' && (
                   <ArrowRightCircleIcon size={14} />
                 )} */}
-                {(step.status === 'pending' || step.status === 'current') && (
-                  <>{index + 1}</>
-                )}
+                {(step.status === 'pending' || step.status === 'current') &&
+                  index + 1}
               </div>
             </div>
 

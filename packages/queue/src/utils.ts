@@ -3,12 +3,12 @@ import type { Queue } from 'bullmq';
 export async function findJobByPrefix<T>(
   queue: Queue<T, any, string>,
   keys: string[],
-  matcher: string
+  matcher: string,
 ) {
   const getTime = (val?: string) => {
     if (!val) return null;
     const match = val.match(/:(\d+)$/);
-    return match?.[1] ? parseInt(match[1], 10) : null;
+    return match?.[1] ? Number.parseInt(match[1], 10) : null;
   };
   const filtered = keys
     .filter((key) => key.includes(matcher))

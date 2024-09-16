@@ -35,7 +35,7 @@ function Info({ title, value }: { title: string; value: string }) {
 const ProfileMetrics = ({ data, profile }: Props) => {
   const [tab, setTab] = useQueryState(
     'tab',
-    parseAsStringEnum(['profile', 'properties']).withDefault('profile')
+    parseAsStringEnum(['profile', 'properties']).withDefault('profile'),
   );
   const number = useNumber();
   return (
@@ -44,24 +44,26 @@ const ProfileMetrics = ({ data, profile }: Props) => {
         <div className="col-span-2 @xl:col-span-3 @4xl:col-span-6">
           <div className="row border-b">
             <button
+              type="button"
               onClick={() => setTab('profile')}
               className={cn(
                 'p-4',
                 'opacity-50',
                 tab === 'profile' &&
-                  'border-b border-foreground text-foreground opacity-100'
+                  'border-b border-foreground text-foreground opacity-100',
               )}
             >
               Profile
             </button>
             <div className="h-full w-px bg-border" />
             <button
+              type="button"
               onClick={() => setTab('properties')}
               className={cn(
                 'p-4',
                 'opacity-50',
                 tab === 'properties' &&
-                  'border-b border-foreground text-foreground opacity-100'
+                  'border-b border-foreground text-foreground opacity-100',
               )}
             >
               Properties
@@ -81,15 +83,12 @@ const ProfileMetrics = ({ data, profile }: Props) => {
                 <ListPropertiesIcon {...profile.properties} />
               </>
             )}
-            {tab === 'properties' && (
-              <>
-                {Object.entries(profile.properties)
-                  .filter(([key, value]) => value !== undefined)
-                  .map(([key, value]) => (
-                    <Info key={key} title={key} value={value as string} />
-                  ))}
-              </>
-            )}
+            {tab === 'properties' &&
+              Object.entries(profile.properties)
+                .filter(([key, value]) => value !== undefined)
+                .map(([key, value]) => (
+                  <Info key={key} title={key} value={value as string} />
+                ))}
           </div>
         </div>
         <Card

@@ -9,7 +9,7 @@ export { Redis };
 
 const createRedisClient = (
   url: string,
-  overrides: RedisOptions = {}
+  overrides: RedisOptions = {},
 ): Redis => {
   const client = new Redis(url, { ...options, ...overrides });
 
@@ -58,7 +58,7 @@ export function getRedisQueue() {
         enableReadyCheck: false,
         maxRetriesPerRequest: null,
         enableOfflineQueue: true,
-      }
+      },
     );
   }
 

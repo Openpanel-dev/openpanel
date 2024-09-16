@@ -18,7 +18,7 @@ export function Navbar({ darkText = false, className }: Props) {
       className={cn(
         'fixed left-0 right-0 top-0 z-10 z-50 flex h-20 items-center border-b border-border bg-white',
         textColor,
-        className
+        className,
       )}
     >
       <div className="container flex items-center justify-between py-4">
@@ -28,13 +28,17 @@ export function Navbar({ darkText = false, className }: Props) {
           <Link href="/#pricing" data-event="click_pricing">
             Pricing
           </Link>
-          <a href="https://docs.openpanel.dev" target="_blank">
+          <a href="https://docs.openpanel.dev" target="_blank" rel="noreferrer">
             Docs
           </a>
-          <a href="https://git.new/openpanel" target="_blank">
+          <a href="https://git.new/openpanel" target="_blank" rel="noreferrer">
             Github
           </a>
-          <a href="https://dashboard.openpanel.dev" target="_blank">
+          <a
+            href="https://dashboard.openpanel.dev"
+            target="_blank"
+            rel="noreferrer"
+          >
             Sign in
           </a>
         </nav>

@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-
 import type {
   OpenPanelOptions as OpenPanelBaseOptions,
   TrackProperties,
@@ -18,7 +16,7 @@ export type OpenPanelOptions = OpenPanelBaseOptions & {
 
 function toCamelCase(str: string) {
   return str.replace(/([-_][a-z])/gi, ($1) =>
-    $1.toUpperCase().replace('-', '').replace('_', '')
+    $1.toUpperCase().replace('-', '').replace('_', ''),
   );
 }
 
@@ -108,7 +106,7 @@ export class OpenPanel extends OpenPanelBase {
       return ret;
     };
 
-    window.addEventListener('popstate', function () {
+    window.addEventListener('popstate', () => {
       window.dispatchEvent(new Event('locationchange'));
     });
 
@@ -155,7 +153,7 @@ export class OpenPanel extends OpenPanelBase {
   screenView(path: string, properties?: TrackProperties): void;
   screenView(
     pathOrProperties?: string | TrackProperties,
-    propertiesOrUndefined?: TrackProperties
+    propertiesOrUndefined?: TrackProperties,
   ): void {
     if (this.isServer()) {
       return;

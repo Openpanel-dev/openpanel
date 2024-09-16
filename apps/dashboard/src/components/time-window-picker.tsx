@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,6 +13,7 @@ import { pushModal, useOnPushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { bind } from 'bind-event-listener';
 import { CalendarIcon } from 'lucide-react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { timeWindows } from '@openpanel/constants';
 import type { IChartRange } from '@openpanel/validation';
@@ -21,9 +21,9 @@ import type { IChartRange } from '@openpanel/validation';
 function shouldIgnoreKeypress(event: KeyboardEvent) {
   const tagName = (event?.target as HTMLElement)?.tagName;
   const modifierPressed =
-    event.ctrlKey || event.metaKey || event.altKey || event.keyCode == 229;
+    event.ctrlKey || event.metaKey || event.altKey || event.keyCode === 229;
   const isTyping =
-    event.isComposing || tagName == 'INPUT' || tagName == 'TEXTAREA';
+    event.isComposing || tagName === 'INPUT' || tagName === 'TEXTAREA';
 
   return modifierPressed || isTyping;
 }
@@ -47,10 +47,9 @@ export function TimeWindowPicker({
   className,
 }: Props) {
   const isDateRangerPickerOpen = useRef(false);
-  useOnPushModal(
-    'DateRangerPicker',
-    (open) => (isDateRangerPickerOpen.current = open)
-  );
+  useOnPushModal('DateRangerPicker', (open) => {
+    isDateRangerPickerOpen.current = open;
+  });
   const timeWindow = timeWindows[value ?? '30d'];
 
   const handleCustom = useCallback(() => {
@@ -78,7 +77,7 @@ export function TimeWindowPicker({
         }
 
         const match = Object.values(timeWindows).find(
-          (tw) => event.key === tw.shortcut.toLowerCase()
+          (tw) => event.key === tw.shortcut.toLowerCase(),
         );
         if (match?.key === 'custom') {
           handleCustom();

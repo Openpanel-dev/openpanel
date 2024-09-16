@@ -43,7 +43,7 @@ export async function getProjectAccess({
 
 export const getOrganizationAccessCached = cacheable(
   getOrganizationAccess,
-  60 * 5
+  60 * 5,
 );
 export async function getOrganizationAccess({
   userId,

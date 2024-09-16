@@ -114,7 +114,7 @@ export default function Page() {
               <strong>Website</strong> refers to Openpanel, accessible from{' '}
               <a
                 href="https://openpanel.com"
-                rel="external nofollow noopener"
+                rel="noreferrer external nofollow noopener"
                 target="_blank"
               >
                 https://openpanel.com
@@ -206,7 +206,7 @@ export default function Page() {
           <a
             href="https://www.termsfeed.com/blog/cookies/#What_Are_Cookies"
             target="_blank"
-            rel="nofollow"
+            rel="noreferrer nofollow"
           >
             here
           </a>

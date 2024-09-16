@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
@@ -12,6 +11,7 @@ import { api } from '@/trpc/client';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 import type { IServiceMember, IServiceProject } from '@openpanel/db';
@@ -77,7 +77,7 @@ function AccessCell({
   projects: IServiceProject[];
 }) {
   const [access, setAccess] = useState<string[]>(
-    row.original.access.map((item) => item.projectId)
+    row.original.access.map((item) => item.projectId),
   );
   const mutation = api.organization.updateMemberAccess.useMutation();
 
@@ -106,13 +106,13 @@ function ActionsCell({ row }: { row: Row<IServiceMember> }) {
   const revoke = api.organization.removeMember.useMutation({
     onSuccess() {
       toast.success(
-        `${row.original.user?.firstName} has been removed from the organization`
+        `${row.original.user?.firstName} has been removed from the organization`,
       );
       router.refresh();
     },
     onError() {
       toast.error(
-        `Failed to remove ${row.original.user?.firstName} from the organization`
+        `Failed to remove ${row.original.user?.firstName} from the organization`,
       );
     },
   });

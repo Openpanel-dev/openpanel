@@ -1,7 +1,7 @@
 import type { RawRequestDefaultExpression } from 'fastify';
 import jwt from 'jsonwebtoken';
 
-import { verifyPassword } from '@openpanel/common';
+import { verifyPassword } from '@openpanel/common/server';
 import type { Client, IServiceClient } from '@openpanel/db';
 import { ClientType, db } from '@openpanel/db';
 
@@ -24,7 +24,7 @@ export class SdkAuthError extends Error {
       clientId?: string;
       clientSecret?: string;
       origin?: string;
-    }
+    },
   ) {
     super(message);
     this.name = 'SdkAuthError';
@@ -33,7 +33,7 @@ export class SdkAuthError extends Error {
 }
 
 export async function validateSdkRequest(
-  headers: RawRequestDefaultExpression['headers']
+  headers: RawRequestDefaultExpression['headers'],
 ): Promise<Client> {
   const clientIdNew = headers['openpanel-client-id'] as string;
   const clientIdOld = headers['mixan-client-id'] as string;
@@ -48,7 +48,7 @@ export async function validateSdkRequest(
       clientId,
       clientSecret:
         typeof clientSecret === 'string'
-          ? clientSecret.slice(0, 5) + '...' + clientSecret.slice(-5)
+          ? `${clientSecret.slice(0, 5)}...${clientSecret.slice(-5)}`
           : 'none',
       origin,
     });
@@ -99,7 +99,7 @@ export async function validateSdkRequest(
 }
 
 export async function validateExportRequest(
-  headers: RawRequestDefaultExpression['headers']
+  headers: RawRequestDefaultExpression['headers'],
 ): Promise<IServiceClient> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
@@ -129,7 +129,7 @@ export async function validateExportRequest(
 }
 
 export async function validateImportRequest(
-  headers: RawRequestDefaultExpression['headers']
+  headers: RawRequestDefaultExpression['headers'],
 ): Promise<IServiceClient> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
@@ -165,7 +165,7 @@ export function validateClerkJwt(token?: string) {
   try {
     const decoded = jwt.verify(
       token,
-      process.env.CLERK_PUBLIC_PEM_KEY!.replace(/\\n/g, '\n')
+      process.env.CLERK_PUBLIC_PEM_KEY!.replace(/\\n/g, '\n'),
     );
 
     if (typeof decoded === 'object') {

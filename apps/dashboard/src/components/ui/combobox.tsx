@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import type { ButtonProps } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +17,7 @@ import { cn } from '@/utils/cn';
 import type { LucideIcon } from 'lucide-react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
+import * as React from 'react';
 
 export interface ComboboxProps<T> {
   placeholder: string;
@@ -66,7 +66,7 @@ export function Combobox<T extends string>({
   const [search, setSearch] = React.useState('');
   function find(value: string) {
     return items.find(
-      (item) => item.value.toLowerCase() === value.toLowerCase()
+      (item) => item.value.toLowerCase() === value.toLowerCase(),
     );
   }
 
@@ -82,13 +82,13 @@ export function Combobox<T extends string>({
             className={cn(
               'justify-between',
               !!error && 'border-destructive',
-              className
+              className,
             )}
           >
             <div className="flex min-w-0 items-center">
               {Icon ? <Icon size={16} className="mr-2 shrink-0" /> : null}
               <span className="overflow-hidden text-ellipsis whitespace-nowrap">
-                {value ? find(value)?.label ?? 'No match' : placeholder}
+                {value ? (find(value)?.label ?? 'No match') : placeholder}
               </span>
             </div>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -147,7 +147,7 @@ export function Combobox<T extends string>({
                 <Check
                   className={cn(
                     'mr-2 h-4 w-4 flex-shrink-0',
-                    value === item.value ? 'opacity-100' : 'opacity-0'
+                    value === item.value ? 'opacity-100' : 'opacity-0',
                   )}
                 />
                 {item.label}

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     if (!email) {
       return Response.json(
         { message: 'No email address found' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

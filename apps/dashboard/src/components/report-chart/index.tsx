@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
 import { mergeDeepRight } from 'ramda';
+import React, { useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 
 import { ReportAreaChart } from './area';

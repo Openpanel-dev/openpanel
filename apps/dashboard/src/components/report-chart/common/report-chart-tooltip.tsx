@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IRechartPayloadItem } from '@/hooks/useRechartDataModel';
@@ -6,6 +5,7 @@ import type { IToolTipProps } from '@/types';
 import * as Portal from '@radix-ui/react-portal';
 import { bind } from 'bind-event-listener';
 import throttle from 'lodash.throttle';
+import React, { useEffect, useState } from 'react';
 
 import { useReportChartContext } from '../context';
 import { PreviousDiffIndicator } from './previous-diff-indicator';
@@ -29,7 +29,7 @@ export function ReportChartTooltip({
   const formatDate = useFormatDateInterval(interval);
   const number = useNumber();
   const [position, setPosition] = useState<{ x: number; y: number } | null>(
-    null
+    null,
   );
 
   const inactive = !active || !payload?.length;

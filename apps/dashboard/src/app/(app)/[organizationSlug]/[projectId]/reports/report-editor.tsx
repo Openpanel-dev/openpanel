@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
 import { ReportChart } from '@/components/report-chart';
 import { ReportChartType } from '@/components/report/ReportChartType';
@@ -25,6 +24,7 @@ import { useDispatch, useSelector } from '@/redux';
 import { bind } from 'bind-event-listener';
 import { endOfDay, startOfDay } from 'date-fns';
 import { GanttChartSquareIcon } from 'lucide-react';
+import { useEffect } from 'react';
 
 import type { IServiceReport } from '@openpanel/db';
 

@@ -49,7 +49,7 @@ export const getBoundingBox = (coordinates: Coordinate[]) => {
 
 export const determineZoom = (
   bbox: ReturnType<typeof getBoundingBox>,
-  aspectRatio = 1.0
+  aspectRatio = 1.0,
 ): number => {
   const latDiff = bbox.maxLat - bbox.minLat;
   const longDiff = bbox.maxLong - bbox.minLong;

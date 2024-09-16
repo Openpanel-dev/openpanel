@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +10,7 @@ import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
+import { useMemo } from 'react';
 
 import { round } from '@openpanel/common';
 import { NOT_SET_VALUE } from '@openpanel/constants';
@@ -33,7 +33,7 @@ export function Chart({ data }: Props) {
   const number = useNumber();
   const series = useMemo(
     () => (isEditMode ? data.series : data.series.slice(0, limit || 10)),
-    [data, isEditMode, limit]
+    [data, isEditMode, limit],
   );
   const maxCount = Math.max(...series.map((serie) => serie.metrics[metric]));
 
@@ -41,7 +41,7 @@ export function Chart({ data }: Props) {
     <div
       className={cn(
         'flex flex-col text-sm',
-        isEditMode ? 'card gap-2 p-4 text-base' : '-m-3 gap-1'
+        isEditMode ? 'card gap-2 p-4 text-base' : '-m-3 gap-1',
       )}
     >
       {series.map((serie) => {
@@ -56,7 +56,7 @@ export function Chart({ data }: Props) {
               <div
                 className={cn(
                   'relative',
-                  (isClickable || isDropDownEnabled) && 'cursor-pointer'
+                  (isClickable || isDropDownEnabled) && 'cursor-pointer',
                 )}
                 {...(isClickable && !isDropDownEnabled
                   ? { onClick: () => onClick?.(serie) }
@@ -80,7 +80,7 @@ export function Chart({ data }: Props) {
                     {serie.metrics.previous?.[metric]?.value}
                     <div className="text-muted-foreground">
                       {number.format(
-                        round((serie.metrics.sum / data.metrics.sum) * 100, 2)
+                        round((serie.metrics.sum / data.metrics.sum) * 100, 2),
                       )}
                       %
                     </div>

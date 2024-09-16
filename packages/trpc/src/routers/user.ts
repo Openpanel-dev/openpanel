@@ -11,7 +11,7 @@ export const userRouter = createTRPCRouter({
       z.object({
         firstName: z.string(),
         lastName: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const [updatedUser] = await Promise.all([

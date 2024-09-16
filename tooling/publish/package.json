@@ -4,9 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "publish": "pnpm dlx ts-node publish.ts",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "publish": "pnpm run publish.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -14,21 +12,9 @@
     "semver": "^7.5.4"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
-    "@types/eslint": "^8.44.2",
     "@types/node": "^18.16.0",
     "@types/semver": "^7.5.4",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

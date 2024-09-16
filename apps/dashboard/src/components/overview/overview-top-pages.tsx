@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 import { ExternalLinkIcon, FilterIcon, Globe2Icon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
+import { useState } from 'react';
 
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
@@ -180,6 +180,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           <WidgetButtons>
             {widgets.map((w) => (
               <button
+                type="button"
                 key={w.key}
                 onClick={() => setWidget(w.key)}
                 className={cn(w.key === widget.key && 'active')}
@@ -225,7 +226,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           <WidgetFooter>
             <OverviewDetailsButton chart={widget.chart.report} />
             <OverviewChartToggle {...{ chartType, setChartType }} />
-            <div className="flex-1"></div>
+            <div className="flex-1" />
             <Button
               variant={'ghost'}
               onClick={() => {

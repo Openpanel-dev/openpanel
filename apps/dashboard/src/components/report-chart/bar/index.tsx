@@ -33,12 +33,15 @@ function Loading() {
   return (
     <AspectContainer className="col gap-4 overflow-hidden">
       {Array.from({ length: 10 }).map((_, index) => (
-        <div key={index} className="row animate-pulse justify-between">
-          <div className="h-4 w-2/5 rounded bg-def-200"></div>
+        <div
+          key={index as number}
+          className="row animate-pulse justify-between"
+        >
+          <div className="h-4 w-2/5 rounded bg-def-200" />
           <div className="row w-1/5 gap-2">
-            <div className="h-4 w-full rounded bg-def-200"></div>
-            <div className="h-4 w-full rounded bg-def-200"></div>
-            <div className="h-4 w-full rounded bg-def-200"></div>
+            <div className="h-4 w-full rounded bg-def-200" />
+            <div className="h-4 w-full rounded bg-def-200" />
+            <div className="h-4 w-full rounded bg-def-200" />
           </div>
         </div>
       ))}

@@ -15,7 +15,7 @@ const Conversions = ({ projectId }: Props) => {
     },
     {
       keepPreviousData: true,
-    }
+    },
   );
 
   return <EventsTable query={query} />;

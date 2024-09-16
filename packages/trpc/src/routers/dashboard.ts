@@ -18,7 +18,7 @@ export const dashboardRouter = createTRPCRouter({
     .input(
       z.object({
         projectId: z.string(),
-      })
+      }),
     )
     .query(({ input }) => {
       return getDashboardsByProjectId(input.projectId);
@@ -28,7 +28,7 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         name: z.string(),
         projectId: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getProjectAccess({
@@ -61,7 +61,7 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const dashboard = await db.dashboard.findUniqueOrThrow({
@@ -93,7 +93,7 @@ export const dashboardRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         forceDelete: z.boolean().optional(),
-      })
+      }),
     )
     .mutation(async ({ input, ctx }) => {
       const dashboard = await db.dashboard.findUniqueOrThrow({
@@ -132,7 +132,7 @@ export const dashboardRouter = createTRPCRouter({
           switch (error.code) {
             case PrismaError.ForeignConstraintViolation:
               throw new Error(
-                'Cannot delete dashboard with associated reports'
+                'Cannot delete dashboard with associated reports',
               );
             default:
               throw new Error('Unknown error deleting dashboard');

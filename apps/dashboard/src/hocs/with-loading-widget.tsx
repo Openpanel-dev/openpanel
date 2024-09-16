@@ -1,6 +1,6 @@
-import { Suspense } from 'react';
 import { Widget, WidgetHead } from '@/components/widget';
 import { cn } from '@/utils/cn';
+import { Suspense } from 'react';
 
 const withLoadingWidget = <P,>(Component: React.ComponentType<P>) => {
   const WithLoadingWidget: React.ComponentType<P> = (props) => {
@@ -14,7 +14,7 @@ const withLoadingWidget = <P,>(Component: React.ComponentType<P>) => {
                 typeof props === 'object' &&
                 'className' in props &&
                 typeof props.className === 'string' &&
-                props?.className
+                props?.className,
             )}
           >
             <WidgetHead>

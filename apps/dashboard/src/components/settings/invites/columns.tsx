@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import type { IServiceInvite, IServiceProject } from '@openpanel/db';
 
 export function useColumns(
-  projects: IServiceProject[]
+  projects: IServiceProject[],
 ): ColumnDef<IServiceInvite>[] {
   return [
     {

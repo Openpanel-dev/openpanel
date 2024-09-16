@@ -1,8 +1,8 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { useBreakpoint } from '@/hooks/useBreakpoint';
 import { subMonths } from 'date-fns';
+import { useState } from 'react';
 
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
@@ -28,7 +28,7 @@ export default function DateRangerPicker({
         mode="range"
         defaultMonth={subMonths(
           startDate ? new Date(startDate) : new Date(),
-          isBelowSm ? 0 : 1
+          isBelowSm ? 0 : 1,
         )}
         selected={{
           from: startDate,

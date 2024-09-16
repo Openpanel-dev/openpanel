@@ -17,9 +17,9 @@ const config = {
     },
     extend: {
       colors: {
-        ['blue-light']: '#2C97FE',
-        ['blue-dark']: '#111F46',
-        ['blue-darker']: '#051030',
+        'blue-light': '#2C97FE',
+        'blue-dark': '#111F46',
+        'blue-darker': '#051030',
 
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',

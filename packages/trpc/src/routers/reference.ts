@@ -21,7 +21,7 @@ export const referenceRouter = createTRPCRouter({
             date: new Date(datetime),
           },
         });
-      }
+      },
     ),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
@@ -54,7 +54,7 @@ export const referenceRouter = createTRPCRouter({
         startDate: z.string().nullish(),
         endDate: z.string().nullish(),
         range: zRange,
-      })
+      }),
     )
     .query(({ input: { projectId, ...input } }) => {
       const { startDate, endDate } = getChartStartEndDate(input);

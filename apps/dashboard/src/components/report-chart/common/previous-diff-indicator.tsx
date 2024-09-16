@@ -9,7 +9,7 @@ export function getDiffIndicator<A, B, C>(
   state: string | undefined | null,
   positive: A,
   negative: B,
-  neutral: C
+  neutral: C,
 ): A | B | C {
   if (state === 'neutral' || !state) {
     return neutral;
@@ -48,7 +48,7 @@ export function PreviousDiffIndicator({
     state,
     'bg-emerald-300',
     'bg-rose-300',
-    undefined
+    undefined,
   );
   const number = useNumber();
 
@@ -72,14 +72,14 @@ export function PreviousDiffIndicator({
         className={cn(
           'flex items-center gap-1 font-mono font-medium',
           size === 'lg' && 'gap-2',
-          className
+          className,
         )}
       >
         <div
           className={cn(
-            `flex size-4 items-center justify-center rounded-full`,
+            'flex size-4 items-center justify-center rounded-full',
             variant,
-            size === 'lg' && 'size-8'
+            size === 'lg' && 'size-8',
           )}
         >
           {renderIcon()}

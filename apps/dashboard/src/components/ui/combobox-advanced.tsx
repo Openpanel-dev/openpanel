@@ -1,9 +1,9 @@
-import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandInput, CommandItem } from '@/components/ui/command';
 import { cn } from '@/utils/cn';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
+import * as React from 'react';
 import { useOnClickOutside } from 'usehooks-ts';
 
 import { Button } from './button';
@@ -40,7 +40,7 @@ export function ComboboxAdvanced({
         (typeof item.label === 'string' &&
           item.label.toLowerCase().includes(inputValue.toLowerCase())) ||
         (typeof item.value === 'string' &&
-          item.value.toLowerCase().includes(inputValue.toLowerCase()))
+          item.value.toLowerCase().includes(inputValue.toLowerCase())),
     );
 
   const renderItem = (item: IItem) => {
@@ -56,7 +56,7 @@ export function ComboboxAdvanced({
           onChange(
             value.includes(item.value)
               ? value.filter((s) => s !== item.value)
-              : [...value, item.value]
+              : [...value, item.value],
           );
         }}
         className={'flex cursor-pointer items-center gap-2'}

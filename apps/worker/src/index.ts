@@ -15,14 +15,14 @@ import { sessionsJob } from './jobs/sessions';
 import { register } from './metrics';
 import { logger } from './utils/logger';
 
-const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
+const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/');
 const app = express();
 
 const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
-  concurrency: parseInt(process.env.CONCURRENCY || '1', 10),
+  concurrency: Number.parseInt(process.env.CONCURRENCY || '1', 10),
 };
 
 async function start() {
@@ -30,7 +30,7 @@ async function start() {
   const sessionsWorker = new Worker(
     sessionsQueue.name,
     sessionsJob,
-    workerOptions
+    workerOptions,
   );
   const cronWorker = new Worker(cronQueue.name, cronJob, workerOptions);
 
@@ -110,7 +110,9 @@ async function start() {
       });
     }
 
-    process.exit(isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError);
+    process.exit(
+      Number.isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError,
+    );
   }
 
   [
@@ -132,7 +134,7 @@ async function start() {
   ].forEach((evt) =>
     process.on(evt, (evt) => {
       exitHandler(evt);
-    })
+    }),
   );
 
   await cronQueue.add(
@@ -147,7 +149,7 @@ async function start() {
         utc: true,
         pattern: '0 0 * * *',
       },
-    }
+    },
   );
 
   await cronQueue.add(
@@ -160,10 +162,10 @@ async function start() {
       jobId: 'flushEvents',
       repeat: {
         every: process.env.BATCH_INTERVAL
-          ? parseInt(process.env.BATCH_INTERVAL, 10)
+          ? Number.parseInt(process.env.BATCH_INTERVAL, 10)
           : 1000 * 10,
       },
-    }
+    },
   );
 
   await cronQueue.add(
@@ -177,7 +179,7 @@ async function start() {
       repeat: {
         every: 2 * 1000,
       },
-    }
+    },
   );
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
@@ -192,7 +194,7 @@ async function start() {
         repeat: {
           pattern: '0 0 * * *',
         },
-      }
+      },
     );
   }
 

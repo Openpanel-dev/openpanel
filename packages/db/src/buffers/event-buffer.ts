@@ -4,7 +4,7 @@ import SuperJSON from 'superjson';
 import { deepMergeObjects } from '@openpanel/common';
 import { getRedisCache, getRedisPub } from '@openpanel/redis';
 
-import { ch, TABLE_NAMES } from '../clickhouse-client';
+import { TABLE_NAMES, ch } from '../clickhouse-client';
 import { transformEvent } from '../services/event.service';
 import type {
   IClickhouseEvent,
@@ -22,7 +22,7 @@ import { RedisBuffer } from './buffer';
 
 const sortOldestFirst = (
   a: QueueItem<IClickhouseEvent>,
-  b: QueueItem<IClickhouseEvent>
+  b: QueueItem<IClickhouseEvent>,
 ) =>
   new Date(a.event.created_at).getTime() -
   new Date(b.event.created_at).getTime();
@@ -37,25 +37,25 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
   public onInsert?: OnInsert<IClickhouseEvent> | undefined = (event) => {
     getRedisPub().publish(
       'event:received',
-      SuperJSON.stringify(transformEvent(event))
+      SuperJSON.stringify(transformEvent(event)),
     );
     if (event.profile_id) {
       getRedisCache().set(
         `live:event:${event.project_id}:${event.profile_id}`,
         '',
         'EX',
-        60 * 5
+        60 * 5,
       );
     }
   };
 
   public onCompleted?: OnCompleted<IClickhouseEvent> | undefined = (
-    savedEvents
+    savedEvents,
   ) => {
     for (const event of savedEvents) {
       getRedisPub().publish(
         'event:saved',
-        SuperJSON.stringify(transformEvent(event))
+        SuperJSON.stringify(transformEvent(event)),
       );
     }
 
@@ -76,7 +76,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     queue
       .filter(
         (item) =>
-          item.event.name !== 'screen_view' || item.event.device === 'server'
+          item.event.name !== 'screen_view' || item.event.device === 'server',
       )
       .forEach((item) => {
         // Find the last event with data and merge it with the current event
@@ -93,7 +93,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
 
         const event = deepMergeObjects<IClickhouseEvent>(
           omit(['properties', 'duration'], lastEventWithData?.event || {}),
-          item.event
+          item.event,
         );
 
         if (lastEventWithData) {
@@ -111,8 +111,8 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
       (item) => item.event.session_id,
       queue.filter(
         (item) =>
-          item.event.name === 'screen_view' && item.event.device !== 'server'
-      )
+          item.event.name === 'screen_view' && item.event.device !== 'server',
+      ),
     );
 
     // Iterate over each group
@@ -125,7 +125,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
       const hasSessionEnd = queue.find(
         (item) =>
           item.event.name === 'session_end' &&
-          item.event.session_id === sessionId
+          item.event.session_id === sessionId,
       );
 
       screenViews
@@ -187,7 +187,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
   };
 
   public findMany: FindMany<IClickhouseEvent, IServiceEvent> = async (
-    callback
+    callback,
   ) => {
     return this.getQueue(-1)
       .then((queue) => {

@@ -1,7 +1,7 @@
-import * as React from 'react';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
 import * as ProgressPrimitive from '@radix-ui/react-progress';
+import * as React from 'react';
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
@@ -14,9 +14,9 @@ const Progress = React.forwardRef<
     ref={ref}
     className={cn(
       'relative h-4 w-full min-w-16 overflow-hidden rounded bg-def-200 shadow-sm',
-      size == 'sm' && 'h-2',
-      size == 'lg' && 'h-8',
-      className
+      size === 'sm' && 'h-2',
+      size === 'lg' && 'h-8',
+      className,
     )}
     {...props}
   >
@@ -27,7 +27,7 @@ const Progress = React.forwardRef<
         background: color,
       }}
     />
-    {value && size != 'sm' && (
+    {value && size !== 'sm' && (
       <div className="z-5 absolute bottom-0 top-0 flex items-center px-2 text-sm font-semibold">
         <div>{round(value, 2)}%</div>
       </div>

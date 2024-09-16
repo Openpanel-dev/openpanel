@@ -27,7 +27,10 @@ export function RenderDots({
         <div {...props} className={cn('flex items-center gap-1', className)}>
           {parts.slice(-sliceAt).map((str, index) => {
             return (
-              <div className="flex items-center gap-1" key={str + index}>
+              <div
+                className="flex items-center gap-1"
+                key={str + (index as number)}
+              >
                 {index !== 0 && (
                   <ChevronRight className="relative top-[0.9px] !h-3 !w-3 flex-shrink-0" />
                 )}
