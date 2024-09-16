@@ -72,11 +72,7 @@ export default {
     text: (
       <span>
         Made with ❤️ by{' '}
-        <a
-          href="https://twitter.com/CarlLindesvard"
-          target="_blank"
-          rel="nofollow"
-        >
+        <a href="https://x.com/OpenPanelDev" target="_blank" rel="nofollow">
           Carl
         </a>
       </span>
