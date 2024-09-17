@@ -83,7 +83,16 @@ const startServer = async () => {
       done();
     });
 
+    const ignoreLog = ['/healthcheck', '/metrics', '/misc'];
+    const ignoreMethods = ['OPTIONS'];
+
     fastify.addHook('onRequest', (request, reply, done) => {
+      if (ignoreMethods.includes(request.method)) {
+        return done();
+      }
+      if (ignoreLog.some((path) => request.url.startsWith(path))) {
+        return done();
+      }
       if (request.url.includes('trpc')) {
         request.log.info('request incoming', {
           url: request.url.split('?')[0],
@@ -100,6 +109,12 @@ const startServer = async () => {
     });
 
     fastify.addHook('onResponse', (request, reply, done) => {
+      if (ignoreMethods.includes(request.method)) {
+        return done();
+      }
+      if (ignoreLog.some((path) => request.url.startsWith(path))) {
+        return done();
+      }
       if (request.url.includes('trpc')) {
         request.log.info('request done', {
           url: request.url.split('?')[0],

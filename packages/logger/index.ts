@@ -12,9 +12,32 @@ const logLevel = process.env.LOG_LEVEL ?? 'info';
 export function createLogger({ name }: { name: string }): ILogger {
   const service = `${name}-${process.env.NODE_ENV ?? 'dev'}`;
 
-  const format = process.env.HYPERDX_API_KEY
-    ? winston.format.json()
-    : winston.format.prettyPrint();
+  const prettyError = (error: Error) => ({
+    ...error,
+    stack: error.stack,
+    message: error.message,
+  });
+
+  const errorFormatter = winston.format((info) => {
+    if (info instanceof Error) {
+      return {
+        ...info,
+        ...prettyError(info),
+      };
+    }
+    if (info.error) {
+      return {
+        ...info,
+        error: prettyError(info.error),
+      };
+    }
+    return info;
+  });
+
+  const format = winston.format.combine(
+    errorFormatter(),
+    winston.format.json(),
+  );
 
   const transports: winston.transport[] = [new winston.transports.Console()];
   if (process.env.HYPERDX_API_KEY) {
