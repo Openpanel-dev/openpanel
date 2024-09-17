@@ -9,7 +9,6 @@ import type { IChartEventFilter } from '@openpanel/validation';
 import { botBuffer, eventBuffer } from '../buffers';
 import {
   TABLE_NAMES,
-  ch,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
@@ -339,7 +338,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_version: payload.sdkVersion ?? '',
   };
 
-  await eventBuffer.insert(event);
+  await eventBuffer.add(event);
 
   return {
     document: event,
@@ -562,7 +561,7 @@ export function createBotEvent({
   createdAt,
   path,
 }: IServiceCreateBotEventPayload) {
-  return botBuffer.insert({
+  return botBuffer.add({
     id: uuid(),
     name,
     type,
@@ -593,7 +592,7 @@ export async function getLastScreenViewFromProfileId({
   }
 
   const eventInBuffer = await eventBuffer.find(
-    (item) => item.event.profile_id === profileId,
+    (item) => item.profile_id === profileId,
   );
 
   if (eventInBuffer) {

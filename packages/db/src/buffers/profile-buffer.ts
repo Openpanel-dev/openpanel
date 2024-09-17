@@ -1,56 +1,80 @@
-import { mergeDeepRight } from 'ramda';
+import { groupBy, mergeDeepRight, prop } from 'ramda';
 
 import { toDots } from '@openpanel/common';
 import { getRedisCache } from '@openpanel/redis';
 
+import { escape } from 'sqlstring';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';
+import { transformProfile } from '../services/profile.service';
 import type {
   IClickhouseProfile,
   IServiceProfile,
 } from '../services/profile.service';
-import { transformProfile } from '../services/profile.service';
-import type {
-  Find,
-  FindMany,
-  OnCompleted,
-  OnInsert,
-  ProcessQueue,
-  QueueItem,
-} from './buffer';
+import type { Find, FindMany } from './buffer';
 import { RedisBuffer } from './buffer';
 
-export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
+const BATCH_SIZE = process.env.BATCH_SIZE_PROFILES
+  ? Number.parseInt(process.env.BATCH_SIZE_PROFILES, 10)
+  : 50;
+
+type BufferType = IClickhouseProfile;
+export class ProfileBuffer extends RedisBuffer<BufferType> {
   constructor() {
-    super({
-      table: TABLE_NAMES.profiles,
-      batchSize: 100,
-      disableAutoFlush: true,
-    });
+    super(TABLE_NAMES.profiles, BATCH_SIZE);
   }
 
-  public onInsert?: OnInsert<IClickhouseProfile> | undefined;
-  public onCompleted?: OnCompleted<IClickhouseProfile> | undefined;
-
-  public processQueue: ProcessQueue<IClickhouseProfile> = async (queue) => {
-    const cleanedQueue = this.combineQueueItems(queue);
-    const redisProfiles = await this.getCachedProfiles(cleanedQueue);
+  // this will do a couple of things:
+  // - we slice the queue to maxBufferSize since this queries have a limit on character count
+  // - check redis cache for profiles
+  // - fetch missing profiles from clickhouse
+  // - merge the incoming profile with existing data
+  protected async processItems(
+    items: BufferType[],
+  ): Promise<{ toInsert: BufferType[]; toKeep: BufferType[] }> {
+    const queue = this.combineQueueItems(items);
+    const slicedQueue = this.maxBufferSize
+      ? queue.slice(0, this.maxBufferSize)
+      : queue;
+    const redisProfiles = await this.getCachedProfiles(slicedQueue);
     const dbProfiles = await this.fetchDbProfiles(
-      cleanedQueue.filter((_, index) => !redisProfiles[index]),
+      slicedQueue.filter((_, index) => !redisProfiles[index]),
     );
 
-    const values = this.createProfileValues(
-      cleanedQueue,
+    const toInsert = this.createProfileValues(
+      slicedQueue,
       redisProfiles,
       dbProfiles,
     );
 
-    if (values.length > 0) {
-      await this.updateRedisCache(values);
-      await this.insertIntoClickhouse(values);
+    if (toInsert.length > 0) {
+      await this.updateRedisCache(toInsert);
     }
 
-    return queue.map((item) => item.index);
-  };
+    return Promise.resolve({
+      toInsert,
+      toKeep: this.maxBufferSize ? queue.slice(this.maxBufferSize) : [],
+    });
+  }
+
+  private combineQueueItems(queue: BufferType[]): BufferType[] {
+    const itemsToClickhouse = new Map<string, BufferType>();
+
+    queue.forEach((item) => {
+      const key = item.project_id + item.id;
+      const existing = itemsToClickhouse.get(key);
+      itemsToClickhouse.set(key, mergeDeepRight(existing ?? {}, item));
+    });
+
+    return Array.from(itemsToClickhouse.values());
+  }
+
+  protected async insertIntoDB(items: BufferType[]): Promise<void> {
+    await ch.insert({
+      table: TABLE_NAMES.profiles,
+      values: items,
+      format: 'JSONEachRow',
+    });
+  }
 
   private matchPartialObject(
     full: any,
@@ -77,27 +101,16 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
     return true;
   }
 
-  private combineQueueItems(
-    queue: QueueItem<IClickhouseProfile>[],
-  ): QueueItem<IClickhouseProfile>[] {
-    const itemsToClickhouse = new Map<string, QueueItem<IClickhouseProfile>>();
-
-    queue.forEach((item) => {
-      const key = item.event.project_id + item.event.id;
-      const existing = itemsToClickhouse.get(key);
-      itemsToClickhouse.set(key, mergeDeepRight(existing ?? {}, item));
-    });
-
-    return Array.from(itemsToClickhouse.values());
-  }
-
   private async getCachedProfiles(
-    cleanedQueue: QueueItem<IClickhouseProfile>[],
+    queue: BufferType[],
   ): Promise<(IClickhouseProfile | null)[]> {
     const redisCache = getRedisCache();
-    const keys = cleanedQueue.map(
-      (item) => `profile:${item.event.project_id}:${item.event.id}`,
-    );
+    const keys = queue.map((item) => `profile:${item.project_id}:${item.id}`);
+
+    if (keys.length === 0) {
+      return [];
+    }
+
     const cachedProfiles = await redisCache.mget(...keys);
     return cachedProfiles.map((profile) => {
       try {
@@ -109,34 +122,51 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
   }
 
   private async fetchDbProfiles(
-    cleanedQueue: QueueItem<IClickhouseProfile>[],
+    queue: IClickhouseProfile[],
   ): Promise<IClickhouseProfile[]> {
-    if (cleanedQueue.length === 0) {
+    if (queue.length === 0) {
       return [];
     }
+
+    // const grouped = groupBy(prop('project_id'), queue);
+    // const queries = Object.entries(grouped).map(([project_id, items]) => {
+    //   if (!items) {
+    //     return [];
+    //   }
+
+    //   return chQuery<IClickhouseProfile>(
+    //     `SELECT
+    //       *
+    //     FROM ${TABLE_NAMES.profiles}
+    //     WHERE
+    //         id IN (${items.map((item) => escape(item.id)).join(',')})
+    //         AND created_at > INTERVAL 12 MONTH
+    //     ORDER BY
+    //         created_at DESC`,
+    //   );
+    // });
 
     return await chQuery<IClickhouseProfile>(
       `SELECT 
           *
         FROM ${TABLE_NAMES.profiles}
         WHERE 
-            (id, project_id) IN (${cleanedQueue.map((item) => `('${item.event.id}', '${item.event.project_id}')`).join(',')})
+            (project_id, id) IN (${queue.map((item) => `('${item.project_id}', '${item.id}')`).join(',')})
         ORDER BY
             created_at DESC`,
     );
   }
 
   private createProfileValues(
-    cleanedQueue: QueueItem<IClickhouseProfile>[],
+    queue: IClickhouseProfile[],
     redisProfiles: (IClickhouseProfile | null)[],
     dbProfiles: IClickhouseProfile[],
   ): IClickhouseProfile[] {
-    return cleanedQueue
+    return queue
       .map((item, index) => {
         const cachedProfile = redisProfiles[index];
         const dbProfile = dbProfiles.find(
-          (p) =>
-            p.id === item.event.id && p.project_id === item.event.project_id,
+          (p) => p.id === item.id && p.project_id === item.project_id,
         );
         const profile = cachedProfile || dbProfile;
 
@@ -145,31 +175,33 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
           this.matchPartialObject(
             profile,
             {
-              ...item.event,
-              properties: toDots(item.event.properties),
+              ...item,
+              properties: toDots(item.properties),
             },
             {
               ignore: ['created_at'],
             },
           )
         ) {
-          console.log('Ignoring profile', item.event.id);
+          this.logger.debug('No changes for profile', {
+            profile,
+          });
           return null;
         }
 
         return {
-          id: item.event.id,
-          first_name: item.event.first_name ?? profile?.first_name ?? '',
-          last_name: item.event.last_name ?? profile?.last_name ?? '',
-          email: item.event.email ?? profile?.email ?? '',
-          avatar: item.event.avatar ?? profile?.avatar ?? '',
+          id: item.id,
+          first_name: item.first_name ?? profile?.first_name ?? '',
+          last_name: item.last_name ?? profile?.last_name ?? '',
+          email: item.email ?? profile?.email ?? '',
+          avatar: item.avatar ?? profile?.avatar ?? '',
           properties: toDots({
             ...(profile?.properties ?? {}),
-            ...(item.event.properties ?? {}),
+            ...(item.properties ?? {}),
           }),
-          project_id: item.event.project_id ?? profile?.project_id ?? '',
-          created_at: item.event.created_at ?? profile?.created_at ?? '',
-          is_external: item.event.is_external,
+          project_id: item.project_id ?? profile?.project_id ?? '',
+          created_at: item.created_at ?? profile?.created_at ?? '',
+          is_external: item.is_external,
         };
       })
       .flatMap((item) => (item ? [item] : []));
@@ -188,24 +220,12 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
     await multi.exec();
   }
 
-  private async insertIntoClickhouse(
-    values: IClickhouseProfile[],
-  ): Promise<void> {
-    await ch.insert({
-      table: TABLE_NAMES.profiles,
-      values,
-      format: 'JSONEachRow',
-    });
-  }
-
   public findMany: FindMany<IClickhouseProfile, IServiceProfile> = async (
     callback,
   ) => {
     return this.getQueue(-1)
       .then((queue) => {
-        return queue
-          .filter(callback)
-          .map((item) => transformProfile(item.event));
+        return queue.filter(callback).map(transformProfile);
       })
       .catch(() => {
         return [];
@@ -216,7 +236,7 @@ export class ProfileBuffer extends RedisBuffer<IClickhouseProfile> {
     return this.getQueue(-1)
       .then((queue) => {
         const match = queue.find(callback);
-        return match ? transformProfile(match.event) : null;
+        return match ? transformProfile(match) : null;
       })
       .catch(() => {
         return null;

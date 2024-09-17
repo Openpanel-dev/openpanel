@@ -1,39 +1,18 @@
 import { TABLE_NAMES, ch } from '../clickhouse-client';
 import type { IClickhouseBotEvent } from '../services/event.service';
-import type {
-  Find,
-  FindMany,
-  OnCompleted,
-  OnInsert,
-  ProcessQueue,
-} from './buffer';
 import { RedisBuffer } from './buffer';
 
-export class BotBuffer extends RedisBuffer<IClickhouseBotEvent> {
+type BufferType = IClickhouseBotEvent;
+export class BotBuffer extends RedisBuffer<BufferType> {
   constructor() {
-    super({
-      table: TABLE_NAMES.events_bots,
-      batchSize: 100,
-    });
+    super(TABLE_NAMES.events, 500);
   }
 
-  public onInsert?: OnInsert<IClickhouseBotEvent> | undefined;
-  public onCompleted?: OnCompleted<IClickhouseBotEvent> | undefined;
-
-  public processQueue: ProcessQueue<IClickhouseBotEvent> = async (queue) => {
+  protected async insertIntoDB(items: BufferType[]): Promise<void> {
     await ch.insert({
       table: TABLE_NAMES.events_bots,
-      values: queue.map((item) => item.event),
+      values: items,
       format: 'JSONEachRow',
     });
-    return queue.map((item) => item.index);
-  };
-
-  public findMany: FindMany<IClickhouseBotEvent, IClickhouseBotEvent> = () => {
-    return Promise.resolve([]);
-  };
-
-  public find: Find<IClickhouseBotEvent, IClickhouseBotEvent> = () => {
-    return Promise.resolve(null);
-  };
+  }
 }

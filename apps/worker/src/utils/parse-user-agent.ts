@@ -9,7 +9,9 @@ export function parseUserAgent(ua?: string | null) {
   if (!ua) return parsedServerUa;
   const res = new UAParser(ua).getResult();
 
-  if (isServer(ua)) return parsedServerUa;
+  if (isServer(ua)) {
+    return parsedServerUa;
+  }
 
   return {
     os: res.os.name,
@@ -77,7 +79,9 @@ function isServer(userAgent: string) {
     return true;
   }
 
-  return !!userAgent.match(/^([^\s]+\/[\d.]+\s*)+$/);
+  // Matches user agents like "Go-http-client/1.0" or "Go Http Client/1.0"
+  // It should just match the first name (with optional spaces) and version
+  return !!userAgent.match(/^[^\/]+\/[\d.]+$/);
 }
 
 export function getDevice(ua: string) {

@@ -22,12 +22,13 @@ export function parsePath(path?: string): {
   }
 
   try {
-    const url = new URL(path);
+    const hasOrigin = path.startsWith('http');
+    const url = new URL(path, hasOrigin ? undefined : 'http://localhost');
     return {
       query: parseSearchParams(url.searchParams),
       path: url.pathname,
       hash: url.hash || undefined,
-      origin: url.origin,
+      origin: hasOrigin ? url.origin : '',
     };
   } catch (error) {
     return {

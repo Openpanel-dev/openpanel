@@ -6,6 +6,7 @@ import { Worker } from 'bullmq';
 import express from 'express';
 
 import { createInitialSalts } from '@openpanel/db';
+import type { CronQueueType } from '@openpanel/queue';
 import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
@@ -137,70 +138,75 @@ async function start() {
     }),
   );
 
-  await cronQueue.add(
-    'salt',
+  const jobs: {
+    name: string;
+    type: CronQueueType;
+    pattern: string | number;
+  }[] = [
     {
+      name: 'salt',
       type: 'salt',
-      payload: undefined,
+      pattern: '0 0 * * *',
     },
     {
-      jobId: 'salt',
-      repeat: {
-        utc: true,
-        pattern: '0 0 * * *',
-      },
-    },
-  );
-
-  await cronQueue.add(
-    'flush',
-    {
+      name: 'flush',
       type: 'flushEvents',
-      payload: undefined,
+      pattern: 1000 * 10,
     },
     {
-      jobId: 'flushEvents',
-      repeat: {
-        every: process.env.BATCH_INTERVAL
-          ? Number.parseInt(process.env.BATCH_INTERVAL, 10)
-          : 1000 * 10,
-      },
-    },
-  );
-
-  await cronQueue.add(
-    'flush',
-    {
+      name: 'flush',
       type: 'flushProfiles',
-      payload: undefined,
+      pattern: 1000 * 60 * 30,
     },
-    {
-      jobId: 'flushProfiles',
-      repeat: {
-        every: 2 * 1000,
-      },
-    },
-  );
+  ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
+    jobs.push({
+      name: 'ping',
+      type: 'ping',
+      pattern: '0 0 * * *',
+    });
+  }
+
+  // Add repeatable jobs
+  for (const job of jobs) {
     await cronQueue.add(
-      'ping',
+      job.name,
       {
-        type: 'ping',
+        type: job.type,
         payload: undefined,
       },
       {
-        jobId: 'ping',
-        repeat: {
-          pattern: '0 0 * * *',
-        },
+        jobId: job.type,
+        repeat:
+          typeof job.pattern === 'number'
+            ? {
+                every: job.pattern,
+              }
+            : {
+                pattern: job.pattern,
+              },
       },
     );
   }
 
+  // Remove outdated repeatable jobs
   const repeatableJobs = await cronQueue.getRepeatableJobs();
-
-  logger.info('Repeatable jobs', { repeatableJobs });
+  for (const repeatableJob of repeatableJobs) {
+    const match = jobs.find(
+      (job) => `${job.name}:${job.type}:::${job.pattern}` === repeatableJob.key,
+    );
+    if (match) {
+      logger.info('Repeatable job exists', {
+        key: repeatableJob.key,
+      });
+    } else {
+      logger.info('Removing repeatable job', {
+        key: repeatableJob.key,
+      });
+      cronQueue.removeRepeatableByKey(repeatableJob.key);
+    }
+  }
 
   await createInitialSalts();
 }

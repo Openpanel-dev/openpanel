@@ -9,12 +9,14 @@ import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
 import { findJobByPrefix, sessionsQueue } from '@openpanel/queue';
-import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
+import type {
+  EventsQueuePayloadCreateSessionEnd,
+  EventsQueuePayloadIncomingEvent,
+} from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
-const SESSION_TIMEOUT = 1000 * 60 * 30;
-const SESSION_END_TIMEOUT = SESSION_TIMEOUT + 1000;
+export const SESSION_TIMEOUT = 1000 * 60 * 30;
 
 export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   const {
@@ -100,37 +102,14 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     previousDeviceId,
   });
 
-  const sessionEndPayload = sessionEnd?.job.data.payload || {
-    sessionId: uuid(),
-    deviceId: currentDeviceId,
-    profileId,
-    projectId,
-  };
-
-  const sessionEndJobId =
-    sessionEnd?.job.id ??
-    `sessionEnd:${projectId}:${sessionEndPayload.deviceId}:${Date.now()}`;
-
-  if (sessionEnd) {
-    // If for some reason we have a session end job that is not a createSessionEnd job
-    if (sessionEnd.job.data.type !== 'createSessionEnd') {
-      throw new Error('Invalid session end job');
-    }
-
-    await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
-  } else {
-    await sessionsQueue.add(
-      'session',
-      {
-        type: 'createSessionEnd',
-        payload: sessionEndPayload,
-      },
-      {
-        delay: SESSION_END_TIMEOUT,
-        jobId: sessionEndJobId,
-      },
-    );
-  }
+  const sessionEndPayload =
+    sessionEnd?.job.data.payload ||
+    ({
+      sessionId: uuid(),
+      deviceId: currentDeviceId,
+      profileId,
+      projectId,
+    } satisfies EventsQueuePayloadCreateSessionEnd['payload']);
 
   const payload: IServiceCreateEventPayload = {
     name: body.name,
@@ -158,12 +137,45 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     duration: 0,
     path: path,
     origin: origin,
-    referrer: referrer?.url,
-    referrerName: referrer?.name || utmReferrer?.name || '',
-    referrerType: referrer?.type || utmReferrer?.type || '',
+    referrer: sessionEndPayload.referrer || referrer?.url,
+    referrerName:
+      sessionEndPayload.referrerName ||
+      referrer?.name ||
+      utmReferrer?.name ||
+      '',
+    referrerType:
+      sessionEndPayload.referrerType ||
+      referrer?.type ||
+      utmReferrer?.type ||
+      '',
     sdkName,
     sdkVersion,
   };
+
+  const sessionEndJobId =
+    sessionEnd?.job.id ??
+    `sessionEnd:${projectId}:${sessionEndPayload.deviceId}:${getTime(createdAt)}`;
+
+  if (sessionEnd) {
+    // If for some reason we have a session end job that is not a createSessionEnd job
+    if (sessionEnd.job.data.type !== 'createSessionEnd') {
+      throw new Error('Invalid session end job');
+    }
+
+    await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
+  } else {
+    await sessionsQueue.add(
+      'session',
+      {
+        type: 'createSessionEnd',
+        payload,
+      },
+      {
+        delay: SESSION_TIMEOUT,
+        jobId: sessionEndJobId,
+      },
+    );
+  }
 
   if (!sessionEnd) {
     await createEvent({

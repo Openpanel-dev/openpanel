@@ -15,7 +15,7 @@ export async function createSessionEnd(
 ) {
   const payload = job.data.payload;
   const eventsInBuffer = await eventBuffer.findMany(
-    (item) => item.event.session_id === payload.sessionId,
+    (item) => item.session_id === payload.sessionId,
   );
 
   const sql = `

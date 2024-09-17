@@ -28,12 +28,11 @@ export interface EventsQueuePayloadCreateEvent {
   type: 'createEvent';
   payload: Omit<IServiceEvent, 'id'>;
 }
+type SessionEndRequired = 'sessionId' | 'deviceId' | 'profileId' | 'projectId';
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
-  payload: Pick<
-    IServiceEvent,
-    'deviceId' | 'sessionId' | 'profileId' | 'projectId'
-  >;
+  payload: Partial<Omit<IServiceEvent, SessionEndRequired>> &
+    Pick<IServiceEvent, SessionEndRequired>;
 }
 
 // TODO: Rename `EventsQueuePayloadCreateSessionEnd`
@@ -65,6 +64,8 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushEvents
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadPing;
+
+export type CronQueueType = CronQueuePayload['type'];
 
 export const eventsQueue = new Queue<EventsQueuePayload>('events', {
   connection: getRedisQueue(),

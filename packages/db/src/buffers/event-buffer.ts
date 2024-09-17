@@ -10,31 +10,16 @@ import type {
   IClickhouseEvent,
   IServiceEvent,
 } from '../services/event.service';
-import type {
-  Find,
-  FindMany,
-  OnCompleted,
-  OnInsert,
-  ProcessQueue,
-  QueueItem,
-} from './buffer';
+import type { Find, FindMany } from './buffer';
 import { RedisBuffer } from './buffer';
 
-const sortOldestFirst = (
-  a: QueueItem<IClickhouseEvent>,
-  b: QueueItem<IClickhouseEvent>,
-) =>
-  new Date(a.event.created_at).getTime() -
-  new Date(b.event.created_at).getTime();
-
-export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
+type BufferType = IClickhouseEvent;
+export class EventBuffer extends RedisBuffer<BufferType> {
   constructor() {
-    super({
-      table: TABLE_NAMES.events,
-    });
+    super(TABLE_NAMES.events, null);
   }
 
-  public onInsert?: OnInsert<IClickhouseEvent> | undefined = (event) => {
+  public onAdd(event: BufferType) {
     getRedisPub().publish(
       'event:received',
       SuperJSON.stringify(transformEvent(event)),
@@ -47,24 +32,22 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
         60 * 5,
       );
     }
-  };
+  }
 
-  public onCompleted?: OnCompleted<IClickhouseEvent> | undefined = (
-    savedEvents,
-  ) => {
-    for (const event of savedEvents) {
+  public onInsert(items: BufferType[]) {
+    for (const event of items) {
       getRedisPub().publish(
         'event:saved',
         SuperJSON.stringify(transformEvent(event)),
       );
     }
+  }
 
-    return savedEvents.map((event) => event.id);
-  };
-
-  public processQueue: ProcessQueue<IClickhouseEvent> = async (queue) => {
-    const itemsToClickhouse = new Set<QueueItem<IClickhouseEvent>>();
-    const itemsToStalled = new Set<QueueItem<IClickhouseEvent>>();
+  protected async processItems(
+    queue: BufferType[],
+  ): Promise<{ toInsert: BufferType[]; toKeep: BufferType[] }> {
+    const toInsert = new Set<BufferType>();
+    const itemsToStalled = new Set<BufferType>();
 
     // Sort data by created_at
     // oldest first
@@ -74,44 +57,37 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     // We only need screen_views since we want to calculate the duration of each screen
     // To do this we need a minimum of 2 screen_views
     queue
-      .filter(
-        (item) =>
-          item.event.name !== 'screen_view' || item.event.device === 'server',
-      )
-      .forEach((item) => {
+      .filter((item) => item.name !== 'screen_view' || item.device === 'server')
+      .forEach((item, index) => {
         // Find the last event with data and merge it with the current event
         // We use profile_id here since this property can be set from backend as well
         const lastEventWithData = queue
-          .slice(0, item.index)
+          .slice(0, index)
           .findLast((lastEvent) => {
             return (
-              lastEvent.event.project_id === item.event.project_id &&
-              lastEvent.event.profile_id === item.event.profile_id &&
-              lastEvent.event.path !== ''
+              lastEvent.project_id === item.project_id &&
+              lastEvent.profile_id === item.profile_id &&
+              lastEvent.path !== ''
             );
           });
 
-        const event = deepMergeObjects<IClickhouseEvent>(
-          omit(['properties', 'duration'], lastEventWithData?.event || {}),
-          item.event,
+        const event = deepMergeObjects<BufferType>(
+          omit(['properties', 'duration'], lastEventWithData || {}),
+          item,
         );
 
         if (lastEventWithData) {
-          // event.properties.__properties_from = lastEventWithData.event.id;
+          event.properties.__properties_from = lastEventWithData.id;
         }
 
-        return itemsToClickhouse.add({
-          ...item,
-          event,
-        });
+        return toInsert.add(event);
       });
 
     // Group screen_view events by session_id
     const grouped = groupBy(
-      (item) => item.event.session_id,
+      (item) => item.session_id,
       queue.filter(
-        (item) =>
-          item.event.name === 'screen_view' && item.event.device !== 'server',
+        (item) => item.name === 'screen_view' && item.device !== 'server',
       ),
     );
 
@@ -123,9 +99,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
 
       // If there is only one screen_view event we can send it back to redis since we can't calculate the duration
       const hasSessionEnd = queue.find(
-        (item) =>
-          item.event.name === 'session_end' &&
-          item.event.session_id === sessionId,
+        (item) => item.name === 'session_end' && item.session_id === sessionId,
       );
 
       screenViews
@@ -136,20 +110,17 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
           // if nextScreenView does not exists we can't calculate the duration (last event in session)
           if (nextScreenView) {
             const duration =
-              new Date(nextScreenView.event.created_at).getTime() -
-              new Date(item.event.created_at).getTime();
+              new Date(nextScreenView.created_at).getTime() -
+              new Date(item.created_at).getTime();
             const event = {
-              ...item.event,
+              ...item,
               duration,
             };
-            event.properties.__duration_from = nextScreenView.event.id;
-            itemsToClickhouse.add({
-              ...item,
-              event,
-            });
-            // push last event in session if we have a session_end event
+            event.properties.__duration_from = nextScreenView.id;
+            toInsert.add(event);
           } else if (hasSessionEnd) {
-            itemsToClickhouse.add(item);
+            // push last event in session if we have a session_end event
+            toInsert.add(item);
           }
         });
     } // for of end
@@ -158,8 +129,8 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     // This should not theoretically happen but if it does we should move them to stalled
     queue.forEach((item) => {
       if (
-        !itemsToClickhouse.has(item) &&
-        new Date(item.event.created_at).getTime() <
+        !toInsert.has(item) &&
+        new Date(item.created_at).getTime() <
           new Date().getTime() - 1000 * 60 * 60 * 24
       ) {
         itemsToStalled.add(item);
@@ -169,43 +140,57 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
     if (itemsToStalled.size > 0) {
       const multi = getRedisCache().multi();
       for (const item of itemsToStalled) {
-        multi.rpush(this.getKey('stalled'), JSON.stringify(item.event));
+        multi.rpush(this.getKey('stalled'), JSON.stringify(item));
       }
       await multi.exec();
     }
 
+    const toInsertArray = Array.from(toInsert);
+    return {
+      toInsert: toInsertArray,
+      toKeep: queue.filter(
+        (item) => !toInsertArray.find((i) => i.id === item.id),
+      ),
+    };
+  }
+
+  protected async insertIntoDB(items: BufferType[]): Promise<void> {
     await ch.insert({
       table: TABLE_NAMES.events,
-      values: Array.from(itemsToClickhouse).map((item) => item.event),
+      values: items,
       format: 'JSONEachRow',
     });
-
-    return [
-      ...Array.from(itemsToClickhouse).map((item) => item.index),
-      ...Array.from(itemsToStalled).map((item) => item.index),
-    ];
-  };
+  }
 
   public findMany: FindMany<IClickhouseEvent, IServiceEvent> = async (
     callback,
   ) => {
-    return this.getQueue(-1)
-      .then((queue) => {
-        return queue.filter(callback).map((item) => transformEvent(item.event));
-      })
-      .catch(() => {
-        return [];
-      });
+    if (await this.waitForReleasedLock()) {
+      return this.getQueue()
+        .then((queue) => {
+          return queue.filter(callback).map(transformEvent);
+        })
+        .catch(() => {
+          return [];
+        });
+    }
+    return [];
   };
 
   public find: Find<IClickhouseEvent, IServiceEvent> = async (callback) => {
-    return this.getQueue(-1)
-      .then((queue) => {
-        const match = queue.find(callback);
-        return match ? transformEvent(match.event) : null;
-      })
-      .catch(() => {
-        return null;
-      });
+    if (await this.waitForReleasedLock()) {
+      return this.getQueue(-1)
+        .then((queue) => {
+          const match = queue.find(callback);
+          return match ? transformEvent(match) : null;
+        })
+        .catch(() => {
+          return null;
+        });
+    }
+    return null;
   };
 }
+
+const sortOldestFirst = (a: IClickhouseEvent, b: IClickhouseEvent) =>
+  new Date(a.created_at).getTime() - new Date(b.created_at).getTime();

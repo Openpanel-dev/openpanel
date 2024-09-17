@@ -222,7 +222,7 @@ export async function upsertProfile({
   projectId,
   isExternal,
 }: IServiceUpsertProfile) {
-  return profileBuffer.insert({
+  return profileBuffer.add({
     id,
     first_name: firstName!,
     last_name: lastName!,
