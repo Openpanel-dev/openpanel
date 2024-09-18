@@ -19,16 +19,16 @@ export function createLogger({ name }: { name: string }): ILogger {
   });
 
   const errorFormatter = winston.format((info) => {
+    if (info.error instanceof Error) {
+      return {
+        ...info,
+        error: prettyError(info.error),
+      };
+    }
     if (info instanceof Error) {
       return {
         ...info,
         ...prettyError(info),
-      };
-    }
-    if (info.error) {
-      return {
-        ...info,
-        error: prettyError(info.error),
       };
     }
     return info;

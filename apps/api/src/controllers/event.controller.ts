@@ -38,31 +38,43 @@ export async function postEvent(
     ua,
   });
 
+  const isScreenView = request.body.name === 'screen_view';
   // this will ensure that we don't have multiple events creating sessions
   const locked = await getRedisCache().set(
-    `request:priority:${currentDeviceId}-${previousDeviceId}`,
+    `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
     'locked',
     'EX',
-    10,
+    5,
     'NX',
   );
 
-  eventsQueue.add('event', {
-    type: 'incomingEvent',
-    payload: {
-      projectId: request.projectId,
-      headers: getStringHeaders(request.headers),
-      event: {
-        ...request.body,
-        // Dont rely on the client for the timestamp
-        timestamp: new Date().toISOString(),
+  eventsQueue.add(
+    'event',
+    {
+      type: 'incomingEvent',
+      payload: {
+        projectId: request.projectId,
+        headers: getStringHeaders(request.headers),
+        event: {
+          ...request.body,
+          // Dont rely on the client for the timestamp
+          timestamp: request.timestamp
+            ? new Date(request.timestamp).toISOString()
+            : new Date().toISOString(),
+        },
+        geo,
+        currentDeviceId,
+        previousDeviceId,
+        priority: locked === 'OK',
       },
-      geo,
-      currentDeviceId,
-      previousDeviceId,
-      priority: locked === 'OK',
     },
-  });
+    {
+      // Prioritize 'screen_view' events by setting no delay
+      // This ensures that session starts are created from 'screen_view' events
+      // rather than other events, maintaining accurate session tracking
+      delay: request.body.name === 'screen_view' ? 0 : 1000,
+    },
+  );
 
   reply.status(202).send('ok');
 }

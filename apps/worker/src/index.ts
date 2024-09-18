@@ -156,7 +156,7 @@ async function start() {
     {
       name: 'flush',
       type: 'flushProfiles',
-      pattern: 1000 * 60 * 30,
+      pattern: 1000 * 60,
     },
   ];
 

@@ -30,6 +30,7 @@ export async function createSessionEnd(
         session_id = '${payload.sessionId}' 
         AND name = 'session_start'
         ${payload.projectId ? `AND project_id = '${payload.projectId}' ` : ''}
+        AND created_at > now() - interval 24 HOUR
       ORDER BY created_at DESC
       LIMIT 1
     ) 

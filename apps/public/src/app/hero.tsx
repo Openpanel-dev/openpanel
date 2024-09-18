@@ -13,14 +13,12 @@ function shortNumber(num: number) {
   if (num >= 1e9 && num < 1e12) return `${+(num / 1e9).toFixed(1)}B`;
   if (num >= 1e12) return `${+(num / 1e12).toFixed(1)}T`;
 }
-
-const getProjectsWithCount = cacheable(async () => {
+const getProjectsWithCount = cacheable(async function getProjectsWithCount() {
   const projects = await chQuery<{ project_id: string; count: number }>(
     `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`,
   );
-
   return projects;
-}, 60 * 10);
+}, 60 * 60);
 
 export async function Hero() {
   const projects = await getProjectsWithCount();

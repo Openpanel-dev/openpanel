@@ -32,6 +32,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     projectId: string;
     client: IServiceClient | null;
+    timestamp?: number;
   }
 }
 
@@ -74,6 +75,11 @@ const startServer = async () => {
         return undefined;
       }
     };
+
+    fastify.addHook('preHandler', (request, reply, done) => {
+      request.timestamp = Date.now();
+      done();
+    });
 
     // add header to request if it does not exist
     fastify.addHook('onRequest', (request, reply, done) => {

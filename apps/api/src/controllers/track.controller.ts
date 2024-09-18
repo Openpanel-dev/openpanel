@@ -4,6 +4,7 @@ import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
+import { toISOString } from '@openpanel/common';
 import { generateDeviceId } from '@openpanel/common/server';
 import {
   createProfileAlias,
@@ -117,6 +118,9 @@ export async function handler(
           projectId,
           geo,
           headers: getStringHeaders(request.headers),
+          timestamp: request.timestamp
+            ? new Date(request.timestamp).toISOString()
+            : new Date().toISOString(),
         }),
       ];
 
@@ -182,6 +186,7 @@ async function track({
   projectId,
   geo,
   headers,
+  timestamp,
 }: {
   payload: TrackPayload;
   currentDeviceId: string;
@@ -189,32 +194,43 @@ async function track({
   projectId: string;
   geo: GeoLocation;
   headers: Record<string, string | undefined>;
+  timestamp: string;
 }) {
+  const isScreenView = payload.name === 'screen_view';
   // this will ensure that we don't have multiple events creating sessions
   const locked = await getRedisCache().set(
-    `request:priority:${currentDeviceId}-${previousDeviceId}`,
+    `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
     'locked',
     'EX',
-    10,
+    5,
     'NX',
   );
 
-  eventsQueue.add('event', {
-    type: 'incomingEvent',
-    payload: {
-      projectId,
-      headers,
-      event: {
-        ...payload,
-        // Dont rely on the client for the timestamp
-        timestamp: new Date().toISOString(),
+  eventsQueue.add(
+    'event',
+    {
+      type: 'incomingEvent',
+      payload: {
+        projectId,
+        headers,
+        event: {
+          ...payload,
+          // Dont rely on the client for the timestamp
+          timestamp,
+        },
+        geo,
+        currentDeviceId,
+        previousDeviceId,
+        priority: locked === 'OK',
       },
-      geo,
-      currentDeviceId,
-      previousDeviceId,
-      priority: locked === 'OK',
     },
-  });
+    {
+      // Prioritize 'screen_view' events by setting no delay
+      // This ensures that session starts are created from 'screen_view' events
+      // rather than other events, maintaining accurate session tracking
+      delay: payload.name === 'screen_view' ? 0 : 1000,
+    },
+  );
 }
 
 async function identify({

@@ -137,17 +137,13 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     duration: 0,
     path: path,
     origin: origin,
-    referrer: sessionEndPayload.referrer || referrer?.url,
-    referrerName:
-      sessionEndPayload.referrerName ||
-      referrer?.name ||
-      utmReferrer?.name ||
-      '',
-    referrerType:
-      sessionEndPayload.referrerType ||
-      referrer?.type ||
-      utmReferrer?.type ||
-      '',
+    referrer: sessionEnd ? sessionEndPayload.referrer : referrer?.url || '',
+    referrerName: sessionEnd
+      ? sessionEndPayload.referrerName
+      : referrer?.name || utmReferrer?.name || '',
+    referrerType: sessionEnd
+      ? sessionEndPayload.referrerType
+      : referrer?.type || utmReferrer?.type || '',
     sdkName,
     sdkVersion,
   };
