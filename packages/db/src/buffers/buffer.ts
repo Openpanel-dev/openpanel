@@ -76,7 +76,7 @@ export class RedisBuffer<T> {
 
   protected async waitForReleasedLock(
     maxWaitTime = 8000,
-    checkInterval = 500,
+    checkInterval = 250,
   ): Promise<boolean> {
     const startTime = performance.now();
 
