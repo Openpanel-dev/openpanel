@@ -240,6 +240,28 @@ export function getDatesFromRange(range: IChartRange) {
   };
 }
 
+function fillFunnel(funnel: { level: number; count: number }[], steps: number) {
+  const filled = Array.from({ length: steps }, (_, index) => {
+    const level = index + 1;
+    const matchingResult = funnel.find((res) => res.level === level);
+    return {
+      level,
+      count: matchingResult ? matchingResult.count : 0,
+    };
+  });
+
+  // Accumulate counts from top to bottom of the funnel
+  for (let i = filled.length - 1; i >= 0; i--) {
+    const step = filled[i];
+    const prevStep = filled[i + 1];
+    // If there's a previous step, add the count to the current step
+    if (step && prevStep) {
+      step.count += prevStep.count;
+    }
+  }
+  return filled.reverse();
+}
+
 export function getChartStartEndDate({
   startDate,
   endDate,
@@ -304,41 +326,9 @@ export async function getFunnelData({
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;
 
-  const funnelRes = await chQuery<{ level: number; count: number }>(sql);
-
-  if (funnelRes[0]?.level !== payload.events.length) {
-    funnelRes.unshift({
-      level: payload.events.length,
-      count: 0,
-    });
-  }
-
-  const filledFunnelRes = funnelRes.reduce(
-    (acc, item, index) => {
-      const diff =
-        index !== 0 ? (acc[acc.length - 1]?.level ?? 0) - item.level : 1;
-
-      if (diff > 1) {
-        acc.push(
-          ...reverse(
-            repeat({}, diff - 1).map((_, index) => ({
-              count: acc[acc.length - 1]?.count ?? 0,
-              level: item.level + index + 1,
-            })),
-          ),
-        );
-      }
-
-      return [
-        ...acc,
-        {
-          count: item.count + (acc[acc.length - 1]?.count ?? 0),
-          level: item.level,
-        },
-      ];
-    },
-    [] as typeof funnelRes,
-  );
+  const funnel = await chQuery<{ level: number; count: number }>(sql);
+  const maxLevel = payload.events.length;
+  const filledFunnelRes = fillFunnel(funnel, maxLevel);
 
   const totalSessions = last(filledFunnelRes)?.count ?? 0;
   const steps = reverse(filledFunnelRes).reduce(

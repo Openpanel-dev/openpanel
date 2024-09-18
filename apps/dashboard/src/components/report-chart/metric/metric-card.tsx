@@ -104,23 +104,39 @@ export function MetricCard({
           )}
         </AutoSizer>
       </div>
-      <div className="col relative gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2 text-left">
-            <span className="truncate text-muted-foreground">
-              <SerieName name={serie.names} />
-            </span>
-          </div>
-        </div>
-        <div className="flex items-end justify-between">
-          <div className="truncate font-mono text-3xl font-bold">
-            {renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
-          </div>
+      <MetricCardNumber
+        label={<SerieName name={serie.names} />}
+        value={renderValue(serie.metrics[metric], 'ml-1 font-light text-xl')}
+        enhancer={
           <PreviousDiffIndicator
             {...previous}
             className="text-sm text-muted-foreground"
           />
+        }
+      />
+    </div>
+  );
+}
+
+export function MetricCardNumber({
+  label,
+  value,
+  enhancer,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  enhancer?: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-w-0 flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2 text-left">
+          <span className="truncate text-muted-foreground">{label}</span>
         </div>
+      </div>
+      <div className="flex items-end justify-between">
+        <div className="truncate font-mono text-3xl font-bold">{value}</div>
+        {enhancer}
       </div>
     </div>
   );
