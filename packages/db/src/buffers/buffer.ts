@@ -103,6 +103,7 @@ export class RedisBuffer<T> {
         await cb();
       } catch (e) {
         this.logger.error(`#2 Failed to execute callback: ${cb.name}`, e);
+        throw e;
       }
     }
   }
@@ -160,14 +161,14 @@ export class RedisBuffer<T> {
         },
       );
     } catch (error) {
-      this.logger.error('Failed to process queue while flushing buffer}:', {
+      this.logger.error('Failed to process queue while flushing buffer', {
         error,
         queueSize: items.length,
       });
 
       if (items.length > 0) {
         // Add back items to keep
-        this.logger.debug('Adding all items back to buffer');
+        this.logger.info('Adding all items back to buffer');
         await getRedisCache().lpush(
           this.getKey(),
           ...items.map((item) => JSON.stringify(item)),

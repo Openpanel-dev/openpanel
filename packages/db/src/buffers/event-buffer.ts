@@ -67,7 +67,8 @@ export class EventBuffer extends RedisBuffer<BufferType> {
             return (
               lastEvent.project_id === item.project_id &&
               lastEvent.profile_id === item.profile_id &&
-              lastEvent.path !== ''
+              lastEvent.path !== '' &&
+              lastEvent.name === 'screen_view'
             );
           });
 
@@ -75,6 +76,10 @@ export class EventBuffer extends RedisBuffer<BufferType> {
           omit(['properties', 'duration'], lastEventWithData || {}),
           item,
         );
+
+        if (!event.properties) {
+          event.properties = {};
+        }
 
         if (lastEventWithData) {
           event.properties.__properties_from = lastEventWithData.id;
@@ -114,9 +119,12 @@ export class EventBuffer extends RedisBuffer<BufferType> {
               new Date(item.created_at).getTime();
             const event = {
               ...item,
+              properties: {
+                ...(item?.properties || {}),
+                __duration_from: nextScreenView.id,
+              },
               duration,
             };
-            event.properties.__duration_from = nextScreenView.id;
             toInsert.add(event);
           } else if (hasSessionEnd) {
             // push last event in session if we have a session_end event
