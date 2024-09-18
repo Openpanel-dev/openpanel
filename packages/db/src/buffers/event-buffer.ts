@@ -97,7 +97,7 @@ export class EventBuffer extends RedisBuffer<IClickhouseEvent> {
         );
 
         if (lastEventWithData) {
-          event.properties.__properties_from = lastEventWithData.event.id;
+          // event.properties.__properties_from = lastEventWithData.event.id;
         }
 
         return itemsToClickhouse.add({
