@@ -8,4 +8,20 @@ fi
 
 export GOOSE_DBSTRING=$CLICKHOUSE_URL
 
+echo "Clickhouse migration script"
+echo ""
+echo "================="
+echo "Selected database: $GOOSE_DBSTRING"
+echo "================="
+echo ""
+if [ "$1" != "create" ] && [ -z "$CI" ]; then
+  read -p "Are you sure you want to run migrations on this database? (y/n) " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Migration cancelled."
+    exit 0
+  fi
+fi
+
+
 goose clickhouse --dir ./migrations $@

@@ -21,7 +21,7 @@ services:
     volumes:
       - op-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -37,7 +37,7 @@ services:
     restart: always
     volumes:
       - op-kv-data:/data
-    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+    command: [ 'redis-server', '--maxmemory-policy', 'noeviction' ]
     # Uncomment to expose ports
     # ports:
     #   - 6379:6379
@@ -56,7 +56,7 @@ services:
       - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
       - ./clickhouse/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
-      test: ['CMD-SHELL', 'clickhouse-client --query "SELECT 1"']
+      test: [ 'CMD-SHELL', 'clickhouse-client --query "SELECT 1"' ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -88,7 +88,7 @@ services:
         echo 'ClickHouse is ready'
 
         echo 'Running migrations...'
-        pnpm -r run migrate:deploy
+        CI=true pnpm -r run migrate:deploy
 
         pnpm start
       "
