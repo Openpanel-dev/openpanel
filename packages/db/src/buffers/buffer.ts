@@ -1,8 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 
+import { getSafeJson } from '@openpanel/common';
 import type { ILogger } from '@openpanel/logger';
 import { createLogger } from '@openpanel/logger';
 import { getRedisCache } from '@openpanel/redis';
+import { pathOr } from 'ramda';
 
 export type Find<T, R = unknown> = (
   callback: (item: T) => boolean,
@@ -42,7 +44,9 @@ export class RedisBuffer<T> {
       await getRedisCache().rpush(this.getKey(), JSON.stringify(item));
       const bufferSize = await getRedisCache().llen(this.getKey());
 
-      this.logger.debug(`Item added. Current size: ${bufferSize}`);
+      this.logger.debug(
+        `Item added (${pathOr('unknown', ['id'], item)}) Current size: ${bufferSize}`,
+      );
 
       if (this.maxBufferSize && bufferSize >= this.maxBufferSize) {
         await this.tryFlush();
@@ -66,6 +70,8 @@ export class RedisBuffer<T> {
       this.logger.debug('Lock acquired. Attempting to flush.');
       try {
         await this.flush();
+      } catch (error) {
+        this.logger.error('Failed to flush buffer', { error });
       } finally {
         await this.releaseLock(lockId);
       }
@@ -117,18 +123,26 @@ export class RedisBuffer<T> {
       .exec();
 
     if (!result) {
+      this.logger.error('No result from redis transaction', {
+        result,
+      });
       throw new Error('Redis transaction failed');
     }
 
     const lrange = result[0];
 
     if (!lrange || lrange[0] instanceof Error) {
+      this.logger.error('Error from lrange', {
+        result,
+      });
       throw new Error('Redis transaction failed');
     }
 
     const items = lrange[1] as string[];
 
-    const parsedItems = items.map((item) => JSON.parse(item) as T);
+    const parsedItems = items
+      .map((item) => getSafeJson<T | null>(item) as T | null)
+      .filter((item): item is T => item !== null);
 
     if (parsedItems.length === 0) {
       this.logger.debug('No items to flush');
@@ -163,15 +177,15 @@ export class RedisBuffer<T> {
     } catch (error) {
       this.logger.error('Failed to process queue while flushing buffer', {
         error,
-        queueSize: items.length,
+        queueSize: parsedItems.length,
       });
 
-      if (items.length > 0) {
+      if (parsedItems.length > 0) {
         // Add back items to keep
         this.logger.info('Adding all items back to buffer');
         await getRedisCache().lpush(
           this.getKey(),
-          ...items.map((item) => JSON.stringify(item)),
+          ...parsedItems.map((item) => JSON.stringify(item)),
         );
       }
     }
@@ -190,8 +204,15 @@ export class RedisBuffer<T> {
   }
 
   protected async getQueue(count?: number): Promise<T[]> {
-    const items = await getRedisCache().lrange(this.getKey(), 0, count ?? -1);
-    return items.map((item) => JSON.parse(item) as T);
+    try {
+      const items = await getRedisCache().lrange(this.getKey(), 0, count ?? -1);
+      return items
+        .map((item) => getSafeJson<T | null>(item) as T | null)
+        .filter((item): item is T => item !== null);
+    } catch (error) {
+      this.logger.error('Failed to get queue', { error });
+      return [];
+    }
   }
 
   protected processItems(items: T[]): Promise<{ toInsert: T[]; toKeep: T[] }> {

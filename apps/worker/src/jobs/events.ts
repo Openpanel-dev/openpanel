@@ -8,6 +8,7 @@ import type {
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
 
+import { cacheable } from '@openpanel/redis';
 import { createSessionEnd } from './events.create-session-end';
 import { incomingEvent } from './events.incoming-event';
 
@@ -30,11 +31,17 @@ export async function eventsJob(job: Job<EventsQueuePayload>) {
   }
 }
 
-async function updateEventsCount(projectId: string) {
+const getProjectEventsCount = cacheable(async function getProjectEventsCount(
+  projectId: string,
+) {
   const res = await chQuery<{ count: number }>(
     `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)}`,
   );
-  const count = res[0]?.count;
+  return res[0]?.count;
+}, 60 * 60);
+
+async function updateEventsCount(projectId: string) {
+  const count = await getProjectEventsCount(projectId);
   if (count) {
     await db.project.update({
       where: {

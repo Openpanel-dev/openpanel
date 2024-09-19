@@ -8,11 +8,19 @@ import {
   eventBuffer,
   getEvents,
 } from '@openpanel/db';
+import { createLogger } from '@openpanel/logger';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
 export async function createSessionEnd(
   job: Job<EventsQueuePayloadCreateSessionEnd>,
 ) {
+  const logger = createLogger({
+    name: 'job:create-session-end',
+  }).child({
+    payload: job.data.payload,
+    jobId: job.id,
+  });
+
   const payload = job.data.payload;
   const eventsInBuffer = await eventBuffer.findMany(
     (item) => item.session_id === payload.sessionId,
@@ -71,7 +79,7 @@ export async function createSessionEnd(
       throw new Error('Could not found session_start or any screen_view');
     }
 
-    job.log('Creating session_start since it was not found');
+    logger.warn('Creating session_start since it was not found');
 
     sessionStart = {
       ...firstScreenView,

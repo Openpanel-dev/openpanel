@@ -39,17 +39,22 @@ export async function parseIp(ip?: string): Promise<GeoLocation> {
   }
 
   try {
-    const geo = await fetch(`${process.env.GEO_IP_HOST}/${ip}`, {
+    const res = await fetch(`${process.env.GEO_IP_HOST}/${ip}`, {
       signal: AbortSignal.timeout(2000),
     });
-    const res = (await geo.json()) as RemoteIpLookupResponse;
+
+    if (!res.ok) {
+      return geo;
+    }
+
+    const json = (await res.json()) as RemoteIpLookupResponse;
 
     return {
-      country: res.country,
-      city: res.city,
-      region: res.stateprov,
-      longitude: res.longitude,
-      latitude: res.latitude,
+      country: json.country,
+      city: json.city,
+      region: json.stateprov,
+      longitude: json.longitude,
+      latitude: json.latitude,
     };
   } catch (error) {
     logger.error('Failed to fetch geo location for ip', { error });

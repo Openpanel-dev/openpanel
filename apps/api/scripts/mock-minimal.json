@@ -1,0 +1,49 @@
+[
+  {
+    "headers": {
+      "openpanel-client-id": "5b679c47-9ec0-470a-8944-a9ab8f42b14f",
+      "x-client-ip": "221.145.77.175",
+      "user-agent": "Opera/13.66 (Macintosh; Intel Mac OS X 10.8.3 U; GV Presto/2.9.183 Version/11.00)",
+      "origin": "https://classic-hovel.info"
+    },
+    "track": {
+      "type": "track",
+      "payload": {
+        "name": "click_button"
+      }
+    }
+  },
+  {
+    "headers": {
+      "openpanel-client-id": "5b679c47-9ec0-470a-8944-a9ab8f42b14f",
+      "x-client-ip": "221.145.77.175",
+      "user-agent": "Opera/13.66 (Macintosh; Intel Mac OS X 10.8.3 U; GV Presto/2.9.183 Version/11.00)",
+      "origin": "https://classic-hovel.info"
+    },
+    "track": {
+      "type": "track",
+      "payload": {
+        "name": "click_button_2"
+      }
+    }
+  },
+  {
+    "headers": {
+      "openpanel-client-id": "5b679c47-9ec0-470a-8944-a9ab8f42b14f",
+      "x-client-ip": "221.145.77.175",
+      "user-agent": "Opera/13.66 (Macintosh; Intel Mac OS X 10.8.3 U; GV Presto/2.9.183 Version/11.00)",
+      "origin": "https://classic-hovel.info"
+    },
+    "track": {
+      "type": "track",
+      "payload": {
+        "name": "screen_view",
+        "properties": {
+          "__referrer": "https://www.google.com",
+          "__path": "https://classic-hovel.info/beneficium-arcesso-quisquam",
+          "__title": "Hic thesis laboriosam copiose admoveo sufficio."
+        }
+      }
+    }
+  }
+]

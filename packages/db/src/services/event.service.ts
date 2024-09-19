@@ -276,9 +276,6 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
   if (!payload.profileId) {
     payload.profileId = payload.deviceId;
   }
-  console.log(
-    `create event ${payload.name} for [deviceId]: ${payload.deviceId} [profileId]: ${payload.profileId} [projectId]: ${payload.projectId} [path]: ${payload.path}`,
-  );
 
   if (payload.profileId !== '') {
     await upsertProfile({

@@ -140,8 +140,9 @@ function scrambleEvents(events: Event[]) {
   return events.sort(() => Math.random() - 0.5);
 }
 
-// Distribute events over 6 minutes
-const SIX_MINUTES_MS = 3 * 60 * 1000;
+// Distribute events over X minutes
+const MINUTES = 3;
+const SIX_MINUTES_MS = 1000 * 60 * MINUTES;
 const startTime = Date.now();
 let lastTriggeredIndex = 0;
 
@@ -155,13 +156,14 @@ async function triggerEvents(file: string) {
     return;
   }
 
-  const eventsToTrigger = Math.floor(
-    generatedEvents.length * (elapsedTime / SIX_MINUTES_MS),
+  const eventsToTrigger = Math.min(
+    Math.ceil(generatedEvents.length * (elapsedTime / SIX_MINUTES_MS)),
+    generatedEvents.length,
   );
 
   // Send events that haven't been triggered yet
   for (let i = lastTriggeredIndex; i < eventsToTrigger; i++) {
-    console.log('asbout to send');
+    console.log('about to send');
 
     const event = generatedEvents[i]!;
     try {
@@ -171,7 +173,7 @@ async function triggerEvents(file: string) {
       console.error(`Failed to send event ${i + 1}:`, error);
     }
     console.log(
-      `sending ${event.track.payload.properties.__path} from user ${event.headers['user-agent']}`,
+      `sending ${event.track.payload?.properties?.__path} from user ${event.headers['user-agent']}`,
     );
   }
 
@@ -184,6 +186,8 @@ async function triggerEvents(file: string) {
 
   if (remainingEvents > 0) {
     setTimeout(() => triggerEvents(file), 50); // Check every 50ms
+  } else {
+    console.log('All events triggered.');
   }
 
   console.log(`Total events to trigger: ${generatedEvents.length}`);

@@ -4,7 +4,11 @@ import SuperJSON from 'superjson';
 import { deepMergeObjects } from '@openpanel/common';
 import { getRedisCache, getRedisPub } from '@openpanel/redis';
 
-import { TABLE_NAMES, ch } from '../clickhouse-client';
+import {
+  TABLE_NAMES,
+  ch,
+  convertClickhouseDateToJs,
+} from '../clickhouse-client';
 import { transformEvent } from '../services/event.service';
 import type {
   IClickhouseEvent,
@@ -12,6 +16,8 @@ import type {
 } from '../services/event.service';
 import type { Find, FindMany } from './buffer';
 import { RedisBuffer } from './buffer';
+
+const STALLED_QUEUE_TIMEOUT = 1000 * 60 * 60 * 24;
 
 type BufferType = IClickhouseEvent;
 export class EventBuffer extends RedisBuffer<BufferType> {
@@ -46,8 +52,8 @@ export class EventBuffer extends RedisBuffer<BufferType> {
   protected async processItems(
     queue: BufferType[],
   ): Promise<{ toInsert: BufferType[]; toKeep: BufferType[] }> {
-    const toInsert = new Set<BufferType>();
-    const itemsToStalled = new Set<BufferType>();
+    const toInsert: BufferType[] = [];
+    const toStalled: BufferType[] = [];
 
     // Sort data by created_at
     // oldest first
@@ -85,7 +91,7 @@ export class EventBuffer extends RedisBuffer<BufferType> {
           event.properties.__properties_from = lastEventWithData.id;
         }
 
-        return toInsert.add(event);
+        return toInsert.push(event);
       });
 
     // Group screen_view events by session_id
@@ -125,10 +131,10 @@ export class EventBuffer extends RedisBuffer<BufferType> {
               },
               duration,
             };
-            toInsert.add(event);
+            toInsert.push(event);
           } else if (hasSessionEnd) {
             // push last event in session if we have a session_end event
-            toInsert.add(item);
+            toInsert.push(item);
           }
         });
     } // for of end
@@ -137,28 +143,37 @@ export class EventBuffer extends RedisBuffer<BufferType> {
     // This should not theoretically happen but if it does we should move them to stalled
     queue.forEach((item) => {
       if (
-        !toInsert.has(item) &&
-        new Date(item.created_at).getTime() <
-          new Date().getTime() - 1000 * 60 * 60 * 24
+        !toInsert.find((i) => i.id === item.id) &&
+        convertClickhouseDateToJs(item.created_at).getTime() <
+          new Date().getTime() - STALLED_QUEUE_TIMEOUT
       ) {
-        itemsToStalled.add(item);
+        toStalled.push(item);
       }
     });
 
-    if (itemsToStalled.size > 0) {
-      const multi = getRedisCache().multi();
-      for (const item of itemsToStalled) {
-        multi.rpush(this.getKey('stalled'), JSON.stringify(item));
+    if (toStalled.length > 0) {
+      try {
+        this.logger.info(`Pushing to stalled queue (${toStalled.length})`, {
+          items: toStalled,
+          count: toStalled.length,
+        });
+        await getRedisCache().rpush(
+          this.getKey('stalled'),
+          ...toStalled.map((item) => JSON.stringify(item)),
+        );
+      } catch (error) {
+        toStalled.length = 0;
+        this.logger.error('Failed to push to stalled queue', { error });
       }
-      await multi.exec();
     }
 
-    const toInsertArray = Array.from(toInsert);
     return {
-      toInsert: toInsertArray,
-      toKeep: queue.filter(
-        (item) => !toInsertArray.find((i) => i.id === item.id),
-      ),
+      toInsert,
+      toKeep: queue.filter((item) => {
+        const willBeInserted = toInsert.find((i) => i.id === item.id);
+        const willBeStalled = toStalled.find((i) => i.id === item.id);
+        return willBeInserted === undefined && willBeStalled === undefined;
+      }),
     };
   }
 

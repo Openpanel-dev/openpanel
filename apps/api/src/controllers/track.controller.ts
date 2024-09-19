@@ -201,8 +201,8 @@ async function track({
   const locked = await getRedisCache().set(
     `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
     'locked',
-    'EX',
-    5,
+    'PX',
+    950, // a bit under the delay below
     'NX',
   );
 
@@ -228,7 +228,7 @@ async function track({
       // Prioritize 'screen_view' events by setting no delay
       // This ensures that session starts are created from 'screen_view' events
       // rather than other events, maintaining accurate session tracking
-      delay: payload.name === 'screen_view' ? 0 : 1000,
+      delay: payload.name === 'screen_view' ? undefined : 1000,
     },
   );
 }

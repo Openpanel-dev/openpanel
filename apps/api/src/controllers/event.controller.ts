@@ -43,8 +43,8 @@ export async function postEvent(
   const locked = await getRedisCache().set(
     `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
     'locked',
-    'EX',
-    5,
+    'PX',
+    950, // a bit under the delay below
     'NX',
   );
 
@@ -72,7 +72,7 @@ export async function postEvent(
       // Prioritize 'screen_view' events by setting no delay
       // This ensures that session starts are created from 'screen_view' events
       // rather than other events, maintaining accurate session tracking
-      delay: request.body.name === 'screen_view' ? 0 : 1000,
+      delay: request.body.name === 'screen_view' ? undefined : 1000,
     },
   );
 
