@@ -23,7 +23,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: input.id,
       });
 
-      if (!access) {
+      if (access?.role !== 'org:admin') {
         throw TRPCAccessError('You do not have access to this project');
       }
 
@@ -45,7 +45,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: input.organizationSlug,
       });
 
-      if (!access) {
+      if (access?.role !== 'org:admin') {
         throw TRPCAccessError('You do not have access to this project');
       }
 
@@ -100,7 +100,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: member.organizationId,
       });
 
-      if (!access) {
+      if (access?.role !== 'org:admin') {
         throw TRPCAccessError('You do not have access to this project');
       }
 
@@ -142,7 +142,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: input.organizationId,
       });
 
-      if (!access) {
+      if (access?.role !== 'org:admin') {
         throw TRPCAccessError('You do not have access to this project');
       }
 
@@ -176,7 +176,7 @@ export const organizationRouter = createTRPCRouter({
         organizationId: input.organizationSlug,
       });
 
-      if (!access) {
+      if (access?.role !== 'org:admin') {
         throw TRPCAccessError('You do not have access to this project');
       }
 
