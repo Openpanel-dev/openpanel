@@ -27,7 +27,7 @@ export async function Hero() {
   return (
     <div className="relative overflow-hidden">
       {/* <div className="bg-blue-50 w-2/5 h-full absolute top-0 right-0"/> */}
-      <div className="container relative flex min-h-[700px] flex-col items-center gap-4 max-md:pt-32 md:h-screen md:flex-row md:gap-8">
+      <div className="container relative flex min-h-[700px] flex-col items-center gap-4 max-md:pt-32 md:h-screen md:flex-row md:gap-8 max-h-[800px]">
         <div className="flex-1 max-md:text-center sm:min-w-[350px] lg:min-w-[400px]">
           <div className="mb-4 flex justify-center md:justify-start">
             <div className="rounded-md border border-border p-1.5 px-4  font-medium">
