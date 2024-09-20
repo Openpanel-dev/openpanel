@@ -217,6 +217,7 @@ export function Chart({ data }: Props) {
                       fill={`url(#color${color})`}
                       type={lineType}
                       isAnimationActive={false}
+                      strokeWidth={0}
                       fillOpacity={0.1}
                     />
                   )}
@@ -230,7 +231,8 @@ export function Chart({ data }: Props) {
                         strokeWidth={2}
                         dataKey={`${serie.id}:count`}
                         stroke={`url('#hideAllButLastInterval_${serie.id}')`}
-                        strokeDasharray="4 2"
+                        strokeDasharray="2 4"
+                        strokeLinecap="round"
                         strokeOpacity={0.7}
                       />
                       <Line
