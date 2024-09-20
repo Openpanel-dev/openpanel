@@ -11,7 +11,11 @@ export function ReportMetricChart() {
     staleTime: 1000 * 60 * 1,
   });
 
-  if (isLazyLoading || res.isLoading || res.isFetching) {
+  if (
+    isLazyLoading ||
+    res.isLoading ||
+    (res.isFetching && !res.data?.series.length)
+  ) {
     return <Loading />;
   }
 

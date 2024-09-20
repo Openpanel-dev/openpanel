@@ -31,7 +31,7 @@ export function ReportFunnelChart() {
     keepPreviousData: true,
   });
 
-  if (isLazyLoading || res.isLoading || res.isFetching) {
+  if (isLazyLoading || res.isLoading) {
     return <Loading />;
   }
 

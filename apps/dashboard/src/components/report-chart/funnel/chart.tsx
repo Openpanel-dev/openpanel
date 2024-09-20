@@ -98,7 +98,7 @@ export function Chart({
                 >
                   <div
                     className={cn(
-                      'bg-def-400 w-full',
+                      'bg-foreground w-full',
                       step.event.id === mostDropoffs.event.id && 'bg-rose-500',
                     )}
                     style={{ height: `${step.percent}%` }}
@@ -236,7 +236,13 @@ export function Chart({
               </div>
               <Progress
                 size="lg"
-                className="w-full @2xl:w-1/2 text-white bg-def-200 mt-0.5 dark:text-black"
+                className={cn(
+                  'w-full @2xl:w-1/2 text-white bg-def-200 mt-0.5 dark:text-black',
+                )}
+                innerClassName={cn(
+                  'bg-primary',
+                  step.event.id === mostDropoffs.event.id && 'bg-rose-500',
+                )}
                 value={percent}
               />
             </div>
