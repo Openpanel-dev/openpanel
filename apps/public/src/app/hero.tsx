@@ -27,7 +27,7 @@ export async function Hero() {
   return (
     <div className="relative overflow-hidden">
       {/* <div className="bg-blue-50 w-2/5 h-full absolute top-0 right-0"/> */}
-      <div className="container relative flex min-h-[700px] flex-col items-center gap-4 max-md:pt-32 md:h-screen md:flex-row md:gap-8 max-h-[800px]">
+      <div className="container relative flex sm:h-[800px] flex-col items-center gap-4 max-md:pt-32 md:flex-row md:gap-8">
         <div className="flex-1 max-md:text-center sm:min-w-[350px] lg:min-w-[400px]">
           <div className="mb-4 flex justify-center md:justify-start">
             <div className="rounded-md border border-border p-1.5 px-4  font-medium">
@@ -88,12 +88,12 @@ export async function Hero() {
             </div>
           </div>
         </div>
-        <div className="relative mt-12 h-[max(90vh,650px)] w-full md:mt-36">
+        <div className="relative mt-12 h-[700px] w-full md:mt-36">
           <div className="absolute inset-0 flex rounded-2xl ring-8 ring-slate-300">
             <div className="absolute inset-0 w-full animate-pulse overflow-hidden rounded-2xl bg-slate-100" />
             <iframe
               src="https://dashboard.openpanel.dev/share/overview/zef2XC?header=0&range=30d"
-              className="relative z-10 h-[max(90vh,650px)] w-full rounded-2xl"
+              className="relative z-10 h-[700px] w-full rounded-2xl"
               title="Openpanel Dashboard"
               scrolling="no"
             />
