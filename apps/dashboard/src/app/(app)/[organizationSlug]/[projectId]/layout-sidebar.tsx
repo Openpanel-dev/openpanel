@@ -4,7 +4,6 @@ import { LogoSquare } from '@/components/logo';
 import SettingsToggle from '@/components/settings-toggle';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
-import { Rotate as Hamburger } from 'hamburger-react';
 import { MenuIcon, XIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
