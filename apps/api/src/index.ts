@@ -228,11 +228,15 @@ const startServer = async () => {
       reply.send({ name: 'openpanel sdk api' });
     });
     fastify.get('/healthcheck', async (request, reply) => {
-      const redisRes = await withTimings(getRedisCache().keys('*'));
+      const redisRes = await withTimings(
+        getRedisCache().keys('keys op:buffer:*'),
+      );
       const dbRes = await withTimings(db.project.findFirst());
       const queueRes = await withTimings(eventsQueue.getCompleted());
       const chRes = await withTimings(
-        chQuery(`SELECT * FROM ${TABLE_NAMES.events} LIMIT 1`),
+        chQuery(
+          `SELECT * FROM ${TABLE_NAMES.events} WHERE created_at > now() - INTERVAL 10 MINUTE LIMIT 1`,
+        ),
       );
       const status = redisRes && dbRes && queueRes && chRes ? 200 : 500;
 
