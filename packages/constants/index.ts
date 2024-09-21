@@ -81,6 +81,7 @@ export const chartTypes = {
   area: 'Area',
   map: 'Map',
   funnel: 'Funnel',
+  retention: 'Retention',
 } as const;
 
 export const lineTypes = {
@@ -161,7 +162,9 @@ export function isMinuteIntervalEnabledByRange(
 }
 
 export function isHourIntervalEnabledByRange(range: keyof typeof timeWindows) {
-  return isMinuteIntervalEnabledByRange(range) || range === 'today';
+  return (
+    isMinuteIntervalEnabledByRange(range) || range === 'today' || range === '7d'
+  );
 }
 
 export function getDefaultIntervalByRange(
