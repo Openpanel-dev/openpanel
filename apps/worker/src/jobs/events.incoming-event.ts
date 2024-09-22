@@ -215,22 +215,26 @@ async function getSessionEnd({
   currentDeviceId: string;
   previousDeviceId: string;
 }) {
-  const sessionEndKeys = await getRedisQueue().keys(
-    `*:sessionEnd:${projectId}:*`,
+  const currentSessionEndKeys = await getRedisQueue().keys(
+    `*:sessionEnd:${projectId}:${currentDeviceId}:*`,
   );
 
   const sessionEndJobCurrentDeviceId = await findJobByPrefix(
     sessionsQueue,
-    sessionEndKeys,
+    currentSessionEndKeys,
     `sessionEnd:${projectId}:${currentDeviceId}:`,
   );
   if (sessionEndJobCurrentDeviceId) {
     return { deviceId: currentDeviceId, job: sessionEndJobCurrentDeviceId };
   }
 
+  const previousSessionEndKeys = await getRedisQueue().keys(
+    `*:sessionEnd:${projectId}:${previousDeviceId}:*`,
+  );
+
   const sessionEndJobPreviousDeviceId = await findJobByPrefix(
     sessionsQueue,
-    sessionEndKeys,
+    previousSessionEndKeys,
     `sessionEnd:${projectId}:${previousDeviceId}:`,
   );
   if (sessionEndJobPreviousDeviceId) {

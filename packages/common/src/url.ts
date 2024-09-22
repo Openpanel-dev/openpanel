@@ -21,8 +21,18 @@ export function parsePath(path?: string): {
     };
   }
 
+  const hasOrigin = path.startsWith('http');
+
+  // If path does not have a leading /,
+  // its probably a named route
+  if (!path.startsWith('/') && !hasOrigin) {
+    return {
+      path,
+      origin: '',
+    };
+  }
+
   try {
-    const hasOrigin = path.startsWith('http');
     const url = new URL(path, hasOrigin ? undefined : 'http://localhost');
     return {
       query: parseSearchParams(url.searchParams),

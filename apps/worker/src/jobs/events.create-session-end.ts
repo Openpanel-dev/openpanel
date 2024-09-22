@@ -11,6 +11,27 @@ import {
 import { createLogger } from '@openpanel/logger';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
+async function getCompleteSession({
+  projectId,
+  sessionId,
+  hoursInterval,
+}: {
+  projectId: string;
+  sessionId: string;
+  hoursInterval: number;
+}) {
+  const sql = `
+    SELECT * FROM ${TABLE_NAMES.events} 
+    WHERE 
+      session_id = '${sessionId}' 
+      AND project_id = '${projectId}'
+      AND created_at > now() - interval ${hoursInterval} HOUR
+    ORDER BY created_at DESC
+  `;
+
+  return getEvents(sql);
+}
+
 export async function createSessionEnd(
   job: Job<EventsQueuePayloadCreateSessionEnd>,
 ) {
@@ -26,26 +47,22 @@ export async function createSessionEnd(
     (item) => item.session_id === payload.sessionId,
   );
 
-  const sql = `
-  SELECT * FROM ${TABLE_NAMES.events} 
-  WHERE 
-    session_id = '${payload.sessionId}' 
-    ${payload.projectId ? `AND project_id = '${payload.projectId}' ` : ''}
-    AND created_at >= (
-      SELECT created_at 
-      FROM ${TABLE_NAMES.events}
-      WHERE 
-        session_id = '${payload.sessionId}' 
-        AND name = 'session_start'
-        ${payload.projectId ? `AND project_id = '${payload.projectId}' ` : ''}
-        AND created_at > now() - interval 24 HOUR
-      ORDER BY created_at DESC
-      LIMIT 1
-    ) 
-  ORDER BY created_at DESC
-`;
-  job.log(sql);
-  const eventsInDb = await getEvents(sql);
+  let eventsInDb = await getCompleteSession({
+    projectId: payload.projectId,
+    sessionId: payload.sessionId,
+    hoursInterval: 12,
+  });
+
+  // If session_start does not exist, try to find it the last 24 hours
+  if (!eventsInDb.find((event) => event.name === 'session_start')) {
+    logger.warn('Checking last 24 hours for session_start');
+    eventsInDb = await getCompleteSession({
+      projectId: payload.projectId,
+      sessionId: payload.sessionId,
+      hoursInterval: 24,
+    });
+  }
+
   // sort last inserted first
   const events = [...eventsInBuffer, ...eventsInDb].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
