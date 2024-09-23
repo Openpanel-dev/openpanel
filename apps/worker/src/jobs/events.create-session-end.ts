@@ -3,6 +3,8 @@ import { last } from 'ramda';
 
 import { getTime } from '@openpanel/common';
 import {
+  IClickhouseEvent,
+  type IServiceEvent,
   TABLE_NAMES,
   createEvent,
   eventBuffer,
@@ -43,9 +45,10 @@ export async function createSessionEnd(
   });
 
   const payload = job.data.payload;
-  const eventsInBuffer = await eventBuffer.findMany(
-    (item) => item.session_id === payload.sessionId,
-  );
+  const eventsInBuffer: IServiceEvent[] = [];
+  // const eventsInBuffer = await eventBuffer.findMany(
+  //   (item) => item.session_id === payload.sessionId,
+  // );
 
   let eventsInDb = await getCompleteSession({
     projectId: payload.projectId,
