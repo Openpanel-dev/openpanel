@@ -191,7 +191,7 @@ function getSessionEndWithPriority(
   return async (args) => {
     const res = await getSessionEnd(args);
 
-    if (count > 10) {
+    if (count > 3) {
       throw new Error('Failed to get session end');
     }
 
@@ -216,7 +216,7 @@ async function getSessionEnd({
   previousDeviceId: string;
 }) {
   const currentSessionEndKeys = await getRedisQueue().keys(
-    `*:sessionEnd:${projectId}:${currentDeviceId}:*`,
+    `bull:sessions:sessionEnd:${projectId}:${currentDeviceId}:*`,
   );
 
   const sessionEndJobCurrentDeviceId = await findJobByPrefix(
@@ -229,7 +229,7 @@ async function getSessionEnd({
   }
 
   const previousSessionEndKeys = await getRedisQueue().keys(
-    `*:sessionEnd:${projectId}:${previousDeviceId}:*`,
+    `bull:sessions:sessionEnd:${projectId}:${previousDeviceId}:*`,
   );
 
   const sessionEndJobPreviousDeviceId = await findJobByPrefix(
