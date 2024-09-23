@@ -75,7 +75,17 @@ export async function validateSdkRequest(
 
   if (client.cors) {
     const domainAllowed = client.cors.split(',').find((domain) => {
-      if (cleanDomain(domain) === cleanDomain(origin || '')) {
+      const cleanedDomain = cleanDomain(domain);
+      // support wildcard domains `*.foo.com`
+      if (cleanedDomain.includes('*')) {
+        const regex = new RegExp(
+          `${cleanedDomain.replaceAll('.', '\\.').replaceAll('*', '.+?')}`,
+        );
+
+        return regex.test(origin || '');
+      }
+
+      if (cleanedDomain === cleanDomain(origin || '')) {
         return true;
       }
     });
