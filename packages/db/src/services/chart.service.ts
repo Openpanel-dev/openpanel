@@ -209,12 +209,12 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x LIKE ${escape(`%${String(val).trim()}%`)}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = value
+            where[id] = `(${value
               .map(
                 (val) =>
                   `${whereFrom} LIKE ${escape(`%${String(val).trim()}%`)}`,
               )
-              .join(' OR ');
+              .join(' OR ')})`;
           }
           break;
         }
@@ -224,12 +224,12 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x NOT LIKE ${escape(`%${String(val).trim()}%`)}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = value
+            where[id] = `(${value
               .map(
                 (val) =>
                   `${whereFrom} NOT LIKE ${escape(`%${String(val).trim()}%`)}`,
               )
-              .join(' OR ');
+              .join(' OR ')})`;
           }
           break;
         }
@@ -239,12 +239,12 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x LIKE ${escape(`${String(val).trim()}%`)}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = value
+            where[id] = `(${value
               .map(
                 (val) =>
                   `${whereFrom} LIKE ${escape(`${String(val).trim()}%`)}`,
               )
-              .join(' OR ');
+              .join(' OR ')})`;
           }
           break;
         }
@@ -254,12 +254,12 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `x LIKE ${escape(`%${String(val).trim()}`)}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = value
+            where[id] = `(${value
               .map(
                 (val) =>
                   `${whereFrom} LIKE ${escape(`%${String(val).trim()}`)}`,
               )
-              .join(' OR ');
+              .join(' OR ')})`;
           }
           break;
         }
@@ -269,11 +269,11 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => `match(x, ${escape(String(val).trim())})`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
-            where[id] = value
+            where[id] = `(${value
               .map(
                 (val) => `match(${whereFrom}, ${escape(String(val).trim())})`,
               )
-              .join(' OR ');
+              .join(' OR ')})`;
           }
           break;
         }
