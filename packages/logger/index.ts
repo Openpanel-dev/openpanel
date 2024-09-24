@@ -3,9 +3,7 @@ import winston from 'winston';
 
 export { winston };
 
-export type ILogger = winston.Logger & {
-  noop: (message: string) => (error: unknown) => void;
-};
+export type ILogger = winston.Logger;
 
 const logLevel = process.env.LOG_LEVEL ?? 'info';
 
@@ -61,8 +59,5 @@ export function createLogger({ name }: { name: string }): ILogger {
     ),
   });
 
-  return Object.assign(logger, {
-    noop: (message: string) => (error: unknown) =>
-      logger.error(`noop: ${message}`, error),
-  });
+  return logger;
 }

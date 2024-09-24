@@ -1,14 +1,16 @@
 import type { Job } from 'bullmq';
 import { last } from 'ramda';
 
+import { logger as baseLogger } from '@/utils/logger';
 import { getTime } from '@openpanel/common';
 import {
+  type IServiceEvent,
   TABLE_NAMES,
   createEvent,
   eventBuffer,
   getEvents,
 } from '@openpanel/db';
-import { createLogger } from '@openpanel/logger';
+import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
 async function getCompleteSession({
@@ -32,66 +34,63 @@ async function getCompleteSession({
   return getEvents(sql);
 }
 
+async function getCompleteSessionWithSessionStart({
+  projectId,
+  sessionId,
+  logger,
+}: {
+  projectId: string;
+  sessionId: string;
+  logger: ILogger;
+}): Promise<ReturnType<typeof getEvents>> {
+  const intervals = [6, 12, 24, 72];
+
+  for (const hoursInterval of intervals) {
+    const events = await getCompleteSession({
+      projectId,
+      sessionId,
+      hoursInterval,
+    });
+
+    if (events.find((event) => event.name === 'session_start')) {
+      return events;
+    }
+
+    logger.warn(`Checking last ${hoursInterval} hours for session_start`);
+  }
+
+  return [];
+}
+
 export async function createSessionEnd(
   job: Job<EventsQueuePayloadCreateSessionEnd>,
 ) {
-  const logger = createLogger({
-    name: 'job:create-session-end',
-  }).child({
+  const logger = baseLogger.child({
     payload: job.data.payload,
     jobId: job.id,
   });
 
   const payload = job.data.payload;
-  const lastScreenView = await eventBuffer.getLastScreenView({
-    projectId: payload.projectId,
-    profileId: payload.profileId || payload.deviceId,
-  });
 
-  const eventsInBuffer = lastScreenView
-    ? [lastScreenView]
-    : await eventBuffer.findMany(
-        (item) => item.session_id === payload.sessionId,
-      );
-
-  if (lastScreenView) {
-    logger.info('found last screen view in buffer');
-  } else if (eventsInBuffer.length > 0) {
-    logger.info('found events in buffer');
-  } else {
-    logger.info('no events in buffer');
-  }
-
-  let eventsInDb = await getCompleteSession({
-    projectId: payload.projectId,
-    sessionId: payload.sessionId,
-    hoursInterval: 12,
-  });
-
-  // If session_start does not exist, try to find it the last 24 hours
-  if (!eventsInDb.find((event) => event.name === 'session_start')) {
-    logger.warn('Checking last 24 hours for session_start');
-    eventsInDb = await getCompleteSession({
+  const [lastScreenView, eventsInDb] = await Promise.all([
+    eventBuffer.getLastScreenView({
+      projectId: payload.projectId,
+      profileId: payload.profileId || payload.deviceId,
+    }),
+    getCompleteSessionWithSessionStart({
       projectId: payload.projectId,
       sessionId: payload.sessionId,
-      hoursInterval: 24,
-    });
-  }
-
-  // If session_start does not exist, try to find it the last 72 hours
-  if (!eventsInDb.find((event) => event.name === 'session_start')) {
-    logger.warn('Checking last 72 hours for session_start');
-    eventsInDb = await getCompleteSession({
-      projectId: payload.projectId,
-      sessionId: payload.sessionId,
-      hoursInterval: 72,
-    });
-  }
+      logger,
+    }),
+  ]);
 
   // sort last inserted first
-  const events = [...eventsInBuffer, ...eventsInDb].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+  const events = [lastScreenView, ...eventsInDb]
+    .filter((event): event is IServiceEvent => !!event)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 
   events.map((event, index) => {
     job.log(

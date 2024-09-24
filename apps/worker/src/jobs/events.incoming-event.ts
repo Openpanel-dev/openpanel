@@ -4,11 +4,11 @@ import type { Job } from 'bullmq';
 import { omit } from 'ramda';
 import { v4 as uuid } from 'uuid';
 
+import { logger } from '@/utils/logger';
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
-import { createLogger } from '@openpanel/logger';
 import { findJobByPrefix, sessionsQueue } from '@openpanel/queue';
 import type {
   EventsQueuePayloadCreateSessionEnd,
@@ -18,10 +18,6 @@ import { getRedisQueue } from '@openpanel/redis';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 export const SESSION_TIMEOUT = 1000 * 60 * 30;
-
-const logger = createLogger({
-  name: 'job:incoming-event',
-});
 
 const getSessionEndJobId = (projectId: string, deviceId: string) =>
   `sessionEnd:${projectId}:${deviceId}`;

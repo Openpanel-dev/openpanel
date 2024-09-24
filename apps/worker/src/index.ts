@@ -84,12 +84,27 @@ async function start() {
     });
 
     worker.on('failed', (job) => {
-      logger.error('job failed', {
-        worker: worker.name,
-        data: job?.data,
-        error: job?.failedReason,
-        options: job?.opts,
-      });
+      if (job) {
+        logger.error('job failed', {
+          worker: worker.name,
+          data: job.data,
+          error: job.failedReason,
+          options: job.opts,
+        });
+      }
+    });
+
+    worker.on('completed', (job) => {
+      if (job) {
+        logger.info('job completed', {
+          worker: worker.name,
+          data: job.data,
+          duration:
+            job.processedOn && job.finishedOn
+              ? job.finishedOn - job.processedOn
+              : undefined,
+        });
+      }
     });
 
     worker.on('ioredis:close', () => {
