@@ -3,8 +3,6 @@ import { last } from 'ramda';
 
 import { getTime } from '@openpanel/common';
 import {
-  IClickhouseEvent,
-  type IServiceEvent,
   TABLE_NAMES,
   createEvent,
   eventBuffer,
@@ -45,10 +43,24 @@ export async function createSessionEnd(
   });
 
   const payload = job.data.payload;
-  const eventsInBuffer: IServiceEvent[] = [];
-  // const eventsInBuffer = await eventBuffer.findMany(
-  //   (item) => item.session_id === payload.sessionId,
-  // );
+  const lastScreenView = await eventBuffer.getLastScreenView({
+    projectId: payload.projectId,
+    profileId: payload.profileId || payload.deviceId,
+  });
+
+  const eventsInBuffer = lastScreenView
+    ? [lastScreenView]
+    : await eventBuffer.findMany(
+        (item) => item.session_id === payload.sessionId,
+      );
+
+  if (lastScreenView) {
+    logger.info('found last screen view in buffer');
+  } else if (eventsInBuffer.length > 0) {
+    logger.info('found events in buffer');
+  } else {
+    logger.info('no events in buffer');
+  }
 
   let eventsInDb = await getCompleteSession({
     projectId: payload.projectId,
@@ -63,6 +75,16 @@ export async function createSessionEnd(
       projectId: payload.projectId,
       sessionId: payload.sessionId,
       hoursInterval: 24,
+    });
+  }
+
+  // If session_start does not exist, try to find it the last 72 hours
+  if (!eventsInDb.find((event) => event.name === 'session_start')) {
+    logger.warn('Checking last 72 hours for session_start');
+    eventsInDb = await getCompleteSession({
+      projectId: payload.projectId,
+      sessionId: payload.sessionId,
+      hoursInterval: 72,
     });
   }
 

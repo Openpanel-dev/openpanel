@@ -1,7 +1,7 @@
 import { groupBy, omit } from 'ramda';
 import SuperJSON from 'superjson';
 
-import { deepMergeObjects } from '@openpanel/common';
+import { deepMergeObjects, getSafeJson } from '@openpanel/common';
 import { getRedisCache, getRedisPub } from '@openpanel/redis';
 
 import {
@@ -23,6 +23,51 @@ type BufferType = IClickhouseEvent;
 export class EventBuffer extends RedisBuffer<BufferType> {
   constructor() {
     super(TABLE_NAMES.events, null);
+  }
+
+  getLastEventKey({
+    projectId,
+    profileId,
+  }: {
+    projectId: string;
+    profileId: string;
+  }) {
+    return `session:last_screen_view:${projectId}:${profileId}`;
+  }
+
+  public async getLastScreenView({
+    projectId,
+    profileId,
+  }: {
+    projectId: string;
+    profileId: string;
+  }): Promise<IServiceEvent | null> {
+    const event = await getRedisCache().get(
+      this.getLastEventKey({ projectId, profileId }),
+    );
+
+    if (event) {
+      const parsed = getSafeJson<BufferType>(event);
+      if (parsed) {
+        return transformEvent(parsed);
+      }
+    }
+    return null;
+  }
+
+  public async add(event: BufferType) {
+    await super.add(event);
+    if (event.name === 'screen_view') {
+      await getRedisCache().set(
+        this.getLastEventKey({
+          projectId: event.project_id,
+          profileId: event.profile_id,
+        }),
+        JSON.stringify(event),
+        'EX',
+        60 * 31,
+      );
+    }
   }
 
   public onAdd(event: BufferType) {

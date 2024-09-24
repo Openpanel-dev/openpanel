@@ -588,9 +588,10 @@ export async function getLastScreenViewFromProfileId({
     return null;
   }
 
-  const eventInBuffer = await eventBuffer.find(
-    (item) => item.profile_id === profileId,
-  );
+  const eventInBuffer = await eventBuffer.getLastScreenView({
+    projectId,
+    profileId,
+  });
 
   if (eventInBuffer) {
     return eventInBuffer;

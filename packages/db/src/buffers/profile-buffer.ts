@@ -219,27 +219,4 @@ export class ProfileBuffer extends RedisBuffer<BufferType> {
     });
     await multi.exec();
   }
-
-  public findMany: FindMany<IClickhouseProfile, IServiceProfile> = async (
-    callback,
-  ) => {
-    return this.getQueue(-1)
-      .then((queue) => {
-        return queue.filter(callback).map(transformProfile);
-      })
-      .catch(() => {
-        return [];
-      });
-  };
-
-  public find: Find<IClickhouseProfile, IServiceProfile> = async (callback) => {
-    return this.getQueue(-1)
-      .then((queue) => {
-        const match = queue.find(callback);
-        return match ? transformProfile(match) : null;
-      })
-      .catch(() => {
-        return null;
-      });
-  };
 }
