@@ -4,7 +4,6 @@ import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
-import { toISOString } from '@openpanel/common';
 import { generateDeviceId } from '@openpanel/common/server';
 import {
   createProfileAlias,
@@ -246,6 +245,7 @@ async function identify({
 }) {
   const uaInfo = parseUserAgent(ua);
   await upsertProfile({
+    ...payload,
     id: payload.profileId,
     isExternal: true,
     projectId,
@@ -254,7 +254,6 @@ async function identify({
       ...(geo ?? {}),
       ...uaInfo,
     },
-    ...payload,
   });
 }
 
