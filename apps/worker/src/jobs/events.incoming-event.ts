@@ -195,7 +195,7 @@ function getSessionEndWithPriority(
   return async (args) => {
     const res = await getSessionEnd(args);
 
-    if (count > 3) {
+    if (count > 10) {
       throw new Error('Failed to get session end');
     }
 
