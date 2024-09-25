@@ -11,6 +11,7 @@ import {
 } from '@openpanel/db';
 import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
 import { zChartInput } from '@openpanel/validation';
+import { omit } from 'ramda';
 
 async function getProjectId(
   request: FastifyRequest<{
@@ -125,7 +126,7 @@ export async function events(
 
   const [data, totalCount] = await Promise.all([
     getEventList(options),
-    getEventsCountCached(options),
+    getEventsCountCached(omit(['cursor', 'take'], options)),
   ]);
 
   reply.send({
