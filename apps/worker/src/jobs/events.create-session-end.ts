@@ -44,7 +44,7 @@ async function getCompleteSessionWithSessionStart({
   logger: ILogger;
 }): Promise<ReturnType<typeof getEvents>> {
   const intervals = [6, 12, 24, 72];
-
+  let intervalIndex = 0;
   for (const hoursInterval of intervals) {
     const events = await getCompleteSession({
       projectId,
@@ -56,7 +56,10 @@ async function getCompleteSessionWithSessionStart({
       return events;
     }
 
-    logger.warn(`Checking last ${hoursInterval} hours for session_start`);
+    const nextHoursInterval = intervals[++intervalIndex];
+    if (nextHoursInterval) {
+      logger.warn(`Checking last ${nextHoursInterval} hours for session_start`);
+    }
   }
 
   return [];

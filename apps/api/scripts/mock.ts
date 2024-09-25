@@ -140,44 +140,29 @@ function scrambleEvents(events: Event[]) {
   return events.sort(() => Math.random() - 0.5);
 }
 
-// Distribute events over X minutes
-const MINUTES = 3;
-const SIX_MINUTES_MS = 1000 * 60 * MINUTES;
-const startTime = Date.now();
 let lastTriggeredIndex = 0;
 
-async function triggerEvents(file: string) {
-  const generatedEvents = require(`./${file}`);
-  const currentTime = Date.now();
-  const elapsedTime = currentTime - startTime;
+async function triggerEvents(generatedEvents: any[]) {
+  const EVENTS_PER_SECOND = 100; // Adjust this value to set the desired events per second
+  const INTERVAL_MS = 1000 / EVENTS_PER_SECOND;
 
-  if (elapsedTime >= SIX_MINUTES_MS) {
+  if (lastTriggeredIndex >= generatedEvents.length) {
     console.log('All events triggered.');
     return;
   }
 
-  const eventsToTrigger = Math.min(
-    Math.ceil(generatedEvents.length * (elapsedTime / SIX_MINUTES_MS)),
-    generatedEvents.length,
-  );
-
-  // Send events that haven't been triggered yet
-  for (let i = lastTriggeredIndex; i < eventsToTrigger; i++) {
-    console.log('about to send');
-
-    const event = generatedEvents[i]!;
-    try {
-      await trackit(event);
-      console.log(`Event ${i + 1} sent successfully`);
-    } catch (error) {
-      console.error(`Failed to send event ${i + 1}:`, error);
-    }
+  const event = generatedEvents[lastTriggeredIndex]!;
+  try {
+    await trackit(event);
+    console.log(`Event ${lastTriggeredIndex + 1} sent successfully`);
     console.log(
       `sending ${event.track.payload?.properties?.__path} from user ${event.headers['user-agent']}`,
     );
+  } catch (error) {
+    console.error(`Failed to send event ${lastTriggeredIndex + 1}:`, error);
   }
 
-  lastTriggeredIndex = eventsToTrigger;
+  lastTriggeredIndex++;
   const remainingEvents = generatedEvents.length - lastTriggeredIndex;
 
   console.log(
@@ -185,7 +170,7 @@ async function triggerEvents(file: string) {
   );
 
   if (remainingEvents > 0) {
-    setTimeout(() => triggerEvents(file), 50); // Check every 50ms
+    setTimeout(() => triggerEvents(generatedEvents), INTERVAL_MS);
   } else {
     console.log('All events triggered.');
   }
@@ -222,8 +207,43 @@ async function createMock(file: string) {
   );
 }
 
+function insertFakeEvents(events: Event[]) {
+  const blueprint = {
+    headers: {
+      'openpanel-client-id': '5b679c47-9ec0-470a-8944-a9ab8f42b14f',
+      'x-client-ip': '229.145.77.175',
+      'user-agent':
+        'Opera/13.66 (Macintosh; Intel Mac OS X 10.8.3 U; GV Presto/2.9.183 Version/11.00)',
+      origin: 'https://classic-hovel.info',
+    },
+    track: {
+      type: 'track',
+      payload: {
+        name: 'screen_view',
+        properties: {
+          __referrer: 'https://www.google.com',
+          __path: 'https://classic-hovel.info/beneficium-arcesso-quisquam',
+          __title: 'Hic thesis laboriosam copiose admoveo sufficio.',
+        },
+      },
+    },
+  };
+  const newEvents = [];
+  for (const event of events) {
+    newEvents.push(event);
+    if (Math.random() < 0.6) {
+      const fakeEvent = JSON.parse(JSON.stringify(blueprint));
+      fakeEvent.track.payload.name = faker.allFakers.en.lorem.word();
+      delete fakeEvent.track.payload.properties;
+      newEvents.push(fakeEvent);
+    }
+  }
+
+  return newEvents;
+}
+
 async function simultaneousRequests() {
-  const events = require('./api-requests.json');
+  const events = require('./mock-basic.json');
   const screenView = events[0]!;
   const event = JSON.parse(JSON.stringify(events[0]));
   event.track.payload.name = 'click_button';
@@ -243,7 +263,7 @@ async function main() {
 
   switch (type) {
     case 'send':
-      await triggerEvents(file);
+      await triggerEvents(insertFakeEvents(require(`./${file}`)));
       break;
     case 'sim':
       await simultaneousRequests();

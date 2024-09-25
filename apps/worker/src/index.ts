@@ -99,7 +99,7 @@ async function start() {
         logger.info('job completed', {
           worker: worker.name,
           data: job.data,
-          duration:
+          elapsed:
             job.processedOn && job.finishedOn
               ? job.finishedOn - job.processedOn
               : undefined,

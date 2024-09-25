@@ -9,7 +9,11 @@ import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
-import { findJobByPrefix, sessionsQueue } from '@openpanel/queue';
+import {
+  findJobByPrefix,
+  sessionsQueue,
+  sessionsQueueEvents,
+} from '@openpanel/queue';
 import type {
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
@@ -215,18 +219,48 @@ async function getSessionEnd({
   currentDeviceId: string;
   previousDeviceId: string;
 }) {
+  async function handleJobStates(
+    job: Job,
+  ): Promise<{ deviceId: string; job: Job } | null> {
+    const state = await job.getState();
+    if (state === 'delayed') {
+      return { deviceId: currentDeviceId, job };
+    }
+
+    if (state === 'completed' || state === 'failed') {
+      await job.remove();
+    }
+
+    if (state === 'active' || state === 'waiting') {
+      await job.waitUntilFinished(sessionsQueueEvents, 1000 * 10);
+      return getSessionEnd({
+        projectId,
+        currentDeviceId,
+        previousDeviceId,
+      });
+    }
+
+    return null;
+  }
+
   const job = await sessionsQueue.getJob(
     getSessionEndJobId(projectId, currentDeviceId),
   );
-  if (job && (await job.isDelayed())) {
-    return { deviceId: currentDeviceId, job };
+  if (job) {
+    const res = await handleJobStates(job);
+    if (res) {
+      return res;
+    }
   }
 
   const previousJob = await sessionsQueue.getJob(
     getSessionEndJobId(projectId, previousDeviceId),
   );
-  if (previousJob && (await previousJob.isDelayed())) {
-    return { deviceId: previousDeviceId, job: previousJob };
+  if (previousJob) {
+    const res = await handleJobStates(previousJob);
+    if (res) {
+      return res;
+    }
   }
 
   // Fallback during migration period

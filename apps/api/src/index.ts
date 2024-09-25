@@ -8,7 +8,7 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
 import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
-import { path } from 'ramda';
+import { path, pick } from 'ramda';
 
 import { generateId, round } from '@openpanel/common';
 import { TABLE_NAMES, chQuery, db } from '@openpanel/db';
@@ -104,14 +104,22 @@ const startServer = async () => {
           url: request.url.split('?')[0],
           method: request.method,
           input: getTrpcInput(request),
-          responseTime: reply.elapsedTime,
+          elapsed: reply.elapsedTime,
         });
       } else {
         request.log.info('request done', {
           url: request.url,
           method: request.method,
-          responseTime: reply.elapsedTime,
-          headers: request.headers,
+          elapsed: reply.elapsedTime,
+          headers: pick(
+            [
+              'openpanel-client-id',
+              'openpanel-sdk-name',
+              'openpanel-sdk-version',
+              'user-agent',
+            ],
+            request.headers,
+          ),
           body: request.body,
         });
       }

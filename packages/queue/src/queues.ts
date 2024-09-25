@@ -1,4 +1,4 @@
-import { Queue } from 'bullmq';
+import { Queue, QueueEvents } from 'bullmq';
 
 import type { IServiceEvent } from '@openpanel/db';
 import { getRedisQueue } from '@openpanel/redis';
@@ -79,6 +79,9 @@ export const sessionsQueue = new Queue<SessionsQueuePayload>('sessions', {
   defaultJobOptions: {
     removeOnComplete: 10,
   },
+});
+export const sessionsQueueEvents = new QueueEvents('sessions', {
+  connection: getRedisQueue(),
 });
 
 export const cronQueue = new Queue<CronQueuePayload>('cron', {
