@@ -315,7 +315,7 @@ export async function getFunnelData({
 
   const innerSql = `SELECT
     session_id,
-    windowFunnel(${ONE_DAY_IN_SECONDS}, 'strict_order')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+    windowFunnel(${ONE_DAY_IN_SECONDS}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM ${TABLE_NAMES.events}
   WHERE 
     project_id = ${escape(projectId)} AND 
