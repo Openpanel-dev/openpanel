@@ -4,17 +4,17 @@ import { useSelector } from '@/redux';
 
 import { ReportBreakdowns } from './ReportBreakdowns';
 import { ReportEvents } from './ReportEvents';
-import { ReportForumula } from './ReportForumula';
+import { ReportFormula } from './ReportFormula';
 
 export function ReportSidebar() {
   const { chartType } = useSelector((state) => state.report);
-  const showForumula = chartType !== 'funnel';
+  const showFormula = chartType !== 'funnel';
   const showBreakdown = chartType !== 'funnel';
   return (
     <>
       <div className="flex flex-col gap-8">
         <ReportEvents />
-        {showForumula && <ReportForumula />}
+        {showFormula && <ReportFormula />}
         {showBreakdown && <ReportBreakdowns />}
       </div>
       <SheetFooter>
