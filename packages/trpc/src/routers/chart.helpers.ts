@@ -99,19 +99,20 @@ export function withFormula(
       };
     });
   }
-
   return [
     {
       ...series[0],
       data: series[0].data.map((item, dIndex) => {
-        const scope = series.reduce((acc, item) => {
-          if (!item.event.id) {
-            return acc;
+        const scope = series.reduce((acc, item, index) => {
+          const readableId = alphabetIds[index];
+
+          if (!readableId) {
+            throw new Error('no alphabet id for serie in withFormula');
           }
 
           return {
             ...acc,
-            [item.event.id]: item.data[dIndex]?.count ?? 0,
+            [readableId]: item.data[dIndex]?.count ?? 0,
           };
         }, {});
 
