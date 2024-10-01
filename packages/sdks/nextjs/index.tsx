@@ -18,6 +18,7 @@ type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
   cdnUrl?: string;
   filter?: string;
+  globalProperties?: Record<string, unknown>;
 };
 
 const stringify = (obj: unknown) => {
@@ -37,6 +38,7 @@ const stringify = (obj: unknown) => {
 export function OpenPanelComponent({
   profileId,
   cdnUrl,
+  globalProperties,
   ...options
 }: OpenPanelComponentProps) {
   const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
@@ -55,6 +57,12 @@ export function OpenPanelComponent({
       value: {
         profileId,
       },
+    });
+  }
+  if (globalProperties) {
+    methods.push({
+      name: 'setGlobalProperties',
+      value: globalProperties,
     });
   }
   return (
@@ -82,6 +90,18 @@ export function IdentifyComponent(props: IdentifyComponentProps) {
       <Script
         dangerouslySetInnerHTML={{
           __html: `window.op('identify', ${JSON.stringify(props)});`,
+        }}
+      />
+    </>
+  );
+}
+
+export function SetGlobalPropertiesComponent(props: Record<string, unknown>) {
+  return (
+    <>
+      <Script
+        dangerouslySetInnerHTML={{
+          __html: `window.op('setGlobalProperties', ${JSON.stringify(props)});`,
         }}
       />
     </>
