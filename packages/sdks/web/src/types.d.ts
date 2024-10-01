@@ -1,9 +1,9 @@
 import type { OpenPanel, OpenPanelOptions } from './';
 
 type ExposedMethodsNames =
-  | 'screenView'
   | 'track'
   | 'identify'
+  | 'setGlobalProperties'
   | 'alias'
   | 'increment'
   | 'decrement'
@@ -15,8 +15,11 @@ export type ExposedMethods = {
     : never;
 }[ExposedMethodsNames];
 
-export type OpenPanelMethodNames = ExposedMethodsNames | 'init';
-export type OpenPanelMethods = ExposedMethods | ['init', OpenPanelOptions];
+export type OpenPanelMethodNames = ExposedMethodsNames | 'init' | 'screenView';
+export type OpenPanelMethods =
+  | ExposedMethods
+  | ['init', OpenPanelOptions]
+  | ['screenView', string | TrackProperties, TrackProperties];
 
 declare global {
   interface Window {

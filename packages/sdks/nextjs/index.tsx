@@ -96,15 +96,25 @@ export function useOpenPanel() {
     increment,
     decrement,
     clear,
+    setGlobalProperties,
   };
+}
+
+function setGlobalProperties(properties: Record<string, unknown>) {
+  window.op?.('setGlobalProperties', properties);
 }
 
 function track(name: string, properties?: TrackProperties) {
   window.op?.('track', name, properties);
 }
 
-function screenView(properties: TrackProperties) {
-  track('screen_view', properties);
+function screenView(properties?: TrackProperties): void;
+function screenView(path: string, properties?: TrackProperties): void;
+function screenView(
+  pathOrProperties?: string | TrackProperties,
+  propertiesOrUndefined?: TrackProperties,
+) {
+  window.op?.('screenView', pathOrProperties, propertiesOrUndefined);
 }
 
 function identify(payload: IdentifyPayload) {
