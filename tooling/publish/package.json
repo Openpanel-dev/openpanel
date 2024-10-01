@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "publish": "pnpm run publish.ts",
+    "publish": "pnpm dlx ts-node publish.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
