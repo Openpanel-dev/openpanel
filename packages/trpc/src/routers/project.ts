@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { db, getId, getProjectsByOrganizationSlug } from '@openpanel/db';
+import {
+  db,
+  getId,
+  getProjectByIdCached,
+  getProjectsByOrganizationSlug,
+} from '@openpanel/db';
 
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
@@ -34,8 +39,7 @@ export const projectRouter = createTRPCRouter({
       if (!access) {
         throw TRPCAccessError('You do not have access to this project');
       }
-
-      return db.project.update({
+      const res = await db.project.update({
         where: {
           id: input.id,
         },
@@ -43,6 +47,8 @@ export const projectRouter = createTRPCRouter({
           name: input.name,
         },
       });
+      await getProjectByIdCached.clear(input.id);
+      return res;
     }),
   create: protectedProcedure
     .input(

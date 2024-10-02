@@ -79,7 +79,7 @@ export function OverviewLiveHistogram({
         {staticArray.map((percent, i) => (
           <div
             key={i as number}
-            className="flex-1 animate-pulse rounded-t bg-def-200"
+            className="flex-1 animate-pulse rounded-t-sm bg-def-200"
             style={{ height: `${percent}%` }}
           />
         ))}
@@ -99,7 +99,7 @@ export function OverviewLiveHistogram({
             <TooltipTrigger asChild>
               <div
                 className={cn(
-                  'flex-1 rounded-t transition-all ease-in-out hover:scale-110',
+                  'flex-1 rounded-t-sm transition-all ease-in-out hover:scale-110',
                   minute.count === 0 ? 'bg-def-200' : 'bg-highlight',
                 )}
                 style={{

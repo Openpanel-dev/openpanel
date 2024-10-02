@@ -15,6 +15,7 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
 
+import { NotificationProvider } from '@/components/notifications/notification-provider';
 import { OpenPanelComponent } from '@openpanel/nextjs';
 
 function AllProviders({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
           <QueryClientProvider client={queryClient}>
             <TooltipProvider delayDuration={200}>
               {children}
+              <NotificationProvider />
               <Toaster />
               <ModalProvider />
             </TooltipProvider>

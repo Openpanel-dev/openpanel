@@ -17,8 +17,8 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import { getProfiles, upsertProfile } from './profile.service';
 import type { IServiceProfile } from './profile.service';
+import { getProfiles, upsertProfile } from './profile.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,

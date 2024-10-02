@@ -157,7 +157,9 @@ export default function AddClient(props: Props) {
                       error={form.formState.errors.cors?.message}
                       placeholder="Add a domain"
                       value={field.value?.split(',') ?? []}
-                      renderTag={(tag) => (tag === '*' ? 'Allow domains' : tag)}
+                      renderTag={(tag) =>
+                        tag === '*' ? 'Allow all domains' : tag
+                      }
                       onChange={(newValue) => {
                         field.onChange(
                           newValue

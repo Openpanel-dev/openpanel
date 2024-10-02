@@ -169,7 +169,7 @@ const Tracking = ({
                             placeholder="Add a domain"
                             value={field.value?.split(',') ?? []}
                             renderTag={(tag) =>
-                              tag === '*' ? 'Allow domains' : tag
+                              tag === '*' ? 'Allow all domains' : tag
                             }
                             onChange={(newValue) => {
                               field.onChange(

@@ -1,6 +1,9 @@
 import { escape } from 'sqlstring';
 
-import { getTimezoneFromDateString } from '@openpanel/common';
+import {
+  getTimezoneFromDateString,
+  stripLeadingAndTrailingSlashes,
+} from '@openpanel/common';
 import type {
   IChartEventFilter,
   IGetChartDataInput,
@@ -328,7 +331,10 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         }
         case 'regex': {
           where[id] = value
-            .map((val) => `match(${name}, ${escape(String(val).trim())})`)
+            .map(
+              (val) =>
+                `match(${name}, ${escape(stripLeadingAndTrailingSlashes(String(val)).trim())})`,
+            )
             .join(' OR ');
           break;
         }

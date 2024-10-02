@@ -57,6 +57,14 @@ export default function SettingsToggle({ className }: Props) {
         <DropdownMenuItem asChild>
           <ProjectLink href="/settings/references">References</ProjectLink>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <ProjectLink href="/settings/notifications">
+            Notifications
+          </ProjectLink>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <ProjectLink href="/settings/integrations">Integrations</ProjectLink>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="flex w-full items-center justify-between">

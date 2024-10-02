@@ -4,12 +4,11 @@ import superjson from 'superjson';
 import type * as WebSocket from 'ws';
 
 import { getSuperJson } from '@openpanel/common';
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent, Notification } from '@openpanel/db';
 import {
   TABLE_NAMES,
   getEvents,
   getLiveVisitors,
-  getProfileById,
   getProfileByIdCached,
   transformMinimalEvent,
 } from '@openpanel/db';
@@ -167,5 +166,79 @@ export async function wsProjectEvents(
   connection.socket.on('close', () => {
     getRedisSub().unsubscribe(subscribeToEvent);
     getRedisSub().off('message', message as any);
+  });
+}
+
+export async function wsProjectNotifications(
+  connection: {
+    socket: WebSocket;
+  },
+  req: FastifyRequest<{
+    Params: {
+      projectId: string;
+    };
+    Querystring: {
+      token?: string;
+    };
+  }>,
+) {
+  const { params, query } = req;
+
+  if (!query.token) {
+    connection.socket.send('No token provided');
+    connection.socket.close();
+    return;
+  }
+
+  const subscribeToEvent = 'notification';
+  const decoded = validateClerkJwt(query.token);
+  const userId = decoded?.sub;
+  const access = await getProjectAccess({
+    userId: userId!,
+    projectId: params.projectId,
+  });
+
+  if (!access) {
+    connection.socket.send('No access');
+    connection.socket.close();
+    return;
+  }
+
+  getRedisSub().subscribe(subscribeToEvent);
+
+  const message = async (channel: string, message: string) => {
+    const notification = getSuperJson<Notification>(message);
+    if (notification?.projectId === params.projectId) {
+      connection.socket.send(superjson.stringify(notification));
+    }
+  };
+
+  getRedisSub().on('message', message as any);
+
+  connection.socket.on('close', () => {
+    getRedisSub().unsubscribe(subscribeToEvent);
+    getRedisSub().off('message', message as any);
+  });
+}
+
+export async function wsIntegrationsSlack(
+  connection: {
+    socket: WebSocket;
+  },
+  req: FastifyRequest<{
+    Querystring: {
+      organizationId?: string;
+    };
+  }>,
+) {
+  const subscribeToEvent = 'integrations:slack';
+  getRedisSub().subscribe(subscribeToEvent);
+  const onMessage = (channel: string, message: string) => {
+    connection.socket.send(JSON.stringify('ok'));
+  };
+  getRedisSub().on('message', onMessage);
+  connection.socket.on('close', () => {
+    getRedisSub().unsubscribe(subscribeToEvent);
+    getRedisSub().off('message', onMessage);
   });
 }

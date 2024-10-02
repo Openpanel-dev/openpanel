@@ -74,6 +74,8 @@ const modals = {
   Testimonial: dynamic(() => import('./Testimonial'), {
     loading: Loading,
   }),
+  AddIntegration: dynamic(() => import('./add-integration')),
+  AddNotificationRule: dynamic(() => import('./add-notification-rule')),
 };
 
 export const {

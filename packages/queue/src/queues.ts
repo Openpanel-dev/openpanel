@@ -1,6 +1,6 @@
 import { Queue, QueueEvents } from 'bullmq';
 
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent, Notification } from '@openpanel/db';
 import { getRedisQueue } from '@openpanel/redis';
 import type { TrackPayload } from '@openpanel/sdk';
 
@@ -90,3 +90,20 @@ export const cronQueue = new Queue<CronQueuePayload>('cron', {
     removeOnComplete: 10,
   },
 });
+
+export type NotificationQueuePayload = {
+  type: 'sendNotification';
+  payload: {
+    notification: Notification;
+  };
+};
+
+export const notificationQueue = new Queue<NotificationQueuePayload>(
+  'notification',
+  {
+    connection: getRedisQueue(),
+    defaultJobOptions: {
+      removeOnComplete: 10,
+    },
+  },
+);

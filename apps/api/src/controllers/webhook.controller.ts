@@ -1,9 +1,15 @@
 import type { WebhookEvent } from '@clerk/fastify';
+import { AccessLevel, db } from '@openpanel/db';
+import {
+  sendSlackNotification,
+  slackInstaller,
+} from '@openpanel/integrations/src/slack';
+import { getRedisPub } from '@openpanel/redis';
+import { zSlackAuthResponse } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { pathOr } from 'ramda';
 import { Webhook } from 'svix';
-
-import { AccessLevel, db } from '@openpanel/db';
+import { z } from 'zod';
 
 if (!process.env.CLERK_SIGNING_SECRET) {
   throw new Error('CLERK_SIGNING_SECRET is required');
@@ -151,4 +157,99 @@ export async function clerkWebhook(
   }
 
   reply.send({ success: true });
+}
+
+const paramsSchema = z.object({
+  code: z.string(),
+  state: z.string(),
+});
+
+const metadataSchema = z.object({
+  organizationId: z.string(),
+  integrationId: z.string(),
+});
+
+export async function slackWebhook(
+  request: FastifyRequest<{
+    Querystring: WebhookEvent;
+  }>,
+  reply: FastifyReply,
+) {
+  const parsedParams = paramsSchema.safeParse(request.query);
+
+  if (!parsedParams.success) {
+    request.log.error('Invalid params', parsedParams);
+    return reply.status(400).send({ error: 'Invalid params' });
+  }
+
+  const veryfiedState = await slackInstaller.stateStore?.verifyStateParam(
+    new Date(),
+    parsedParams.data.state,
+  );
+  const parsedMetadata = metadataSchema.safeParse(
+    JSON.parse(veryfiedState?.metadata ?? '{}'),
+  );
+
+  if (!parsedMetadata.success) {
+    request.log.error('Invalid metadata', parsedMetadata.error.errors);
+    return reply.status(400).send({ error: 'Invalid metadata' });
+  }
+
+  const slackOauthAccessUrl = [
+    'https://slack.com/api/oauth.v2.access',
+    `?client_id=${process.env.SLACK_CLIENT_ID}`,
+    `&client_secret=${process.env.SLACK_CLIENT_SECRET}`,
+    `&code=${parsedParams.data.code}`,
+    `&redirect_uri=${process.env.SLACK_OAUTH_REDIRECT_URL}`,
+  ].join('');
+
+  try {
+    const response = await fetch(slackOauthAccessUrl);
+    const json = await response.json();
+    const parsedJson = zSlackAuthResponse.safeParse(json);
+
+    if (!parsedJson.success) {
+      request.log.error(
+        {
+          zod: parsedJson,
+          json,
+        },
+        'Failed to parse slack auth response',
+      );
+      return reply
+        .status(400)
+        .header('Content-Type', 'text/html')
+        .send('<h1>Failed to exchange code for token</h1>');
+    }
+
+    // Send a notification first to confirm the connection
+    await sendSlackNotification({
+      webhookUrl: parsedJson.data.incoming_webhook.url,
+      message:
+        '👋 Hello. You have successfully connected OpenPanel.dev to your Slack workspace.',
+    });
+
+    await db.integration.update({
+      where: {
+        id: parsedMetadata.data.integrationId,
+        organizationId: parsedMetadata.data.organizationId,
+      },
+      data: {
+        config: {
+          type: 'slack',
+          ...parsedJson.data,
+        },
+      },
+    });
+
+    getRedisPub().publish('integrations:slack', 'ok');
+
+    reply.send({ success: true });
+  } catch (err) {
+    request.log.error(err);
+    return reply
+      .status(500)
+      .header('Content-Type', 'text/html')
+      .send('<h1>Failed to exchange code for token</h1>');
+  }
 }

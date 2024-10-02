@@ -7,11 +7,17 @@ import express from 'express';
 
 import { createInitialSalts } from '@openpanel/db';
 import type { CronQueueType } from '@openpanel/queue';
-import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
+import {
+  cronQueue,
+  eventsQueue,
+  notificationQueue,
+  sessionsQueue,
+} from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
+import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
 import { register } from './metrics';
 import { logger } from './utils/logger';
@@ -34,12 +40,18 @@ async function start() {
     workerOptions,
   );
   const cronWorker = new Worker(cronQueue.name, cronJob, workerOptions);
+  const notificationWorker = new Worker(
+    notificationQueue.name,
+    notificationJob,
+    workerOptions,
+  );
 
   createBullBoard({
     queues: [
       new BullMQAdapter(eventsQueue),
       new BullMQAdapter(sessionsQueue),
       new BullMQAdapter(cronQueue),
+      new BullMQAdapter(notificationQueue),
     ],
     serverAdapter: serverAdapter,
   });
@@ -62,7 +74,12 @@ async function start() {
     console.log(`For the UI, open http://localhost:${PORT}/`);
   });
 
-  const workers = [sessionsWorker, eventsWorker, cronWorker];
+  const workers = [
+    sessionsWorker,
+    eventsWorker,
+    cronWorker,
+    notificationWorker,
+  ];
   workers.forEach((worker) => {
     worker.on('error', (error) => {
       logger.error('worker error', {

@@ -47,15 +47,14 @@ export function getSafeJson<T>(str: string): T | null {
 
 export function getSuperJson<T>(str: string): T | null {
   const json = getSafeJson<T>(str);
-  if (
-    typeof json === 'object' &&
-    json !== null &&
-    'json' in json &&
-    'meta' in json
-  ) {
+  if (typeof json === 'object' && json !== null && 'json' in json) {
     return superjson.parse<T>(str);
   }
   return json;
+}
+
+export function setSuperJson(str: Record<string, unknown>): string {
+  return superjson.stringify(str);
 }
 
 type AnyObject = Record<string, any>;

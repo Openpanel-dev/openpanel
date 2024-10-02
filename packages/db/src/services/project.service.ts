@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server';
 
+import { cacheable } from '@openpanel/redis';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
 
@@ -23,6 +24,8 @@ export async function getProjectById(id: string) {
 
   return res;
 }
+
+export const getProjectByIdCached = cacheable(getProjectById, 60 * 60 * 24);
 
 export async function getProjectWithClients(id: string) {
   const res = await db.project.findUnique({

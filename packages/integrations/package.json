@@ -1,0 +1,18 @@
+{
+  "name": "@openpanel/integrations",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@slack/bolt": "^3.18.0",
+    "@slack/oauth": "^3.0.0"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@openpanel/validation": "workspace:*",
+    "@types/node": "^18.16.0",
+    "typescript": "^5.2.2"
+  }
+}

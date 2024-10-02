@@ -7,16 +7,16 @@ import { v4 as uuid } from 'uuid';
 import { logger } from '@/utils/logger';
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
-import { createEvent } from '@openpanel/db';
+import { checkNotificationRulesForEvent, createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';
+import type {
+  EventsQueuePayloadCreateSessionEnd,
+  EventsQueuePayloadIncomingEvent,
+} from '@openpanel/queue';
 import {
   findJobByPrefix,
   sessionsQueue,
   sessionsQueueEvents,
-} from '@openpanel/queue';
-import type {
-  EventsQueuePayloadCreateSessionEnd,
-  EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
@@ -101,6 +101,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       sdkVersion,
     };
 
+    await checkNotificationRulesForEvent(payload);
+
     return createEvent(payload);
   }
 
@@ -184,6 +186,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       createdAt: new Date(getTime(payload.createdAt) - 100),
     });
   }
+
+  await checkNotificationRulesForEvent(payload);
 
   return createEvent(payload);
 }

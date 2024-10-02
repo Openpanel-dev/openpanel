@@ -42,6 +42,7 @@ interface TooltiperProps {
   side?: 'top' | 'right' | 'bottom' | 'left';
   delayDuration?: number;
   sideOffset?: number;
+  disabled?: boolean;
 }
 export function Tooltiper({
   asChild,
@@ -52,7 +53,9 @@ export function Tooltiper({
   side,
   delayDuration = 0,
   sideOffset = 10,
+  disabled = false,
 }: TooltiperProps) {
+  if (disabled) return children;
   return (
     <Tooltip delayDuration={delayDuration}>
       <TooltipTrigger asChild={asChild} className={className} onClick={onClick}>

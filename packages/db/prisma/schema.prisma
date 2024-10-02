@@ -5,6 +5,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -30,6 +34,7 @@ model Organization {
   Client          Client[]
   Dashboard       Dashboard[]
   ShareOverview   ShareOverview[]
+  integrations    Integration[]
 
   @@map("organizations")
 }
@@ -86,6 +91,9 @@ model Project {
   meta       EventMeta[]
   references Reference[]
   access     ProjectAccess[]
+
+  notificationRules NotificationRule[]
+  notifications     Notification[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -298,4 +306,60 @@ model Reference {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("references")
+}
+
+enum IntegrationType {
+  app
+  mail
+  custom
+}
+
+model NotificationRule {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  projectId    String
+  project      Project       @relation(fields: [projectId], references: [id])
+  integrations Integration[]
+  sendToApp    Boolean       @default(false)
+  sendToEmail  Boolean       @default(false)
+  /// [IPrismaNotificationRuleConfig]
+  config       Json
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+
+  @@map("notification_rules")
+}
+
+model Notification {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId     String
+  project       Project      @relation(fields: [projectId], references: [id])
+  title         String
+  message       String
+  isReadAt      DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+  sendToApp     Boolean      @default(false)
+  sendToEmail   Boolean      @default(false)
+  integration   Integration? @relation(fields: [integrationId], references: [id])
+  integrationId String?      @db.Uuid
+  /// [IPrismaNotificationPayload]
+  payload       Json?
+
+  @@map("notifications")
+}
+
+model Integration {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  /// [IPrismaIntegrationConfig]
+  config            Json
+  organization      Organization       @relation(fields: [organizationId], references: [id])
+  organizationId    String
+  notificationRules NotificationRule[]
+  notifications     Notification[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @default(now()) @updatedAt
+
+  @@map("integrations")
 }

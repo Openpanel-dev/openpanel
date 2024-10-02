@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 interface FullPageEmptyStateProps {
   icon?: LucideIcon;
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }
 

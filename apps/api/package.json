@@ -17,6 +17,7 @@
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/logger": "workspace:*",
+    "@openpanel/integrations": "workspace:^",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/trpc": "workspace:*",

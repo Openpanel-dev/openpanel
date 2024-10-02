@@ -7,6 +7,11 @@ const webhookRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/clerk',
     handler: controller.clerkWebhook,
   });
+  fastify.route({
+    method: 'GET',
+    url: '/slack',
+    handler: controller.slackWebhook,
+  });
   done();
 };
 

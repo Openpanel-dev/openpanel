@@ -13,6 +13,7 @@
     "@bull-board/express": "5.21.0",
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
+    "@openpanel/integrations": "workspace:^",
     "@openpanel/logger": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",

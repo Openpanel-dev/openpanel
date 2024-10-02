@@ -6,6 +6,7 @@ import { getTime } from '@openpanel/common';
 import {
   type IServiceEvent,
   TABLE_NAMES,
+  checkNotificationRulesForSessionEnd,
   createEvent,
   eventBuffer,
   getEvents,
@@ -137,6 +138,8 @@ export async function createSessionEnd(
   if (!lastEvent) {
     throw new Error('No last event found');
   }
+
+  await checkNotificationRulesForSessionEnd(events);
 
   return createEvent({
     ...sessionStart,
