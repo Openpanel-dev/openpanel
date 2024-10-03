@@ -250,7 +250,10 @@ export async function slackWebhook(
       }),
     );
 
-    reply.send({ success: true });
+    return reply
+      .status(200)
+      .header('Content-Type', 'text/html')
+      .send('<h1>Slack integration added. You can close this window now.</h1>');
   } catch (err) {
     request.log.error(err);
     return reply

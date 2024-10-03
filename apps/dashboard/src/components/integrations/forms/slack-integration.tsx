@@ -19,11 +19,12 @@ export function SlackIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const popup = useRef<Window | null>(null);
   const { organizationId } = useAppParams();
   useWS(`/live/integrations/slack?organizationId=${organizationId}`, (res) => {
-    if (popup.current) {
-      popup.current.close();
+    // @ts-expect-error
+    if (window.slackPopup && typeof window.slackPopup.close === 'function') {
+      // @ts-expect-error
+      window.slackPopup.close();
     }
     onSuccess();
   });
@@ -42,14 +43,17 @@ export function SlackIntegrationForm({
       const height = 800;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2.5;
-      popup.current = window.open(
+      // @ts-expect-error
+      window.slackPopup = window.open(
         url,
         '',
         `toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=${width}, height=${height}, top=${top}, left=${left}`,
       );
 
       // The popup might have been blocked, so we redirect the user to the URL instead
-      if (!popup.current) {
+      //
+      // @ts-expect-error
+      if (!window.slackPopup) {
         window.location.href = url;
       }
     },
