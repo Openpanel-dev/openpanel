@@ -477,7 +477,7 @@ export async function getEventList({
   }
 
   if (profileId) {
-    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} group by did)`;
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
   }
 
   if (startDate && endDate) {
