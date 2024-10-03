@@ -214,6 +214,7 @@ const zCreateIntegration = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   organizationId: z.string().min(1),
+  projectId: z.string().min(1),
 });
 
 export const zCreateSlackIntegration = zCreateIntegration;

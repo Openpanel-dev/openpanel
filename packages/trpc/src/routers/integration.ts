@@ -66,6 +66,7 @@ export const integrationRouter = createTRPCRouter({
           slackInstallUrl: await getSlackInstallUrl({
             integrationId: res.id,
             organizationId: input.organizationId,
+            projectId: input.projectId,
           }),
         };
       }
@@ -84,6 +85,7 @@ export const integrationRouter = createTRPCRouter({
         slackInstallUrl: await getSlackInstallUrl({
           integrationId: res.id,
           organizationId: input.organizationId,
+          projectId: input.projectId,
         }),
       };
     }),

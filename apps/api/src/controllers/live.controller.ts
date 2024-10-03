@@ -224,39 +224,3 @@ export async function wsProjectNotifications(
     getRedisSub().off('message', message as any);
   });
 }
-
-export async function wsIntegrationsSlack(
-  connection: {
-    socket: WebSocket;
-  },
-  req: FastifyRequest<{
-    Querystring: {
-      organizationId?: string;
-    };
-  }>,
-) {
-  const { organizationId } = req.query;
-
-  if (!organizationId) {
-    connection.socket.send('No organizationId provided');
-    connection.socket.close();
-    return;
-  }
-
-  const subscribeToEvent = 'integrations:slack';
-
-  getRedisSub().subscribe(subscribeToEvent);
-  const onMessage = (channel: string, message: string) => {
-    if (channel === subscribeToEvent) {
-      const parsed = getSuperJson<{ organizationId: string }>(message);
-      if (parsed && parsed.organizationId === organizationId) {
-        connection.socket.send(message);
-      }
-    }
-  };
-  getRedisSub().on('message', onMessage);
-  connection.socket.on('close', () => {
-    getRedisSub().unsubscribe(subscribeToEvent);
-    getRedisSub().off('message', onMessage);
-  });
-}

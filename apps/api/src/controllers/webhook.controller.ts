@@ -1,5 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import type { WebhookEvent } from '@clerk/fastify';
-import { setSuperJson } from '@openpanel/common';
 import { AccessLevel, db } from '@openpanel/db';
 import {
   sendSlackNotification,
@@ -167,6 +168,7 @@ const paramsSchema = z.object({
 
 const metadataSchema = z.object({
   organizationId: z.string(),
+  projectId: z.string(),
   integrationId: z.string(),
 });
 
@@ -179,7 +181,7 @@ export async function slackWebhook(
   const parsedParams = paramsSchema.safeParse(request.query);
 
   if (!parsedParams.success) {
-    request.log.error('Invalid params', parsedParams);
+    request.log.error(parsedParams.error, 'Invalid params');
     return reply.status(400).send({ error: 'Invalid params' });
   }
 
@@ -192,7 +194,7 @@ export async function slackWebhook(
   );
 
   if (!parsedMetadata.success) {
-    request.log.error('Invalid metadata', parsedMetadata.error.errors);
+    request.log.error(parsedMetadata.error, 'Invalid metadata');
     return reply.status(400).send({ error: 'Invalid metadata' });
   }
 
@@ -217,10 +219,8 @@ export async function slackWebhook(
         },
         'Failed to parse slack auth response',
       );
-      return reply
-        .status(400)
-        .header('Content-Type', 'text/html')
-        .send('<h1>Failed to exchange code for token</h1>');
+      const html = fs.readFileSync(path.join(__dirname, 'error.html'), 'utf8');
+      return reply.status(500).header('Content-Type', 'text/html').send(html);
     }
 
     // Send a notification first to confirm the connection
@@ -230,10 +230,12 @@ export async function slackWebhook(
         '👋 Hello. You have successfully connected OpenPanel.dev to your Slack workspace.',
     });
 
+    const { projectId, organizationId, integrationId } = parsedMetadata.data;
+
     await db.integration.update({
       where: {
-        id: parsedMetadata.data.integrationId,
-        organizationId: parsedMetadata.data.organizationId,
+        id: integrationId,
+        organizationId,
       },
       data: {
         config: {
@@ -243,22 +245,12 @@ export async function slackWebhook(
       },
     });
 
-    getRedisPub().publish(
-      'integrations:slack',
-      setSuperJson({
-        organizationId: parsedMetadata.data.organizationId,
-      }),
+    return reply.redirect(
+      `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
     );
-
-    return reply
-      .status(200)
-      .header('Content-Type', 'text/html')
-      .send('<h1>Slack integration added. You can close this window now.</h1>');
   } catch (err) {
     request.log.error(err);
-    return reply
-      .status(500)
-      .header('Content-Type', 'text/html')
-      .send('<h1>Failed to exchange code for token</h1>');
+    const html = fs.readFileSync(path.join(__dirname, 'error.html'), 'utf8');
+    return reply.status(500).header('Content-Type', 'text/html').send(html);
   }
 }

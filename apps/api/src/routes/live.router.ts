@@ -32,11 +32,6 @@ const liveRouter: FastifyPluginCallback = (fastify, opts, done) => {
       { websocket: true },
       controller.wsProjectNotifications,
     );
-    fastify.get(
-      '/integrations/slack',
-      { websocket: true },
-      controller.wsIntegrationsSlack,
-    );
     done();
   });
 

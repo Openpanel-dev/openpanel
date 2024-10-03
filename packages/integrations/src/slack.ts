@@ -18,7 +18,8 @@ export const slackInstaller = new InstallProvider({
 export const getSlackInstallUrl = ({
   integrationId,
   organizationId,
-}: { integrationId: string; organizationId: string }) => {
+  projectId,
+}: { integrationId: string; organizationId: string; projectId: string }) => {
   return slackInstaller.generateInstallUrl({
     scopes: [
       'incoming-webhook',
@@ -27,7 +28,7 @@ export const getSlackInstallUrl = ({
       'team:read',
     ],
     redirectUri: SLACK_OAUTH_REDIRECT_URL,
-    metadata: JSON.stringify({ integrationId, organizationId }),
+    metadata: JSON.stringify({ integrationId, organizationId, projectId }),
   });
 };
 

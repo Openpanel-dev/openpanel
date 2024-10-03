@@ -19,49 +19,20 @@ export function SlackIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
-  useWS(`/live/integrations/slack?organizationId=${organizationId}`, (res) => {
-    // @ts-expect-error
-    console.log('3. slack integration done', window.slackPopup);
-    // @ts-expect-error
-    if (window.slackPopup && typeof window.slackPopup.close === 'function') {
-      console.log('4. close popup');
-      // @ts-expect-error
-      window.slackPopup.close();
-    }
-    onSuccess();
-  });
+  const { organizationId, projectId } = useAppParams();
+
   const form = useForm<IForm>({
     defaultValues: {
       id: defaultValues?.id,
       organizationId,
+      projectId,
       name: defaultValues?.name ?? '',
     },
     resolver: zodResolver(zCreateSlackIntegration),
   });
   const mutation = api.integration.createOrUpdateSlack.useMutation({
     async onSuccess(res) {
-      console.log('1. onSuccess', res);
-
-      const url = res.slackInstallUrl;
-      const width = 600;
-      const height = 800;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2.5;
-      console.log('2. open popup');
-      // @ts-expect-error
-      window.slackPopup = window.open(
-        url,
-        '',
-        `toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, resizable=no, copyhistory=no, width=${width}, height=${height}, top=${top}, left=${left}`,
-      );
-
-      // The popup might have been blocked, so we redirect the user to the URL instead
-      //
-      // @ts-expect-error
-      if (!window.slackPopup) {
-        window.location.href = url;
-      }
+      window.location.href = res.slackInstallUrl;
     },
     onError() {
       toast.error('Failed to create integration');
