@@ -1,4 +1,5 @@
 import type { WebhookEvent } from '@clerk/fastify';
+import { setSuperJson } from '@openpanel/common';
 import { AccessLevel, db } from '@openpanel/db';
 import {
   sendSlackNotification,
@@ -242,7 +243,12 @@ export async function slackWebhook(
       },
     });
 
-    getRedisPub().publish('integrations:slack', 'ok');
+    getRedisPub().publish(
+      'integrations:slack',
+      setSuperJson({
+        organizationId: parsedMetadata.data.organizationId,
+      }),
+    );
 
     reply.send({ success: true });
   } catch (err) {

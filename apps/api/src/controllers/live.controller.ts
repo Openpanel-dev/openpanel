@@ -142,22 +142,24 @@ export async function wsProjectEvents(
   getRedisSub().subscribe(subscribeToEvent);
 
   const message = async (channel: string, message: string) => {
-    const event = getSuperJson<IServiceEvent>(message);
-    if (event?.projectId === params.projectId) {
-      const profile = await getProfileByIdCached(
-        event.profileId,
-        event.projectId,
-      );
-      connection.socket.send(
-        superjson.stringify(
-          access
-            ? {
-                ...event,
-                profile,
-              }
-            : transformMinimalEvent(event),
-        ),
-      );
+    if (channel === subscribeToEvent) {
+      const event = getSuperJson<IServiceEvent>(message);
+      if (event?.projectId === params.projectId) {
+        const profile = await getProfileByIdCached(
+          event.profileId,
+          event.projectId,
+        );
+        connection.socket.send(
+          superjson.stringify(
+            access
+              ? {
+                  ...event,
+                  profile,
+                }
+              : transformMinimalEvent(event),
+          ),
+        );
+      }
     }
   };
 
@@ -207,9 +209,11 @@ export async function wsProjectNotifications(
   getRedisSub().subscribe(subscribeToEvent);
 
   const message = async (channel: string, message: string) => {
-    const notification = getSuperJson<Notification>(message);
-    if (notification?.projectId === params.projectId) {
-      connection.socket.send(superjson.stringify(notification));
+    if (channel === subscribeToEvent) {
+      const notification = getSuperJson<Notification>(message);
+      if (notification?.projectId === params.projectId) {
+        connection.socket.send(superjson.stringify(notification));
+      }
     }
   };
 
@@ -234,7 +238,12 @@ export async function wsIntegrationsSlack(
   const subscribeToEvent = 'integrations:slack';
   getRedisSub().subscribe(subscribeToEvent);
   const onMessage = (channel: string, message: string) => {
-    connection.socket.send(JSON.stringify('ok'));
+    if (channel === subscribeToEvent) {
+      const parsed = getSuperJson<{ organizationId: string }>(message);
+      if (parsed && parsed.organizationId === req.query.organizationId) {
+        connection.socket.send(message);
+      }
+    }
   };
   getRedisSub().on('message', onMessage);
   connection.socket.on('close', () => {
