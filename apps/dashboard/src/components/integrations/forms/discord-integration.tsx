@@ -70,6 +70,7 @@ export function DiscordIntegrationForm({
     >
       <InputWithLabel
         label="Name"
+        placeholder="Eg. My personal discord"
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />

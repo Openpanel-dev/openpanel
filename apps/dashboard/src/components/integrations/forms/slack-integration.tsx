@@ -54,6 +54,7 @@ export function SlackIntegrationForm({
     >
       <InputWithLabel
         label="Name"
+        placeholder="Eg. My personal slack"
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />

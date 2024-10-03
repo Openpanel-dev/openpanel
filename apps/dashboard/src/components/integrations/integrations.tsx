@@ -1,4 +1,4 @@
-import type { IIntegrationConfig } from '@openpanel/db';
+import type { IIntegrationConfig } from '@openpanel/validation';
 import { WebhookIcon } from 'lucide-react';
 import {
   IntegrationCardLogo,

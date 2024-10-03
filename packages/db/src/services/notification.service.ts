@@ -36,7 +36,7 @@ export const EMAIL_NOTIFICATION_INTEGRATION_ID = 'email';
 export const BASE_INTEGRATIONS: Integration[] = [
   {
     id: APP_NOTIFICATION_INTEGRATION_ID,
-    name: 'App',
+    name: 'Website',
     createdAt: new Date(),
     updatedAt: new Date(),
     config: {
@@ -44,16 +44,16 @@ export const BASE_INTEGRATIONS: Integration[] = [
     },
     organizationId: '',
   },
-  {
-    id: EMAIL_NOTIFICATION_INTEGRATION_ID,
-    name: 'Email',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    config: {
-      type: EMAIL_NOTIFICATION_INTEGRATION_ID,
-    },
-    organizationId: '',
-  },
+  // {
+  //   id: EMAIL_NOTIFICATION_INTEGRATION_ID,
+  //   name: 'Email',
+  //   createdAt: new Date(),
+  //   updatedAt: new Date(),
+  //   config: {
+  //     type: EMAIL_NOTIFICATION_INTEGRATION_ID,
+  //   },
+  //   organizationId: '',
+  // },
 ];
 
 export const isBaseIntegration = (id: string) =>

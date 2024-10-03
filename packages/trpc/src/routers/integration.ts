@@ -40,6 +40,9 @@ export const integrationRouter = createTRPCRouter({
       const integrations = await db.integration.findMany({
         where: {
           organizationId: input.organizationId,
+          config: {
+            not: {},
+          },
         },
       });
 

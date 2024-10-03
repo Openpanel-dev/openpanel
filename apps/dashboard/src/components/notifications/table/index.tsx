@@ -7,16 +7,15 @@ import type { UseQueryResult } from '@tanstack/react-query';
 import { GanttChartIcon } from 'lucide-react';
 import type { Dispatch, SetStateAction } from 'react';
 
-import type { Notification } from '@openpanel/db';
-
+import type { RouterOutputs } from '@/trpc/client';
 import { useColumns } from './columns';
 
 type Props =
   | {
-      query: UseQueryResult<Notification[]>;
+      query: UseQueryResult<RouterOutputs['notification']['list'][number][]>;
     }
   | {
-      query: UseQueryResult<Notification[]>;
+      query: UseQueryResult<RouterOutputs['notification']['list'][number][]>;
       cursor: number;
       setCursor: Dispatch<SetStateAction<number>>;
     };
@@ -31,8 +30,8 @@ export const NotificationsTable = ({ query, ...props }: Props) => {
 
   if (data?.length === 0) {
     return (
-      <FullPageEmptyState title="No events here" icon={GanttChartIcon}>
-        <p>Could not find any events</p>
+      <FullPageEmptyState title="No notifications here" icon={GanttChartIcon}>
+        <p>Could not find any notifications</p>
         {'cursor' in props && props.cursor !== 0 && (
           <Button
             className="mt-8"

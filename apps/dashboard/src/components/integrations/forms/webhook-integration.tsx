@@ -59,6 +59,7 @@ export function WebhookIntegrationForm({
     >
       <InputWithLabel
         label="Name"
+        placeholder="Eg. Zapier webhook"
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
