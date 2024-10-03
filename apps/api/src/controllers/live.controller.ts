@@ -235,12 +235,21 @@ export async function wsIntegrationsSlack(
     };
   }>,
 ) {
+  const { organizationId } = req.query;
+
+  if (!organizationId) {
+    connection.socket.send('No organizationId provided');
+    connection.socket.close();
+    return;
+  }
+
   const subscribeToEvent = 'integrations:slack';
+
   getRedisSub().subscribe(subscribeToEvent);
   const onMessage = (channel: string, message: string) => {
     if (channel === subscribeToEvent) {
       const parsed = getSuperJson<{ organizationId: string }>(message);
-      if (parsed && parsed.organizationId === req.query.organizationId) {
+      if (parsed && parsed.organizationId === organizationId) {
         connection.socket.send(message);
       }
     }

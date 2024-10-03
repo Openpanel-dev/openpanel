@@ -2,11 +2,9 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import useWS from '@/hooks/useWS';
-import { popModal } from '@/modals';
 import { type RouterOutputs, api } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zCreateSlackIntegration } from '@openpanel/validation';
-import { useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -23,8 +21,7 @@ export function SlackIntegrationForm({
 }) {
   const popup = useRef<Window | null>(null);
   const { organizationId } = useAppParams();
-  const client = useQueryClient();
-  useWS('/live/integrations/slack', (res) => {
+  useWS(`/live/integrations/slack?organizationId=${organizationId}`, (res) => {
     if (popup.current) {
       popup.current.close();
     }
