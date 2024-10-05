@@ -121,6 +121,9 @@ importers:
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
+      '@types/js-yaml':
+        specifier: ^4.0.9
+        version: 4.0.9
       '@types/jsonwebtoken':
         specifier: ^9.0.6
         version: 9.0.6
@@ -139,6 +142,9 @@ importers:
       '@types/ws':
         specifier: ^8.5.10
         version: 8.5.10
+      js-yaml:
+        specifier: ^4.1.0
+        version: 4.1.0
       tsup:
         specifier: ^7.2.0
         version: 7.3.0(typescript@5.3.3)
@@ -8444,7 +8450,6 @@ packages:
 
   /@types/js-yaml@4.0.9:
     resolution: {integrity: sha512-k4MGaQl5TGo/iipqb2UDG2UwjXziSWkh0uysQelTlJpX1qGlpUZYm8PnO4DxG1qBomtJUdYJ6qR6xdIah10JLg==}
-    dev: false
 
   /@types/json5@0.0.29:
     resolution: {integrity: sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==}
@@ -9059,7 +9064,6 @@ packages:
 
   /argparse@2.0.1:
     resolution: {integrity: sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q==}
-    dev: false
 
   /aria-hidden@1.2.3:
     resolution: {integrity: sha512-xcLxITLe2HYa1cnYnwCjkOO1PqUHQpozB8x9AR0OgWN2woOBi5kSDVxKfd0b7sb1hw5qFeJhXm9H1nu3xSfLeQ==}
@@ -13946,7 +13950,6 @@ packages:
     hasBin: true
     dependencies:
       argparse: 2.0.1
-    dev: false
 
   /jsc-android@250231.0.0:
     resolution: {integrity: sha512-rS46PvsjYmdmuz1OAWXY/1kCYG7pnf1TBqeTiOJr1iDz7s5DLxxC9n/ZMknLDxzYzNVfI7R95MH10emSSG1Wuw==}
