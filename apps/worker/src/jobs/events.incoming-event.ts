@@ -1,11 +1,11 @@
 import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
-import { parseUserAgent } from '@/utils/parse-user-agent';
 import type { Job } from 'bullmq';
 import { omit } from 'ramda';
 import { v4 as uuid } from 'uuid';
 
 import { logger } from '@/utils/logger';
 import { getTime, isSameDomain, parsePath } from '@openpanel/common';
+import { parseUserAgent } from '@openpanel/common/server';
 import type { IServiceCreateEventPayload } from '@openpanel/db';
 import { checkNotificationRulesForEvent, createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db/src/services/event.service';

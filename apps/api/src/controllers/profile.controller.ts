@@ -1,8 +1,8 @@
 import { getClientIp, parseIp } from '@/utils/parseIp';
-import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr } from 'ramda';
 
+import { parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, upsertProfile } from '@openpanel/db';
 import type {
   IncrementProfilePayload,

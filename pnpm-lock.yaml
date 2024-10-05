@@ -102,9 +102,6 @@ importers:
       svix:
         specifier: ^1.24.0
         version: 1.24.0
-      ua-parser-js:
-        specifier: ^1.0.37
-        version: 1.0.37
       url-metadata:
         specifier: ^4.1.0
         version: 4.1.0
@@ -136,9 +133,6 @@ importers:
       '@types/sqlstring':
         specifier: ^2.3.2
         version: 2.3.2
-      '@types/ua-parser-js':
-        specifier: ^0.7.39
-        version: 0.7.39
       '@types/uuid':
         specifier: ^9.0.8
         version: 9.0.8
@@ -709,9 +703,6 @@ importers:
       sqlstring:
         specifier: ^2.3.3
         version: 2.3.3
-      ua-parser-js:
-        specifier: ^1.0.37
-        version: 1.0.37
       uuid:
         specifier: ^9.0.1
         version: 9.0.1
@@ -728,9 +719,6 @@ importers:
       '@types/sqlstring':
         specifier: ^2.3.2
         version: 2.3.2
-      '@types/ua-parser-js':
-        specifier: ^0.7.39
-        version: 0.7.39
       '@types/uuid':
         specifier: ^9.0.8
         version: 9.0.8
@@ -816,6 +804,9 @@ importers:
       superjson:
         specifier: ^1.13.3
         version: 1.13.3
+      ua-parser-js:
+        specifier: ^1.0.37
+        version: 1.0.37
       unique-names-generator:
         specifier: ^4.7.1
         version: 4.7.1
@@ -832,6 +823,9 @@ importers:
       '@types/ramda':
         specifier: ^0.29.6
         version: 0.29.10
+      '@types/ua-parser-js':
+        specifier: ^0.7.39
+        version: 0.7.39
       prisma:
         specifier: ^5.1.1
         version: 5.9.1
@@ -11700,6 +11694,7 @@ packages:
   /eslint@8.56.0:
     resolution: {integrity: sha512-Go19xM6T9puCOWntie1/P997aXxFsOi37JIHRWI514Hc6ZnaHGKY9xFhrU65RT6CcBEzZoGG1e6Nq+DT04ZtZQ==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     dependencies:
       '@eslint-community/eslint-utils': 4.4.0(eslint@8.56.0)

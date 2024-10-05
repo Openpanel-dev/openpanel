@@ -9,7 +9,7 @@ export function parseUserAgent(ua?: string | null) {
   if (!ua) return parsedServerUa;
   const res = new UAParser(ua).getResult();
 
-  if (isServer(ua)) {
+  if (isServer(ua, res)) {
     return parsedServerUa;
   }
 
@@ -71,17 +71,28 @@ const userAgentServerList = [
   'grpc-',
 ];
 
-function isServer(userAgent: string) {
-  const match = userAgentServerList.some((server) =>
+function isServer(userAgent: string, res: UAParser.IResult) {
+  const isInServerList = userAgentServerList.some((server) =>
     userAgent.toLowerCase().includes(server.toLowerCase()),
   );
-  if (match) {
+  if (isInServerList) {
     return true;
   }
 
   // Matches user agents like "Go-http-client/1.0" or "Go Http Client/1.0"
   // It should just match the first name (with optional spaces) and version
-  return !!userAgent.match(/^[^\/]+\/[\d.]+$/);
+  const isSingleNameWithVersion = !!userAgent.match(/^[^\/]+\/[\d.]+$/);
+  if (isSingleNameWithVersion) {
+    return true;
+  }
+
+  // If all of these are undefined, we can consider it a server
+  return (
+    res.os.name === undefined &&
+    res.browser.name === undefined &&
+    res.device.vendor === undefined &&
+    res.device.model === undefined
+  );
 }
 
 export function getDevice(ua: string) {

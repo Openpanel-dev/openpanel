@@ -1,10 +1,9 @@
 import type { GeoLocation } from '@/utils/parseIp';
 import { getClientIp, parseIp } from '@/utils/parseIp';
-import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
-import { generateDeviceId } from '@openpanel/common/server';
+import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
   createProfileAlias,
   getProfileById,
