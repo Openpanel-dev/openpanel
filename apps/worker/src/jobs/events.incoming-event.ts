@@ -63,10 +63,12 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   const uaInfo = parseUserAgent(userAgent);
 
   if (uaInfo.isServer) {
-    const event = await getLastScreenViewFromProfileId({
-      profileId,
-      projectId,
-    });
+    const event = profileId
+      ? await getLastScreenViewFromProfileId({
+          profileId,
+          projectId,
+        })
+      : null;
 
     const payload: IServiceCreateEventPayload = {
       name: body.name,
@@ -82,8 +84,8 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       country: event?.country || geo.country || '',
       city: event?.city || geo.city || '',
       region: event?.region || geo.region || '',
-      longitude: geo.longitude,
-      latitude: geo.latitude,
+      longitude: event?.longitude || geo.longitude || null,
+      latitude: event?.latitude || geo.latitude || null,
       os: event?.os ?? '',
       osVersion: event?.osVersion ?? '',
       browser: event?.browser ?? '',
@@ -128,6 +130,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     profileId,
     projectId,
     properties: Object.assign({}, omit(GLOBAL_PROPERTIES, properties), {
+      user_agent: userAgent,
       __hash: hash,
       __query: query,
     }),
