@@ -5,11 +5,54 @@ const parsedServerUa = {
   device: 'server',
 } as const;
 
+const IPHONE_MODEL_REGEX = /(iPhone|iPad)\s*([0-9,]+)/i;
+const IOS_MODEL_REGEX = /(iOS)\s*([0-9\.]+)/i;
+
+const isIphone = (ua: string) => {
+  const model = ua.match(IPHONE_MODEL_REGEX);
+  const os = ua.match(IOS_MODEL_REGEX);
+  return model && os
+    ? {
+        model: model[1],
+        os: os[1],
+        osVersion: os[2],
+      }
+    : null;
+};
+
+const parse = (ua: string): UAParser.IResult => {
+  const parser = new UAParser(ua);
+  const res = parser.getResult();
+
+  // Some user agents are not detected correctly by ua-parser-js
+  // Doing some extra checks for ios
+  if (!res.device.model && !res.os.name) {
+    const iphone = isIphone(ua);
+    if (iphone) {
+      return {
+        ...res,
+        device: {
+          ...res.device,
+          model: iphone.model,
+          vendor: 'Apple',
+        },
+        os: {
+          ...res.os,
+          name: iphone.os,
+          version: iphone.osVersion,
+        },
+      };
+    }
+  }
+
+  return res;
+};
+
 export function parseUserAgent(ua?: string | null) {
   if (!ua) return parsedServerUa;
-  const res = new UAParser(ua).getResult();
+  const res = parse(ua);
 
-  if (isServer(ua, res)) {
+  if (isServer(res)) {
     return parsedServerUa;
   }
 
@@ -25,63 +68,10 @@ export function parseUserAgent(ua?: string | null) {
   } as const;
 }
 
-const userAgentServerList = [
-  // Node.js libraries
-  'node',
-  'node-fetch',
-  'axios',
-  'request',
-  'superagent',
-  'undici',
-
-  // Python libraries
-  'python-requests',
-  'python-urllib',
-  'aiohttp',
-  'python',
-
-  // Ruby libraries
-  'Faraday',
-  'Ruby',
-  'http.rb',
-
-  // Go libraries
-  'Go-http-client',
-  'Go-http-client',
-
-  // Java libraries
-  'Apache-HttpClient',
-  'okhttp',
-  'okhowtp',
-
-  // PHP libraries
-  'GuzzleHttp',
-  'PHP-cURL',
-
-  // Other
-  'Dart',
-  'RestSharp', // Popular .NET HTTP client library
-  'HttpClientFactory', // .NET's typed client factory
-  'Ktor', // A client for Kotlin
-  'Ning', // Async HTTP client for Java
-  'grpc-csharp', // gRPC for C#
-  'Volley', // HTTP library used in Android apps for making network requests
-  'Spring',
-  'vert.x',
-  'grpc-',
-];
-
-function isServer(userAgent: string, res: UAParser.IResult) {
-  const isInServerList = userAgentServerList.some((server) =>
-    userAgent.toLowerCase().includes(server.toLowerCase()),
-  );
-  if (isInServerList) {
-    return true;
-  }
-
+function isServer(res: UAParser.IResult) {
   // Matches user agents like "Go-http-client/1.0" or "Go Http Client/1.0"
   // It should just match the first name (with optional spaces) and version
-  const isSingleNameWithVersion = !!userAgent.match(/^[^\/]+\/[\d.]+$/);
+  const isSingleNameWithVersion = !!res.ua.match(/^[^\/]+\/[\d.]+$/);
   if (isSingleNameWithVersion) {
     return true;
   }
