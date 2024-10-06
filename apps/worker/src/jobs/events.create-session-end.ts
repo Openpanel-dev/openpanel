@@ -150,6 +150,7 @@ export async function createSessionEnd(
     name: 'session_end',
     duration: sessionDuration,
     path: screenViews[0]?.path ?? '',
-    createdAt: new Date(getTime(lastEvent?.createdAt) + 100),
+    createdAt: new Date(getTime(lastEvent.createdAt) + 1000),
+    profileId: lastEvent.profileId || sessionStart.profileId,
   });
 }
