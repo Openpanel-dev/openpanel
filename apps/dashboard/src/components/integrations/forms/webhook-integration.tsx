@@ -20,12 +20,13 @@ export function WebhookIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
       {
         id: defaultValues?.id,
         organizationId,
+        projectId,
         config: {
           type: 'webhook' as const,
           url: '',
