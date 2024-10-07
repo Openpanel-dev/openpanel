@@ -45,6 +45,20 @@ const parse = (ua: string): UAParser.IResult => {
     }
   }
 
+  // Mozilla/5.0 (iPad; iPadOS 18_0; like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/18.0
+  if (res.device.model === 'iPad' && !res.os.version) {
+    const osVersion = ua.match(/iPadOS\s*([0-9_]+)/i);
+    if (osVersion) {
+      return {
+        ...res,
+        os: {
+          ...res.os,
+          version: osVersion[1]!.replace('_', '.'),
+        },
+      };
+    }
+  }
+
   return res;
 };
 
