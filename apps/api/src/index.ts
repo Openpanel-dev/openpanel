@@ -209,8 +209,16 @@ const startServer = async () => {
     fastify.register(importRouter, { prefix: '/import' });
     fastify.register(trackRouter, { prefix: '/track' });
     fastify.setErrorHandler((error, request, reply) => {
-      request.log.error('request error', { error });
-      reply.status(500).send('Internal server error');
+      if (error.statusCode === 429) {
+        reply.status(429).send({
+          status: 429,
+          error: 'Too Many Requests',
+          message: 'You have exceeded the rate limit for this endpoint.',
+        });
+      } else {
+        request.log.error('request error', { error });
+        reply.status(500).send('Internal server error');
+      }
     });
     fastify.get('/', (_request, reply) => {
       reply.send({ name: 'openpanel sdk api' });

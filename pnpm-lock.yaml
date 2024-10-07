@@ -42,6 +42,9 @@ importers:
       '@fastify/cors':
         specifier: ^9.0.0
         version: 9.0.1
+      '@fastify/rate-limit':
+        specifier: ^9.1.0
+        version: 9.1.0
       '@fastify/websocket':
         specifier: ^8.3.1
         version: 8.3.1
@@ -3805,6 +3808,14 @@ packages:
       fast-deep-equal: 3.1.3
     dev: false
 
+  /@fastify/rate-limit@9.1.0:
+    resolution: {integrity: sha512-h5dZWCkuZXN0PxwqaFQLxeln8/LNwQwH9popywmDCFdKfgpi4b/HoMH1lluy6P+30CG9yzzpSpwTCIPNB9T1JA==}
+    dependencies:
+      '@lukeed/ms': 2.0.2
+      fastify-plugin: 4.5.1
+      toad-cache: 3.7.0
+    dev: false
+
   /@fastify/websocket@8.3.1:
     resolution: {integrity: sha512-hsQYHHJme/kvP3ZS4v/WMUznPBVeeQHHwAoMy1LiN6m/HuPfbdXq1MBJ4Nt8qX1YI+eVbog4MnOsU7MTozkwYA==}
     dependencies:
@@ -4309,6 +4320,11 @@ packages:
 
   /@js-sdsl/ordered-map@4.4.2:
     resolution: {integrity: sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw==}
+    dev: false
+
+  /@lukeed/ms@2.0.2:
+    resolution: {integrity: sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA==}
+    engines: {node: '>=8'}
     dev: false
 
   /@mapbox/node-pre-gyp@1.0.11:
