@@ -1,10 +1,10 @@
 'use client';
 
-import { Children, useEffect, useRef, useState } from 'react';
 import { useThrottle } from '@/hooks/useThrottle';
 import { cn } from '@/utils/cn';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import { last } from 'ramda';
+import { Children, useEffect, useRef, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ export function WidgetHead({ className, ...props }: WidgetHeadProps) {
     <WidgetHeadBase
       className={cn(
         'flex flex-col rounded-t-xl p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:justify-between [&_.title]:p-4 [&_.title]:font-semibold',
-        className
+        className,
       )}
       {...props}
     />
@@ -43,11 +43,11 @@ export function WidgetButtons({
       if (sizes.current.length === 0) {
         // Get buttons
         const buttons: HTMLButtonElement[] = Array.from(
-          container.current.querySelectorAll(`button`)
+          container.current.querySelectorAll('button'),
         );
         // Get sizes and cache them
         sizes.current = buttons.map(
-          (button) => Math.ceil(button.offsetWidth) + gap
+          (button) => Math.ceil(button.offsetWidth) + gap,
         );
       }
       const containerWidth = container.current.offsetWidth;
@@ -62,7 +62,7 @@ export function WidgetButtons({
             }
             return { index, size: acc.size + size };
           },
-          { index: 0, size: 0 }
+          { index: 0, size: 0 },
         );
 
         setSlice(res.index);
@@ -86,7 +86,7 @@ export function WidgetButtons({
       ref={container}
       className={cn(
         '-mb-px -mt-2 flex flex-wrap justify-start self-stretch px-4 transition-opacity [&_button.active]:border-b-2 [&_button.active]:border-black [&_button.active]:opacity-100 dark:[&_button.active]:border-white [&_button]:whitespace-nowrap [&_button]:py-1 [&_button]:text-sm [&_button]:opacity-50',
-        className
+        className,
       )}
       style={{ gap }}
       {...props}
@@ -96,7 +96,7 @@ export function WidgetButtons({
           <div
             className={cn(
               'flex [&_button]:leading-normal',
-              slice < index ? hidden : 'opacity-100'
+              slice < index ? hidden : 'opacity-100',
             )}
           >
             {child}
@@ -106,9 +106,10 @@ export function WidgetButtons({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
+            type="button"
             className={cn(
               'flex select-none items-center gap-1',
-              sizes.current.length - 1 === slice ? hidden : 'opacity-50'
+              sizes.current.length - 1 === slice ? hidden : 'opacity-50',
             )}
           >
             More <ChevronsUpDownIcon size={12} />
@@ -138,7 +139,7 @@ export function WidgetFooter({
     <div
       className={cn(
         'flex rounded-b-md border-t bg-def-100 p-2  py-1',
-        className
+        className,
       )}
       {...props}
     >

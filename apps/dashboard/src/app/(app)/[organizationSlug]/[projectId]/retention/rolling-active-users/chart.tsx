@@ -1,13 +1,15 @@
 'use client';
 
-import { getYAxisWidth } from '@/components/report/chart/chart-utils';
-import { ResponsiveContainer } from '@/components/report/chart/ResponsiveContainer';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import {
+  useXAxisProps,
+  useYAxisProps,
+} from '@/components/report-chart/common/axis';
 import { getChartColor } from '@/utils/theme';
 import {
   Area,
   AreaChart,
   Tooltip as RechartTooltip,
+  ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -50,106 +52,94 @@ function Tooltip(props: any) {
 }
 
 const Chart = ({ data }: Props) => {
-  const max = Math.max(...data.monthly.map((d) => d.users));
-  const number = useNumber();
   const rechartData = data.daily.map((d) => ({
-    date: d.date,
+    date: new Date(d.date).getTime(),
     dau: d.users,
     wau: data.weekly.find((w) => w.date === d.date)?.users,
     mau: data.monthly.find((m) => m.date === d.date)?.users,
   }));
+  const xAxisProps = useXAxisProps({ interval: 'day' });
+  const yAxisProps = useYAxisProps({
+    data: data.monthly.map((d) => d.users),
+  });
   return (
-    <div className="p-4">
+    <div className="aspect-video max-h-[300px] w-full p-4">
       <ResponsiveContainer>
-        {({ width, height }) => (
-          <AreaChart data={rechartData} width={width} height={height}>
-            <defs>
-              <linearGradient id="dau" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={getChartColor(0)}
-                  stopOpacity={0.8}
-                ></stop>
-                <stop
-                  offset="100%"
-                  stopColor={getChartColor(0)}
-                  stopOpacity={0.1}
-                ></stop>
-              </linearGradient>
-              <linearGradient id="wau" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={getChartColor(1)}
-                  stopOpacity={0.8}
-                ></stop>
-                <stop
-                  offset="100%"
-                  stopColor={getChartColor(1)}
-                  stopOpacity={0.1}
-                ></stop>
-              </linearGradient>
-              <linearGradient id="mau" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={getChartColor(2)}
-                  stopOpacity={0.8}
-                ></stop>
-                <stop
-                  offset="100%"
-                  stopColor={getChartColor(2)}
-                  stopOpacity={0.1}
-                ></stop>
-              </linearGradient>
-            </defs>
+        <AreaChart data={rechartData}>
+          <defs>
+            <linearGradient id="dau" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="0%"
+                stopColor={getChartColor(0)}
+                stopOpacity={0.8}
+              />
+              <stop
+                offset="100%"
+                stopColor={getChartColor(0)}
+                stopOpacity={0.1}
+              />
+            </linearGradient>
+            <linearGradient id="wau" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="0%"
+                stopColor={getChartColor(1)}
+                stopOpacity={0.8}
+              />
+              <stop
+                offset="100%"
+                stopColor={getChartColor(1)}
+                stopOpacity={0.1}
+              />
+            </linearGradient>
+            <linearGradient id="mau" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="0%"
+                stopColor={getChartColor(2)}
+                stopOpacity={0.8}
+              />
+              <stop
+                offset="100%"
+                stopColor={getChartColor(2)}
+                stopOpacity={0.1}
+              />
+            </linearGradient>
+          </defs>
 
-            <RechartTooltip content={<Tooltip />} />
+          <RechartTooltip content={<Tooltip />} />
 
-            <Area
-              dataKey="dau"
-              stroke={getChartColor(0)}
-              strokeWidth={2}
-              fill={`url(#dau)`}
-              isAnimationActive={false}
-            />
-            <Area
-              dataKey="wau"
-              stroke={getChartColor(1)}
-              strokeWidth={2}
-              fill={`url(#wau)`}
-              isAnimationActive={false}
-            />
-            <Area
-              dataKey="mau"
-              stroke={getChartColor(2)}
-              strokeWidth={2}
-              fill={`url(#mau)`}
-              isAnimationActive={false}
-            />
-            <XAxis
-              dataKey="date"
-              axisLine={false}
-              fontSize={12}
-              // type="number"
-              tickLine={false}
-            />
-            <YAxis
-              label={{
-                value: 'UNIQUE USERS',
-                angle: -90,
-                position: 'insideLeft',
-                offset: 0,
-                fontSize: 10,
-              }}
-              fontSize={12}
-              axisLine={false}
-              tickLine={false}
-              width={getYAxisWidth(max)}
-              allowDecimals={false}
-              domain={[0, max]}
-              tickFormatter={number.short}
-            />
-          </AreaChart>
-        )}
+          <Area
+            dataKey="dau"
+            stroke={getChartColor(0)}
+            strokeWidth={2}
+            fill={'url(#dau)'}
+            isAnimationActive={false}
+          />
+          <Area
+            dataKey="wau"
+            stroke={getChartColor(1)}
+            strokeWidth={2}
+            fill={'url(#wau)'}
+            isAnimationActive={false}
+          />
+          <Area
+            dataKey="mau"
+            stroke={getChartColor(2)}
+            strokeWidth={2}
+            fill={'url(#mau)'}
+            isAnimationActive={false}
+          />
+          <XAxis {...xAxisProps} dataKey="date" />
+          <YAxis
+            {...yAxisProps}
+            label={{
+              value: 'UNIQUE USERS',
+              angle: -90,
+              position: 'insideLeft',
+              offset: 0,
+              fontSize: 10,
+            }}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

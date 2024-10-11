@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 
 const withSuspense = <P,>(
   Component: React.ComponentType<P>,
-  Fallback: React.ComponentType<P>
+  Fallback: React.ComponentType<P>,
 ) => {
   const WithSuspense: React.ComponentType<P> = (props) => {
     const fallback = <Fallback {...(props as any)} />;

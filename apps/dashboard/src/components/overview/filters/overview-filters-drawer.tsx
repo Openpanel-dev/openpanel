@@ -8,7 +8,7 @@ import type { OverviewFiltersDrawerContentProps } from './overview-filters-drawe
 import { OverviewFiltersDrawerContent } from './overview-filters-drawer-content';
 
 export function OverviewFiltersDrawer(
-  props: OverviewFiltersDrawerContentProps
+  props: OverviewFiltersDrawerContentProps,
 ) {
   return (
     <Sheet>

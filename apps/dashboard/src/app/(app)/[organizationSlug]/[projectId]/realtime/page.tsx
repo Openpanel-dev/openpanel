@@ -1,12 +1,11 @@
-import { Suspense } from 'react';
 import {
   Fullscreen,
   FullscreenClose,
   FullscreenOpen,
 } from '@/components/fullscreen-toggle';
-import { LazyChart } from '@/components/report/chart/LazyChart';
+import { ReportChart } from '@/components/report-chart';
+import { Suspense } from 'react';
 
-import PageLayout from '../page-layout';
 import RealtimeMap from './map';
 import RealtimeLiveEventsServer from './realtime-live-events';
 import { RealtimeLiveHistogram } from './realtime-live-histogram';
@@ -42,9 +41,11 @@ export default function Page({ params: { projectId } }: Props) {
             <div className="mb-6">
               <div className="font-bold">Pages</div>
             </div>
-            <LazyChart
-              hideID
-              {...{
+            <ReportChart
+              options={{
+                hideID: true,
+              }}
+              report={{
                 projectId,
                 events: [
                   {
@@ -74,9 +75,11 @@ export default function Page({ params: { projectId } }: Props) {
             <div className="mb-6">
               <div className="font-bold">Cities</div>
             </div>
-            <LazyChart
-              hideID
-              {...{
+            <ReportChart
+              options={{
+                hideID: true,
+              }}
+              report={{
                 projectId,
                 events: [
                   {
@@ -106,9 +109,11 @@ export default function Page({ params: { projectId } }: Props) {
             <div className="mb-6">
               <div className="font-bold">Referrers</div>
             </div>
-            <LazyChart
-              hideID
-              {...{
+            <ReportChart
+              options={{
+                hideID: true,
+              }}
+              report={{
                 projectId,
                 events: [
                   {

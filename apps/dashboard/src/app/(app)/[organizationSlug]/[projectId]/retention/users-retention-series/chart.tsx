@@ -1,15 +1,17 @@
 'use client';
 
-import { getYAxisWidth } from '@/components/report/chart/chart-utils';
-import { ResponsiveContainer } from '@/components/report/chart/ResponsiveContainer';
+import {
+  useXAxisProps,
+  useYAxisProps,
+} from '@/components/report-chart/common/axis';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import { useNumber } from '@/hooks/useNumerFormatter';
 import { formatDate } from '@/utils/date';
 import { getChartColor } from '@/utils/theme';
 import {
   Area,
   AreaChart,
   Tooltip as RechartTooltip,
+  ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts';
@@ -54,69 +56,61 @@ function Tooltip({ payload }: any) {
 }
 
 const Chart = ({ data }: Props) => {
-  const max = Math.max(...data.map((d) => d.retention));
-  const number = useNumber();
+  const xAxisProps = useXAxisProps();
+  const yAxisProps = useYAxisProps({
+    data: data.map((d) => d.retention),
+  });
   return (
-    <div className="p-4">
+    <div className="aspect-video max-h-[300px] w-full p-4">
       <ResponsiveContainer>
-        {({ width, height }) => (
-          <AreaChart data={data} width={width} height={height}>
-            <defs>
-              <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={getChartColor(0)}
-                  stopOpacity={0.8}
-                ></stop>
-                <stop
-                  offset="100%"
-                  stopColor={getChartColor(0)}
-                  stopOpacity={0.1}
-                ></stop>
-              </linearGradient>
-            </defs>
+        <AreaChart data={data}>
+          <defs>
+            <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+              <stop
+                offset="0%"
+                stopColor={getChartColor(0)}
+                stopOpacity={0.8}
+              />
+              <stop
+                offset="100%"
+                stopColor={getChartColor(0)}
+                stopOpacity={0.1}
+              />
+            </linearGradient>
+          </defs>
 
-            <RechartTooltip content={<Tooltip />} />
+          <RechartTooltip content={<Tooltip />} />
 
-            <Area
-              dataKey="retention"
-              stroke={getChartColor(0)}
-              strokeWidth={2}
-              fill={`url(#bg)`}
-              isAnimationActive={false}
-            />
-            <XAxis
-              axisLine={false}
-              fontSize={12}
-              dataKey="date"
-              tickFormatter={(m: string) => formatDate(new Date(m))}
-              tickLine={false}
-              allowDuplicatedCategory={false}
-              label={{
-                value: 'DATE',
-                position: 'insideBottom',
-                offset: 0,
-                fontSize: 10,
-              }}
-            />
-            <YAxis
-              label={{
-                value: 'RETENTION (%)',
-                angle: -90,
-                position: 'insideLeft',
-                offset: 0,
-                fontSize: 10,
-              }}
-              fontSize={12}
-              axisLine={false}
-              tickLine={false}
-              width={getYAxisWidth(max)}
-              allowDecimals={false}
-              domain={[0, max]}
-              tickFormatter={number.short}
-            />
-          </AreaChart>
-        )}
+          <Area
+            dataKey="retention"
+            stroke={getChartColor(0)}
+            strokeWidth={2}
+            fill={'url(#bg)'}
+            isAnimationActive={false}
+          />
+          <XAxis
+            {...xAxisProps}
+            dataKey="date"
+            tickFormatter={(m: string) => formatDate(new Date(m))}
+            allowDuplicatedCategory={false}
+            label={{
+              value: 'DATE',
+              position: 'insideBottom',
+              offset: 0,
+              fontSize: 10,
+            }}
+          />
+          <YAxis
+            {...yAxisProps}
+            label={{
+              value: 'RETENTION (%)',
+              angle: -90,
+              position: 'insideLeft',
+              offset: 0,
+              fontSize: 10,
+            }}
+          />
+        </AreaChart>
       </ResponsiveContainer>
     </div>
   );

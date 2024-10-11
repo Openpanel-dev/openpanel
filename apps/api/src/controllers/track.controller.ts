@@ -1,10 +1,9 @@
 import type { GeoLocation } from '@/utils/parseIp';
 import { getClientIp, parseIp } from '@/utils/parseIp';
-import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { assocPath, path, pathOr, pick } from 'ramda';
+import { path, assocPath, pathOr, pick } from 'ramda';
 
-import { generateDeviceId } from '@openpanel/common';
+import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import {
   createProfileAlias,
   getProfileById,
@@ -31,21 +30,21 @@ export function getStringHeaders(headers: FastifyRequest['headers']) {
         'openpanel-sdk-version',
         'openpanel-client-id',
       ],
-      headers
-    )
+      headers,
+    ),
   ).reduce(
     (acc, [key, value]) => ({
       ...acc,
       [key]: value ? String(value) : undefined,
     }),
-    {}
+    {},
   );
 }
 
 function getIdentity(body: TrackHandlerPayload): IdentifyPayload | undefined {
   const identity = path<IdentifyPayload>(
     ['properties', '__identify'],
-    body.payload
+    body.payload,
   );
 
   return (
@@ -62,7 +61,7 @@ export async function handler(
   request: FastifyRequest<{
     Body: TrackHandlerPayload;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const ip =
     path<string>(['properties', '__ip'], request.body.payload) ||
@@ -117,6 +116,9 @@ export async function handler(
           projectId,
           geo,
           headers: getStringHeaders(request.headers),
+          timestamp: request.timestamp
+            ? new Date(request.timestamp).toISOString()
+            : new Date().toISOString(),
         }),
       ];
 
@@ -129,7 +131,7 @@ export async function handler(
             projectId,
             geo,
             ua,
-          })
+          }),
         );
       }
 
@@ -182,6 +184,7 @@ async function track({
   projectId,
   geo,
   headers,
+  timestamp,
 }: {
   payload: TrackPayload;
   currentDeviceId: string;
@@ -189,32 +192,43 @@ async function track({
   projectId: string;
   geo: GeoLocation;
   headers: Record<string, string | undefined>;
+  timestamp: string;
 }) {
+  const isScreenView = payload.name === 'screen_view';
   // this will ensure that we don't have multiple events creating sessions
   const locked = await getRedisCache().set(
-    `request:priority:${currentDeviceId}-${previousDeviceId}`,
+    `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
     'locked',
-    'EX',
-    10,
-    'NX'
+    'PX',
+    950, // a bit under the delay below
+    'NX',
   );
 
-  eventsQueue.add('event', {
-    type: 'incomingEvent',
-    payload: {
-      projectId,
-      headers,
-      event: {
-        ...payload,
-        // Dont rely on the client for the timestamp
-        timestamp: new Date().toISOString(),
+  eventsQueue.add(
+    'event',
+    {
+      type: 'incomingEvent',
+      payload: {
+        projectId,
+        headers,
+        event: {
+          ...payload,
+          // Dont rely on the client for the timestamp
+          timestamp,
+        },
+        geo,
+        currentDeviceId,
+        previousDeviceId,
+        priority: locked === 'OK',
       },
-      geo,
-      currentDeviceId,
-      previousDeviceId,
-      priority: locked === 'OK',
     },
-  });
+    {
+      // Prioritize 'screen_view' events by setting no delay
+      // This ensures that session starts are created from 'screen_view' events
+      // rather than other events, maintaining accurate session tracking
+      delay: payload.name === 'screen_view' ? undefined : 1000,
+    },
+  );
 }
 
 async function identify({
@@ -230,6 +244,7 @@ async function identify({
 }) {
   const uaInfo = parseUserAgent(ua);
   await upsertProfile({
+    ...payload,
     id: payload.profileId,
     isExternal: true,
     projectId,
@@ -238,7 +253,6 @@ async function identify({
       ...(geo ?? {}),
       ...uaInfo,
     },
-    ...payload,
   });
 }
 
@@ -269,19 +283,19 @@ async function increment({
     throw new Error('Not found');
   }
 
-  const parsed = parseInt(
+  const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10
+    10,
   );
 
-  if (isNaN(parsed)) {
+  if (Number.isNaN(parsed)) {
     throw new Error('Not number');
   }
 
   profile.properties = assocPath(
     property.split('.'),
     parsed + (value || 1),
-    profile.properties
+    profile.properties,
   );
 
   await upsertProfile({
@@ -305,19 +319,19 @@ async function decrement({
     throw new Error('Not found');
   }
 
-  const parsed = parseInt(
+  const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10
+    10,
   );
 
-  if (isNaN(parsed)) {
+  if (Number.isNaN(parsed)) {
     throw new Error('Not number');
   }
 
   profile.properties = assocPath(
     property.split('.'),
     parsed - (value || 1),
-    profile.properties
+    profile.properties,
   );
 
   await upsertProfile({

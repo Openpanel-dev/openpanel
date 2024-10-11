@@ -6,8 +6,6 @@
     "dev": "rm -rf .next && pnpm with-env next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{tsx,mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },
@@ -44,34 +42,15 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@tailwindcss/typography": "^0.5.10",
     "@types/node": "^18.16.0",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@types/react-syntax-highlighter": "^15.5.9",
-    "@typescript-eslint/eslint-plugin": "^6.6.0",
-    "@typescript-eslint/parser": "^6.6.0",
     "autoprefixer": "^10.4.14",
-    "eslint": "^8.48.0",
     "postcss": "^8.4.27",
-    "prettier": "^3.0.3",
-    "prettier-plugin-tailwindcss": "^0.5.1",
     "tailwindcss": "^3.3.3",
     "typescript": "^5.2.2"
-  },
-  "ct3aMetadata": {
-    "initVersion": "7.21.0"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base",
-      "@openpanel/eslint-config/react",
-      "@openpanel/eslint-config/nextjs"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

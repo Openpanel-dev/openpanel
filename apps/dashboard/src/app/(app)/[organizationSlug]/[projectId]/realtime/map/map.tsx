@@ -1,11 +1,11 @@
 'use client';
 
-import { Fragment, useEffect, useRef, useState } from 'react';
 import { useFullscreen } from '@/components/fullscreen-toggle';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { cn } from '@/utils/cn';
 import { bind } from 'bind-event-listener';
 import { useTheme } from 'next-themes';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import {
   ComposableMap,
   Geographies,
@@ -22,8 +22,8 @@ import {
 } from './coordinates';
 import {
   CustomZoomableGroup,
-  determineZoom,
   GEO_MAP_URL,
+  determineZoom,
   getBoundingBox,
   useAnimatedState,
 } from './map.helpers';
@@ -37,7 +37,7 @@ const Map = ({ markers }: Props) => {
   const showCenterMarker = false;
   const ref = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(
-    null
+    null,
   );
 
   // const { markers, toggle } = useActiveMarkers(_m);
@@ -50,7 +50,7 @@ const Map = ({ markers }: Props) => {
   const [zoom] = useAnimatedState(
     markers.length === 1
       ? 20
-      : determineZoom(boundingBox, size ? size?.height / size?.width : 1)
+      : determineZoom(boundingBox, size ? size?.height / size?.width : 1),
   );
 
   const [long] = useAnimatedState(center.long);
@@ -99,7 +99,7 @@ const Map = ({ markers }: Props) => {
     <div
       className={cn(
         'fixed bottom-0 left-0 right-0 top-0',
-        !isFullscreen && 'lg:left-72'
+        !isFullscreen && 'lg:left-72',
       )}
       ref={ref}
     >
@@ -142,7 +142,7 @@ const Map = ({ markers }: Props) => {
               )}
               {clusterCoordinates(markers).map((marker) => {
                 const size = adjustSizeBasedOnZoom(
-                  calculateMarkerSize(marker.count)
+                  calculateMarkerSize(marker.count),
                 );
                 const coordinates: [number, number] = [
                   marker.center.long,

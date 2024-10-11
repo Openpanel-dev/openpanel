@@ -3,8 +3,8 @@
 import { ColorSquare } from '@/components/color-square';
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
+import { useEventProperties } from '@/hooks/useEventProperties';
 import { useDispatch, useSelector } from '@/redux';
-import { api } from '@/trpc/client';
 import { SplitIcon } from 'lucide-react';
 
 import type { IChartBreakdown } from '@openpanel/validation';
@@ -20,12 +20,11 @@ export function ReportBreakdowns() {
   const range = useSelector((state) => state.report.range);
 
   const dispatch = useDispatch();
-  const propertiesQuery = api.chart.properties.useQuery({
+  const properties = useEventProperties({
     projectId,
     range,
     interval,
-  });
-  const propertiesCombobox = (propertiesQuery.data ?? []).map((item) => ({
+  }).map((item) => ({
     value: item,
     label: item, // <RenderDots truncate>{item}</RenderDots>,
   }));
@@ -61,10 +60,10 @@ export function ReportBreakdowns() {
                       changeBreakdown({
                         ...item,
                         name: value,
-                      })
+                      }),
                     );
                   }}
-                  items={propertiesCombobox}
+                  items={properties}
                   placeholder="Select..."
                 />
                 <ReportBreakdownMore onClick={handleMore(item)} />
@@ -81,10 +80,10 @@ export function ReportBreakdowns() {
             dispatch(
               addBreakdown({
                 name: value,
-              })
+              }),
             );
           }}
-          items={propertiesCombobox}
+          items={properties}
           placeholder="Select breakdown"
         />
       </div>

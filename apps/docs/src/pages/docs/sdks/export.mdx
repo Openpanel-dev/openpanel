@@ -6,14 +6,35 @@ To authenticate with the Export API, you need to use your `clientId` and `client
 
 We expect you to send `openpanel-client-id` and `openpanel-client-secret` headers with your requests.
 
+Example:
+
+```bash
+curl 'https://api.openpanel.dev/export/events' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
 ## Events
 
-Get all `screen_view` events from project `abc` between `2024-04-15` and `2024-04-18`.
+Get events from a specific project within a date range.
+
+Endpoint: `GET /export/events`
+
+Parameters:
+- project_id (required): The ID of the project
+- event (optional): Filter by event name(s). Can be a single event or an array of events.
+- start (optional): Start date (format: YYYY-MM-DD)
+- end (optional): End date (format: YYYY-MM-DD)
+- page (optional, default: 1): Page number for pagination
+- limit (optional, default: 50, max: 50): Number of events per page
+- includes (optional): Additional fields to include in the response
+
+Example:
 
 ```bash
 curl 'https://api.openpanel.dev/export/events?project_id=abc&event=screen_view&start=2024-04-15&end=2024-04-18' \
-  -H 'openpanel-client-id: CLIENT_ID' \
-  -H 'openpanel-client-secret: CLIENT_SECRET'
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
 ```
 
 ## Profiles

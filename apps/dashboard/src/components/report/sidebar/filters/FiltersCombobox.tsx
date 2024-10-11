@@ -1,7 +1,7 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/useAppParams';
+import { useEventProperties } from '@/hooks/useEventProperties';
 import { useDispatch, useSelector } from '@/redux';
-import { api } from '@/trpc/client';
 import { FilterIcon } from 'lucide-react';
 
 import { shortId } from '@openpanel/common';
@@ -21,7 +21,7 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
   const endDate = useSelector((state) => state.report.endDate);
   const { projectId } = useAppParams();
 
-  const query = api.chart.properties.useQuery(
+  const properties = useEventProperties(
     {
       event: event.name,
       projectId,
@@ -32,20 +32,18 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
     },
     {
       enabled: !!event.name,
-    }
+    },
   );
-
-  const properties = (query.data ?? []).map((item) => ({
-    label: item,
-    value: item,
-  }));
 
   return (
     <Combobox
       searchable
       placeholder="Select a filter"
       value=""
-      items={properties}
+      items={properties.map((item) => ({
+        label: item,
+        value: item,
+      }))}
       onChange={(value) => {
         dispatch(
           changeEvent({
@@ -59,11 +57,14 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
                 value: [],
               },
             ],
-          })
+          }),
         );
       }}
     >
-      <button className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none">
+      <button
+        type="button"
+        className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
+      >
         <FilterIcon size={12} /> Add filter
       </button>
     </Combobox>

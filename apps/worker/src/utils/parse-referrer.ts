@@ -26,7 +26,7 @@ export function parseReferrer(url: string | undefined) {
 }
 
 export function getReferrerWithQuery(
-  query: Record<string, string> | undefined
+  query: Record<string, string> | undefined,
 ) {
   if (!query) {
     return null;
@@ -40,7 +40,7 @@ export function getReferrerWithQuery(
 
   const match =
     Object.values(referrers).find(
-      (referrer) => referrer.name.toLowerCase() === source.toLowerCase()
+      (referrer) => referrer.name.toLowerCase() === source.toLowerCase(),
     ) || referrers[source];
 
   if (match) {

@@ -123,7 +123,7 @@ export function Feature({
       <div
         className={cn(
           'container flex min-h-[300px] items-center justify-between gap-16 max-md:flex-col-reverse',
-          !even && 'md:flex-row-reverse'
+          !even && 'md:flex-row-reverse',
         )}
       >
         <div className="flex w-full flex-col">

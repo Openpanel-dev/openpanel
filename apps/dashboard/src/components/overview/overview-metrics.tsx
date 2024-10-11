@@ -1,12 +1,12 @@
 'use client';
 
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { ChartRoot } from '@/components/report/chart';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
 import type { IChartProps } from '@openpanel/validation';
 
+import { ReportChart } from '../report-chart';
 import { OverviewLiveHistogram } from './overview-live-histogram';
 
 interface OverviewMetricsProps {
@@ -151,6 +151,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       formula: 'A/B*100',
       metric: 'average',
       unit: '%',
+      maxDomain: 100,
     },
     {
       id: 'Visit duration',
@@ -186,7 +187,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       metric: 'average',
       unit: 'min',
     },
-  ] satisfies (IChartProps & { id: string })[];
+  ] satisfies (IChartProps & { id: string; maxDomain?: number })[];
 
   const selectedMetric = reports[metric]!;
 
@@ -196,32 +197,41 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
         <div className="card mb-2 grid grid-cols-4 overflow-hidden rounded-md">
           {reports.map((report, index) => (
             <button
-              key={index}
+              type="button"
+              key={report.id}
               className={cn(
-                'col-span-2 flex-1 p-4 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
-                index === metric && 'bg-def-100'
+                'col-span-2 flex-1 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
+                index === metric && 'bg-def-100',
               )}
               onClick={() => {
                 setMetric(index);
               }}
             >
-              <ChartRoot hideID {...report} />
+              <ReportChart report={report} options={{ hideID: true }} />
             </button>
           ))}
           <div
             className={cn(
-              'col-span-4 min-h-28 flex-1 p-4 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-2'
+              'col-span-4 min-h-16 flex-1 p-4 pb-0 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-2',
             )}
           >
             <OverviewLiveHistogram projectId={projectId} />
           </div>
         </div>
         <div className="card col-span-6 p-4">
-          <ChartRoot
+          <ReportChart
             key={selectedMetric.id}
-            hideID
-            {...selectedMetric}
-            chartType="linear"
+            options={{
+              hideID: true,
+              maxDomain: selectedMetric.maxDomain,
+              aspectRatio: 0.2,
+              hideLegend: true,
+            }}
+            report={{
+              ...selectedMetric,
+              chartType: 'linear',
+              lineType: 'linear',
+            }}
           />
         </div>
       </div>

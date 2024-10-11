@@ -99,7 +99,7 @@ import { useOpenPanel } from '@openpanel/nextjs';
 function YourComponent() {
   const op = useOpenPanel();
 
-  return <button onClick={() => op.track('my_event', { foo: 'bar' })}>Trigger event</button>
+  return <button type="button" onClick={() => op.track('my_event', { foo: 'bar' })}>Trigger event</button>
 }
 ```
 
@@ -110,9 +110,9 @@ Since you can't use hooks in server components, you need to create an instance o
 <Callout>Remember, your client secret is exposed here so do not use this on client side.</Callout>
 
 ```tsx filename="utils/op.ts"
-import { Openpanel } from '@openpanel/nextjs';
+import { OpenPanel } from '@openpanel/nextjs';
 
-export const op = new Openpanel({
+export const op = new OpenPanel({
   clientId: 'your-client-id',
   clientSecret: 'your-client-secret',
 });

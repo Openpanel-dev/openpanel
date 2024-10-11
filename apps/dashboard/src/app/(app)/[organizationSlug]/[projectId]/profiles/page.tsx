@@ -26,11 +26,11 @@ export default function Page({
       <Padding>
         <div className="mb-4">
           <PageTabs>
-            <PageTabsLink href={`?tab=profiles`} isActive={tab === 'profiles'}>
+            <PageTabsLink href={'?tab=profiles'} isActive={tab === 'profiles'}>
               Profiles
             </PageTabsLink>
             <PageTabsLink
-              href={`?tab=power-users`}
+              href={'?tab=power-users'}
               isActive={tab === 'power-users'}
             >
               Power users

@@ -44,20 +44,19 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
         Update
       </Button>
     );
-  } else {
-    return (
-      <Button
-        className={className}
-        disabled={!report.dirty}
-        onClick={() => {
-          pushModal('SaveReport', {
-            report,
-          });
-        }}
-        icon={SaveIcon}
-      >
-        Save
-      </Button>
-    );
   }
+  return (
+    <Button
+      className={className}
+      disabled={!report.dirty}
+      onClick={() => {
+        pushModal('SaveReport', {
+          report,
+        });
+      }}
+      icon={SaveIcon}
+    >
+      Save
+    </Button>
+  );
 }

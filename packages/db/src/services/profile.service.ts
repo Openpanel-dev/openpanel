@@ -7,10 +7,10 @@ import type { IChartEventFilter } from '@openpanel/validation';
 
 import { profileBuffer } from '../buffers';
 import {
+  TABLE_NAMES,
   ch,
   chQuery,
   formatClickhouseDate,
-  TABLE_NAMES,
 } from '../clickhouse-client';
 import { createSqlBuilder } from '../sql-builder';
 
@@ -49,7 +49,7 @@ export async function getProfileById(id: string, projectId: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT * FROM profiles WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`
+    `SELECT * FROM ${TABLE_NAMES.profiles} WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 1`,
   );
 
   if (!profile) {
@@ -66,9 +66,10 @@ interface GetProfileListOptions {
   take: number;
   cursor?: number;
   filters?: IChartEventFilter[];
+  search?: string;
 }
 
-export async function getProfiles(ids: string[]) {
+export async function getProfiles(ids: string[], projectId: string) {
   const filteredIds = uniq(ids.filter((id) => id !== ''));
 
   if (filteredIds.length === 0) {
@@ -76,10 +77,12 @@ export async function getProfiles(ids: string[]) {
   }
 
   const data = await chQuery<IClickhouseProfile>(
-    `SELECT *
-    FROM profiles FINAL 
-    WHERE id IN (${filteredIds.map((id) => escape(id)).join(',')})
-    `
+    `SELECT id, first_name, last_name, email, avatar, is_external, properties, created_at
+    FROM ${TABLE_NAMES.profiles} FINAL 
+    WHERE 
+      project_id = ${escape(projectId)} AND
+      id IN (${filteredIds.map((id) => escape(id)).join(',')})
+    `,
   );
 
   return data.map(transformProfile);
@@ -90,14 +93,18 @@ export async function getProfileList({
   cursor,
   projectId,
   filters,
+  search,
 }: GetProfileListOptions) {
   const { sb, getSql } = createSqlBuilder();
-  sb.from = 'profiles FINAL';
+  sb.from = `${TABLE_NAMES.profiles} FINAL`;
   sb.select.all = '*';
   sb.where.project_id = `project_id = ${escape(projectId)}`;
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
+  if (search) {
+    sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
+  }
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
 }
@@ -107,7 +114,7 @@ export async function getProfileListCount({
   filters,
 }: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
   const { sb, getSql } = createSqlBuilder();
-  sb.from = 'profiles FINAL';
+  sb.from = 'profiles';
   sb.select.count = 'count(id) as count';
   sb.where.project_id = `project_id = ${escape(projectId)}`;
   sb.groupBy.project_id = 'project_id';
@@ -174,10 +181,9 @@ export function transformProfile({
     firstName: first_name,
     lastName: last_name,
     isExternal: profile.is_external,
-    properties: omit(
-      ['browserVersion', 'osVersion'],
-      toObject(profile.properties)
-    ),
+    properties: profile.properties
+      ? omit(['browserVersion', 'osVersion'], toObject(profile.properties))
+      : {},
     createdAt: new Date(created_at),
   };
 }
@@ -216,7 +222,7 @@ export async function upsertProfile({
   projectId,
   isExternal,
 }: IServiceUpsertProfile) {
-  return profileBuffer.insert({
+  return profileBuffer.add({
     id,
     first_name: firstName!,
     last_name: lastName!,
@@ -245,7 +251,7 @@ export async function getProfileId({
     profile_id: string;
     project_id: string;
   }>(
-    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`
+    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`,
   );
 
   if (res[0]) {

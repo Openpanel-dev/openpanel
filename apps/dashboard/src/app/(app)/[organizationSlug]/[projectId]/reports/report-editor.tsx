@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
 import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
-import { ChartRoot } from '@/components/report/chart';
+import { ReportChart } from '@/components/report-chart';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
@@ -25,6 +24,7 @@ import { useDispatch, useSelector } from '@/redux';
 import { bind } from 'bind-event-listener';
 import { endOfDay, startOfDay } from 'date-fns';
 import { GanttChartSquareIcon } from 'lucide-react';
+import { useEffect } from 'react';
 
 import type { IServiceReport } from '@openpanel/db';
 
@@ -99,7 +99,7 @@ export default function ReportEditor({
       </StickyBelowHeader>
       <div className="flex flex-col gap-4 p-4" id="report-editor">
         {report.ready && (
-          <ChartRoot {...report} projectId={projectId} editMode />
+          <ReportChart report={{ ...report, projectId }} isEditMode />
         )}
       </div>
       <SheetContent className="!max-w-lg" side="left">

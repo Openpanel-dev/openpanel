@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import AnimateHeight from '@/components/animate-height';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
 import TagInput from '@/components/forms/tag-input';
@@ -17,6 +16,7 @@ import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SaveIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -90,6 +90,7 @@ export default function AddClient(props: Props) {
               className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}
               href="https://docs.openpanel.dev/docs"
               target="_blank"
+              rel="noreferrer"
             >
               Read docs
             </a>
@@ -156,7 +157,9 @@ export default function AddClient(props: Props) {
                       error={form.formState.errors.cors?.message}
                       placeholder="Add a domain"
                       value={field.value?.split(',') ?? []}
-                      renderTag={(tag) => (tag === '*' ? 'Allow domains' : tag)}
+                      renderTag={(tag) =>
+                        tag === '*' ? 'Allow all domains' : tag
+                      }
                       onChange={(newValue) => {
                         field.onChange(
                           newValue
@@ -171,7 +174,7 @@ export default function AddClient(props: Props) {
                               }
                               return `https://${trimmed}`;
                             })
-                            .join(',')
+                            .join(','),
                         );
                       }}
                     />
@@ -264,38 +267,4 @@ export default function AddClient(props: Props) {
       )}
     </ModalContent>
   );
-}
-
-{
-  /* <div>
-  <div className="text-lg">
-    Select your framework and we'll generate a client for you.
-  </div>
-  <div className="flex flex-wrap gap-2 mt-8">
-    <FeatureButton
-      name="React"
-      logo="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png"
-    />
-    <FeatureButton
-      name="React Native"
-      logo="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png"
-    />
-    <FeatureButton
-      name="Next.js"
-      logo="https://static-00.iconduck.com/assets.00/nextjs-icon-512x512-y563b8iq.png"
-    />
-    <FeatureButton
-      name="Remix"
-      logo="https://www.datocms-assets.com/205/1642515307-square-logo.svg"
-    />
-    <FeatureButton
-      name="Vue"
-      logo="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0UhQnp6TUPCwAr3ruTEwBDiTN5HLAWaoUD3AJIgtepQ&s"
-    />
-    <FeatureButton
-      name="HTML"
-      logo="https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/HTML5_logo_and_wordmark.svg/240px-HTML5_logo_and_wordmark.svg.png"
-    />
-  </div>
-</div> */
 }

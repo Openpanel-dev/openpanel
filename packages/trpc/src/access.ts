@@ -1,7 +1,7 @@
 import { db, getProjectById } from '@openpanel/db';
 import { cacheable } from '@openpanel/redis';
 
-export const getProjectAccessCached = cacheable(getProjectAccess, 60 * 60);
+export const getProjectAccessCached = cacheable(getProjectAccess, 60 * 5);
 export async function getProjectAccess({
   userId,
   projectId,
@@ -16,14 +16,26 @@ export async function getProjectAccess({
       return false;
     }
 
-    const member = await db.member.findFirst({
-      where: {
-        organizationId: project.organizationSlug,
-        userId,
-      },
-    });
+    const [projectAccess, member] = await Promise.all([
+      db.projectAccess.findMany({
+        where: {
+          userId,
+          organizationId: project.organizationSlug,
+        },
+      }),
+      db.member.findFirst({
+        where: {
+          organizationId: project.organizationSlug,
+          userId,
+        },
+      }),
+    ]);
 
-    return member;
+    if (projectAccess.length === 0 && member) {
+      return true;
+    }
+
+    return projectAccess.find((item) => item.projectId === projectId);
   } catch (err) {
     return false;
   }
@@ -31,7 +43,7 @@ export async function getProjectAccess({
 
 export const getOrganizationAccessCached = cacheable(
   getOrganizationAccess,
-  60 * 60
+  60 * 5,
 );
 export async function getOrganizationAccess({
   userId,
@@ -46,4 +58,36 @@ export async function getOrganizationAccess({
       organizationId,
     },
   });
+}
+
+export const getClientAccessCached = cacheable(getClientAccess, 60 * 5);
+export async function getClientAccess({
+  userId,
+  clientId,
+}: {
+  userId: string;
+  clientId: string;
+}) {
+  const client = await db.client.findFirst({
+    where: {
+      id: clientId,
+    },
+  });
+
+  if (!client) {
+    return false;
+  }
+
+  if (client.projectId) {
+    return getProjectAccess({ userId, projectId: client.projectId });
+  }
+
+  if (client.organizationId) {
+    return getOrganizationAccess({
+      userId,
+      organizationId: client.organizationId,
+    });
+  }
+
+  return false;
 }

@@ -1,6 +1,6 @@
 import { escape } from 'sqlstring';
 
-import { chQuery, TABLE_NAMES } from '../clickhouse-client';
+import { TABLE_NAMES, chQuery } from '../clickhouse-client';
 
 type IGetWeekRetentionInput = {
   projectId: string;
@@ -121,7 +121,7 @@ export function getRollingActiveUsers({
       FROM
       (
           SELECT *
-          FROM dau_mv
+          FROM ${TABLE_NAMES.dau_mv}
           WHERE project_id = ${escape(projectId)}
       )
       ARRAY JOIN range(${days}) AS n

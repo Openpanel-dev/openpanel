@@ -6,19 +6,20 @@
     "testing": "API_PORT=3333 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsup",
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
+    "gen:referrers": "jiti scripts/get-referrers.ts && biome format --write src/referrers/index.ts",
+    "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@baselime/pino-transport": "^0.1.5",
     "@clerk/fastify": "^1.0.0",
     "@fastify/compress": "^7.0.3",
     "@fastify/cookie": "^9.3.1",
     "@fastify/cors": "^9.0.0",
+    "@fastify/rate-limit": "^9.1.0",
     "@fastify/websocket": "^8.3.1",
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
+    "@openpanel/integrations": "workspace:^",
     "@openpanel/logger": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
@@ -29,41 +30,29 @@
     "fastify-metrics": "^11.0.0",
     "ico-to-png": "^0.2.1",
     "jsonwebtoken": "^9.0.2",
-    "pino": "^8.17.2",
-    "pino-pretty": "^10.3.1",
     "ramda": "^0.29.1",
     "request-ip": "^3.3.0",
     "sharp": "^0.33.2",
     "sqlstring": "^2.3.3",
     "superjson": "^1.13.3",
     "svix": "^1.24.0",
-    "ua-parser-js": "^1.0.37",
     "url-metadata": "^4.1.0",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
+    "@faker-js/faker": "^9.0.1",
     "@openpanel/sdk": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
+    "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.6",
     "@types/ramda": "^0.29.6",
     "@types/request-ip": "^0.0.41",
     "@types/sqlstring": "^2.3.2",
-    "@types/ua-parser-js": "^0.7.39",
     "@types/uuid": "^9.0.8",
     "@types/ws": "^8.5.10",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
+    "js-yaml": "^4.1.0",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

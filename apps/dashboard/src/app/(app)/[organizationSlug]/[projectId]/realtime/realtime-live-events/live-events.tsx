@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { EventListItem } from '@/app/(app)/[organizationSlug]/[projectId]/events/event-list/event-list-item';
+import { EventListItem } from '@/components/events/event-list-item';
 import useWS from '@/hooks/useWS';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useState } from 'react';
 
 import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/db';
 
@@ -19,7 +19,7 @@ const RealtimeLiveEvents = ({ events, projectId, limit }: Props) => {
     `/live/events/${projectId}`,
     (event) => {
       setState((p) => [event, ...p].slice(0, limit));
-    }
+    },
   );
   return (
     <AnimatePresence mode="popLayout" initial={false}>

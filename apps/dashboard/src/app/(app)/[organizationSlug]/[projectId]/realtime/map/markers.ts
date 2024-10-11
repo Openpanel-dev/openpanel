@@ -11,7 +11,7 @@ const useActiveMarkers = (initialMarkers: Coordinate[]) => {
     // Cut the array in half randomly to simulate changes in active markers
     const selected = shuffled.slice(
       0,
-      Math.floor(Math.random() * shuffled.length) + 1
+      Math.floor(Math.random() * shuffled.length) + 1,
     );
     setActiveMarkers(selected);
   }, [activeMarkers]);

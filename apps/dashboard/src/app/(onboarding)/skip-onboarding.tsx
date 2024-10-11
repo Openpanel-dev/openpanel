@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
 import { showConfirm } from '@/modals';
 import { api } from '@/trpc/client';
 import { useAuth } from '@clerk/nextjs';
 import { ChevronLastIcon } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const SkipOnboarding = () => {
   const router = useRouter();
@@ -20,6 +20,7 @@ const SkipOnboarding = () => {
 
   return (
     <button
+      type="button"
       onClick={() => {
         if (res.data?.canSkip && res.data?.url) {
           router.push(res.data.url);

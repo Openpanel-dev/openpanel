@@ -2,7 +2,7 @@
 
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
-import { ChartRootShortcut } from '@/components/report/chart';
+import { ReportChartShortcut } from '@/components/report-chart/shortcut';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import {
   useEventQueryFilters,
@@ -44,7 +44,7 @@ function Charts({ projectId }: Props) {
             <span className="title">Events per day</span>
           </WidgetHead>
           <WidgetBody>
-            <ChartRootShortcut
+            <ReportChartShortcut
               projectId={projectId}
               range="30d"
               chartType="histogram"
@@ -67,7 +67,7 @@ function Charts({ projectId }: Props) {
             <span className="title">Event distribution</span>
           </WidgetHead>
           <WidgetBody>
-            <ChartRootShortcut
+            <ReportChartShortcut
               projectId={projectId}
               range="30d"
               chartType="pie"
@@ -104,7 +104,7 @@ function Charts({ projectId }: Props) {
             <span className="title">Event distribution</span>
           </WidgetHead>
           <WidgetBody>
-            <ChartRootShortcut
+            <ReportChartShortcut
               projectId={projectId}
               range="30d"
               chartType="bar"
@@ -141,7 +141,7 @@ function Charts({ projectId }: Props) {
             <span className="title">Event distribution</span>
           </WidgetHead>
           <WidgetBody>
-            <ChartRootShortcut
+            <ReportChartShortcut
               projectId={projectId}
               range="30d"
               chartType="linear"

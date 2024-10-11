@@ -1,7 +1,14 @@
 import { z } from 'zod';
 
-import { db, getId, getProjectsByOrganizationSlug } from '@openpanel/db';
+import {
+  db,
+  getId,
+  getProjectByIdCached,
+  getProjectsByOrganizationSlug,
+} from '@openpanel/db';
 
+import { getProjectAccess } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const projectRouter = createTRPCRouter({
@@ -9,7 +16,7 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         organizationSlug: z.string().nullable(),
-      })
+      }),
     )
     .query(async ({ input: { organizationSlug } }) => {
       if (organizationSlug === null) return [];
@@ -21,10 +28,18 @@ export const projectRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         name: z.string(),
-      })
+      }),
     )
-    .mutation(({ input }) => {
-      return db.project.update({
+    .mutation(async ({ input, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+      const res = await db.project.update({
         where: {
           id: input.id,
         },
@@ -32,13 +47,15 @@ export const projectRouter = createTRPCRouter({
           name: input.name,
         },
       });
+      await getProjectByIdCached.clear(input.id);
+      return res;
     }),
   create: protectedProcedure
     .input(
       z.object({
         name: z.string().min(1),
         organizationSlug: z.string(),
-      })
+      }),
     )
     .mutation(async ({ input: { name, organizationSlug } }) => {
       return db.project.create({
@@ -54,9 +71,18 @@ export const projectRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      })
+      }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
       await db.project.delete({
         where: {
           id: input.id,

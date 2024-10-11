@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/utils/cn';
 import { bind } from 'bind-event-listener';
 import { ChevronLeftIcon, FullscreenIcon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
+import { useEffect, useRef, useState } from 'react';
 import { useDebounce } from 'usehooks-ts';
 
 import { Button } from './ui/button';
@@ -21,7 +21,7 @@ export const useFullscreen = () =>
     parseAsBoolean.withDefault(false).withOptions({
       history: 'push',
       clearOnDefault: true,
-    })
+    }),
   );
 
 export const Fullscreen = (props: Props) => {
@@ -29,7 +29,7 @@ export const Fullscreen = (props: Props) => {
   return (
     <div
       className={cn(
-        isFullscreen && 'fixed inset-0 z-50 overflow-auto bg-def-200'
+        isFullscreen && 'fixed inset-0 z-50 overflow-auto bg-def-200',
       )}
     >
       {props.children}
@@ -92,10 +92,11 @@ export const FullscreenClose = () => {
     <div className="fixed bottom-0 top-0 z-50 flex items-center">
       <Tooltiper content="Exit full screen" asChild>
         <button
+          type="button"
           ref={ref}
           className={cn(
             'flex h-20 w-20 -translate-x-20 items-center justify-center rounded-full bg-foreground transition-transform',
-            visible && isFullscreenDebounced && '-translate-x-10'
+            visible && isFullscreenDebounced && '-translate-x-10',
           )}
           onClick={() => {
             setIsFullscreen(false);

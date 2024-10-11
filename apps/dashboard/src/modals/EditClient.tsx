@@ -91,7 +91,7 @@ export default function EditClient({
                   error={formState.errors.cors?.message}
                   placeholder="Add a domain"
                   value={field.value?.split(',') ?? []}
-                  renderTag={(tag) => (tag === '*' ? 'Allow domains' : tag)}
+                  renderTag={(tag) => (tag === '*' ? 'Allow all domains' : tag)}
                   onChange={(newValue) => {
                     field.onChange(
                       newValue
@@ -106,7 +106,7 @@ export default function EditClient({
                           }
                           return `https://${trimmed}`;
                         })
-                        .join(',')
+                        .join(','),
                     );
                   }}
                 />

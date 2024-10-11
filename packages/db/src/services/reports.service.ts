@@ -19,20 +19,20 @@ export type IServiceReport = Awaited<ReturnType<typeof getReportById>>;
 
 export function transformFilter(
   filter: Partial<IChartEventFilter>,
-  index: number
+  index: number,
 ): IChartEventFilter {
   return {
     id: filter.id ?? alphabetIds[index] ?? 'A',
     name: filter.name ?? 'Unknown Filter',
     operator: filter.operator ?? 'is',
     value:
-      typeof filter.value === 'string' ? [filter.value] : filter.value ?? [],
+      typeof filter.value === 'string' ? [filter.value] : (filter.value ?? []),
   };
 }
 
 export function transformReportEvent(
   event: Partial<IChartEvent>,
-  index: number
+  index: number,
 ): IChartEvent {
   return {
     segment: event.segment ?? 'event',
@@ -45,7 +45,7 @@ export function transformReportEvent(
 }
 
 export function transformReport(
-  report: DbReport
+  report: DbReport,
 ): IChartProps & { id: string } {
   return {
     id: report.id,

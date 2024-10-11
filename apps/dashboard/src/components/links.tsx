@@ -13,7 +13,13 @@ export function ProjectLink({
   const { organizationSlug, projectId } = useAppParams();
   if (typeof props.href === 'string') {
     return (
-      <Link {...props} href={`/${organizationSlug}/${projectId}/${props.href}`}>
+      <Link
+        {...props}
+        href={`/${organizationSlug}/${projectId}/${props.href.replace(
+          /^\//,
+          '',
+        )}`}
+      >
         {children}
       </Link>
     );

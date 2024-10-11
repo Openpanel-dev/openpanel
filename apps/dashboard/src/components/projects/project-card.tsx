@@ -1,9 +1,9 @@
-import { Suspense } from 'react';
 import { shortNumber } from '@/hooks/useNumerFormatter';
+import { Suspense } from 'react';
 import { escape } from 'sqlstring';
 
 import type { IServiceProject } from '@openpanel/db';
-import { chQuery, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, chQuery } from '@openpanel/db';
 
 import { ChartSSR } from '../chart-ssr';
 import { FadeIn } from '../fade-in';
@@ -34,7 +34,7 @@ function ProjectCard({ id, name, organizationSlug }: IServiceProject) {
 
 async function ProjectChart({ id }: { id: string }) {
   const chart = await chQuery<{ value: number; date: string }>(
-    `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(id)} AND name = 'session_start' AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`
+    `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(id)} AND name = 'session_start' AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`,
   );
 
   return (
@@ -70,7 +70,7 @@ async function ProjectMetrics({ id }: { id: string }) {
       (
         SELECT count(DISTINCT profile_id) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 day'
       ) as day
-    `
+    `,
   );
 
   return (

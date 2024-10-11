@@ -1,25 +1,24 @@
-import { omit, uniq } from 'ramda';
+import { mergeDeepRight, omit, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import { getRedisCache } from '@openpanel/redis';
+import { cacheable, getRedisCache } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
-import { eventBuffer } from '../buffers';
+import { botBuffer, eventBuffer } from '../buffers';
 import {
-  ch,
+  TABLE_NAMES,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
-  TABLE_NAMES,
 } from '../clickhouse-client';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import { getProfiles, upsertProfile } from './profile.service';
 import type { IServiceProfile } from './profile.service';
+import { getProfiles, upsertProfile } from './profile.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -27,6 +26,35 @@ export type IImportedEvent = Omit<
 > & {
   properties: Record<string, unknown>;
 };
+
+export type IServicePage = {
+  path: string;
+  count: number;
+  project_id: string;
+  first_seen: string;
+  title: string;
+  origin: string;
+};
+
+export interface IClickhouseBotEvent {
+  id: string;
+  name: string;
+  type: string;
+  project_id: string;
+  path: string;
+  created_at: string;
+}
+
+export interface IServiceBotEvent {
+  id: string;
+  name: string;
+  type: string;
+  projectId: string;
+  path: string;
+  createdAt: Date;
+}
+
+export type IServiceCreateBotEventPayload = Omit<IServiceBotEvent, 'id'>;
 
 export interface IClickhouseEvent {
   id: string;
@@ -94,7 +122,7 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     referrerType: event.referrer_type,
     profile: event.profile,
     meta: event.meta,
-    importedAt: event.imported_at ? new Date(event.imported_at) : null,
+    importedAt: event.imported_at ? new Date(event.imported_at) : undefined,
     sdkName: event.sdk_name,
     sdkVersion: event.sdk_version,
   };
@@ -135,12 +163,16 @@ export interface IServiceEvent {
   referrer: string | undefined;
   referrerName: string | undefined;
   referrerType: string | undefined;
-  importedAt: Date | null;
+  importedAt: Date | undefined;
   profile: IServiceProfile | undefined;
   meta: EventMeta | undefined;
   sdkName: string | undefined;
   sdkVersion: string | undefined;
 }
+
+type SelectHelper<T> = {
+  [K in keyof T]?: boolean;
+};
 
 export interface IServiceEventMinimal {
   id: string;
@@ -178,7 +210,7 @@ function maskString(str: string, mask = '*') {
 }
 
 export function transformMinimalEvent(
-  event: IServiceEvent
+  event: IServiceEvent,
 ): IServiceEventMinimal {
   return {
     id: event.id,
@@ -209,26 +241,27 @@ export async function getLiveVisitors(projectId: string) {
 
 export async function getEvents(
   sql: string,
-  options: GetEventsOptions = {}
+  options: GetEventsOptions = {},
 ): Promise<IServiceEvent[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
-  if (options.profile) {
+  const projectId = events[0]?.project_id;
+  if (options.profile && projectId) {
     const ids = events.map((e) => e.profile_id);
-    const profiles = await getProfiles(ids);
+    const profiles = await getProfiles(ids, projectId);
 
     for (const event of events) {
       event.profile = profiles.find((p) => p.id === event.profile_id);
     }
   }
 
-  if (options.meta) {
+  if (options.meta && projectId) {
     const names = uniq(events.map((e) => e.name));
     const metas = await db.eventMeta.findMany({
       where: {
         name: {
           in: names,
         },
-        projectId: events[0]?.project_id,
+        projectId,
       },
       select: options.meta === true ? undefined : options.meta,
     });
@@ -243,9 +276,6 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
   if (!payload.profileId) {
     payload.profileId = payload.deviceId;
   }
-  console.log(
-    `create event ${payload.name} for [deviceId]: ${payload.deviceId} [profileId]: ${payload.profileId} [projectId]: ${payload.projectId} [path]: ${payload.path}`
-  );
 
   if (payload.profileId !== '') {
     await upsertProfile({
@@ -305,7 +335,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_version: payload.sdkVersion ?? '',
   };
 
-  await eventBuffer.insert(event);
+  await eventBuffer.add(event);
 
   return {
     document: event,
@@ -321,8 +351,7 @@ export interface GetEventListOptions {
   filters?: IChartEventFilter[];
   startDate?: Date;
   endDate?: Date;
-  meta?: boolean;
-  profile?: boolean;
+  select?: SelectHelper<IServiceEvent>;
 }
 
 export async function getEventList({
@@ -334,30 +363,121 @@ export async function getEventList({
   filters,
   startDate,
   endDate,
-  meta = true,
-  profile = true,
+  select: incomingSelect,
 }: GetEventListOptions) {
   const { sb, getSql, join } = createSqlBuilder();
 
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.where.projectId = `project_id = ${escape(projectId)}`;
+  const select = mergeDeepRight(
+    {
+      id: true,
+      name: true,
+      deviceId: true,
+      profileId: true,
+      projectId: true,
+      createdAt: true,
+      path: true,
+      duration: true,
+      city: true,
+      country: true,
+      os: true,
+      browser: true,
+    },
+    incomingSelect ?? {},
+  );
 
-  sb.select.id = 'id';
-  sb.select.name = 'name';
-  sb.select.deviceId = 'device_id';
-  sb.select.profileId = 'profile_id';
-  sb.select.projectId = 'project_id';
-  sb.select.createdAt = 'created_at';
-  sb.select.path = 'path';
-  sb.select.duration = 'duration';
-  sb.select.city = 'city';
-  sb.select.country = 'country';
-  sb.select.os = 'os';
-  sb.select.browser = 'browser';
+  if (select.id) {
+    sb.select.id = 'id';
+  }
+  if (select.name) {
+    sb.select.name = 'name';
+  }
+  if (select.deviceId) {
+    sb.select.deviceId = 'device_id';
+  }
+  if (select.profileId) {
+    sb.select.profileId = 'profile_id';
+  }
+  if (select.projectId) {
+    sb.select.projectId = 'project_id';
+  }
+  if (select.sessionId) {
+    sb.select.sessionId = 'session_id';
+  }
+  if (select.properties) {
+    sb.select.properties = 'properties';
+  }
+  if (select.createdAt) {
+    sb.select.createdAt = 'created_at';
+  }
+  if (select.country) {
+    sb.select.country = 'country';
+  }
+  if (select.city) {
+    sb.select.city = 'city';
+  }
+  if (select.region) {
+    sb.select.region = 'region';
+  }
+  if (select.longitude) {
+    sb.select.longitude = 'longitude';
+  }
+  if (select.latitude) {
+    sb.select.latitude = 'latitude';
+  }
+  if (select.os) {
+    sb.select.os = 'os';
+  }
+  if (select.osVersion) {
+    sb.select.osVersion = 'os_version';
+  }
+  if (select.browser) {
+    sb.select.browser = 'browser';
+  }
+  if (select.browserVersion) {
+    sb.select.browserVersion = 'browser_version';
+  }
+  if (select.device) {
+    sb.select.device = 'device';
+  }
+  if (select.brand) {
+    sb.select.brand = 'brand';
+  }
+  if (select.model) {
+    sb.select.model = 'model';
+  }
+  if (select.duration) {
+    sb.select.duration = 'duration';
+  }
+  if (select.path) {
+    sb.select.path = 'path';
+  }
+  if (select.origin) {
+    sb.select.origin = 'origin';
+  }
+  if (select.referrer) {
+    sb.select.referrer = 'referrer';
+  }
+  if (select.referrerName) {
+    sb.select.referrerName = 'referrer_name';
+  }
+  if (select.referrerType) {
+    sb.select.referrerType = 'referrer_type';
+  }
+  if (select.importedAt) {
+    sb.select.importedAt = 'imported_at';
+  }
+  if (select.sdkName) {
+    sb.select.sdkName = 'sdk_name';
+  }
+  if (select.sdkVersion) {
+    sb.select.sdkVersion = 'sdk_version';
+  }
 
   if (profileId) {
-    sb.where.deviceId = `device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} group by did)`;
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
   }
 
   if (startDate && endDate) {
@@ -367,7 +487,7 @@ export async function getEventList({
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((event) => escape(event)),
-      ','
+      ',',
     )})`;
   }
 
@@ -385,9 +505,13 @@ export async function getEventList({
   sb.orderBy.created_at =
     'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
 
-  return getEvents(getSql(), { profile, meta });
+  return getEvents(getSql(), {
+    profile: select.profile ?? true,
+    meta: select.meta ?? true,
+  });
 }
 
+export const getEventsCountCached = cacheable(getEventsCount, 60 * 10);
 export async function getEventsCount({
   projectId,
   profileId,
@@ -409,7 +533,7 @@ export async function getEventsCount({
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
       events.map((event) => escape(event)),
-      ','
+      ',',
     )})`;
   }
 
@@ -421,18 +545,10 @@ export async function getEventsCount({
   }
 
   const res = await chQuery<{ count: number }>(
-    getSql().replace('*', 'count(*) as count')
+    getSql().replace('*', 'count(*) as count'),
   );
 
   return res[0]?.count ?? 0;
-}
-
-interface CreateBotEventPayload {
-  name: string;
-  type: string;
-  path: string;
-  projectId: string;
-  createdAt: Date;
 }
 
 export function createBotEvent({
@@ -441,19 +557,14 @@ export function createBotEvent({
   projectId,
   createdAt,
   path,
-}: CreateBotEventPayload) {
-  return ch.insert({
-    table: 'events_bots',
-    format: 'JSONEachRow',
-    values: [
-      {
-        name,
-        type,
-        project_id: projectId,
-        path,
-        created_at: formatClickhouseDate(createdAt),
-      },
-    ],
+}: IServiceCreateBotEventPayload) {
+  return botBuffer.add({
+    id: uuid(),
+    name,
+    type,
+    project_id: projectId,
+    path,
+    created_at: formatClickhouseDate(createdAt),
   });
 }
 
@@ -477,9 +588,10 @@ export async function getLastScreenViewFromProfileId({
     return null;
   }
 
-  const eventInBuffer = await eventBuffer.find(
-    (item) => item.event.profile_id === profileId
-  );
+  const eventInBuffer = await eventBuffer.getLastScreenView({
+    projectId,
+    profileId,
+  });
 
   if (eventInBuffer) {
     return eventInBuffer;
@@ -487,9 +599,36 @@ export async function getLastScreenViewFromProfileId({
 
   const [eventInDb] = profileId
     ? await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`,
       )
     : [];
 
   return eventInDb || null;
+}
+
+export async function getTopPages({
+  projectId,
+  cursor,
+  take,
+  search,
+}: {
+  projectId: string;
+  cursor?: number;
+  take: number;
+  search?: string;
+}) {
+  const res = await chQuery<IServicePage>(`
+    SELECT path, count(*) as count, project_id, first_value(created_at) as first_seen, max(properties['__title']) as title, origin
+    FROM ${TABLE_NAMES.events} 
+    WHERE name = 'screen_view' 
+    AND  project_id = ${escape(projectId)} 
+    AND created_at > now() - INTERVAL 30 DAY 
+    ${search ? `AND path ILIKE '%${search}%'` : ''}
+    GROUP BY path, project_id, origin
+    ORDER BY count desc 
+    LIMIT ${take} 
+    OFFSET ${Math.max(0, (cursor ?? 0) * take)}
+  `);
+
+  return res;
 }

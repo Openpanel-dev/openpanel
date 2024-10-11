@@ -1,8 +1,8 @@
 import { getClientIp, parseIp } from '@/utils/parseIp';
-import { parseUserAgent } from '@/utils/parseUserAgent';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr } from 'ramda';
 
+import { parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, upsertProfile } from '@openpanel/db';
 import type {
   IncrementProfilePayload,
@@ -13,7 +13,7 @@ export async function updateProfile(
   request: FastifyRequest<{
     Body: UpdateProfilePayload;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { profileId, properties, ...rest } = request.body;
   const projectId = request.projectId;
@@ -41,7 +41,7 @@ export async function incrementProfileProperty(
   request: FastifyRequest<{
     Body: IncrementProfilePayload;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { profileId, property, value } = request.body;
   const projectId = request.projectId;
@@ -51,19 +51,19 @@ export async function incrementProfileProperty(
     return reply.status(404).send('Not found');
   }
 
-  const parsed = parseInt(
+  const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10
+    10,
   );
 
-  if (isNaN(parsed)) {
+  if (Number.isNaN(parsed)) {
     return reply.status(400).send('Not number');
   }
 
   profile.properties = assocPath(
     property.split('.'),
     parsed + value,
-    profile.properties
+    profile.properties,
   );
 
   await upsertProfile({
@@ -80,7 +80,7 @@ export async function decrementProfileProperty(
   request: FastifyRequest<{
     Body: IncrementProfilePayload;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const { profileId, property, value } = request.body;
   const projectId = request.projectId;
@@ -90,19 +90,19 @@ export async function decrementProfileProperty(
     return reply.status(404).send('Not found');
   }
 
-  const parsed = parseInt(
+  const parsed = Number.parseInt(
     pathOr<string>('0', property.split('.'), profile.properties),
-    10
+    10,
   );
 
-  if (isNaN(parsed)) {
+  if (Number.isNaN(parsed)) {
     return reply.status(400).send('Not number');
   }
 
   profile.properties = assocPath(
     property.split('.'),
     parsed - value,
-    profile.properties
+    profile.properties,
   );
 
   await upsertProfile({

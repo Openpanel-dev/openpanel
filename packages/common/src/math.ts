@@ -1,14 +1,14 @@
 import { isNumber } from 'mathjs';
 
 export const round = (num: number, decimals = 2) => {
-  const factor = Math.pow(10, decimals);
+  const factor = 10 ** decimals;
   return Math.round((num + Number.EPSILON) * factor) / factor;
 };
 
 export const average = (arr: (number | null)[]) => {
   const filtered = arr.filter(
     (n): n is number =>
-      isNumber(n) && !Number.isNaN(n) && Number.isFinite(n) && n !== 0
+      isNumber(n) && !Number.isNaN(n) && Number.isFinite(n) && n !== 0,
   );
   const avg = filtered.reduce((p, c) => p + c, 0) / filtered.length;
   return Number.isNaN(avg) ? 0 : avg;

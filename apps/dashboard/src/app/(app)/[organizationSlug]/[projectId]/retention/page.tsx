@@ -55,7 +55,7 @@ const Retention = ({ params: { projectId } }: Props) => {
           </AlertDescription>
         </Alert>
         <LastActiveUsersServer projectId={projectId} />
-        <UsersRetentionSeries projectId={projectId} />
+        {/* <UsersRetentionSeries projectId={projectId} /> */}
         <WeeklyCohortsServer projectId={projectId} />
       </div>
     </Padding>

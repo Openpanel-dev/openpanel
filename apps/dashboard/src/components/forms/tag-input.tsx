@@ -1,11 +1,11 @@
 // Based on Christin Alares tag input component (https://github.com/christianalares/seventy-seven)
 
-import type { ElementRef } from 'react';
-import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import { useAnimate } from 'framer-motion';
 import { XIcon } from 'lucide-react';
+import type { ElementRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Props = {
   placeholder: string;
@@ -47,7 +47,7 @@ const TagInput = ({
       e.preventDefault();
 
       const tagAlreadyExists = value.some(
-        (tag) => tag.toLowerCase() === inputValue.toLowerCase()
+        (tag) => tag.toLowerCase() === inputValue.toLowerCase(),
       );
 
       if (inputValue) {
@@ -59,7 +59,7 @@ const TagInput = ({
             },
             {
               duration: 0.3,
-            }
+            },
           );
           return;
         }
@@ -101,7 +101,7 @@ const TagInput = ({
       ref={scope}
       className={cn(
         'inline-flex w-full flex-wrap items-center gap-2 rounded-md border border-input p-1 px-3 ring-offset-background has-[input:focus]:ring-2 has-[input:focus]:ring-ring has-[input:focus]:ring-offset-1',
-        !!error && 'border-destructive'
+        !!error && 'border-destructive',
       )}
     >
       {value.map((tag, i) => {
@@ -116,7 +116,7 @@ const TagInput = ({
               isMarkedForDeletion &&
                 i === value.length - 1 &&
                 'bg-destructive-foreground ring-2 ring-destructive/50 ring-offset-1',
-              isCreating && 'opacity-60'
+              isCreating && 'opacity-60',
             )}
           >
             {renderTag ? renderTag(tag) : tag}

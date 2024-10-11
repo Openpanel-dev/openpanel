@@ -1,18 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import type { IChartData } from '@/trpc/client';
+import { useEffect, useMemo, useState } from 'react';
 
 export type IVisibleSeries = ReturnType<typeof useVisibleSeries>['series'];
 export function useVisibleSeries(data: IChartData, limit?: number | undefined) {
   const max = limit ?? 5;
   const [visibleSeries, setVisibleSeries] = useState<string[]>(
-    data?.series?.slice(0, max).map((serie) => serie.id) ?? []
+    data?.series?.slice(0, max).map((serie) => serie.id) ?? [],
   );
 
   useEffect(() => {
     setVisibleSeries(
-      data?.series?.slice(0, max).map((serie) => serie.id) ?? []
+      data?.series?.slice(0, max).map((serie) => serie.id) ?? [],
     );
   }, [data, max]);
 

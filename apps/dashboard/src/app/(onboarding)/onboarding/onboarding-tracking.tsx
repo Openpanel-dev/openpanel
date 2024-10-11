@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import AnimateHeight from '@/components/animate-height';
 import { ButtonContainer } from '@/components/button-container';
 import { CheckboxItem } from '@/components/forms/checkbox-item';
@@ -19,6 +18,7 @@ import {
   SmartphoneIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { z } from 'zod';
@@ -169,7 +169,7 @@ const Tracking = ({
                             placeholder="Add a domain"
                             value={field.value?.split(',') ?? []}
                             renderTag={(tag) =>
-                              tag === '*' ? 'Allow domains' : tag
+                              tag === '*' ? 'Allow all domains' : tag
                             }
                             onChange={(newValue) => {
                               field.onChange(
@@ -185,7 +185,7 @@ const Tracking = ({
                                     }
                                     return `https://${trimmed}`;
                                   })
-                                  .join(',')
+                                  .join(','),
                               );
                             }}
                           />

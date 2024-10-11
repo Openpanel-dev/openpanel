@@ -1,10 +1,16 @@
 import * as controller from '@/controllers/export.controller';
 import { validateExportRequest } from '@/utils/auth';
+import { activateRateLimiter } from '@/utils/rate-limiter';
+import { Prisma } from '@openpanel/db';
 import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
 
-import { Prisma } from '@openpanel/db';
+const exportRouter: FastifyPluginCallback = async (fastify, opts, done) => {
+  await activateRateLimiter({
+    fastify,
+    max: 10,
+    timeWindow: '10 seconds',
+  });
 
-const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
   fastify.addHook('preHandler', async (req: FastifyRequest, reply) => {
     try {
       const client = await validateExportRequest(req.headers);
@@ -15,11 +21,14 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
           error: 'Unauthorized',
           message: 'Client ID seems to be malformed',
         });
-      } else if (e instanceof Error) {
+      }
+
+      if (e instanceof Error) {
         return reply
           .status(401)
           .send({ error: 'Unauthorized', message: e.message });
       }
+
       return reply
         .status(401)
         .send({ error: 'Unauthorized', message: 'Unexpected error' });
@@ -40,4 +49,4 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
   done();
 };
 
-export default eventRouter;
+export default exportRouter;

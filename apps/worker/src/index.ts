@@ -6,22 +6,30 @@ import { Worker } from 'bullmq';
 import express from 'express';
 
 import { createInitialSalts } from '@openpanel/db';
-import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
+import type { CronQueueType } from '@openpanel/queue';
+import {
+  cronQueue,
+  eventsQueue,
+  notificationQueue,
+  sessionsQueue,
+} from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
+import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
 import { register } from './metrics';
+import { logger } from './utils/logger';
 
-const PORT = parseInt(process.env.WORKER_PORT || '3000', 10);
+const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);
 const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath('/');
 const app = express();
 
 const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
-  concurrency: parseInt(process.env.CONCURRENCY || '1', 10),
+  concurrency: Number.parseInt(process.env.CONCURRENCY || '1', 10),
 };
 
 async function start() {
@@ -29,15 +37,21 @@ async function start() {
   const sessionsWorker = new Worker(
     sessionsQueue.name,
     sessionsJob,
-    workerOptions
+    workerOptions,
   );
   const cronWorker = new Worker(cronQueue.name, cronJob, workerOptions);
+  const notificationWorker = new Worker(
+    notificationQueue.name,
+    notificationJob,
+    workerOptions,
+  );
 
   createBullBoard({
     queues: [
       new BullMQAdapter(eventsQueue),
       new BullMQAdapter(sessionsQueue),
       new BullMQAdapter(cronQueue),
+      new BullMQAdapter(notificationQueue),
     ],
     serverAdapter: serverAdapter,
   });
@@ -60,25 +74,60 @@ async function start() {
     console.log(`For the UI, open http://localhost:${PORT}/`);
   });
 
-  function workerLogger(worker: string, type: string, err?: Error) {
-    console.log(`Worker ${worker} -> ${type}`);
-    if (err) {
-      console.error(err);
-    }
-  }
-
-  const workers = [sessionsWorker, eventsWorker, cronWorker];
+  const workers = [
+    sessionsWorker,
+    eventsWorker,
+    cronWorker,
+    notificationWorker,
+  ];
   workers.forEach((worker) => {
-    worker.on('error', (err) => {
-      workerLogger(worker.name, 'error', err);
+    worker.on('error', (error) => {
+      logger.error('worker error', {
+        worker: worker.name,
+        error,
+      });
     });
 
     worker.on('closed', () => {
-      workerLogger(worker.name, 'closed');
+      logger.info('worker closed', {
+        worker: worker.name,
+      });
     });
 
     worker.on('ready', () => {
-      workerLogger(worker.name, 'ready');
+      logger.info('worker ready', {
+        worker: worker.name,
+      });
+    });
+
+    worker.on('failed', (job) => {
+      if (job) {
+        logger.error('job failed', {
+          worker: worker.name,
+          data: job.data,
+          error: job.failedReason,
+          options: job.opts,
+        });
+      }
+    });
+
+    worker.on('completed', (job) => {
+      if (job) {
+        logger.info('job completed', {
+          worker: worker.name,
+          data: job.data,
+          elapsed:
+            job.processedOn && job.finishedOn
+              ? job.finishedOn - job.processedOn
+              : undefined,
+        });
+      }
+    });
+
+    worker.on('ioredis:close', () => {
+      logger.error('worker closed due to ioredis:close', {
+        worker: worker.name,
+      });
     });
   });
 
@@ -88,10 +137,15 @@ async function start() {
       await sessionsWorker.close();
       await cronWorker.close();
     } catch (e) {
-      console.error('EXIT HANDLER ERROR', e);
+      logger.error('exit handler error', {
+        code: evtOrExitCodeOrError,
+        error: e,
+      });
     }
 
-    process.exit(isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError);
+    process.exit(
+      Number.isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError,
+    );
   }
 
   [
@@ -113,76 +167,78 @@ async function start() {
   ].forEach((evt) =>
     process.on(evt, (evt) => {
       exitHandler(evt);
-    })
+    }),
   );
 
-  await cronQueue.add(
-    'salt',
+  const jobs: {
+    name: string;
+    type: CronQueueType;
+    pattern: string | number;
+  }[] = [
     {
+      name: 'salt',
       type: 'salt',
-      payload: undefined,
+      pattern: '0 0 * * *',
     },
     {
-      jobId: 'salt',
-      repeat: {
-        utc: true,
-        pattern: '0 0 * * *',
-      },
-    }
-  );
-
-  await cronQueue.add(
-    'flush',
-    {
+      name: 'flush',
       type: 'flushEvents',
-      payload: undefined,
+      pattern: 1000 * 10,
     },
     {
-      jobId: 'flushEvents',
-      repeat: {
-        every: process.env.BATCH_INTERVAL
-          ? parseInt(process.env.BATCH_INTERVAL, 10)
-          : 1000 * 10,
-      },
-    }
-  );
-
-  await cronQueue.add(
-    'flush',
-    {
+      name: 'flush',
       type: 'flushProfiles',
-      payload: undefined,
+      pattern: 1000 * 60,
     },
-    {
-      jobId: 'flushProfiles',
-      repeat: {
-        every: process.env.BATCH_INTERVAL
-          ? parseInt(process.env.BATCH_INTERVAL, 10)
-          : 1000 * 10,
-      },
-    }
-  );
+  ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
+    jobs.push({
+      name: 'ping',
+      type: 'ping',
+      pattern: '0 0 * * *',
+    });
+  }
+
+  // Add repeatable jobs
+  for (const job of jobs) {
     await cronQueue.add(
-      'ping',
+      job.name,
       {
-        type: 'ping',
+        type: job.type,
         payload: undefined,
       },
       {
-        jobId: 'ping',
-        repeat: {
-          pattern: '0 0 * * *',
-        },
-      }
+        jobId: job.type,
+        repeat:
+          typeof job.pattern === 'number'
+            ? {
+                every: job.pattern,
+              }
+            : {
+                pattern: job.pattern,
+              },
+      },
     );
   }
 
+  // Remove outdated repeatable jobs
   const repeatableJobs = await cronQueue.getRepeatableJobs();
-
-  console.log('Repeatable jobs:');
-  console.log(repeatableJobs);
+  for (const repeatableJob of repeatableJobs) {
+    const match = jobs.find(
+      (job) => `${job.name}:${job.type}:::${job.pattern}` === repeatableJob.key,
+    );
+    if (match) {
+      logger.info('Repeatable job exists', {
+        key: repeatableJob.key,
+      });
+    } else {
+      logger.info('Removing repeatable job', {
+        key: repeatableJob.key,
+      });
+      cronQueue.removeRepeatableByKey(repeatableJob.key);
+    }
+  }
 
   await createInitialSalts();
 }

@@ -4,13 +4,12 @@ import superjson from 'superjson';
 import type * as WebSocket from 'ws';
 
 import { getSuperJson } from '@openpanel/common';
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent, Notification } from '@openpanel/db';
 import {
+  TABLE_NAMES,
   getEvents,
   getLiveVisitors,
-  getProfileById,
   getProfileByIdCached,
-  TABLE_NAMES,
   transformMinimalEvent,
 } from '@openpanel/db';
 import { getRedisCache, getRedisPub, getRedisSub } from '@openpanel/redis';
@@ -26,10 +25,10 @@ export async function testVisitors(
       projectId: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const events = await getEvents(
-    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`
+    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`,
   );
   const event = events[Math.floor(Math.random() * events.length)];
   if (!event) {
@@ -41,7 +40,7 @@ export async function testVisitors(
     `live:event:${event.projectId}:${Math.random() * 1000}`,
     '',
     'EX',
-    10
+    10,
   );
   reply.status(202).send(event);
 }
@@ -52,10 +51,10 @@ export async function testEvents(
       projectId: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const events = await getEvents(
-    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`
+    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`,
   );
   const event = events[Math.floor(Math.random() * events.length)];
   if (!event) {
@@ -73,7 +72,7 @@ export function wsVisitors(
     Params: {
       projectId: string;
     };
-  }>
+  }>,
 ) {
   const { params } = req;
 
@@ -122,7 +121,7 @@ export async function wsProjectEvents(
       token?: string;
       type?: string;
     };
-  }>
+  }>,
 ) {
   const { params, query } = req;
   const { token } = query;
@@ -143,22 +142,78 @@ export async function wsProjectEvents(
   getRedisSub().subscribe(subscribeToEvent);
 
   const message = async (channel: string, message: string) => {
-    const event = getSuperJson<IServiceEvent>(message);
-    if (event?.projectId === params.projectId) {
-      const profile = await getProfileByIdCached(
-        event.profileId,
-        event.projectId
-      );
-      connection.socket.send(
-        superjson.stringify(
-          access
-            ? {
-                ...event,
-                profile,
-              }
-            : transformMinimalEvent(event)
-        )
-      );
+    if (channel === subscribeToEvent) {
+      const event = getSuperJson<IServiceEvent>(message);
+      if (event?.projectId === params.projectId) {
+        const profile = await getProfileByIdCached(
+          event.profileId,
+          event.projectId,
+        );
+        connection.socket.send(
+          superjson.stringify(
+            access
+              ? {
+                  ...event,
+                  profile,
+                }
+              : transformMinimalEvent(event),
+          ),
+        );
+      }
+    }
+  };
+
+  getRedisSub().on('message', message as any);
+
+  connection.socket.on('close', () => {
+    getRedisSub().unsubscribe(subscribeToEvent);
+    getRedisSub().off('message', message as any);
+  });
+}
+
+export async function wsProjectNotifications(
+  connection: {
+    socket: WebSocket;
+  },
+  req: FastifyRequest<{
+    Params: {
+      projectId: string;
+    };
+    Querystring: {
+      token?: string;
+    };
+  }>,
+) {
+  const { params, query } = req;
+
+  if (!query.token) {
+    connection.socket.send('No token provided');
+    connection.socket.close();
+    return;
+  }
+
+  const subscribeToEvent = 'notification';
+  const decoded = validateClerkJwt(query.token);
+  const userId = decoded?.sub;
+  const access = await getProjectAccess({
+    userId: userId!,
+    projectId: params.projectId,
+  });
+
+  if (!access) {
+    connection.socket.send('No access');
+    connection.socket.close();
+    return;
+  }
+
+  getRedisSub().subscribe(subscribeToEvent);
+
+  const message = async (channel: string, message: string) => {
+    if (channel === subscribeToEvent) {
+      const notification = getSuperJson<Notification>(message);
+      if (notification?.projectId === params.projectId) {
+        connection.socket.send(superjson.stringify(notification));
+      }
     }
   };
 

@@ -29,13 +29,13 @@ import {
 import type { ISerieDataItem } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import {
+  TABLE_NAMES,
   chQuery,
   createSqlBuilder,
   formatClickhouseDate,
   getChartSql,
   getEventFiltersWhereClause,
   getProfiles,
-  TABLE_NAMES,
 } from '@openpanel/db';
 import type {
   FinalChart,
@@ -53,7 +53,7 @@ function getEventLegend(event: IChartEvent) {
 
 export function withFormula(
   { formula, events }: IChartInput,
-  series: Awaited<ReturnType<typeof getChartSerie>>
+  series: Awaited<ReturnType<typeof getChartSerie>>,
 ) {
   if (!formula) {
     return series;
@@ -99,19 +99,20 @@ export function withFormula(
       };
     });
   }
-
   return [
     {
       ...series[0],
       data: series[0].data.map((item, dIndex) => {
-        const scope = series.reduce((acc, item) => {
-          if (!item.event.id) {
-            return acc;
+        const scope = series.reduce((acc, item, index) => {
+          const readableId = alphabetIds[index];
+
+          if (!readableId) {
+            throw new Error('no alphabet id for serie in withFormula');
           }
 
           return {
             ...acc,
-            [item.event.id]: item.data[dIndex]?.count ?? 0,
+            [readableId]: item.data[dIndex]?.count ?? 0,
           };
         }, {});
 
@@ -131,7 +132,7 @@ export function withFormula(
 const toDynamicISODateWithTZ = (
   date: string,
   blueprint: string,
-  interval: IInterval
+  interval: IInterval,
 ) => {
   // If we have a space in the date we know it's a date with time
   if (date.includes(' ')) {
@@ -240,6 +241,28 @@ export function getDatesFromRange(range: IChartRange) {
   };
 }
 
+function fillFunnel(funnel: { level: number; count: number }[], steps: number) {
+  const filled = Array.from({ length: steps }, (_, index) => {
+    const level = index + 1;
+    const matchingResult = funnel.find((res) => res.level === level);
+    return {
+      level,
+      count: matchingResult ? matchingResult.count : 0,
+    };
+  });
+
+  // Accumulate counts from top to bottom of the funnel
+  for (let i = filled.length - 1; i >= 0; i--) {
+    const step = filled[i];
+    const prevStep = filled[i + 1];
+    // If there's a previous step, add the count to the current step
+    if (step && prevStep) {
+      step.count += prevStep.count;
+    }
+  }
+  return filled.reverse();
+}
+
 export function getChartStartEndDate({
   startDate,
   endDate,
@@ -293,7 +316,7 @@ export async function getFunnelData({
 
   const innerSql = `SELECT
     session_id,
-    windowFunnel(${ONE_DAY_IN_SECONDS}, 'strict_order')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+    windowFunnel(${ONE_DAY_IN_SECONDS}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM ${TABLE_NAMES.events}
   WHERE 
     project_id = ${escape(projectId)} AND 
@@ -304,41 +327,9 @@ export async function getFunnelData({
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;
 
-  const funnelRes = await chQuery<{ level: number; count: number }>(sql);
-
-  if (funnelRes[0]?.level !== payload.events.length) {
-    funnelRes.unshift({
-      level: payload.events.length,
-      count: 0,
-    });
-  }
-
-  const filledFunnelRes = funnelRes.reduce(
-    (acc, item, index) => {
-      const diff =
-        index !== 0 ? (acc[acc.length - 1]?.level ?? 0) - item.level : 1;
-
-      if (diff > 1) {
-        acc.push(
-          ...reverse(
-            repeat({}, diff - 1).map((_, index) => ({
-              count: acc[acc.length - 1]?.count ?? 0,
-              level: item.level + index + 1,
-            }))
-          )
-        );
-      }
-
-      return [
-        ...acc,
-        {
-          count: item.count + (acc[acc.length - 1]?.count ?? 0),
-          level: item.level,
-        },
-      ];
-    },
-    [] as typeof funnelRes
-  );
+  const funnel = await chQuery<{ level: number; count: number }>(sql);
+  const maxLevel = payload.events.length;
+  const filledFunnelRes = fillFunnel(funnel, maxLevel);
 
   const totalSessions = last(filledFunnelRes)?.count ?? 0;
   const steps = reverse(filledFunnelRes).reduce(
@@ -367,7 +358,7 @@ export async function getFunnelData({
       dropoffCount: number;
       dropoffPercent: number;
       previousCount: number;
-    }[]
+    }[],
   );
 
   return {
@@ -430,7 +421,10 @@ export async function getFunnelStep({
     id: string;
   }>(profileIdsQuery);
 
-  return getProfiles(res.map((r) => r.id));
+  return getProfiles(
+    res.map((r) => r.id),
+    projectId,
+  );
 }
 
 export async function getChartSerie(payload: IGetChartDataInput) {
@@ -441,7 +435,7 @@ export async function getChartSerie(payload: IGetChartDataInput) {
         getChartSql({
           ...payload,
           breakdowns: [],
-        })
+        }),
       );
     }
     return result;
@@ -449,7 +443,7 @@ export async function getChartSerie(payload: IGetChartDataInput) {
 
   return getSeries()
     .then((data) =>
-      completeSerie(data, payload.startDate, payload.endDate, payload.interval)
+      completeSerie(data, payload.startDate, payload.endDate, payload.interval),
     )
     .then((series) => {
       return Object.keys(series).map((key) => {
@@ -467,7 +461,7 @@ export async function getChartSerie(payload: IGetChartDataInput) {
             date: toDynamicISODateWithTZ(
               item.date,
               payload.startDate,
-              payload.interval
+              payload.interval,
             ),
           })),
         };
@@ -483,8 +477,8 @@ export async function getChartSeries(input: IChartInputWithDates) {
         getChartSerie({
           ...input,
           event,
-        })
-      )
+        }),
+      ),
     )
   ).flat();
 
@@ -509,7 +503,7 @@ export async function getChart(input: IChartInput) {
       getChartSeries({
         ...input,
         ...previousPeriod,
-      })
+      }),
     );
   }
 
@@ -526,11 +520,11 @@ export async function getChart(input: IChartInput) {
   const final: FinalChart = {
     series: series.map((serie, index) => {
       const eventIndex = input.events.findIndex(
-        (event) => event.id === serie.event.id
+        (event) => event.id === serie.event.id,
       );
       const alphaId = alphabetIds[eventIndex];
       const previousSerie = previousSeries?.find(
-        (prevSerie) => getSerieId(prevSerie) === getSerieId(serie)
+        (prevSerie) => getSerieId(prevSerie) === getSerieId(serie),
       );
       const metrics = {
         sum: sum(serie.data.map((item) => item.count)),
@@ -558,30 +552,30 @@ export async function getChart(input: IChartInput) {
                     metrics.sum,
                     previousSerie
                       ? sum(previousSerie?.data.map((item) => item.count))
-                      : null
+                      : null,
                   ),
                   average: getPreviousMetric(
                     metrics.average,
                     previousSerie
                       ? round(
                           average(
-                            previousSerie?.data.map((item) => item.count)
+                            previousSerie?.data.map((item) => item.count),
                           ),
-                          2
+                          2,
                         )
-                      : null
+                      : null,
                   ),
                   min: getPreviousMetric(
                     metrics.sum,
                     previousSerie
                       ? min(previousSerie?.data.map((item) => item.count))
-                      : null
+                      : null,
                   ),
                   max: getPreviousMetric(
                     metrics.sum,
                     previousSerie
                       ? max(previousSerie?.data.map((item) => item.count))
-                      : null
+                      : null,
                   ),
                 },
               }
@@ -593,7 +587,7 @@ export async function getChart(input: IChartInput) {
           previous: previousSerie?.data[index]
             ? getPreviousMetric(
                 item.count ?? 0,
-                previousSerie?.data[index]?.count ?? null
+                previousSerie?.data[index]?.count ?? null,
               )
             : undefined,
         })),
@@ -614,16 +608,15 @@ export async function getChart(input: IChartInput) {
         const sumA = a.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
         const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
         return sumB - sumA;
-      } else {
-        return b.metrics[input.metric] - a.metrics[input.metric];
       }
+      return b.metrics[input.metric] - a.metrics[input.metric];
     })
     .slice(offset, limit ? offset + limit : series.length);
 
   final.metrics.sum = sum(final.series.map((item) => item.metrics.sum));
   final.metrics.average = round(
     average(final.series.map((item) => item.metrics.average)),
-    2
+    2,
   );
   final.metrics.min = min(final.series.map((item) => item.metrics.min));
   final.metrics.max = max(final.series.map((item) => item.metrics.max));
@@ -631,26 +624,26 @@ export async function getChart(input: IChartInput) {
     final.metrics.previous = {
       sum: getPreviousMetric(
         final.metrics.sum,
-        sum(final.series.map((item) => item.metrics.previous?.sum?.value ?? 0))
+        sum(final.series.map((item) => item.metrics.previous?.sum?.value ?? 0)),
       ),
       average: getPreviousMetric(
         final.metrics.average,
         round(
           average(
             final.series.map(
-              (item) => item.metrics.previous?.average?.value ?? 0
-            )
+              (item) => item.metrics.previous?.average?.value ?? 0,
+            ),
           ),
-          2
-        )
+          2,
+        ),
       ),
       min: getPreviousMetric(
         final.metrics.min,
-        min(final.series.map((item) => item.metrics.previous?.min?.value ?? 0))
+        min(final.series.map((item) => item.metrics.previous?.min?.value ?? 0)),
       ),
       max: getPreviousMetric(
         final.metrics.max,
-        max(final.series.map((item) => item.metrics.previous?.max?.value ?? 0))
+        max(final.series.map((item) => item.metrics.previous?.max?.value ?? 0)),
       ),
     };
   }

@@ -1,5 +1,5 @@
-import React from 'react';
 import Script from 'next/script';
+import React from 'react';
 
 import type {
   DecrementPayload,
@@ -18,6 +18,7 @@ type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
   cdnUrl?: string;
   filter?: string;
+  globalProperties?: Record<string, unknown>;
 };
 
 const stringify = (obj: unknown) => {
@@ -37,6 +38,7 @@ const stringify = (obj: unknown) => {
 export function OpenPanelComponent({
   profileId,
   cdnUrl,
+  globalProperties,
   ...options
 }: OpenPanelComponentProps) {
   const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
@@ -55,6 +57,12 @@ export function OpenPanelComponent({
       value: {
         profileId,
       },
+    });
+  }
+  if (globalProperties) {
+    methods.push({
+      name: 'setGlobalProperties',
+      value: globalProperties,
     });
   }
   return (
@@ -88,6 +96,18 @@ export function IdentifyComponent(props: IdentifyComponentProps) {
   );
 }
 
+export function SetGlobalPropertiesComponent(props: Record<string, unknown>) {
+  return (
+    <>
+      <Script
+        dangerouslySetInnerHTML={{
+          __html: `window.op('setGlobalProperties', ${JSON.stringify(props)});`,
+        }}
+      />
+    </>
+  );
+}
+
 export function useOpenPanel() {
   return {
     track,
@@ -96,23 +116,33 @@ export function useOpenPanel() {
     increment,
     decrement,
     clear,
+    setGlobalProperties,
   };
 }
 
-function track(name: string, properties?: TrackProperties) {
-  window.op('track', name, properties);
+function setGlobalProperties(properties: Record<string, unknown>) {
+  window.op?.('setGlobalProperties', properties);
 }
 
-function screenView(properties: TrackProperties) {
-  track('screen_view', properties);
+function track(name: string, properties?: TrackProperties) {
+  window.op?.('track', name, properties);
+}
+
+function screenView(properties?: TrackProperties): void;
+function screenView(path: string, properties?: TrackProperties): void;
+function screenView(
+  pathOrProperties?: string | TrackProperties,
+  propertiesOrUndefined?: TrackProperties,
+) {
+  window.op?.('screenView', pathOrProperties, propertiesOrUndefined);
 }
 
 function identify(payload: IdentifyPayload) {
-  window.op('identify', payload);
+  window.op?.('identify', payload);
 }
 
 function increment(payload: IncrementPayload) {
-  window.op('increment', payload);
+  window.op?.('increment', payload);
 }
 
 function decrement(payload: DecrementPayload) {
@@ -120,5 +150,5 @@ function decrement(payload: DecrementPayload) {
 }
 
 function clear() {
-  window.op('clear');
+  window.op?.('clear');
 }

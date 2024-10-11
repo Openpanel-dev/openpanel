@@ -1,7 +1,6 @@
-import { Suspense } from 'react';
-import { ChartLoading } from '@/components/report/chart/ChartLoading';
 import { Widget, WidgetHead } from '@/components/widget';
 import { cn } from '@/utils/cn';
+import { Suspense } from 'react';
 
 const withLoadingWidget = <P,>(Component: React.ComponentType<P>) => {
   const WithLoadingWidget: React.ComponentType<P> = (props) => {
@@ -15,13 +14,13 @@ const withLoadingWidget = <P,>(Component: React.ComponentType<P>) => {
                 typeof props === 'object' &&
                 'className' in props &&
                 typeof props.className === 'string' &&
-                props?.className
+                props?.className,
             )}
           >
             <WidgetHead>
               <span className="title">Loading...</span>
             </WidgetHead>
-            <ChartLoading />
+            <div className="aspect-video animate-pulse rounded bg-def-100" />
           </Widget>
         }
       >

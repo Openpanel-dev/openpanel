@@ -1,6 +1,6 @@
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import bcrypt from 'bcrypt';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
@@ -19,7 +19,7 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
   const caddyfileTemplatePath = path.resolve(
     __dirname,
     'caddy',
-    'Caddyfile.template'
+    'Caddyfile.template',
   );
   const caddyfilePath = path.resolve(__dirname, 'caddy', 'Caddyfile');
   fs.writeFileSync(
@@ -29,12 +29,12 @@ function writeCaddyfile(domainName: string, basicAuthPassword: string) {
       .replaceAll('$DOMAIN_NAME', domainName.replace(/https?:\/\//, ''))
       .replaceAll(
         '$BASIC_AUTH_PASSWORD',
-        bcrypt.hashSync(basicAuthPassword, 10)
+        bcrypt.hashSync(basicAuthPassword, 10),
       )
       .replaceAll(
         '$SSL_CONFIG',
-        domainName.includes('localhost:443') ? '\n\ttls internal' : ''
-      )
+        domainName.includes('localhost:443') ? '\n\ttls internal' : '',
+      ),
   );
 }
 
@@ -61,7 +61,7 @@ function searchAndReplaceDockerCompose(replacements: [string, string][]) {
   const dockerComposeContent = fs.readFileSync(dockerComposePath, 'utf-8');
   const dockerComposeReplaced = replacements.reduce(
     (acc, [search, replace]) => acc.replaceAll(search, replace),
-    dockerComposeContent
+    dockerComposeContent,
   );
 
   fs.writeFileSync(dockerComposePath, dockerComposeReplaced);
@@ -75,7 +75,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
   const dockerCompose = yaml.load(dockerComposeContent) as DockerComposeFile;
 
   // Remove the service
-  if (dockerCompose.services && dockerCompose.services[serviceName]) {
+  if (dockerCompose.services[serviceName]) {
     delete dockerCompose.services[serviceName];
     console.log(`Service '${serviceName}' has been removed.`);
   } else {
@@ -112,12 +112,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
 }
 
 function writeEnvFile(envs: {
-  POSTGRES_PASSWORD: string | undefined;
-  REDIS_PASSWORD: string | undefined;
   CLICKHOUSE_URL: string;
-  CLICKHOUSE_DB: string;
-  CLICKHOUSE_USER: string;
-  CLICKHOUSE_PASSWORD: string;
   REDIS_URL: string;
   DATABASE_URL: string;
   DOMAIN_NAME: string;
@@ -129,29 +124,22 @@ function writeEnvFile(envs: {
   const envPath = path.resolve(__dirname, '.env');
   const envTemplate = fs.readFileSync(envTemplatePath, 'utf-8');
 
-  let newEnvFile = envTemplate
+  const newEnvFile = envTemplate
     .replace('$CLICKHOUSE_URL', envs.CLICKHOUSE_URL)
-    .replace('$CLICKHOUSE_DB', envs.CLICKHOUSE_DB)
-    .replace('$CLICKHOUSE_USER', envs.CLICKHOUSE_USER)
-    .replace('$CLICKHOUSE_PASSWORD', envs.CLICKHOUSE_PASSWORD)
     .replace('$REDIS_URL', envs.REDIS_URL)
     .replace('$DATABASE_URL', envs.DATABASE_URL)
     .replace('$DATABASE_URL_DIRECT', envs.DATABASE_URL)
     .replace('$NEXT_PUBLIC_DASHBOARD_URL', stripTrailingSlash(envs.DOMAIN_NAME))
     .replace(
       '$NEXT_PUBLIC_API_URL',
-      `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`
+      `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`,
     )
     .replace(
       '$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
-      envs.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+      envs.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     )
     .replace('$CLERK_SECRET_KEY', envs.CLERK_SECRET_KEY)
     .replace('$CLERK_SIGNING_SECRET', envs.CLERK_SIGNING_SECRET);
-
-  if (envs.POSTGRES_PASSWORD) {
-    newEnvFile += `\nPOSTGRES_PASSWORD=${envs.POSTGRES_PASSWORD}`;
-  }
 
   fs.writeFileSync(
     envPath,
@@ -160,7 +148,7 @@ function writeEnvFile(envs: {
       .filter((line) => {
         return !line.includes('=""');
       })
-      .join('\n')
+      .join('\n'),
   );
 }
 
@@ -178,7 +166,7 @@ async function initiateOnboarding() {
     "With that said let's get started! 🤠",
     '',
     `Hey and welcome to Openpanel's self-hosting setup! 🚀\n`,
-    `Before you continue, please make sure you have the following:`,
+    'Before you continue, please make sure you have the following:',
     `${T}1. Docker and Docker Compose installed on your machine.`,
     `${T}2. A domain name that you can use for this setup and point it to this machine's ip`,
     `${T}3. A Clerk.com account`,
@@ -189,11 +177,11 @@ async function initiateOnboarding() {
   ];
 
   console.log(
-    '******************************************************************************\n'
+    '******************************************************************************\n',
   );
   console.log(message.join('\n'));
   console.log(
-    '\n******************************************************************************'
+    '\n******************************************************************************',
   );
 
   // Domain name
@@ -234,26 +222,9 @@ async function initiateOnboarding() {
       {
         type: 'input',
         name: 'CLICKHOUSE_URL',
-        message: 'Enter your ClickHouse URL:',
-        default: process.env.DEBUG ? 'http://clickhouse:8123' : undefined,
-      },
-      {
-        type: 'input',
-        name: 'CLICKHOUSE_DB',
-        message: 'Enter your ClickHouse DB name:',
-        default: process.env.DEBUG ? 'db_openpanel' : undefined,
-      },
-      {
-        type: 'input',
-        name: 'CLICKHOUSE_USER',
-        message: 'Enter your ClickHouse user name:',
-        default: process.env.DEBUG ? 'user_openpanel' : undefined,
-      },
-      {
-        type: 'input',
-        name: 'CLICKHOUSE_PASSWORD',
-        message: 'Enter your ClickHouse password:',
-        default: process.env.DEBUG ? 'ch_password' : undefined,
+        message:
+          'Enter your ClickHouse URL (format: http://user:pw@host:port/db):',
+        default: process.env.DEBUG ? 'http://op-ch:8123/openpanel' : undefined,
       },
     ]);
 
@@ -268,8 +239,8 @@ async function initiateOnboarding() {
       {
         type: 'input',
         name: 'REDIS_URL',
-        message: 'Enter your Redis URL:',
-        default: process.env.DEBUG ? 'redis://redis:6379' : undefined,
+        message: 'Enter your Redis URL (format: redis://user:pw@host:port/db):',
+        default: process.env.DEBUG ? 'redis://op-kv:6379' : undefined,
       },
     ]);
     envs = {
@@ -283,9 +254,10 @@ async function initiateOnboarding() {
       {
         type: 'input',
         name: 'DATABASE_URL',
-        message: 'Enter your Database URL:',
+        message:
+          'Enter your Database URL (format: postgresql://user:pw@host:port/db):',
         default: process.env.DEBUG
-          ? 'postgresql://postgres:postgres@postgres:5432/postgres?schema=public'
+          ? 'postgresql://postgres:postgres@op-db:5432/postgres?schema=public'
           : undefined,
       },
     ]);
@@ -360,7 +332,7 @@ async function initiateOnboarding() {
       default: os.cpus().length,
       message: 'How many CPUs do you have?',
       validate: (value) => {
-        const parsed = parseInt(value, 10);
+        const parsed = Number.parseInt(value, 10);
 
         if (Number.isNaN(parsed)) {
           return 'Please enter a valid number';
@@ -399,20 +371,13 @@ async function initiateOnboarding() {
 
   console.log('');
   console.log('Creating .env file...\n');
-  const POSTGRES_PASSWORD = generatePassword(20);
-  const REDIS_PASSWORD = generatePassword(20);
 
   writeEnvFile({
-    POSTGRES_PASSWORD: envs.DATABASE_URL ? undefined : POSTGRES_PASSWORD,
-    REDIS_PASSWORD: envs.REDIS_URL ? undefined : REDIS_PASSWORD,
-    CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op-ch:8123',
-    CLICKHOUSE_DB: envs.CLICKHOUSE_DB || 'openpanel',
-    CLICKHOUSE_USER: envs.CLICKHOUSE_USER || 'openpanel',
-    CLICKHOUSE_PASSWORD: envs.CLICKHOUSE_PASSWORD || generatePassword(20),
+    CLICKHOUSE_URL: envs.CLICKHOUSE_URL || 'http://op-ch:8123/openpanel',
     REDIS_URL: envs.REDIS_URL || 'redis://op-kv:6379',
     DATABASE_URL:
       envs.DATABASE_URL ||
-      `postgresql://postgres:${POSTGRES_PASSWORD}@op-db:5432/postgres?schema=public`,
+      'postgresql://postgres:postgres@op-db:5432/postgres?schema=public',
     DOMAIN_NAME: domainNameResponse.domainName,
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
       clerkResponse.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '',
@@ -423,7 +388,7 @@ async function initiateOnboarding() {
   console.log('Updating docker-compose.yml file...\n');
   fs.copyFileSync(
     path.resolve(__dirname, 'docker-compose.template.yml'),
-    path.resolve(__dirname, 'docker-compose.yml')
+    path.resolve(__dirname, 'docker-compose.yml'),
   );
 
   if (envs.CLICKHOUSE_URL) {
@@ -469,7 +434,7 @@ async function initiateOnboarding() {
       `Start OpenPanel with "./start" inside the self-hosting directory`,
       '',
       '',
-    ].join('\n')
+    ].join('\n'),
   );
 }
 

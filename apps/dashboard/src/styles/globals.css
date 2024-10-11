@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    --highlight: 220, 84%, 53%; /* #2266ec */
+    --highlight: 220 84% 53%; /* #2266ec */
 
     --def-100: 210 40% 98%; /* #F0F4F9 */
     --def-200: 210 40% 96.1%; /* #E7ECF2 */
@@ -13,6 +13,7 @@
 
     --background: 0 0% 100%; /* #FFFFFF */
     --foreground: 222.2 84% 4.9%; /* #0C162A */
+    --foregroundish: 226.49 3.06% 22.62%;
 
     --card: 0 0% 100%; /* #FFFFFF */
     --card-foreground: 222.2 84% 4.9%; /* #0C162A */
@@ -52,6 +53,7 @@
 
     --background: 0 0% 12.02%; /* #1e1e1e */
     --foreground: 0 0% 98%; /* #fafafa */
+    --foregroundish: 0 0% 79.23%;
 
     --card: 0 0% 10%; /* #1a1a1a */
     --card-foreground: 0 0% 98%; /* #fafafa */
@@ -108,31 +110,18 @@
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
   }
 
-  .shine {
-    background-repeat: no-repeat;
-    background-position:
-      -120px -120px,
-      0 0;
-    background-image: linear-gradient(
-      0 0,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0.2) 37%,
-      rgba(255, 255, 255, 0.8) 45%,
-      rgba(255, 255, 255, 0) 50%
-    );
-    background-size:
-      250% 250%,
-      100% 100%;
-    transition: background-position 0s ease;
+  .heading {
+    @apply text-3xl font-semibold;
   }
 
-  .shine:hover {
-    background-position:
-      0 0,
-      0 0;
-    transition-duration: 0.5s;
+  .title {
+    @apply text-lg font-semibold;
   }
 
+  .subtitle {
+    @apply text-md font-medium;
+  }
+  
   .card {
     @apply rounded-md border border-border bg-card;
   }

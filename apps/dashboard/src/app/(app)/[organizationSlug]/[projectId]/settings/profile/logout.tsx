@@ -10,9 +10,7 @@ export function Logout() {
         <span className="title">Sad part</span>
       </WidgetHead>
       <WidgetBody>
-        <p className="mb-4">
-          Sometimes you need to go. See you next time
-        </p>
+        <p className="mb-4">Sometimes you need to go. See you next time</p>
         <SignOutButton />
       </WidgetBody>
     </Widget>

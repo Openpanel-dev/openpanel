@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { api } from '@/trpc/client';
+import { useState } from 'react';
 
 import { Pagination } from '../pagination';
 import { Tooltiper } from '../ui/tooltip';
@@ -23,7 +23,7 @@ const OverviewTopBots = ({ projectId }: Props) => {
     { projectId, cursor },
     {
       keepPreviousData: true,
-    }
+    },
   );
   const data = res.data?.data ?? [];
   const count = res.data?.count ?? 0;

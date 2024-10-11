@@ -31,8 +31,8 @@ export function OverviewShare({ data }: OverviewShareProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button icon={data && data.public ? Globe2Icon : LockIcon} responsive>
-          {data && data.public ? 'Public' : 'Private'}
+        <Button icon={data?.public ? Globe2Icon : LockIcon} responsive>
+          {data?.public ? 'Public' : 'Private'}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

@@ -3,12 +3,18 @@ ARG NODE_VERSION=20.15.1
 FROM node:${NODE_VERSION}-slim AS base
 
 RUN corepack enable && apt-get update && \
-apt-get install -y --no-install-recommends \
-ca-certificates \
-openssl \
-libssl3 \
-&& apt-get clean && \
-rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    openssl \
+    libssl3 \
+    curl \
+    netcat-openbsd \
+    && apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL \
+    https://raw.githubusercontent.com/pressly/goose/master/install.sh |\
+    sh 
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
@@ -30,10 +36,8 @@ COPY packages/common/package.json packages/common/
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/
 COPY packages/constants/package.json packages/constants/
 COPY packages/validation/package.json packages/validation/
+COPY packages/integrations/package.json packages/integrations/
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/
-
-# Patches
-COPY patches patches
 
 # BUILD
 FROM base AS build
@@ -90,7 +94,7 @@ COPY --from=build /app/packages/common ./packages/common
 COPY --from=build /app/packages/sdks/sdk ./packages/sdks/sdk
 COPY --from=build /app/packages/constants ./packages/constants
 COPY --from=build /app/packages/validation ./packages/validation
-
+COPY --from=build /app/packages/integrations ./packages/integrations
 RUN pnpm db:codegen
 
 WORKDIR /app/apps/api

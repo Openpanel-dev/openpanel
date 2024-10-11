@@ -1,4 +1,4 @@
-import { ChartRootShortcut } from '@/components/report/chart';
+import { ReportChartShortcut } from '@/components/report-chart/shortcut';
 import { KeyValue } from '@/components/ui/key-value';
 import { useAppParams } from '@/hooks/useAppParams';
 import {
@@ -158,7 +158,7 @@ export default function EventDetails({ id }: Props) {
                       setFilter(
                         `properties.${item.name}`,
                         item.value ? String(item.value) : '',
-                        'is'
+                        'is',
                       );
                     }}
                   />
@@ -184,6 +184,7 @@ export default function EventDetails({ id }: Props) {
             <div className="mb-2 flex justify-between  font-medium">
               <div>Similar events</div>
               <button
+                type="button"
                 className="text-muted-foreground hover:underline"
                 onClick={() => {
                   setEvents([event.name]);
@@ -193,7 +194,7 @@ export default function EventDetails({ id }: Props) {
                 Show all
               </button>
             </div>
-            <ChartRootShortcut
+            <ReportChartShortcut
               projectId={event.projectId}
               chartType="histogram"
               events={[

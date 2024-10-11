@@ -22,7 +22,7 @@ const MostEvents = ({ data }: Props) => {
               style={{
                 width: `${(item.count / max) * 100}%`,
               }}
-            ></div>
+            />
             <div className="relative flex justify-between ">
               <div>{item.name}</div>
               <div>{item.count}</div>

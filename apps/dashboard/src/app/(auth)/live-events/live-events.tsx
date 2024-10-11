@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { EventListItem } from '@/app/(app)/[organizationSlug]/[projectId]/events/event-list/event-list-item';
+import { EventListItem } from '@/components/events/event-list-item';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 import type { IServiceEventMinimal } from '@openpanel/db';
 

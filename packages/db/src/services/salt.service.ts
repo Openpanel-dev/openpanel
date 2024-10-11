@@ -1,4 +1,4 @@
-import { generateSalt } from '@openpanel/common';
+import { generateSalt } from '@openpanel/common/server';
 
 import { db } from '../prisma-client';
 
@@ -61,17 +61,14 @@ export async function createInitialSalts() {
       } else {
         console.log('Error getting salts', error);
         if (retryCount < MAX_RETRIES) {
-          const delay = BASE_DELAY * Math.pow(2, retryCount);
+          const delay = BASE_DELAY * 2 ** retryCount;
           console.log(
-            `Retrying in ${delay}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`
+            `Retrying in ${delay}ms... (Attempt ${retryCount + 1}/${MAX_RETRIES})`,
           );
           await new Promise((resolve) => setTimeout(resolve, delay));
           return createSaltsWithRetry(retryCount + 1);
-        } else {
-          throw new Error(
-            `Failed to create salts after ${MAX_RETRIES} attempts`
-          );
         }
+        throw new Error(`Failed to create salts after ${MAX_RETRIES} attempts`);
       }
     }
   };

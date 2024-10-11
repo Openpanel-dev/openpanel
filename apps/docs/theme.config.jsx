@@ -42,7 +42,7 @@ export default {
           content={domain.replace('https://', '')}
         />
         <meta name="twitter:url" content={domain} />
-        <meta name="og:type" content={`site`} />
+        <meta name="og:type" content={'site'} />
         <meta name="og:url" content={canonicalUrl} />
         <meta name="og:title" content={`${title} - Openpanel Docs`} />
         <meta property="og:description" content={description} />
@@ -72,7 +72,11 @@ export default {
     text: (
       <span>
         Made with ❤️ by{' '}
-        <a href="https://x.com/OpenPanelDev" target="_blank" rel="nofollow">
+        <a
+          href="https://x.com/OpenPanelDev"
+          target="_blank"
+          rel="noreferrer nofollow"
+        >
           Carl
         </a>
       </span>

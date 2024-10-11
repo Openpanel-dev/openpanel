@@ -14,6 +14,9 @@ const Loading = () => (
 );
 
 const modals = {
+  EditEvent: dynamic(() => import('./edit-event'), {
+    loading: Loading,
+  }),
   EventDetails: dynamic(() => import('./event-details'), {
     loading: Loading,
   }),
@@ -71,6 +74,8 @@ const modals = {
   Testimonial: dynamic(() => import('./Testimonial'), {
     loading: Loading,
   }),
+  AddIntegration: dynamic(() => import('./add-integration')),
+  AddNotificationRule: dynamic(() => import('./add-notification-rule')),
 };
 
 export const {

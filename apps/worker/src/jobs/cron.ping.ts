@@ -1,8 +1,8 @@
-import { chQuery, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, chQuery } from '@openpanel/db';
 
 export async function ping() {
   const [res] = await chQuery<{ count: number }>(
-    `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`
+    `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`,
   );
 
   if (typeof res?.count === 'number') {

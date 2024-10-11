@@ -21,11 +21,11 @@ export const MembersTable = ({ projects, data }: Props) => {
   if (!data) {
     return (
       <div className="flex flex-col gap-2">
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4"></div>
+        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
+        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
+        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
+        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
+        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
       </div>
     );
   }

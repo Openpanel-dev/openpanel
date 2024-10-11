@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { useUser } from '@clerk/nextjs';
 import { differenceInDays } from 'date-fns';
+import { useEffect } from 'react';
 
 import { useOpenPanel } from '@openpanel/nextjs';
 
@@ -12,7 +12,7 @@ export default function SideEffects() {
   const { user } = useUser();
   const accountAgeInDays = differenceInDays(
     new Date(),
-    user?.createdAt || new Date()
+    user?.createdAt || new Date(),
   );
   useOnPushModal('Testimonial', (open) => {
     if (!open) {

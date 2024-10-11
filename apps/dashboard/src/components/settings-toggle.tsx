@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -16,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { CheckIcon, MoreHorizontalIcon, PlusIcon } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import * as React from 'react';
 
 import { ProjectLink } from './links';
 
@@ -56,6 +56,14 @@ export default function SettingsToggle({ className }: Props) {
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <ProjectLink href="/settings/references">References</ProjectLink>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <ProjectLink href="/settings/notifications">
+            Notifications
+          </ProjectLink>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <ProjectLink href="/settings/integrations">Integrations</ProjectLink>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>

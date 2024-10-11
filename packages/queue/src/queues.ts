@@ -1,6 +1,6 @@
-import { Queue } from 'bullmq';
+import { Queue, QueueEvents } from 'bullmq';
 
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent, Notification } from '@openpanel/db';
 import { getRedisQueue } from '@openpanel/redis';
 import type { TrackPayload } from '@openpanel/sdk';
 
@@ -28,12 +28,11 @@ export interface EventsQueuePayloadCreateEvent {
   type: 'createEvent';
   payload: Omit<IServiceEvent, 'id'>;
 }
+type SessionEndRequired = 'sessionId' | 'deviceId' | 'profileId' | 'projectId';
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
-  payload: Pick<
-    IServiceEvent,
-    'deviceId' | 'sessionId' | 'profileId' | 'projectId'
-  >;
+  payload: Partial<Omit<IServiceEvent, SessionEndRequired>> &
+    Pick<IServiceEvent, SessionEndRequired>;
 }
 
 // TODO: Rename `EventsQueuePayloadCreateSessionEnd`
@@ -66,6 +65,8 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadPing;
 
+export type CronQueueType = CronQueuePayload['type'];
+
 export const eventsQueue = new Queue<EventsQueuePayload>('events', {
   connection: getRedisQueue(),
   defaultJobOptions: {
@@ -79,6 +80,9 @@ export const sessionsQueue = new Queue<SessionsQueuePayload>('sessions', {
     removeOnComplete: 10,
   },
 });
+export const sessionsQueueEvents = new QueueEvents('sessions', {
+  connection: getRedisQueue(),
+});
 
 export const cronQueue = new Queue<CronQueuePayload>('cron', {
   connection: getRedisQueue(),
@@ -86,3 +90,20 @@ export const cronQueue = new Queue<CronQueuePayload>('cron', {
     removeOnComplete: 10,
   },
 });
+
+export type NotificationQueuePayload = {
+  type: 'sendNotification';
+  payload: {
+    notification: Notification;
+  };
+};
+
+export const notificationQueue = new Queue<NotificationQueuePayload>(
+  'notification',
+  {
+    connection: getRedisQueue(),
+    defaultJobOptions: {
+      removeOnComplete: 10,
+    },
+  },
+);

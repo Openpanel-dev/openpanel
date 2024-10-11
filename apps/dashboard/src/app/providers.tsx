@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
@@ -10,14 +9,17 @@ import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
+import type React from 'react';
+import { useRef, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
 
+import { NotificationProvider } from '@/components/notifications/notification-provider';
 import { OpenPanelComponent } from '@openpanel/nextjs';
 
 function AllProviders({ children }: { children: React.ReactNode }) {
-  const { userId, getToken } = useAuth();
+  const { getToken } = useAuth();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -28,7 +30,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
             refetchOnWindowFocus: false,
           },
         },
-      })
+      }),
   );
   const [trpcClient] = useState(() =>
     api.createClient({
@@ -47,7 +49,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
           },
         }),
       ],
-    })
+    }),
   );
 
   const storeRef = useRef<AppStore>();
@@ -75,6 +77,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
           <QueryClientProvider client={queryClient}>
             <TooltipProvider delayDuration={200}>
               {children}
+              <NotificationProvider />
               <Toaster />
               <ModalProvider />
             </TooltipProvider>

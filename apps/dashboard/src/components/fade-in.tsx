@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { cn } from '@/utils/cn';
+import { useEffect, useRef } from 'react';
 
 type Props = {
   className?: string;

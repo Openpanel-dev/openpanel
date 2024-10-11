@@ -1,4 +1,4 @@
-import { ChartRoot } from '@/components/report/chart';
+import { ReportChart } from '@/components/report-chart';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 import type { IChartProps } from '@openpanel/validation';
@@ -15,7 +15,13 @@ const OverviewChartDetails = (props: Props) => {
       <ModalHeader title={props.chart.name} />
       <ScrollArea className="-m-6 max-h-[calc(100vh-200px)]">
         <div className="p-6">
-          <ChartRoot {...props.chart} limit={999} chartType="bar" />
+          <ReportChart
+            report={{
+              ...props.chart,
+              limit: 999,
+              chartType: 'bar',
+            }}
+          />
         </div>
       </ScrollArea>
     </ModalContent>

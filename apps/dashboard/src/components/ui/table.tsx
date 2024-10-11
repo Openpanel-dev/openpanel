@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
 import { cn } from '@/utils/cn';
+import * as React from 'react';
 
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -61,7 +61,7 @@ const TableRow = React.forwardRef<
     ref={ref}
     className={cn(
       'transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
-      className
+      className,
     )}
     {...props}
   />
@@ -76,7 +76,7 @@ const TableHead = React.forwardRef<
     ref={ref}
     className={cn(
       'h-10 whitespace-nowrap border-b border-border bg-def-100 px-4 text-left align-middle  font-semibold text-muted-foreground shadow-[0_0_0_0.5px] shadow-border [&:has([role=checkbox])]:pr-0',
-      className
+      className,
     )}
     {...props}
   />
@@ -91,7 +91,7 @@ const TableCell = React.forwardRef<
     ref={ref}
     className={cn(
       'h-12 whitespace-nowrap px-4 align-middle shadow-[0_0_0_0.5px] shadow-border',
-      className
+      className,
     )}
     {...props}
   />
@@ -109,6 +109,39 @@ const TableCaption = React.forwardRef<
   />
 ));
 TableCaption.displayName = 'TableCaption';
+
+export function TableSkeleton({
+  rows = 10,
+  cols = 2,
+}: {
+  rows?: number;
+  cols?: number;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {Array.from({ length: cols }).map((_, j) => (
+            <TableHead key={j as number}>
+              <div className="h-4 w-1/4 animate-pulse rounded-full bg-def-300" />
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: rows }).map((_, i) => (
+          <TableRow key={i as number}>
+            {Array.from({ length: cols }).map((_, j) => (
+              <TableCell key={(j + i) as number}>
+                <div className="h-4 w-1/4 min-w-20 animate-pulse rounded-full bg-def-300" />
+              </TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
 
 export {
   Table,

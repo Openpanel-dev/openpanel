@@ -42,7 +42,7 @@ export default function RootLayout({
         className={cn(
           'grainy min-h-screen font-sans text-slate-900 antialiased',
           head.variable,
-          body.variable
+          body.variable,
         )}
       >
         <Navbar darkText />

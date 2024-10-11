@@ -112,7 +112,7 @@ export default function Page() {
               <strong>Website</strong> refers to Openpanel, accessible from{' '}
               <a
                 href="https://openpanel.dev"
-                rel="external nofollow noopener"
+                rel="noreferrer external nofollow noopener"
                 target="_blank"
               >
                 https://openpanel.dev

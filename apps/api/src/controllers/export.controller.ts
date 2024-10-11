@@ -3,9 +3,15 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import type { GetEventListOptions } from '@openpanel/db';
-import { ClientType, db, getEventList, getEventsCount } from '@openpanel/db';
+import {
+  ClientType,
+  db,
+  getEventList,
+  getEventsCountCached,
+} from '@openpanel/db';
 import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
 import { zChartInput } from '@openpanel/validation';
+import { omit } from 'ramda';
 
 async function getProjectId(
   request: FastifyRequest<{
@@ -14,7 +20,7 @@ async function getProjectId(
       projectId?: string;
     };
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   let projectId = request.query.projectId || request.query.project_id;
 
@@ -72,7 +78,7 @@ const eventsScheme = z.object({
   includes: z
     .preprocess(
       (arg) => (typeof arg === 'string' ? [arg] : arg),
-      z.array(z.string())
+      z.array(z.string()),
     )
     .optional(),
 });
@@ -81,7 +87,7 @@ export async function events(
   request: FastifyRequest<{
     Querystring: z.infer<typeof eventsScheme>;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const query = eventsScheme.safeParse(request.query);
 
@@ -108,13 +114,19 @@ export async function events(
     endDate: query.data.end ? new Date(query.data.end) : undefined,
     cursor,
     take,
-    meta: false,
-    profile: query.data.includes?.includes('profile'),
+    select: {
+      profile: false,
+      meta: false,
+      ...query.data.includes?.reduce(
+        (acc, key) => ({ ...acc, [key]: true }),
+        {},
+      ),
+    },
   };
 
   const [data, totalCount] = await Promise.all([
     getEventList(options),
-    getEventsCount(options),
+    getEventsCountCached(omit(['cursor', 'take'], options)),
   ]);
 
   reply.send({
@@ -143,7 +155,7 @@ export async function charts(
   request: FastifyRequest<{
     Querystring: Record<string, string>;
   }>,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const query = chartSchemeFull.safeParse(parseQueryString(request.query));
 

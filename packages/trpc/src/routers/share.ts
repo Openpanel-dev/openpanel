@@ -10,7 +10,7 @@ const uid = new ShortUniqueId({ length: 6 });
 export const shareRouter = createTRPCRouter({
   shareOverview: protectedProcedure
     .input(zShareOverview)
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
       return db.shareOverview.upsert({
         where: {
           projectId: input.projectId,

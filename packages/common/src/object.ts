@@ -3,8 +3,8 @@ import superjson from 'superjson';
 
 export function toDots(
   obj: Record<string, unknown>,
-  path = ''
-): Record<string, number | string | boolean> {
+  path = '',
+): Record<string, string> {
   return Object.entries(obj).reduce((acc, [key, value]) => {
     if (typeof value === 'object' && value !== null) {
       return {
@@ -26,7 +26,7 @@ export function toDots(
 }
 
 export function toObject(
-  obj: Record<string, string | undefined>
+  obj: Record<string, string | undefined>,
 ): Record<string, unknown> {
   let result: Record<string, unknown> = {};
   Object.entries(obj).forEach(([key, value]) => {
@@ -47,15 +47,14 @@ export function getSafeJson<T>(str: string): T | null {
 
 export function getSuperJson<T>(str: string): T | null {
   const json = getSafeJson<T>(str);
-  if (
-    typeof json === 'object' &&
-    json !== null &&
-    'json' in json &&
-    'meta' in json
-  ) {
+  if (typeof json === 'object' && json !== null && 'json' in json) {
     return superjson.parse<T>(str);
   }
   return json;
+}
+
+export function setSuperJson(str: Record<string, unknown>): string {
+  return superjson.stringify(str);
 }
 
 type AnyObject = Record<string, any>;

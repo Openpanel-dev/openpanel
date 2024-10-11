@@ -14,18 +14,19 @@ const trackRouter: FastifyPluginCallback = (fastify, opts, done) => {
       req: FastifyRequest<{
         Body: TrackHandlerPayload;
       }>,
-      reply
+      reply,
     ) => {
       try {
         const client = await validateSdkRequest(req.headers).catch((error) => {
-          if (!(error instanceof SdkAuthError)) {
-            logger.error(error, 'Failed to validate sdk request');
+          if (error instanceof SdkAuthError) {
+            return reply.status(401).send(error.message);
           }
-          return null;
+          logger.error('Failed to validate sdk request', { error });
+          return reply.status(401).send('Unknown validation error');
         });
 
         if (!client?.projectId) {
-          return reply.status(401).send();
+          return reply.status(401).send('No project found for this client');
         }
 
         req.projectId = client.projectId;
@@ -49,12 +50,12 @@ const trackRouter: FastifyPluginCallback = (fastify, opts, done) => {
 
           reply.status(202).send('OK');
         }
-      } catch (e) {
-        logger.error(e, 'Failed to create bot event');
+      } catch (error) {
+        logger.error('Failed to create bot event', { error });
         reply.status(401).send();
         return;
       }
-    }
+    },
   );
 
   fastify.route({

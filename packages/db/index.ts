@@ -15,4 +15,6 @@ export * from './src/services/user.service';
 export * from './src/services/reference.service';
 export * from './src/services/id.service';
 export * from './src/services/retention.service';
+export * from './src/services/notification.service';
 export * from './src/buffers';
+export * from './src/types';

@@ -18,7 +18,7 @@ queues.forEach((queue) => {
         const metric = await queue.getActiveCount();
         this.set(metric);
       },
-    })
+    }),
   );
 
   register.registerMetric(
@@ -29,7 +29,7 @@ queues.forEach((queue) => {
         const metric = await queue.getDelayedCount();
         this.set(metric);
       },
-    })
+    }),
   );
 
   register.registerMetric(
@@ -40,7 +40,7 @@ queues.forEach((queue) => {
         const metric = await queue.getFailedCount();
         this.set(metric);
       },
-    })
+    }),
   );
 
   register.registerMetric(
@@ -51,7 +51,7 @@ queues.forEach((queue) => {
         const metric = await queue.getCompletedCount();
         this.set(metric);
       },
-    })
+    }),
   );
 
   register.registerMetric(
@@ -62,12 +62,12 @@ queues.forEach((queue) => {
         const metric = await queue.getWaitingCount();
         this.set(metric);
       },
-    })
+    }),
   );
 });
 
 // Buffer
-const buffers = ['events_v2', 'profiles'];
+const buffers = ['events_v2', 'profiles', 'events_bots'];
 
 buffers.forEach((buffer) => {
   register.registerMetric(
@@ -78,7 +78,7 @@ buffers.forEach((buffer) => {
         const metric = await getRedisCache().llen(`op:buffer:${buffer}`);
         this.set(metric);
       },
-    })
+    }),
   );
 
   register.registerMetric(
@@ -87,10 +87,10 @@ buffers.forEach((buffer) => {
       help: 'Number of users in the users array',
       async collect() {
         const metric = await getRedisCache().llen(
-          `op:buffer:${buffer}:stalled`
+          `op:buffer:${buffer}:stalled`,
         );
         this.set(metric);
       },
-    })
+    }),
   );
 });

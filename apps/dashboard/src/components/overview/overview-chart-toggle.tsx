@@ -1,5 +1,5 @@
-import type { Dispatch, SetStateAction } from 'react';
 import { BarChartIcon, LineChartIcon } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
 
 import type { IChartType } from '@openpanel/validation';
 

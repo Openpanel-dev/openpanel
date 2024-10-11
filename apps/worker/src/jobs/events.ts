@@ -1,13 +1,14 @@
 import type { Job } from 'bullmq';
 import { escape } from 'sqlstring';
 
-import { chQuery, db, TABLE_NAMES } from '@openpanel/db';
+import { TABLE_NAMES, chQuery, db } from '@openpanel/db';
 import type {
   EventsQueuePayload,
   EventsQueuePayloadCreateSessionEnd,
   EventsQueuePayloadIncomingEvent,
 } from '@openpanel/queue';
 
+import { cacheable } from '@openpanel/redis';
 import { createSessionEnd } from './events.create-session-end';
 import { incomingEvent } from './events.incoming-event';
 
@@ -24,17 +25,23 @@ export async function eventsJob(job: Job<EventsQueuePayload>) {
       }
 
       return await createSessionEnd(
-        job as Job<EventsQueuePayloadCreateSessionEnd>
+        job as Job<EventsQueuePayloadCreateSessionEnd>,
       );
     }
   }
 }
 
-async function updateEventsCount(projectId: string) {
+const getProjectEventsCount = cacheable(async function getProjectEventsCount(
+  projectId: string,
+) {
   const res = await chQuery<{ count: number }>(
-    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)}`
+    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)}`,
   );
-  const count = res[0]?.count;
+  return res[0]?.count;
+}, 60 * 60);
+
+async function updateEventsCount(projectId: string) {
+  const count = await getProjectEventsCount(projectId);
   if (count) {
     await db.project.update({
       where: {

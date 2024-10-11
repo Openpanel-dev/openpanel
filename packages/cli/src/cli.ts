@@ -9,7 +9,7 @@ function cli() {
     },
     {
       permissive: true,
-    }
+    },
   );
 
   const [command] = args._;

@@ -3,8 +3,6 @@
   "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
-    "lint": "eslint .",
-    "format": "prettier --check \"**/*.{mjs,ts,md,json}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -15,25 +13,16 @@
     "ramda": "^0.29.1",
     "slugify": "^1.6.6",
     "superjson": "^1.13.3",
+    "ua-parser-js": "^1.0.37",
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
-    "@openpanel/eslint-config": "workspace:*",
-    "@openpanel/prettier-config": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@types/node": "^18.16.0",
     "@types/ramda": "^0.29.6",
-    "eslint": "^8.48.0",
-    "prettier": "^3.0.3",
+    "@types/ua-parser-js": "^0.7.39",
     "prisma": "^5.1.1",
     "typescript": "^5.2.2"
-  },
-  "eslintConfig": {
-    "root": true,
-    "extends": [
-      "@openpanel/eslint-config/base"
-    ]
-  },
-  "prettier": "@openpanel/prettier-config"
+  }
 }

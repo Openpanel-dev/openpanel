@@ -1,6 +1,6 @@
-import { EventIcon } from '@/app/(app)/[organizationSlug]/[projectId]/events/event-list/event-icon';
+import { EventIcon } from '@/components/events/event-icon';
 import { ProjectLink } from '@/components/links';
-import { SerieIcon } from '@/components/report/chart/SerieIcon';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { pushModal } from '@/modals';
@@ -50,13 +50,26 @@ export function useColumns() {
 
         return (
           <div className="flex items-center gap-2">
-            <EventIcon
-              size="sm"
-              name={row.original.name}
-              meta={row.original.meta}
-            />
+            <TooltipComplete content="Click to edit" side="left">
+              <button
+                type="button"
+                className="transition-transform hover:scale-105"
+                onClick={() => {
+                  pushModal('EditEvent', {
+                    id: row.original.id,
+                  });
+                }}
+              >
+                <EventIcon
+                  size="sm"
+                  name={row.original.name}
+                  meta={row.original.meta}
+                />
+              </button>
+            </TooltipComplete>
             <span className="flex gap-2">
               <button
+                type="button"
                 onClick={() => {
                   pushModal('EventDetails', {
                     id: row.original.id,

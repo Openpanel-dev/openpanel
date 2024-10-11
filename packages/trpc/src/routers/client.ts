@@ -1,10 +1,13 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { z } from 'zod';
 
-import { hashPassword, stripTrailingSlash } from '@openpanel/common';
+import { stripTrailingSlash } from '@openpanel/common';
 import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
 
+import { hashPassword } from '@openpanel/common/server';
+import { getClientAccess } from '../access';
+import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const clientRouter = createTRPCRouter({
@@ -15,9 +18,18 @@ export const clientRouter = createTRPCRouter({
         name: z.string(),
         cors: z.string().nullable(),
         crossDomain: z.boolean().optional(),
-      })
+      }),
     )
-    .mutation(({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getClientAccess({
+        userId: ctx.session.userId,
+        clientId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this client');
+      }
+
       return db.client.update({
         where: {
           id: input.id,
@@ -38,7 +50,7 @@ export const clientRouter = createTRPCRouter({
         cors: z.string().nullable(),
         crossDomain: z.boolean().optional(),
         type: z.enum(['read', 'write', 'root']).optional(),
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
@@ -64,9 +76,18 @@ export const clientRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-      })
+      }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const access = await getClientAccess({
+        userId: ctx.session.userId,
+        clientId: input.id,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this client');
+      }
+
       await db.client.delete({
         where: {
           id: input.id,

@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import {
@@ -24,11 +23,13 @@ import {
   PlusIcon,
 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import type {
   getCurrentOrganizations,
   getProjectsByOrganizationSlug,
 } from '@openpanel/db';
+import Link from 'next/link';
 
 interface LayoutProjectSelectorProps {
   projects: Awaited<ReturnType<typeof getProjectsByOrganizationSlug>>;
@@ -50,7 +51,7 @@ export default function LayoutProjectSelector({
       const split = pathname
         .replace(
           `/${organizationSlug}/${projectId}`,
-          `/${organizationSlug}/${newProjectId}`
+          `/${organizationSlug}/${newProjectId}`,
         )
         .split('/');
       // slicing here will remove everything after /{orgId}/{projectId}/dashboards [slice here] /xxx/xxx/xxx
@@ -86,7 +87,7 @@ export default function LayoutProjectSelector({
       <DropdownMenuContent align={align} className="w-[200px]">
         <DropdownMenuLabel>Projects</DropdownMenuLabel>
         <DropdownMenuGroup>
-          {projects.map((project) => (
+          {projects.slice(0, 10).map((project) => (
             <DropdownMenuItem
               key={project.id}
               onClick={() => changeProject(project.id)}
@@ -99,7 +100,11 @@ export default function LayoutProjectSelector({
               )}
             </DropdownMenuItem>
           ))}
-          <DropdownMenuSeparator />
+          {projects.length > 10 && (
+            <DropdownMenuItem asChild>
+              <Link href={`/${organizationSlug}`}>All projects</Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem
             className="text-emerald-600"
             onClick={() => pushModal('AddProject')}

@@ -5,30 +5,43 @@
   "license": "MIT",
   "author": "Carl-Gerhard Lindesvärd",
   "packageManager": "pnpm@8.7.6",
-  "module": "index.ts",
   "scripts": {
+    "dock:up": "docker compose up -d",
+    "dock:down": "docker compose down",
+    "dock:ch": "docker compose exec -it op-ch clickhouse-client -d openpanel",
     "db:codegen": "pnpm -r --filter db run codegen",
+    "codegen": "pnpm db:codegen",
     "migrate": "pnpm -r --filter db run migrate",
     "migrate:deploy": "pnpm -r --filter db run migrate:deploy",
     "dev": "pnpm -r --parallel testing",
-    "format": "pnpm -r format --cache --cache-location=\"node_modules/.cache/.prettiercache\"",
-    "format:fix": "pnpm -r format --write --cache --cache-location=\"node_modules/.cache/.prettiercache\"",
-    "lint": "pnpm -r lint",
-    "lint:fix": "pnpm -r lint --fix",
+    "format": "biome format .",
+    "format:fix": "biome format --write .",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
     "lint:workspace": "pnpm dlx sherif@latest",
     "typecheck": "pnpm -r typecheck"
   },
   "dependencies": {
-    "@openpanel/prettier-config": "^0.1.0",
+    "@hyperdx/node-opentelemetry": "^0.8.1",
     "dotenv-cli": "^7.3.0",
-    "prettier": "^3.0.3",
     "semver": "^7.5.4",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "winston": "^3.14.2"
   },
-  "prettier": "@openpanel/prettier-config",
-  "pnpm": {
-    "patchedDependencies": {
-      "@bull-board/api@5.21.0": "patches/@bull-board__api@5.21.0.patch"
-    }
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "@clerk/shared",
+    "@prisma/client",
+    "@prisma/engines",
+    "bcrypt",
+    "esbuild",
+    "lodepng",
+    "msgpackr-extract",
+    "prisma",
+    "protobufjs",
+    "sharp"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "1.9.1"
   }
 }

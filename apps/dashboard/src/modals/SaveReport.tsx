@@ -44,7 +44,7 @@ export default function SaveReport({ report }: SaveReportProps) {
       router.push(
         `/${organizationSlug}/${projectId}/reports/${
           res.id
-        }?${searchParams?.toString()}`
+        }?${searchParams?.toString()}`,
       );
     },
   });
@@ -114,7 +114,6 @@ export default function SaveReport({ report }: SaveReportProps) {
                     dashboardMutation.mutate({
                       projectId,
                       name: value,
-                      organizationSlug,
                     });
                   }}
                 />

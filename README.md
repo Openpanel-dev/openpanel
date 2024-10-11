@@ -75,3 +75,12 @@ You can find the how to [here](https://docs.openpanel.dev/docs/self-hosting)
 **Give us a star if you like it!**
 
 [![Star History Chart](https://api.star-history.com/svg?repos=Openpanel-dev/openpanel&type=Date)](https://star-history.com/#Openpanel-dev/openpanel&Date)
+
+## Development
+
+```bash
+pnpm dock:up
+pnpm codegen
+pnpm migrate:deploy # once to setup the db
+pnpm dev
+```

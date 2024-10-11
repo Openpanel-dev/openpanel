@@ -1,10 +1,5 @@
-import { SerieIcon } from '../report/chart/SerieIcon';
-import {
-  Tooltip,
-  TooltipContent,
-  Tooltiper,
-  TooltipTrigger,
-} from '../ui/tooltip';
+import { SerieIcon } from '../report-chart/common/serie-icon';
+import { Tooltiper } from '../ui/tooltip';
 
 interface Props {
   country?: string;

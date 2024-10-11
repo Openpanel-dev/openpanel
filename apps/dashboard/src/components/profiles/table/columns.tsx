@@ -1,5 +1,5 @@
 import { ProjectLink } from '@/components/links';
-import { SerieIcon } from '@/components/report/chart/SerieIcon';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { formatDateTime, formatTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';

@@ -110,15 +110,7 @@ strong {
       transparent 50%,
       transparent 100%
     );
-  background-position:
-    left top,
-    left bottom,
-    left top,
-    right top;
+  background-position: left top, left bottom, left top, right top;
   background-repeat: repeat-x, repeat-x, repeat-y, repeat-y;
-  background-size:
-    15px 2px,
-    15px 2px,
-    2px 15px,
-    2px 15px;
+  background-size: 15px 2px, 15px 2px, 2px 15px, 2px 15px;
 }

@@ -12,10 +12,10 @@ export async function cronJob(job: Job<CronQueuePayload>) {
       return await salt();
     }
     case 'flushEvents': {
-      return await eventBuffer.flush();
+      return await eventBuffer.tryFlush();
     }
     case 'flushProfiles': {
-      return await profileBuffer.flush();
+      return await profileBuffer.tryFlush();
     }
     case 'ping': {
       return await ping();

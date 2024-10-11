@@ -4,7 +4,7 @@ import { db } from '../prisma-client';
 
 export async function getId(
   tableName: 'project' | 'dashboard' | 'organization',
-  name: string
+  name: string,
 ) {
   const newId = slug(name);
   if (!db[tableName]) {

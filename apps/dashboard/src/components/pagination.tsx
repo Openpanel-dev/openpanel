@@ -1,5 +1,3 @@
-import type { Dispatch, SetStateAction } from 'react';
-import { useState } from 'react';
 import { cn } from '@/utils/cn';
 import {
   ChevronLeftIcon,
@@ -7,6 +5,8 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
 } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
+import { useState } from 'react';
 
 import { Button } from './ui/button';
 
@@ -45,7 +45,7 @@ export function Pagination({
     <div
       className={cn(
         'flex select-none items-center justify-end gap-1',
-        className
+        className,
       )}
     >
       {size === 'base' && (

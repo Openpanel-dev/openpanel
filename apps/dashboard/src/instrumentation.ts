@@ -1,24 +1,10 @@
-/* eslint-disable */
-
 export async function register() {
-  if (
-    process.env.NODE_ENV === 'production' &&
-    process.env.NEXT_RUNTIME === 'nodejs'
-  ) {
-    const { BaselimeSDK, VercelPlugin, BetterHttpInstrumentation } =
-      // @ts-expect-error
-      await import('@baselime/node-opentelemetry');
-
-    const sdk = new BaselimeSDK({
-      serverless: true,
-      service: 'vercel-coderaxs-projects-d46dc62b',
-      instrumentations: [
-        new BetterHttpInstrumentation({
-          plugins: [new VercelPlugin()],
-        }),
-      ],
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.HYPERDX_API_KEY) {
+    const { initSDK } = await import('@hyperdx/node-opentelemetry');
+    initSDK({
+      consoleCapture: true,
+      apiKey: process.env.HYPERDX_API_KEY,
+      service: 'dashboard',
     });
-
-    sdk.start();
   }
 }

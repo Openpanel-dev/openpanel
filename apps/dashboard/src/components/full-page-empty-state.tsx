@@ -5,7 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 interface FullPageEmptyStateProps {
   icon?: LucideIcon;
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
 }
 
@@ -19,7 +19,7 @@ export function FullPageEmptyState({
     <div
       className={cn(
         'flex items-center justify-center p-4 text-center',
-        className
+        className,
       )}
     >
       <div className="flex w-full max-w-xl flex-col items-center justify-center p-8">

@@ -19,7 +19,6 @@ const AnimatedText = ({ texts }: Props) => {
         index === 0 ? 3000 : 2000,
       ];
     }, [] as any[]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -36,7 +35,7 @@ const AnimatedText = ({ texts }: Props) => {
         preRenderFirstString={true}
         sequence={sequence}
         wrapper="span"
-        repeat={Infinity}
+        repeat={Number.POSITIVE_INFINITY}
         omitDeletionAnimation
       />
     </span>

@@ -43,6 +43,7 @@ export function formatTime(date: Date) {
   return new Intl.DateTimeFormat(getLocale(), {
     hour: 'numeric',
     minute: 'numeric',
+    second: 'numeric',
   }).format(date);
 }
 

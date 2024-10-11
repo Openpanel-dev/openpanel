@@ -8,7 +8,7 @@ import { Heading2, Lead2 } from './copy';
 export default function Footer() {
   return (
     <footer className="bg-blue-darker relative mt-40 text-white">
-      <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]"></div>
+      <div className="absolute inset-0 h-full w-full bg-[radial-gradient(circle,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_100%)]" />
       <div className="container relative flex flex-col items-center text-center">
         <div className="my-24">
           <Heading2 className="mb-2 text-white">Get early access</Heading2>
@@ -40,7 +40,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="relative z-10 -mt-8">
-        <div className="h-px w-full bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]"></div>
+        <div className="h-px w-full bg-[radial-gradient(circle,rgba(255,255,255,0.7)_0%,rgba(255,255,255,0.7)_50%,rgba(255,255,255,0)_100%)]" />
         <div className="bg-blue-darker p-4">
           <div className="container">
             <div className="flex flex-col gap-4  md:flex-row md:items-center md:justify-between">
@@ -56,7 +56,7 @@ export default function Footer() {
                   className="hover:underline"
                   href="https://x.com/OpenPanelDev"
                   target="_blank"
-                  rel="nofollow"
+                  rel="noreferrer nofollow"
                 >
                   Follow on X
                 </a>

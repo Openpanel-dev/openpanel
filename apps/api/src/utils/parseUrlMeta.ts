@@ -9,7 +9,7 @@ function findBestFavicon(favicons: UrlMetaData['favicons']) {
     (favicon) =>
       favicon.rel === 'shortcut icon' ||
       favicon.rel === 'icon' ||
-      favicon.rel === 'apple-touch-icon'
+      favicon.rel === 'apple-touch-icon',
   );
 
   if (match) {

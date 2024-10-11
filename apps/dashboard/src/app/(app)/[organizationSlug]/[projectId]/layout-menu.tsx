@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
@@ -9,6 +8,7 @@ import { useUser } from '@clerk/nextjs';
 import {
   GanttChartIcon,
   Globe2Icon,
+  LayersIcon,
   LayoutPanelTopIcon,
   PlusIcon,
   ScanEyeIcon,
@@ -18,6 +18,7 @@ import {
 import type { LucideProps } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
 
 import type { IServiceDashboards } from '@openpanel/db';
 
@@ -41,7 +42,7 @@ function LinkWithIcon({
       className={cn(
         'text-text flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
         active && 'bg-def-200',
-        className
+        className,
       )}
       href={href}
     >
@@ -88,6 +89,11 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
         icon={LayoutPanelTopIcon}
         label="Dashboards"
         href={`/${params.organizationSlug}/${projectId}/dashboards`}
+      />
+      <LinkWithIcon
+        icon={LayersIcon}
+        label="Pages"
+        href={`/${params.organizationSlug}/${projectId}/pages`}
       />
       <LinkWithIcon
         icon={Globe2Icon}
