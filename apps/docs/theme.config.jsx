@@ -73,7 +73,7 @@ export default {
       <span>
         Made with ❤️ by{' '}
         <a
-          href="https://twitter.com/CarlLindesvard"
+          href="https://x.com/OpenPanelDev"
           target="_blank"
           rel="noreferrer nofollow"
         >

@@ -54,7 +54,7 @@ export default function Footer() {
                 </Link>
                 <a
                   className="hover:underline"
-                  href="https://twitter.com/CarlLindesvard"
+                  href="https://x.com/OpenPanelDev"
                   target="_blank"
                   rel="noreferrer nofollow"
                 >
