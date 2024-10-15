@@ -130,10 +130,18 @@ export const organizationRouter = createTRPCRouter({
       z.object({
         organizationId: z.string(),
         userId: z.string(),
+        id: z.string(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
-      if (ctx.session.userId === input.userId) {
+      const exists = await db.member.count({
+        where: {
+          userId: input.userId,
+          organizationId: input.organizationId,
+        },
+      });
+
+      if (ctx.session.userId === input.userId && exists === 1) {
         throw new Error('You cannot remove yourself from the organization');
       }
 
@@ -147,8 +155,9 @@ export const organizationRouter = createTRPCRouter({
       }
 
       await db.$transaction([
-        db.member.deleteMany({
+        db.member.delete({
           where: {
+            id: input.id,
             userId: input.userId,
             organizationId: input.organizationId,
           },
@@ -171,6 +180,10 @@ export const organizationRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ input, ctx }) => {
+      if (input.userId === ctx.session.userId) {
+        throw TRPCAccessError('You cannot update your own access');
+      }
+
       const access = await getOrganizationAccess({
         userId: ctx.session.userId,
         organizationId: input.organizationSlug,

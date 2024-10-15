@@ -67,11 +67,13 @@ export default function CreateInvite({ projects }: Props) {
       </SheetTrigger>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Invite a user</SheetTitle>
-          <SheetDescription>
-            Invite users to your organization. They will recieve an email will
-            instructions.
-          </SheetDescription>
+          <div>
+            <SheetTitle>Invite a user</SheetTitle>
+            <SheetDescription>
+              Invite users to your organization. They will recieve an email will
+              instructions.
+            </SheetDescription>
+          </div>
         </SheetHeader>
         <form
           onSubmit={handleSubmit((values) => mutation.mutate(values))}

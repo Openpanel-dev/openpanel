@@ -77,14 +77,16 @@ export const onboardingRouter = createTRPCRouter({
         throw new Error('Organization slug is missing');
       }
 
-      await db.member.create({
-        data: {
-          email: user.email,
-          organizationId: organization.id,
-          role: 'org:admin',
-          userId: user.id,
-        },
-      });
+      if (input.organization) {
+        await db.member.create({
+          data: {
+            email: user.email,
+            organizationId: organization.id,
+            role: 'org:admin',
+            userId: user.id,
+          },
+        });
+      }
 
       const project = await db.project.create({
         data: {

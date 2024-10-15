@@ -11,7 +11,7 @@ import { api } from '@/trpc/client';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { IServiceMember, IServiceProject } from '@openpanel/db';
@@ -76,10 +76,16 @@ function AccessCell({
   row: Row<IServiceMember>;
   projects: IServiceProject[];
 }) {
+  const initial = useRef(row.original.access.map((item) => item.projectId));
   const [access, setAccess] = useState<string[]>(
     row.original.access.map((item) => item.projectId),
   );
-  const mutation = api.organization.updateMemberAccess.useMutation();
+  const mutation = api.organization.updateMemberAccess.useMutation({
+    onError(error) {
+      toast.error(error.message);
+      setAccess(initial.current);
+    },
+  });
 
   return (
     <ComboboxAdvanced
@@ -128,7 +134,8 @@ function ActionsCell({ row }: { row: Row<IServiceMember> }) {
           onClick={() => {
             revoke.mutate({
               organizationId: row.original.organizationId,
-              userId: row.original.id,
+              userId: row.original.userId!,
+              id: row.original.id,
             });
           }}
         >

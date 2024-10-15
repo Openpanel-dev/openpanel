@@ -104,7 +104,7 @@ const Tracking = ({
               render={({ field, formState }) => {
                 return (
                   <div>
-                    <Label>Workspace name</Label>
+                    <Label>Workspace</Label>
                     <Combobox
                       className="w-full"
                       placeholder="Select workspace"
