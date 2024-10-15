@@ -19,14 +19,10 @@ export function EventPropertiesCombobox({
 }: EventPropertiesComboboxProps) {
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
-  const range = useSelector((state) => state.report.range);
-  const interval = useSelector((state) => state.report.interval);
   const properties = useEventProperties(
     {
       event: event.name,
       projectId,
-      range,
-      interval,
     },
     {
       enabled: !!event.name,

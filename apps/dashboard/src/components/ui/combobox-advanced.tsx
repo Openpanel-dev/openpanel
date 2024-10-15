@@ -6,7 +6,7 @@ import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
 import { useOnClickOutside } from 'usehooks-ts';
 
-import { Button } from './button';
+import { Button, type ButtonProps } from './button';
 import { Checkbox, DumpCheckbox } from './checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
@@ -19,6 +19,7 @@ interface ComboboxAdvancedProps {
   items: IItem[];
   placeholder: string;
   className?: string;
+  size?: ButtonProps['size'];
 }
 
 export function ComboboxAdvanced({
@@ -27,6 +28,7 @@ export function ComboboxAdvanced({
   onChange,
   placeholder,
   className,
+  size,
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
@@ -99,7 +101,9 @@ export function ComboboxAdvanced({
         <Button
           variant={'outline'}
           onClick={() => setOpen((prev) => !prev)}
-          className={cn('h-auto min-h-10 py-2', className)}
+          className={className}
+          size={size}
+          autoHeight
         >
           <div className="flex w-full flex-wrap gap-1">
             {value.length === 0 && placeholder}

@@ -81,6 +81,10 @@ export function getChartSql({
       sb.select.date = `toStartOfDay(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
       break;
     }
+    case 'week': {
+      sb.select.date = `toStartOfWeek(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      break;
+    }
     case 'month': {
       sb.select.date = `toStartOfMonth(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
       break;

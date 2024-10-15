@@ -15,20 +15,12 @@ interface FiltersComboboxProps {
 
 export function FiltersCombobox({ event }: FiltersComboboxProps) {
   const dispatch = useDispatch();
-  const interval = useSelector((state) => state.report.interval);
-  const range = useSelector((state) => state.report.range);
-  const startDate = useSelector((state) => state.report.startDate);
-  const endDate = useSelector((state) => state.report.endDate);
   const { projectId } = useAppParams();
 
   const properties = useEventProperties(
     {
       event: event.name,
       projectId,
-      range,
-      interval,
-      startDate,
-      endDate,
     },
     {
       enabled: !!event.name,

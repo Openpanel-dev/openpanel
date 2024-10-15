@@ -3,7 +3,6 @@
 import { type RouterOutputs, api } from '@/trpc/client';
 
 import { SheetContent } from '@/components/ui/sheet';
-import type { NotificationRule } from '@openpanel/db';
 import { useQueryClient } from '@tanstack/react-query';
 import { getQueryKey } from '@trpc/react-query';
 import { toast } from 'sonner';
@@ -11,7 +10,6 @@ import { popModal } from '.';
 import { ModalHeader } from './Modal/Container';
 
 import { ColorSquare } from '@/components/color-square';
-import { CheckboxItem } from '@/components/forms/checkbox-item';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
@@ -22,19 +20,8 @@ import { useEventNames } from '@/hooks/useEventNames';
 import { useEventProperties } from '@/hooks/useEventProperties';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { shortId } from '@openpanel/common';
-import {
-  IChartEvent,
-  type IChartRange,
-  type IInterval,
-  zCreateNotificationRule,
-} from '@openpanel/validation';
-import {
-  FilterIcon,
-  PlusIcon,
-  SaveIcon,
-  SmartphoneIcon,
-  TrashIcon,
-} from 'lucide-react';
+import { zCreateNotificationRule } from '@openpanel/validation';
+import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
 import {
   Controller,
   type SubmitHandler,
@@ -200,9 +187,6 @@ export default function AddNotificationRule({ rule }: Props) {
   );
 }
 
-const interval: IInterval = 'day';
-const range: IChartRange = 'lastMonth';
-
 function EventField({
   form,
   index,
@@ -213,7 +197,7 @@ function EventField({
   remove: () => void;
 }) {
   const { projectId } = useAppParams();
-  const eventNames = useEventNames({ projectId, interval, range });
+  const eventNames = useEventNames({ projectId });
   const filtersArray = useFieldArray({
     control: form.control,
     name: `config.events.${index}.filters`,
@@ -222,7 +206,7 @@ function EventField({
     control: form.control,
     name: `config.events.${index}.name`,
   });
-  const properties = useEventProperties({ projectId, interval, range });
+  const properties = useEventProperties({ projectId });
 
   return (
     <div className="border bg-def-100 rounded">
@@ -280,10 +264,6 @@ function EventField({
             <PureFilterItem
               eventName={eventName}
               filter={filter}
-              range={range}
-              startDate={null}
-              endDate={null}
-              interval={interval}
               onRemove={() => {
                 filtersArray.remove(index);
               }}

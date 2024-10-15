@@ -38,6 +38,7 @@ export interface ComboboxProps<T> {
   align?: 'start' | 'end' | 'center';
   portal?: boolean;
   error?: string;
+  disabled?: boolean;
 }
 
 export type ExtendedComboboxProps<T> = Omit<
@@ -61,6 +62,7 @@ export function Combobox<T extends string>({
   align = 'start',
   portal,
   error,
+  disabled,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -75,6 +77,7 @@ export function Combobox<T extends string>({
       <PopoverTrigger asChild>
         {children ?? (
           <Button
+            disabled={disabled}
             size={size}
             variant="outline"
             role="combobox"

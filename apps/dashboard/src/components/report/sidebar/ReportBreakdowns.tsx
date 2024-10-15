@@ -16,14 +16,10 @@ import type { ReportEventMoreProps } from './ReportEventMore';
 export function ReportBreakdowns() {
   const { projectId } = useAppParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
-  const interval = useSelector((state) => state.report.interval);
-  const range = useSelector((state) => state.report.range);
 
   const dispatch = useDispatch();
   const properties = useEventProperties({
     projectId,
-    range,
-    interval,
   }).map((item) => ({
     value: item,
     label: item, // <RenderDots truncate>{item}</RenderDots>,

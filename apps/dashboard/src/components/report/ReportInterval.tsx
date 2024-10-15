@@ -21,7 +21,8 @@ export function ReportInterval({ className }: ReportIntervalProps) {
     chartType !== 'linear' &&
     chartType !== 'histogram' &&
     chartType !== 'area' &&
-    chartType !== 'metric'
+    chartType !== 'metric' &&
+    chartType !== 'retention'
   ) {
     return null;
   }

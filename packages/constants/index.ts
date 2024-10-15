@@ -106,6 +106,7 @@ export const intervals = {
   minute: 'minute',
   day: 'day',
   hour: 'hour',
+  week: 'week',
   month: 'month',
 } as const;
 

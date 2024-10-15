@@ -10,6 +10,7 @@ import type {
   IChartLineType,
   IChartProps,
   IChartRange,
+  ICriteria,
 } from '@openpanel/validation';
 
 import { db } from '../prisma-client';
@@ -64,6 +65,7 @@ export function transformReport(
     formula: report.formula ?? undefined,
     metric: report.metric ?? 'sum',
     unit: report.unit ?? undefined,
+    criteria: (report.criteria as ICriteria) ?? undefined,
   };
 }
 

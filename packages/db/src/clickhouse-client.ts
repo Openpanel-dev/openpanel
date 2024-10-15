@@ -14,6 +14,9 @@ export const TABLE_NAMES = {
   self_hosting: 'self_hosting',
   events_bots: 'events_bots',
   dau_mv: 'dau_mv',
+  event_names_mv: 'distinct_event_names_mv',
+  event_property_values_mv: 'event_property_values_mv',
+  cohort_events_mv: 'cohort_events_mv',
 };
 
 export const originalCh = createClient({
@@ -129,6 +132,10 @@ export function formatClickhouseDate(
   _date: Date | string,
   skipTime = false,
 ): string {
+  if (typeof _date === 'string') {
+    return _date.slice(0, 19).replace('T', ' ');
+  }
+
   const date = typeof _date === 'string' ? new Date(_date) : _date;
   if (skipTime) {
     return date.toISOString().split('T')[0]!;

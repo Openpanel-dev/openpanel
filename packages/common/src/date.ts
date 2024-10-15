@@ -32,6 +32,19 @@ export function getTimezoneFromDateString(_date: string) {
     '-10:00': 'Pacific/Honolulu',
     '-11:00': 'Pacific/Midway',
     '-12:00': 'Pacific/Tarawa',
+    // Additional time zones
+    '+05:30': 'Asia/Kolkata',
+    '+05:45': 'Asia/Kathmandu',
+    '+08:45': 'Australia/Eucla',
+    '+09:30': 'Australia/Darwin',
+    '+10:30': 'Australia/Adelaide',
+    '+12:45': 'Pacific/Chatham',
+    '+13:00': 'Pacific/Apia',
+    '+14:00': 'Pacific/Kiritimati',
+    '-02:30': 'America/St_Johns',
+    '-03:30': 'America/St_Johns',
+    '-04:30': 'America/Caracas',
+    '-09:30': 'Pacific/Marquesas',
   };
 
   const defaultTimezone = 'UTC';
