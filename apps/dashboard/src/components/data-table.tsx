@@ -15,6 +15,8 @@ interface DataTableProps<TData> {
   data: TData[];
 }
 
+export const ACTIONS = '__actions__';
+
 export function TableButtons({
   children,
   className,
@@ -41,16 +43,30 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
       <GridHeader>
         {table.getHeaderGroups().map((headerGroup) => (
           <GridRow key={headerGroup.id}>
-            {headerGroup.headers.map((header) => (
-              <GridCell key={header.id} isHeader>
-                {header.isPlaceholder
-                  ? null
-                  : flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )}
-              </GridCell>
-            ))}
+            {headerGroup.headers.map((header) => {
+              if (header.column.id === ACTIONS) {
+                return (
+                  <GridCell
+                    key={header.id}
+                    isHeader
+                    className="sticky right-0 center-center"
+                  >
+                    Actions
+                  </GridCell>
+                );
+              }
+
+              return (
+                <GridCell key={header.id} isHeader>
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </GridCell>
+              );
+            })}
           </GridRow>
         ))}
       </GridHeader>
@@ -61,11 +77,27 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
               key={row.id}
               data-state={row.getIsSelected() && 'selected'}
             >
-              {row.getVisibleCells().map((cell) => (
-                <GridCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </GridCell>
-              ))}
+              {row.getVisibleCells().map((cell) => {
+                if (cell.column.id === ACTIONS) {
+                  return (
+                    <GridCell
+                      key={cell.id}
+                      className="sticky right-0 bg-background center-center"
+                    >
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </GridCell>
+                  );
+                }
+
+                return (
+                  <GridCell key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </GridCell>
+                );
+              })}
             </GridRow>
           ))
         ) : (

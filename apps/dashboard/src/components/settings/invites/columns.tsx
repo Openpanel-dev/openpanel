@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { pathOr } from 'ramda';
 import { toast } from 'sonner';
 
+import { ACTIONS } from '@/components/data-table';
 import type { IServiceInvite, IServiceProject } from '@openpanel/db';
 
 export function useColumns(
@@ -72,7 +73,7 @@ export function useColumns(
       },
     },
     {
-      id: 'actions',
+      id: ACTIONS,
       cell: ({ row }) => {
         return <ActionCell row={row} />;
       },

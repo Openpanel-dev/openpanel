@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 
 import type { IServiceProject } from '@openpanel/db';
 
+import { ACTIONS } from '../data-table';
 import { ProjectActions } from './project-actions';
 
 export type Project = IServiceProject;
@@ -20,7 +21,7 @@ export const columns: ColumnDef<IServiceProject>[] = [
     },
   },
   {
-    id: 'actions',
+    id: ACTIONS,
     header: 'Actions',
     cell: ({ row }) => <ProjectActions {...row.original} />,
   },

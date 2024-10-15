@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
+import { ACTIONS } from '@/components/data-table';
 import type { IServiceMember, IServiceProject } from '@openpanel/db';
 
 export function useColumns(projects: IServiceProject[]) {
@@ -59,7 +60,7 @@ export function useColumns(projects: IServiceProject[]) {
       },
     },
     {
-      id: 'actions',
+      id: ACTIONS,
       cell: ({ row }) => {
         return <ActionsCell row={row} />;
       },
