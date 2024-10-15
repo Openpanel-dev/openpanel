@@ -192,6 +192,7 @@ enum Interval {
   day
   month
   minute
+  week
 }
 
 enum ChartType {
@@ -203,6 +204,7 @@ enum ChartType {
   area
   map
   funnel
+  retention
 }
 
 model Dashboard {
@@ -243,6 +245,7 @@ model Report {
   projectId  String
   project    Project   @relation(fields: [projectId], references: [id])
   previous   Boolean   @default(false)
+  criteria   String?
 
   dashboardId String
   dashboard   Dashboard @relation(fields: [dashboardId], references: [id])

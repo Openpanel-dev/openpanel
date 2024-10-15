@@ -14,6 +14,7 @@ import { ReportLineChart } from './line';
 import { ReportMapChart } from './map';
 import { ReportMetricChart } from './metric';
 import { ReportPieChart } from './pie';
+import { ReportRetentionChart } from './retention';
 
 export function ReportChart(props: ReportChartProps) {
   const ref = useRef<HTMLDivElement>(null);
@@ -48,6 +49,8 @@ export function ReportChart(props: ReportChartProps) {
         return <ReportMetricChart />;
       case 'funnel':
         return <ReportFunnelChart />;
+      case 'retention':
+        return <ReportRetentionChart />;
       default:
         return null;
     }

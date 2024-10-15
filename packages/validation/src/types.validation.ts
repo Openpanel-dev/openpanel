@@ -5,6 +5,7 @@ import type {
   zChartEvent,
   zChartInput,
   zChartType,
+  zCriteria,
   zLineType,
   zMetric,
   zRange,
@@ -41,6 +42,7 @@ export type IGetChartDataInput = {
   startDate: string;
   endDate: string;
 } & Omit<IChartInput, 'events' | 'name' | 'startDate' | 'endDate' | 'range'>;
+export type ICriteria = z.infer<typeof zCriteria>;
 
 export type PreviousValue =
   | {

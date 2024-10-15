@@ -45,6 +45,26 @@ export interface ButtonProps
   loading?: boolean;
   icon?: LucideIcon;
   responsive?: boolean;
+  autoHeight?: boolean;
+}
+
+function fixHeight({
+  autoHeight,
+  size,
+}: { autoHeight?: boolean; size: ButtonProps['size'] }) {
+  if (autoHeight) {
+    switch (size) {
+      case 'lg':
+        return 'h-auto min-h-11 py-2';
+      case 'icon':
+        return 'h-auto min-h-8 py-1';
+      case 'default':
+        return 'h-auto min-h-10 py-2';
+      default:
+        return 'h-auto min-h-8 py-1';
+    }
+  }
+  return '';
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -59,6 +79,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       icon,
       responsive,
+      autoHeight,
       ...props
     },
     ref,
@@ -67,7 +88,10 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Icon = loading ? Loader2 : (icon ?? null);
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          fixHeight({ autoHeight, size }),
+        )}
         ref={ref}
         disabled={loading || disabled}
         {...props}

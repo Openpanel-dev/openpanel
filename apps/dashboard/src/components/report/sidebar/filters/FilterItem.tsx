@@ -34,10 +34,6 @@ interface FilterProps {
 interface PureFilterProps {
   eventName: string;
   filter: IChartEventFilter;
-  range: IChartRange;
-  startDate: string | null;
-  endDate: string | null;
-  interval: IInterval;
   onRemove: (filter: IChartEventFilter) => void;
   onChangeValue: (
     value: IChartEventFilterValue[],
@@ -111,10 +107,6 @@ export function FilterItem({ filter, event }: FilterProps) {
     <PureFilterItem
       filter={filter}
       eventName={event.name}
-      range={range}
-      startDate={startDate}
-      endDate={endDate}
-      interval={interval}
       onRemove={onRemove}
       onChangeValue={onChangeValue}
       onChangeOperator={onChangeOperator}
@@ -126,10 +118,6 @@ export function FilterItem({ filter, event }: FilterProps) {
 export function PureFilterItem({
   filter,
   eventName,
-  range,
-  startDate,
-  endDate,
-  interval,
   onRemove,
   onChangeValue,
   onChangeOperator,
@@ -142,10 +130,6 @@ export function PureFilterItem({
     event: eventName,
     property: filter.name,
     projectId,
-    range,
-    interval,
-    startDate,
-    endDate,
   });
 
   const valuesCombobox =
@@ -188,11 +172,7 @@ export function PureFilterItem({
           }))}
           label="Operator"
         >
-          <Button
-            variant={'outline'}
-            className="whitespace-nowrap"
-            size="default"
-          >
+          <Button variant={'outline'} className="whitespace-nowrap">
             {operators[filter.operator]}
           </Button>
         </DropdownMenuComposed>

@@ -14,6 +14,6 @@ export function isBot(ua: string) {
 
   return {
     name: res.name,
-    type: res.category || 'Unknown',
+    type: 'category' in res ? res.category : 'Unknown',
   };
 }

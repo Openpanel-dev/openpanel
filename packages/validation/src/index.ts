@@ -75,10 +75,13 @@ export const zChartInput = z.object({
   offset: z.number().optional(),
 });
 
+export const zCriteria = z.enum(['on_or_after', 'on']);
+
 export const zReportInput = zChartInput.extend({
   name: z.string(),
   lineType: zLineType,
   unit: z.string().optional(),
+  criteria: zCriteria.optional(),
 });
 
 export const zInviteUser = z.object({

@@ -1,11 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/useAppParams';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
-import { useUser } from '@clerk/nextjs';
 import {
+  ChartLineIcon,
   GanttChartIcon,
   Globe2Icon,
   LayersIcon,
@@ -15,11 +14,10 @@ import {
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
-import type { LucideProps } from 'lucide-react';
-import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
 
+import { ProjectLink } from '@/components/links';
 import type { IServiceDashboards } from '@openpanel/db';
 
 function LinkWithIcon({
@@ -30,7 +28,7 @@ function LinkWithIcon({
   className,
 }: {
   href: string;
-  icon: React.ElementType<LucideProps>;
+  icon: LucideIcon;
   label: React.ReactNode;
   active?: boolean;
   className?: string;
@@ -38,7 +36,7 @@ function LinkWithIcon({
   const pathname = usePathname();
   const active = overrideActive || href === pathname;
   return (
-    <Link
+    <ProjectLink
       className={cn(
         'text-text flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
         active && 'bg-def-200',
@@ -48,7 +46,7 @@ function LinkWithIcon({
     >
       <Icon size={20} />
       <div className="flex-1">{label}</div>
-    </Link>
+    </ProjectLink>
   );
 }
 
@@ -56,66 +54,34 @@ interface LayoutMenuProps {
   dashboards: IServiceDashboards;
 }
 export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
-  const { user } = useUser();
-
-  const params = useAppParams();
-  const hasProjectId =
-    params.projectId &&
-    params.projectId !== 'null' &&
-    params.projectId !== 'undefined';
-  const projectId = hasProjectId
-    ? params.projectId
-    : (user?.unsafeMetadata.projectId as string);
-
-  useEffect(() => {
-    if (hasProjectId) {
-      user?.update({
-        unsafeMetadata: {
-          ...user.unsafeMetadata,
-          projectId: params.projectId,
-        },
-      });
-    }
-  }, [params.projectId, hasProjectId]);
-
   return (
     <>
-      <LinkWithIcon
-        icon={WallpaperIcon}
-        label="Overview"
-        href={`/${params.organizationSlug}/${projectId}`}
-      />
+      <ProjectLink
+        href={'/reports'}
+        className={cn(
+          'border rounded p-2 row items-center gap-2 hover:bg-def-200 mb-4',
+        )}
+      >
+        <ChartLineIcon size={20} />
+        <div className="flex-1 col gap-1">
+          <div className="font-medium">Create report</div>
+          <div className="text-sm text-muted-foreground">
+            Visualize your events
+          </div>
+        </div>
+        <PlusIcon size={16} className="text-muted-foreground" />
+      </ProjectLink>
+      <LinkWithIcon icon={WallpaperIcon} label="Overview" href={'/'} />
       <LinkWithIcon
         icon={LayoutPanelTopIcon}
         label="Dashboards"
-        href={`/${params.organizationSlug}/${projectId}/dashboards`}
+        href={'/dashboards'}
       />
-      <LinkWithIcon
-        icon={LayersIcon}
-        label="Pages"
-        href={`/${params.organizationSlug}/${projectId}/pages`}
-      />
-      <LinkWithIcon
-        icon={Globe2Icon}
-        label="Realtime"
-        href={`/${params.organizationSlug}/${projectId}/realtime`}
-      />
-      <LinkWithIcon
-        icon={GanttChartIcon}
-        label="Events"
-        href={`/${params.organizationSlug}/${projectId}/events`}
-      />
-      <LinkWithIcon
-        icon={UsersIcon}
-        label="Profiles"
-        href={`/${params.organizationSlug}/${projectId}/profiles`}
-      />
-      <LinkWithIcon
-        icon={ScanEyeIcon}
-        label="Retention"
-        href={`/${params.organizationSlug}/${projectId}/retention`}
-      />
-
+      <LinkWithIcon icon={LayersIcon} label="Pages" href={'/pages'} />
+      <LinkWithIcon icon={Globe2Icon} label="Realtime" href={'/realtime'} />
+      <LinkWithIcon icon={GanttChartIcon} label="Events" href={'/events'} />
+      <LinkWithIcon icon={UsersIcon} label="Profiles" href={'/profiles'} />
+      <LinkWithIcon icon={ScanEyeIcon} label="Retention" href={'/retention'} />
       <div className="mt-4">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-muted-foreground">Your dashboards</div>
@@ -134,7 +100,7 @@ export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
               key={item.id}
               icon={LayoutPanelTopIcon}
               label={item.name}
-              href={`/${item.organizationSlug}/${item.projectId}/dashboards/${item.id}`}
+              href={`/dashboards/${item.id}`}
             />
           ))}
         </div>

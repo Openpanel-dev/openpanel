@@ -24,7 +24,9 @@ import type {
   IChartRange,
   IChartType,
   IInterval,
+  zCriteria,
 } from '@openpanel/validation';
+import type { z } from 'zod';
 
 type InitialState = IChartProps & {
   dirty: boolean;
@@ -53,6 +55,7 @@ const initialState: InitialState = {
   unit: undefined,
   metric: 'sum',
   limit: 500,
+  criteria: 'on_or_after',
 };
 
 export const reportSlice = createSlice({
@@ -251,6 +254,18 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.formula = action.payload;
     },
+
+    changeCriteria(state, action: PayloadAction<z.infer<typeof zCriteria>>) {
+      state.dirty = true;
+      state.criteria = action.payload;
+    },
+
+    changeUnit(state, action: PayloadAction<string | undefined>) {
+      console.log('here?!?!', action.payload);
+
+      state.dirty = true;
+      state.unit = action.payload || undefined;
+    },
   },
 });
 
@@ -276,6 +291,8 @@ export const {
   resetDirty,
   changeFormula,
   changePrevious,
+  changeCriteria,
+  changeUnit,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

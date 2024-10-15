@@ -40,8 +40,8 @@ export function OverviewFiltersDrawerContent({
   const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
-  const eventNames = useEventNames({ projectId, interval, range });
-  const eventProperties = useEventProperties({ projectId, interval, range });
+  const eventNames = useEventNames({ projectId });
+  const eventProperties = useEventProperties({ projectId, event: event[0] });
   const profileProperties = useProfileProperties(projectId);
   const properties = mode === 'events' ? eventProperties : profileProperties;
 
@@ -94,8 +94,6 @@ export function OverviewFiltersDrawerContent({
                 eventName="screen_view"
                 key={filter.name}
                 filter={filter}
-                range={range}
-                interval={interval}
                 onRemove={() => {
                   setFilter(filter.name, [], filter.operator);
                 }}
@@ -105,8 +103,6 @@ export function OverviewFiltersDrawerContent({
                 onChangeOperator={(operator) => {
                   setFilter(filter.name, filter.value, operator);
                 }}
-                startDate={startDate}
-                endDate={endDate}
               />
             ) : /* TODO: Implement profile filters */
             null;
@@ -128,13 +124,10 @@ export function FilterOptionEvent({
     operator: IChartEventFilterOperator,
   ) => void;
 }) {
-  const { interval, range } = useOverviewOptions();
   const values = usePropertyValues({
     projectId,
     event: filter.name === 'path' ? 'screen_view' : 'session_start',
     property: filter.name,
-    interval,
-    range,
   });
 
   return (

@@ -12,8 +12,10 @@ import {
   AreaChartIcon,
   BarChart3Icon,
   BarChartHorizontalIcon,
+  ChartScatterIcon,
   ConeIcon,
   Globe2Icon,
+  Grid3X3Icon,
   HashIcon,
   LayoutPanelTopIcon,
   LineChartIcon,
@@ -110,6 +112,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                         histogram: BarChart3Icon,
                         funnel: ConeIcon,
                         area: AreaChartIcon,
+                        retention: ChartScatterIcon,
                       }[report.chartType];
 
                       return (

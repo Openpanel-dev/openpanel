@@ -19,6 +19,7 @@ import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 import type * as React from 'react';
 
+import { logDependencies } from 'mathjs';
 import { PreviousDiffIndicator } from './previous-diff-indicator';
 import { SerieName } from './serie-name';
 
@@ -80,7 +81,7 @@ export function ReportTable({
               );
 
               return (
-                <TableRow key={serie.id}>
+                <TableRow key={`${serie.id}-1`}>
                   {serie.names.map((name, nameIndex) => {
                     return (
                       <TableCell className="h-10" key={name}>
@@ -140,7 +141,7 @@ export function ReportTable({
             <TableBody>
               {paginate(data.series).map((serie) => {
                 return (
-                  <TableRow key={serie.id}>
+                  <TableRow key={`${serie.id}-2`}>
                     <TableCell className="h-10">
                       <div className="flex items-center gap-2 font-medium">
                         {number.format(serie.metrics.sum)}

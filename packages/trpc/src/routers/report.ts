@@ -44,6 +44,7 @@ export const reportRouter = createTRPCRouter({
           range: report.range === 'custom' ? '30d' : report.range,
           formula: report.formula,
           previous: report.previous ?? false,
+          unit: report.unit,
         },
       });
     }),
@@ -84,6 +85,7 @@ export const reportRouter = createTRPCRouter({
           range: report.range === 'custom' ? '30d' : report.range,
           formula: report.formula,
           previous: report.previous ?? false,
+          unit: report.unit,
         },
       });
     }),

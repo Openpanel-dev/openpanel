@@ -13,9 +13,7 @@ export const formatNumber =
     if (isNil(value)) {
       return 'N/A';
     }
-    return new Intl.NumberFormat(locale, {
-      maximumSignificantDigits: 3,
-    }).format(value);
+    return new Intl.NumberFormat(locale).format(value);
   };
 
 export const shortNumber =

@@ -30,7 +30,8 @@
         "noNonNullAssertion": "off"
       },
       "correctness": {
-        "useExhaustiveDependencies": "off"
+        "useExhaustiveDependencies": "off",
+        "noUnreachable": "off"
       },
       "performance": {
         "noDelete": "off",

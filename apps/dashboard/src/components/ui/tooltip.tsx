@@ -38,6 +38,7 @@ interface TooltiperProps {
   content: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  tooltipClassName?: string;
   onClick?: () => void;
   side?: 'top' | 'right' | 'bottom' | 'left';
   delayDuration?: number;
@@ -49,6 +50,7 @@ export function Tooltiper({
   content,
   children,
   className,
+  tooltipClassName,
   onClick,
   side,
   delayDuration = 0,
@@ -62,7 +64,11 @@ export function Tooltiper({
         {children}
       </TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent sideOffset={sideOffset} side={side}>
+        <TooltipContent
+          sideOffset={sideOffset}
+          side={side}
+          className={tooltipClassName}
+        >
           {content}
         </TooltipContent>
       </TooltipPortal>

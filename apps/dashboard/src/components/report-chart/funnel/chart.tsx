@@ -3,10 +3,8 @@
 import { ColorSquare } from '@/components/color-square';
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { Progress } from '@/components/ui/progress';
-import { Widget, WidgetBody } from '@/components/widget';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { getChartColor } from '@/utils/theme';
 import { AlertCircleIcon } from 'lucide-react';
 import { last } from 'ramda';
 
@@ -70,7 +68,7 @@ export function Chart({
             />
             <MetricCardNumber
               label="Percent"
-              value={`${round((lastStep.count / totalSessions) * 100, 1)}%`}
+              value={`${totalSessions ? round((lastStep.count / totalSessions) * 100, 1) : 0}%`}
               enhancer={
                 <PreviousDiffIndicator
                   size="lg"
