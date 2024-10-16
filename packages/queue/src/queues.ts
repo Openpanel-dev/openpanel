@@ -10,6 +10,7 @@ export interface EventsQueuePayloadIncomingEvent {
     projectId: string;
     event: TrackPayload & {
       timestamp: string;
+      isTimestampFromThePast: boolean;
     };
     geo: {
       country: string | undefined;

@@ -3,6 +3,12 @@ import { UAParser } from 'ua-parser-js';
 const parsedServerUa = {
   isServer: true,
   device: 'server',
+  os: '',
+  osVersion: '',
+  browser: '',
+  browserVersion: '',
+  brand: '',
+  model: '',
 } as const;
 
 const IPHONE_MODEL_REGEX = /(iPhone|iPad)\s*([0-9,]+)/i;
