@@ -231,13 +231,29 @@ export function ReportEvents() {
           value={''}
           searchable
           onChange={(value) => {
-            dispatch(
-              addEvent({
-                name: value,
-                segment: 'event',
-                filters: [],
-              }),
-            );
+            if (isSelectManyEvents) {
+              dispatch(
+                addEvent({
+                  segment: 'user',
+                  name: value,
+                  filters: [
+                    {
+                      name: 'name',
+                      operator: 'is',
+                      value: [value],
+                    },
+                  ],
+                }),
+              );
+            } else {
+              dispatch(
+                addEvent({
+                  name: value,
+                  segment: 'event',
+                  filters: [],
+                }),
+              );
+            }
           }}
           items={eventNames.map((item) => ({
             label: item.name,
