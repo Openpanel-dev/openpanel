@@ -27,7 +27,13 @@ function Info({ title, value }: { title: string; value: string }) {
   return (
     <div className="col gap-2">
       <div className="capitalize text-muted-foreground">{title}</div>
-      <div className="truncate font-mono">{value || '-'}</div>
+      <div className="truncate font-mono">
+        {value
+          ? typeof value === 'string'
+            ? value
+            : JSON.stringify(value)
+          : '-'}
+      </div>
     </div>
   );
 }
