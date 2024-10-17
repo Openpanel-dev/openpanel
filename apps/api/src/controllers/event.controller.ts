@@ -7,7 +7,7 @@ import { eventsQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
-import { getStringHeaders } from './track.controller';
+import { getStringHeaders, getTimestamp } from './track.controller';
 
 export async function postEvent(
   request: FastifyRequest<{
@@ -15,6 +15,7 @@ export async function postEvent(
   }>,
   reply: FastifyReply,
 ) {
+  const timestamp = getTimestamp(request.timestamp, request.body);
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const projectId = request.client?.projectId;
@@ -57,10 +58,8 @@ export async function postEvent(
         headers: getStringHeaders(request.headers),
         event: {
           ...request.body,
-          // Dont rely on the client for the timestamp
-          timestamp: request.timestamp
-            ? new Date(request.timestamp).toISOString()
-            : new Date().toISOString(),
+          timestamp: timestamp.timestamp,
+          isTimestampFromThePast: timestamp.isTimestampFromThePast,
         },
         geo,
         currentDeviceId,
