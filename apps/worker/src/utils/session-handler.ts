@@ -145,7 +145,7 @@ export async function getSessionEndJob(args: {
 
   // If no job found and not priority, retry
   if (!priority) {
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 200));
     return getSessionEndJob({ ...args, priority, retryCount: retryCount + 1 });
   }
 
