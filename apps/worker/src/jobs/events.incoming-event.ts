@@ -103,7 +103,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
         })
       : null;
 
-    const payload = merge(event ?? {}, baseEvent);
+    const payload = merge(omit(['properties'], event ?? {}), baseEvent);
     return createEventAndNotify(payload);
   }
 
