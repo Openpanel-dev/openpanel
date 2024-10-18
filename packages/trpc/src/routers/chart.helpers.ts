@@ -288,7 +288,7 @@ export function getChartPrevStartEndDate({
   };
 }
 
-const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
+const ONE_DAY_IN_SECONDS = 60 * 60 * 24 * 30;
 
 export async function getFunnelData({
   projectId,
@@ -296,6 +296,8 @@ export async function getFunnelData({
   endDate,
   ...payload
 }: IChartInput) {
+  const windowSize = ONE_DAY_IN_SECONDS;
+  const groupBy = 'profile_id';
   if (!startDate || !endDate) {
     throw new Error('startDate and endDate are required');
   }
@@ -315,15 +317,15 @@ export async function getFunnelData({
   });
 
   const innerSql = `SELECT
-    session_id,
-    windowFunnel(${ONE_DAY_IN_SECONDS}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+    ${groupBy},
+    windowFunnel(${windowSize}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM ${TABLE_NAMES.events}
   WHERE 
     project_id = ${escape(projectId)} AND 
     created_at >= '${formatClickhouseDate(startDate)}' AND 
     created_at <= '${formatClickhouseDate(endDate)}' AND
     name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  GROUP BY session_id`;
+  GROUP BY ${groupBy}`;
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;
 
