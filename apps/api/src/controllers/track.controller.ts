@@ -57,12 +57,42 @@ function getIdentity(body: TrackHandlerPayload): IdentifyPayload | undefined {
   );
 }
 
+export function getTimestamp(
+  timestamp: FastifyRequest['timestamp'],
+  payload: TrackHandlerPayload['payload'],
+) {
+  const safeTimestamp = new Date(timestamp || Date.now()).toISOString();
+  const userDefinedTimestamp = path<string>(
+    ['properties', '__timestamp'],
+    payload,
+  );
+
+  if (!userDefinedTimestamp) {
+    return { timestamp: safeTimestamp, isTimestampFromThePast: false };
+  }
+
+  const clientTimestamp = new Date(userDefinedTimestamp);
+
+  if (
+    Number.isNaN(clientTimestamp.getTime()) ||
+    clientTimestamp > new Date(safeTimestamp)
+  ) {
+    return { timestamp: safeTimestamp, isTimestampFromThePast: false };
+  }
+
+  return {
+    timestamp: clientTimestamp.toISOString(),
+    isTimestampFromThePast: true,
+  };
+}
+
 export async function handler(
   request: FastifyRequest<{
     Body: TrackHandlerPayload;
   }>,
   reply: FastifyReply,
 ) {
+  const timestamp = getTimestamp(request.timestamp, request.body.payload);
   const ip =
     path<string>(['properties', '__ip'], request.body.payload) ||
     getClientIp(request)!;
@@ -116,9 +146,8 @@ export async function handler(
           projectId,
           geo,
           headers: getStringHeaders(request.headers),
-          timestamp: request.timestamp
-            ? new Date(request.timestamp).toISOString()
-            : new Date().toISOString(),
+          timestamp: timestamp.timestamp,
+          isTimestampFromThePast: timestamp.isTimestampFromThePast,
         }),
       ];
 
@@ -185,6 +214,7 @@ async function track({
   geo,
   headers,
   timestamp,
+  isTimestampFromThePast,
 }: {
   payload: TrackPayload;
   currentDeviceId: string;
@@ -193,6 +223,7 @@ async function track({
   geo: GeoLocation;
   headers: Record<string, string | undefined>;
   timestamp: string;
+  isTimestampFromThePast: boolean;
 }) {
   const isScreenView = payload.name === 'screen_view';
   // this will ensure that we don't have multiple events creating sessions
@@ -213,8 +244,8 @@ async function track({
         headers,
         event: {
           ...payload,
-          // Dont rely on the client for the timestamp
           timestamp,
+          isTimestampFromThePast,
         },
         geo,
         currentDeviceId,
