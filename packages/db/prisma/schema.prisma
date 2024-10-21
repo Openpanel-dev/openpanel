@@ -231,21 +231,23 @@ enum Metric {
 }
 
 model Report {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  interval   Interval
-  range      String    @default("30d")
-  chartType  ChartType
-  lineType   String    @default("monotone")
-  breakdowns Json
-  events     Json
-  formula    String?
-  unit       String?
-  metric     Metric    @default(sum)
-  projectId  String
-  project    Project   @relation(fields: [projectId], references: [id])
-  previous   Boolean   @default(false)
-  criteria   String?
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  interval     Interval
+  range        String    @default("30d")
+  chartType    ChartType
+  lineType     String    @default("monotone")
+  breakdowns   Json
+  events       Json
+  formula      String?
+  unit         String?
+  metric       Metric    @default(sum)
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id])
+  previous     Boolean   @default(false)
+  criteria     String?
+  funnelGroup  String?
+  funnelWindow Float?
 
   dashboardId String
   dashboard   Dashboard @relation(fields: [dashboardId], references: [id])

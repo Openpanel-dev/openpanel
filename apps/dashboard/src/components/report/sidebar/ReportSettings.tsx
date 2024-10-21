@@ -3,16 +3,25 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useDispatch, useSelector } from '@/redux';
 
+import { InputEnter } from '@/components/ui/input-enter';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useMemo } from 'react';
-import { changeCriteria, changePrevious, changeUnit } from '../reportSlice';
+import {
+  changeCriteria,
+  changeFunnelGroup,
+  changeFunnelWindow,
+  changePrevious,
+  changeUnit,
+} from '../reportSlice';
 
 export function ReportSettings() {
   const chartType = useSelector((state) => state.report.chartType);
   const previous = useSelector((state) => state.report.previous);
   const criteria = useSelector((state) => state.report.criteria);
   const unit = useSelector((state) => state.report.unit);
+  const funnelGroup = useSelector((state) => state.report.funnelGroup);
+  const funnelWindow = useSelector((state) => state.report.funnelWindow);
 
   const dispatch = useDispatch();
 
@@ -28,6 +37,11 @@ export function ReportSettings() {
       fields.push('unit');
     }
 
+    if (chartType === 'funnel') {
+      fields.push('funnelGroup');
+      fields.push('funnelWindow');
+    }
+
     return fields;
   }, [chartType]);
 
@@ -41,7 +55,9 @@ export function ReportSettings() {
       <div className="col rounded-lg border bg-def-100 p-4 gap-2">
         {fields.includes('previous') && (
           <Label className="flex items-center justify-between mb-0">
-            <span>Compare to previous period</span>
+            <span className="whitespace-nowrap">
+              Compare to previous period
+            </span>
             <Switch
               checked={previous}
               onCheckedChange={(val) => dispatch(changePrevious(!!val))}
@@ -49,8 +65,8 @@ export function ReportSettings() {
           </Label>
         )}
         {fields.includes('criteria') && (
-          <div className="flex items-center justify-between">
-            <span>Criteria</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium">Criteria</span>
             <Combobox
               align="end"
               placeholder="Select criteria"
@@ -70,8 +86,8 @@ export function ReportSettings() {
           </div>
         )}
         {fields.includes('unit') && (
-          <div className="flex items-center justify-between">
-            <span>Unit</span>
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium">Unit</span>
             <Combobox
               align="end"
               placeholder="Unit"
@@ -89,6 +105,49 @@ export function ReportSettings() {
                   value: '%',
                 },
               ]}
+            />
+          </div>
+        )}
+        {fields.includes('funnelGroup') && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium">Funnel Group</span>
+            <Combobox
+              align="end"
+              placeholder="Default: Session"
+              value={funnelGroup || 'session_id'}
+              onChange={(val) => {
+                dispatch(
+                  changeFunnelGroup(val === 'session_id' ? undefined : val),
+                );
+              }}
+              items={[
+                {
+                  label: 'Session',
+                  value: 'session_id',
+                },
+                {
+                  label: 'Profile',
+                  value: 'profile_id',
+                },
+              ]}
+            />
+          </div>
+        )}
+        {fields.includes('funnelWindow') && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium">Funnel Window</span>
+            <InputEnter
+              type="number"
+              value={funnelWindow ? String(funnelWindow) : ''}
+              placeholder="Default: 24h"
+              onChangeValue={(value) => {
+                const parsed = Number.parseFloat(value);
+                if (Number.isNaN(parsed)) {
+                  dispatch(changeFunnelWindow(undefined));
+                } else {
+                  dispatch(changeFunnelWindow(parsed));
+                }
+              }}
             />
           </div>
         )}

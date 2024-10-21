@@ -13,7 +13,7 @@ import { Chart } from './chart';
 
 export function ReportFunnelChart() {
   const {
-    report: { events, range, projectId },
+    report: { events, range, projectId, funnelWindow, funnelGroup },
     isLazyLoading,
   } = useReportChartContext();
 
@@ -24,6 +24,8 @@ export function ReportFunnelChart() {
     interval: 'day',
     chartType: 'funnel',
     breakdowns: [],
+    funnelWindow,
+    funnelGroup,
     previous: false,
     metric: 'sum',
   };

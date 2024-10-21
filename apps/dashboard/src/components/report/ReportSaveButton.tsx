@@ -8,12 +8,18 @@ import { api, handleError } from '@/trpc/client';
 import { SaveIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { useIsFetching } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
 import { resetDirty } from './reportSlice';
 
 interface ReportSaveButtonProps {
   className?: string;
 }
 export function ReportSaveButton({ className }: ReportSaveButtonProps) {
+  const fetching = [
+    useIsFetching(getQueryKey(api.chart.chart)),
+    useIsFetching(getQueryKey(api.chart.cohort)),
+  ];
   const { reportId } = useAppParams<{ reportId: string | undefined }>();
   const dispatch = useDispatch();
   const update = api.report.update.useMutation({
@@ -26,13 +32,14 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
     onError: handleError,
   });
   const report = useSelector((state) => state.report);
+  const isLoading = update.isLoading || fetching.some((f) => f !== 0);
 
   if (reportId) {
     return (
       <Button
         className={className}
         disabled={!report.dirty}
-        loading={update.isLoading}
+        loading={update.isLoading || isLoading}
         onClick={() => {
           update.mutate({
             reportId: reportId,
@@ -55,6 +62,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
         });
       }}
       icon={SaveIcon}
+      loading={isLoading}
     >
       Save
     </Button>

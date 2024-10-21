@@ -45,6 +45,10 @@ export const reportRouter = createTRPCRouter({
           formula: report.formula,
           previous: report.previous ?? false,
           unit: report.unit,
+          criteria: report.criteria,
+          metric: report.metric,
+          funnelGroup: report.funnelGroup,
+          funnelWindow: report.funnelWindow,
         },
       });
     }),
@@ -86,6 +90,10 @@ export const reportRouter = createTRPCRouter({
           formula: report.formula,
           previous: report.previous ?? false,
           unit: report.unit,
+          criteria: report.criteria,
+          metric: report.metric,
+          funnelGroup: report.funnelGroup,
+          funnelWindow: report.funnelWindow,
         },
       });
     }),

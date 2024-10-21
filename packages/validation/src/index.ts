@@ -59,6 +59,8 @@ export const zMetric = z.enum(objectToZodEnums(metrics));
 
 export const zRange = z.enum(objectToZodEnums(timeWindows));
 
+export const zCriteria = z.enum(['on_or_after', 'on']);
+
 export const zChartInput = z.object({
   chartType: zChartType.default('linear'),
   interval: zTimeInterval.default('day'),
@@ -73,15 +75,15 @@ export const zChartInput = z.object({
   endDate: z.string().nullish(),
   limit: z.number().optional(),
   offset: z.number().optional(),
+  criteria: zCriteria.optional(),
+  funnelGroup: z.string().optional(),
+  funnelWindow: z.number().optional(),
 });
-
-export const zCriteria = z.enum(['on_or_after', 'on']);
 
 export const zReportInput = zChartInput.extend({
   name: z.string(),
   lineType: zLineType,
   unit: z.string().optional(),
-  criteria: zCriteria.optional(),
 });
 
 export const zInviteUser = z.object({

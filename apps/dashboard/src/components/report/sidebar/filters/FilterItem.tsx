@@ -1,17 +1,13 @@
 import { ColorSquare } from '@/components/color-square';
 import { RenderDots } from '@/components/ui/RenderDots';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { usePropertyValues } from '@/hooks/usePropertyValues';
 import { useDispatch, useSelector } from '@/redux';
-import { AnimatePresence, motion } from 'framer-motion';
-import { RefreshCcwIcon, SlidersHorizontal, Trash } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { SlidersHorizontal, Trash } from 'lucide-react';
 
 import { operators } from '@openpanel/constants';
 import type {
@@ -19,11 +15,10 @@ import type {
   IChartEventFilter,
   IChartEventFilterOperator,
   IChartEventFilterValue,
-  IChartRange,
-  IInterval,
 } from '@openpanel/validation';
 import { mapKeys } from '@openpanel/validation';
 
+import { InputEnter } from '@/components/ui/input-enter';
 import { changeEvent } from '../../reportSlice';
 
 interface FilterProps {
@@ -185,61 +180,11 @@ export function PureFilterItem({
             placeholder="Select..."
           />
         ) : (
-          <FilterRawInput
+          <InputEnter
             value={filter.value[0] ? String(filter.value[0]) : ''}
             onChangeValue={(value) => changeFilterValue([value])}
           />
         )}
-      </div>
-    </div>
-  );
-}
-
-function FilterRawInput({
-  value,
-  onChangeValue,
-}: {
-  value: string;
-  onChangeValue: (value: string) => void;
-}) {
-  const [internalValue, setInternalValue] = useState(value || '');
-
-  useEffect(() => {
-    if (value !== internalValue) {
-      setInternalValue(value);
-    }
-  }, [value]);
-
-  return (
-    <div className="relative w-full">
-      <Input
-        value={internalValue}
-        onChange={(e) => setInternalValue(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            onChangeValue(internalValue);
-          }
-        }}
-        placeholder="Value"
-        size="default"
-      />
-      <div className="absolute right-2 top-1/2 -translate-y-1/2">
-        <AnimatePresence>
-          {internalValue !== value && (
-            <motion.button
-              key="refresh"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              onClick={() => onChangeValue(internalValue)}
-            >
-              <Badge variant="muted">
-                Press enter
-                <RefreshCcwIcon className="ml-1 h-3 w-3" />
-              </Badge>
-            </motion.button>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
