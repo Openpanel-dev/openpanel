@@ -288,14 +288,15 @@ export function getChartPrevStartEndDate({
   };
 }
 
-const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
-
 export async function getFunnelData({
   projectId,
   startDate,
   endDate,
   ...payload
 }: IChartInput) {
+  const funnelWindow = (payload.funnelWindow || 24) * 3600;
+  const funnelGroup = payload.funnelGroup || 'session_id';
+
   if (!startDate || !endDate) {
     throw new Error('startDate and endDate are required');
   }
@@ -315,15 +316,15 @@ export async function getFunnelData({
   });
 
   const innerSql = `SELECT
-    session_id,
-    windowFunnel(${ONE_DAY_IN_SECONDS}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+    ${funnelGroup},
+    windowFunnel(${funnelWindow}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM ${TABLE_NAMES.events}
   WHERE 
     project_id = ${escape(projectId)} AND 
     created_at >= '${formatClickhouseDate(startDate)}' AND 
     created_at <= '${formatClickhouseDate(endDate)}' AND
     name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  GROUP BY session_id`;
+  GROUP BY ${funnelGroup}`;
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;
 
@@ -376,55 +377,56 @@ export async function getFunnelStep({
 }: IChartInput & {
   step: number;
 }) {
-  if (!startDate || !endDate) {
-    throw new Error('startDate and endDate are required');
-  }
+  throw new Error('not implemented');
+  // if (!startDate || !endDate) {
+  //   throw new Error('startDate and endDate are required');
+  // }
 
-  if (payload.events.length === 0) {
-    throw new Error('no events selected');
-  }
+  // if (payload.events.length === 0) {
+  //   throw new Error('no events selected');
+  // }
 
-  const funnels = payload.events.map((event) => {
-    const { sb, getWhere } = createSqlBuilder();
-    sb.where = getEventFiltersWhereClause(event.filters);
-    sb.where.name = `name = ${escape(event.name)}`;
-    return getWhere().replace('WHERE ', '');
-  });
+  // const funnels = payload.events.map((event) => {
+  //   const { sb, getWhere } = createSqlBuilder();
+  //   sb.where = getEventFiltersWhereClause(event.filters);
+  //   sb.where.name = `name = ${escape(event.name)}`;
+  //   return getWhere().replace('WHERE ', '');
+  // });
 
-  const innerSql = `SELECT
-    session_id,
-    windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
-  FROM ${TABLE_NAMES.events}
-  WHERE 
-    project_id = ${escape(projectId)} AND 
-    created_at >= '${formatClickhouseDate(startDate)}' AND 
-    created_at <= '${formatClickhouseDate(endDate)}' AND
-    name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  GROUP BY session_id`;
+  // const innerSql = `SELECT
+  //   session_id,
+  //   windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
+  // FROM ${TABLE_NAMES.events}
+  // WHERE
+  //   project_id = ${escape(projectId)} AND
+  //   created_at >= '${formatClickhouseDate(startDate)}' AND
+  //   created_at <= '${formatClickhouseDate(endDate)}' AND
+  //   name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
+  // GROUP BY session_id`;
 
-  const profileIdsQuery = `WITH sessions AS (${innerSql}) 
-    SELECT 
-      DISTINCT e.profile_id as id
-    FROM sessions s
-    JOIN ${TABLE_NAMES.events} e ON s.session_id = e.session_id
-    WHERE 
-      s.level = ${step} AND
-      e.project_id = ${escape(projectId)} AND 
-      e.created_at >= '${formatClickhouseDate(startDate)}' AND 
-      e.created_at <= '${formatClickhouseDate(endDate)}' AND
-      name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-    ORDER BY e.created_at DESC
-    LIMIT 500
-    `;
+  // const profileIdsQuery = `WITH sessions AS (${innerSql})
+  //   SELECT
+  //     DISTINCT e.profile_id as id
+  //   FROM sessions s
+  //   JOIN ${TABLE_NAMES.events} e ON s.session_id = e.session_id
+  //   WHERE
+  //     s.level = ${step} AND
+  //     e.project_id = ${escape(projectId)} AND
+  //     e.created_at >= '${formatClickhouseDate(startDate)}' AND
+  //     e.created_at <= '${formatClickhouseDate(endDate)}' AND
+  //     name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
+  //   ORDER BY e.created_at DESC
+  //   LIMIT 500
+  //   `;
 
-  const res = await chQuery<{
-    id: string;
-  }>(profileIdsQuery);
+  // const res = await chQuery<{
+  //   id: string;
+  // }>(profileIdsQuery);
 
-  return getProfiles(
-    res.map((r) => r.id),
-    projectId,
-  );
+  // return getProfiles(
+  //   res.map((r) => r.id),
+  //   projectId,
+  // );
 }
 
 export async function getChartSerie(payload: IGetChartDataInput) {

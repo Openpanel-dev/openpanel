@@ -66,6 +66,8 @@ export function transformReport(
     metric: report.metric ?? 'sum',
     unit: report.unit ?? undefined,
     criteria: (report.criteria as ICriteria) ?? undefined,
+    funnelGroup: report.funnelGroup ?? undefined,
+    funnelWindow: report.funnelWindow ?? undefined,
   };
 }
 

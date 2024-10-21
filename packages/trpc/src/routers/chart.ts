@@ -406,36 +406,46 @@ function processCohortData(
     };
   });
 
-  // Initialize aggregation for averages
   const averageData: {
-    sum: number;
-    values: Array<number>;
-    percentages: Array<number>;
+    totalSum: number;
+    values: Array<{ sum: number; weightedSum: number }>;
+    percentages: Array<{ sum: number; weightedSum: number }>;
   } = {
-    sum: 0,
-    values: range(0, diffInterval + 1).map(() => 0),
-    percentages: range(0, diffInterval + 1).map(() => 0),
+    totalSum: 0,
+    values: range(0, diffInterval + 1).map(() => ({ sum: 0, weightedSum: 0 })),
+    percentages: range(0, diffInterval + 1).map(() => ({
+      sum: 0,
+      weightedSum: 0,
+    })),
   };
 
-  // Aggregate data for averages
+  // Aggregate data for weighted averages, excluding zeros
   processed.forEach((row) => {
-    averageData.sum += row.sum;
+    averageData.totalSum += row.sum;
     row.values.forEach((value, index) => {
-      averageData.values[index] += value;
-      averageData.percentages[index] += row.percentages[index]!;
+      if (value !== 0) {
+        averageData.values[index]!.sum += row.sum;
+        averageData.values[index]!.weightedSum += value * row.sum;
+      }
+    });
+    row.percentages.forEach((percentage, index) => {
+      if (percentage !== 0) {
+        averageData.percentages[index]!.sum += row.sum;
+        averageData.percentages[index]!.weightedSum += percentage * row.sum;
+      }
     });
   });
 
-  const cohortCount = processed.length;
-
-  // Calculate average values
+  // Calculate weighted average values, excluding zeros
   const averageRow = {
-    cohort_interval: 'Average',
-    sum: cohortCount > 0 ? round(averageData.sum / cohortCount, 0) : 0,
-    percentages: averageData.percentages.map((item) =>
-      round(item / cohortCount, 2),
+    cohort_interval: 'Weighted Average',
+    sum: round(averageData.totalSum / processed.length, 0),
+    percentages: averageData.percentages.map(({ sum, weightedSum }) =>
+      sum > 0 ? round(weightedSum / sum, 2) : 0,
     ),
-    values: averageData.values.map((item) => round(item / cohortCount, 0)),
+    values: averageData.values.map(({ sum, weightedSum }) =>
+      sum > 0 ? round(weightedSum / sum, 0) : 0,
+    ),
   };
 
   return [averageRow, ...processed];

@@ -56,6 +56,8 @@ const initialState: InitialState = {
   metric: 'sum',
   limit: 500,
   criteria: 'on_or_after',
+  funnelGroup: undefined,
+  funnelWindow: undefined,
 };
 
 export const reportSlice = createSlice({
@@ -266,6 +268,16 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.unit = action.payload || undefined;
     },
+
+    changeFunnelGroup(state, action: PayloadAction<string | undefined>) {
+      state.dirty = true;
+      state.funnelGroup = action.payload || undefined;
+    },
+
+    changeFunnelWindow(state, action: PayloadAction<number | undefined>) {
+      state.dirty = true;
+      state.funnelWindow = action.payload || undefined;
+    },
   },
 });
 
@@ -293,6 +305,8 @@ export const {
   changePrevious,
   changeCriteria,
   changeUnit,
+  changeFunnelGroup,
+  changeFunnelWindow,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

@@ -129,14 +129,16 @@ export async function chQuery<T extends Record<string, any>>(
 }
 
 export function formatClickhouseDate(
-  _date: Date | string,
+  date: Date | string,
   skipTime = false,
 ): string {
-  if (typeof _date === 'string') {
-    return _date.slice(0, 19).replace('T', ' ');
+  if (typeof date === 'string') {
+    if (skipTime) {
+      return date.slice(0, 10);
+    }
+    return date.slice(0, 19).replace('T', ' ');
   }
 
-  const date = typeof _date === 'string' ? new Date(_date) : _date;
   if (skipTime) {
     return date.toISOString().split('T')[0]!;
   }
