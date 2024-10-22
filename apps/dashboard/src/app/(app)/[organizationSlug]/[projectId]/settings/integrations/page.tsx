@@ -2,7 +2,7 @@ import { ActiveIntegrations } from '@/components/integrations/active-integration
 import { AllIntegrations } from '@/components/integrations/all-integrations';
 import { PageTabs, PageTabsLink } from '@/components/page-tabs';
 import { Padding } from '@/components/ui/padding';
-import { parseAsStringEnum } from 'nuqs';
+import { parseAsStringEnum } from 'nuqs/server';
 
 interface PageProps {
   params: {
