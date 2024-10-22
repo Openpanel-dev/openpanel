@@ -10,6 +10,7 @@ export interface EventsQueuePayloadIncomingEvent {
     projectId: string;
     event: TrackPayload & {
       timestamp: string;
+      isTimestampFromThePast: boolean;
     };
     geo: {
       country: string | undefined;
@@ -71,6 +72,11 @@ export const eventsQueue = new Queue<EventsQueuePayload>('events', {
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 1000,
+    },
   },
 });
 
