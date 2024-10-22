@@ -59,6 +59,9 @@ export const BASE_INTEGRATIONS: Integration[] = [
 export const isBaseIntegration = (id: string) =>
   BASE_INTEGRATIONS.find((i) => i.id === id);
 
+export type INotificationRuleCached = Awaited<
+  ReturnType<typeof getNotificationRulesByProjectId>
+>[number];
 export const getNotificationRulesByProjectId = cacheable(
   function getNotificationRulesByProjectId(projectId: string) {
     return db.notificationRule.findMany({
@@ -71,6 +74,7 @@ export const getNotificationRulesByProjectId = cacheable(
         sendToApp: true,
         sendToEmail: true,
         config: true,
+        template: true,
         integrations: {
           select: {
             id: true,
@@ -190,6 +194,32 @@ export function matchEvent(
   return true;
 }
 
+function notificationTemplateEvent({
+  payload,
+  rule,
+}: {
+  payload: IServiceCreateEventPayload;
+  rule: INotificationRuleCached;
+}) {
+  if (!rule.template) return `You received a new "${payload.name}" event`;
+  return rule.template
+    .replaceAll('$EVENT_NAME', payload.name)
+    .replaceAll('$RULE_NAME', rule.name);
+}
+
+function notificationTemplateFunnel({
+  events,
+  rule,
+}: {
+  events: IServiceEvent[];
+  rule: INotificationRuleCached;
+}) {
+  if (!rule.template) return `Funnel "${rule.name}" completed`;
+  return rule.template
+    .replaceAll('$EVENT_NAME', events.map((e) => e.name).join(' -> '))
+    .replaceAll('$RULE_NAME', rule.name);
+}
+
 export async function checkNotificationRulesForEvent(
   payload: IServiceCreateEventPayload,
 ) {
@@ -207,7 +237,10 @@ export async function checkNotificationRulesForEvent(
         }
 
         const notification = {
-          title: `You received a new "${payload.name}" event`,
+          title: notificationTemplateEvent({
+            payload,
+            rule,
+          }),
           message: project?.name ? `Project: ${project?.name}` : '',
           projectId: payload.projectId,
           payload: {
@@ -266,7 +299,7 @@ export async function checkNotificationRulesForSessionEnd(
   const notificationPromises = funnelRules.flatMap((rule) => {
     // Match funnel events
     let funnelIndex = 0;
-    const matchedEvents = [];
+    const matchedEvents: IServiceEvent[] = [];
     for (const event of sortedEvents) {
       if (matchEvent(event, rule.config.events[funnelIndex]!)) {
         matchedEvents.push(event);
@@ -280,7 +313,10 @@ export async function checkNotificationRulesForSessionEnd(
 
     // Create notification object
     const notification = {
-      title: `Funnel "${rule.name}" completed`,
+      title: notificationTemplateFunnel({
+        rule,
+        events: matchedEvents,
+      }),
       message: project?.name ? `Project: ${project?.name}` : '',
       projectId,
       payload: { type: 'funnel', funnel: matchedEvents } as const,

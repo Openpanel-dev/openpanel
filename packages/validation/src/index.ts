@@ -264,6 +264,7 @@ export type INotificationRuleConfig = z.infer<typeof zNotificationRuleConfig>;
 export const zCreateNotificationRule = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
+  template: z.string().optional(),
   config: zNotificationRuleConfig,
   integrations: z.array(z.string()),
   sendToApp: z.boolean(),

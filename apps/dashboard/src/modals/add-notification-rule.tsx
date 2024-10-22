@@ -15,6 +15,7 @@ import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useEventNames } from '@/hooks/useEventNames';
 import { useEventProperties } from '@/hooks/useEventProperties';
@@ -51,6 +52,7 @@ export default function AddNotificationRule({ rule }: Props) {
       integrations:
         rule?.integrations.map((integration) => integration.id) ?? [],
       projectId,
+      template: rule?.template ?? '',
       config: rule?.config ?? {
         type: 'events',
         events: [
@@ -158,6 +160,16 @@ export default function AddNotificationRule({ rule }: Props) {
               Add event
             </Button>
           </div>
+        </WithLabel>
+
+        <WithLabel
+          label="Template"
+          info="Customize your notification. Exisiting variables: $EVENT_NAME, $RULE_NAME"
+        >
+          <Textarea
+            {...form.register('template')}
+            placeholder="You received a new '$EVENT_NAME' event"
+          />
         </WithLabel>
 
         <Controller
