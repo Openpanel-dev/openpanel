@@ -20,7 +20,6 @@ export const useFullscreen = () =>
     'fullscreen',
     parseAsBoolean.withDefault(false).withOptions({
       history: 'push',
-      clearOnDefault: true,
     }),
   );
 
