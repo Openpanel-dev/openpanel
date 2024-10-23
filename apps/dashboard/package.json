@@ -79,7 +79,7 @@
     "next-auth": "^4.24.5",
     "next-themes": "^0.2.1",
     "nextjs-toploader": "^1.6.11",
-    "nuqs": "^2.0.0",
+    "nuqs": "^2.0.2",
     "prisma-error-enum": "^0.1.3",
     "pushmodal": "^1.0.3",
     "ramda": "^0.29.1",
