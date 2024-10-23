@@ -89,7 +89,8 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
                     <div className="mt-2 flex gap-2 ">
                       <span
                         className={
-                          range !== null || (startDate && endDate)
+                          (chartRange !== range && range !== null) ||
+                          (startDate && endDate)
                             ? 'line-through'
                             : ''
                         }
@@ -99,7 +100,10 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
                       {startDate && endDate ? (
                         <span>Custom dates</span>
                       ) : (
-                        range !== null && <span>{range}</span>
+                        range !== null &&
+                        chartRange !== range && (
+                          <span>{timeWindows[range].label}</span>
+                        )
                       )}
                     </div>
                   )}
