@@ -308,38 +308,38 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           break;
         }
         case 'contains': {
-          where[id] = value
+          where[id] = `(${value
             .map((val) => `${name} LIKE ${escape(`%${String(val).trim()}%`)}`)
-            .join(' OR ');
+            .join(' OR ')})`;
           break;
         }
         case 'doesNotContain': {
-          where[id] = value
+          where[id] = `(${value
             .map(
               (val) => `${name} NOT LIKE ${escape(`%${String(val).trim()}%`)}`,
             )
-            .join(' OR ');
+            .join(' OR ')})`;
           break;
         }
         case 'startsWith': {
-          where[id] = value
+          where[id] = `(${value
             .map((val) => `${name} LIKE ${escape(`${String(val).trim()}%`)}`)
-            .join(' OR ');
+            .join(' OR ')})`;
           break;
         }
         case 'endsWith': {
-          where[id] = value
+          where[id] = `(${value
             .map((val) => `${name} LIKE ${escape(`%${String(val).trim()}`)}`)
-            .join(' OR ');
+            .join(' OR ')})`;
           break;
         }
         case 'regex': {
-          where[id] = value
+          where[id] = `(${value
             .map(
               (val) =>
                 `match(${name}, ${escape(stripLeadingAndTrailingSlashes(String(val)).trim())})`,
             )
-            .join(' OR ');
+            .join(' OR ')})`;
           break;
         }
       }
