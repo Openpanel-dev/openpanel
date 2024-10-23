@@ -25,7 +25,8 @@ export function ReportRetentionChart() {
   } = useReportChartContext();
   const firstEvent = (events[0]?.filters[0]?.value ?? []).map(String);
   const secondEvent = (events[1]?.filters[0]?.value ?? []).map(String);
-  const isEnabled = firstEvent.length > 0 && secondEvent.length > 0;
+  const isEnabled =
+    firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
   const res = api.chart.cohort.useQuery(
     {
       firstEvent,
@@ -38,6 +39,8 @@ export function ReportRetentionChart() {
       interval,
     },
     {
+      keepPreviousData: true,
+      staleTime: 1000 * 60 * 1,
       enabled: isEnabled,
     },
   );

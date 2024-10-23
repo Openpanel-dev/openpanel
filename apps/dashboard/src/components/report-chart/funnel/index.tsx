@@ -31,6 +31,7 @@ export function ReportFunnelChart() {
   };
   const res = api.chart.funnel.useQuery(input, {
     keepPreviousData: true,
+    enabled: !isLazyLoading,
   });
 
   if (isLazyLoading || res.isLoading) {

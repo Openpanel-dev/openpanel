@@ -12,6 +12,7 @@ export function ReportBarChart() {
   const res = api.chart.chart.useQuery(report, {
     keepPreviousData: true,
     staleTime: 1000 * 60 * 1,
+    enabled: !isLazyLoading,
   });
 
   if (
