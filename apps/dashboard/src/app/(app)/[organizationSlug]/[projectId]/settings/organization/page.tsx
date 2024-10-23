@@ -1,11 +1,10 @@
-import PageLayout from '@/app/(app)/[organizationSlug]/[projectId]/page-layout';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { PageTabs, PageTabsLink } from '@/components/page-tabs';
 import { Padding } from '@/components/ui/padding';
 import { auth } from '@clerk/nextjs/server';
 import { ShieldAlertIcon } from 'lucide-react';
 import { notFound } from 'next/navigation';
-import { parseAsStringEnum } from 'nuqs';
+import { parseAsStringEnum } from 'nuqs/server';
 
 import { db } from '@openpanel/db';
 

@@ -9,6 +9,7 @@ import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type React from 'react';
 import { useRef, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
@@ -75,12 +76,14 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       <ReduxProvider store={storeRef.current}>
         <api.Provider client={trpcClient} queryClient={queryClient}>
           <QueryClientProvider client={queryClient}>
-            <TooltipProvider delayDuration={200}>
-              {children}
-              <NotificationProvider />
-              <Toaster />
-              <ModalProvider />
-            </TooltipProvider>
+            <NuqsAdapter>
+              <TooltipProvider delayDuration={200}>
+                {children}
+                <NotificationProvider />
+                <Toaster />
+                <ModalProvider />
+              </TooltipProvider>
+            </NuqsAdapter>
           </QueryClientProvider>
         </api.Provider>
       </ReduxProvider>

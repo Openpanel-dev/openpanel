@@ -362,8 +362,8 @@ importers:
         specifier: ^1.6.11
         version: 1.6.11(next@14.2.1)(react-dom@18.2.0)(react@18.2.0)
       nuqs:
-        specifier: ^1.16.1
-        version: 1.17.0(next@14.2.1)
+        specifier: ^2.0.2
+        version: 2.0.2(next@14.2.1)(react@18.2.0)
       prisma-error-enum:
         specifier: ^0.1.3
         version: 0.1.3
@@ -16122,13 +16122,24 @@ packages:
     resolution: {integrity: sha512-2vPPEi+Z7WqML2jZYddDIfy5Dqb0r2fze2zTxNNknZaFpVHU3mFB3R+DWeJWGVx0ecvttSGlJTI+WG+8Z4cDWw==}
     dev: false
 
-  /nuqs@1.17.0(next@14.2.1):
-    resolution: {integrity: sha512-Lp2qLETMb7AAYhDtRtx20oAZNkYYTPApZcaX7Q5nQz7bfy893TCIe92IYVIfl9ZUqQLTsl9855KGEsA57dylPQ==}
+  /nuqs@2.0.2(next@14.2.1)(react@18.2.0):
+    resolution: {integrity: sha512-m9o8avj1CI6ryO0jhjFi8dhFA8jLXb+6esZbkki8tJixBnexPFoVZ5wFgmANVumbyeLemZ/ujhYn23iERRYwlA==}
     peerDependencies:
-      next: '>=13.4 <14.0.2 || ^14.0.3'
+      '@remix-run/react': '>= 2'
+      next: '>= 14.2.0'
+      react: '>= 18.2.0'
+      react-router-dom: '>= 6'
+    peerDependenciesMeta:
+      '@remix-run/react':
+        optional: true
+      next:
+        optional: true
+      react-router-dom:
+        optional: true
     dependencies:
       mitt: 3.0.1
       next: 14.2.1(@opentelemetry/api@1.8.0)(react-dom@18.2.0)(react@18.2.0)
+      react: 18.2.0
     dev: false
 
   /oauth@0.9.15:

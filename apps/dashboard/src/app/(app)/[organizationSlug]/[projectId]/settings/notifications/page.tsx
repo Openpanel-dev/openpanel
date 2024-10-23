@@ -2,7 +2,7 @@ import { NotificationRules } from '@/components/notifications/notification-rules
 import { Notifications } from '@/components/notifications/notifications';
 import { PageTabs, PageTabsLink } from '@/components/page-tabs';
 import { Padding } from '@/components/ui/padding';
-import { parseAsStringEnum } from 'nuqs';
+import { parseAsStringEnum } from 'nuqs/server';
 
 interface PageProps {
   params: {

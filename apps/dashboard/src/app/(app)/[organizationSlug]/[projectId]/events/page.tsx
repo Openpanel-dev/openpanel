@@ -1,6 +1,6 @@
 import { PageTabs, PageTabsLink } from '@/components/page-tabs';
 import { Padding } from '@/components/ui/padding';
-import { parseAsStringEnum } from 'nuqs';
+import { parseAsStringEnum } from 'nuqs/server';
 
 import Charts from './charts';
 import Conversions from './conversions';
