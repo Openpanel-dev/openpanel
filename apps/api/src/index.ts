@@ -10,14 +10,19 @@ import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
 import { path, pick } from 'ramda';
 
-import { generateId, round } from '@openpanel/common';
-import { TABLE_NAMES, chQuery, db } from '@openpanel/db';
+import { generateId } from '@openpanel/common';
 import type { IServiceClient } from '@openpanel/db';
-import { eventsQueue } from '@openpanel/queue';
-import { getRedisCache, getRedisPub } from '@openpanel/redis';
+import { getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
+import {
+  healthcheck,
+  healthcheckQueue,
+} from './controllers/healthcheck.controller';
+import { requestIdHook } from './hooks/request-id.hook';
+import { requestLoggingHook } from './hooks/request-logging.hook';
+import { timestampHook } from './hooks/timestamp.hook';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
 import importRouter from './routes/import.router';
@@ -33,19 +38,6 @@ declare module 'fastify' {
     projectId: string;
     client: IServiceClient | null;
     timestamp?: number;
-  }
-}
-
-async function withTimings<T>(promise: Promise<T>) {
-  const time = performance.now();
-  try {
-    const data = await promise;
-    return {
-      time: round(performance.now() - time, 2),
-      data,
-    } as const;
-  } catch (e) {
-    return null;
   }
 }
 
@@ -65,66 +57,9 @@ const startServer = async () => {
           : generateId(),
     });
 
-    const getTrpcInput = (
-      request: FastifyRequest,
-    ): Record<string, unknown> | undefined => {
-      const input = path(['query', 'input'], request);
-      try {
-        return typeof input === 'string' ? JSON.parse(input).json : input;
-      } catch (e) {
-        return undefined;
-      }
-    };
-
-    fastify.addHook('preHandler', (request, reply, done) => {
-      request.timestamp = Date.now();
-      done();
-    });
-
-    // add header to request if it does not exist
-    fastify.addHook('onRequest', (request, reply, done) => {
-      if (!request.headers['request-id']) {
-        request.headers['request-id'] = request.id;
-      }
-      done();
-    });
-
-    const ignoreLog = ['/healthcheck', '/metrics', '/misc'];
-    const ignoreMethods = ['OPTIONS'];
-
-    fastify.addHook('onResponse', (request, reply, done) => {
-      if (ignoreMethods.includes(request.method)) {
-        return done();
-      }
-      if (ignoreLog.some((path) => request.url.startsWith(path))) {
-        return done();
-      }
-      if (request.url.includes('trpc')) {
-        request.log.info('request done', {
-          url: request.url.split('?')[0],
-          method: request.method,
-          input: getTrpcInput(request),
-          elapsed: reply.elapsedTime,
-        });
-      } else {
-        request.log.info('request done', {
-          url: request.url,
-          method: request.method,
-          elapsed: reply.elapsedTime,
-          headers: pick(
-            [
-              'openpanel-client-id',
-              'openpanel-sdk-name',
-              'openpanel-sdk-version',
-              'user-agent',
-            ],
-            request.headers,
-          ),
-          body: request.body,
-        });
-      }
-      done();
-    });
+    fastify.addHook('preHandler', timestampHook);
+    fastify.addHook('onRequest', requestIdHook);
+    fastify.addHook('onResponse', requestLoggingHook);
 
     fastify.register(compress, {
       global: false,
@@ -165,18 +100,16 @@ const startServer = async () => {
       },
     );
 
-    await fastify.register(metricsPlugin, { endpoint: '/metrics' });
-
     fastify.register(cors, {
       origin: '*',
       credentials: true,
     });
 
     fastify.register((instance, opts, done) => {
-      fastify.register(cookie, {
-        secret: 'random', // for cookies signature
-        hook: 'onRequest',
-      });
+      // fastify.register(cookie, {
+      //   secret: 'random', // for cookies signature
+      //   hook: 'onRequest',
+      // });
       instance.register(clerkPlugin, {
         publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
         secretKey: process.env.CLERK_SECRET_KEY,
@@ -200,7 +133,7 @@ const startServer = async () => {
       done();
     });
 
-    fastify.decorateRequest('projectId', '');
+    fastify.register(metricsPlugin, { endpoint: '/metrics' });
     fastify.register(eventRouter, { prefix: '/event' });
     fastify.register(profileRouter, { prefix: '/profile' });
     fastify.register(miscRouter, { prefix: '/misc' });
@@ -208,6 +141,12 @@ const startServer = async () => {
     fastify.register(webhookRouter, { prefix: '/webhook' });
     fastify.register(importRouter, { prefix: '/import' });
     fastify.register(trackRouter, { prefix: '/track' });
+    fastify.get('/', (_request, reply) =>
+      reply.send({ name: 'openpanel sdk api' }),
+    );
+    fastify.get('/healthcheck', healthcheck);
+    fastify.get('/healthcheck/queue', healthcheckQueue);
+
     fastify.setErrorHandler((error, request, reply) => {
       if (error.statusCode === 429) {
         reply.status(429).send({
@@ -220,63 +159,7 @@ const startServer = async () => {
         reply.status(500).send('Internal server error');
       }
     });
-    fastify.get('/', (_request, reply) => {
-      reply.send({ name: 'openpanel sdk api' });
-    });
-    fastify.get('/healthcheck', async (request, reply) => {
-      const redisRes = await withTimings(
-        getRedisCache().keys('keys op:buffer:*'),
-      );
-      const dbRes = await withTimings(db.project.findFirst());
-      const queueRes = await withTimings(eventsQueue.getCompleted());
-      const chRes = await withTimings(
-        chQuery(
-          `SELECT * FROM ${TABLE_NAMES.events} WHERE created_at > now() - INTERVAL 10 MINUTE LIMIT 1`,
-        ),
-      );
-      const status = redisRes && dbRes && queueRes && chRes ? 200 : 500;
 
-      reply.status(status).send({
-        redis: redisRes
-          ? {
-              ok: !!redisRes.data.length,
-              time: `${redisRes.time}ms`,
-            }
-          : null,
-        db: dbRes
-          ? {
-              ok: !!dbRes.data,
-              time: `${dbRes.time}ms`,
-            }
-          : null,
-        queue: queueRes
-          ? {
-              ok: !!queueRes.data,
-              time: `${queueRes.time}ms`,
-            }
-          : null,
-        ch: chRes
-          ? {
-              ok: !!chRes.data,
-              time: `${chRes.time}ms`,
-            }
-          : null,
-      });
-    });
-    fastify.get('/healthcheck/queue', async (request, reply) => {
-      const count = await eventsQueue.getWaitingCount();
-      if (count > 40) {
-        reply.status(500).send({
-          ok: false,
-          count,
-        });
-      } else {
-        reply.status(200).send({
-          ok: true,
-          count,
-        });
-      }
-    });
     if (process.env.NODE_ENV === 'production') {
       for (const signal of ['SIGINT', 'SIGTERM']) {
         process.on(signal, (error) => {
