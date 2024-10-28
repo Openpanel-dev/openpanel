@@ -293,8 +293,16 @@ const startServer = async () => {
       port,
     });
 
-    // Notify when keys expires
-    getRedisPub().config('SET', 'notify-keyspace-events', 'Ex');
+    try {
+      // Notify when keys expires
+      await getRedisPub().config('SET', 'notify-keyspace-events', 'Ex');
+    } catch (error) {
+      logger.warn('Failed to set redis notify-keyspace-events', error);
+      logger.warn(
+        'If you use a managed Redis service, you may need to set this manually.',
+      );
+      logger.warn('Otherwise some functions may not work as expected.');
+    }
   } catch (error) {
     logger.error('Failed to start server', error);
   }
