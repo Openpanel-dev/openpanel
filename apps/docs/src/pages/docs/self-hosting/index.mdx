@@ -127,3 +127,11 @@ const op = new OpenPanel({
   trackAttributes: true,
 });
 ``` 
+
+### Managed Redis
+
+If you use a managed Redis service, you may need to set the `notify-keyspace-events` manually.
+
+Without this setting we wont be able to listen for expired keys which we use for caluclating currently active vistors.
+
+> You will see a warning in the logs if this needs to be set manually.
