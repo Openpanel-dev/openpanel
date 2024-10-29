@@ -38,6 +38,7 @@ export class OpenPanel extends OpenPanelBase {
 
       if (this.options.trackScreenViews) {
         this.trackScreenViews();
+        setTimeout(() => this.screenView(), 0);
       }
 
       if (this.options.trackOutgoingLinks) {
@@ -87,8 +88,6 @@ export class OpenPanel extends OpenPanelBase {
     if (this.isServer()) {
       return;
     }
-
-    this.screenView();
 
     const oldPushState = history.pushState;
     history.pushState = function pushState(...args) {
