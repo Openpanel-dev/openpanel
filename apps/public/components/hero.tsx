@@ -14,17 +14,17 @@ export function Hero() {
       {/* Content */}
       <div className="container relative z-10">
         <div className="max-w-2xl col gap-4 pt-28 text-center mx-auto ">
-          <h1 className="text-6xl font-bold leading-[1.1] animate-fade-up">
+          <h1 className="text-6xl font-bold leading-[1.1]">
             An open-source alternative to <span>Mixpanel</span>
           </h1>
-          <p className="text-xl text-muted-foreground animate-fade-up">
+          <p className="text-xl text-muted-foreground">
             The power of Mixpanel, the ease of Plausible and nothing from Google
             Analytics 😉
           </p>
         </div>
 
         {/* CTA */}
-        <div className="row gap-4 center-center my-12 animate-fade-up">
+        <div className="row gap-4 center-center my-12">
           <Button size="lg" asChild>
             <Link href="https://dashboard.openpanel.dev/register">
               Try it for free

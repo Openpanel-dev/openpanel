@@ -1,10 +1,11 @@
-import { articleSource, source } from '@/lib/source';
+import { articleSource, pageSource, source } from '@/lib/source';
 import type { MetadataRoute } from 'next';
 import { url } from './layout.config';
-const articles = await articleSource.getPages();
-const docs = await source.getPages();
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const articles = await articleSource.getPages();
+  const docs = await source.getPages();
+  const pages = await pageSource.getPages();
   return [
     {
       url: url('/'),
@@ -31,6 +32,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     })),
     ...docs.map((item) => ({
+      url: url(item.url),
+      lastModified: item.data.lastModified,
+      changeFrequency: 'monthly' as const,
+      priority: 0.3,
+    })),
+    ...pages.map((item) => ({
       url: url(item.url),
       lastModified: item.data.lastModified,
       changeFrequency: 'monthly' as const,

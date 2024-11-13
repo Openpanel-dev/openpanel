@@ -41,7 +41,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="fixed top-4 z-50 w-full animate-fade-down" ref={navbarRef}>
+    <nav className="fixed top-4 z-50 w-full" ref={navbarRef}>
       <div className="container">
         <div
           className={cn(
