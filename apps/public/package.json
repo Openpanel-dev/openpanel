@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm with-env next dev",
-    "build": "pnpm with-env next build",
+    "build": "next build",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
     "with-env": "dotenv -e ../../.env -c --"
