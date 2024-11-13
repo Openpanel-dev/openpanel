@@ -216,17 +216,6 @@ export function Chart({
                       </span>
                       <div className="flex items-center gap-4">
                         <span className="text-lg font-mono">{step.count}</span>
-                        {/* <button type="button"
-                        className="ml-2 underline"
-                        onClick={() =>
-                        pushModal('FunnelStepDetails', {
-                          ...input,
-                          step: index + 1,
-                          })
-                          }
-                          >
-                          Inspect
-                          </button> */}
                       </div>
                     </div>
                   </TooltipComplete>

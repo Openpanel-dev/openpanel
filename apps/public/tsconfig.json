@@ -1,18 +1,29 @@
 {
-  "extends": "@openpanel/tsconfig/base.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "target": "ESNext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./*"]
     },
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json",
-    "strictNullChecks": true
+    ]
   },
-  "include": [".", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "public"]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }

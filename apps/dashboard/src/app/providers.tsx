@@ -18,8 +18,10 @@ import superjson from 'superjson';
 
 import { NotificationProvider } from '@/components/notifications/notification-provider';
 import { OpenPanelComponent } from '@openpanel/nextjs';
+import { useSearchParams } from 'next/navigation';
 
 function AllProviders({ children }: { children: React.ReactNode }) {
+  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const [queryClient] = useState(
     () =>
@@ -59,11 +61,16 @@ function AllProviders({ children }: { children: React.ReactNode }) {
     storeRef.current = makeStore();
   }
 
+  const forcedTheme = searchParams.get('colorScheme');
+
   return (
     <ThemeProvider
       attribute="class"
-      defaultTheme="light"
       disableTransitionOnChange
+      defaultTheme="system"
+      forcedTheme={
+        forcedTheme ? (forcedTheme === 'dark' ? 'dark' : 'light') : 'system'
+      }
     >
       {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
         <OpenPanelComponent

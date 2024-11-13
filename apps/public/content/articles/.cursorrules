@@ -1,0 +1,51 @@
+- **Language**
+  - Use American English.
+  - Be concise and dont hallucinate.
+  - Dont use emojis.
+  - Dont use hashtags.
+  - Dont use to fancy english. Keep it simple and readable.
+
+-  **Title Guidelines**
+  - Ensure titles are engaging and informative.
+  - Checks:
+    - **Length**: Titles should be concise, ideally under 70 characters.
+    - **Format**: Titles should start with a capital letter.
+
+-  **Introduction**
+  - Write a compelling introduction that summarizes the article.
+  - Checks:
+    - **Length**: Introduction should be at least 50 words.
+
+-  **Content Structure**
+  - Use headings and subheadings to organize content.
+  - Do not use to many headings either. Aiming for 3-5 depending on structure and article length.
+  - Avoid doing to many bullet points with the format `- **Bold text** Lorem ipsum dolor sit amet`. (max 1 per article)
+  - Checks:
+    - **Presence**: Use at least one H2 heading to structure the article.
+
+-  **Paragraph Length**
+  - Keep paragraphs short and readable.
+  - Checks:
+    - **Length**: Paragraphs should not exceed 150 words.
+
+-  **Use of Images**
+  - Incorporate images to enhance the article.
+  - Checks:
+    - **Presence**: Include at least one image to support the content.
+
+-  **SEO Best Practices**
+  - Incorporate keywords naturally throughout the article.
+  - Look in this folder for keywords in other mdx files.
+  - Checks:
+    - **Keyword Density**: Maintain keyword density between 0.5% and 2.5%.
+
+-  **Conclusion**
+  - Summarize the main points and provide a call to action.
+  - Checks:
+    - **Length**: Conclusion should be at least 30 words.
+
+-  **Grammar and Spelling**
+  - Ensure correct grammar and spelling throughout the article.
+  - Checks:
+    - **Spell Check**: Check for spelling errors.
+    - **Grammar Check**: Check for grammatical errors.

@@ -5,7 +5,11 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "react": "18.2.0"
+  },
   "devDependencies": {
+    "@types/react": "^18.2.20",
     "@openpanel/tsconfig": "workspace:*",
     "prisma": "^5.1.1",
     "typescript": "^5.2.2"

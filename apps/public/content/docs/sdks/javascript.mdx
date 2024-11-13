@@ -1,0 +1,140 @@
+---
+title: Javascript (Node / Generic)
+description: The OpenPanel Web SDK allows you to track user behavior on your website using a simple script tag. This guide provides instructions for installing and using the Web SDK in your project.
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+## Installation
+
+<Steps>
+### Step 1: Install
+
+```bash
+npm install @openpanel/sdk
+```
+
+### Step 2: Initialize
+
+```js filename="op.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+});
+```
+
+#### Options
+
+<CommonSdkConfig />
+
+### Step 3: Usage
+
+```js filename="main.ts"
+import { op } from './op.js';
+
+op.track('my_event', { foo: 'bar' });
+```
+</Steps>
+
+## Usage
+
+### Tracking Events
+
+You can track events with two different methods: by calling the `op.track( directly or by adding `data-track` attributes to your HTML elements.
+
+```ts filename="index.ts"
+import { op } from './op.ts';
+
+op.track('my_event', { foo: 'bar' });
+```
+
+### Identifying Users
+
+To identify a user, call the `op.identify( method with a unique identifier.
+
+```js filename="index.js"
+import { op } from './op.ts';
+
+op.identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+```
+
+### Setting Global Properties
+
+To set properties that will be sent with every event:
+
+```js filename="index.js"
+import { op } from './op.ts'
+
+op.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+```
+
+### Creating Aliases
+
+To create an alias for a user:
+
+```js filename="index.js"
+import { op } from './op.ts'
+
+op.alias({
+  alias: 'a1',
+  profileId: '1'
+});
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile.
+
+- `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
+
+```js filename="index.js"
+import { op } from './op.ts'
+
+op.increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile.
+
+- `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
+
+```js filename="index.js"
+import { op } from './op.ts'
+
+op.decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1 // optional
+});
+```
+
+### Clearing User Data
+
+To clear the current user's data:
+
+```js filename="index.js"
+import { op } from './op.ts'
+
+op.clear()
+```

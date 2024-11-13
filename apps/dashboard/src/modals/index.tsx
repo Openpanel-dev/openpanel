@@ -62,9 +62,6 @@ const modals = {
   VerifyEmail: dynamic(() => import('./VerifyEmail'), {
     loading: Loading,
   }),
-  FunnelStepDetails: dynamic(() => import('./FunnelStepDetails'), {
-    loading: Loading,
-  }),
   DateRangerPicker: dynamic(() => import('./DateRangerPicker'), {
     loading: Loading,
   }),

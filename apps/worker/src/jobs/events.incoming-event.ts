@@ -5,7 +5,7 @@ import { omit } from 'ramda';
 import { createSessionEnd, getSessionEnd } from '@/utils/session-handler';
 import { isSameDomain, parsePath } from '@openpanel/common';
 import { parseUserAgent } from '@openpanel/common/server';
-import type { IServiceCreateEventPayload } from '@openpanel/db';
+import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import { checkNotificationRulesForEvent, createEvent } from '@openpanel/db';
 import { getLastScreenViewFromProfileId } from '@openpanel/db';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
@@ -104,7 +104,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       : null;
 
     const payload = merge(omit(['properties'], event ?? {}), baseEvent);
-    return createEventAndNotify(payload);
+    return createEventAndNotify(payload as IServiceEvent);
   }
 
   const sessionEnd = await getSessionEnd({

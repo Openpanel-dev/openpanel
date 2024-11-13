@@ -1,67 +1,99 @@
-const api = {
-  logo: 'https://cdn-icons-png.flaticon.com/512/10169/10169724.png',
-  name: 'Rest API',
-  href: 'https://docs.openpanel.dev/docs/sdks/api',
-} as const;
+import type React from 'react';
+import { AstroIcon } from './icons/astro-icon';
+import { ExpressIcon } from './icons/express-icon';
+import { HtmlIcon } from './icons/html-icon';
+import { LaravelIcon } from './icons/laravel-icon';
+import { NextjsIcon } from './icons/nextjs-icon';
+import { NodeIcon } from './icons/node-icon';
+import { ReactIcon } from './icons/react-icon';
+import { RemixIcon } from './icons/remix-icon';
+import { RestIcon } from './icons/rest-icon';
+import { VueIcon } from './icons/vue-icon';
 
-export const frameworks = {
-  website: [
-    {
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/HTML5_logo_and_wordmark.svg/240px-HTML5_logo_and_wordmark.svg.png',
-      name: 'HTML / Script',
-      href: 'https://docs.openpanel.dev/docs/sdks/script',
-    },
-    {
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png',
-      name: 'React',
-      href: 'https://docs.openpanel.dev/docs/sdks/react',
-    },
-    {
-      logo: 'https://static-00.iconduck.com/assets.00/nextjs-icon-512x512-y563b8iq.png',
-      name: 'Next.js',
-      href: 'https://docs.openpanel.dev/docs/sdks/nextjs',
-    },
-    {
-      logo: 'https://www.datocms-assets.com/205/1642515307-square-logo.svg',
-      name: 'Remix',
-      href: 'https://docs.openpanel.dev/docs/sdks/remix',
-    },
-    {
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/Vue.js_Logo_2.svg/1024px-Vue.js_Logo_2.svg.png',
-      name: 'Vue',
-      href: 'https://docs.openpanel.dev/docs/sdks/vue',
-    },
-    {
-      logo: 'https://astro.build/assets/press/astro-icon-dark.png',
-      name: 'Astro',
-      href: 'https://docs.openpanel.dev/docs/sdks/astro',
-    },
-    api,
-  ],
-  app: [
-    {
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/2300px-React-icon.svg.png',
-      name: 'React-Native',
-      href: 'https://docs.openpanel.dev/docs/sdks/react-native',
-    },
-    api,
-  ],
-  backend: [
-    {
-      logo: 'https://static-00.iconduck.com/assets.00/node-js-icon-454x512-nztofx17.png',
-      name: 'Node',
-      href: 'https://docs.openpanel.dev/docs/sdks/node',
-    },
-    {
-      logo: 'https://expressjs.com/images/favicon.png',
-      name: 'Express',
-      href: 'https://docs.openpanel.dev/docs/sdks/express',
-    },
-    {
-      logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Laravel.svg/1969px-Laravel.svg.png',
-      name: 'Laravel',
-      href: 'https://github.com/tbleckert/openpanel-laravel/tree/main',
-    },
-    api,
-  ],
-} as const;
+export type Framework = {
+  key: string;
+  IconComponent: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  name: string;
+  href: string;
+  type: ('website' | 'app' | 'backend')[];
+};
+
+export const frameworks: Framework[] = [
+  {
+    key: 'html',
+    IconComponent: HtmlIcon,
+    name: 'HTML / Script',
+    href: 'https://openpanel.dev/docs/sdks/script',
+    type: ['website'],
+  },
+  {
+    key: 'react',
+    IconComponent: ReactIcon,
+    name: 'React',
+    href: 'https://openpanel.dev/docs/sdks/react',
+    type: ['website'],
+  },
+  {
+    key: 'nextjs',
+    IconComponent: NextjsIcon,
+    name: 'Next.js',
+    href: 'https://openpanel.dev/docs/sdks/nextjs',
+    type: ['website'],
+  },
+  {
+    key: 'remix',
+    IconComponent: RemixIcon,
+    name: 'Remix',
+    href: 'https://openpanel.dev/docs/sdks/remix',
+    type: ['website'],
+  },
+  {
+    key: 'vue',
+    IconComponent: VueIcon,
+    name: 'Vue',
+    href: 'https://openpanel.dev/docs/sdks/vue',
+    type: ['website'],
+  },
+  {
+    key: 'astro',
+    IconComponent: AstroIcon,
+    name: 'Astro',
+    href: 'https://openpanel.dev/docs/sdks/astro',
+    type: ['website'],
+  },
+  {
+    key: 'rest',
+    IconComponent: RestIcon,
+    name: 'Rest API',
+    href: 'https://openpanel.dev/docs/api/track',
+    type: ['backend', 'app', 'website'],
+  },
+  {
+    key: 'react-native',
+    IconComponent: ReactIcon,
+    name: 'React-Native',
+    href: 'https://openpanel.dev/docs/sdks/react-native',
+    type: ['app'],
+  },
+  {
+    key: 'node',
+    IconComponent: NodeIcon,
+    name: 'Node',
+    href: 'https://openpanel.dev/docs/sdks/javascript',
+    type: ['backend'],
+  },
+  {
+    key: 'express',
+    IconComponent: ExpressIcon,
+    name: 'Express',
+    href: 'https://openpanel.dev/docs/sdks/express',
+    type: ['backend'],
+  },
+  {
+    key: 'laravel',
+    IconComponent: LaravelIcon,
+    name: 'Laravel',
+    href: 'https://github.com/tbleckert/openpanel-laravel/tree/main',
+    type: ['backend'],
+  },
+];

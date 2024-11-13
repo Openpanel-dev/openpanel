@@ -1,0 +1,59 @@
+---
+title: Introduction
+description: The OpenPanel SDKs provide a set of core methods that allow you to track events, identify users, and more. Here's an overview of the key methods available in the SDKs.
+---
+
+<Callout>
+  While all OpenPanel SDKs share a common set of core methods, some may have
+  syntax variations or additional methods specific to their environment. This
+  documentation provides an overview of the base methods and available SDKs.
+</Callout>
+
+## Core Methods
+
+### Set global properties
+
+Sets global properties that will be included with every subsequent event.
+
+### Track
+
+Tracks a custom event with the given name and optional properties. 
+
+#### Tips
+
+You can identify the user directly with this method.
+
+```js filename="Example shown in JavaScript"
+track('your_event_name', {
+  foo: 'bar',
+  baz: 'qux',
+  // reserved property name
+  __identify: {
+    profileId: 'your_user_id', // required
+    email: 'your_user_email',
+    firstName: 'your_user_name',
+    lastName: 'your_user_name',
+    avatar: 'your_user_avatar',
+  }
+});
+```
+
+### Identify
+
+Associates the current user with a unique identifier and optional traits.
+
+### Alias
+
+Creates an alias for a user identifier.
+
+### Increment
+
+Increments a numeric property for a user.
+
+### Decrement
+
+Decrements a numeric property for a user.
+
+### Clear
+
+Clears the current user identifier and ends the session.

@@ -1,0 +1,115 @@
+---
+title: React Native
+---
+
+import Link from 'next/link';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+We're dependent on `expo-application` for `buildNumber`, `versionNumber` (and `referrer` on android) and `expo-constants` to get the `user-agent`.
+
+```bash
+npm install @openpanel/react-native
+npx expo install expo-application expo-constants
+```
+
+### Initialize
+
+On native we use a clientSecret to authenticate the app.
+
+```typescript
+const op = new Openpanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+```
+
+#### Options
+
+<CommonSdkConfig />
+</Steps>
+
+## Usage
+
+### Track event
+
+```typescript
+op.track('my_event', { foo: 'bar' });
+```
+
+### Navigation / Screen views
+
+<Tabs items={['expo-router', 'react-navigation (simple)']}>
+  <Tab value="expo-router">
+    ```typescript
+    import { usePathname, useSegments } from 'expo-router';
+
+    const op = new Openpanel({ /* ... */ })
+
+    function RootLayout() {
+      // ...
+      const pathname = usePathname()
+      // Segments is optional but can be nice to have if you
+      // want to group routes together
+      // pathname = /posts/123
+      // segements = ['posts', '[id]']
+      const segments = useSegments()
+
+      useEffect(() => {
+        // Simple
+        op.screenView(pathname)
+
+        // With extra data
+        op.screenView(pathname, {
+          // segments is optional but nice to have
+          segments: segments.join('/'),
+          // other optional data you want to send with the screen view
+        })
+      }, [pathname,segments])
+      // ...
+    }
+    ```
+
+  </Tab>
+  <Tab value="react-navigation (simple)">
+    ```tsx
+      import { createNavigationContainerRef } from '@react-navigation/native'
+      import { Openpanel } from '@openpanel/react-native'
+
+      const op = new Openpanel({ /* ... */ })
+      const navigationRef = createNavigationContainerRef()
+
+      export function NavigationRoot() {
+        const handleNavigationStateChange = () => {
+          const current = navigationRef.getCurrentRoute()
+          if (current) {
+            op.screenView(current.name, {
+              params: current.params,
+            })
+          }
+        }
+
+        return (
+          <NavigationContainer
+            ref={navigationRef}
+            onReady={handleNavigationStateChange}
+            onStateChange={handleNavigationStateChange}
+          >
+            <Stack.Navigator />
+          </NavigationContainer>
+        )
+      }
+    ```
+  </Tab>
+</Tabs>
+
+For more information on how to use the SDK, check out the [Javascript SDK](/docs/sdks/javascript#usage).

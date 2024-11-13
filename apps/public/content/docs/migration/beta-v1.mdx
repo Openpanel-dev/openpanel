@@ -1,0 +1,40 @@
+---
+title: Beta to V1
+description: We are happy to announce the release of `v1` of the Openpanel SDK. This release includes a lot of improvements and changes to the SDK. This guide will help you migrate from the `beta` version to the `v1` version.
+---
+
+## General
+
+The `Openpanel` class is now called `OpenPanel`!
+
+## Options
+
+- Renamed: `api` to `apiUrl`
+- Added: `disabled`
+- Added: `filter`
+
+## Methods
+- Renamed: `event` method is now called `track`
+- Renamed: `setProfile` and `setProfileId` is now called `identify` (and combined)
+- Changed: `increment('app_opened', 5)` is now `increment({ name: 'app_opened', value: 5, profileId: '123' })`. So profile ID is now required.
+- Changed: `decrement('app_opened', 5)` is now `decrement({ name: 'app_opened', value: 5, profileId: '123' })`. So profile ID is now required.
+- Improved: `screenView` method has 2 arguments now. This change is more aligned with `@openpanel/react-native`.
+```ts
+screenView(properties?: TrackProperties): void;
+screenView(path: string, properties?: TrackProperties): void;
+
+// Example
+op.screenView('/home', { title: 'Home' }); // path will be "/home"
+op.screenView({ title: 'Home' }); // path will be what ever window.location.pathname is
+```
+
+## Script tag
+
+- New: `https://openpanel.dev/op1.js` should be used instead of `op.js` (note the filename)
+- Renamed: Tracking with attributes have changed. Use `data-track="my_event"` instead of `data-event="my_event"`
+
+## @openpanel/nextjs
+
+- Renamed: `OpenpanelProvider` to `OpenPanelComponent`
+- Removed: All exported methods (trackEvent etc). Use the `useOpenPanel` hook instead since these are client tracking only
+- Moved: `createNextRouteHandler` is moved to `@openpanel/nextjs/server`

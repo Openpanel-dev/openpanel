@@ -1,0 +1,80 @@
+---
+title: Express
+description: The Express middleware is a basic wrapper around Javascript SDK. It provides a simple way to add the SDK to your Express application.
+---
+
+import Link from 'next/link';
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+## Installation
+
+```bash
+pnpm install @openpanel/express
+```
+
+## Usage
+
+The default export of `@openpanel/express` is a function that returns an Express middleware. It will also append the Openpanel SDK to the `req` object.
+
+You can access it via `req.op`.
+
+```ts
+import express from 'express';
+
+import createOpenpanelMiddleware from '@openpanel/express';
+
+const app = express();
+
+app.use(
+  createOpenpanelMiddleware({
+    clientId: 'xxx',
+    clientSecret: 'xxx',
+    // trackRequest(url) {
+    //   return url.includes('/v1')
+    // },
+    // getProfileId(req) {
+    //   return req.user.id
+    // }
+  })
+);
+
+app.get('/sign-up', (req, res) => {
+  // track sign up events
+  req.op.track('sign-up', {
+    email: req.body.email,
+  });
+  res.send('Hello World');
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000');
+});
+```
+
+### Options
+
+<CommonSdkConfig />
+
+#### Express options
+
+- `trackRequest` - A function that returns `true` if the request should be tracked.
+- `getProfileId` - A function that returns the profile ID of the user making the request.
+
+## Typescript
+
+If `req.op` is not typed you can extend the `Request` interface.
+
+```ts
+import { OpenPanel } from '@openpanel/express';
+
+declare global {
+  namespace Express {
+    export interface Request {
+      op: OpenPanel;
+    }
+  }
+}
+```
