@@ -16,7 +16,7 @@ const config = {
     '@openpanel/redis',
     '@openpanel/validation',
   ],
-  serverExternalPackages: ['@hyperdx/node-opentelemetry'],
+  serverExternalPackages: ['@hyperdx/node-opentelemetry', 'ioredis', 'bullmq'],
 };
 
 export default withMDX(config);

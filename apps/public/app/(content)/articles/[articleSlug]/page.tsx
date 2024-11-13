@@ -15,7 +15,7 @@ import Script from 'next/script';
 export async function generateMetadata({
   params,
 }: {
-  params: { articleSlug: string };
+  params: Promise<{ articleSlug: string }>;
 }): Promise<Metadata> {
   const { articleSlug } = await params;
   const article = await articleSource.getPage([articleSlug]);
@@ -55,7 +55,7 @@ export async function generateMetadata({
 export default async function Page({
   params,
 }: {
-  params: { articleSlug: string };
+  params: Promise<{ articleSlug: string }>;
 }) {
   const { articleSlug } = await params;
   const article = await articleSource.getPage([articleSlug]);
