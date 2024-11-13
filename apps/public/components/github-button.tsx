@@ -19,7 +19,7 @@ export function GithubButton() {
   // }, []);
   return (
     <Button variant={'secondary'} asChild>
-      <Link href="https://git.new/openpanel" className="hidden md:block">
+      <Link href="https://git.new/openpanel" className="hidden md:flex">
         <svg
           className="w-5 h-5"
           fill="currentColor"

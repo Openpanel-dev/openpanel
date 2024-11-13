@@ -85,7 +85,7 @@ const Navbar = () => {
               {/* Sign in button */}
               <Button asChild>
                 <Link
-                  className="hidden md:block"
+                  className="hidden md:flex"
                   href="https://dashboard.openpanel.dev/login"
                 >
                   Sign in
