@@ -51,10 +51,10 @@ export function TwitterCard({
         </div>
         <div className="col gap-1">
           <div className="col">
-            <div className="row gap-2 items-center">
+            <div className="">
               <span className="font-medium">{name}</span>
               {verified && (
-                <div className="relative">
+                <div className="relative inline-block top-0.5 ml-1">
                   <BadgeIcon className="size-4 fill-[#1D9BF0] text-[#1D9BF0]" />
                   <div className="absolute inset-0 center-center">
                     <CheckIcon className="size-2 text-white" strokeWidth={3} />

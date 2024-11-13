@@ -1,6 +1,7 @@
 'use client';
 
 import { useIsDarkMode } from '@/lib/dark-mode';
+import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
@@ -77,12 +78,12 @@ export function HeroCarousel() {
       label: 'Retention',
       Component: () => <Image src="retention" />,
     },
-    {
-      id: 'profile',
-      key: 'profile',
-      label: 'Inspect profile',
-      Component: () => <Image src="profile" />,
-    },
+    // {
+    //   id: 'profile',
+    //   key: 'profile',
+    //   label: 'Inspect profile',
+    //   Component: () => <Image src="profile" />,
+    // },
   ];
 
   const [activeFrames, setActiveFrames] = useState<Frame[]>([frames[0]]);
@@ -90,7 +91,7 @@ export function HeroCarousel() {
 
   return (
     <div className="col gap-6 w-full">
-      <div className="row gap-4 justify-center [&>div]:font-medium mt-1">
+      <div className="flex-wrap row gap-x-4 gap-y-2 justify-center [&>div]:font-medium mt-1">
         {frames.map((frame) => (
           <div key={frame.id} className="relative">
             <Button
@@ -130,7 +131,12 @@ export function HeroCarousel() {
       </div>
       <div className="pulled animated-iframe-gradient p-px pb-0 rounded-t-xl">
         <div className="overflow-hidden rounded-xl rounded-b-none w-full bg-background">
-          <div className="relative w-full h-[750px]">
+          <div
+            className={cn(
+              'relative w-full h-[750px]',
+              activeFrame.id !== 'overview' && 'h-auto aspect-[4/3]',
+            )}
+          >
             <AnimatePresence mode="popLayout" initial={false}>
               {activeFrames.slice(-2).map((frame) => (
                 <motion.div

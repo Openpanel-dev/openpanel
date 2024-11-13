@@ -120,7 +120,9 @@ export function Faq() {
       >
         {questions.map((q) => (
           <AccordionItem value={q.question} key={q.question}>
-            <AccordionTrigger>{q.question}</AccordionTrigger>
+            <AccordionTrigger className="text-left">
+              {q.question}
+            </AccordionTrigger>
             <AccordionContent>
               <div className="max-w-2xl col gap-2">
                 {q.answer.map((a) => (

@@ -73,15 +73,17 @@ export function ProfilesFeature() {
             key={profile.name + index.toString()}
             className="w-full flex-shrink-0 p-8"
           >
-            <div className="row items-center gap-4">
+            <div className="col md:row justify-center md:justify-start items-center gap-4">
               <img src={profile.avatar} className="size-32 rounded-full" />
               <div>
                 <div className="text-3xl font-semibold">{profile.name}</div>
-                <div className="text-muted-foreground">{profile.email}</div>
+                <div className="text-muted-foreground text-center md:text-left">
+                  {profile.email}
+                </div>
               </div>
             </div>
 
-            <div className="mt-8 grid grid-cols-2 gap-4">
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-lg border p-4 bg-background-light">
                 <div className="text-sm text-muted-foreground">First seen</div>
                 <div className="text-lg font-medium">

@@ -84,7 +84,10 @@ const Navbar = () => {
               <GithubButton />
               {/* Sign in button */}
               <Button asChild>
-                <Link href="https://dashboard.openpanel.dev/login">
+                <Link
+                  className="hidden md:block"
+                  href="https://dashboard.openpanel.dev/login"
+                >
                   Sign in
                 </Link>
               </Button>
@@ -120,6 +123,7 @@ const Navbar = () => {
                         key={link.url}
                         href={link.url!}
                         className="text-foreground/80 hover:text-foreground text-xl font-medium p-4 px-4"
+                        onClick={() => setIsMobileMenuOpen(false)}
                       >
                         {link.text}
                       </Link>
