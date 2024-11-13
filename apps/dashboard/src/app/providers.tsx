@@ -10,7 +10,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
-import type React from 'react';
 import { useRef, useState } from 'react';
 import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';

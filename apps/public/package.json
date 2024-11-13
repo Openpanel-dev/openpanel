@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm with-env next dev",
-    "build": "next build",
+    "build": "pnpm with-env next build",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
     "with-env": "dotenv -e ../../.env -c --"
@@ -29,7 +29,7 @@
     "fumadocs-ui": "14.1.1",
     "geist": "^1.3.1",
     "lucide-react": "^0.454.0",
-    "next": "15.0.1",
+    "next": "15.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "rehype-external-links": "^3.0.0",

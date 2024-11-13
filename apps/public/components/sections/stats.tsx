@@ -27,18 +27,7 @@ const getProjectsWithCount = cacheable(async function getProjectsWithCount() {
   return { projects, last24hCount: last24h[0]?.count || 0 };
 }, 60 * 60);
 
-export default Stats;
-export function Stats() {
-  return (
-    <Suspense
-      fallback={<StatsPure projectCount={0} eventCount={0} last24hCount={0} />}
-    >
-      <StatsServer />
-    </Suspense>
-  );
-}
-
-export async function StatsServer() {
+export async function Stats() {
   const { projects, last24hCount } = await getProjectsWithCount();
   const projectCount = projects.length;
   const eventCount = projects.reduce((acc, { count }) => acc + count, 0);

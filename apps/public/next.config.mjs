@@ -8,6 +8,9 @@ const config = {
   images: {
     domains: ['localhost', 'openpanel.dev'],
   },
+  // experimental: {
+  //   ppr: 'incremental', // does not work with hyperdx?!
+  // },
   transpilePackages: [
     '@openpanel/queue',
     '@openpanel/db',

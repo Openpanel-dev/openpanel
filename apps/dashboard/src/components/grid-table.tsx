@@ -1,5 +1,4 @@
 import { cn } from '@/utils/cn';
-import type React from 'react';
 
 export const Grid: React.FC<
   React.HTMLAttributes<HTMLDivElement> & { columns: number }

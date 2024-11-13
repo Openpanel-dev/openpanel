@@ -1,11 +1,7 @@
-import { ProjectLink } from '@/components/links';
-import { Tooltiper } from '@/components/ui/tooltip';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { max, min, sum } from '@openpanel/common';
-import { intervals } from '@openpanel/constants';
-import type React from 'react';
+import { max, min } from '@openpanel/common';
 import { useReportChartContext } from '../context';
 
 type CohortData = RouterOutputs['chart']['cohort'];

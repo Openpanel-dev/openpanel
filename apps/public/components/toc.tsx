@@ -1,7 +1,6 @@
 import type { TableOfContents } from 'fumadocs-core/server';
 import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
-import type React from 'react';
 
 interface Props {
   toc: TableOfContents;
