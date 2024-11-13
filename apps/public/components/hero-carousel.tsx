@@ -134,26 +134,16 @@ export function HeroCarousel() {
           <div
             className={cn(
               'relative w-full h-[750px]',
-              activeFrame.id !== 'overview' && 'h-auto aspect-[4/3]',
+              activeFrame.id !== 'overview' && 'h-auto aspect-[5/3]',
             )}
           >
-            <AnimatePresence mode="popLayout" initial={false}>
-              {activeFrames.slice(-2).map((frame) => (
-                <motion.div
-                  key={frame.key}
-                  layout
-                  className="absolute inset-0 w-full h-full"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5, ease: 'easeIn' }}
-                >
-                  <div className="bg-background rounded-xl h-full w-full">
-                    <frame.Component />
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+            {activeFrames.slice(-1).map((frame) => (
+              <div key={frame.key} className="absolute inset-0 w-full h-full">
+                <div className="bg-background rounded-xl h-full w-full">
+                  <frame.Component />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
