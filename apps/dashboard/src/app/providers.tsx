@@ -1,11 +1,13 @@
 'use client';
 
+import { NotificationProvider } from '@/components/notifications/notification-provider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
 import makeStore from '@/redux';
 import { api } from '@/trpc/client';
 import { ClerkProvider, useAuth } from '@clerk/nextjs';
+import { OpenPanelComponent } from '@openpanel/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
 import { ThemeProvider } from 'next-themes';
@@ -15,12 +17,7 @@ import { Provider as ReduxProvider } from 'react-redux';
 import { Toaster } from 'sonner';
 import superjson from 'superjson';
 
-import { NotificationProvider } from '@/components/notifications/notification-provider';
-import { OpenPanelComponent } from '@openpanel/nextjs';
-import { useSearchParams } from 'next/navigation';
-
 function AllProviders({ children }: { children: React.ReactNode }) {
-  const searchParams = useSearchParams();
   const { getToken } = useAuth();
   const [queryClient] = useState(
     () =>
@@ -60,16 +57,12 @@ function AllProviders({ children }: { children: React.ReactNode }) {
     storeRef.current = makeStore();
   }
 
-  const forcedTheme = searchParams.get('colorScheme');
-
   return (
     <ThemeProvider
       attribute="class"
       disableTransitionOnChange
       defaultTheme="system"
-      forcedTheme={
-        forcedTheme ? (forcedTheme === 'dark' ? 'dark' : 'light') : 'system'
-      }
+      forcedTheme={'system'}
     >
       {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
         <OpenPanelComponent
