@@ -60,11 +60,7 @@ export default async function Layout({ children }: { children: ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <body className={cn(GeistSans.variable, GeistMono.variable)}>
         <RootProvider>
-          <TooltipProvider>
-            <Navbar />
-            {children}
-            <Footer />
-          </TooltipProvider>
+          <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
       </body>
     </html>

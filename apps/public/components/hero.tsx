@@ -1,9 +1,10 @@
 import { cn } from '@/lib/utils';
+import { DollarSignIcon } from 'lucide-react';
 import Link from 'next/link';
 import { HeroCarousel } from './hero-carousel';
 import { HeroMap } from './hero-map';
+import { Tag } from './tag';
 import { Button } from './ui/button';
-import { WorldMap } from './world-map';
 
 export function Hero() {
   return (
@@ -13,7 +14,11 @@ export function Hero() {
 
       {/* Content */}
       <div className="container relative z-10">
-        <div className="max-w-2xl col gap-4 pt-28 text-center mx-auto ">
+        <div className="max-w-2xl col gap-4 pt-44 text-center mx-auto ">
+          <Tag className="self-center">
+            <DollarSignIcon className="size-4" />
+            Free during beta
+          </Tag>
           <h1 className="text-4xl md:text-6xl font-bold leading-[1.1]">
             An open-source alternative to <span>Mixpanel</span>
           </h1>
@@ -31,7 +36,7 @@ export function Hero() {
             </Link>
           </Button>
           <p className="text-sm text-muted-foreground">
-            Free for 30 days, no credit card required
+            Free trail for 30 days, no credit card required
           </p>
         </div>
 

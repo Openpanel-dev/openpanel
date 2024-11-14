@@ -194,7 +194,7 @@ export function EventsFeature() {
   return (
     <div className="overflow-hidden p-8 max-h-[700px]">
       <div
-        className="min-w-[1000px] gap-4 flex flex-col overflow-hidden relative isolate"
+        className="min-w-[500px] gap-4 flex flex-col overflow-hidden relative isolate"
         // style={{ height: 60 * TOTAL_EVENTS + 16 * (TOTAL_EVENTS - 1) }}
       >
         <AnimatePresence mode="popLayout" initial={false}>
@@ -228,7 +228,9 @@ export function EventsFeature() {
                 {event.location}
               </div>
               <div className="w-[150px] py-2 px-4 truncate">
-                <img src={getPlatformIcon(event.platform)} alt="" />
+                <span className="mr-2 text-xl relative top-px">
+                  {getPlatformIcon(event.platform)}
+                </span>
                 {event.platform}
               </div>
             </motion.div>

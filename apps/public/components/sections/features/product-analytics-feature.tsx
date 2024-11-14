@@ -38,25 +38,18 @@ const COHORT_DATA = [
   {
     week: 'Week 7',
     users: '2,108',
-    retention: [100, 82, 71, 65, 61, 57],
+    retention: [100, 82, 71, 65, 61],
   },
   {
     week: 'Week 8',
     users: '1,896',
-    retention: [100, 83, 72, 66, 62, 58],
+    retention: [100, 83, 72, 66],
   },
   {
     week: 'Week 9',
     users: '2,156',
-    retention: [100, 81, 70, 64, 60, 56],
+    retention: [100, 81, 70],
   },
-  { week: 'Week 10', users: '2,089', retention: [100, 84, 73, 67, 63] },
-  { week: 'Week 11', users: '1,967', retention: [100, 82, 71, 65] },
-  { week: 'Week 12', users: '2,198', retention: [100, 83, 72] },
-  { week: 'Week 13', users: '2,045', retention: [100, 81] },
-  // { week: 'Week 14', users: '1,978', retention: [100, 84, 73] },
-  // { week: 'Week 15', users: '2,134', retention: [100, 82] },
-  // { week: 'Week 16', users: '1,923', retention: [100] },
 ];
 const COHORT_DATA_ALT = [
   {
@@ -92,25 +85,18 @@ const COHORT_DATA_ALT = [
   {
     week: 'Week 7',
     users: '2,432',
-    retention: [100, 93, 88, 72, 64, 60],
+    retention: [100, 93, 88, 72, 64],
   },
   {
     week: 'Week 8',
     users: '2,123',
-    retention: [100, 78, 76, 69, 65, 61],
+    retention: [100, 78, 76, 69],
   },
   {
     week: 'Week 9',
     users: '2,567',
-    retention: [100, 70, 64, 61, 59, 58],
+    retention: [100, 70, 64],
   },
-  { week: 'Week 10', users: '2,345', retention: [100, 88, 77, 71, 67] },
-  { week: 'Week 11', users: '2,234', retention: [100, 86, 75, 69] },
-  { week: 'Week 12', users: '2,543', retention: [100, 79, 76] },
-  { week: 'Week 13', users: '2,321', retention: [100, 77] },
-  // { week: 'Week 14', users: '1,978', retention: [100, 84, 73] },
-  // { week: 'Week 15', users: '2,134', retention: [100, 82] },
-  // { week: 'Week 16', users: '1,923', retention: [100] },
 ];
 
 function RetentionCell({ percentage }: { percentage: number }) {

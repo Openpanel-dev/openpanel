@@ -12,7 +12,6 @@ import { Logo } from './logo';
 import { Button } from './ui/button';
 
 const Navbar = () => {
-  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navbarRef = useRef<HTMLDivElement>(null);
@@ -35,10 +34,6 @@ const Navbar = () => {
     window.addEventListener('click', handleClick);
     return () => window.removeEventListener('click', handleClick);
   }, [isMobileMenuOpen]);
-
-  if (pathname.startsWith('/docs')) {
-    return null;
-  }
 
   return (
     <nav className="fixed top-4 z-50 w-full" ref={navbarRef}>

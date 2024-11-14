@@ -9,12 +9,16 @@ export default function Layout({
   children: ReactNode;
 }): React.ReactElement {
   return (
-    <main className="overflow-hidden">
-      <HeroContainer className="h-screen pointer-events-none" />
-      <div className="absolute h-screen inset-0 radial-gradient-dot-pages select-none pointer-events-none" />
-      <div className="-mt-[calc(100vh-100px)] relative min-h-[500px] pb-12">
-        {children}
-      </div>
-    </main>
+    <>
+      <Navbar />
+      <main className="overflow-hidden">
+        <HeroContainer className="h-screen pointer-events-none" />
+        <div className="absolute h-screen inset-0 radial-gradient-dot-pages select-none pointer-events-none" />
+        <div className="-mt-[calc(100vh-100px)] relative min-h-[500px] pb-12">
+          {children}
+        </div>
+      </main>
+      <Footer />
+    </>
   );
 }

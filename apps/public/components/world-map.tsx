@@ -58,17 +58,37 @@ const COORDINATES = [
   { lat: -43.532, lng: 172.6306 }, // Christchurch, New Zealand
 ];
 
+const getRandomCoordinates = (count: number) => {
+  const shuffled = [...COORDINATES].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+};
+
 export function WorldMap() {
-  const [visiblePins, setVisiblePins] = useState<typeof COORDINATES>([]);
+  const [visiblePins, setVisiblePins] = useState<typeof COORDINATES>([
+    { lat: 61.2181, lng: -149.9003 },
+    { lat: 31.2304, lng: 121.4737 },
+    { lat: 59.5613, lng: 150.8086 },
+    { lat: 64.8378, lng: -147.7164 },
+    { lat: -33.8688, lng: 151.2093 },
+    { lat: 43.0621, lng: 141.3544 },
+    { lat: 58.3019, lng: -134.4197 },
+    { lat: 37.5665, lng: 126.978 },
+    { lat: -41.2865, lng: 174.7762 },
+    { lat: -36.8485, lng: 174.7633 },
+    { lat: -31.9505, lng: 115.8605 },
+    { lat: 35.6762, lng: 139.6503 },
+    { lat: 49.2827, lng: -123.1207 },
+    { lat: -12.4634, lng: 130.8456 },
+    { lat: 56.1304, lng: 101.614 },
+    { lat: 22.3193, lng: 114.1694 },
+    { lat: 55.3422, lng: -131.6461 },
+    { lat: 32.7157, lng: -117.1611 },
+    { lat: 61.5815, lng: -149.444 },
+    { lat: 60.5544, lng: -151.2583 },
+  ]);
   const activePinColor = '#2265EC';
   const inactivePinColor = '#818181';
   const visiblePinsCount = 20;
-
-  // Helper function to get random coordinates
-  const getRandomCoordinates = (count: number) => {
-    const shuffled = [...COORDINATES].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
-  };
 
   // Helper function to update pins
   const updatePins = () => {
@@ -97,16 +117,13 @@ export function WorldMap() {
   };
 
   useEffect(() => {
-    // Initial pins
-    setVisiblePins(getRandomCoordinates(10));
-
     // Update pins every 4 seconds
-    const interval = setInterval(updatePins, 2000);
+    const interval = setInterval(updatePins, 4000);
     return () => clearInterval(interval);
   }, []);
 
   const map = useMemo(() => {
-    const map = new DottedMap({ map: JSON.parse(mapJsonString) });
+    const map = new DottedMap({ map: mapJsonString as any });
 
     visiblePins.forEach((coord) => {
       map.addPin({

@@ -1,9 +1,8 @@
 'use client';
 
-import { useIsDarkMode } from '@/lib/dark-mode';
 import { cn } from '@/lib/utils';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useState } from 'react';
 import { Button } from './ui/button';
 
 type Frame = {
@@ -14,22 +13,11 @@ type Frame = {
 };
 
 function LivePreview() {
-  const isDark = useIsDarkMode();
-  const colorScheme = isDark ? 'dark' : 'light';
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    setLoaded(true);
-  }, []);
-
-  if (!loaded) {
-    return null;
-  }
-
   return (
     <iframe
-      // src={`http://localhost:3000/share/overview/zef2XC?header=0&range=30d&colorScheme=${colorScheme}`}
-      src={`https://dashboard.openpanel.dev/share/overview/zef2XC?header=0&range=30d&colorScheme=${colorScheme}`}
+      src={
+        'https://dashboard.openpanel.dev/share/overview/zef2XC?header=0&range=30d'
+      }
       className="w-full h-full"
       title="Live preview"
       scrolling="no"
@@ -38,15 +26,17 @@ function LivePreview() {
 }
 
 function Image({ src }: { src: string }) {
-  const isDark = useIsDarkMode();
-  const colorScheme = isDark ? 'dark' : 'light';
-
   return (
     <div>
       <img
-        className="w-full  h-full"
-        src={`/${src}-${colorScheme}.png`}
-        alt={src}
+        className="w-full  h-full block dark:hidden"
+        src={`/${src}-light.png`}
+        alt={`${src} light`}
+      />
+      <img
+        className="w-full  h-full hidden dark:block"
+        src={`/${src}-dark.png`}
+        alt={`${src} dark`}
       />
     </div>
   );
@@ -78,12 +68,12 @@ export function HeroCarousel() {
       label: 'Retention',
       Component: () => <Image src="retention" />,
     },
-    // {
-    //   id: 'profile',
-    //   key: 'profile',
-    //   label: 'Inspect profile',
-    //   Component: () => <Image src="profile" />,
-    // },
+    {
+      id: 'profile',
+      key: 'profile',
+      label: 'Inspect profile',
+      Component: () => <Image src="profile" />,
+    },
   ];
 
   const [activeFrames, setActiveFrames] = useState<Frame[]>([frames[0]]);
