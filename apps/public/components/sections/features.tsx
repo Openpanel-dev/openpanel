@@ -170,7 +170,10 @@ export function Features() {
                 'We offer a cloud version of the platform, but you can also self-host it on your own infrastructure.',
               ]}
             />
-            <FeatureMore href="#" className="mt-4 -mb-4">
+            <FeatureMore
+              href="/docs/self-hosting/self-hosting"
+              className="mt-4 -mb-4"
+            >
               More about self-hosting
             </FeatureMore>
           </Feature>
