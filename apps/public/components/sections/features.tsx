@@ -155,7 +155,8 @@ export function Features() {
               icon={<DatabaseIcon className="size-8" strokeWidth={1} />}
               title="Own your own data"
               content={[
-                'Own your data, no vendor lock-in. Export your all your data or delete it any time',
+                'Own your data, no vendor lock-in. Export all your data with our export API.',
+                'Self-host it on your own infrastructure to have complete control.',
               ]}
             />
           </Feature>
