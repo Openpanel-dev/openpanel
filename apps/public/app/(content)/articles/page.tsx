@@ -35,7 +35,7 @@ export default async function Page() {
         <div className="py-16">
           <h1 className="text-center text-7xl font-bold">Articles</h1>
         </div>
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {articles.map((item) => (
             <Link
               href={item.url}
@@ -47,6 +47,7 @@ export default async function Page() {
                 alt={item.data.title}
                 width={323}
                 height={181}
+                className="w-full"
               />
               <span className="p-4 col flex-1">
                 {item.data.tag && (

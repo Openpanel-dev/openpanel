@@ -29,10 +29,10 @@ const Slider = ({
   step: number;
   onValueChange: (value: number[]) => void;
 }) => {
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isMobile = useMediaQuery('(max-width: 768px)');
   return (
     <>
-      {!isDesktop && (
+      {isMobile && (
         <div className="text-sm text-muted-foreground mb-4">{tooltip}</div>
       )}
       <SliderPrimitive.Root
@@ -46,7 +46,7 @@ const Slider = ({
         <SliderPrimitive.Track className="relative h-2 w-full grow overflow-hidden rounded-full bg-white/10">
           <SliderPrimitive.Range className="absolute h-full bg-white/90" />
         </SliderPrimitive.Track>
-        {tooltip && isDesktop ? (
+        {tooltip && !isMobile ? (
           <Tooltip open disableHoverableContent>
             <TooltipTrigger asChild>
               <SliderPrimitive.Thumb className="block h-5 w-5 rounded-full border-2 border-white bg-black ring-offset-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
