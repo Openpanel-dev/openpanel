@@ -1,0 +1,187 @@
+---
+title: Python
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+The OpenPanel Python SDK allows you to track user behavior in your Python applications. This guide provides instructions for installing and using the Python SDK in your project.
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+```bash
+pip install openpanel
+```
+
+### Initialize
+
+Import and initialize the OpenPanel SDK with your credentials:
+
+```python
+from openpanel import OpenPanel
+
+op = OpenPanel(
+    client_id="YOUR_CLIENT_ID",
+    client_secret="YOUR_CLIENT_SECRET"
+)
+```
+
+### Configuration Options
+
+<CommonSdkConfig />
+
+Additional Python-specific options:
+
+- `filter` - A function that will be called before tracking an event. If it returns false the event will not be tracked
+- `disabled` - Set to `True` to disable all event tracking
+- `global_properties` - Dictionary of properties that will be sent with every event
+
+#### Filter Function Example
+
+```python
+def my_filter(event):
+    # Skip events named 'my_event'
+    return event.get('name') != 'my_event'
+
+op = OpenPanel(
+    client_id="YOUR_CLIENT_ID",
+    client_secret="YOUR_CLIENT_SECRET",
+    filter=my_filter
+)
+```
+
+</Steps>
+
+## Usage
+
+### Tracking Events
+
+To track an event, use the `track` method:
+
+```python
+# Track a simple event
+op.track("button_clicked")
+
+# Track with properties
+op.track("purchase_completed", {
+    "product_id": "123",
+    "price": 99.99,
+    "currency": "USD"
+})
+
+# Track for a specific user
+op.track("login_successful", {
+    "method": "google"
+}, profile_id="user_123")
+```
+
+### Identifying Users
+
+To identify a user, use the `identify` method:
+
+```python
+op.identify({
+    "profile_id": "123",  # Required
+    "first_name": "Joe",
+    "last_name": "Doe",
+    "email": "joe@doe.com",
+    "properties": {
+        "tier": "premium",
+        "company": "Acme Inc"
+    }
+})
+```
+
+### Setting Global Properties
+
+To set properties that will be sent with every event:
+
+```python
+op.set_global_properties({
+    "app_version": "1.0.2",
+    "environment": "production",
+    "deployment": "us-east-1"
+})
+```
+
+### Creating Aliases
+
+To create an alias for a user:
+
+```python
+op.alias({
+    "alias": "a1",
+    "profile_id": "1"
+})
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile:
+
+```python
+op.increment({
+    "profile_id": "1",
+    "property": "visits",
+    "value": 1  # optional, defaults to 1
+})
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile:
+
+```python
+op.decrement({
+    "profile_id": "1",
+    "property": "credits",
+    "value": 1  # optional, defaults to 1
+})
+```
+
+### Clearing User Data
+
+To clear the current user's data:
+
+```python
+op.clear()
+```
+
+## Advanced Usage
+
+### Thread Safety
+
+<Callout>
+The OpenPanel SDK is thread-safe. You can safely use a single instance across multiple threads in your application.
+</Callout>
+
+### Error Handling
+
+The SDK includes built-in error handling and will not raise exceptions during normal operation. However, you can wrap SDK calls in try-except blocks for additional safety:
+
+```python
+try:
+    op.track("important_event", {"critical": True})
+except Exception as e:
+    logger.error(f"Failed to track event: {e}")
+```
+
+### Disabling Tracking
+
+You can temporarily disable all tracking:
+
+```python
+# Disable during initialization
+op = OpenPanel(
+    client_id="YOUR_CLIENT_ID",
+    client_secret="YOUR_CLIENT_SECRET",
+    disabled=True
+)
+
+# Or disable after initialization
+op.disabled = True
+```
