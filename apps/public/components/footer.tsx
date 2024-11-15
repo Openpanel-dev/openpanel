@@ -27,9 +27,12 @@ export function Footer() {
         </div>
       </section>
 
-      <footer className="container py-32 text-sm">
-        <div className="grid grid-cols-1 md:grid-cols-8 gap-12 md:gap-8">
-          <div className="md:col-span-2">
+      <footer className="pt-32 text-sm relative overflow-hidden">
+        <div className="absolute -bottom-20 md:-bottom-32 left-0 right-0 center-center opacity-5 pointer-events-none">
+          <Logo className="w-[900px] shrink-0" />
+        </div>
+        <div className="container grid grid-cols-1 md:grid-cols-5 gap-12 md:gap-8 relative">
+          <div>
             <Link href="/" className="row items-center font-medium">
               <Logo className="h-6" />
               {baseOptions.nav?.title}
@@ -51,8 +54,8 @@ export function Footer() {
             </ul>
           </div>
 
-          <div className="col gap-3">
-            {/* <h3 className="font-medium">Company</h3>
+          {/* <div className="col gap-3">
+            <h3 className="font-medium">Company</h3>
             <ul className="gap-2 col text-muted-foreground">
               <li>
                 <Link href="/about">About</Link>
@@ -60,10 +63,10 @@ export function Footer() {
               <li>
                 <Link href="/contact">Contact</Link>
               </li>
-            </ul> */}
-          </div>
+            </ul> 
+          </div> */}
 
-          <div className="col gap-3 md:col-span-2">
+          <div className="col gap-3 ">
             <h3 className="font-medium">Comparisons</h3>
             <ul className="gap-2 col text-muted-foreground">
               <li>
@@ -72,7 +75,7 @@ export function Footer() {
             </ul>
           </div>
 
-          <div className="md:col-span-2 items-end col gap-4">
+          <div className="md:col-span-2 md:items-end col gap-4">
             <div className="[&_svg]:size-6 row gap-4">
               <Link
                 title="Go to GitHub"
@@ -121,7 +124,7 @@ export function Footer() {
             <a
               target="_blank"
               href="https://status.openpanel.dev"
-              className="row gap-2 items-center border rounded-full px-2 py-1"
+              className="row gap-2 items-center border rounded-full px-2 py-1 max-md:self-start"
               rel="noreferrer"
             >
               <span>Operational</span>
@@ -130,12 +133,15 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="col md:row justify-between text-muted-foreground border-t pt-4 mt-16 gap-8">
-          <div>Copyright © 2024 OpenPanel. All rights reserved.</div>
-          <div className="col lg:row gap-2 md:gap-4">
-            <Link href="/privacy">Privacy Policy</Link>
-            <Link href="/terms">Terms of Service</Link>
-            <Link href="/cookies">Cookie Policy (just kidding)</Link>
+        <div className="text-muted-foreground border-t pt-4 mt-16 gap-8 relative bg-background/70 pb-32">
+          <div className="container col md:row justify-between">
+            <div>Copyright © 2024 OpenPanel. All rights reserved.</div>
+            <div className="col lg:row gap-2 md:gap-4">
+              <Link href="/sitemap.xml">Sitemap</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/cookies">Cookie Policy (just kidding)</Link>
+            </div>
           </div>
         </div>
       </footer>

@@ -8,7 +8,7 @@ interface Props {
 
 export const Toc: React.FC<Props> = ({ toc }) => {
   return (
-    <nav className="bg-background-light border rounded-lg pb-2 min-w-[280px]">
+    <nav className="bg-background-light border rounded-lg pb-2 w-[280px]">
       <span className="block font-medium p-4 pb-2">Table of contents</span>
       <ul>
         {toc.map((item) => (

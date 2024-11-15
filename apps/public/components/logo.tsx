@@ -3,12 +3,10 @@ import { cn } from '@/lib/utils';
 export function Logo({ className }: { className?: string }) {
   return (
     <svg
-      width="61"
-      height="35"
       viewBox="0 0 61 35"
       xmlns="http://www.w3.org/2000/svg"
       fill="currentColor"
-      className={cn('text-black dark:text-white', className)}
+      className={cn('text-black dark:text-white w-16', className)}
     >
       <rect
         x="34.0269"

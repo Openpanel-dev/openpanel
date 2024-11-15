@@ -1,0 +1,236 @@
+---
+title: How to secure your Ubuntu server
+description: Learn essential steps to secure your Ubuntu server, including user management, firewall configuration, SSH hardening, and best practices for maintaining a robust security posture.
+tag: Hosting
+team: OpenPanel Team
+date: 2024-11-14
+cover: /content/secure-server.jpg
+---
+
+Securing your Ubuntu server is one of the most important things to do when you have your own server (VPS). There are a ton of horror stories about people who have had their servers hacked and data stolen.
+
+Security is a broad and hard topic to cover and usually the best way in for hackers is actually not from your servers but rather your software (your code).
+
+In this article, we'll cover some basic steps to secure your Ubuntu server.
+
+## 1. Update your system
+
+Keep always your system up to date. This can be done with a simple command:
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+
+## 2. Create a new user
+
+Create a new user with sudo privilages. By doing this you can manage your server without giving full root access to your server. But for this to be secure, you should also disable root login over SSH.
+
+```bash
+sudo adduser <username>
+sudo usermod -aG sudo <username>
+```
+
+## 3. Secure your SSH
+
+Securing your SSH is like securing your front door. You want to make sure it's always locked and only accessible to people you trust. Since SSH is how you access your server, you want to make sure it's as secure as possible. 
+
+We'll disable root login and only allow access with ssh keys.
+
+```bash
+sudo nano /etc/ssh/sshd_config
+```
+
+Find the line that says `PermitRootLogin yes` and change it to `PermitRootLogin no`.
+
+Also find or add these lines to disable password authentication and only allow SSH keys:
+
+```bash
+PasswordAuthentication no
+PubkeyAuthentication yes
+```
+
+Then restart the SSH service:
+
+```bash
+sudo systemctl restart ssh
+```
+
+### 3.1 Change SSH port
+
+You can change the SSH port to make it harder to brute force your server.
+
+### 3.2 Add fail2ban
+
+Fail2ban is a tool that can help you protect your server from brute force attacks. It works by monitoring your SSH logs and banning IPs that show suspicious activity. With this and a good ssh key you should be pretty safe.
+
+```bash
+sudo apt install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+```
+
+### 3.3 Two factor authentication
+
+Adding two factor authentication is a good idea. There are many tools for this, but a simple one is Google Authenticator. You can install it with this command:
+
+```bash
+sudo apt install -y libpam-google-authenticator
+sudo sed -i 's/^#*\s*KbdInteractiveAuthentication\s.*$/KbdInteractiveAuthentication yes/' /etc/ssh/sshd_config
+sudo echo 'AuthenticationMethods publickey,password publickey,keyboard-interactive' | sudo tee -a /etc/ssh/sshd_config
+echo "auth required pam_google_authenticator.so" | sudo tee -a /etc/pam.d/sshd
+echo "auth required pam_permit.so" | sudo tee -a /etc/pam.d/sshd
+sudo sed -i '/^@include common-auth/s/^/#/' /etc/pam.d/sshd
+sudo runuser -l "CHANGE_THIS_TO_YOUR_USERNAME" -c 'google-authenticator -t -d -f -r 3 -R 30 -W'
+sudo systemctl restart ssh
+```
+
+## Enable your firewall
+
+This maybe goes without saying, but you should always enable a firewall and only allow traffic on the ports you need.
+
+**Common ports**
+
+- SSH: 22
+- HTTP: 80
+- HTTPS: 443
+- FTP: 21
+- SFTP: 2222
+
+```bash
+sudo ufw enable
+sudo ufw allow OpenSSH # Allow SSH
+sudo ufw allow 80,443/tcp; # Allow HTTP and HTTPS traffic
+```
+
+## Easy to use code snippet
+
+Create a file called `secure.sh` and add the code below. Then run it with `sudo bash secure.sh`. It'll prompt you for a username and generate a password and SSH key for you.
+
+```bash
+#!/bin/bash
+
+# Update and upgrade system
+echo "Updating and upgrading the system..."
+sudo apt update && sudo apt upgrade -y
+
+# Install necessary packages
+echo "Installing necessary packages..."
+sudo apt install -y whois  # For mkpasswd
+sudo apt install -y libpam-google-authenticator fail2ban ufw
+
+# Create a new user with sudo access
+read -p "Enter the new username: " username
+if id "$username" &>/dev/null; then
+    echo "User $username already exists!"
+    exit 1
+else
+    # Generate a random password
+    password=$(openssl rand -base64 12)
+
+    # Create the user and assign the password
+    sudo adduser --gecos "" "$username" --disabled-password
+    echo "$username:$password" | sudo chpasswd
+    sudo usermod -aG sudo "$username"
+    echo "User $username created with sudo access."
+    echo "Generated password for $username: $password"
+
+    # Generate SSH key for the new user
+    sudo -u "$username" mkdir -p /home/"$username"/.ssh
+    sudo -u "$username" ssh-keygen -t rsa -b 4096 -f /home/"$username"/.ssh/id_rsa -q -N ""
+    echo "SSH key generated for $username."
+    
+    # Copy the existing authorized_keys from root or initial user to the new user's .ssh directory
+    if [ -f /root/.ssh/authorized_keys ]; then
+        sudo cp /root/.ssh/authorized_keys /home/"$username"/.ssh/
+    fi
+    sudo chown -R "$username":"$username" /home/"$username"/.ssh
+    if [ -f /home/"$username"/.ssh/authorized_keys ]; then
+		    sudo chmod 600 /home/"$username"/.ssh/authorized_keys
+		fi
+    echo "Authorized keys copied to new user's .ssh directory."
+
+    # Outputs the public key
+    public_key=$(cat /home/"$username"/.ssh/id_rsa.pub)
+fi
+
+# Set up SSH to use keys only (disable password login)
+echo "Configuring SSH to use keys only..."
+sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
+sudo sed -ri 's/^(#)?PasswordAuthentication\s+.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+sudo sed -ri 's/^(#)?PermitRootLogin\s+.*/PermitRootLogin no/' /etc/ssh/sshd_config
+# Enables Google Authenticator
+sudo sed -i 's/^#*\s*KbdInteractiveAuthentication\s.*$/KbdInteractiveAuthentication yes/' /etc/ssh/sshd_config
+sudo echo 'AuthenticationMethods publickey,password publickey,keyboard-interactive' | sudo tee -a /etc/ssh/sshd_config
+sudo systemctl restart ssh
+
+# Enable and configure the firewall
+echo "Enabling and configuring the firewall..."
+sudo ufw allow OpenSSH
+# sudo ufw allow 80,443,3000,996,7946,4789,2377/tcp; 
+# sudo ufw allow 7946,4789,2377/udp;
+sudo ufw allow 80,443,3000/tcp; 
+sudo ufw enable
+
+# Configure Google Authenticator
+echo "Configuring Google Authenticator for the user..."
+sudo cp /etc/pam.d/sshd /etc/pam.d/sshd.bak
+echo "auth required pam_google_authenticator.so" | sudo tee -a /etc/pam.d/sshd
+echo "auth required pam_permit.so" | sudo tee -a /etc/pam.d/sshd
+sudo sed -i '/^@include common-auth/s/^/#/' /etc/pam.d/sshd
+sudo runuser -l "$username" -c 'google-authenticator -t -d -f -r 3 -R 30 -W'
+sudo systemctl restart ssh
+
+# Configure Fail2Ban
+echo "Configuring Fail2Ban..."
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
+
+# Check if Docker is installed
+if ! command -v docker &> /dev/null
+then
+    echo "Docker is not installed. Installing Docker..."
+    # Install required packages
+    sudo apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+        apt-transport-https
+    # Add Docker’s official GPG key
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    # Set Up Docker’s Stable Repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    # Update the package index
+    sudo apt update
+    # Install Docker
+    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    # Check if Docker is running
+    sudo systemctl is-active docker
+    # Add current user to the Docker group
+    sudo usermod -aG docker $USER
+    sudo usermod -aG docker $username
+		# Check if the script is being run interactively, then change group without needing re-login
+		if tty -s; then
+		    newgrp docker
+		fi
+    echo "Docker installed successfully."
+else
+    echo "Docker is already installed."
+fi
+
+echo "Server security enhancement is complete."
+echo ""
+echo "------------"
+echo "Host:       $(hostname)"
+echo "Username:   $username"
+echo "Password:   $password"
+echo "------------"
+echo "Public key: $public_key"
+echo "------------"
+echo "2FA:        $(cat /home/"$username"/.google_authenticator)"
+echo "------------"
+```
+
+## Conclusion
+
+This is a good starting point to secure your Ubuntu server. There are many more things you can do to secure your server, but this should give you a good foundation.

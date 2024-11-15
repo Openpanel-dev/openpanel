@@ -198,3 +198,19 @@ strong {
 h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
   font-size: inherit !important;
 }
+
+.prose pre {
+  background: hsl(var(--background-dark));
+  border: 1px solid hsl(var(--background-light));
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+  border: none;
+}

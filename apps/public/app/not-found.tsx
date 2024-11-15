@@ -12,6 +12,7 @@ export default function NotFound({
 }): React.ReactElement {
   return (
     <div>
+      <Navbar />
       <HeroContainer className="h-screen center-center">
         <div className="relative z-10 col gap-2">
           <div className="text-[150px] font-mono font-bold opacity-5 -mb-4">
@@ -23,6 +24,7 @@ export default function NotFound({
           </p>
         </div>
       </HeroContainer>
+      <Footer />
     </div>
   );
 }
