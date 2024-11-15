@@ -62,7 +62,6 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       attribute="class"
       disableTransitionOnChange
       defaultTheme="system"
-      forcedTheme={'system'}
     >
       {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
         <OpenPanelComponent
