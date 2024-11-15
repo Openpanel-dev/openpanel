@@ -1,11 +1,9 @@
-import './global.css';
 import { RootProvider } from 'fumadocs-ui/provider';
 import type { ReactNode } from 'react';
+import './global.css';
 
-import { Footer } from '@/components/footer';
-import Navbar from '@/components/navbar';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { getGithubRepoInfo } from '@/lib/github';
+import { OpenPanelComponent } from '@openpanel/nextjs';
 import { cn } from 'fumadocs-ui/components/api';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
@@ -62,6 +60,12 @@ export default async function Layout({ children }: { children: ReactNode }) {
         <RootProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
+        <OpenPanelComponent
+          clientId="301c6dc1-424c-4bc3-9886-a8beab09b615"
+          trackAttributes
+          trackScreenViews
+          trackOutgoingLinks
+        />
       </body>
     </html>
   );

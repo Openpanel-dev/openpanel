@@ -521,6 +521,9 @@ importers:
       '@openpanel/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@openpanel/nextjs':
+        specifier: ^1.0.5
+        version: 1.0.5(next@15.0.3)(react-dom@18.3.1)(react@18.3.1)
       '@openpanel/redis':
         specifier: workspace:*
         version: link:../../packages/redis
@@ -5212,12 +5215,31 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
+  /@openpanel/nextjs@1.0.5(next@15.0.3)(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-+Zdrl5fC8Iczub/pVvX8Xp9q6mQvApNXGenCEkdiAZk9nT7xpaLfzkdHnwx7XHxp5H50zdwgqWDGiwLMqRWjKA==}
+    peerDependencies:
+      next: ^12.0.0 || ^13.0.0 || ^14.0.0
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      '@openpanel/web': 1.0.1
+      next: 15.0.3(@opentelemetry/api@1.8.0)(react-dom@18.3.1)(react@18.3.1)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+    dev: false
+
   /@openpanel/sdk@1.0.0:
     resolution: {integrity: sha512-FNmmfjdXoC/VHEjA+WkrQ4lyM5lxEmV7xDd57uj4E+lIS0sU3DLG2mV/dpS8AscnZbUvuMn3kPhiLCqYzuv/gg==}
     dev: false
 
   /@openpanel/web@1.0.0:
     resolution: {integrity: sha512-ipY5hYWWrzPDwi1BtzyNn1d+Ly1gjujpmLvqO6oMKOhbNT8CwV9dIObZjyhzckaSMS8qYII9pLDIU1HCRysEDg==}
+    dependencies:
+      '@openpanel/sdk': 1.0.0
+    dev: false
+
+  /@openpanel/web@1.0.1:
+    resolution: {integrity: sha512-cVZ7Kr9SicczJ/RDIfEtZs8+1iGDzwkabVA/j3NqSl8VSucsC8m1+LVbjmCDzCJNnK4yVn6tEcc9PJRi2rtllw==}
     dependencies:
       '@openpanel/sdk': 1.0.0
     dev: false
