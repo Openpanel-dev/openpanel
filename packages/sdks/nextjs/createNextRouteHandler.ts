@@ -1,4 +1,6 @@
-import { NextResponse } from 'next/server';
+// adding .js next/script import fixes an issues
+// with esm and nextjs (when using pages dir)
+import { NextResponse } from 'next/server.js';
 
 export function createNextRouteHandler({
   apiUrl = 'https://api.openpanel.dev',

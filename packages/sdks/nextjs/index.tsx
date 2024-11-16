@@ -1,4 +1,6 @@
-import Script from 'next/script';
+// adding .js next/script import fixes an issues
+// with esm and nextjs (when using pages dir)
+import Script from 'next/script.js';
 import React from 'react';
 
 import type {

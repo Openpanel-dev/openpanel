@@ -149,8 +149,6 @@ const updatePackageJsonForRelease = (
     ),
   };
 
-  if (name === '@openpanel/nextjs') delete newPkgJson.type;
-
   savePackageJson(workspacePath(`${localPath}/package.json`), newPkgJson);
   packages[name]!.dependencies = newPkgJson.dependencies;
 };
