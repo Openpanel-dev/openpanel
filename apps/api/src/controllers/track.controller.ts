@@ -273,7 +273,7 @@ async function identify({
   geo: GeoLocation;
   ua?: string;
 }) {
-  const uaInfo = parseUserAgent(ua);
+  const uaInfo = parseUserAgent(ua, payload.properties);
   await upsertProfile({
     ...payload,
     id: payload.profileId,

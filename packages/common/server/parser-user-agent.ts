@@ -68,7 +68,10 @@ const parse = (ua: string): UAParser.IResult => {
   return res;
 };
 
-export function parseUserAgent(ua?: string | null) {
+export function parseUserAgent(
+  ua?: string | null,
+  overrides?: Record<string, unknown>,
+) {
   if (!ua) return parsedServerUa;
   const res = parse(ua);
 
@@ -77,13 +80,13 @@ export function parseUserAgent(ua?: string | null) {
   }
 
   return {
-    os: res.os.name,
-    osVersion: res.os.version,
-    browser: res.browser.name,
-    browserVersion: res.browser.version,
-    device: res.device.type ?? getDevice(ua),
-    brand: res.device.vendor,
-    model: res.device.model,
+    os: overrides?.__os || res.os.name,
+    osVersion: overrides?.__osVersion || res.os.version,
+    browser: overrides?.__browser || res.browser.name,
+    browserVersion: overrides?.__browserVersion || res.browser.version,
+    device: overrides?.__device || res.device.type || getDevice(ua),
+    brand: overrides?.__brand || res.device.vendor,
+    model: overrides?.__model || res.device.model,
     isServer: false,
   } as const;
 }

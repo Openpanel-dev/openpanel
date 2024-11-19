@@ -59,7 +59,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   const userAgent = headers['user-agent'];
   const sdkName = headers['openpanel-sdk-name'];
   const sdkVersion = headers['openpanel-sdk-version'];
-  const uaInfo = parseUserAgent(userAgent);
+  const uaInfo = parseUserAgent(userAgent, properties);
 
   const baseEvent = {
     name: body.name,
@@ -121,7 +121,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     referrer: sessionEnd.payload?.referrer,
     referrerName: sessionEnd.payload?.referrerName,
     referrerType: sessionEnd.payload?.referrerType,
-  });
+  }) as IServiceCreateEventPayload
 
   if (sessionEnd.notFound) {
     await createSessionEnd({ payload });

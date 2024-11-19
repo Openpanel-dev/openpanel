@@ -19,7 +19,7 @@ export async function updateProfile(
   const projectId = request.projectId;
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
-  const uaInfo = parseUserAgent(ua);
+  const uaInfo = parseUserAgent(ua, properties);
   const geo = await parseIp(ip);
 
   await upsertProfile({
