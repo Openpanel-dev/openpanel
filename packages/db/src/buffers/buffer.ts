@@ -119,6 +119,7 @@ export class RedisBuffer<T> {
     const result = await getRedisCache()
       .multi()
       .lrange(this.getKey(), 0, -1)
+      .lrange(this.getKey('backup'), 0, -1)
       .del(this.getKey())
       .exec();
 
@@ -128,8 +129,9 @@ export class RedisBuffer<T> {
       });
       throw new Error('Redis transaction failed');
     }
-
+    
     const lrange = result[0];
+    const lrangePrevious = result[1];
 
     if (!lrange || lrange[0] instanceof Error) {
       this.logger.error('Error from lrange', {
@@ -139,10 +141,20 @@ export class RedisBuffer<T> {
     }
 
     const items = lrange[1] as string[];
+    if (lrangePrevious && lrangePrevious[0] === null && Array.isArray(lrangePrevious[1])) {
+      items.push(...(lrangePrevious[1] as string[]));
+    }
 
     const parsedItems = items
       .map((item) => getSafeJson<T | null>(item) as T | null)
       .filter((item): item is T => item !== null);
+
+    if (parsedItems.length > 0) {
+      await getRedisCache().lpush(
+        this.getKey('backup'),
+        ...parsedItems.map((item) => JSON.stringify(item)),
+      );
+    }
 
     if (parsedItems.length === 0) {
       this.logger.debug('No items to flush');
@@ -166,6 +178,9 @@ export class RedisBuffer<T> {
           ...toKeep.map((item) => JSON.stringify(item)),
         );
       }
+
+      // Clear backup
+      await getRedisCache().del(this.getKey('backup'));
 
       this.logger.info(
         `Inserted ${toInsert.length} items into DB, kept ${toKeep.length} items in buffer`,
