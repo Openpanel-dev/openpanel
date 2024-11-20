@@ -131,42 +131,37 @@ async function start() {
     });
   });
 
-  async function exitHandler(evtOrExitCodeOrError: number | string | Error) {
+  async function exitHandler(
+    eventName: string,
+    evtOrExitCodeOrError: number | string | Error,
+  ) {
+    logger.info('Starting graceful shutdown', {
+      code: evtOrExitCodeOrError,
+      eventName,
+    });
     try {
-      await eventsWorker.close();
-      await sessionsWorker.close();
-      await cronWorker.close();
+      await Promise.all([
+        cronWorker.close(),
+        eventsWorker.close(),
+        sessionsWorker.close(),
+        notificationWorker.close(),
+      ]);
+      logger.info('workers closed successfully');
     } catch (e) {
       logger.error('exit handler error', {
         code: evtOrExitCodeOrError,
         error: e,
       });
     }
-
-    process.exit(
-      Number.isNaN(+evtOrExitCodeOrError) ? 1 : +evtOrExitCodeOrError,
-    );
+    const exitCode = Number.isNaN(+evtOrExitCodeOrError)
+      ? 1
+      : +evtOrExitCodeOrError;
+    process.exit(exitCode);
   }
 
-  [
-    'beforeExit',
-    'uncaughtException',
-    'unhandledRejection',
-    'SIGHUP',
-    'SIGINT',
-    'SIGQUIT',
-    'SIGILL',
-    'SIGTRAP',
-    'SIGABRT',
-    'SIGBUS',
-    'SIGFPE',
-    'SIGUSR1',
-    'SIGSEGV',
-    'SIGUSR2',
-    'SIGTERM',
-  ].forEach((evt) =>
-    process.on(evt, (evt) => {
-      exitHandler(evt);
+  ['uncaughtException', 'unhandledRejection', 'SIGTERM'].forEach((evt) =>
+    process.on(evt, (code) => {
+      exitHandler(evt, code);
     }),
   );
 
