@@ -13,14 +13,14 @@ import SideEffects from './side-effects';
 interface AppLayoutProps {
   children: React.ReactNode;
   params: {
-    organizationId: string;
+    organizationSlug: string;
     projectId: string;
   };
 }
 
 export default async function AppLayout({
   children,
-  params: { organizationId, projectId },
+  params: { organizationSlug: organizationId, projectId },
 }: AppLayoutProps) {
   const [organizations, projects, dashboards] = await Promise.all([
     getCurrentOrganizations(),

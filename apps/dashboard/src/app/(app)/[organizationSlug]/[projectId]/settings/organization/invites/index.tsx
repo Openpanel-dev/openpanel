@@ -6,10 +6,10 @@ import { getInvites, getProjectsByOrganizationId } from '@openpanel/db';
 import CreateInvite from './create-invite';
 
 interface Props {
-  organizationId: string;
+  organizationSlug: string;
 }
 
-const InvitesServer = async ({ organizationId }: Props) => {
+const InvitesServer = async ({ organizationSlug: organizationId }: Props) => {
   const [invites, projects] = await Promise.all([
     getInvites(organizationId),
     getProjectsByOrganizationId(organizationId),

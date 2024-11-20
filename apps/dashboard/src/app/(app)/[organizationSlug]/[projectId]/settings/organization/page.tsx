@@ -14,13 +14,13 @@ import MembersServer from './members';
 
 interface PageProps {
   params: {
-    organizationId: string;
+    organizationSlug: string;
   };
   searchParams: Record<string, string>;
 }
 
 export default async function Page({
-  params: { organizationId },
+  params: { organizationSlug: organizationId },
   searchParams,
 }: PageProps) {
   const tab = parseAsStringEnum(['org', 'members', 'invites'])

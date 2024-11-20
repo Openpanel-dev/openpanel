@@ -8,17 +8,20 @@ import { getCurrentOrganizations, getCurrentProjects } from '@openpanel/db';
 
 interface PageProps {
   params: {
-    organizationId: string;
+    organizationSlug: string;
   };
 }
 
-export default async function Page({ params: { organizationId } }: PageProps) {
+export default async function Page({
+  params: { organizationSlug: organizationId },
+}: PageProps) {
   const [organizations, projects] = await Promise.all([
     getCurrentOrganizations(),
     getCurrentProjects(organizationId),
   ]);
 
   const organization = organizations.find((org) => org.id === organizationId);
+  console.log(organizations, organizationId, projects);
 
   if (!organization) {
     return (
