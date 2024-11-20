@@ -8,13 +8,13 @@ import { TABLE_NAMES, chQuery } from '@openpanel/db';
 import { ChartSSR } from '../chart-ssr';
 import { FadeIn } from '../fade-in';
 
-function ProjectCard({ id, name, organizationSlug }: IServiceProject) {
+function ProjectCard({ id, name, organizationId }: IServiceProject) {
   // For some unknown reason I get when navigating back to this page when using <Link />
   // Should be solved: https://github.com/vercel/next.js/issues/61336
   // But still get the error
   return (
     <a
-      href={`/${organizationSlug}/${id}`}
+      href={`/${organizationId}/${id}`}
       className="card inline-flex flex-col gap-2 p-4 transition-transform hover:-translate-y-1"
     >
       <div className="font-medium">{name}</div>

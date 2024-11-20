@@ -1,18 +1,18 @@
 import { TableButtons } from '@/components/data-table';
 import { InvitesTable } from '@/components/settings/invites';
 
-import { getInvites, getProjectsByOrganizationSlug } from '@openpanel/db';
+import { getInvites, getProjectsByOrganizationId } from '@openpanel/db';
 
 import CreateInvite from './create-invite';
 
 interface Props {
-  organizationSlug: string;
+  organizationId: string;
 }
 
-const InvitesServer = async ({ organizationSlug }: Props) => {
+const InvitesServer = async ({ organizationId }: Props) => {
   const [invites, projects] = await Promise.all([
-    getInvites(organizationSlug),
-    getProjectsByOrganizationSlug(organizationSlug),
+    getInvites(organizationId),
+    getProjectsByOrganizationId(organizationId),
   ]);
 
   return (

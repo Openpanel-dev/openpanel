@@ -74,13 +74,12 @@ model Member {
 }
 
 model Project {
-  id               String        @id @default(dbgenerated("gen_random_uuid()"))
-  name             String
-  organizationSlug String
-  organization     Organization? @relation(fields: [organizationId], references: [id])
-  organizationId   String?
-  eventsCount      Int           @default(0)
-  types            ProjectType[] @default([])
+  id             String        @id @default(dbgenerated("gen_random_uuid()"))
+  name           String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organizationId String
+  eventsCount    Int           @default(0)
+  types          ProjectType[] @default([])
 
   events     Event[]
   profiles   Profile[]
@@ -108,17 +107,16 @@ enum AccessLevel {
 }
 
 model ProjectAccess {
-  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId        String
-  project          Project       @relation(fields: [projectId], references: [id])
-  organizationSlug String
-  organization     Organization? @relation(fields: [organizationId], references: [id])
-  organizationId   String?
-  userId           String
-  user             User          @relation(fields: [userId], references: [id])
-  level            AccessLevel
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @default(now()) @updatedAt
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  level          AccessLevel
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
 
   @@map("project_access")
 }
@@ -169,17 +167,16 @@ enum ClientType {
 }
 
 model Client {
-  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  secret           String?
-  type             ClientType    @default(write)
-  projectId        String?
-  project          Project?      @relation(fields: [projectId], references: [id])
-  organizationSlug String
-  organization     Organization? @relation(fields: [organizationId], references: [id])
-  organizationId   String?
-  cors             String?
-  crossDomain      Boolean       @default(false)
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  secret         String?
+  type           ClientType   @default(write)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  cors           String?
+  crossDomain    Boolean      @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -208,14 +205,13 @@ enum ChartType {
 }
 
 model Dashboard {
-  id               String        @id @default(dbgenerated("gen_random_uuid()"))
-  name             String
-  organizationSlug String
-  organization     Organization? @relation(fields: [organizationId], references: [id])
-  organizationId   String?
-  projectId        String
-  project          Project       @relation(fields: [projectId], references: [id])
-  reports          Report[]
+  id             String       @id @default(dbgenerated("gen_random_uuid()"))
+  name           String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id])
+  reports        Report[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -269,16 +265,15 @@ model Waitlist {
 }
 
 model ShareOverview {
-  id               String        @unique
-  projectId        String        @unique
-  project          Project       @relation(fields: [projectId], references: [id])
-  organizationSlug String
-  organization     Organization? @relation(fields: [organizationId], references: [id])
-  organizationId   String?
-  public           Boolean       @default(false)
-  password         String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @default(now()) @updatedAt
+  id             String       @unique
+  projectId      String       @unique
+  project        Project      @relation(fields: [projectId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  organizationId String
+  public         Boolean      @default(false)
+  password       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
 
   @@map("shares")
 }

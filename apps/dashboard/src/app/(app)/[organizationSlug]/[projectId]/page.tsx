@@ -13,7 +13,6 @@ import { OverviewReportRange } from './overview-sticky-header';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
     projectId: string;
   };
 }

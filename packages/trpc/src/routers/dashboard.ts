@@ -50,7 +50,6 @@ export const dashboardRouter = createTRPCRouter({
         data: {
           id: await getId('dashboard', input.name),
           projectId: input.projectId,
-          organizationSlug: project.organizationId!,
           organizationId: project.organizationId,
           name: input.name,
         },

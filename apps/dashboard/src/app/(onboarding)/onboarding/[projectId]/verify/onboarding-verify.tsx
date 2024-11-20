@@ -72,7 +72,7 @@ const Verify = ({ project, events }: Props) => {
         <div className="flex items-center gap-8">
           {!verified && (
             <Link
-              href={`/${project.organizationSlug}/${project.id}`}
+              href={`/${project.organizationId}/${project.id}`}
               className=" text-muted-foreground underline"
             >
               Skip for now

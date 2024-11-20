@@ -18,8 +18,8 @@ type Props = {
 
 const Verify = async ({ params: { projectId } }: Props) => {
   const orgs = await getCurrentOrganizations();
-  const organizationSlug = orgs[0]?.id;
-  if (!organizationSlug) {
+  const organizationId = orgs[0]?.id;
+  if (!organizationId) {
     throw new Error('No organization found');
   }
   const [project, events] = await Promise.all([

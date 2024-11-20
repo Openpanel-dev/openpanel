@@ -66,10 +66,10 @@ export async function getOrganizationByProjectId(projectId: string) {
   return transformOrganization(project.organization);
 }
 
-export async function getInvites(organizationSlug: string) {
+export async function getInvites(organizationId: string) {
   return db.member.findMany({
     where: {
-      organizationId: organizationSlug,
+      organizationId,
       userId: null,
     },
     include: {
@@ -78,11 +78,11 @@ export async function getInvites(organizationSlug: string) {
   });
 }
 
-export async function getMembers(organizationSlug: string) {
+export async function getMembers(organizationId: string) {
   const [members, access] = await Promise.all([
     db.member.findMany({
       where: {
-        organizationId: organizationSlug,
+        organizationId,
         userId: {
           not: null,
         },
@@ -93,7 +93,7 @@ export async function getMembers(organizationSlug: string) {
     }),
     db.projectAccess.findMany({
       where: {
-        organizationSlug,
+        organizationId,
       },
     }),
   ]);
@@ -104,10 +104,10 @@ export async function getMembers(organizationSlug: string) {
   }));
 }
 
-export async function getMember(organizationSlug: string, userId: string) {
+export async function getMember(organizationId: string, userId: string) {
   return db.member.findFirst({
     where: {
-      organizationId: organizationSlug,
+      organizationId,
       userId,
     },
   });

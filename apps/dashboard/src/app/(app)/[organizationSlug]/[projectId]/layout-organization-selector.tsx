@@ -18,7 +18,7 @@ export default function LayoutOrganizationSelector({
   const router = useRouter();
 
   const organization = organizations.find(
-    (item) => item.id === params.organizationSlug,
+    (item) => item.id === params.organizationId,
   );
 
   return (

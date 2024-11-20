@@ -4,7 +4,6 @@ import ListReferences from './list-references';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
     projectId: string;
   };
 }

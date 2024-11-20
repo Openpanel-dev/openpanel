@@ -1,9 +1,7 @@
 import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
 import { OverviewReportRange } from '@/app/(app)/[organizationSlug]/[projectId]/overview-sticky-header';
-import { Logo } from '@/components/logo';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import ServerLiveCounter from '@/components/overview/live-counter';
-import { OverviewLiveHistogram } from '@/components/overview/overview-live-histogram';
 import OverviewMetrics from '@/components/overview/overview-metrics';
 import OverviewTopDevices from '@/components/overview/overview-top-devices';
 import OverviewTopEvents from '@/components/overview/overview-top-events';
@@ -35,7 +33,7 @@ export default async function Page({
     return notFound();
   }
   const projectId = share.projectId;
-  const organization = await getOrganizationBySlug(share.organizationSlug);
+  const organization = await getOrganizationBySlug(share.organizationId);
 
   return (
     <div>

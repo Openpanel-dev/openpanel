@@ -13,8 +13,8 @@ async function createOrGetOrganization(
   input: z.infer<typeof zOnboardingProject>,
   userId: string,
 ) {
-  if (input.organizationSlug) {
-    return await getOrganizationBySlug(input.organizationSlug);
+  if (input.organizationId) {
+    return await getOrganizationBySlug(input.organizationId);
   }
 
   if (input.organization) {
@@ -92,7 +92,6 @@ export const onboardingRouter = createTRPCRouter({
         data: {
           id: await getId('project', input.project),
           name: input.project,
-          organizationSlug: organization.id,
           organizationId: organization.id,
           types,
         },
@@ -102,7 +101,6 @@ export const onboardingRouter = createTRPCRouter({
       const client = await db.client.create({
         data: {
           name: `${project.name} Client`,
-          organizationSlug: organization.id,
           organizationId: organization.id,
           projectId: project.id,
           type: 'write',

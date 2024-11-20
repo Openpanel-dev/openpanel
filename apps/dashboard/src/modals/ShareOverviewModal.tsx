@@ -20,7 +20,7 @@ const validator = zShareOverview;
 type IForm = z.infer<typeof validator>;
 
 export default function ShareOverviewModal() {
-  const { projectId, organizationSlug } = useAppParams();
+  const { projectId, organizationId } = useAppParams();
   const router = useRouter();
 
   const { register, handleSubmit, control } = useForm<IForm>({
@@ -29,7 +29,7 @@ export default function ShareOverviewModal() {
       public: true,
       password: '',
       projectId,
-      organizationSlug,
+      organizationId,
     },
   });
 

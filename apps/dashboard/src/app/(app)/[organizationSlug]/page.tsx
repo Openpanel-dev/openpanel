@@ -8,19 +8,17 @@ import { getCurrentOrganizations, getCurrentProjects } from '@openpanel/db';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
+    organizationId: string;
   };
 }
 
-export default async function Page({
-  params: { organizationSlug },
-}: PageProps) {
+export default async function Page({ params: { organizationId } }: PageProps) {
   const [organizations, projects] = await Promise.all([
     getCurrentOrganizations(),
-    getCurrentProjects(organizationSlug),
+    getCurrentProjects(organizationId),
   ]);
 
-  const organization = organizations.find((org) => org.id === organizationSlug);
+  const organization = organizations.find((org) => org.id === organizationId);
 
   if (!organization) {
     return (
@@ -35,7 +33,7 @@ export default async function Page({
   }
 
   if (projects.length === 1 && projects[0]) {
-    return redirect(`/${organizationSlug}/${projects[0].id}`);
+    return redirect(`/${organizationId}/${projects[0].id}`);
   }
 
   return (

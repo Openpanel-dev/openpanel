@@ -54,7 +54,6 @@ export async function POST(request: Request) {
           data: access
             .filter((a) => typeof a === 'string')
             .map((projectId) => ({
-              organizationSlug: membership.organizationId,
               organizationId: membership.organizationId,
               projectId: projectId,
               userId: user.id,
@@ -72,7 +71,6 @@ export async function POST(request: Request) {
         data: access
           .filter((a): a is string => typeof a === 'string')
           .map((projectId) => ({
-            organizationSlug: payload.data.organization.slug,
             organizationId: payload.data.organization.slug,
             projectId: projectId,
             userId: payload.data.public_user_data.user_id,
@@ -110,7 +108,7 @@ export async function POST(request: Request) {
   if (payload.type === 'organizationMembership.deleted') {
     await db.projectAccess.deleteMany({
       where: {
-        organizationSlug: payload.data.organization.slug,
+        organizationId: payload.data.organization.slug,
         userId: payload.data.public_user_data.user_id,
       },
     });

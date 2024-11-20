@@ -7,7 +7,6 @@ import { ListReports } from './list-reports';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
     projectId: string;
     dashboardId: string;
   };

@@ -17,8 +17,7 @@ export const shareRouter = createTRPCRouter({
         },
         create: {
           id: uid.rnd(),
-          organizationSlug: input.organizationSlug,
-          organizationId: input.organizationSlug,
+          organizationId: input.organizationId,
           projectId: input.projectId,
           public: input.public,
           password: input.password || null,

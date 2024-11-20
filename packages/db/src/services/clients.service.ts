@@ -8,10 +8,10 @@ export type IServiceClientWithProject = Prisma.ClientGetPayload<{
   };
 }>;
 
-export async function getClientsByOrganizationSlug(organizationSlug: string) {
+export async function getClientsByOrganizationId(organizationId: string) {
   return db.client.findMany({
     where: {
-      organizationSlug,
+      organizationId,
     },
     include: {
       project: true,

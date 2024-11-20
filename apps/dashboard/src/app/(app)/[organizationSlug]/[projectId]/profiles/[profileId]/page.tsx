@@ -1,5 +1,4 @@
 import ClickToCopy from '@/components/click-to-copy';
-import { ListPropertiesIcon } from '@/components/events/list-properties-icon';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { Padding } from '@/components/ui/padding';
 import { getProfileName } from '@/utils/getters';
@@ -16,7 +15,6 @@ import ProfileMetrics from './profile-metrics';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
     projectId: string;
     profileId: string;
   };

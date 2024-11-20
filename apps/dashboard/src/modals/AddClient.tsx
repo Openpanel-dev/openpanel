@@ -39,7 +39,7 @@ interface Props {
   projectId: string;
 }
 export default function AddClient(props: Props) {
-  const { organizationSlug, projectId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const router = useRouter();
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
@@ -60,7 +60,7 @@ export default function AddClient(props: Props) {
     },
   });
   const query = api.project.list.useQuery({
-    organizationSlug,
+    organizationId,
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
     if (hasDomain && values.cors === '') {
@@ -73,7 +73,7 @@ export default function AddClient(props: Props) {
       name: values.name,
       cors: hasDomain ? values.cors : null,
       projectId: values.projectId,
-      organizationSlug,
+      organizationId,
       type: values.type,
       crossDomain: values.crossDomain,
     });
