@@ -30,15 +30,17 @@ jobs:
           base: 'main'
           filters: |
             api:
-              - '**'
               - 'apps/api/**'
               - 'packages/**'
+              - '.github/workflows/**'
             worker:
               - 'apps/worker/**'
               - 'packages/**'
+              - '.github/workflows/**'
             public:
               - 'apps/public/**'
               - 'packages/**'
+              - '.github/workflows/**'
 
   lint-and-test:
     needs: changes
@@ -85,7 +87,6 @@ jobs:
 
   build-and-push-api:
     permissions:
-      contents: read
       packages: write
     needs: [changes, lint-and-test]
     if: ${{ needs.changes.outputs.api == 'true' }}
@@ -96,11 +97,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        # with:
-        #   driver-opts: |
-        #     image=moby/buildkit:latest
-        #     network=host
-        #   buildkitd-flags: --allow-insecure-entitlement security.insecure --allow-insecure-entitlement network.host
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -122,54 +118,37 @@ jobs:
             ghcr.io/${{ env.repo_owner }}/api:${{ github.sha }}
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+  
+  build-and-push-worker:
+    permissions:
+      packages: write
+    needs: [changes, lint-and-test]
+    if: ${{ needs.changes.outputs.worker == 'true' }}
+    runs-on: ubuntu-latest
+    steps:          
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-  # build-and-push-worker:
-  #   needs: changes
-  #   if: ${{ needs.changes.outputs.worker == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Log in to GitHub Container Registry
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Build and push Docker image
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: .
-  #         file: apps/worker/Dockerfile
-  #         push: true
-  #         tags: |
-  #           ghcr.io/${{ env.repo_owner }}/worker:latest
-  #           ghcr.io/${{ env.repo_owner }}/worker:${{ github.sha }}
-
-  # build-and-push-public:
-  #   needs: changes
-  #   if: ${{ needs.changes.outputs.public == 'true' }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-
-  #     - name: Log in to GitHub Container Registry
-  #       uses: docker/login-action@v3
-  #       with:
-  #         registry: ghcr.io
-  #         username: ${{ github.actor }}
-  #         password: ${{ secrets.GITHUB_TOKEN }}
-
-  #     - name: Build and push Docker image
-  #       uses: docker/build-push-action@v5
-  #       with:
-  #         context: .
-  #         file: apps/public/Dockerfile
-  #         push: true
-  #         tags: |
-  #           ghcr.io/${{ env.repo_owner }}/public:latest
-  #           ghcr.io/${{ env.repo_owner }}/public:${{ github.sha }}
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/worker/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ env.repo_owner }}/worker:latest
+            ghcr.io/${{ env.repo_owner }}/worker:${{ github.sha }}
+          build-args: |
+            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
