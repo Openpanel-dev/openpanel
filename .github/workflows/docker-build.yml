@@ -54,8 +54,6 @@ jobs:
           
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 8
           
       - name: Get pnpm store directory
         shell: bash
