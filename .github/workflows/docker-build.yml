@@ -2,7 +2,7 @@ name: Docker Build and Push
 
 on:
   push:
-    branches: [ "feature/ci" ]  # or your default branch
+    branches: [ "main" ]
     paths:
       - 'apps/api/**'
       - 'apps/worker/**'
