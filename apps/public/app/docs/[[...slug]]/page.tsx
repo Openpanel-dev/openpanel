@@ -1,12 +1,13 @@
+import { url, siteName } from '@/app/layout.config';
 import { source } from '@/lib/source';
+import defaultMdxComponents from 'fumadocs-ui/mdx';
 import {
-  DocsPage,
   DocsBody,
   DocsDescription,
+  DocsPage,
   DocsTitle,
 } from 'fumadocs-ui/page';
 import { notFound } from 'next/navigation';
-import defaultMdxComponents from 'fumadocs-ui/mdx';
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -42,5 +43,25 @@ export async function generateMetadata(props: {
   return {
     title: page.data.title,
     description: page.data.description,
+    alternates: {
+      canonical: url(page.url),
+    },
+    icons: {
+      apple: '/apple-touch-icon.png',
+      icon: '/favicon.ico',
+    },
+    manifest: '/site.webmanifest',
+    openGraph: {
+      url: url(page.url),
+      type: 'article',
+      images: [
+        {
+          url: url('/ogimage.jpg'),
+          width: 1200,
+          height: 630,
+          alt: siteName,
+        },
+      ],
+    },
   };
 }
