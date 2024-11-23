@@ -245,30 +245,30 @@ export async function getEvents(
 ): Promise<IServiceEvent[]> {
   const events = await chQuery<IClickhouseEvent>(sql);
   const projectId = events[0]?.project_id;
-  if (options.profile && projectId) {
-    const ids = events.map((e) => e.profile_id);
-    const profiles = await getProfiles(ids, projectId);
+  const [meta, profiles] = await Promise.all([
+    options.meta && projectId
+      ? db.eventMeta.findMany({
+          where: {
+            name: {
+              in: uniq(events.map((e) => e.name)),
+            },
+          },
+        })
+      : null,
+    options.profile && projectId
+      ? getProfiles(uniq(events.map((e) => e.profile_id)), projectId)
+      : null,
+  ]);
 
-    for (const event of events) {
+  for (const event of events) {
+    if (profiles) {
       event.profile = profiles.find((p) => p.id === event.profile_id);
     }
-  }
-
-  if (options.meta && projectId) {
-    const names = uniq(events.map((e) => e.name));
-    const metas = await db.eventMeta.findMany({
-      where: {
-        name: {
-          in: names,
-        },
-        projectId,
-      },
-      select: options.meta === true ? undefined : options.meta,
-    });
-    for (const event of events) {
-      event.meta = metas.find((m) => m.name === event.name);
+    if (meta) {
+      event.meta = meta.find((m) => m.name === event.name);
     }
   }
+
   return events.map(transformEvent);
 }
 
@@ -477,7 +477,7 @@ export async function getEventList({
   }
 
   if (profileId) {
-    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
   }
 
   if (startDate && endDate) {

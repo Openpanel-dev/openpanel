@@ -13,9 +13,9 @@ import {
   subYears,
 } from 'date-fns';
 import * as mathjs from 'mathjs';
-import { last, pluck, repeat, reverse, uniq } from 'ramda';
-import { escape } from 'sqlstring';
+import { pluck, uniq } from 'ramda';
 
+import type { ISerieDataItem } from '@openpanel/common';
 import {
   average,
   completeSerie,
@@ -26,17 +26,8 @@ import {
   slug,
   sum,
 } from '@openpanel/common';
-import type { ISerieDataItem } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
-import {
-  TABLE_NAMES,
-  chQuery,
-  createSqlBuilder,
-  formatClickhouseDate,
-  getChartSql,
-  getEventFiltersWhereClause,
-  getProfiles,
-} from '@openpanel/db';
+import { chQuery, getChartSql } from '@openpanel/db';
 import type {
   FinalChart,
   IChartEvent,
@@ -241,28 +232,6 @@ export function getDatesFromRange(range: IChartRange) {
   };
 }
 
-function fillFunnel(funnel: { level: number; count: number }[], steps: number) {
-  const filled = Array.from({ length: steps }, (_, index) => {
-    const level = index + 1;
-    const matchingResult = funnel.find((res) => res.level === level);
-    return {
-      level,
-      count: matchingResult ? matchingResult.count : 0,
-    };
-  });
-
-  // Accumulate counts from top to bottom of the funnel
-  for (let i = filled.length - 1; i >= 0; i--) {
-    const step = filled[i];
-    const prevStep = filled[i + 1];
-    // If there's a previous step, add the count to the current step
-    if (step && prevStep) {
-      step.count += prevStep.count;
-    }
-  }
-  return filled.reverse();
-}
-
 export function getChartStartEndDate({
   startDate,
   endDate,
@@ -286,147 +255,6 @@ export function getChartPrevStartEndDate({
     startDate: formatISO(subMilliseconds(new Date(startDate), diff - 1)),
     endDate: formatISO(subMilliseconds(new Date(endDate), diff - 1)),
   };
-}
-
-export async function getFunnelData({
-  projectId,
-  startDate,
-  endDate,
-  ...payload
-}: IChartInput) {
-  const funnelWindow = (payload.funnelWindow || 24) * 3600;
-  const funnelGroup = payload.funnelGroup || 'session_id';
-
-  if (!startDate || !endDate) {
-    throw new Error('startDate and endDate are required');
-  }
-
-  if (payload.events.length === 0) {
-    return {
-      totalSessions: 0,
-      steps: [],
-    };
-  }
-
-  const funnels = payload.events.map((event) => {
-    const { sb, getWhere } = createSqlBuilder();
-    sb.where = getEventFiltersWhereClause(event.filters);
-    sb.where.name = `name = ${escape(event.name)}`;
-    return getWhere().replace('WHERE ', '');
-  });
-
-  const innerSql = `SELECT
-    ${funnelGroup},
-    windowFunnel(${funnelWindow}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
-  FROM ${TABLE_NAMES.events}
-  WHERE 
-    project_id = ${escape(projectId)} AND 
-    created_at >= '${formatClickhouseDate(startDate)}' AND 
-    created_at <= '${formatClickhouseDate(endDate)}' AND
-    name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  GROUP BY ${funnelGroup}`;
-
-  const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;
-
-  const funnel = await chQuery<{ level: number; count: number }>(sql);
-  const maxLevel = payload.events.length;
-  const filledFunnelRes = fillFunnel(funnel, maxLevel);
-
-  const totalSessions = last(filledFunnelRes)?.count ?? 0;
-  const steps = reverse(filledFunnelRes).reduce(
-    (acc, item, index, list) => {
-      const prev = list[index - 1] ?? { count: totalSessions };
-      const event = payload.events[item.level - 1]!;
-      return [
-        ...acc,
-        {
-          event: {
-            ...event,
-            displayName: event.displayName ?? event.name,
-          },
-          count: item.count,
-          percent: (item.count / totalSessions) * 100,
-          dropoffCount: prev.count - item.count,
-          dropoffPercent: 100 - (item.count / prev.count) * 100,
-          previousCount: prev.count,
-        },
-      ];
-    },
-    [] as {
-      event: IChartEvent & { displayName: string };
-      count: number;
-      percent: number;
-      dropoffCount: number;
-      dropoffPercent: number;
-      previousCount: number;
-    }[],
-  );
-
-  return {
-    totalSessions,
-    steps,
-  };
-}
-
-export async function getFunnelStep({
-  projectId,
-  startDate,
-  endDate,
-  step,
-  ...payload
-}: IChartInput & {
-  step: number;
-}) {
-  throw new Error('not implemented');
-  // if (!startDate || !endDate) {
-  //   throw new Error('startDate and endDate are required');
-  // }
-
-  // if (payload.events.length === 0) {
-  //   throw new Error('no events selected');
-  // }
-
-  // const funnels = payload.events.map((event) => {
-  //   const { sb, getWhere } = createSqlBuilder();
-  //   sb.where = getEventFiltersWhereClause(event.filters);
-  //   sb.where.name = `name = ${escape(event.name)}`;
-  //   return getWhere().replace('WHERE ', '');
-  // });
-
-  // const innerSql = `SELECT
-  //   session_id,
-  //   windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
-  // FROM ${TABLE_NAMES.events}
-  // WHERE
-  //   project_id = ${escape(projectId)} AND
-  //   created_at >= '${formatClickhouseDate(startDate)}' AND
-  //   created_at <= '${formatClickhouseDate(endDate)}' AND
-  //   name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  // GROUP BY session_id`;
-
-  // const profileIdsQuery = `WITH sessions AS (${innerSql})
-  //   SELECT
-  //     DISTINCT e.profile_id as id
-  //   FROM sessions s
-  //   JOIN ${TABLE_NAMES.events} e ON s.session_id = e.session_id
-  //   WHERE
-  //     s.level = ${step} AND
-  //     e.project_id = ${escape(projectId)} AND
-  //     e.created_at >= '${formatClickhouseDate(startDate)}' AND
-  //     e.created_at <= '${formatClickhouseDate(endDate)}' AND
-  //     name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  //   ORDER BY e.created_at DESC
-  //   LIMIT 500
-  //   `;
-
-  // const res = await chQuery<{
-  //   id: string;
-  // }>(profileIdsQuery);
-
-  // return getProfiles(
-  //   res.map((r) => r.id),
-  //   projectId,
-  // );
 }
 
 export async function getChartSerie(payload: IGetChartDataInput) {

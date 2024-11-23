@@ -1,3 +1,4 @@
+import { TooltipPortal } from '@radix-ui/react-tooltip';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 interface TooltipCompleteProps {
@@ -15,12 +16,17 @@ export function TooltipComplete({
 }: TooltipCompleteProps) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild={typeof children !== 'string'}>
+      <TooltipTrigger
+        className="appearance-none"
+        style={{ textAlign: 'inherit' }}
+      >
         {children}
       </TooltipTrigger>
-      <TooltipContent side={side} disabled={disabled}>
-        {content}
-      </TooltipContent>
+      <TooltipPortal>
+        <TooltipContent side={side} disabled={disabled}>
+          {content}
+        </TooltipContent>
+      </TooltipPortal>
     </Tooltip>
   );
 }

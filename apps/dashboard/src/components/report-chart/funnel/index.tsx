@@ -13,7 +13,16 @@ import { Chart } from './chart';
 
 export function ReportFunnelChart() {
   const {
-    report: { events, range, projectId, funnelWindow, funnelGroup },
+    report: {
+      events,
+      range,
+      projectId,
+      funnelWindow,
+      funnelGroup,
+      startDate,
+      endDate,
+      previous,
+    },
     isLazyLoading,
   } = useReportChartContext();
 
@@ -26,8 +35,10 @@ export function ReportFunnelChart() {
     breakdowns: [],
     funnelWindow,
     funnelGroup,
-    previous: false,
+    previous,
     metric: 'sum',
+    startDate,
+    endDate,
   };
   const res = api.chart.funnel.useQuery(input, {
     keepPreviousData: true,

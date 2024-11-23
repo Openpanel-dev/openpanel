@@ -29,7 +29,7 @@ interface PreviousDiffIndicatorProps {
   children?: React.ReactNode;
   inverted?: boolean;
   className?: string;
-  size?: 'sm' | 'lg';
+  size?: 'sm' | 'lg' | 'md';
 }
 
 export function PreviousDiffIndicator({
@@ -80,6 +80,7 @@ export function PreviousDiffIndicator({
             'flex size-4 items-center justify-center rounded-full',
             variant,
             size === 'lg' && 'size-8',
+            size === 'md' && 'size-6',
           )}
         >
           {renderIcon()}
