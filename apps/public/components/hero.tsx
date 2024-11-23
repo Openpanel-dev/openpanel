@@ -36,7 +36,7 @@ export function Hero() {
             </Link>
           </Button>
           <p className="text-sm text-muted-foreground">
-            Free trail for 30 days, no credit card required
+            Free trial for 30 days, no credit card required
           </p>
         </div>
 
