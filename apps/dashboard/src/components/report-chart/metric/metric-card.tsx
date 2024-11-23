@@ -122,19 +122,21 @@ export function MetricCardNumber({
   label,
   value,
   enhancer,
+  className,
 }: {
   label: React.ReactNode;
   value: React.ReactNode;
   enhancer?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2">
+    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2 text-left">
           <span className="truncate text-muted-foreground">{label}</span>
         </div>
       </div>
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between gap-4">
         <div className="truncate font-mono text-3xl font-bold">{value}</div>
         {enhancer}
       </div>

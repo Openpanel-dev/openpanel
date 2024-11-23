@@ -32,7 +32,6 @@ import {
   getChartPrevStartEndDate,
   getChartStartEndDate,
   getFunnelData,
-  getFunnelStep,
 } from './chart.helpers';
 
 function utc(date: string | Date) {
@@ -87,9 +86,12 @@ export const chartRouter = createTRPCRouter({
         .map((item) => item.replace(/\.([0-9]+)/g, '[*]'))
         .map((item) => `properties.${item}`);
 
+      if (event === '*') {
+        properties.push('name');
+      }
+
       properties.push(
         'has_profile',
-        'name',
         'path',
         'origin',
         'referrer',
@@ -184,7 +186,9 @@ export const chartRouter = createTRPCRouter({
 
     const [current, previous] = await Promise.all([
       getFunnelData({ ...input, ...currentPeriod }),
-      getFunnelData({ ...input, ...previousPeriod }),
+      input.previous
+        ? getFunnelData({ ...input, ...previousPeriod })
+        : Promise.resolve(null),
     ]);
 
     return {
@@ -192,17 +196,6 @@ export const chartRouter = createTRPCRouter({
       previous,
     };
   }),
-
-  funnelStep: protectedProcedure
-    .input(
-      zChartInput.extend({
-        step: z.number(),
-      }),
-    )
-    .query(async ({ input }) => {
-      const currentPeriod = getChartStartEndDate(input);
-      return getFunnelStep({ ...input, ...currentPeriod });
-    }),
 
   chart: publicProcedure.input(zChartInput).query(async ({ input, ctx }) => {
     if (ctx.session.userId) {
