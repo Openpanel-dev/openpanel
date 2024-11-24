@@ -57,6 +57,8 @@ export async function getFavicon(
     if (cacheKey) {
       getRedisCache().set(`favicon:${cacheKey}`, buffer.toString('base64'));
     }
+    reply.header('Cache-Control', 'public, max-age=604800');
+    reply.header('Expires', new Date(Date.now() + 604800000).toUTCString());
     reply.type('image/png');
     return reply.send(buffer);
   }
