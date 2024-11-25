@@ -160,6 +160,8 @@ export const chartRouter = createTRPCRouter({
         }
         sb.select.values = `distinct ${getSelectPropertyKey(property)} as values`;
         sb.where.date = `${toDate('created_at', 'month')} > now() - INTERVAL 6 MONTH`;
+        sb.orderBy.created_at = 'created_at DESC';
+        sb.limit = 100_000;
         const events = await chQuery<{ values: string[] }>(getSql());
 
         values.push(
