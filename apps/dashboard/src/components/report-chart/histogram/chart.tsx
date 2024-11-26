@@ -60,7 +60,7 @@ export function Chart({ data }: Props) {
     <>
       <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
         <ResponsiveContainer>
-          <BarChart data={rechartData} barCategoryGap={10}>
+          <BarChart data={rechartData}>
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
@@ -68,30 +68,10 @@ export function Chart({ data }: Props) {
             />
             <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
             <YAxis {...yAxisProps} />
-            <XAxis {...xAxisProps} />
+            <XAxis {...xAxisProps} scale={'auto'} type="category" />
             {series.map((serie) => {
               return (
                 <React.Fragment key={serie.id}>
-                  <defs>
-                    <linearGradient
-                      id="colorGradient"
-                      x1="0"
-                      y1="1"
-                      x2="0"
-                      y2="0"
-                    >
-                      <stop
-                        offset="0%"
-                        stopColor={getChartColor(serie.index)}
-                        stopOpacity={0.7}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor={getChartColor(serie.index)}
-                        stopOpacity={1}
-                      />
-                    </linearGradient>
-                  </defs>
                   {previous && (
                     <Bar
                       key={`${serie.id}:prev`}
@@ -100,17 +80,17 @@ export function Chart({ data }: Props) {
                       fill={getChartColor(serie.index)}
                       fillOpacity={0.1}
                       radius={3}
-                      barSize={20} // Adjust the bar width here
+                      barSize={5} // Adjust the bar width here
                     />
                   )}
                   <Bar
                     key={serie.id}
                     name={serie.id}
                     dataKey={`${serie.id}:count`}
-                    fill="url(#colorGradient)"
+                    fill={getChartColor(serie.index)}
                     radius={3}
                     fillOpacity={1}
-                    barSize={20} // Adjust the bar width here
+                    barSize={5} // Adjust the bar width here
                   />
                 </React.Fragment>
               );

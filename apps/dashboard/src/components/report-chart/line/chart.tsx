@@ -23,6 +23,7 @@ import {
 } from 'recharts';
 
 import { useXAxisProps, useYAxisProps } from '../common/axis';
+import { SolidToDashedGradient } from '../common/linear-gradient';
 import { ReportChartTooltip } from '../common/report-chart-tooltip';
 import { ReportTable } from '../common/report-table';
 import { SerieIcon } from '../common/serie-icon';
@@ -69,20 +70,6 @@ export function Chart({ data }: Props) {
   const lastIntervalPercent =
     ((rechartData.length - 2) * 100) / (rechartData.length - 1);
 
-  const gradientTwoColors = (
-    id: string,
-    col1: string,
-    col2: string,
-    percentChange: number,
-  ) => (
-    <linearGradient id={id} x1="0" y1="0" x2="100%" y2="0">
-      <stop offset="0%" stopColor={col1} />
-      <stop offset={`${percentChange}%`} stopColor={col1} />
-      <stop offset={`${percentChange}%`} stopColor={`${col2}`} />
-      <stop offset="100%" stopColor={col2} />
-    </linearGradient>
-  );
-
   const lastSerieDataItem = last(series[0]?.data || [])?.date || new Date();
   const useDashedLastLine = (() => {
     if (interval === 'hour') {
@@ -102,7 +89,7 @@ export function Chart({ data }: Props) {
 
   const CustomLegend = useCallback(() => {
     return (
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+      <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs mt-4 -mb-2">
         {series.map((serie) => (
           <div
             className="flex items-center gap-1"
@@ -157,12 +144,7 @@ export function Chart({ data }: Props) {
               domain={maxDomain ? [0, maxDomain] : undefined}
             />
             <XAxis {...xAxisProps} />
-            {series.length > 1 && (
-              <Legend
-                wrapperStyle={{ fontSize: '10px' }}
-                content={<CustomLegend />}
-              />
-            )}
+            {series.length > 1 && <Legend content={<CustomLegend />} />}
             <Tooltip content={<ReportChartTooltip />} />
             {series.map((serie) => {
               const color = getChartColor(serie.index);
@@ -185,17 +167,12 @@ export function Chart({ data }: Props) {
                         />
                       </linearGradient>
                     )}
-                    {gradientTwoColors(
-                      `hideAllButLastInterval_${serie.id}`,
-                      'rgba(0,0,0,0)',
-                      color,
-                      lastIntervalPercent,
-                    )}
-                    {gradientTwoColors(
-                      `hideJustLastInterval_${serie.id}`,
-                      color,
-                      'rgba(0,0,0,0)',
-                      lastIntervalPercent,
+                    {useDashedLastLine && (
+                      <SolidToDashedGradient
+                        percentage={lastIntervalPercent}
+                        baseColor={color}
+                        id={`stroke${color}`}
+                      />
                     )}
                   </defs>
                   <Line
@@ -205,7 +182,7 @@ export function Chart({ data }: Props) {
                     isAnimationActive={false}
                     strokeWidth={2}
                     dataKey={`${serie.id}:count`}
-                    stroke={useDashedLastLine ? 'transparent' : color}
+                    stroke={useDashedLastLine ? `url(#stroke${color})` : color}
                     // Use for legend
                     fill={color}
                   />
@@ -220,31 +197,6 @@ export function Chart({ data }: Props) {
                       strokeWidth={0}
                       fillOpacity={0.1}
                     />
-                  )}
-                  {useDashedLastLine && (
-                    <>
-                      <Line
-                        dot={false}
-                        type={lineType}
-                        name={`${serie.id}:dashed:noTooltip`}
-                        isAnimationActive={false}
-                        strokeWidth={2}
-                        dataKey={`${serie.id}:count`}
-                        stroke={`url('#hideAllButLastInterval_${serie.id}')`}
-                        strokeDasharray="2 4"
-                        strokeLinecap="round"
-                        strokeOpacity={0.7}
-                      />
-                      <Line
-                        dot={false}
-                        type={lineType}
-                        name={`${serie.id}:solid:noTooltip`}
-                        isAnimationActive={false}
-                        strokeWidth={2}
-                        dataKey={`${serie.id}:count`}
-                        stroke={`url('#hideJustLastInterval_${serie.id}')`}
-                      />
-                    </>
                   )}
                   {previous && (
                     <Line
