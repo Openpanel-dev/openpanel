@@ -16,7 +16,6 @@ const RealtimeReloader = ({ projectId }: Props) => {
     `/live/events/${projectId}`,
     () => {
       if (!document.hidden) {
-        router.refresh();
         client.refetchQueries({
           type: 'active',
         });
@@ -24,8 +23,8 @@ const RealtimeReloader = ({ projectId }: Props) => {
     },
     {
       debounce: {
-        maxWait: 15000,
-        delay: 15000,
+        maxWait: 60000,
+        delay: 60000,
       },
     },
   );
