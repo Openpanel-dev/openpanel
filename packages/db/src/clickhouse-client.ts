@@ -44,7 +44,9 @@ export const originalCh = createClient({
 });
 
 const cleanQuery = (query?: string) =>
-  query ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim() : undefined;
+  typeof query === 'string'
+    ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
+    : undefined;
 
 export const ch = new Proxy(originalCh, {
   get(target, property, receiver) {
