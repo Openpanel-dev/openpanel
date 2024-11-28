@@ -11,15 +11,15 @@ export { createClient };
 const logger = createLogger({ name: 'clickhouse' });
 
 export const TABLE_NAMES = {
-  events: 'events_distributed',
-  profiles: 'profiles_distributed',
-  alias: 'profile_aliases_distributed',
-  self_hosting: 'self_hosting_distributed',
-  events_bots: 'events_bots_distributed',
-  dau_mv: 'dau_mv_distributed',
-  event_names_mv: 'distinct_event_names_mv_distributed',
-  event_property_values_mv: 'event_property_values_mv_distributed',
-  cohort_events_mv: 'cohort_events_mv_distributed',
+  events: 'events_v2',
+  profiles: 'profiles',
+  alias: 'profile_aliases',
+  self_hosting: 'self_hosting',
+  events_bots: 'events_bots',
+  dau_mv: 'dau_mv',
+  event_names_mv: 'distinct_event_names_mv',
+  event_property_values_mv: 'event_property_values_mv',
+  cohort_events_mv: 'cohort_events_mv',
 };
 
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
@@ -44,9 +44,7 @@ export const originalCh = createClient({
 });
 
 const cleanQuery = (query?: string) =>
-  typeof query === 'string'
-    ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
-    : undefined;
+  query ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim() : undefined;
 
 export const ch = new Proxy(originalCh, {
   get(target, property, receiver) {
