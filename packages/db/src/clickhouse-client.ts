@@ -43,8 +43,8 @@ export const originalCh = createClient({
   ...CLICKHOUSE_OPTIONS,
 });
 
-const cleanQuery = (query: string) =>
-  query.replace(/\n/g, '').replace(/\s+/g, ' ').trim();
+const cleanQuery = (query?: string) =>
+  query ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim() : undefined;
 
 export const ch = new Proxy(originalCh, {
   get(target, property, receiver) {
