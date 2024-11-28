@@ -4,7 +4,12 @@ import { toDots } from '@openpanel/common';
 import { getRedisCache } from '@openpanel/redis';
 
 import { escape } from 'sqlstring';
-import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';
+import {
+  TABLE_NAMES,
+  ch,
+  chQuery,
+  formatClickhouseDate,
+} from '../clickhouse-client';
 import { transformProfile } from '../services/profile.service';
 import type {
   IClickhouseProfile,
@@ -21,6 +26,15 @@ type BufferType = IClickhouseProfile;
 export class ProfileBuffer extends RedisBuffer<BufferType> {
   constructor() {
     super(TABLE_NAMES.profiles, BATCH_SIZE);
+  }
+
+  protected transformProfiles(profiles: IClickhouseProfile[]): BufferType[] {
+    return profiles.map((profile) => ({
+      ...profile,
+      created_at: profile.created_at
+        ? formatClickhouseDate(profile.created_at)
+        : '',
+    }));
   }
 
   // this will do a couple of things:
@@ -40,11 +54,13 @@ export class ProfileBuffer extends RedisBuffer<BufferType> {
       slicedQueue.filter((_, index) => !redisProfiles[index]),
     );
 
-    const toInsert = this.createProfileValues(
+    const profiles = this.createProfileValues(
       slicedQueue,
       redisProfiles,
       dbProfiles,
     );
+
+    const toInsert = this.transformProfiles(profiles);
 
     if (toInsert.length > 0) {
       await this.updateRedisCache(toInsert);

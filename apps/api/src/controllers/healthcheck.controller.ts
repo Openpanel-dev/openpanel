@@ -21,7 +21,7 @@ export async function healthcheck(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  const redisRes = await withTimings(getRedisCache().keys('keys op:buffer:*'));
+  const redisRes = await withTimings(getRedisCache().keys('op:buffer:*'));
   const dbRes = await withTimings(db.project.findFirst());
   const queueRes = await withTimings(eventsQueue.getCompleted());
   const chRes = await withTimings(

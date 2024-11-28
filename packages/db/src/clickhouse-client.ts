@@ -2,8 +2,11 @@ import type { ResponseJSON } from '@clickhouse/client';
 import { createClient } from '@clickhouse/client';
 import { escape } from 'sqlstring';
 
+import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
 import { createLogger } from '@openpanel/logger';
 import type { IInterval } from '@openpanel/validation';
+
+export { createClient };
 
 const logger = createLogger({ name: 'clickhouse' });
 
@@ -19,8 +22,7 @@ export const TABLE_NAMES = {
   cohort_events_mv: 'cohort_events_mv',
 };
 
-export const originalCh = createClient({
-  url: process.env.CLICKHOUSE_URL,
+export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: 30,
   request_timeout: 30000,
   keep_alive: {
@@ -33,14 +35,23 @@ export const originalCh = createClient({
   clickhouse_settings: {
     date_time_input_format: 'best_effort',
   },
+};
+
+export const originalCh = createClient({
+  // TODO: remove this after migration
+  url: process.env.CLICKHOUSE_URL_CLUSTER ?? process.env.CLICKHOUSE_URL,
+  ...CLICKHOUSE_OPTIONS,
 });
+
+const cleanQuery = (query: string) =>
+  query.replace(/\n/g, '').replace(/\s+/g, ' ').trim();
 
 export const ch = new Proxy(originalCh, {
   get(target, property, receiver) {
     if (property === 'insert' || property === 'query') {
       return async (...args: any[]) => {
         const childLogger = logger.child({
-          query: args[0].query,
+          query: cleanQuery(args[0].query),
           property,
         });
         try {
@@ -113,7 +124,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   };
 
   logger.info('query info', {
-    query,
+    query: cleanQuery(query),
     rows: json.rows,
     stats: response.statistics,
     elapsed: Date.now() - start,
