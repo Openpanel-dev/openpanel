@@ -14,7 +14,7 @@ const isPublicRoute = createRouteMatcher([
 
 export default clerkMiddleware(
   (auth, req) => {
-    if (!process.env.MAINTENANCE_MODE && !req.url.includes('/maintenance')) {
+    if (process.env.MAINTENANCE_MODE && !req.url.includes('/maintenance')) {
       return NextResponse.redirect(new URL('/maintenance', req.url), 307);
     }
     if (!isPublicRoute(req)) {
