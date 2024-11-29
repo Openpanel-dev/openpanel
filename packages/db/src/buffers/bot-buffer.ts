@@ -5,7 +5,7 @@ import { RedisBuffer } from './buffer';
 type BufferType = IClickhouseBotEvent;
 export class BotBuffer extends RedisBuffer<BufferType> {
   constructor() {
-    super(TABLE_NAMES.events_bots, 500);
+    super('events_bots', 500);
   }
 
   protected async insertIntoDB(items: BufferType[]): Promise<void> {

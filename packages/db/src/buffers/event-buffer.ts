@@ -22,7 +22,7 @@ const STALLED_QUEUE_TIMEOUT = 1000 * 60 * 60 * 24;
 type BufferType = IClickhouseEvent;
 export class EventBuffer extends RedisBuffer<BufferType> {
   constructor() {
-    super(TABLE_NAMES.events, null);
+    super('events_v2', null);
   }
 
   getLastEventKey({

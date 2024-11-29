@@ -20,6 +20,7 @@ export class RedisBuffer<T> {
   private lockKey: string;
   protected maxBufferSize: number | null;
   protected logger: ILogger;
+  private isCurrentlyFlushing = false;
 
   constructor(bufferName: string, maxBufferSize: number | null) {
     this.bufferKey = bufferName;
@@ -57,6 +58,11 @@ export class RedisBuffer<T> {
   }
 
   public async tryFlush(): Promise<void> {
+    if (this.isCurrentlyFlushing) {
+      this.logger.debug('Already flushing. Skipping additional flush attempt.');
+      return;
+    }
+
     const lockId = uuidv4();
     const acquired = await getRedisCache().set(
       this.lockKey,
@@ -68,15 +74,17 @@ export class RedisBuffer<T> {
 
     if (acquired === 'OK') {
       this.logger.debug('Lock acquired. Attempting to flush.');
+      this.isCurrentlyFlushing = true;
       try {
         await this.flush();
       } catch (error) {
         this.logger.error('Failed to flush buffer', { error });
       } finally {
+        this.isCurrentlyFlushing = false;
         await this.releaseLock(lockId);
       }
     } else {
-      this.logger.debug('Failed to acquire lock for. Skipping flush.');
+      this.logger.debug('Failed to acquire lock. Skipping flush.');
     }
   }
 
@@ -129,7 +137,7 @@ export class RedisBuffer<T> {
       });
       throw new Error('Redis transaction failed');
     }
-    
+
     const lrange = result[0];
     const lrangePrevious = result[1];
 
@@ -141,7 +149,11 @@ export class RedisBuffer<T> {
     }
 
     const items = lrange[1] as string[];
-    if (lrangePrevious && lrangePrevious[0] === null && Array.isArray(lrangePrevious[1])) {
+    if (
+      lrangePrevious &&
+      lrangePrevious[0] === null &&
+      Array.isArray(lrangePrevious[1])
+    ) {
       items.push(...(lrangePrevious[1] as string[]));
     }
 
@@ -149,21 +161,23 @@ export class RedisBuffer<T> {
       .map((item) => getSafeJson<T | null>(item) as T | null)
       .filter((item): item is T => item !== null);
 
-    if (parsedItems.length > 0) {
-      await getRedisCache().lpush(
-        this.getKey('backup'),
-        ...parsedItems.map((item) => JSON.stringify(item)),
-      );
-    }
-
     if (parsedItems.length === 0) {
       this.logger.debug('No items to flush');
+      // Clear any existing backup since we have no items to process
+      await getRedisCache().del(this.getKey('backup'));
       return;
     }
 
     this.logger.info(`Flushing ${parsedItems.length} items`);
 
     try {
+      // Create backup before processing
+      await getRedisCache().del(this.getKey('backup')); // Clear any existing backup first
+      await getRedisCache().lpush(
+        this.getKey('backup'),
+        ...parsedItems.map((item) => JSON.stringify(item)),
+      );
+
       const { toInsert, toKeep } = await this.processItems(parsedItems);
 
       if (toInsert.length) {
@@ -203,6 +217,9 @@ export class RedisBuffer<T> {
           ...parsedItems.map((item) => JSON.stringify(item)),
         );
       }
+
+      // Clear the backup since we're adding items back to main buffer
+      await getRedisCache().del(this.getKey('backup'));
     }
   }
 

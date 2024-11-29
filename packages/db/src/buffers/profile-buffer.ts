@@ -20,7 +20,7 @@ const BATCH_SIZE = process.env.BATCH_SIZE_PROFILES
 type BufferType = IClickhouseProfile;
 export class ProfileBuffer extends RedisBuffer<BufferType> {
   constructor() {
-    super(TABLE_NAMES.profiles, BATCH_SIZE);
+    super('profiles', BATCH_SIZE);
   }
 
   // this will do a couple of things:
