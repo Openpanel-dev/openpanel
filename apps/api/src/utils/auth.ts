@@ -32,9 +32,11 @@ export class SdkAuthError extends Error {
   }
 }
 
+type ClientWithProjectId = Client & { projectId: string };
+
 export async function validateSdkRequest(
   headers: RawRequestDefaultExpression['headers'],
-): Promise<Client> {
+): Promise<ClientWithProjectId> {
   const clientIdNew = headers['openpanel-client-id'] as string;
   const clientIdOld = headers['mixan-client-id'] as string;
   const clientSecretNew = headers['openpanel-client-secret'] as string;
@@ -57,13 +59,11 @@ export async function validateSdkRequest(
     throw createError('Ingestion: Missing client id');
   }
 
-  const client = await db.client
-    .findUnique({
-      where: {
-        id: clientId,
-      },
-    })
-    .catch(() => null);
+  const client = await db.client.findUnique({
+    where: {
+      id: clientId,
+    },
+  });
 
   if (!client) {
     throw createError('Ingestion: Invalid client id');
@@ -91,17 +91,17 @@ export async function validateSdkRequest(
     });
 
     if (domainAllowed) {
-      return client;
+      return client as ClientWithProjectId;
     }
 
     if (client.cors === '*' && origin) {
-      return client;
+      return client as ClientWithProjectId;
     }
   }
 
   if (client.secret && clientSecret) {
     if (await verifyPassword(clientSecret, client.secret)) {
-      return client;
+      return client as ClientWithProjectId;
     }
   }
 
