@@ -4,7 +4,12 @@ import { toDots } from '@openpanel/common';
 import { getRedisCache } from '@openpanel/redis';
 
 import { escape } from 'sqlstring';
-import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';
+import {
+  TABLE_NAMES,
+  ch,
+  chQuery,
+  formatClickhouseDate,
+} from '../clickhouse-client';
 import { transformProfile } from '../services/profile.service';
 import type {
   IClickhouseProfile,
@@ -71,7 +76,12 @@ export class ProfileBuffer extends RedisBuffer<BufferType> {
   protected async insertIntoDB(items: BufferType[]): Promise<void> {
     await ch.insert({
       table: TABLE_NAMES.profiles,
-      values: items,
+      values: items.map((item) => ({
+        ...item,
+        created_at: item.created_at
+          ? formatClickhouseDate(item.created_at)
+          : '',
+      })),
       format: 'JSONEachRow',
     });
   }

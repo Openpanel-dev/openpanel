@@ -159,6 +159,7 @@ export function formatClickhouseDate(
 }
 
 export function toDate(str: string, interval?: IInterval) {
+  // If it does not match the regex it's a column name eg 'created_at'
   if (!interval || interval === 'minute' || interval === 'hour') {
     if (str.match(/\d{4}-\d{2}-\d{2}/)) {
       return escape(str);
@@ -168,7 +169,7 @@ export function toDate(str: string, interval?: IInterval) {
   }
 
   if (str.match(/\d{4}-\d{2}-\d{2}/)) {
-    return `toDate(${escape(str)})`;
+    return `toDate(${escape(str.split(' ')[0])})`;
   }
 
   return `toDate(${str})`;
