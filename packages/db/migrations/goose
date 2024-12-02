@@ -1,12 +1,14 @@
 #!/bin/bash
 
 
-if [ -z "$CLICKHOUSE_URL" ]; then
-  echo "CLICKHOUSE_URL is not set"
+if [ -n "$CLICKHOUSE_URL_DIRECT" ]; then
+  export GOOSE_DBSTRING=$CLICKHOUSE_URL_DIRECT
+elif [ -z "$CLICKHOUSE_URL" ]; then
+  echo "Neither CLICKHOUSE_URL_DIRECT nor CLICKHOUSE_URL is set"
   exit 1
+else
+  export GOOSE_DBSTRING=$CLICKHOUSE_URL
 fi
-
-export GOOSE_DBSTRING=$CLICKHOUSE_URL
 
 echo "Clickhouse migration script"
 echo ""
@@ -22,6 +24,5 @@ if [ "$1" != "create" ] && [ -z "$CI" ]; then
     exit 0
   fi
 fi
-
 
 goose clickhouse --dir ./migrations $@
