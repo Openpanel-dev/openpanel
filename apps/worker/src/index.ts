@@ -16,23 +16,25 @@ import { bootWorkers } from './boot-workers';
 import { register } from './metrics';
 import { logger } from './utils/logger';
 
-const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);
-const serverAdapter = new ExpressAdapter();
-serverAdapter.setBasePath('/');
-const app = express();
-
 async function start() {
-  createBullBoard({
-    queues: [
-      new BullMQAdapter(eventsQueue),
-      new BullMQAdapter(sessionsQueue),
-      new BullMQAdapter(cronQueue),
-      new BullMQAdapter(notificationQueue),
-    ],
-    serverAdapter: serverAdapter,
-  });
+  const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);
+  const app = express();
 
-  app.use('/', serverAdapter.getRouter());
+  if (process.env.DISABLE_BULLBOARD === undefined) {
+    const serverAdapter = new ExpressAdapter();
+    serverAdapter.setBasePath('/');
+    createBullBoard({
+      queues: [
+        new BullMQAdapter(eventsQueue),
+        new BullMQAdapter(sessionsQueue),
+        new BullMQAdapter(cronQueue),
+        new BullMQAdapter(notificationQueue),
+      ],
+      serverAdapter: serverAdapter,
+    });
+
+    app.use('/', serverAdapter.getRouter());
+  }
 
   app.get('/metrics', (req, res) => {
     res.set('Content-Type', register.contentType);
