@@ -96,6 +96,9 @@ importers:
       sharp:
         specifier: ^0.33.2
         version: 0.33.2
+      source-map-support:
+        specifier: ^0.5.21
+        version: 0.5.21
       sqlstring:
         specifier: ^2.3.3
         version: 2.3.3
@@ -136,6 +139,9 @@ importers:
       '@types/request-ip':
         specifier: ^0.0.41
         version: 0.0.41
+      '@types/source-map-support':
+        specifier: ^0.5.10
+        version: 0.5.10
       '@types/sqlstring':
         specifier: ^2.3.2
         version: 2.3.2
@@ -657,6 +663,9 @@ importers:
       ramda:
         specifier: ^0.29.1
         version: 0.29.1
+      source-map-support:
+        specifier: ^0.5.21
+        version: 0.5.21
       sqlstring:
         specifier: ^2.3.3
         version: 2.3.3
@@ -673,6 +682,9 @@ importers:
       '@types/ramda':
         specifier: ^0.29.6
         version: 0.29.10
+      '@types/source-map-support':
+        specifier: ^0.5.10
+        version: 0.5.10
       '@types/sqlstring':
         specifier: ^2.3.2
         version: 2.3.2
@@ -10093,6 +10105,12 @@ packages:
   /@types/shimmer@1.2.0:
     resolution: {integrity: sha512-UE7oxhQLLd9gub6JKIAhDq06T0F6FnztwMNRvYgjeQSBeMc1ZG/tA47EwfduvkuQS8apbkM/lpLpWsaCeYsXVg==}
     dev: false
+
+  /@types/source-map-support@0.5.10:
+    resolution: {integrity: sha512-tgVP2H469x9zq34Z0m/fgPewGhg/MLClalNOiPIzQlXrSS2YrKu/xCdSCKnEDwkFha51VKEKB6A9wW26/ZNwzA==}
+    dependencies:
+      source-map: 0.6.1
+    dev: true
 
   /@types/sqlstring@2.3.2:
     resolution: {integrity: sha512-lVRe4Iz9UNgiHelKVo8QlC8fb5nfY8+p+jNQNE+UVsuuVlQnWhyWmQ/wF5pE8Ys6TdjfVpqTG9O9i2vi6E0+Sg==}
@@ -19996,7 +20014,6 @@ packages:
   /source-map@0.6.1:
     resolution: {integrity: sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==}
     engines: {node: '>=0.10.0'}
-    dev: false
 
   /source-map@0.7.4:
     resolution: {integrity: sha512-l3BikUxvPOcn5E74dZiq5BGsTb5yEwhaTSzccU6t4sDOH8NWJCstKO5QT2CvtFoK6F0saL7p9xHAqHOlCPJygA==}

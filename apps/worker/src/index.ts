@@ -11,10 +11,13 @@ import {
   sessionsQueue,
 } from '@openpanel/queue';
 
+import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
 import { bootWorkers } from './boot-workers';
 import { register } from './metrics';
 import { logger } from './utils/logger';
+
+sourceMapSupport.install();
 
 async function start() {
   const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);

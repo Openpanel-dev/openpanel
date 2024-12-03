@@ -16,6 +16,7 @@ import { getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
+import sourceMapSupport from 'source-map-support';
 import {
   healthcheck,
   healthcheckQueue,
@@ -32,6 +33,8 @@ import profileRouter from './routes/profile.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
 import { logger } from './utils/logger';
+
+sourceMapSupport.install();
 
 declare module 'fastify' {
   interface FastifyRequest {

@@ -1,4 +1,4 @@
-import type { WorkerOptions } from 'bullmq';
+import type { Queue, WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 
 import {
@@ -9,6 +9,8 @@ import {
 } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
+import { performance } from 'node:perf_hooks';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
 import { notificationJob } from './jobs/notification';
@@ -101,13 +103,17 @@ export async function bootWorkers() {
       eventName,
     });
     try {
+      const time = performance.now();
+      await waitForQueueToEmpty(cronQueue);
       await Promise.all([
         cronWorker.close(),
         eventsWorker.close(),
         sessionsWorker.close(),
         notificationWorker.close(),
       ]);
-      logger.info('workers closed successfully');
+      logger.info('workers closed successfully', {
+        elapsed: performance.now() - time,
+      });
     } catch (e) {
       logger.error('exit handler error', {
         code: evtOrExitCodeOrError,
@@ -120,11 +126,39 @@ export async function bootWorkers() {
     process.exit(exitCode);
   }
 
-  ['uncaughtException', 'unhandledRejection', 'SIGTERM'].forEach((evt) =>
-    process.on(evt, (code) => {
-      exitHandler(evt, code);
-    }),
+  ['uncaughtException', 'unhandledRejection', 'SIGTERM', 'SIGINT'].forEach(
+    (evt) => {
+      process.on(evt, (code) => {
+        exitHandler(evt, code);
+      });
+    },
   );
 
   return workers;
+}
+
+export async function waitForQueueToEmpty(queue: Queue, timeout = 60_000) {
+  const startTime = performance.now();
+
+  while (true) {
+    const activeCount = await queue.getActiveCount();
+
+    if (activeCount === 0) {
+      break;
+    }
+
+    if (performance.now() - startTime > timeout) {
+      logger.warn('Timeout reached while waiting for queue to empty', {
+        queue: queue.name,
+        remainingCount: activeCount,
+      });
+      break;
+    }
+
+    logger.info('Waiting for queue to finish', {
+      queue: queue.name,
+      count: activeCount,
+    });
+    await sleep(500);
+  }
 }

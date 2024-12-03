@@ -48,14 +48,32 @@ const cleanQuery = (query?: string) =>
     ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
     : undefined;
 
+const createChildLogger = (property: string, args?: any[]) => {
+  if (property === 'insert') {
+    return logger.child({
+      property,
+      table: args?.[0]?.table,
+      values: (args?.[0]?.values || []).length,
+    });
+  }
+
+  return logger.child({
+    property,
+    table: args?.[0]?.table,
+    query: cleanQuery(args?.[0]?.query),
+  });
+};
+
 export const ch = new Proxy(originalCh, {
   get(target, property, receiver) {
     if (property === 'insert' || property === 'query') {
       return async (...args: any[]) => {
-        const childLogger = logger.child({
-          query: cleanQuery(args[0].query),
-          property,
-        });
+        const childLogger = createChildLogger(property, args);
+
+        if (property === 'insert') {
+          childLogger.info('insert info');
+        }
+
         try {
           // First attempt
           if (property in target) {
@@ -69,23 +87,23 @@ export const ch = new Proxy(originalCh, {
               error.message.includes('socket hang up') ||
               error.message.includes('Timeout error'))
           ) {
-            childLogger.error('Captured error', {
+            childLogger.error('First failed attempt', {
               error,
             });
             await new Promise((resolve) => setTimeout(resolve, 500));
             try {
               // Retry once
-              childLogger.info('Retrying query');
+              childLogger.info(`Retrying ${property}`);
               if (property in target) {
                 // @ts-expect-error
                 return await target[property](...args);
               }
             } catch (retryError) {
-              logger.error('Retry failed', retryError);
+              childLogger.error('Second failed attempt', retryError);
               throw retryError; // Rethrow or handle as needed
             }
           } else {
-            logger.error('query failed', {
+            childLogger.error('Failed without retry', {
               ...args[0],
               error,
             });

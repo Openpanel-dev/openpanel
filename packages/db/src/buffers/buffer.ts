@@ -20,7 +20,6 @@ export class RedisBuffer<T> {
   private lockKey: string;
   protected maxBufferSize: number | null;
   protected logger: ILogger;
-  private isCurrentlyFlushing = false;
 
   constructor(bufferName: string, maxBufferSize: number | null) {
     this.bufferKey = bufferName;
@@ -58,11 +57,6 @@ export class RedisBuffer<T> {
   }
 
   public async tryFlush(): Promise<void> {
-    if (this.isCurrentlyFlushing) {
-      this.logger.debug('Already flushing. Skipping additional flush attempt.');
-      return;
-    }
-
     const lockId = uuidv4();
     const acquired = await getRedisCache().set(
       this.lockKey,
@@ -73,18 +67,16 @@ export class RedisBuffer<T> {
     );
 
     if (acquired === 'OK') {
-      this.logger.debug('Lock acquired. Attempting to flush.');
-      this.isCurrentlyFlushing = true;
+      this.logger.info('Lock acquired. Attempting to flush.');
       try {
         await this.flush();
       } catch (error) {
         this.logger.error('Failed to flush buffer', { error });
       } finally {
-        this.isCurrentlyFlushing = false;
         await this.releaseLock(lockId);
       }
     } else {
-      this.logger.debug('Failed to acquire lock. Skipping flush.');
+      this.logger.warn('Failed to acquire lock. Skipping flush.');
     }
   }
 
