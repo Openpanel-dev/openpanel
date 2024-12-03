@@ -558,7 +558,21 @@ const bots = [
     regex: 'facebook(?:catalog|externalhit|externalua|platform|scraper)',
     name: 'Facebook Crawler',
     category: 'Social Media Agent',
-    url: 'https://developers.facebook.com/docs/sharing/webmasters/crawler/',
+    url: 'https://developers.facebook.com/docs/sharing/webmasters/web-crawlers',
+    producer: { name: 'Meta Platforms, Inc.', url: 'https://www.meta.com/' },
+  },
+  {
+    regex: 'meta-externalagent',
+    name: 'Meta-ExternalAgent',
+    category: 'Crawler',
+    url: 'https://developers.facebook.com/docs/sharing/webmasters/web-crawlers',
+    producer: { name: 'Meta Platforms, Inc.', url: 'https://www.meta.com/' },
+  },
+  {
+    regex: 'meta-externalfetcher',
+    name: 'Meta-ExternalFetcher',
+    category: 'Social Media Agent',
+    url: 'https://developers.facebook.com/docs/sharing/webmasters/web-crawlers',
     producer: { name: 'Meta Platforms, Inc.', url: 'https://www.meta.com/' },
   },
   {
@@ -731,6 +745,34 @@ const bots = [
     producer: { name: 'Google Inc.', url: 'https://www.google.com/' },
   },
   {
+    regex: 'Google-Document-Conversion',
+    name: 'Google-Document-Conversion',
+    category: 'Service Agent',
+    url: 'https://support.google.com/drive/answer/176692?hl=en',
+    producer: { name: 'Google Inc.', url: 'https://www.google.com/' },
+  },
+  {
+    regex: 'GoogleDocs; apps-spreadsheets',
+    name: 'Google Sheets',
+    category: 'Service Agent',
+    url: 'https://workspace.google.com/products/sheets/',
+    producer: { name: 'Google Inc.', url: 'https://www.google.com/' },
+  },
+  {
+    regex: 'GoogleDocs; apps-presentations',
+    name: 'Google Slides',
+    category: 'Service Agent',
+    url: 'https://workspace.google.com/products/slides/',
+    producer: { name: 'Google Inc.', url: 'https://www.google.com/' },
+  },
+  {
+    regex: 'GoogleDocs;',
+    name: 'Google Docs',
+    category: 'Service Agent',
+    url: 'https://docs.google.com/',
+    producer: { name: 'Google Inc.', url: 'https://www.google.com/' },
+  },
+  {
     regex: 'SeznamEmailProxy',
     name: 'Seznam Email Proxy',
     category: 'Crawler',
@@ -863,7 +905,7 @@ const bots = [
     url: '',
     producer: { name: '', url: 'https://ip-guide.com' },
   },
-  { regex: 'k6/[0-9\\.]+', name: 'K6', url: 'https://k6.io/' },
+  { regex: 'k6/[0-9.]+', name: 'K6', url: 'https://k6.io/' },
   {
     regex: 'kouio',
     name: 'Kouio',
@@ -4093,13 +4135,6 @@ const bots = [
     },
   },
   {
-    regex: 'Cypress/[\\d.]+',
-    name: 'Cypress',
-    category: 'Site Monitor',
-    url: 'https://github.com/cypress-io/cypress',
-    producer: { name: 'Cypress.io, Inc.', url: 'https://www.cypress.io/' },
-  },
-  {
     regex: 'Google-Apps-Script',
     name: 'Google Apps Script',
     category: 'Service Agent',
@@ -4662,8 +4697,61 @@ const bots = [
     producer: { name: 'Immutable, SNC', url: 'https://ohdear.app/' },
   },
   {
+    regex: 'Inspici',
+    name: 'Inspici',
+    category: 'Crawler',
+    url: 'https://www.inspici.com/',
+    producer: { name: 'Inspici, LLC', url: 'https://www.inspici.com/' },
+  },
+  {
+    regex: 'peer39_crawler',
+    name: 'Peer39',
+    category: 'Crawler',
+    url: 'https://www.peer39.com/crawler-notice',
+    producer: { name: 'Peer39 Tech, LLC', url: 'https://www.peer39.com/' },
+  },
+  {
+    regex: 'Pandalytics',
+    name: 'Pandalytics',
+    category: 'Crawler',
+    url: 'https://www.domainsbot.com/business-intelligence/',
+    producer: { name: 'DomainsBot, Inc.', url: 'https://www.domainsbot.com/' },
+  },
+  {
+    regex: 'CloudServerMarketSpider',
+    name: 'CloudServerMarketSpider',
+    category: 'Crawler',
+    url: 'https://web.archive.org/web/20151228225429/https://cloudservermarket.com/spider.html',
+  },
+  {
+    regex: 'Pigafetta',
+    name: 'Pigafetta',
+    category: 'Crawler',
+    url: 'https://visual-seo.com/Pigafetta-Bot',
+    producer: {
+      name: 'aStonish Studio Srl',
+      url: 'http://www.astonishstudio.com/',
+    },
+  },
+  {
+    regex: 'Cotoyogi',
+    name: 'Cotoyogi',
+    category: 'Crawler',
+    url: 'https://ds.rois.ac.jp/center8/crawler/',
+    producer: {
+      name: 'Joint Support-Center for Data Science Research (ROIS-DS)',
+      url: 'https://ds.rois.ac.jp/',
+    },
+  },
+  {
+    regex: 'SuggestBot',
+    name: 'SuggestBot',
+    category: 'Crawler',
+    url: 'https://github.com/nettrom/suggestbot',
+  },
+  {
     regex:
-      'nuhk|grub-client|Download Demon|SearchExpress|Microsoft URL Control|borg|altavista|dataminr\\.com|teoma|oegp|http%20client|htdig|mogimogi|larbin|scrubby|searchsight|semanticdiscovery|snappy|vortex(?!(?: Build|Plus| CM62| HD65))|zeal(?!ot)|dataparksearch|findlinks|BrowserMob|URL2PNG|ZooShot|GomezA|Google SketchUp|Read%20Later|7Siters|centuryb\\.o\\.t9|InterNaetBoten|EasyBib AutoCite|Bidtellect|tomnomnom/meg|cortex|Re-re Studio|adreview|AHC/|NameOfAgent|Request-Promise|ALittle Client|Hello,? world|wp_is_mobile|0xAbyssalDoesntExist|Anarchy99|^revolt|nvd0rz|xfa1|Hakai|gbrmss|fuck-your-hp|IDBTE4M CODE87|Antoine|Insomania|Hells-Net|b3astmode|Linux Gnu \\(cow\\)|Test Certificate Info|iplabel|Magellan|TheSafex?Internetx?Search|Searcherx?web|kirkland-signature|LinkChain|survey-security-dot-txt|infrawatch|Time/|r00ts3c-owned-you|nvdorz|Root Slut|NiggaBalls|BotPoke|GlobalWebSearch|xx032_bo9vs83_2a|sslshed|geckotrail|Wordup|^xenu|^(?:chrome|firefox|Abcd|Dark|KvshClient|Node.js|Report Runner|url|Zeus|ZmEu)$',
+      'nuhk|grub-client|Download Demon|SearchExpress|Microsoft URL Control|borg|altavista|dataminr\\.com|teoma|oegp|http%20client|htdig|mogimogi|larbin|scrubby|searchsight|semanticdiscovery|snappy|vortex(?!(?: Build|Plus| CM62| HD65))|zeal(?!ot)|dataparksearch|findlinks|BrowserMob|URL2PNG|ZooShot|GomezA|Google SketchUp|Read%20Later|7Siters|centuryb\\.o\\.t9|InterNaetBoten|EasyBib AutoCite|Bidtellect|tomnomnom/meg|cortex|Re-re Studio|adreview|AHC/|NameOfAgent|Request-Promise|ALittle Client|Hello,? world|wp_is_mobile|0xAbyssalDoesntExist|Anarchy99|^revolt|nvd0rz|xfa1|Hakai|gbrmss|fuck-your-hp|IDBTE4M CODE87|Antoine|Insomania|Hells-Net|b3astmode|Linux Gnu \\(cow\\)|Test Certificate Info|iplabel|Magellan|TheSafex?Internetx?Search|Searcherx?web|kirkland-signature|LinkChain|survey-security-dot-txt|infrawatch|Time/|r00ts3c-owned-you|nvdorz|Root Slut|NiggaBalls|BotPoke|GlobalWebSearch|xx032_bo9vs83_2a|sslshed|geckotrail|Wordup|Keydrop|^xenu|^(?:chrome|firefox|Abcd|Dark|KvshClient|Node.js|Report Runner|url|Zeus|ZmEu)$',
     name: 'Generic Bot',
   },
   {
