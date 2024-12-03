@@ -10,6 +10,7 @@ import { getStorageItem, setStorageItem } from '@/utils/storage';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
+  intervals,
   timeWindows,
 } from '@openpanel/constants';
 import type { IChartRange } from '@openpanel/validation';
@@ -36,6 +37,13 @@ export function useOverviewOptions() {
         clearOnDefault: false,
       }),
   );
+  const [overrideInterval, setInterval] = useQueryState(
+    'overrideInterval',
+    parseAsStringEnum(mapKeys(intervals)).withOptions({
+      ...nuqsOptions,
+      clearOnDefault: false,
+    }),
+  );
 
   useEffect(() => {
     const range = getStorageItem('range', '7d');
@@ -45,6 +53,7 @@ export function useOverviewOptions() {
   }, []);
 
   const interval =
+    overrideInterval ||
     getDefaultIntervalByDates(startDate, endDate) ||
     getDefaultIntervalByRange(range);
 
@@ -78,8 +87,7 @@ export function useOverviewOptions() {
     setStartDate,
     endDate,
     setEndDate,
-
-    // Computed
     interval,
+    setInterval,
   };
 }

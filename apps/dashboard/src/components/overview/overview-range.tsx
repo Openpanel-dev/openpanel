@@ -4,7 +4,7 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { TimeWindowPicker } from '@/components/time-window-picker';
 import { endOfDay, formatISO, startOfDay } from 'date-fns';
 
-export function OverviewReportRange() {
+export function OverviewRange() {
   const { range, setRange, setStartDate, setEndDate, endDate, startDate } =
     useOverviewOptions();
 

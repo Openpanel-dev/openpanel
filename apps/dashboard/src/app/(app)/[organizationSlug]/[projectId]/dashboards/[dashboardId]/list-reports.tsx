@@ -32,7 +32,7 @@ import {
 } from '@openpanel/constants';
 import type { IServiceDashboard, getReportsByDashboardId } from '@openpanel/db';
 
-import { OverviewReportRange } from '../../overview-sticky-header';
+import { OverviewRange } from '@/components/overview/overview-range';
 
 interface ListReportsProps {
   reports: Awaited<ReturnType<typeof getReportsByDashboardId>>;
@@ -55,7 +55,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
       <div className="row mb-4 items-center justify-between">
         <h1 className="text-3xl font-semibold">{dashboard.name}</h1>
         <div className="flex items-center justify-end gap-2">
-          <OverviewReportRange />
+          <OverviewRange />
           <Button
             icon={PlusIcon}
             onClick={() => {

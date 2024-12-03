@@ -9,7 +9,8 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 
-import { OverviewReportRange } from './overview-sticky-header';
+import { OverviewInterval } from '@/components/overview/overview-interval';
+import { OverviewRange } from '@/components/overview/overview-range';
 
 interface PageProps {
   params: {
@@ -23,7 +24,8 @@ export default function Page({ params: { projectId } }: PageProps) {
       <div className="col gap-2 p-4">
         <div className="flex justify-between gap-2">
           <div className="flex gap-2">
-            <OverviewReportRange />
+            <OverviewRange />
+            <OverviewInterval />
             <OverviewFiltersDrawer projectId={projectId} mode="events" />
           </div>
           <div className="flex gap-2">

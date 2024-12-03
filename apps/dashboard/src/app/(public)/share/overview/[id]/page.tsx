@@ -1,5 +1,4 @@
 import { StickyBelowHeader } from '@/app/(app)/[organizationSlug]/[projectId]/layout-sticky-below-header';
-import { OverviewReportRange } from '@/app/(app)/[organizationSlug]/[projectId]/overview-sticky-header';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import ServerLiveCounter from '@/components/overview/live-counter';
 import OverviewMetrics from '@/components/overview/overview-metrics';
@@ -10,6 +9,7 @@ import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { notFound } from 'next/navigation';
 
+import { OverviewRange } from '@/components/overview/overview-range';
 import { getOrganizationBySlug, getShareOverviewById } from '@openpanel/db';
 
 interface PageProps {
@@ -56,7 +56,7 @@ export default async function Page({
         <StickyBelowHeader>
           <div className="flex justify-between gap-2 p-4">
             <div className="flex gap-2">
-              <OverviewReportRange />
+              <OverviewRange />
             </div>
             <div className="flex gap-2">
               <ServerLiveCounter projectId={projectId} />
