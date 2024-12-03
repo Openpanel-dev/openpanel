@@ -13,7 +13,7 @@ import WebSdkConfig from '@/components/web-sdk-config.mdx';
 
 Just insert this snippet and replace `YOUR_CLIENT_ID` with your client id.
 
-```html filename="index.html" /clientId: 'YOUR_CLIENT_ID'/
+```html title="index.html" /clientId: 'YOUR_CLIENT_ID'/
 <script>
   window.op = window.op||function(...args){(window.op.q=window.op.q||[]).push(args);};
   window.op('init', {
@@ -37,13 +37,13 @@ Just insert this snippet and replace `YOUR_CLIENT_ID` with your client id.
 
 You can track events with two different methods: by calling the `window.op('track')` directly or by adding `data-track` attributes to your HTML elements.
 
-```html filename="index.html"
+```html title="index.html"
 <button type="button" onclick="window.op('track', 'my_event', { foo: 'bar' })">
   Track event
 </button>
 ```
 
-```html filename="index.html"
+```html title="index.html"
 <button type="button" data-track="my_event" data-foo="bar">Track event</button>
 ```
 
@@ -51,7 +51,7 @@ You can track events with two different methods: by calling the `window.op('trac
 
 To identify a user, call the `window.op('identify')` method with a unique identifier.
 
-```js filename="main.js"
+```js title="main.js"
 window.op('identify', {
   profileId: '123', // Required
   firstName: 'Joe',
@@ -67,7 +67,7 @@ window.op('identify', {
 
 To set properties that will be sent with every event:
 
-```js filename="main.js"
+```js title="main.js"
 window.op('setGlobalProperties', {
   app_version: '1.0.2',
   environment: 'production',
@@ -78,7 +78,7 @@ window.op('setGlobalProperties', {
 
 To create an alias for a user:
 
-```js filename="main.js"
+```js title="main.js"
 window.op('alias', {
   alias: 'a1',
   profileId: '1'
@@ -91,7 +91,7 @@ To increment a numeric property on a user profile.
 
 - `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
 
-```js filename="main.js"
+```js title="main.js"
 window.op('increment', {
   profileId: '1',
   property: 'visits',
@@ -105,7 +105,7 @@ To decrement a numeric property on a user profile.
 
 - `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
 
-```js filename="main.js"
+```js title="main.js"
 window.op('decrement', {
   profileId: '1',
   property: 'visits',
@@ -117,7 +117,7 @@ window.op('decrement', {
 
 To clear the current user's data:
 
-```js filename="main.js"
+```js title="main.js"
 window.op('clear');
 ```
 
@@ -129,7 +129,7 @@ You can filter out events by adding a `filter` property to the `init` method.
 
 Below is an example of how to disable tracking for users who have a `disable_tracking` item in their local storage.
 
-```js filename="main.js"
+```js title="main.js"
 window.op('init', {
   clientId: 'YOUR_CLIENT_ID',
   trackScreenViews: true,
@@ -150,7 +150,7 @@ npm install @openpanel/web
 
 #### Step 2: Initialize the SDK
 
-```js filename="op.js"
+```js title="op.js"
 import { OpenPanel } from '@openpanel/web';
 
 const op = new OpenPanel({
@@ -163,7 +163,7 @@ const op = new OpenPanel({
 
 #### Step 3: Use the SDK
 
-```js filename="main.js"
+```js title="main.js"
 import { op } from './op.js';
 
 op.track('my_event', { foo: 'bar' });
@@ -178,7 +178,7 @@ Getting ts errors when using the SDK? You can add a custom type definition file 
 
 Just paste this code in any of your `.d.ts` files.
 
-```ts filename="op.d.ts"
+```ts title="op.d.ts"
 declare global {
   interface Window {
     op: {
@@ -205,7 +205,7 @@ npm install @openpanel/web
 
 Create a `op.d.ts`file and paste the following code:
 
-```ts filename="op.d.ts"
+```ts title="op.d.ts"
 /// <reference types="@openpanel/web" />
 ```
 </Steps>

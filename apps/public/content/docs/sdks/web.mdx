@@ -19,7 +19,7 @@ npm install @openpanel/web
 
 ### Step 2: Initialize
 
-```js filename="op.ts"
+```js title="op.ts"
 import { OpenPanel } from '@openpanel/web';
 
 const op = new OpenPanel({
@@ -37,7 +37,7 @@ const op = new OpenPanel({
 
 ### Step 3: Usage
 
-```js filename="main.ts"
+```js title="main.ts"
 import { op } from './op.js';
 
 op.track('my_event', { foo: 'bar' });

@@ -19,7 +19,7 @@ npm install @openpanel/sdk
 
 ### Step 2: Initialize
 
-```js filename="op.ts"
+```js title="op.ts"
 import { OpenPanel } from '@openpanel/sdk';
 
 const op = new OpenPanel({
@@ -34,7 +34,7 @@ const op = new OpenPanel({
 
 ### Step 3: Usage
 
-```js filename="main.ts"
+```js title="main.ts"
 import { op } from './op.js';
 
 op.track('my_event', { foo: 'bar' });
@@ -47,7 +47,7 @@ op.track('my_event', { foo: 'bar' });
 
 You can track events with two different methods: by calling the `op.track( directly or by adding `data-track` attributes to your HTML elements.
 
-```ts filename="index.ts"
+```ts title="index.ts"
 import { op } from './op.ts';
 
 op.track('my_event', { foo: 'bar' });
@@ -57,7 +57,7 @@ op.track('my_event', { foo: 'bar' });
 
 To identify a user, call the `op.identify( method with a unique identifier.
 
-```js filename="index.js"
+```js title="index.js"
 import { op } from './op.ts';
 
 op.identify({
@@ -75,7 +75,7 @@ op.identify({
 
 To set properties that will be sent with every event:
 
-```js filename="index.js"
+```js title="index.js"
 import { op } from './op.ts'
 
 op.setGlobalProperties({
@@ -88,7 +88,7 @@ op.setGlobalProperties({
 
 To create an alias for a user:
 
-```js filename="index.js"
+```js title="index.js"
 import { op } from './op.ts'
 
 op.alias({
@@ -103,7 +103,7 @@ To increment a numeric property on a user profile.
 
 - `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
 
-```js filename="index.js"
+```js title="index.js"
 import { op } from './op.ts'
 
 op.increment({
@@ -119,7 +119,7 @@ To decrement a numeric property on a user profile.
 
 - `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
 
-```js filename="index.js"
+```js title="index.js"
 import { op } from './op.ts'
 
 op.decrement({
@@ -133,7 +133,7 @@ op.decrement({
 
 To clear the current user's data:
 
-```js filename="index.js"
+```js title="index.js"
 import { op } from './op.ts'
 
 op.clear()

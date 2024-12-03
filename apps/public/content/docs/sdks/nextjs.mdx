@@ -114,7 +114,7 @@ Since you can't use hooks in server components, you need to create an instance o
 
 <Callout>Remember, your client secret is exposed here so do not use this on client side.</Callout>
 
-```tsx filename="utils/op.ts"
+```tsx title="utils/op.ts"
 import { OpenPanel } from '@openpanel/nextjs';
 
 export const op = new OpenPanel({
@@ -132,7 +132,7 @@ Refer to the [Javascript SDK](/docs/sdks/javascript#usage) for usage instruction
 
 You can track events with two different methods: by calling the `op.track( directly or by adding `data-track` attributes to your HTML elements.
 
-```ts filename="index.ts"
+```ts title="index.ts"
 useOpenPanel().track('my_event', { foo: 'bar' });
 ```
 
@@ -140,7 +140,7 @@ useOpenPanel().track('my_event', { foo: 'bar' });
 
 To identify a user, call the `op.identify( method with a unique identifier.
 
-```js filename="index.js"
+```js title="index.js"
 useOpenPanel().identify({
   profileId: '123', // Required
   firstName: 'Joe',
@@ -158,7 +158,7 @@ For server components you can use the `IdentifyComponent` component which is exp
 
 > This component is great if you have the user data available on the server side.
 
-```tsx filename="app/nested/layout.tsx"
+```tsx title="app/nested/layout.tsx"
 import { IdentifyComponent } from '@openpanel/nextjs';
 
 export default function Layout({ children }) {
@@ -186,7 +186,7 @@ export default function Layout({ children }) {
 
 To set properties that will be sent with every event:
 
-```js filename="index.js"
+```js title="index.js"
 useOpenPanel().setGlobalProperties({
   app_version: '1.0.2',
   environment: 'production',
@@ -197,7 +197,7 @@ useOpenPanel().setGlobalProperties({
 
 To create an alias for a user:
 
-```js filename="index.js"
+```js title="index.js"
 useOpenPanel().alias({
   alias: 'a1',
   profileId: '1'
@@ -210,7 +210,7 @@ To increment a numeric property on a user profile.
 
 - `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
 
-```js filename="index.js"
+```js title="index.js"
 useOpenPanel().increment({
   profileId: '1',
   property: 'visits',
@@ -224,7 +224,7 @@ To decrement a numeric property on a user profile.
 
 - `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
 
-```js filename="index.js"
+```js title="index.js"
 useOpenPanel().decrement({
   profileId: '1',
   property: 'visits',
@@ -236,7 +236,7 @@ useOpenPanel().decrement({
 
 To clear the current user's data:
 
-```js filename="index.js"
+```js title="index.js"
 useOpenPanel().clear()
 ```
 
@@ -286,7 +286,7 @@ export function GET() {
 
 With `createNextRouteHandler` you can proxy your events through your server, this will ensure all events are tracked since there is a lot of adblockers that block requests to third party domains.
 
-```typescript filename="/app/api/op/route.ts"
+```typescript title="/app/api/[...op]/route.ts"
 import { createNextRouteHandler } from '@openpanel/nextjs/server';
 
 export const POST = createNextRouteHandler();
@@ -294,9 +294,9 @@ export const POST = createNextRouteHandler();
 
 Remember to change the `apiUrl` in the `OpenPanelComponent` to your own server.
 
-```tsx {2}
+```tsx
 <OpenPanelComponent
-  apiUrl="/api/op"
+  apiUrl="/api/op" // [!code highlight]
   clientId="your-client-id"
   trackScreenViews={true}
 />

@@ -107,11 +107,11 @@ When self-hosting you'll need to provide your api url when initializing the SDK.
 
 The path should be `/api` and the domain should be your domain.
 
-```html filename="index.html" {4}
+```html title="index.html"
 <script>
   window.op = window.op||function(...args){(window.op.q=window.op.q||[]).push(args);};
   window.op('init', {
-    apiUrl: 'https://your-domain.com/api',
+    apiUrl: 'https://your-domain.com/api', // [!code highlight]
     clientId: 'YOUR_CLIENT_ID',
     trackScreenViews: true,
     trackOutgoingLinks: true,
@@ -121,11 +121,11 @@ The path should be `/api` and the domain should be your domain.
 <script src="https://openpanel.dev/op1.js" defer async></script>
 ```
 
-```js filename="op.ts" {4}
+```js title="op.ts"
 import { OpenPanel } from '@openpanel/sdk';
 
 const op = new OpenPanel({
-  apiUrl: 'https://your-domain.com/api',
+  apiUrl: 'https://your-domain.com/api', // [!code highlight]
   clientId: 'YOUR_CLIENT_ID',
   trackScreenViews: true,
   trackOutgoingLinks: true,
