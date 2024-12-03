@@ -1,6 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
-
-import { getSafeJson } from '@openpanel/common';
+import { generateId, getSafeJson } from '@openpanel/common';
 import type { ILogger } from '@openpanel/logger';
 import { createLogger } from '@openpanel/logger';
 import { getRedisCache } from '@openpanel/redis';
@@ -57,26 +55,27 @@ export class RedisBuffer<T> {
   }
 
   public async tryFlush(): Promise<void> {
-    const lockId = uuidv4();
+    const lockId = generateId();
     const acquired = await getRedisCache().set(
       this.lockKey,
       lockId,
       'EX',
-      8,
+      60,
       'NX',
     );
 
     if (acquired === 'OK') {
-      this.logger.info('Lock acquired. Attempting to flush.');
+      this.logger.info(`Lock acquired. Attempting to flush. ID: ${lockId}`);
       try {
         await this.flush();
       } catch (error) {
-        this.logger.error('Failed to flush buffer', { error });
+        this.logger.error(`Failed to flush buffer. ID: ${lockId}`, { error });
       } finally {
+        this.logger.info(`Releasing lock. ID: ${lockId}`);
         await this.releaseLock(lockId);
       }
     } else {
-      this.logger.warn('Failed to acquire lock. Skipping flush.');
+      this.logger.warn(`Failed to acquire lock. Skipping flush. ID: ${lockId}`);
     }
   }
 
