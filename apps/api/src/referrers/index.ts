@@ -2680,5 +2680,6 @@ const referrers: Record<string, { type: string; name: string }> = {
   'hyves.nl': { type: 'social', name: 'Hyves' },
   'paper.li': { type: 'social', name: 'Paper.li' },
   'moikrug.ru': { type: 'social', name: 'MoiKrug.ru' },
+  'bsky.app': { type: 'social', name: 'Bluesky' },
 } as const;
 export default referrers;

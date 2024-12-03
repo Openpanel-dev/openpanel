@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+// extras
+const extraReferrers = {
+  'bsky.app': { type: 'social', name: 'Bluesky' },
+};
+
 function transform(data: any) {
   const obj: Record<string, unknown> = {};
   for (const type in data) {
@@ -34,7 +39,10 @@ async function main() {
         `// The orginal referers.yml is based on Piwik's SearchEngines.php and Socials.php, copyright 2012 Matthieu Aubry and available under the GNU General Public License v3.`,
         '',
         `const referrers: Record<string, { type: string, name: string }> = ${JSON.stringify(
-          transform(data),
+          {
+            ...transform(data),
+            ...extraReferrers,
+          },
         )} as const;`,
         'export default referrers;',
       ].join('\n'),
