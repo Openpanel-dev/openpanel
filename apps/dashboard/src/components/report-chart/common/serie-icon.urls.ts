@@ -1,6 +1,7 @@
 // biome-ignore format: annoying
 
 const data = {
+  amazon: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/Amazon_icon.svg',
   'chromium os': 'https://upload.wikimedia.org/wikipedia/commons/2/28/Chromium_Logo.svg',
   'mac os': 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/MacOS_logo.svg/1200px-MacOS_logo.svg.png',
   apple: 'https://sladesportfolio.wordpress.com/wp-content/uploads/2015/08/apple_logo_black-svg.png',
