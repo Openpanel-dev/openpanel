@@ -38,6 +38,7 @@ export class SdkAuthError extends Error {
   ) {
     super(message);
     this.name = 'SdkAuthError';
+    this.message = message;
     this.payload = payload;
   }
 }
