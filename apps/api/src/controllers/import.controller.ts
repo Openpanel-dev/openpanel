@@ -10,12 +10,17 @@ export async function importEvents(
   }>,
   reply: FastifyReply,
 ) {
+  const projectId = request.client?.projectId;
+  if (!projectId) {
+    throw new Error('Project ID is required');
+  }
+
   const importedAt = formatClickhouseDate(new Date());
   const values: IClickhouseEvent[] = request.body.map((event) => {
     return {
       ...event,
       properties: toDots(event.properties),
-      project_id: request.client?.projectId ?? '',
+      project_id: projectId,
       created_at: formatClickhouseDate(event.created_at),
       imported_at: importedAt,
     };

@@ -39,7 +39,7 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
 
 export const originalCh = createClient({
   // TODO: remove this after migration
-  url: process.env.CLICKHOUSE_URL_CLUSTER ?? process.env.CLICKHOUSE_URL,
+  url: process.env.CLICKHOUSE_URL_DIRECT ?? process.env.CLICKHOUSE_URL,
   ...CLICKHOUSE_OPTIONS,
 });
 

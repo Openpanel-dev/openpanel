@@ -1,20 +1,9 @@
 import { SdkAuthError, validateSdkRequest } from '@/utils/auth';
-import type { TrackHandlerPayload } from '@openpanel/sdk';
-import type {
-  FastifyReply,
-  FastifyRequest,
-  HookHandlerDoneFunction,
-} from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
-export async function clientHook(
-  req: FastifyRequest<{
-    Body: TrackHandlerPayload;
-  }>,
-  reply: FastifyReply,
-) {
+export async function clientHook(req: FastifyRequest, reply: FastifyReply) {
   try {
-    const client = await validateSdkRequest(req.headers);
-    req.projectId = client.projectId;
+    const client = await validateSdkRequest(req);
     req.client = client;
   } catch (error) {
     if (error instanceof SdkAuthError) {

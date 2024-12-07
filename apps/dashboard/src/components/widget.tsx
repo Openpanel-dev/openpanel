@@ -9,7 +9,7 @@ export function WidgetHead({ children, className }: WidgetHeadProps) {
   return (
     <div
       className={cn(
-        'border-b border-border p-4 [&_.title]:whitespace-nowrap [&_.title]:font-medium',
+        'border-b border-border p-4 [&_.title]:whitespace-nowrap [&_.title]:font-semibold [&_.title]:text-lg',
         className,
       )}
     >

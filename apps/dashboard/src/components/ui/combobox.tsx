@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/utils/cn';
+import { PopoverPortal } from '@radix-ui/react-popover';
 import type { LucideIcon } from 'lucide-react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
@@ -98,67 +99,69 @@ export function Combobox<T extends string>({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent
-        className="w-full max-w-md p-0"
-        align={align}
-        portal={portal}
-      >
-        <Command shouldFilter={false}>
-          {searchable === true && (
-            <CommandInput
-              placeholder="Search item..."
-              value={search}
-              onValueChange={setSearch}
-            />
-          )}
-          {typeof onCreate === 'function' && search ? (
-            <CommandEmpty className="p-2">
-              <Button
-                onClick={() => {
-                  onCreate(search as T);
-                  setSearch('');
-                  setOpen(false);
-                }}
-              >
-                Create &quot;{search}&quot;
-              </Button>
-            </CommandEmpty>
-          ) : (
-            <CommandEmpty>Nothing selected</CommandEmpty>
-          )}
-          <VirtualList
-            height={Math.min(items.length * 32, 300)}
-            data={items.filter((item) => {
-              if (search === '') return true;
-              return item.label.toLowerCase().includes(search.toLowerCase());
-            })}
-            itemHeight={32}
-            itemKey="value"
-            className="min-w-60"
-          >
-            {(item) => (
-              <CommandItem
-                key={item.value}
-                value={item.value}
-                onSelect={(currentValue) => {
-                  const value = find(currentValue)?.value ?? currentValue;
-                  onChange(value as T);
-                  setOpen(false);
-                }}
-                {...(item.disabled && { disabled: true })}
-              >
-                <Check
-                  className={cn(
-                    'mr-2 h-4 w-4 flex-shrink-0',
-                    value === item.value ? 'opacity-100' : 'opacity-0',
-                  )}
-                />
-                {item.label}
-              </CommandItem>
+      <PopoverPortal>
+        <PopoverContent
+          className="w-full max-w-md p-0"
+          align={align}
+          portal={portal}
+        >
+          <Command shouldFilter={false}>
+            {searchable === true && (
+              <CommandInput
+                placeholder="Search item..."
+                value={search}
+                onValueChange={setSearch}
+              />
             )}
-          </VirtualList>
-        </Command>
-      </PopoverContent>
+            {typeof onCreate === 'function' && search ? (
+              <CommandEmpty className="p-2">
+                <Button
+                  onClick={() => {
+                    onCreate(search as T);
+                    setSearch('');
+                    setOpen(false);
+                  }}
+                >
+                  Create &quot;{search}&quot;
+                </Button>
+              </CommandEmpty>
+            ) : (
+              <CommandEmpty>Nothing selected</CommandEmpty>
+            )}
+            <VirtualList
+              height={Math.min(items.length * 32, 300)}
+              data={items.filter((item) => {
+                if (search === '') return true;
+                return item.label.toLowerCase().includes(search.toLowerCase());
+              })}
+              itemHeight={32}
+              itemKey="value"
+              className="min-w-60"
+            >
+              {(item) => (
+                <CommandItem
+                  key={item.value}
+                  value={item.value}
+                  onSelect={(currentValue) => {
+                    const value = find(currentValue)?.value ?? currentValue;
+                    onChange(value as T);
+                    setOpen(false);
+                  }}
+                  {...(item.disabled && { disabled: true })}
+                >
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4 flex-shrink-0',
+                      value === item.value ? 'opacity-100' : 'opacity-0',
+                    )}
+                  />
+                  {item.label}
+                </CommandItem>
+              )}
+            </VirtualList>
+          </Command>
+        </PopoverContent>
+      </PopoverPortal>
     </Popover>
   );
 }

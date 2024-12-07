@@ -54,7 +54,7 @@ export async function postEvent(
     {
       type: 'incomingEvent',
       payload: {
-        projectId: request.projectId,
+        projectId,
         headers: getStringHeaders(request.headers),
         event: {
           ...request.body,

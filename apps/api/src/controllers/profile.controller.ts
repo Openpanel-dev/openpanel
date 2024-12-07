@@ -16,7 +16,10 @@ export async function updateProfile(
   reply: FastifyReply,
 ) {
   const { profileId, properties, ...rest } = request.body;
-  const projectId = request.projectId;
+  const projectId = request.client!.projectId;
+  if (!projectId) {
+    return reply.status(400).send('No projectId');
+  }
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const uaInfo = parseUserAgent(ua, properties);
@@ -44,7 +47,10 @@ export async function incrementProfileProperty(
   reply: FastifyReply,
 ) {
   const { profileId, property, value } = request.body;
-  const projectId = request.projectId;
+  const projectId = request.client!.projectId;
+  if (!projectId) {
+    return reply.status(400).send('No projectId');
+  }
 
   const profile = await getProfileById(profileId, projectId);
   if (!profile) {
@@ -83,7 +89,10 @@ export async function decrementProfileProperty(
   reply: FastifyReply,
 ) {
   const { profileId, property, value } = request.body;
-  const projectId = request.projectId;
+  const projectId = request.client?.projectId;
+  if (!projectId) {
+    return reply.status(400).send('No projectId');
+  }
 
   const profile = await getProfileById(profileId, projectId);
   if (!profile) {

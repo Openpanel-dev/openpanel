@@ -271,3 +271,31 @@ export const zCreateNotificationRule = z.object({
   sendToEmail: z.boolean(),
   projectId: z.string(),
 });
+
+export const zProjectFilterIp = z.object({
+  type: z.literal('ip'),
+  ip: z.string(),
+});
+export type IProjectFilterIp = z.infer<typeof zProjectFilterIp>;
+
+export const zProjectFilterProfileId = z.object({
+  type: z.literal('profile_id'),
+  profileId: z.string(),
+});
+export type IProjectFilterProfileId = z.infer<typeof zProjectFilterProfileId>;
+
+export const zProjectFilters = z.discriminatedUnion('type', [
+  zProjectFilterIp,
+  zProjectFilterProfileId,
+]);
+export type IProjectFilters = z.infer<typeof zProjectFilters>;
+
+export const zProject = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  filters: z.array(zProjectFilters).default([]),
+  domain: z.string().url().or(z.literal('').or(z.null())),
+  cors: z.array(z.string()).default([]),
+  crossDomain: z.boolean().default(false),
+});
+export type IProjectEdit = z.infer<typeof zProject>;

@@ -80,6 +80,11 @@ model Project {
   organizationId String
   eventsCount    Int           @default(0)
   types          ProjectType[] @default([])
+  domain         String?
+  cors           String[]      @default([])
+  crossDomain    Boolean       @default(false)
+  /// [IPrismaProjectFilters]
+  filters        Json          @default("[]")
 
   events     Event[]
   profiles   Profile[]

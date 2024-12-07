@@ -41,26 +41,29 @@ export default function EditOrganization({
   });
 
   return (
-    <form
-      onSubmit={handleSubmit((values) => {
-        mutation.mutate(values);
-      })}
-    >
-      <Widget>
-        <WidgetHead className="flex items-center justify-between">
-          <span className="title">Org. details</span>
-          <Button size="sm" type="submit" disabled={!formState.isDirty}>
-            Save
-          </Button>
-        </WidgetHead>
-        <WidgetBody>
-          <InputWithLabel
-            label="Name"
-            {...register('name')}
-            defaultValue={organization?.name}
-          />
-        </WidgetBody>
-      </Widget>
-    </form>
+    <section className="max-w-screen-sm">
+      <form
+        onSubmit={handleSubmit((values) => {
+          mutation.mutate(values);
+        })}
+      >
+        <Widget>
+          <WidgetHead className="flex items-center justify-between">
+            <span className="title">Details</span>
+          </WidgetHead>
+          <WidgetBody className="flex items-end gap-2">
+            <InputWithLabel
+              className="flex-1"
+              label="Name"
+              {...register('name')}
+              defaultValue={organization?.name}
+            />
+            <Button size="sm" type="submit" disabled={!formState.isDirty}>
+              Save
+            </Button>
+          </WidgetBody>
+        </Widget>
+      </form>
+    </section>
   );
 }

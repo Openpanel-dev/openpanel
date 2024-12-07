@@ -11,7 +11,7 @@ import metricsPlugin from 'fastify-metrics';
 import { path, pick } from 'ramda';
 
 import { generateId } from '@openpanel/common';
-import type { IServiceClient } from '@openpanel/db';
+import type { IServiceClient, IServiceClientWithProject } from '@openpanel/db';
 import { getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
@@ -21,6 +21,7 @@ import {
   healthcheck,
   healthcheckQueue,
 } from './controllers/healthcheck.controller';
+import { ipHook } from './hooks/ip.hook';
 import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
 import { timestampHook } from './hooks/timestamp.hook';
@@ -38,8 +39,8 @@ sourceMapSupport.install();
 
 declare module 'fastify' {
   interface FastifyRequest {
-    projectId: string;
-    client: IServiceClient | null;
+    client: IServiceClientWithProject | null;
+    clientIp?: string;
     timestamp?: number;
   }
 }
@@ -60,6 +61,7 @@ const startServer = async () => {
           : generateId(),
     });
 
+    fastify.addHook('preHandler', ipHook);
     fastify.addHook('preHandler', timestampHook);
     fastify.addHook('onRequest', requestIdHook);
     fastify.addHook('onResponse', requestLoggingHook);
