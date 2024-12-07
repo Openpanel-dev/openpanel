@@ -1,10 +1,11 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullWidthNavbar from '@/components/full-width-navbar';
 import ProjectCard from '@/components/projects/project-card';
-import SignOutButton from '@/components/sign-out-button';
 import { redirect } from 'next/navigation';
 
+import SettingsToggle from '@/components/settings-toggle';
 import { getCurrentOrganizations, getCurrentProjects } from '@openpanel/db';
+import LayoutProjectSelector from './[projectId]/layout-project-selector';
 
 interface PageProps {
   params: {
@@ -21,7 +22,6 @@ export default async function Page({
   ]);
 
   const organization = organizations.find((org) => org.id === organizationId);
-  console.log(organizations, organizationId, projects);
 
   if (!organization) {
     return (
@@ -42,10 +42,16 @@ export default async function Page({
   return (
     <div>
       <FullWidthNavbar>
-        <SignOutButton />
+        <div className="row gap-4">
+          <LayoutProjectSelector
+            align="start"
+            projects={projects}
+            organizations={organizations}
+          />
+          <SettingsToggle />
+        </div>
       </FullWidthNavbar>
       <div className="mx-auto flex flex-col gap-4 p-4 pt-20 md:max-w-[95vw] lg:max-w-[80vw] ">
-        <h1 className="text-xl font-medium">Select project</h1>
         <div className="grid gap-4 md:grid-cols-2">
           {projects.map((item) => (
             <ProjectCard key={item.id} {...item} />

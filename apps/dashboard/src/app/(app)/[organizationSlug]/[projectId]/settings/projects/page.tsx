@@ -1,29 +1,40 @@
 import { Padding } from '@/components/ui/padding';
 
 import {
+  db,
   getClientsByOrganizationId,
+  getProjectWithClients,
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 
-import ListProjects from './list-projects';
+import { notFound } from 'next/navigation';
+import EditProjectDetails from './edit-project-details';
+import EditProjectFilters from './edit-project-filters';
+import ProjectClients from './project-clients';
 
 interface PageProps {
   params: {
-    organizationSlug: string;
+    projectId: string;
   };
 }
 
-export default async function Page({
-  params: { organizationSlug: organizationId },
-}: PageProps) {
-  const [projects, clients] = await Promise.all([
-    getProjectsByOrganizationId(organizationId),
-    getClientsByOrganizationId(organizationId),
-  ]);
+export default async function Page({ params: { projectId } }: PageProps) {
+  const project = await getProjectWithClients(projectId);
+
+  if (!project) {
+    notFound();
+  }
 
   return (
     <Padding>
-      <ListProjects projects={projects} clients={clients} />
+      <div className="col gap-4">
+        <div className="row justify-between items-center">
+          <h1 className="text-2xl font-bold">{project.name}</h1>
+        </div>
+        <EditProjectDetails project={project} />
+        <EditProjectFilters project={project} />
+        <ProjectClients project={project} />
+      </div>
     </Padding>
   );
 }

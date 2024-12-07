@@ -77,7 +77,9 @@ export default function LayoutProjectSelector({
           <span className="mx-2 truncate">
             {projectId
               ? projects.find((p) => p.id === projectId)?.name
-              : 'Select project'}
+              : organizationId
+                ? organizations?.find((o) => o.id === organizationId)?.name
+                : 'Select project'}
           </span>
           <ChevronsUpDownIcon className="ml-auto h-4 w-4 shrink-0 opacity-50" />
         </Button>

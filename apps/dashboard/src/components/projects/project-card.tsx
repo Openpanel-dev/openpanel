@@ -5,30 +5,48 @@ import { escape } from 'sqlstring';
 import type { IServiceProject } from '@openpanel/db';
 import { TABLE_NAMES, chQuery } from '@openpanel/db';
 
+import { SettingsIcon } from 'lucide-react';
+import Link from 'next/link';
 import { ChartSSR } from '../chart-ssr';
 import { FadeIn } from '../fade-in';
+import { SerieIcon } from '../report-chart/common/serie-icon';
+import { LinkButton } from '../ui/button';
 
-function ProjectCard({ id, name, organizationId }: IServiceProject) {
+function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
   // For some unknown reason I get when navigating back to this page when using <Link />
   // Should be solved: https://github.com/vercel/next.js/issues/61336
   // But still get the error
   return (
-    <a
-      href={`/${organizationId}/${id}`}
-      className="card inline-flex flex-col gap-2 p-4 transition-transform hover:-translate-y-1"
-    >
-      <div className="font-medium">{name}</div>
-      <div className="-mx-4 aspect-[15/1]">
-        <Suspense>
-          <ProjectChart id={id} />
-        </Suspense>
-      </div>
-      <div className="flex justify-end gap-4 ">
-        <Suspense>
-          <ProjectMetrics id={id} />
-        </Suspense>
-      </div>
-    </a>
+    <div className="relative card hover:-translate-y-px hover:shadow-sm">
+      <a
+        href={`/${organizationId}/${id}`}
+        className="col p-4 transition-transform"
+      >
+        <div className="font-medium flex items-center gap-2 text-lg pb-2">
+          <div className="row gap-2 flex-1">
+            {domain && <SerieIcon name={domain ?? ''} />}
+            {name}
+          </div>
+        </div>
+        <div className="-mx-4 aspect-[8/1]">
+          <Suspense>
+            <ProjectChart id={id} />
+          </Suspense>
+        </div>
+        <div className="flex justify-end gap-4 h-9 md:h-4">
+          <Suspense>
+            <ProjectMetrics id={id} />
+          </Suspense>
+        </div>
+      </a>
+      <LinkButton
+        variant="ghost"
+        href={`/${organizationId}/${id}/settings/projects`}
+        className="text-muted-foreground absolute top-2 right-2"
+      >
+        <SettingsIcon size={16} />
+      </LinkButton>
+    </div>
   );
 }
 

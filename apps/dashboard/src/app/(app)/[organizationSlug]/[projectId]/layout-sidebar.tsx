@@ -14,6 +14,7 @@ import type {
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 
+import Link from 'next/link';
 import LayoutMenu from './layout-menu';
 import LayoutProjectSelector from './layout-project-selector';
 
@@ -64,7 +65,9 @@ export function LayoutSidebar({
           </Button>
         </div>
         <div className="flex h-16 shrink-0 items-center gap-4 border-b border-border px-4">
-          <LogoSquare className="max-h-8" />
+          <Link href="/">
+            <LogoSquare className="max-h-8" />
+          </Link>
           <LayoutProjectSelector
             align="start"
             projects={projects}

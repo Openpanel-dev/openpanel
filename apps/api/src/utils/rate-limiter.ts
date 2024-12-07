@@ -28,7 +28,9 @@ export async function activateRateLimiter({
         req.headers['x-forwarded-for']) as string;
     },
     onExceeded: (req, reply) => {
-      req.log.warn('Rate limit exceeded');
+      req.log.warn('Rate limit exceeded', {
+        clientId: req.headers['openpanel-client-id'],
+      });
     },
   });
 }

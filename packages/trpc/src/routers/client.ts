@@ -1,7 +1,6 @@
 import crypto from 'node:crypto';
 import { z } from 'zod';
 
-import { stripTrailingSlash } from '@openpanel/common';
 import type { Prisma } from '@openpanel/db';
 import { db } from '@openpanel/db';
 
@@ -47,8 +46,6 @@ export const clientRouter = createTRPCRouter({
         name: z.string(),
         projectId: z.string(),
         organizationId: z.string(),
-        cors: z.string().nullable(),
-        crossDomain: z.boolean().optional(),
         type: z.enum(['read', 'write', 'root']).optional(),
       }),
     )
@@ -59,9 +56,7 @@ export const clientRouter = createTRPCRouter({
         projectId: input.projectId,
         name: input.name,
         type: input.type ?? 'write',
-        cors: input.cors ? stripTrailingSlash(input.cors) : null,
         secret: await hashPassword(secret),
-        crossDomain: input.crossDomain ?? false,
       };
 
       const client = await db.client.create({ data });

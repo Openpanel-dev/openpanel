@@ -1,9 +1,19 @@
-import type { RawRequestDefaultExpression } from 'fastify';
+import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
 import jwt from 'jsonwebtoken';
 
 import { verifyPassword } from '@openpanel/common/server';
-import type { Client, IServiceClient } from '@openpanel/db';
-import { ClientType, db } from '@openpanel/db';
+import type {
+  Client,
+  IServiceClient,
+  IServiceClientWithProject,
+} from '@openpanel/db';
+import { ClientType, db, getClientByIdCached } from '@openpanel/db';
+import type { PostEventPayload, TrackHandlerPayload } from '@openpanel/sdk';
+import type {
+  IProjectFilterIp,
+  IProjectFilterProfileId,
+} from '@openpanel/validation';
+import { path } from 'ramda';
 
 const cleanDomain = (domain: string) =>
   domain
@@ -32,11 +42,12 @@ export class SdkAuthError extends Error {
   }
 }
 
-type ClientWithProjectId = Client & { projectId: string };
-
 export async function validateSdkRequest(
-  headers: RawRequestDefaultExpression['headers'],
-): Promise<ClientWithProjectId> {
+  req: FastifyRequest<{
+    Body: PostEventPayload | TrackHandlerPayload;
+  }>,
+): Promise<IServiceClientWithProject> {
+  const { headers, clientIp } = req;
   const clientIdNew = headers['openpanel-client-id'] as string;
   const clientIdOld = headers['mixan-client-id'] as string;
   const clientSecretNew = headers['openpanel-client-secret'] as string;
@@ -59,22 +70,38 @@ export async function validateSdkRequest(
     throw createError('Ingestion: Missing client id');
   }
 
-  const client = await db.client.findUnique({
-    where: {
-      id: clientId,
-    },
-  });
+  const client = await getClientByIdCached(clientId);
 
   if (!client) {
     throw createError('Ingestion: Invalid client id');
   }
 
-  if (!client.projectId) {
+  if (!client.project) {
     throw createError('Ingestion: Client has no project');
   }
 
-  if (client.cors) {
-    const domainAllowed = client.cors.split(',').find((domain) => {
+  // Filter out blocked IPs
+  const ipFilter = client.project.filters.filter(
+    (filter): filter is IProjectFilterIp => filter.type === 'ip',
+  );
+  if (ipFilter.some((filter) => filter.ip === clientIp)) {
+    throw createError('Ingestion: IP address is blocked by project filter');
+  }
+
+  // Filter out blocked profile ids
+  const profileFilter = client.project.filters.filter(
+    (filter): filter is IProjectFilterProfileId => filter.type === 'profile_id',
+  );
+  const profileId =
+    path<string | undefined>(['payload', 'profileId'], req.body) || // Track handler
+    path<string | undefined>(['profileId'], req.body); // Event handler
+
+  if (profileFilter.some((filter) => filter.profileId === profileId)) {
+    throw createError('Ingestion: Profile id is blocked by project filter');
+  }
+
+  if (client.project.cors) {
+    const domainAllowed = client.project.cors.find((domain) => {
       const cleanedDomain = cleanDomain(domain);
       // support wildcard domains `*.foo.com`
       if (cleanedDomain.includes('*')) {
@@ -91,17 +118,17 @@ export async function validateSdkRequest(
     });
 
     if (domainAllowed) {
-      return client as ClientWithProjectId;
+      return client;
     }
 
-    if (client.cors === '*' && origin) {
-      return client as ClientWithProjectId;
+    if (client.project.cors.includes('*') && origin) {
+      return client;
     }
   }
 
   if (client.secret && clientSecret) {
     if (await verifyPassword(clientSecret, client.secret)) {
-      return client as ClientWithProjectId;
+      return client;
     }
   }
 
@@ -110,14 +137,10 @@ export async function validateSdkRequest(
 
 export async function validateExportRequest(
   headers: RawRequestDefaultExpression['headers'],
-): Promise<IServiceClient> {
+): Promise<IServiceClientWithProject> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
-  const client = await db.client.findUnique({
-    where: {
-      id: clientId,
-    },
-  });
+  const client = await getClientByIdCached(clientId);
 
   if (!client) {
     throw new Error('Export: Invalid client id');
@@ -140,14 +163,10 @@ export async function validateExportRequest(
 
 export async function validateImportRequest(
   headers: RawRequestDefaultExpression['headers'],
-): Promise<IServiceClient> {
+): Promise<IServiceClientWithProject> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
-  const client = await db.client.findUnique({
-    where: {
-      id: clientId,
-    },
-  });
+  const client = await getClientByIdCached(clientId);
 
   if (!client) {
     throw new Error('Import: Invalid client id');

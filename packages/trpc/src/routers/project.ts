@@ -2,11 +2,14 @@ import { z } from 'zod';
 
 import {
   db,
+  getClientById,
+  getClientByIdCached,
   getId,
   getProjectByIdCached,
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 
+import { zProject } from '@openpanel/validation';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -24,13 +27,12 @@ export const projectRouter = createTRPCRouter({
     }),
 
   update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-      }),
-    )
+    .input(zProject.partial())
     .mutation(async ({ input, ctx }) => {
+      if (!input.id) {
+        throw new Error('Project ID is required to update a project');
+      }
+
       const access = await getProjectAccess({
         userId: ctx.session.userId,
         projectId: input.id,
@@ -39,30 +41,52 @@ export const projectRouter = createTRPCRouter({
       if (!access) {
         throw TRPCAccessError('You do not have access to this project');
       }
+
       const res = await db.project.update({
         where: {
           id: input.id,
         },
         data: {
           name: input.name,
+          crossDomain: input.crossDomain,
+          filters: input.filters,
+          cors: input.cors,
+          domain: input.domain,
+        },
+        include: {
+          clients: {
+            select: {
+              id: true,
+            },
+          },
         },
       });
-      await getProjectByIdCached.clear(input.id);
+      await Promise.all([
+        getProjectByIdCached.clear(input.id),
+        res.clients.map((client) => {
+          getClientByIdCached.clear(client.id);
+        }),
+      ]);
       return res;
     }),
   create: protectedProcedure
     .input(
-      z.object({
-        name: z.string().min(1),
-        organizationId: z.string(),
-      }),
+      zProject.omit({ id: true }).merge(
+        z.object({
+          organizationId: z.string(),
+        }),
+      ),
     )
-    .mutation(async ({ input: { name, organizationId } }) => {
+    .mutation(async ({ input }) => {
       return db.project.create({
         data: {
-          id: await getId('project', name),
-          organizationId,
-          name: name,
+          id: await getId('project', input.name),
+          organizationId: input.organizationId,
+          name: input.name,
+          domain: input.domain,
+          cors: input.cors,
+          crossDomain: input.crossDomain,
+          filters: [],
         },
       });
     }),
