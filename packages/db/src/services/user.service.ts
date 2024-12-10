@@ -1,9 +1,9 @@
-import { auth } from '@clerk/nextjs/server';
+import { auth } from '@openpanel/auth/server/nextjs';
 
 import { db } from '../prisma-client';
 
 export async function getCurrentUser() {
-  const session = auth();
+  const session = await auth();
   if (!session.userId) {
     return null;
   }
@@ -16,4 +16,34 @@ export async function getUserById(id: string) {
       id,
     },
   });
+}
+
+export async function getUserAccount({
+  email,
+  provider,
+  providerId,
+}: { email: string; provider: string; providerId?: string }) {
+  const res = await db.user.findFirst({
+    where: {
+      email,
+    },
+    include: {
+      accounts: {
+        where: {
+          provider,
+          providerId: providerId ? String(providerId) : undefined,
+        },
+        take: 1,
+      },
+    },
+  });
+
+  if (!res?.accounts[0]) {
+    return null;
+  }
+
+  return {
+    ...res,
+    account: res?.accounts[0],
+  };
 }

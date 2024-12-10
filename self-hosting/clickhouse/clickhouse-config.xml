@@ -22,4 +22,32 @@
     <session_log remove="remove"/>
     <part_log remove="remove"/>
 
+    <listen_host>0.0.0.0</listen_host>
+    <interserver_listen_host>0.0.0.0</interserver_listen_host>
+    <interserver_http_host>op-ch</interserver_http_host>
+
+    <macros>
+        <shard>1</shard>
+        <replica>replica1</replica>
+        <cluster>openpanel_cluster</cluster>
+    </macros>
+
+    <zookeeper>
+        <node index="1">
+            <host>op-zk</host>
+            <port>9181</port>
+        </node>
+    </zookeeper>
+
+    <remote_servers>
+        <openpanel_cluster>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>op-ch</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+        </openpanel_cluster>
+    </remote_servers>
 </clickhouse>

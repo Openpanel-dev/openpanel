@@ -1,5 +1,4 @@
-import { auth } from '@clerk/nextjs/server';
-
+import { auth } from '@openpanel/auth/server/nextjs';
 import { cacheable } from '@openpanel/redis';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -56,7 +55,7 @@ export async function getProjectsByOrganizationId(organizationId: string) {
 }
 
 export async function getCurrentProjects(organizationId: string) {
-  const session = auth();
+  const session = await auth();
   if (!session.userId) {
     return [];
   }

@@ -44,10 +44,10 @@ export function useColumns(
       ),
     },
     {
-      accessorKey: 'access',
+      accessorKey: 'projectAccess',
       header: 'Access',
       cell: ({ row }) => {
-        const access = pathOr<string[]>([], ['meta', 'access'], row.original);
+        const access = row.original.projectAccess;
         return (
           <>
             {access.map((id) => {
@@ -102,7 +102,7 @@ function ActionCell({ row }: { row: Row<IServiceInvite> }) {
         <DropdownMenuItem
           className="text-destructive"
           onClick={() => {
-            revoke.mutate({ memberId: row.original.id });
+            revoke.mutate({ inviteId: row.original.id });
           }}
         >
           Revoke invite

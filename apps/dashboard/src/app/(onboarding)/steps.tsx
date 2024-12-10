@@ -17,14 +17,14 @@ type Props = {
 function useSteps(path: string) {
   const steps: Step[] = [
     {
-      name: 'Account creation',
-      status: 'pending',
-      match: '/sign-up',
-    },
-    {
-      name: 'General',
+      name: 'Create an account',
       status: 'pending',
       match: '/onboarding',
+    },
+    {
+      name: 'Create a project',
+      status: 'pending',
+      match: '/onboarding/project',
     },
     {
       name: 'Connect your data',
@@ -75,7 +75,7 @@ const Steps = ({ className }: Props) => {
         {steps.map((step, index) => (
           <div
             className={cn(
-              'flex flex-shrink-0 items-center gap-2 self-start px-3 py-1.5',
+              'flex flex-shrink-0 items-center gap-4 self-start px-3 py-1.5',
               step.status === 'current' &&
                 'rounded-xl border border-border bg-card',
               step.status === 'completed' &&
@@ -108,7 +108,7 @@ const Steps = ({ className }: Props) => {
               </div>
             </div>
 
-            <div className=" font-medium">{step.name}</div>
+            <div className="font-medium">{step.name}</div>
           </div>
         ))}
       </div>

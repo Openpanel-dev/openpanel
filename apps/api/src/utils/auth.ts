@@ -1,13 +1,8 @@
 import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
-import jwt from 'jsonwebtoken';
 
 import { verifyPassword } from '@openpanel/common/server';
-import type {
-  Client,
-  IServiceClient,
-  IServiceClientWithProject,
-} from '@openpanel/db';
-import { ClientType, db, getClientByIdCached } from '@openpanel/db';
+import type { IServiceClientWithProject } from '@openpanel/db';
+import { ClientType, getClientByIdCached } from '@openpanel/db';
 import type { PostEventPayload, TrackHandlerPayload } from '@openpanel/sdk';
 import type {
   IProjectFilterIp,
@@ -186,24 +181,4 @@ export async function validateImportRequest(
   }
 
   return client;
-}
-
-export function validateClerkJwt(token?: string) {
-  if (!token) {
-    return null;
-  }
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.CLERK_PUBLIC_PEM_KEY!.replace(/\\n/g, '\n'),
-    );
-
-    if (typeof decoded === 'object') {
-      return decoded;
-    }
-  } catch (e) {
-    //
-  }
-
-  return null;
 }

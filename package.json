@@ -31,7 +31,6 @@
   },
   "trustedDependencies": [
     "@biomejs/biome",
-    "@clerk/shared",
     "@prisma/client",
     "@prisma/engines",
     "bcrypt",

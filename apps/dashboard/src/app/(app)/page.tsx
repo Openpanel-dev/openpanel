@@ -9,5 +9,5 @@ export default async function Page() {
     return redirect(`/${organizations[0]?.id}`);
   }
 
-  return redirect('/onboarding');
+  return redirect('/onboarding/project');
 }

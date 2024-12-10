@@ -32,7 +32,7 @@ export default async function Page({
   }
 
   if (projects.length === 0) {
-    return redirect('/onboarding');
+    return redirect('/onboarding/project');
   }
 
   if (projects.length === 1 && projects[0]) {

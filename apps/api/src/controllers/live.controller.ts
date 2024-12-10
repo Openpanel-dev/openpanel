@@ -1,4 +1,3 @@
-import { validateClerkJwt } from '@/utils/auth';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import superjson from 'superjson';
 import type * as WebSocket from 'ws';
@@ -124,18 +123,24 @@ export async function wsProjectEvents(
   }>,
 ) {
   const { params, query } = req;
-  const { token } = query;
   const type = query.type || 'saved';
+  const subscribeToEvent = `event:${type}`;
+
   if (!['saved', 'received'].includes(type)) {
     connection.socket.send('Invalid type');
     connection.socket.close();
     return;
   }
-  const subscribeToEvent = `event:${type}`;
-  const decoded = validateClerkJwt(token);
-  const userId = decoded?.sub;
+
+  const userId = req.session?.userId;
+  if (!userId) {
+    connection.socket.send('No active session');
+    connection.socket.close();
+    return;
+  }
+
   const access = await getProjectAccess({
-    userId: userId!,
+    userId,
     projectId: params.projectId,
   });
 
@@ -185,18 +190,18 @@ export async function wsProjectNotifications(
   }>,
 ) {
   const { params, query } = req;
+  const userId = req.session?.userId;
 
-  if (!query.token) {
-    connection.socket.send('No token provided');
+  if (!userId) {
+    connection.socket.send('No active session');
     connection.socket.close();
     return;
   }
 
   const subscribeToEvent = 'notification';
-  const decoded = validateClerkJwt(query.token);
-  const userId = decoded?.sub;
+
   const access = await getProjectAccess({
-    userId: userId!,
+    userId,
     projectId: params.projectId,
   });
 

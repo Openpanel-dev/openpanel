@@ -84,3 +84,16 @@ export type FinalChart = {
   series: IChartSerie[];
   metrics: Metrics;
 };
+
+export type ISetCookie = (
+  key: string,
+  value: string,
+  options: {
+    maxAge?: number;
+    domain?: string;
+    path?: string;
+    sameSite?: 'lax' | 'strict' | 'none';
+    secure?: boolean;
+    httpOnly?: boolean;
+  },
+) => void;

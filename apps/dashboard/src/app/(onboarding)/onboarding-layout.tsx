@@ -11,7 +11,12 @@ export const OnboardingDescription = ({
   children,
   className,
 }: Pick<Props, 'children' | 'className'>) => (
-  <div className={cn('font-medium text-muted-foreground', className)}>
+  <div
+    className={cn(
+      'font-medium text-muted-foreground leading-normal [&_a]:underline [&_a]:font-semibold',
+      className,
+    )}
+  >
     {children}
   </div>
 );

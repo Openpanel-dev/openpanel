@@ -1,0 +1,8 @@
+#!/bin/bash
+
+brew install mkcert
+brew install nss
+
+mkcert -install
+
+mkcert op.local api.op.local 127.0.0.1 ::1

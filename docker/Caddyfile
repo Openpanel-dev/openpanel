@@ -1,0 +1,9 @@
+op.local {
+	tls /etc/ssl/cert.pem /etc/ssl/key.pem
+  reverse_proxy host.docker.internal:3000
+}
+
+api.op.local {
+	tls /etc/ssl/cert.pem /etc/ssl/key.pem
+  reverse_proxy host.docker.internal:3333
+}

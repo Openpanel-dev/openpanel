@@ -1,12 +1,15 @@
-import { auth } from '@clerk/nextjs/server';
-
-import type { Organization, Prisma, ProjectAccess } from '../prisma-client';
+import { auth } from '@openpanel/auth/server/nextjs';
+import type {
+  Invite,
+  Organization,
+  Prisma,
+  ProjectAccess,
+  User,
+} from '../prisma-client';
 import { db } from '../prisma-client';
 
 export type IServiceOrganization = ReturnType<typeof transformOrganization>;
-export type IServiceInvite = Prisma.MemberGetPayload<{
-  include: { user: true };
-}>;
+export type IServiceInvite = Invite;
 export type IServiceMember = Prisma.MemberGetPayload<{
   include: { user: true };
 }> & { access: ProjectAccess[] };
@@ -22,7 +25,8 @@ export function transformOrganization(org: Organization) {
 }
 
 export async function getCurrentOrganizations() {
-  const session = auth();
+  const session = await auth();
+
   if (!session.userId) return [];
 
   const organizations = await db.organization.findMany({
@@ -67,13 +71,9 @@ export async function getOrganizationByProjectId(projectId: string) {
 }
 
 export async function getInvites(organizationId: string) {
-  return db.member.findMany({
+  return db.invite.findMany({
     where: {
       organizationId,
-      userId: null,
-    },
-    include: {
-      user: true,
     },
   });
 }
@@ -111,4 +111,57 @@ export async function getMember(organizationId: string, userId: string) {
       userId,
     },
   });
+}
+
+export async function connectUserToOrganization({
+  user,
+  inviteId,
+}: {
+  user: User;
+  inviteId: string;
+}) {
+  const invite = await db.invite.findUnique({
+    where: {
+      id: inviteId,
+    },
+  });
+
+  if (!invite) {
+    throw new Error('Invite not found');
+  }
+
+  if (invite.expiresAt < new Date()) {
+    throw new Error('Invite expired');
+  }
+
+  const member = await db.member.create({
+    data: {
+      organizationId: invite.organizationId,
+      userId: user.id,
+      role: invite.role,
+      email: user.email,
+      invitedById: invite.createdById,
+    },
+  });
+
+  if (invite.projectAccess.length > 0) {
+    for (const projectId of invite.projectAccess) {
+      await db.projectAccess.create({
+        data: {
+          projectId,
+          userId: user.id,
+          organizationId: invite.organizationId,
+          level: 'write',
+        },
+      });
+    }
+  }
+
+  await db.invite.delete({
+    where: {
+      id: inviteId,
+    },
+  });
+
+  return member;
 }

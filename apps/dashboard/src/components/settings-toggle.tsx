@@ -18,7 +18,9 @@ import { useTheme } from 'next-themes';
 import * as React from 'react';
 
 import { useAppParams } from '@/hooks/useAppParams';
-import { useAuth } from '@clerk/nextjs';
+import { useLogout } from '@/hooks/useLogout';
+import { api } from '@/trpc/client';
+import { useRouter } from 'next/navigation';
 import { ProjectLink } from './links';
 
 interface Props {
@@ -26,9 +28,10 @@ interface Props {
 }
 
 export default function SettingsToggle({ className }: Props) {
+  const router = useRouter();
   const { setTheme, theme } = useTheme();
   const { projectId } = useAppParams();
-  const auth = useAuth();
+  const logout = useLogout();
 
   return (
     <DropdownMenu>
@@ -101,12 +104,7 @@ export default function SettingsToggle({ className }: Props) {
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-red-600"
-          onClick={() => {
-            auth.signOut();
-          }}
-        >
+        <DropdownMenuItem className="text-red-600" onClick={() => logout()}>
           Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
