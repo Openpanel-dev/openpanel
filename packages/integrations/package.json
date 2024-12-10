@@ -12,7 +12,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
-    "@types/node": "^18.16.0",
+    "@types/node": "20.14.8",
     "typescript": "^5.2.2"
   }
 }

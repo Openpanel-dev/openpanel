@@ -11,12 +11,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/fastify": "^1.0.0",
     "@fastify/compress": "^7.0.3",
     "@fastify/cookie": "^9.3.1",
     "@fastify/cors": "^9.0.0",
     "@fastify/rate-limit": "^9.1.0",
     "@fastify/websocket": "^8.3.1",
+    "@node-rs/argon2": "^2.0.2",
+    "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/integrations": "workspace:^",
@@ -26,6 +27,7 @@
     "@openpanel/trpc": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@trpc/server": "^10.45.1",
+    "bcrypt": "^5.1.1",
     "fastify": "^4.25.2",
     "fastify-metrics": "^11.0.0",
     "ico-to-png": "^0.2.1",

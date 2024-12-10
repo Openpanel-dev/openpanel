@@ -24,14 +24,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import type {
-  getCurrentOrganizations,
+  getOrganizations,
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 import Link from 'next/link';
 
 interface LayoutProjectSelectorProps {
   projects: Awaited<ReturnType<typeof getProjectsByOrganizationId>>;
-  organizations?: Awaited<ReturnType<typeof getCurrentOrganizations>>;
+  organizations?: Awaited<ReturnType<typeof getOrganizations>>;
   align?: 'start' | 'end';
 }
 export default function LayoutProjectSelector({

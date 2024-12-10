@@ -10,7 +10,7 @@
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "^18.16.0",
+    "@types/node": "20.14.8",
     "prisma": "^5.1.1",
     "typescript": "^5.2.2"
   }

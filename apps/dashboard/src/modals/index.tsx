@@ -14,6 +14,9 @@ const Loading = () => (
 );
 
 const modals = {
+  RequestPasswordReset: dynamic(() => import('./request-reset-password'), {
+    loading: Loading,
+  }),
   EditEvent: dynamic(() => import('./edit-event'), {
     loading: Loading,
   }),
@@ -54,9 +57,6 @@ const modals = {
     loading: Loading,
   }),
   OnboardingTroubleshoot: dynamic(() => import('./OnboardingTroubleshoot'), {
-    loading: Loading,
-  }),
-  VerifyEmail: dynamic(() => import('./VerifyEmail'), {
     loading: Loading,
   }),
   DateRangerPicker: dynamic(() => import('./DateRangerPicker'), {

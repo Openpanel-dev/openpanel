@@ -1,0 +1,44 @@
+<clickhouse>    
+    <logger>
+        <level>information</level>
+        <console>true</console>
+    </logger>
+    
+    <path>/var/lib/clickhouse/</path>
+    <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
+
+    <user_files_path>/var/lib/clickhouse/user_files/</user_files_path>
+
+    <timezone>UTC</timezone>
+    <mlock_executable>false</mlock_executable>
+
+    <listen_host>0.0.0.0</listen_host>
+    <interserver_listen_host>0.0.0.0</interserver_listen_host>
+    <interserver_http_host>op-zk</interserver_http_host>
+
+    <keeper_server>
+        <tcp_port>9181</tcp_port>
+        <listen_host>::</listen_host>
+        <interserver_listen_host>::</interserver_listen_host>
+        <server_id>1</server_id>
+        <log_storage_path>/var/lib/clickhouse/coordination/log</log_storage_path>
+        <snapshot_storage_path>/var/lib/clickhouse/coordination/snapshots</snapshot_storage_path>
+
+        <coordination_settings>
+            <operation_timeout_ms>10000</operation_timeout_ms>
+            <session_timeout_ms>30000</session_timeout_ms>
+        </coordination_settings>
+
+        <raft_configuration>
+            <server>
+                <id>1</id>
+                <hostname>op-zk</hostname>
+                <port>9234</port>
+            </server>
+        </raft_configuration>
+    </keeper_server>
+
+    <distributed_ddl>
+        <path>/clickhouse/production/task_queue/ddl</path>
+    </distributed_ddl>
+</clickhouse> 

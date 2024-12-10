@@ -15,6 +15,15 @@ datasource db {
   directUrl = env("DATABASE_URL_DIRECT")
 }
 
+model CodeMigration {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("__code_migrations")
+}
+
 enum ProjectType {
   website
   app
@@ -35,6 +44,7 @@ model Organization {
   Dashboard       Dashboard[]
   ShareOverview   ShareOverview[]
   integrations    Integration[]
+  invites         Invite[]
 
   @@map("organizations")
 }
@@ -51,8 +61,41 @@ model User {
   updatedAt            DateTime        @default(now()) @updatedAt
   deletedAt            DateTime?
   ProjectAccess        ProjectAccess[]
+  sessions             Session[]
+  accounts             Account[]
+  invites              Invite[]
 
   @@map("users")
+}
+
+model Account {
+  id                    String          @id @default(dbgenerated("gen_random_uuid()"))
+  userId                String
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider              String
+  providerId            String?
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @default(now()) @updatedAt
+  resetPasswords        ResetPassword[]
+
+  @@map("accounts")
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+
+  @@map("sessions")
 }
 
 model Member {
@@ -61,11 +104,11 @@ model Member {
   email          String
   // userId is nullable because we want to allow invites to be sent to emails that are not registered
   userId         String?
-  user           User?        @relation(fields: [userId], references: [id])
+  user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitedById    String?
   invitedBy      User?        @relation("invitedBy", fields: [invitedById], references: [id])
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   meta           Json?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
@@ -73,10 +116,26 @@ model Member {
   @@map("members")
 }
 
+model Invite {
+  id             String       @id
+  email          String
+  createdBy      User         @relation(fields: [createdById], references: [id])
+  createdById    String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectAccess  String[]
+  expiresAt      DateTime
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  role           String
+
+  @@map("invites")
+}
+
 model Project {
   id             String        @id @default(dbgenerated("gen_random_uuid()"))
   name           String
-  organization   Organization  @relation(fields: [organizationId], references: [id])
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
   eventsCount    Int           @default(0)
   types          ProjectType[] @default([])
@@ -114,11 +173,11 @@ enum AccessLevel {
 model ProjectAccess {
   id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId      String
-  project        Project      @relation(fields: [projectId], references: [id])
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
   userId         String
-  user           User         @relation(fields: [userId], references: [id])
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   level          AccessLevel
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
@@ -368,4 +427,15 @@ model Integration {
   updatedAt         DateTime           @default(now()) @updatedAt
 
   @@map("integrations")
+}
+
+model ResetPassword {
+  id        String   @id
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("reset_password")
 }

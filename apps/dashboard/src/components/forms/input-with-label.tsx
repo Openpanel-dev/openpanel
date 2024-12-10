@@ -37,8 +37,13 @@ export const WithLabel = ({
           )}
         </Label>
         {error && (
-          <Tooltiper asChild content={error}>
-            <div className="flex items-center gap-1  leading-none text-destructive">
+          <Tooltiper
+            asChild
+            content={error}
+            tooltipClassName="max-w-80 leading-normal"
+            align="end"
+          >
+            <div className="flex items-center gap-1 leading-none text-destructive">
               Issues
               <BanIcon size={14} />
             </div>

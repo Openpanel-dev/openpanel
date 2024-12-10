@@ -1,3 +1,4 @@
+import { authRouter } from './routers/auth';
 import { chartRouter } from './routers/chart';
 import { clientRouter } from './routers/client';
 import { dashboardRouter } from './routers/dashboard';
@@ -36,6 +37,7 @@ export const appRouter = createTRPCRouter({
   ticket: ticketRouter,
   notification: notificationRouter,
   integration: integrationRouter,
+  auth: authRouter,
 });
 
 // export type definition of API

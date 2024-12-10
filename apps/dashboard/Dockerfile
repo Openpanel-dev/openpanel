@@ -34,6 +34,8 @@ COPY packages/db/package.json packages/db/package.json
 COPY packages/redis/package.json packages/redis/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
+COPY packages/auth/package.json packages/auth/package.json
+COPY packages/email/package.json packages/email/package.json
 COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/integrations/package.json packages/integrations/package.json
@@ -55,12 +57,6 @@ WORKDIR /app/apps/dashboard
 # Will be replaced on runtime
 ENV NEXT_PUBLIC_DASHBOARD_URL="__NEXT_PUBLIC_DASHBOARD_URL__"
 ENV NEXT_PUBLIC_API_URL="__NEXT_PUBLIC_API_URL__"
-ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_eW9sby5jb20k"
-# Does not need to be replaced
-ENV NEXT_PUBLIC_CLERK_SIGN_IN_URL="/login"
-ENV NEXT_PUBLIC_CLERK_SIGN_UP_URL="/register"
-ENV NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="/"
-ENV NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL="/"
 
 RUN pnpm run build
 

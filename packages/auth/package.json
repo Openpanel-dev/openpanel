@@ -1,0 +1,27 @@
+{
+  "name": "@openpanel/auth",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
+    "@openpanel/db": "workspace:^",
+    "@openpanel/validation": "workspace:^",
+    "@oslojs/crypto": "^1.0.1",
+    "@oslojs/encoding": "^1.1.0",
+    "arctic": "^2.3.0"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "20.14.8",
+    "@types/react": "^18.2.0",
+    "prisma": "^5.1.1",
+    "typescript": "^5.2.2"
+  },
+  "peerDependencies": {
+    "next": "14.2.1",
+    "react": "18.2.0"
+  }
+}

@@ -15,6 +15,7 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ACTIONS } from '@/components/data-table';
+import { useAuth } from '@/hooks/useAuth';
 import type { IServiceMember, IServiceProject } from '@openpanel/db';
 
 export function useColumns(projects: IServiceProject[]) {
@@ -77,6 +78,8 @@ function AccessCell({
   row: Row<IServiceMember>;
   projects: IServiceProject[];
 }) {
+  const auth = useAuth();
+  const currentUserId = auth.data?.userId;
   const initial = useRef(row.original.access.map((item) => item.projectId));
   const [access, setAccess] = useState<string[]>(
     row.original.access.map((item) => item.projectId),
@@ -87,6 +90,16 @@ function AccessCell({
       setAccess(initial.current);
     },
   });
+
+  if (auth.isLoading) {
+    return null;
+  }
+
+  if (currentUserId === row.original.userId) {
+    return (
+      <div className="text-muted-foreground">Can't change your own access</div>
+    );
+  }
 
   return (
     <ComboboxAdvanced

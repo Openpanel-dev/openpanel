@@ -19,7 +19,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
-    "@types/node": "^18.16.0",
+    "@types/node": "20.14.8",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",
     "prisma": "^5.1.1",

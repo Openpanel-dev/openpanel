@@ -1,0 +1,5 @@
+{
+  "title": "Self-hosting",
+  "defaultOpen": true,
+  "pages": ["self-hosting", "migrating-from-clerk"]
+}

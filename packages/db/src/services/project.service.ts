@@ -1,5 +1,3 @@
-import { auth } from '@clerk/nextjs/server';
-
 import { cacheable } from '@openpanel/redis';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -55,9 +53,14 @@ export async function getProjectsByOrganizationId(organizationId: string) {
   });
 }
 
-export async function getCurrentProjects(organizationId: string) {
-  const session = auth();
-  if (!session.userId) {
+export async function getProjects({
+  organizationId,
+  userId,
+}: {
+  organizationId: string;
+  userId: string | null;
+}) {
+  if (!userId) {
     return [];
   }
 
@@ -72,13 +75,13 @@ export async function getCurrentProjects(organizationId: string) {
     }),
     db.member.findMany({
       where: {
-        userId: session.userId,
+        userId,
         organizationId,
       },
     }),
     db.projectAccess.findMany({
       where: {
-        userId: session.userId,
+        userId,
         organizationId,
       },
     }),

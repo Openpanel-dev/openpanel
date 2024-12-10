@@ -1,11 +1,12 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 
 import {
-  getCurrentOrganizations,
-  getCurrentProjects,
   getDashboardsByProjectId,
+  getOrganizations,
+  getProjects,
 } from '@openpanel/db';
 
+import { auth } from '@openpanel/auth/nextjs';
 import LayoutContent from './layout-content';
 import { LayoutSidebar } from './layout-sidebar';
 import SideEffects from './side-effects';
@@ -22,9 +23,10 @@ export default async function AppLayout({
   children,
   params: { organizationSlug: organizationId, projectId },
 }: AppLayoutProps) {
+  const { userId } = await auth();
   const [organizations, projects, dashboards] = await Promise.all([
-    getCurrentOrganizations(),
-    getCurrentProjects(organizationId),
+    getOrganizations(userId),
+    getProjects({ organizationId, userId }),
     getDashboardsByProjectId(projectId),
   ]);
 

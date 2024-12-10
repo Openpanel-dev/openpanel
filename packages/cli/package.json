@@ -23,7 +23,7 @@
     "@openpanel/db": "workspace:^",
     "@openpanel/sdk": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "^20.14.10",
+    "@types/node": "20.14.8",
     "@types/progress": "^2.0.7",
     "@types/ramda": "^0.30.1",
     "tsup": "^7.2.0",

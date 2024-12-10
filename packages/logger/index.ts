@@ -32,8 +32,37 @@ export function createLogger({ name }: { name: string }): ILogger {
     return info;
   });
 
+  const sensitiveKeys = [
+    'password',
+    'token',
+    'secret',
+    'authorization',
+    'apiKey',
+  ];
+
+  const redactSensitiveInfo = winston.format((info) => {
+    const redactObject = (obj: any): any => {
+      if (!obj || typeof obj !== 'object') return obj;
+
+      return Object.keys(obj).reduce((acc, key) => {
+        const lowerKey = key.toLowerCase();
+        if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
+          acc[key] = '[REDACTED]';
+        } else if (typeof obj[key] === 'object') {
+          acc[key] = redactObject(obj[key]);
+        } else {
+          acc[key] = obj[key];
+        }
+        return acc;
+      }, {} as any);
+    };
+
+    return Object.assign({}, info, redactObject(info));
+  });
+
   const format = winston.format.combine(
     errorFormatter(),
+    redactSensitiveInfo(),
     winston.format.json(),
   );
 

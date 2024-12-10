@@ -33,13 +33,6 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
 
   const isConnected = events.length > 0;
 
-  const renderBadge = () => {
-    if (isConnected) {
-      return <Badge variant={'success'}>Connected</Badge>;
-    }
-
-    return <Badge variant={'destructive'}>Not connected</Badge>;
-  };
   const renderIcon = () => {
     if (isConnected) {
       return (
@@ -61,9 +54,6 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
       <div className="flex items-center gap-2 text-2xl capitalize">
         {client?.name}
       </div>
-      <div className="mt-2 text-sm font-semibold text-muted-foreground">
-        Connection status: {renderBadge()}
-      </div>
 
       <div
         className={cn(
@@ -75,7 +65,7 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
       >
         {renderIcon()}
         <div className="flex-1">
-          <div className="text-lg font-semibold">
+          <div className="text-lg font-semibold leading-normal">
             {isConnected ? 'Success' : 'Waiting for events'}
           </div>
           {isConnected ? (

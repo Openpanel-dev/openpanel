@@ -1,11 +1,24 @@
 version: '3'
 
 services:
+  op-proxy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./docker/data/op-proxy-data:/data
+      - ./docker/data/op-proxy-config:/config
+      - ./docker/op.local+3-key.pem:/etc/ssl/key.pem
+      - ./docker/op.local+3.pem:/etc/ssl/cert.pem
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile
+
   op-db:
     image: postgres:14-alpine
     restart: always
     volumes:
-      - ./tmp/op-db-data:/var/lib/postgresql/data
+      - ./docker/data/op-db-data:/var/lib/postgresql/data
     ports:
       - 5432:5432
     environment:
@@ -16,8 +29,8 @@ services:
     image: redis:7.2.5-alpine
     restart: always
     volumes:
-      - ./tmp/op-kv-data:/data
-    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+      - ./docker/data/op-kv-data:/data
+    command: [ 'redis-server', '--maxmemory-policy', 'noeviction' ]
     ports:
       - 6379:6379
 
@@ -31,14 +44,30 @@ services:
     image: clickhouse/clickhouse-server:24.3.2-alpine
     restart: always
     volumes:
-      - ./tmp/op-ch-data:/var/lib/clickhouse
-      - ./tmp/op-ch-logs:/var/log/clickhouse-server
-      - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml:ro
-      - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
+      - ./docker/data/op-ch-data:/var/lib/clickhouse
+      - ./docker/data/op-ch-logs:/var/log/clickhouse-server
+      - ./self-hosting/clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml
+      - ./self-hosting/clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
     ports:
-      - 9000:9000
-      - 8123:8123
+      - "8123:8123" # HTTP interface
+      - "9000:9000" # Native/TCP interface
+      - "9009:9009" # Inter-server communication
+
+  op-zk:
+    image: clickhouse/clickhouse-server:24.3.2-alpine
+    volumes:
+      - ./docker/data/op-zk-data:/var/lib/clickhouse
+      - ./self-hosting/clickhouse/clickhouse-keeper-config.xml:/etc/clickhouse-server/config.xml
+    command: [ 'clickhouse-keeper', '--config-file', '/etc/clickhouse-server/config.xml' ]
+    restart: always
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    ports:
+      - "9181:9181" # Keeper port
+      - "9234:9234" # Keeper Raft port
