@@ -874,9 +874,6 @@ importers:
       '@clickhouse/client':
         specifier: ^1.2.0
         version: 1.2.0
-      '@openpanel/auth':
-        specifier: workspace:^
-        version: link:../auth
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common

@@ -1,14 +1,4 @@
-import { auth } from '@openpanel/auth/nextjs';
-
 import { db } from '../prisma-client';
-
-export async function getCurrentUser() {
-  const session = await auth();
-  if (!session.userId) {
-    return null;
-  }
-  return getUserById(session.userId);
-}
 
 export async function getUserById(id: string) {
   return db.user.findUniqueOrThrow({

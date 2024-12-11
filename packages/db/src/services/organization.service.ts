@@ -1,4 +1,3 @@
-import { auth } from '@openpanel/auth/nextjs';
 import type {
   Invite,
   Organization,
@@ -24,16 +23,14 @@ export function transformOrganization(org: Organization) {
   };
 }
 
-export async function getCurrentOrganizations() {
-  const session = await auth();
-
-  if (!session.userId) return [];
+export async function getOrganizations(userId: string | null) {
+  if (!userId) return [];
 
   const organizations = await db.organization.findMany({
     where: {
       members: {
         some: {
-          userId: session.userId,
+          userId,
         },
       },
     },
