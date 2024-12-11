@@ -245,19 +245,3 @@ export const organizationRouter = createTRPCRouter({
       ]);
     }),
 });
-
-export function getInviteById(inviteId: string) {
-  return db.invite.findUnique({
-    where: {
-      id: inviteId,
-    },
-    include: {
-      organization: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  });
-}

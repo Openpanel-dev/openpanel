@@ -1,14 +1,12 @@
-import { setSessionTokenCookie } from '@openpanel/auth/server/cookie';
 import {
   Arctic,
   type OAuth2Tokens,
-  github,
-  google,
-} from '@openpanel/auth/server/oauth';
-import {
   createSession,
   generateSessionToken,
-} from '@openpanel/auth/server/session';
+  github,
+  google,
+  setSessionTokenCookie,
+} from '@openpanel/auth';
 import { type User, connectUserToOrganization, db } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';

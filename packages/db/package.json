@@ -23,6 +23,7 @@
     "@openpanel/redis": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@prisma/client": "^5.1.1",
+    "jiti": "^2.4.1",
     "prisma-json-types-generator": "^3.1.1",
     "ramda": "^0.29.1",
     "sqlstring": "^2.3.3",
@@ -31,7 +32,7 @@
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "^18.16.0",
+    "@types/node": "20.14.8",
     "@types/ramda": "^0.29.6",
     "@types/sqlstring": "^2.3.2",
     "@types/uuid": "^9.0.8",

@@ -34,6 +34,8 @@ COPY packages/db/package.json packages/db/package.json
 COPY packages/redis/package.json packages/redis/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json
+COPY packages/auth/package.json packages/auth/package.json
+COPY packages/email/package.json packages/email/package.json
 COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/integrations/package.json packages/integrations/package.json

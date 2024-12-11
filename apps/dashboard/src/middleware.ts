@@ -1,4 +1,4 @@
-import { COOKIE_MAX_AGE, COOKIE_OPTIONS } from '@openpanel/auth/server/cookie';
+import { COOKIE_MAX_AGE, COOKIE_OPTIONS } from '@openpanel/auth/constants';
 import { type NextRequest, NextResponse } from 'next/server';
 
 function createRouteMatcher(patterns: string[]) {

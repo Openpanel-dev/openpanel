@@ -252,8 +252,9 @@ CREATE TABLE IF NOT EXISTS profile_aliases_distributed ON CLUSTER '{cluster}' AS
 -- +goose StatementBegin
 INSERT INTO events_replicated
 SELECT *
-FROM events_v2 -- +goose StatementEnd
-  -- +goose StatementBegin
+FROM events_v2;
+-- +goose StatementEnd
+-- +goose StatementBegin
 INSERT INTO events_bots_replicated
 SELECT *
 FROM events_bots;

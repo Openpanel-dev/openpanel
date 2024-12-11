@@ -9,7 +9,6 @@ const options: Options = {
     '@hyperdx/node-opentelemetry',
     'winston',
     '@node-rs/argon2',
-    'crypto',
     'bcrypt',
   ],
   ignoreWatch: ['../../**/{.git,node_modules}/**'],

@@ -4,8 +4,7 @@ import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
-import { COOKIE_OPTIONS } from '@openpanel/auth/server/cookie';
-import { validateSessionToken } from '@openpanel/auth/server/session';
+import { COOKIE_OPTIONS, validateSessionToken } from '@openpanel/auth';
 import { getRedisCache } from '@openpanel/redis';
 import type { ISetCookie } from '@openpanel/validation';
 import {

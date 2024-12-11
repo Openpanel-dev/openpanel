@@ -1,17 +1,15 @@
 import {
-  deleteSessionTokenCookie,
-  setSessionTokenCookie,
-} from '@openpanel/auth/server/cookie';
-import { Arctic, github, google } from '@openpanel/auth/server/oauth';
-import {
-  hashPassword,
-  verifyPasswordHash,
-} from '@openpanel/auth/server/password';
-import {
+  Arctic,
   createSession,
+  deleteSessionTokenCookie,
   generateSessionToken,
+  github,
+  google,
+  hashPassword,
   invalidateSession,
-} from '@openpanel/auth/server/session';
+  setSessionTokenCookie,
+  verifyPasswordHash,
+} from '@openpanel/auth';
 import { generateSecureId } from '@openpanel/common/server/id';
 import { connectUserToOrganization, db, getUserAccount } from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';

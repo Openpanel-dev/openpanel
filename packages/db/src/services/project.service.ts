@@ -1,4 +1,4 @@
-import { auth } from '@openpanel/auth/server/nextjs';
+import { auth } from '@openpanel/auth/nextjs';
 import { cacheable } from '@openpanel/redis';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';

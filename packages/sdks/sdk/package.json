@@ -9,7 +9,7 @@
   "dependencies": {},
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "^20.14.12",
+    "@types/node": "20.14.8",
     "tsup": "^7.2.0",
     "typescript": "^5.2.2"
   }

@@ -1,5 +1,5 @@
 import { Padding } from '@/components/ui/padding';
-import { auth } from '@openpanel/auth/server/nextjs';
+import { auth } from '@openpanel/auth/nextjs';
 import { getUserById } from '@openpanel/db';
 
 import EditProfile from './edit-profile';

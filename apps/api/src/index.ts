@@ -18,7 +18,7 @@ import {
   EMPTY_SESSION,
   type SessionValidationResult,
   validateSessionToken,
-} from '@openpanel/auth/server/session';
+} from '@openpanel/auth';
 import sourceMapSupport from 'source-map-support';
 import {
   healthcheck,

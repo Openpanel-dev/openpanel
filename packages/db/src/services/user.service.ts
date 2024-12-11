@@ -1,4 +1,4 @@
-import { auth } from '@openpanel/auth/server/nextjs';
+import { auth } from '@openpanel/auth/nextjs';
 
 import { db } from '../prisma-client';
 

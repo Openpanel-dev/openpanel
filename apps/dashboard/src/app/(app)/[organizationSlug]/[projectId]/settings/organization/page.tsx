@@ -5,7 +5,7 @@ import { ShieldAlertIcon } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { parseAsStringEnum } from 'nuqs/server';
 
-import { auth } from '@openpanel/auth/server/nextjs';
+import { auth } from '@openpanel/auth/nextjs';
 import { db } from '@openpanel/db';
 
 import EditOrganization from './edit-organization';

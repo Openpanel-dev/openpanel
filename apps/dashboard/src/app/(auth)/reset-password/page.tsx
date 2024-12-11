@@ -1,5 +1,5 @@
 import { ResetPasswordForm } from '@/components/auth/reset-password-form';
-import { auth } from '@openpanel/auth/server/nextjs';
+import { auth } from '@openpanel/auth/nextjs';
 import { redirect } from 'next/navigation';
 
 export default async function Page() {

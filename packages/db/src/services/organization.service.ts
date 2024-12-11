@@ -1,4 +1,4 @@
-import { auth } from '@openpanel/auth/server/nextjs';
+import { auth } from '@openpanel/auth/nextjs';
 import type {
   Invite,
   Organization,
@@ -74,6 +74,22 @@ export async function getInvites(organizationId: string) {
   return db.invite.findMany({
     where: {
       organizationId,
+    },
+  });
+}
+
+export function getInviteById(inviteId: string) {
+  return db.invite.findUnique({
+    where: {
+      id: inviteId,
+    },
+    include: {
+      organization: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
   });
 }

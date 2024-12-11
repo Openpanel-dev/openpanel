@@ -3,7 +3,7 @@ import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
 import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { LinkButton } from '@/components/ui/button';
-import { auth } from '@openpanel/auth/server/nextjs';
+import { auth } from '@openpanel/auth/nextjs';
 import { redirect } from 'next/navigation';
 
 export default async function Page() {
