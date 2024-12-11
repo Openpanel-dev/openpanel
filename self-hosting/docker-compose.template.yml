@@ -78,7 +78,10 @@ services:
         hard: 262144
 
   op-api:
-    image: lindesvard/openpanel-api:latest
+    # image: lindesvard/openpanel-api:latest
+    build:
+      context: ../
+      dockerfile: ./apps/api/Dockerfile
     restart: always
     command: >
       sh -c "
@@ -108,7 +111,10 @@ services:
       - .env
 
   op-dashboard:
-    image: lindesvard/openpanel-dashboard:latest
+    # image: lindesvard/openpanel-dashboard:latest
+    build:
+      context: ../
+      dockerfile: ./apps/dashboard/Dockerfile
     restart: always
     depends_on:
       - op-api
@@ -116,7 +122,10 @@ services:
       - .env
 
   op-worker:
-    image: lindesvard/openpanel-worker:latest
+    # image: lindesvard/openpanel-worker:latest
+    build:
+      context: ../
+      dockerfile: ./apps/worker/Dockerfile
     restart: always
     depends_on:
       - op-api
