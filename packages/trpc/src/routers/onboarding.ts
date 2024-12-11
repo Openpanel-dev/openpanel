@@ -88,12 +88,18 @@ export const onboardingRouter = createTRPCRouter({
         });
       }
 
+      if (input.cors.length === 0 && input.website) {
+        input.cors.push('*');
+      }
+
       const project = await db.project.create({
         data: {
           id: await getId('project', input.project),
           name: input.project,
           organizationId: organization.id,
           types,
+          domain: input.domain ? stripTrailingSlash(input.domain) : null,
+          cors: input.cors.map((c) => stripTrailingSlash(c)),
         },
       });
 

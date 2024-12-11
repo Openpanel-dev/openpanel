@@ -113,6 +113,7 @@ export const zOnboardingProject = z
     organizationId: z.string().optional(),
     project: z.string().min(3),
     domain: z.string().url().or(z.literal('').or(z.null())),
+    cors: z.array(z.string()).default([]),
     website: z.boolean(),
     app: z.boolean(),
     backend: z.boolean(),

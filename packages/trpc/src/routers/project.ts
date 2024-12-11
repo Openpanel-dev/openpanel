@@ -9,6 +9,7 @@ import {
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 
+import { stripTrailingSlash } from '@openpanel/common';
 import { zProject } from '@openpanel/validation';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
@@ -50,8 +51,8 @@ export const projectRouter = createTRPCRouter({
           name: input.name,
           crossDomain: input.crossDomain,
           filters: input.filters,
-          cors: input.cors,
-          domain: input.domain,
+          domain: input.domain ? stripTrailingSlash(input.domain) : null,
+          cors: input.cors?.map((c) => stripTrailingSlash(c)) || [],
         },
         include: {
           clients: {

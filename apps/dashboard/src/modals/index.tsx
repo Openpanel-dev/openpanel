@@ -20,9 +20,6 @@ const modals = {
   EventDetails: dynamic(() => import('./event-details'), {
     loading: Loading,
   }),
-  EditProject: dynamic(() => import('./EditProject'), {
-    loading: Loading,
-  }),
   EditClient: dynamic(() => import('./EditClient'), {
     loading: Loading,
   }),

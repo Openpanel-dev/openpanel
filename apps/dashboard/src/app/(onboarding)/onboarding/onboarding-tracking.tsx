@@ -50,7 +50,8 @@ const Tracking = ({
     defaultValues: {
       organization: '',
       project: '',
-      domain: null,
+      domain: '',
+      cors: [],
       website: false,
       app: false,
       backend: false,
@@ -75,6 +76,7 @@ const Tracking = ({
   useEffect(() => {
     if (!isWebsite) {
       form.setValue('domain', null);
+      form.setValue('cors', []);
     }
   }, [isWebsite, form]);
 
@@ -156,36 +158,53 @@ const Tracking = ({
               >
                 <AnimateHeight open={isWebsite && !isApp}>
                   <div className="p-4 pl-14">
+                    <InputWithLabel
+                      label="Domain"
+                      placeholder="Your website address"
+                      {...form.register('domain')}
+                      className="mb-4"
+                      error={form.formState.errors.domain?.message}
+                      onBlur={(e) => {
+                        const value = e.target.value.trim();
+                        if (
+                          value.includes('.') &&
+                          form.getValues().cors.length === 0 &&
+                          !form.formState.errors.domain
+                        ) {
+                          form.setValue('cors', [value]);
+                        }
+                      }}
+                    />
+
                     <Controller
-                      name="domain"
+                      name="cors"
                       control={form.control}
                       render={({ field }) => (
-                        <WithLabel
-                          label="Domain(s)"
-                          error={form.formState.errors.domain?.message}
-                        >
+                        <WithLabel label="Cors">
                           <TagInput
                             {...field}
-                            placeholder="Add a domain"
-                            value={field.value?.split(',') ?? []}
+                            id="Cors"
+                            error={form.formState.errors.cors?.message}
+                            placeholder="Accept events from these domains"
+                            value={field.value ?? []}
                             renderTag={(tag) =>
-                              tag === '*' ? 'Allow all domains' : tag
+                              tag === '*'
+                                ? 'Accept events from any domains'
+                                : tag
                             }
                             onChange={(newValue) => {
                               field.onChange(
-                                newValue
-                                  .map((item) => {
-                                    const trimmed = item.trim();
-                                    if (
-                                      trimmed.startsWith('http://') ||
-                                      trimmed.startsWith('https://') ||
-                                      trimmed === '*'
-                                    ) {
-                                      return trimmed;
-                                    }
-                                    return `https://${trimmed}`;
-                                  })
-                                  .join(','),
+                                newValue.map((item) => {
+                                  const trimmed = item.trim();
+                                  if (
+                                    trimmed.startsWith('http://') ||
+                                    trimmed.startsWith('https://') ||
+                                    trimmed === '*'
+                                  ) {
+                                    return trimmed;
+                                  }
+                                  return `https://${trimmed}`;
+                                }),
                               );
                             }}
                           />
