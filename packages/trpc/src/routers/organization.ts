@@ -88,7 +88,7 @@ export const organizationRouter = createTRPCRouter({
 
       const invite = await db.invite.create({
         data: {
-          id: generateSecureId('invite_'),
+          id: generateSecureId('invite'),
           email,
           organizationId: input.organizationId,
           role: input.role,

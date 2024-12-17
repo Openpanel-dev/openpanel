@@ -31,10 +31,10 @@ import {
 const zProvider = z.enum(['email', 'google', 'github']);
 
 export const authRouter = createTRPCRouter({
-  signOut: publicProcedure.mutation(({ ctx }) => {
+  signOut: publicProcedure.mutation(async ({ ctx }) => {
+    deleteSessionTokenCookie(ctx.setCookie);
     if (ctx.session?.session?.id) {
-      deleteSessionTokenCookie(ctx.setCookie);
-      invalidateSession(ctx.session.session.id);
+      await invalidateSession(ctx.session.session.id);
     }
   }),
   signInOAuth: publicProcedure

@@ -20,7 +20,7 @@ export function SignInGithub({ type }: { type: 'sign-in' | 'sign-up' }) {
   };
   return (
     <Button
-      className="flex-1"
+      className="md:flex-1"
       size="lg"
       onClick={() =>
         mutation.mutate({
@@ -30,7 +30,7 @@ export function SignInGithub({ type }: { type: 'sign-in' | 'sign-up' }) {
       }
     >
       <svg
-        className="size-6 mr-4"
+        className="size-4 mr-2"
         xmlns="http://www.w3.org/2000/svg"
         width="24"
         height="24"

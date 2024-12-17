@@ -61,7 +61,7 @@ const Page = async ({
             </p>
           </div>
         )}
-        <div className="row gap-8">
+        <div className="col md:row gap-4">
           <SignInGithub type="sign-up" />
           <SignInGoogle type="sign-up" />
         </div>

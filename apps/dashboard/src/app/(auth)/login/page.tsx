@@ -14,15 +14,11 @@ export default async function Page() {
   }
 
   return (
-    <div className="flex h-full center-center">
-      <div className="col gap-8">
-        <div className="row gap-4">
-          <div>
-            <SignInGithub type="sign-in" />
-          </div>
-          <div>
-            <SignInGoogle type="sign-in" />
-          </div>
+    <div className="flex h-full center-center w-full">
+      <div className="col gap-8 max-w-md w-full">
+        <div className="col md:row gap-4">
+          <SignInGithub type="sign-in" />
+          <SignInGoogle type="sign-in" />
         </div>
         <Or />
         <div className="card p-8">

@@ -12,7 +12,7 @@ const Page = ({ children }: Props) => {
           <div className="min-h-screen border-r border-r-background bg-gradient-to-r from-background to-def-200 max-md:hidden">
             <LiveEventsServer />
           </div>
-          <div className="min-h-screen">{children}</div>
+          <div className="min-h-screen p-4">{children}</div>
         </div>
       </div>
     </>
