@@ -73,7 +73,7 @@ export function Footer() {
           </Text>
         </Row>
 
-        <Row>
+        {/* <Row>
           <Link
             className="text-[#707070] text-[14px]"
             href="https://dashboard.openpanel.dev/settings/notifications"
@@ -81,7 +81,7 @@ export function Footer() {
           >
             Notification preferences
           </Link>
-        </Row>
+        </Row> */}
       </Section>
     </>
   );
