@@ -1,24 +1,54 @@
-import { getAuth } from '@clerk/fastify';
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
+import { COOKIE_OPTIONS, validateSessionToken } from '@openpanel/auth';
+import { getRedisCache } from '@openpanel/redis';
+import type { ISetCookie } from '@openpanel/validation';
+import {
+  createTrpcRedisLimiter,
+  defaultFingerPrint,
+} from '@trpc-limiter/redis';
 import { getOrganizationAccessCached, getProjectAccessCached } from './access';
 import { TRPCAccessError } from './errors';
 
-export function createContext({ req, res }: CreateFastifyContextOptions) {
+export const rateLimitMiddleware = ({
+  max,
+  windowMs,
+}: {
+  max: number;
+  windowMs: number;
+}) =>
+  createTrpcRedisLimiter<typeof t>({
+    fingerprint: (ctx) => defaultFingerPrint(ctx.req),
+    message: (hitInfo) =>
+      `Too many requests, please try again later. ${hitInfo}`,
+    max,
+    windowMs,
+    redisClient: getRedisCache(),
+  });
+
+export async function createContext({ req, res }: CreateFastifyContextOptions) {
+  const setCookie: ISetCookie = (key, value, options) => {
+    // @ts-ignore
+    res.setCookie(key, value, {
+      maxAge: options.maxAge,
+      ...COOKIE_OPTIONS,
+    });
+  };
+
+  // @ts-ignore
+  const session = await validateSessionToken(req.cookies?.session);
+
   return {
     req,
     res,
-    session: getAuth(req),
+    session,
     // we do not get types for `setCookie` from fastify
     // so define it here and be safe in routers
-    setCookie: (key: string, value: string, options: any) => {
-      // @ts-ignore
-      res.setCookie(key, value, options);
-    },
+    setCookie,
   };
 }
 export type Context = Awaited<ReturnType<typeof createContext>>;

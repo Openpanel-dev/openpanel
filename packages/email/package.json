@@ -1,0 +1,24 @@
+{
+  "name": "@openpanel/email",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "dev": "email dev --dir src/emails -p 3939",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-email/components": "^0.0.30",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "resend": "^4.0.1",
+    "responsive-react-email": "^0.0.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "20.14.8",
+    "@types/react": "^18.2.0",
+    "react-email": "3.0.4",
+    "typescript": "^5.2.2"
+  }
+}

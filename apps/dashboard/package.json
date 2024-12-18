@@ -11,10 +11,10 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
-    "@clerk/nextjs": "^5.0.12",
     "@clickhouse/client": "^1.2.0",
     "@hookform/resolvers": "^3.3.4",
     "@hyperdx/node-opentelemetry": "^0.8.1",
+    "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",
     "@openpanel/db": "workspace:^",
@@ -47,6 +47,7 @@
     "@reduxjs/toolkit": "^1.9.7",
     "@t3-oss/env-nextjs": "^0.7.3",
     "@tailwindcss/container-queries": "^0.1.1",
+    "@tailwindcss/typography": "^0.5.15",
     "@tanstack/react-query": "^4.36.1",
     "@tanstack/react-table": "^8.11.8",
     "@trpc/client": "^10.45.1",
@@ -117,7 +118,7 @@
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.isequal": "^4.5.8",
     "@types/lodash.throttle": "^4.1.9",
-    "@types/node": "^18.19.15",
+    "@types/node": "20.14.8",
     "@types/ramda": "^0.29.10",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",

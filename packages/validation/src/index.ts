@@ -300,3 +300,43 @@ export const zProject = z.object({
   crossDomain: z.boolean().default(false),
 });
 export type IProjectEdit = z.infer<typeof zProject>;
+
+export const zPassword = z
+  .string()
+  .min(8)
+  .regex(
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
+    'Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number and one special character',
+  );
+
+export const zSignInEmail = z.object({
+  email: z.string().email().min(1),
+  password: zPassword,
+});
+export type ISignInEmail = z.infer<typeof zSignInEmail>;
+
+export const zSignUpEmail = z
+  .object({
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    email: z.string().email(),
+    password: zPassword,
+    confirmPassword: zPassword,
+    inviteId: z.string().nullish(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    path: ['confirmPassword'],
+    message: 'Passwords do not match',
+  });
+export type ISignUpEmail = z.infer<typeof zSignUpEmail>;
+
+export const zResetPassword = z.object({
+  token: z.string(),
+  password: z.string().min(8),
+});
+export type IResetPassword = z.infer<typeof zResetPassword>;
+
+export const zRequestResetPassword = z.object({
+  email: z.string().email(),
+});
+export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;

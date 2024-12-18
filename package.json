@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "author": "Carl-Gerhard Lindesvärd",
-  "packageManager": "pnpm@8.7.6",
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dock:up": "docker compose up -d",
     "dock:down": "docker compose down",
@@ -31,7 +31,6 @@
   },
   "trustedDependencies": [
     "@biomejs/biome",
-    "@clerk/shared",
     "@prisma/client",
     "@prisma/engines",
     "bcrypt",

@@ -6,7 +6,6 @@ import { ModalProvider } from '@/modals';
 import type { AppStore } from '@/redux';
 import makeStore from '@/redux';
 import { api } from '@/trpc/client';
-import { ClerkProvider, useAuth } from '@clerk/nextjs';
 import { OpenPanelComponent } from '@openpanel/nextjs';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpLink } from '@trpc/client';
@@ -18,7 +17,6 @@ import { Toaster } from 'sonner';
 import superjson from 'superjson';
 
 function AllProviders({ children }: { children: React.ReactNode }) {
-  const { getToken } = useAuth();
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -43,15 +41,6 @@ function AllProviders({ children }: { children: React.ReactNode }) {
               credentials: 'include',
               mode: 'cors',
             });
-          },
-          async headers() {
-            const token = await getToken();
-            if (token) {
-              return {
-                Authorization: `Bearer ${token}`,
-              };
-            }
-            return {};
           },
         }),
       ],
@@ -97,9 +86,5 @@ function AllProviders({ children }: { children: React.ReactNode }) {
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <ClerkProvider>
-      <AllProviders>{children}</AllProviders>
-    </ClerkProvider>
-  );
+  return <AllProviders>{children}</AllProviders>;
 }

@@ -1,5 +1,4 @@
 import zlib from 'node:zlib';
-import { clerkPlugin } from '@clerk/fastify';
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors, { type FastifyCorsOptions } from '@fastify/cors';
@@ -8,14 +7,18 @@ import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
 import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
-import { path, pick } from 'ramda';
 
 import { generateId } from '@openpanel/common';
-import type { IServiceClient, IServiceClientWithProject } from '@openpanel/db';
+import type { IServiceClientWithProject } from '@openpanel/db';
 import { getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
+import {
+  EMPTY_SESSION,
+  type SessionValidationResult,
+  validateSessionToken,
+} from '@openpanel/auth';
 import sourceMapSupport from 'source-map-support';
 import {
   healthcheck,
@@ -30,6 +33,7 @@ import exportRouter from './routes/export.router';
 import importRouter from './routes/import.router';
 import liveRouter from './routes/live.router';
 import miscRouter from './routes/misc.router';
+import oauthRouter from './routes/oauth-callback.router';
 import profileRouter from './routes/profile.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
@@ -42,6 +46,7 @@ declare module 'fastify' {
     client: IServiceClientWithProject | null;
     clientIp?: string;
     timestamp?: number;
+    session: SessionValidationResult;
   }
 }
 
@@ -59,6 +64,31 @@ const startServer = async () => {
         req.headers['request-id']
           ? String(req.headers['request-id'])
           : generateId(),
+    });
+
+    fastify.register(cors, () => {
+      return (
+        req: FastifyRequest,
+        callback: (error: Error | null, options: FastifyCorsOptions) => void,
+      ) => {
+        // TODO: set prefix on dashboard routes
+        const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc'];
+
+        const isPrivatePath = corsPaths.some((path) =>
+          req.url.startsWith(path),
+        );
+
+        if (isPrivatePath) {
+          return callback(null, {
+            origin: process.env.NEXT_PUBLIC_DASHBOARD_URL,
+            credentials: true,
+          });
+        }
+
+        return callback(null, {
+          origin: '*',
+        });
+      };
     });
 
     fastify.addHook('preHandler', ipHook);
@@ -105,40 +135,34 @@ const startServer = async () => {
       },
     );
 
-    fastify.register(cors, () => {
-      return (
-        req: FastifyRequest,
-        callback: (error: Error | null, options: FastifyCorsOptions) => void,
-      ) => {
-        // TODO: set prefix on dashboard routes
-        const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc'];
-
-        const isPrivatePath = corsPaths.some((path) =>
-          req.url.startsWith(path),
-        );
-
-        if (isPrivatePath) {
-          return callback(null, {
-            origin: process.env.NEXT_PUBLIC_DASHBOARD_URL,
-            credentials: true,
-          });
-        }
-
-        return callback(null, {
-          origin: '*',
-        });
-      };
-    });
-
+    // Dashboard API
     fastify.register((instance, opts, done) => {
-      fastify.register(cookie, {
-        secret: 'random', // for cookies signature
+      instance.register(cookie, {
+        secret: process.env.COOKIE_SECRET ?? '',
         hook: 'onRequest',
+        parseOptions: {},
       });
-      instance.register(clerkPlugin, {
-        publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-        secretKey: process.env.CLERK_SECRET_KEY,
+
+      instance.addHook('onRequest', (req, reply, done) => {
+        if (req.cookies?.session) {
+          validateSessionToken(req.cookies.session)
+            .then((session) => {
+              if (session.session) {
+                req.session = session;
+              }
+            })
+            .catch(() => {
+              req.session = EMPTY_SESSION;
+            })
+            .finally(() => {
+              done();
+            });
+        } else {
+          req.session = EMPTY_SESSION;
+          done();
+        }
       });
+
       instance.register(fastifyTRPCPlugin, {
         prefix: '/trpc',
         trpcOptions: {
@@ -155,22 +179,27 @@ const startServer = async () => {
         } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
       });
       instance.register(liveRouter, { prefix: '/live' });
+      instance.register(webhookRouter, { prefix: '/webhook' });
+      instance.register(oauthRouter, { prefix: '/oauth' });
+      instance.register(miscRouter, { prefix: '/misc' });
       done();
     });
 
-    fastify.register(metricsPlugin, { endpoint: '/metrics' });
-    fastify.register(eventRouter, { prefix: '/event' });
-    fastify.register(profileRouter, { prefix: '/profile' });
-    fastify.register(miscRouter, { prefix: '/misc' });
-    fastify.register(exportRouter, { prefix: '/export' });
-    fastify.register(webhookRouter, { prefix: '/webhook' });
-    fastify.register(importRouter, { prefix: '/import' });
-    fastify.register(trackRouter, { prefix: '/track' });
-    fastify.get('/', (_request, reply) =>
-      reply.send({ name: 'openpanel sdk api' }),
-    );
-    fastify.get('/healthcheck', healthcheck);
-    fastify.get('/healthcheck/queue', healthcheckQueue);
+    // Public API
+    fastify.register((instance, opts, done) => {
+      instance.register(metricsPlugin, { endpoint: '/metrics' });
+      instance.register(eventRouter, { prefix: '/event' });
+      instance.register(profileRouter, { prefix: '/profile' });
+      instance.register(exportRouter, { prefix: '/export' });
+      instance.register(importRouter, { prefix: '/import' });
+      instance.register(trackRouter, { prefix: '/track' });
+      instance.get('/healthcheck', healthcheck);
+      instance.get('/healthcheck/queue', healthcheckQueue);
+      instance.get('/', (_request, reply) =>
+        reply.send({ name: 'openpanel sdk api' }),
+      );
+      done();
+    });
 
     fastify.setErrorHandler((error, request, reply) => {
       if (error.statusCode === 429) {

@@ -4,7 +4,8 @@ import ProjectCard from '@/components/projects/project-card';
 import { redirect } from 'next/navigation';
 
 import SettingsToggle from '@/components/settings-toggle';
-import { getCurrentOrganizations, getCurrentProjects } from '@openpanel/db';
+import { auth } from '@openpanel/auth/nextjs';
+import { getOrganizations, getProjects } from '@openpanel/db';
 import LayoutProjectSelector from './[projectId]/layout-project-selector';
 
 interface PageProps {
@@ -16,9 +17,10 @@ interface PageProps {
 export default async function Page({
   params: { organizationSlug: organizationId },
 }: PageProps) {
+  const { userId } = await auth();
   const [organizations, projects] = await Promise.all([
-    getCurrentOrganizations(),
-    getCurrentProjects(organizationId),
+    getOrganizations(userId),
+    getProjects({ organizationId, userId }),
   ]);
 
   const organization = organizations.find((org) => org.id === organizationId);
@@ -32,7 +34,7 @@ export default async function Page({
   }
 
   if (projects.length === 0) {
-    return redirect('/onboarding');
+    return redirect('/onboarding/project');
   }
 
   if (projects.length === 1 && projects[0]) {

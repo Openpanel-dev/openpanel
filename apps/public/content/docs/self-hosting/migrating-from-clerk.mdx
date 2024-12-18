@@ -1,0 +1,53 @@
+---
+title: Migrating from Clerk
+description: This is a simple guide how to migrate from Clerk to OpenPanel.
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+As of version 0.0.5, we have removed Clerk.com from OpenPanel. This means that if you are upgrading from a previous version, you will need to export your users from Clerk and import them into OpenPanel. Here is how you can do it.
+
+Before we start lets get the users from Clerk. Go to **Clerk > Configure > Settings > Export all users** and download the CSV file. This file will be used to import the users into OpenPanel.
+
+
+
+<Steps>
+<Step>
+Copy the csv file we downloaded from Clerk to your server:
+```bash
+scp ./path/to/your/clerk-users.csv user@your-ip:users-dump.csv
+```
+</Step>
+<Step>
+SSH into your server:
+```bash
+ssh user@your-ip
+```
+</Step>
+<Step>
+Pull the latest images, and restart the containers:
+```bash
+docker compose pull
+docker compose down
+docker compose up -d
+```
+</Step>
+<Step>
+SSH into your server:
+```bash
+ssh user@your-ip
+```
+</Step>
+<Step>
+Run the following command to copy the file to the OpenPanel container:
+```bash
+docker compose cp ./users-dump.csv op-api:/app/packages/db/code-migrations/users-dump.csv
+```
+</Step>
+<Step>
+Run the migration:
+```bash
+docker compose exec -it op-api bash -c "cd /app/packages/db && pnpm migrate:deploy:db:code 2-accounts.ts"
+```
+</Step>
+</Steps>

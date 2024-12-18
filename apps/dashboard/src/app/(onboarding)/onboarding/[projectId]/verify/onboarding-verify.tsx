@@ -4,10 +4,24 @@ import { ButtonContainer } from '@/components/button-container';
 import { LinkButton } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import type { IServiceEvent, IServiceProjectWithClients } from '@openpanel/db';
+import type {
+  IServiceClient,
+  IServiceEvent,
+  IServiceProjectWithClients,
+} from '@openpanel/db';
 
+import Syntax from '@/components/syntax';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { useClientSecret } from '@/hooks/useClientSecret';
+import { clipboard } from '@/utils/clipboard';
+import { local } from 'd3';
 import OnboardingLayout, {
   OnboardingDescription,
 } from '../../../onboarding-layout';
@@ -36,29 +50,15 @@ const Verify = ({ project, events }: Props) => {
         </OnboardingDescription>
       }
     >
-      {/* 
-      Sadly we cant have a verify for each type since we use the same client for all different types (website, app, backend)
-      
-      Pros: the user just need to keep track of one client id/secret
-      Cons: we cant verify each type individually
-
-      Might be a good idea to add a verify for each type in the future, but for now we will just have one verify for all types
-
-      {project.types.map((type) => {
-        const Component = {
-          website: VerifyWeb,
-          app: VerifyApp,
-          backend: VerifyBackend,
-        }[type];
-
-        return <Component key={type} client={client} events={events} />;
-      })} */}
       <VerifyListener
         project={project}
         client={client}
         events={events}
         onVerified={setVerified}
       />
+
+      <CurlPreview project={project} />
+
       <ButtonContainer>
         <LinkButton
           href={`/onboarding/${project.id}/connect`}
@@ -80,7 +80,7 @@ const Verify = ({ project, events }: Props) => {
           )}
 
           <LinkButton
-            href="/"
+            href={`/${project.organizationId}/${project.id}`}
             size="lg"
             className={cn(
               'min-w-28 self-start',
@@ -96,3 +96,48 @@ const Verify = ({ project, events }: Props) => {
 };
 
 export default Verify;
+
+function CurlPreview({ project }: { project: IServiceProjectWithClients }) {
+  const [secret] = useClientSecret();
+  const client = project.clients[0];
+  if (!client) {
+    return null;
+  }
+
+  const code = `curl -X POST ${process.env.NEXT_PUBLIC_API_URL}/track \\
+-H "Content-Type: application/json" \\
+-H "openpanel-client-id: ${client.id}" \\
+-H "openpanel-client-secret: ${secret}" \\
+-H "User-Agent: ${window.navigator.userAgent}" \\
+-d '{
+  "type": "track",
+  "payload": {
+    "name": "screen_view",
+    "properties": {
+      "__title": "Testing OpenPanel - ${project.name}",
+      "__path": "${project.domain}",
+      "__referrer": "${process.env.NEXT_PUBLIC_DASHBOARD_URL}"
+    }
+  }
+}'`;
+
+  return (
+    <div className="card">
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger
+            className="px-6"
+            onClick={() => {
+              clipboard(code, null);
+            }}
+          >
+            Try out the curl command
+          </AccordionTrigger>
+          <AccordionContent className="p-0">
+            <Syntax code={code} />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
+  );
+}

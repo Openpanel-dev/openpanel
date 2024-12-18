@@ -1,11 +1,11 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { PageTabs, PageTabsLink } from '@/components/page-tabs';
 import { Padding } from '@/components/ui/padding';
-import { auth } from '@clerk/nextjs/server';
 import { ShieldAlertIcon } from 'lucide-react';
 import { notFound } from 'next/navigation';
 import { parseAsStringEnum } from 'nuqs/server';
 
+import { auth } from '@openpanel/auth/nextjs';
 import { db } from '@openpanel/db';
 
 import EditOrganization from './edit-organization';
@@ -26,7 +26,7 @@ export default async function Page({
   const tab = parseAsStringEnum(['org', 'members', 'invites'])
     .withDefault('org')
     .parseServerSide(searchParams.tab);
-  const session = auth();
+  const session = await auth();
   const organization = await db.organization.findUnique({
     where: {
       id: organizationId,

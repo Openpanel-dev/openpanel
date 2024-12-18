@@ -87,7 +87,7 @@ const SheetHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'relative -m-6 mb-6 flex justify-between rounded-t-lg border-b bg-def-100 p-6',
+      'relative -m-6 mb-0 flex justify-between rounded-t-lg border-b bg-def-100 p-6',
       className,
     )}
     {...props}

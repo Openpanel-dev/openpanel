@@ -30,8 +30,11 @@ COPY apps/api/package.json ./apps/api/
 # Packages
 COPY packages/db/package.json packages/db/
 COPY packages/trpc/package.json packages/trpc/
+COPY packages/auth/package.json packages/auth/
+COPY packages/email/package.json packages/email/
 COPY packages/queue/package.json packages/queue/
 COPY packages/redis/package.json packages/redis/
+COPY packages/logger/package.json packages/logger/
 COPY packages/common/package.json packages/common/
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/
 COPY packages/constants/package.json packages/constants/
@@ -87,9 +90,13 @@ COPY --from=build /app/apps/api ./apps/api
 
 # Packages
 COPY --from=build /app/packages/db ./packages/db
+COPY --from=build /app/packages/auth ./packages/auth
 COPY --from=build /app/packages/trpc ./packages/trpc
+COPY --from=build /app/packages/auth ./packages/auth
+COPY --from=build /app/packages/email ./packages/email
 COPY --from=build /app/packages/queue ./packages/queue
 COPY --from=build /app/packages/redis ./packages/redis
+COPY --from=build /app/packages/logger ./packages/logger
 COPY --from=build /app/packages/common ./packages/common
 COPY --from=build /app/packages/sdks/sdk ./packages/sdks/sdk
 COPY --from=build /app/packages/constants ./packages/constants

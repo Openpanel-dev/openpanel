@@ -1,22 +1,47 @@
 'use client';
 
+import { useLogout } from '@/hooks/useLogout';
 import { showConfirm } from '@/modals';
 import { api } from '@/trpc/client';
-import { useAuth } from '@clerk/nextjs';
-import { ChevronLastIcon } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { ChevronLastIcon, LogInIcon } from 'lucide-react';
+import Link from 'next/link';
+import {
+  usePathname,
+  useRouter,
+  useSelectedLayoutSegments,
+} from 'next/navigation';
 import { useEffect } from 'react';
+
+const PUBLIC_SEGMENTS = [['onboarding']];
 
 const SkipOnboarding = () => {
   const router = useRouter();
   const pathname = usePathname();
-  const res = api.onboarding.skipOnboardingCheck.useQuery();
-  const auth = useAuth();
+  const segments = useSelectedLayoutSegments();
+  const isPublic = PUBLIC_SEGMENTS.some((segment) =>
+    segments.every((s, index) => s === segment[index]),
+  );
+  const res = api.onboarding.skipOnboardingCheck.useQuery(undefined, {
+    enabled: !isPublic,
+  });
+
+  const logout = useLogout();
   useEffect(() => {
     res.refetch();
   }, [pathname]);
 
-  if (!pathname.startsWith('/onboarding')) return null;
+  // Do not show skip onboarding for the first step (register account)
+  if (isPublic) {
+    return (
+      <Link
+        href="/login"
+        className="flex items-center gap-2  text-muted-foreground"
+      >
+        Login
+        <LogInIcon size={16} />
+      </Link>
+    );
+  }
 
   return (
     <button
@@ -29,8 +54,7 @@ const SkipOnboarding = () => {
             title: 'Skip onboarding?',
             text: 'Are you sure you want to skip onboarding? Since you do not have any projects, you will be logged out.',
             onConfirm() {
-              auth.signOut();
-              router.replace(process.env.NEXT_PUBLIC_CLERK_SIGN_IN_URL!);
+              logout();
             },
           });
         }

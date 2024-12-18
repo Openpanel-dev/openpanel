@@ -29,7 +29,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          'grainy min-h-screen bg-def-100 font-sans text-base antialiased',
+          'grainy min-h-screen bg-def-100 font-sans text-base antialiased leading-normal',
           GeistSans.variable,
           GeistMono.variable,
         )}

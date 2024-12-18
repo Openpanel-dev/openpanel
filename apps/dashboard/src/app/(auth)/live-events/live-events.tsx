@@ -102,7 +102,7 @@ const useWebEventGenerator = () => {
     function createNewEvent() {
       const newEvent = generateEvent();
       setEvents((prevEvents) => [newEvent, ...prevEvents]);
-      timer = setTimeout(() => createNewEvent(), Math.random() * 1000);
+      timer = setTimeout(() => createNewEvent(), Math.random() * 3000);
     }
 
     createNewEvent();

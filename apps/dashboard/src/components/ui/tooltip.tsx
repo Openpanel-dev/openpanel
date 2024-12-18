@@ -41,6 +41,7 @@ interface TooltiperProps {
   tooltipClassName?: string;
   onClick?: () => void;
   side?: 'top' | 'right' | 'bottom' | 'left';
+  align?: 'start' | 'center' | 'end';
   delayDuration?: number;
   sideOffset?: number;
   disabled?: boolean;
@@ -56,6 +57,7 @@ export function Tooltiper({
   delayDuration = 0,
   sideOffset = 10,
   disabled = false,
+  align,
 }: TooltiperProps) {
   if (disabled) return children;
   return (
@@ -68,6 +70,7 @@ export function Tooltiper({
           sideOffset={sideOffset}
           side={side}
           className={tooltipClassName}
+          align={align}
         >
           {content}
         </TooltipContent>

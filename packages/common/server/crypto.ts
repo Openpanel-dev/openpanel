@@ -49,7 +49,12 @@ export async function verifyPassword(
         reject(err);
       }
       // compare the new supplied password with the hashed password using timeSafeEqual
-      resolve(timingSafeEqual(hashKeyBuff, derivedKey));
+      resolve(
+        timingSafeEqual(
+          new Uint8Array(hashKeyBuff),
+          new Uint8Array(derivedKey),
+        ),
+      );
     });
   });
 }

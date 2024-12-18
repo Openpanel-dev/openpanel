@@ -48,101 +48,137 @@ export default function CreateInvite({ projects }: Props) {
 
   const mutation = api.organization.inviteUser.useMutation({
     onSuccess() {
-      toast('User invited!', {
-        description: 'The user has been invited to the organization.',
-      });
+      toast.success('User has been invited');
       reset();
-      closeSheet();
       router.refresh();
     },
-    onError() {
-      toast.error('Failed to invite user');
+    onError(error) {
+      toast.error('Failed to invite user', {
+        description: error.message,
+      });
     },
   });
 
   return (
-    <Sheet>
+    <Sheet onOpenChange={() => mutation.reset()}>
       <SheetTrigger asChild>
         <Button icon={PlusIcon}>Invite user</Button>
       </SheetTrigger>
-      <SheetContent>
-        <SheetHeader>
-          <div>
-            <SheetTitle>Invite a user</SheetTitle>
-            <SheetDescription>
-              Invite users to your organization. They will recieve an email will
-              instructions.
-            </SheetDescription>
+      {mutation.isSuccess ? (
+        <SheetContent>
+          <SheetHeader>
+            <SheetTitle>User has been invited</SheetTitle>
+          </SheetHeader>
+          <div className="prose">
+            {mutation.data.type === 'is_member' ? (
+              <>
+                <p>
+                  Since the user already has an account we have added him/her to
+                  your organization. This means you will not see this user in
+                  the list of invites.
+                </p>
+                <p>We have also notified the user by email about this.</p>
+              </>
+            ) : (
+              <p>
+                We have sent an email with instructions to join the
+                organization.
+              </p>
+            )}
+            <div className="row gap-4 mt-8">
+              <Button onClick={() => mutation.reset()}>
+                Invite another user
+              </Button>
+              <Button variant="outline" onClick={() => closeSheet()}>
+                Close
+              </Button>
+            </div>
           </div>
-        </SheetHeader>
-        <form
-          onSubmit={handleSubmit((values) => mutation.mutate(values))}
-          className="flex flex-col gap-8"
-        >
-          <InputWithLabel
-            className="w-full max-w-sm"
-            label="Email"
-            error={formState.errors.email?.message}
-            placeholder="Who do you want to invite?"
-            {...register('email')}
-          />
-          <div>
-            <Label>What role?</Label>
+        </SheetContent>
+      ) : (
+        <SheetContent>
+          <SheetHeader>
+            <div>
+              <SheetTitle>Invite a user</SheetTitle>
+              <SheetDescription>
+                Invite users to your organization. They will recieve an email
+                will instructions.
+              </SheetDescription>
+            </div>
+          </SheetHeader>
+          <form
+            onSubmit={handleSubmit((values) => mutation.mutate(values))}
+            className="flex flex-col gap-8"
+          >
+            <InputWithLabel
+              className="w-full max-w-sm"
+              label="Email"
+              error={formState.errors.email?.message}
+              placeholder="Who do you want to invite?"
+              {...register('email')}
+            />
+            <div>
+              <Label>What role?</Label>
+              <Controller
+                name="role"
+                control={control}
+                render={({ field }) => (
+                  <RadioGroup
+                    defaultValue={field.value}
+                    onChange={field.onChange}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="org:member" id="member" />
+                      <Label className="mb-0" htmlFor="member">
+                        Member
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="org:admin" id="admin" />
+                      <Label className="mb-0" htmlFor="admin">
+                        Admin
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                )}
+              />
+            </div>
             <Controller
-              name="role"
+              name="access"
               control={control}
               render={({ field }) => (
-                <RadioGroup
-                  defaultValue={field.value}
-                  onChange={field.onChange}
-                  ref={field.ref}
-                  onBlur={field.onBlur}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="org:member" id="member" />
-                    <Label className="mb-0" htmlFor="member">
-                      Member
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="org:admin" id="admin" />
-                    <Label className="mb-0" htmlFor="admin">
-                      Admin
-                    </Label>
-                  </div>
-                </RadioGroup>
+                <div>
+                  <Label>Restrict access</Label>
+                  <ComboboxAdvanced
+                    placeholder="Restrict access to projects"
+                    value={field.value}
+                    onChange={field.onChange}
+                    items={projects.map((item) => ({
+                      label: item.name,
+                      value: item.id,
+                    }))}
+                  />
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Leave empty to give access to all projects
+                  </p>
+                </div>
               )}
             />
-          </div>
-          <Controller
-            name="access"
-            control={control}
-            render={({ field }) => (
-              <div>
-                <Label>Restrict access</Label>
-                <ComboboxAdvanced
-                  placeholder="Restrict access to projects"
-                  value={field.value}
-                  onChange={field.onChange}
-                  items={projects.map((item) => ({
-                    label: item.name,
-                    value: item.id,
-                  }))}
-                />
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Leave empty to give access to all projects
-                </p>
-              </div>
-            )}
-          />
-          <SheetFooter>
-            <Button icon={SendIcon} type="submit" loading={mutation.isLoading}>
-              Invite user
-            </Button>
-          </SheetFooter>
-        </form>
-      </SheetContent>
+            <SheetFooter>
+              <Button
+                icon={SendIcon}
+                type="submit"
+                loading={mutation.isLoading}
+              >
+                Invite user
+              </Button>
+            </SheetFooter>
+          </form>
+        </SheetContent>
+      )}
     </Sheet>
   );
 }
