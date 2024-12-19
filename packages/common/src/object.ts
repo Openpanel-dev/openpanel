@@ -5,6 +5,13 @@ export function toDots(
   obj: Record<string, unknown>,
   path = '',
 ): Record<string, string> {
+  // Clickhouse breaks on insert if a property contains invalid surrogate pairs
+  function removeInvalidSurrogates(value: string): string {
+    const validSurrogatePairRegex =
+      /[\uD800-\uDBFF][\uDC00-\uDFFF]|[^\uD800-\uDFFF]/g;
+    return value.match(validSurrogatePairRegex)?.join('') || '';
+  }
+
   return Object.entries(obj).reduce((acc, [key, value]) => {
     if (typeof value === 'object' && value !== null) {
       return {
@@ -17,10 +24,14 @@ export function toDots(
       return acc;
     }
 
+    const cleanedValue =
+      typeof value === 'string'
+        ? removeInvalidSurrogates(value).trim()
+        : String(value);
+
     return {
       ...acc,
-      [`${path}${key}`]:
-        typeof value === 'string' ? value.trim() : String(value),
+      [`${path}${key}`]: cleanedValue,
     };
   }, {});
 }
