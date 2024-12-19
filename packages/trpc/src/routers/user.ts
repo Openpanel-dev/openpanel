@@ -32,4 +32,36 @@ export const userRouter = createTRPCRouter({
 
       return updatedUser;
     }),
+  debugPostCookie: protectedProcedure
+    .input(
+      z.object({
+        sameSite: z.enum(['lax', 'strict', 'none']),
+        domain: z.string(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      ctx.setCookie('debugCookie', new Date().toISOString(), {
+        domain: input.domain,
+        sameSite: input.sameSite,
+        httpOnly: true,
+        secure: true,
+        path: '/',
+      });
+    }),
+  debugGetCookie: protectedProcedure
+    .input(
+      z.object({
+        sameSite: z.enum(['lax', 'strict', 'none']),
+        domain: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      ctx.setCookie('debugCookie', new Date().toISOString(), {
+        domain: input.domain,
+        sameSite: input.sameSite,
+        httpOnly: true,
+        secure: true,
+        path: '/',
+      });
+    }),
 });

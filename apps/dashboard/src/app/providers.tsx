@@ -37,6 +37,13 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       links: [
         httpLink({
           url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
+          fetch(url, options) {
+            return fetch(url, {
+              ...options,
+              credentials: 'include',
+              mode: 'cors',
+            });
+          },
           async headers() {
             const token = await getToken();
             if (token) {

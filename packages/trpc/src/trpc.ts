@@ -15,14 +15,7 @@ export function createContext({ req, res }: CreateFastifyContextOptions) {
     session: getAuth(req),
     // we do not get types for `setCookie` from fastify
     // so define it here and be safe in routers
-    setCookie: (
-      key: string,
-      value: string,
-      options: {
-        maxAge: number;
-        path: string;
-      },
-    ) => {
+    setCookie: (key: string, value: string, options: any) => {
       // @ts-ignore
       res.setCookie(key, value, options);
     },

@@ -2,7 +2,7 @@ import zlib from 'node:zlib';
 import { clerkPlugin } from '@clerk/fastify';
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
-import cors from '@fastify/cors';
+import cors, { type FastifyCorsOptions } from '@fastify/cors';
 import type { FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
 import { fastifyTRPCPlugin } from '@trpc/server/adapters/fastify';
 import type { FastifyBaseLogger, FastifyRequest } from 'fastify';
@@ -105,16 +105,36 @@ const startServer = async () => {
       },
     );
 
-    fastify.register(cors, {
-      origin: '*',
-      credentials: true,
+    fastify.register(cors, () => {
+      return (
+        req: FastifyRequest,
+        callback: (error: Error | null, options: FastifyCorsOptions) => void,
+      ) => {
+        // TODO: set prefix on dashboard routes
+        const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc'];
+
+        const isPrivatePath = corsPaths.some((path) =>
+          req.url.startsWith(path),
+        );
+
+        if (isPrivatePath) {
+          return callback(null, {
+            origin: process.env.NEXT_PUBLIC_DASHBOARD_URL,
+            credentials: true,
+          });
+        }
+
+        return callback(null, {
+          origin: '*',
+        });
+      };
     });
 
     fastify.register((instance, opts, done) => {
-      // fastify.register(cookie, {
-      //   secret: 'random', // for cookies signature
-      //   hook: 'onRequest',
-      // });
+      fastify.register(cookie, {
+        secret: 'random', // for cookies signature
+        hook: 'onRequest',
+      });
       instance.register(clerkPlugin, {
         publishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
         secretKey: process.env.CLERK_SECRET_KEY,
