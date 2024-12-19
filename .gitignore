@@ -7,6 +7,7 @@ dump.sql
 dump-*
 .sql
 tmp
+docker/data*
 
 # Logs
 
