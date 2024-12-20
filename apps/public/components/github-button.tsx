@@ -1,7 +1,8 @@
 'use client';
 
+import { getGithubRepoInfo } from '@/lib/github';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 
 function formatStars(stars: number) {
@@ -13,10 +14,10 @@ function formatStars(stars: number) {
 }
 
 export function GithubButton() {
-  const [stars, setStars] = useState(3_100);
-  // useEffect(() => {
-  //   getGithubRepoInfo().then((res) => setStars(res.stargazers_count));
-  // }, []);
+  const [stars, setStars] = useState(3_263);
+  useEffect(() => {
+    getGithubRepoInfo().then((res) => setStars(res.stargazers_count));
+  }, []);
   return (
     <Button variant={'secondary'} asChild>
       <Link href="https://git.new/openpanel" className="hidden md:flex">
