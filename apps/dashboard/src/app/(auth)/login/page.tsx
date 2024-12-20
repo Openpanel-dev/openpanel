@@ -27,6 +27,18 @@ export default async function Page() {
         <LinkButton variant={'outline'} size="lg" href="/onboarding">
           No account? Sign up today
         </LinkButton>
+        <p className="text-sm text-muted-foreground leading-tight">
+          Having issues logging in?
+          <br />
+          Contact us at{' '}
+          <a
+            href="mailto:hello@openpanel.dev"
+            className="text-primary underline"
+          >
+            hello[at]openpanel.dev
+          </a>
+          . We're not using Clerk (auth provider) anymore.
+        </p>
       </div>
     </div>
   );
