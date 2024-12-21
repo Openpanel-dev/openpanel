@@ -169,6 +169,15 @@ export async function githubCallback(
           },
         },
       });
+    } else if (existingUser.provider === 'github') {
+      await db.account.update({
+        where: {
+          id: existingUser.id,
+        },
+        data: {
+          providerId: String(githubUserId),
+        },
+      });
     }
 
     setSessionTokenCookie(
@@ -369,6 +378,15 @@ export async function googleCallback(
               id: existingAccount.userId,
             },
           },
+        },
+      });
+    } else if (existingAccount.provider === 'google') {
+      await db.account.update({
+        where: {
+          id: existingAccount.id,
+        },
+        data: {
+          providerId: googleId,
         },
       });
     }
