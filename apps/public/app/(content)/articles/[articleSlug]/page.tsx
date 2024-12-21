@@ -164,7 +164,7 @@ export default async function Page({
                     description="Give it a spin for free. No credit card required."
                   />
                   <Button size="lg" variant="secondary" asChild>
-                    <Link href="https://dashboard.openpanel.dev/register">
+                    <Link href="https://dashboard.openpanel.dev/onboarding">
                       Get started today!
                     </Link>
                   </Button>

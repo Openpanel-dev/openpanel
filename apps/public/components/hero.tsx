@@ -31,7 +31,7 @@ export function Hero() {
         {/* CTA */}
         <div className="col md:row gap-4 center-center my-12">
           <Button size="lg" asChild>
-            <Link href="https://dashboard.openpanel.dev/register">
+            <Link href="https://dashboard.openpanel.dev/onboarding">
               Try it for free
             </Link>
           </Button>

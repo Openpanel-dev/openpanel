@@ -20,7 +20,7 @@ export function Footer() {
             description="Simplify your web & product analytics with our user-friendly platform. Collect, analyze, and optimize your data in minutes, for free."
           />
           <Button size="lg" variant="secondary" asChild>
-            <Link href="https://dashboard.openpanel.dev/register">
+            <Link href="https://dashboard.openpanel.dev/onboarding">
               Get started today!
             </Link>
           </Button>

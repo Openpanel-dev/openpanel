@@ -26,7 +26,6 @@ const isPublicRoute = createRouteMatcher([
   '/share/overview/:id',
   '/login(.*)?',
   '/reset-password(.*)?',
-  '/register(.*)?',
   '/sso-callback(.*)?',
   '/onboarding',
 ]);

@@ -90,7 +90,7 @@ export function StatsPure({
       <div className="center-center col gap-4 absolute bottom-20 left-0 right-0 z-10">
         <p>Get the analytics you deserve</p>
         <Button asChild>
-          <Link href="https://dashboard.openpanel.dev/register">
+          <Link href="https://dashboard.openpanel.dev/onboarding">
             Try it for free
           </Link>
         </Button>

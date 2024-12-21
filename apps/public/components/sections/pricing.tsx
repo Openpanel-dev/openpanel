@@ -53,7 +53,7 @@ export function Pricing() {
             </ul>
 
             <Button variant="secondary" className="self-start mt-4" asChild>
-              <Link href="https://dashboard.openpanel.dev/register">
+              <Link href="https://dashboard.openpanel.dev/onboarding">
                 Start for free
               </Link>
             </Button>
