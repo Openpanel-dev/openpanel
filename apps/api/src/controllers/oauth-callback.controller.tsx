@@ -54,30 +54,44 @@ export async function githubCallback(
 
   const query = schema.safeParse(req.query);
   if (!query.success) {
+    req.log.error('invalid callback query params', {
+      error: query.error.message,
+      query: req.query,
+      provider: 'github',
+    });
     return reply.status(400).send(query.error.message);
   }
+
   const { code, state, inviteId } = query.data;
   const storedState = req.cookies.github_oauth_state ?? null;
 
   if (code === null || state === null || storedState === null) {
-    return new Response('Please restart the process.', {
-      status: 400,
+    req.log.error('missing oauth parameters', {
+      code: code === null,
+      state: state === null,
+      storedState: storedState === null,
+      provider: 'github',
     });
+    return reply.status(400).send('Please restart the process.');
   }
   if (state !== storedState) {
-    return new Response('Please restart the process.', {
-      status: 400,
+    req.log.error('oauth state mismatch', {
+      state,
+      storedState,
+      provider: 'github',
     });
+    return reply.status(400).send('Please restart the process.');
   }
 
   let tokens: OAuth2Tokens;
   try {
     tokens = await github.validateAuthorizationCode(code);
-  } catch {
-    // Invalid code or client credentials
-    return new Response('Please restart the process.', {
-      status: 400,
+  } catch (error) {
+    req.log.error('github authorization failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      provider: 'github',
     });
+    return reply.status(400).send('Please restart the process.');
   }
   const githubAccessToken = tokens.accessToken();
 
@@ -97,6 +111,11 @@ export async function githubCallback(
 
   const userResult = userSchema.safeParse(userJson);
   if (!userResult.success) {
+    req.log.error('user schema error', {
+      error: userResult.error.message,
+      userJson,
+      provider: 'github',
+    });
     return reply.status(400).send(userResult.error.message);
   }
   const githubUserId = userResult.data.id;
@@ -156,6 +175,10 @@ export async function githubCallback(
   }
 
   if (email === null) {
+    req.log.error('github email not found or not verified', {
+      githubUserId,
+      provider: 'github',
+    });
     return reply.status(400).send('Please verify your GitHub email address.');
   }
 
@@ -217,6 +240,11 @@ export async function googleCallback(
 
   const query = schema.safeParse(req.query);
   if (!query.success) {
+    req.log.error('invalid callback query params', {
+      error: query.error.message,
+      query: req.query,
+      provider: 'google',
+    });
     return reply.status(400).send(query.error.message);
   }
 
@@ -230,16 +258,32 @@ export async function googleCallback(
     storedState === null ||
     codeVerifier === null
   ) {
+    req.log.error('missing oauth parameters', {
+      code: code === null,
+      state: state === null,
+      storedState: storedState === null,
+      codeVerifier: codeVerifier === null,
+      provider: 'google',
+    });
     return reply.status(400).send('Please restart the process.');
   }
   if (state !== storedState) {
+    req.log.error('oauth state mismatch', {
+      state,
+      storedState,
+      provider: 'google',
+    });
     return reply.status(400).send('Please restart the process.');
   }
 
   let tokens: OAuth2Tokens;
   try {
     tokens = await google.validateAuthorizationCode(code, codeVerifier);
-  } catch {
+  } catch (error) {
+    req.log.error('google authorization failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      provider: 'google',
+    });
     return reply.status(400).send('Please restart the process.');
   }
 
@@ -264,6 +308,11 @@ export async function googleCallback(
 
   const claimsResult = claimsParser.safeParse(claims);
   if (!claimsResult.success) {
+    req.log.error('invalid claims format', {
+      error: claimsResult.error.message,
+      claims,
+      provider: 'google',
+    });
     return reply.status(400).send(claimsResult.error.message);
   }
 
