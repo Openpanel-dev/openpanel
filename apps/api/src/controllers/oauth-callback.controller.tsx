@@ -88,7 +88,7 @@ export async function githubCallback(
   const userSchema = z.object({
     id: z.number(),
     login: z.string(),
-    name: z.string(),
+    name: z.string().nullable(),
   });
   const userJson = await userResponse.json();
 
@@ -160,7 +160,7 @@ export async function githubCallback(
   const user = await await db.user.create({
     data: {
       email,
-      firstName: userResult.data.name,
+      firstName: userResult.data.name || userResult.data.login || '',
       accounts: {
         create: {
           provider: 'github',
