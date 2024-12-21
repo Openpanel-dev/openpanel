@@ -104,7 +104,7 @@ export async function githubCallback(
     login: z.string(),
     name: z
       .string()
-      .nullable()
+      .nullish()
       .transform((val) => val || ''),
   });
   const userJson = await userResponse.json();
@@ -307,15 +307,15 @@ export async function googleCallback(
     sub: z.string(),
     given_name: z
       .string()
-      .nullable()
+      .nullish()
       .transform((val) => val || ''),
     family_name: z
       .string()
-      .nullable()
+      .nullish()
       .transform((val) => val || ''),
     picture: z
       .string()
-      .nullable()
+      .nullish()
       .transform((val) => val || ''),
     email: z.string(),
   });
