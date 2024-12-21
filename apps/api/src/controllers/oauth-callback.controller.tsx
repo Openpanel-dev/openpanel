@@ -88,7 +88,10 @@ export async function githubCallback(
   const userSchema = z.object({
     id: z.number(),
     login: z.string(),
-    name: z.string().nullable(),
+    name: z
+      .string()
+      .nullable()
+      .transform((val) => val || ''),
   });
   const userJson = await userResponse.json();
 
@@ -244,9 +247,18 @@ export async function googleCallback(
 
   const claimsParser = z.object({
     sub: z.string(),
-    given_name: z.string(),
-    family_name: z.string(),
-    picture: z.string(),
+    given_name: z
+      .string()
+      .nullable()
+      .transform((val) => val || ''),
+    family_name: z
+      .string()
+      .nullable()
+      .transform((val) => val || ''),
+    picture: z
+      .string()
+      .nullable()
+      .transform((val) => val || ''),
     email: z.string(),
   });
 
