@@ -72,6 +72,7 @@ model Account {
   id                    String          @id @default(dbgenerated("gen_random_uuid()"))
   userId                String
   user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email                 String?
   provider              String
   providerId            String?
   accessToken           String?

@@ -129,6 +129,11 @@ export async function githubCallback(
           providerId: String(githubUserId),
         },
         {
+          provider: 'github',
+          providerId: null,
+          email,
+        },
+        {
           provider: 'oauth',
           user: {
             email: email ?? '',
@@ -324,6 +329,11 @@ export async function googleCallback(
         {
           provider: 'google',
           providerId: googleId,
+        },
+        {
+          provider: 'google',
+          providerId: null,
+          email,
         },
         {
           provider: 'oauth',
