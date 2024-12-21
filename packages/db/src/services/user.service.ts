@@ -15,7 +15,10 @@ export async function getUserAccount({
 }: { email: string; provider: string; providerId?: string }) {
   const res = await db.user.findFirst({
     where: {
-      email,
+      email: {
+        equals: email,
+        mode: 'insensitive',
+      },
     },
     include: {
       accounts: {

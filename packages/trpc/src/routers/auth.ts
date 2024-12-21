@@ -141,6 +141,7 @@ export const authRouter = createTRPCRouter({
     .input(zSignInEmail)
     .mutation(async ({ input, ctx }) => {
       const provider = 'email';
+      const password = input.password.trim();
 
       const user = await getUserAccount({
         email: input.email,
@@ -158,7 +159,7 @@ export const authRouter = createTRPCRouter({
         if (user.account.password?.startsWith('$argon2')) {
           const validPassword = await verifyPasswordHash(
             user.account.password ?? '',
-            input.password,
+            password,
           );
 
           if (!validPassword) {
@@ -166,7 +167,7 @@ export const authRouter = createTRPCRouter({
           }
         } else {
           const validPassword = await bcrypt.compare(
-            input.password,
+            password,
             user.account.password ?? '',
           );
 
