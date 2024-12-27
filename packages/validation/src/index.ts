@@ -189,7 +189,7 @@ export const zWebhookConfig = z.object({
   type: z.literal('webhook'),
   url: z.string().url(),
   headers: z.record(z.string()),
-  payload: z.record(z.string(), z.unknown()),
+  payload: z.record(z.string(), z.unknown()).optional(),
 });
 export type IWebhookConfig = z.infer<typeof zWebhookConfig>;
 

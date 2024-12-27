@@ -34,7 +34,7 @@ function EventBadge({
       }
     >
       <Badge variant="outline" className="inline-flex">
-        {event.name}
+        {event.name === '*' ? 'Any event' : event.name}
         {Boolean(event.filters.length) && (
           <FilterIcon className="size-2 ml-1" />
         )}

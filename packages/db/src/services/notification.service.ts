@@ -134,7 +134,7 @@ export function triggerNotification(notification: Notification) {
 }
 
 function matchEventFilters(
-  event: IServiceCreateEventPayload,
+  payload: IServiceCreateEventPayload,
   filters: IChartEventFilter[],
 ) {
   return filters.every((filter) => {
@@ -144,15 +144,15 @@ function matchEventFilters(
 
     if (name === 'has_profile') {
       if (value.includes('true')) {
-        return event.profileId !== event.deviceId;
+        return payload.profileId !== payload.deviceId;
       }
-      return event.profileId === event.deviceId;
+      return payload.profileId === payload.deviceId;
     }
 
     const propertyValue = (
       name.startsWith('properties.')
-        ? pathOr('', name.split('.'), event)
-        : pathOr('', [name], event)
+        ? pathOr('', name.split('.'), payload)
+        : pathOr('', [name], payload)
     ).trim();
 
     switch (operator) {
@@ -180,15 +180,15 @@ function matchEventFilters(
 }
 
 export function matchEvent(
-  event: IServiceCreateEventPayload,
+  payload: IServiceCreateEventPayload,
   chartEvent: IChartEvent,
 ) {
-  if (event.name !== chartEvent.name) {
+  if (payload.name !== chartEvent.name && chartEvent.name !== '*') {
     return false;
   }
 
   if (chartEvent.filters.length > 0) {
-    return matchEventFilters(event, chartEvent.filters);
+    return matchEventFilters(payload, chartEvent.filters);
   }
 
   return true;
