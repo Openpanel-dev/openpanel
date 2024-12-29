@@ -88,7 +88,7 @@ export async function githubCallback(
     tokens = await github.validateAuthorizationCode(code);
   } catch (error) {
     req.log.error('github authorization failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error,
       provider: 'github',
     });
     return reply.status(400).send('Please restart the process.');
@@ -295,7 +295,7 @@ export async function googleCallback(
     tokens = await google.validateAuthorizationCode(code, codeVerifier);
   } catch (error) {
     req.log.error('google authorization failed', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error,
       provider: 'google',
     });
     return reply.status(400).send('Please restart the process.');
