@@ -62,7 +62,12 @@ export function Tooltiper({
   if (disabled) return children;
   return (
     <Tooltip delayDuration={delayDuration}>
-      <TooltipTrigger asChild={asChild} className={className} onClick={onClick}>
+      <TooltipTrigger
+        asChild={asChild}
+        className={className}
+        onClick={onClick}
+        type="button"
+      >
         {children}
       </TooltipTrigger>
       <TooltipPortal>

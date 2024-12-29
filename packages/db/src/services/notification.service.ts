@@ -17,7 +17,12 @@ import { getProjectByIdCached } from './project.service';
 
 type ICreateNotification = Pick<
   Notification,
-  'projectId' | 'title' | 'message' | 'integrationId' | 'payload'
+  | 'projectId'
+  | 'title'
+  | 'message'
+  | 'integrationId'
+  | 'payload'
+  | 'notificationRuleId'
 >;
 
 export type INotificationPayload =
@@ -118,6 +123,7 @@ export async function createNotification(notification: ICreateNotification) {
       projectId: notification.projectId,
       payload: notification.payload || Prisma.DbNull,
       ...getIntegration(notification.integrationId),
+      notificationRuleId: notification.notificationRuleId,
     },
   });
 
@@ -202,9 +208,23 @@ function notificationTemplateEvent({
   rule: INotificationRuleCached;
 }) {
   if (!rule.template) return `You received a new "${payload.name}" event`;
-  return rule.template
+  let template = rule.template
     .replaceAll('$EVENT_NAME', payload.name)
-    .replaceAll('$RULE_NAME', rule.name);
+    .replaceAll('$RULE_NAME', rule.name)
+    .replaceAll('{{rule_name}}', rule.name);
+
+  // Replace all {{xxx}} placeholders with their values
+  const placeholderMatches = template.match(/{{[^}]+}}/g) || [];
+  for (const match of placeholderMatches) {
+    const path = match.slice(2, -2); // Remove {{ and }}
+    const value = pathOr('', path.split('.'), payload);
+
+    if (value) {
+      template = template.replaceAll(match, JSON.stringify(value));
+    }
+  }
+
+  return template;
 }
 
 function notificationTemplateFunnel({
@@ -253,6 +273,7 @@ export async function checkNotificationRulesForEvent(
           createNotification({
             ...notification,
             integrationId: integration.id,
+            notificationRuleId: rule.id,
           }),
         );
 
@@ -261,6 +282,7 @@ export async function checkNotificationRulesForEvent(
             createNotification({
               ...notification,
               integrationId: APP_NOTIFICATION_INTEGRATION_ID,
+              notificationRuleId: rule.id,
             }),
           );
         }
@@ -270,6 +292,7 @@ export async function checkNotificationRulesForEvent(
             createNotification({
               ...notification,
               integrationId: EMAIL_NOTIFICATION_INTEGRATION_ID,
+              notificationRuleId: rule.id,
             }),
           );
         }
@@ -325,13 +348,18 @@ export async function checkNotificationRulesForSessionEnd(
     // Generate notification promises
     return [
       ...rule.integrations.map((integration) =>
-        createNotification({ ...notification, integrationId: integration.id }),
+        createNotification({
+          ...notification,
+          integrationId: integration.id,
+          notificationRuleId: rule.id,
+        }),
       ),
       ...(rule.sendToApp
         ? [
             createNotification({
               ...notification,
               integrationId: APP_NOTIFICATION_INTEGRATION_ID,
+              notificationRuleId: rule.id,
             }),
           ]
         : []),
@@ -340,6 +368,7 @@ export async function checkNotificationRulesForSessionEnd(
             createNotification({
               ...notification,
               integrationId: EMAIL_NOTIFICATION_INTEGRATION_ID,
+              notificationRuleId: rule.id,
             }),
           ]
         : []),

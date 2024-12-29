@@ -21,19 +21,19 @@ export const notificationRouter = createTRPCRouter({
       return db.notification.findMany({
         where: {
           projectId: input.projectId,
-          sendToApp: true,
         },
         orderBy: {
           createdAt: 'desc',
         },
         include: {
           integration: {
-            include: {
-              notificationRules: {
-                select: {
-                  name: true,
-                },
-              },
+            select: {
+              name: true,
+            },
+          },
+          notificationRule: {
+            select: {
+              name: true,
             },
           },
         },

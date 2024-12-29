@@ -380,37 +380,40 @@ enum IntegrationType {
 }
 
 model NotificationRule {
-  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name         String
-  projectId    String
-  project      Project       @relation(fields: [projectId], references: [id])
-  integrations Integration[]
-  sendToApp    Boolean       @default(false)
-  sendToEmail  Boolean       @default(false)
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  projectId     String
+  project       Project        @relation(fields: [projectId], references: [id])
+  integrations  Integration[]
+  sendToApp     Boolean        @default(false)
+  sendToEmail   Boolean        @default(false)
   /// [IPrismaNotificationRuleConfig]
-  config       Json
-  template     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @default(now()) @updatedAt
+  config        Json
+  template      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @default(now()) @updatedAt
+  notifications Notification[]
 
   @@map("notification_rules")
 }
 
 model Notification {
-  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId     String
-  project       Project      @relation(fields: [projectId], references: [id])
-  title         String
-  message       String
-  isReadAt      DateTime?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @default(now()) @updatedAt
-  sendToApp     Boolean      @default(false)
-  sendToEmail   Boolean      @default(false)
-  integration   Integration? @relation(fields: [integrationId], references: [id])
-  integrationId String?      @db.Uuid
+  id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId          String
+  project            Project           @relation(fields: [projectId], references: [id])
+  title              String
+  message            String
+  isReadAt           DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @default(now()) @updatedAt
+  sendToApp          Boolean           @default(false)
+  sendToEmail        Boolean           @default(false)
+  integration        Integration?      @relation(fields: [integrationId], references: [id])
+  integrationId      String?           @db.Uuid
+  notificationRuleId String?           @db.Uuid
+  notificationRule   NotificationRule? @relation(fields: [notificationRuleId], references: [id])
   /// [IPrismaNotificationPayload]
-  payload       Json?
+  payload            Json?
 
   @@map("notifications")
 }

@@ -21,17 +21,16 @@ export default function Page({
     .withDefault('available')
     .parseServerSide(searchParams.tab);
   return (
-    <Padding>
-      <PageTabs className="mb-4">
-        <PageTabsLink href="?tab=available" isActive={tab === 'available'}>
-          Available
-        </PageTabsLink>
-        <PageTabsLink href="?tab=installed" isActive={tab === 'installed'}>
-          Installed
-        </PageTabsLink>
-      </PageTabs>
-      {tab === 'installed' && <ActiveIntegrations />}
-      {tab === 'available' && <AllIntegrations />}
+    <Padding className="col gap-8">
+      <div className="col gap-4">
+        <h2 className="text-3xl font-semibold">Your integrations</h2>
+        <ActiveIntegrations />
+      </div>
+
+      <div className="col gap-4">
+        <h2 className="text-3xl font-semibold">Available integrations</h2>
+        <AllIntegrations />
+      </div>
     </Padding>
   );
 }

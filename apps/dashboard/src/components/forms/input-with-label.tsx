@@ -10,7 +10,7 @@ type WithLabel = {
   children: React.ReactNode;
   label: string;
   error?: string | undefined;
-  info?: string;
+  info?: React.ReactNode;
   className?: string;
 };
 type InputWithLabelProps = InputProps & Omit<WithLabel, 'children'>;

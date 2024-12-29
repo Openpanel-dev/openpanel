@@ -28,7 +28,7 @@ export function useColumns() {
         const { title, isReadAt } = row.original;
         return (
           <div className="row gap-2 items-center">
-            {isReadAt === null && <PingBadge>Unread</PingBadge>}
+            {/* {isReadAt === null && <PingBadge>Unread</PingBadge>} */}
             <span className="max-w-md truncate font-medium">{title}</span>
           </div>
         );
@@ -44,6 +44,22 @@ export function useColumns() {
             {message}
           </div>
         );
+      },
+    },
+    {
+      accessorKey: 'integration',
+      header: 'Integration',
+      cell({ row }) {
+        const integration = row.original.integration;
+        return <div>{integration?.name}</div>;
+      },
+    },
+    {
+      accessorKey: 'notificationRule',
+      header: 'Rule',
+      cell({ row }) {
+        const rule = row.original.notificationRule;
+        return <div>{rule?.name}</div>;
       },
     },
     {
@@ -121,16 +137,8 @@ export function useColumns() {
       header: 'Created at',
       cell({ row }) {
         const date = row.original.createdAt;
-        const rule = row.original.integration?.notificationRules[0];
         return (
-          <div className="col gap-1">
-            <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
-            {rule && (
-              <div className="text-sm text-muted-foreground">
-                Rule: {rule.name}
-              </div>
-            )}
-          </div>
+          <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
         );
       },
     },
