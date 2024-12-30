@@ -6,6 +6,7 @@ import { useState } from 'react';
 
 import type { IChartType } from '@openpanel/validation';
 
+import { NOT_SET_VALUE } from '@openpanel/constants';
 import { ReportChart } from '../report-chart';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
@@ -318,6 +319,8 @@ export default function OverviewTopSources({
               previous: false,
             }}
             options={{
+              renderSerieName: (name) =>
+                name[0] === NOT_SET_VALUE ? 'Direct / Not set' : name[0],
               onClick: (item) => {
                 switch (widget.key) {
                   case 'all':
