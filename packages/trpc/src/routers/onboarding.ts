@@ -7,7 +7,7 @@ import type { ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/common/server';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 async function createOrGetOrganization(
   input: z.infer<typeof zOnboardingProject>,
@@ -31,7 +31,11 @@ async function createOrGetOrganization(
 }
 
 export const onboardingRouter = createTRPCRouter({
-  skipOnboardingCheck: protectedProcedure.query(async ({ ctx }) => {
+  skipOnboardingCheck: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.session.userId) {
+      return { canSkip: false, url: null };
+    }
+
     const members = await db.member.findMany({
       where: {
         userId: ctx.session.userId,
