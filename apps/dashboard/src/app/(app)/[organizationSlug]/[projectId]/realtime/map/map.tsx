@@ -93,7 +93,6 @@ const Map = ({ markers }: Props) => {
   };
 
   const theme = useTheme();
-  console.log(theme.theme);
 
   return (
     <div
@@ -123,8 +122,10 @@ const Map = ({ markers }: Props) => {
                     <Geography
                       key={geo.rsmKey}
                       geography={geo}
-                      fill={theme.theme === 'dark' ? '#000' : '#e5eef6'}
-                      stroke={theme.theme === 'dark' ? '#333' : '#bcccda'}
+                      fill={theme.resolvedTheme === 'dark' ? '#000' : '#e5eef6'}
+                      stroke={
+                        theme.resolvedTheme === 'dark' ? '#333' : '#bcccda'
+                      }
                       pointerEvents={'none'}
                     />
                   ))
@@ -153,7 +154,9 @@ const Map = ({ markers }: Props) => {
                     <Marker coordinates={coordinates}>
                       <circle
                         r={size}
-                        fill={theme.theme === 'dark' ? '#3d79ff' : '#2266ec'}
+                        fill={
+                          theme.resolvedTheme === 'dark' ? '#3d79ff' : '#2266ec'
+                        }
                         className="animate-ping opacity-20"
                       />
                     </Marker>
@@ -161,7 +164,11 @@ const Map = ({ markers }: Props) => {
                       <Marker coordinates={coordinates}>
                         <circle
                           r={size}
-                          fill={theme.theme === 'dark' ? '#3d79ff' : '#2266ec'}
+                          fill={
+                            theme.resolvedTheme === 'dark'
+                              ? '#3d79ff'
+                              : '#2266ec'
+                          }
                           fillOpacity={0.5}
                         />
                       </Marker>
