@@ -165,7 +165,7 @@ export default function AddNotificationRule({ rule }: Props) {
         <WithLabel
           label="Template"
           info={
-            <div className="text-base leading-normal max-w-sm p-2 prose text-left text-white [&_code]:text-white">
+            <div className="prose dark:prose-invert">
               <p>
                 Customize your notification message. You can grab any property
                 from your event.

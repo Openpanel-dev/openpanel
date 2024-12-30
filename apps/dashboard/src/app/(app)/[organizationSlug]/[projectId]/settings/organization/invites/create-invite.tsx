@@ -69,7 +69,7 @@ export default function CreateInvite({ projects }: Props) {
           <SheetHeader>
             <SheetTitle>User has been invited</SheetTitle>
           </SheetHeader>
-          <div className="prose">
+          <div className="prose dark:prose-invert">
             {mutation.data.type === 'is_member' ? (
               <>
                 <p>
