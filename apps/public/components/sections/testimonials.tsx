@@ -6,8 +6,7 @@ import { MessageCircleIcon } from 'lucide-react';
 const testimonials = [
   {
     verified: true,
-    avatarUrl:
-      'https://pbs.twimg.com/profile_images/1506792347840888834/dS-r50Je_x96.jpg',
+    avatarUrl: '/twitter-steven.jpg',
     name: 'Steven Tey',
     handle: 'steventey',
     content: [
@@ -21,8 +20,7 @@ const testimonials = [
   },
   {
     verified: true,
-    avatarUrl:
-      'https://pbs.twimg.com/profile_images/1755611130368770048/JwLEqyeo_x96.jpg',
+    avatarUrl: '/twitter-pontus.jpg',
     name: 'Pontus Abrahamsson — oss/acc',
     handle: 'pontusab',
     content: ['Thanks, OpenPanel is a beast, love it!'],
@@ -32,8 +30,7 @@ const testimonials = [
   },
   {
     verified: true,
-    avatarUrl:
-      'https://pbs.twimg.com/profile_images/1849912160593268736/Zm3zrpOI_x96.jpg',
+    avatarUrl: '/twitter-piotr.jpg',
     name: 'Piotr Kulpinski',
     handle: 'piotrkulpinski',
     content: [
@@ -46,8 +43,7 @@ const testimonials = [
   },
   {
     verified: true,
-    avatarUrl:
-      'https://pbs.twimg.com/profile_images/1825857658017959936/3nEG8n7__x96.jpg',
+    avatarUrl: '/twitter-greg.jpg',
     name: 'greg hodson 🍜',
     handle: 'h0dson',
     content: ['i second this, openpanel is killing it'],
@@ -57,8 +53,7 @@ const testimonials = [
   },
   {
     verified: true,
-    avatarUrl:
-      'https://pbs.twimg.com/profile_images/1777870199515164672/47EBkHLm_x96.jpg',
+    avatarUrl: '/twitter-jacob.jpg',
     name: 'Jacob 🍀 Build in Public',
     handle: 'javayhuwx',
     content: [
@@ -72,8 +67,7 @@ const testimonials = [
   },
   {
     verified: true,
-    avatarUrl:
-      'https://pbs.twimg.com/profile_images/1787577276646780929/YuoDbD1f_x96.jpg',
+    avatarUrl: '/twitter-lee.jpg',
     name: 'Lee',
     handle: 'DutchEngIishman',
     content: [

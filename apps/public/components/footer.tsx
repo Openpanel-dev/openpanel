@@ -12,7 +12,7 @@ export function Footer() {
     <div className="mt-32">
       <section className="overflow-hidden relative bg-foreground dark:bg-background-dark text-background dark:text-foreground rounded-xl p-0 pb-32 pt-16 max-w-7xl mx-auto">
         <SingleSwirl className="pointer-events-none absolute top-0 bottom-0 left-0" />
-        <SingleSwirl className="pointer-events-none rotate-180 absolute top-0 bottom-0 -right-32 opacity-50" />
+        <SingleSwirl className="pointer-events-none rotate-180 absolute top-0 bottom-0 -right-0 opacity-50" />
         <div className="container center-center col">
           <SectionHeader
             tag={<Tag>Discover User Insights</Tag>}

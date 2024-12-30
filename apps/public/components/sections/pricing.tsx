@@ -10,7 +10,7 @@ export default Pricing;
 export function Pricing() {
   return (
     <Section className="overflow-hidden relative bg-foreground dark:bg-background-dark text-background dark:text-foreground rounded-xl p-0 pb-32 pt-16 max-w-7xl mx-auto">
-      <DoubleSwirl className="absolute -top-32 left-0" />
+      <DoubleSwirl className="absolute top-0 left-0" />
       <div className="container relative z-10">
         <SectionHeader
           tag={
