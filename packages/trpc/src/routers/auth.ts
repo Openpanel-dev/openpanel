@@ -42,23 +42,18 @@ export const authRouter = createTRPCRouter({
     .mutation(({ input, ctx }) => {
       const { provider } = input;
 
+      if (input.inviteId) {
+        ctx.setCookie('inviteId', input.inviteId, {
+          maxAge: 60 * 10,
+        });
+      }
+
       if (provider === 'github') {
         const state = Arctic.generateState();
         const url = github.createAuthorizationURL(state, [
           'user:email',
           'user:read',
         ]);
-
-        // if we have an inviteId we want to add it to the redirect url
-        // so we have this information in the callback url later
-        if (input.inviteId) {
-          const redirectUri = url.searchParams.get('redirect_uri');
-          if (redirectUri) {
-            const redirectUrl = new URL(redirectUri);
-            redirectUrl.searchParams.set('inviteId', input.inviteId);
-            url.searchParams.set('redirect_uri', redirectUrl.toString());
-          }
-        }
 
         ctx.setCookie('github_oauth_state', state, {
           maxAge: 60 * 10,

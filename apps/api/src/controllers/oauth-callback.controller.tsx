@@ -1,3 +1,4 @@
+import { LogError } from '@/utils/errors';
 import {
   Arctic,
   type OAuth2Tokens,
@@ -7,7 +8,7 @@ import {
   google,
   setSessionTokenCookie,
 } from '@openpanel/auth';
-import { type User, connectUserToOrganization, db } from '@openpanel/db';
+import { type Account, connectUserToOrganization, db } from '@openpanel/db';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
@@ -37,66 +38,118 @@ async function getGithubEmail(githubAccessToken: string) {
   return email;
 }
 
-export async function githubCallback(
-  req: FastifyRequest<{
-    Querystring: {
-      code: string;
-      state: string;
-    };
-  }>,
-  reply: FastifyReply,
-) {
-  const schema = z.object({
-    code: z.string(),
-    state: z.string(),
-    inviteId: z.string().nullish(),
+// New types and interfaces
+type Provider = 'github' | 'google';
+interface OAuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName?: string;
+}
+
+// Shared utility functions
+async function handleExistingUser({
+  account,
+  oauthUser,
+  providerName,
+  reply,
+}: {
+  account: Account;
+  oauthUser: OAuthUser;
+  providerName: Provider;
+  reply: FastifyReply;
+}) {
+  const sessionToken = generateSessionToken();
+  const session = await createSession(sessionToken, account.userId);
+
+  await db.account.update({
+    where: { id: account.id },
+    data: {
+      provider: providerName,
+      providerId: oauthUser.id,
+      email: oauthUser.email,
+    },
   });
 
-  const query = schema.safeParse(req.query);
-  if (!query.success) {
-    req.log.error('invalid callback query params', {
-      error: query.error.message,
-      query: req.query,
-      provider: 'github',
-    });
-    return reply.status(400).send(query.error.message);
+  setSessionTokenCookie(
+    (...args) => reply.setCookie(...args),
+    sessionToken,
+    session.expiresAt,
+  );
+  return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+}
+
+async function handleNewUser({
+  oauthUser,
+  providerName,
+  inviteId,
+  reply,
+}: {
+  oauthUser: OAuthUser;
+  providerName: Provider;
+  inviteId: string | undefined | null;
+  reply: FastifyReply;
+}) {
+  const existingUser = await db.user.findFirst({
+    where: { email: oauthUser.email },
+  });
+
+  if (existingUser) {
+    throw new LogError(
+      'Please sign in using your original authentication method',
+      {
+        existingUser,
+        oauthUser,
+        providerName,
+      },
+    );
   }
 
-  const { code, state, inviteId } = query.data;
-  const storedState = req.cookies.github_oauth_state ?? null;
+  const user = await db.user.create({
+    data: {
+      email: oauthUser.email,
+      firstName: oauthUser.firstName,
+      lastName: oauthUser.lastName,
+      accounts: {
+        create: {
+          provider: providerName,
+          providerId: oauthUser.id,
+        },
+      },
+    },
+  });
 
-  if (code === null || state === null || storedState === null) {
-    req.log.error('missing oauth parameters', {
-      code: code === null,
-      state: state === null,
-      storedState: storedState === null,
-      provider: 'github',
-    });
-    return reply.status(400).send('Please restart the process.');
-  }
-  if (state !== storedState) {
-    req.log.error('oauth state mismatch', {
-      state,
-      storedState,
-      provider: 'github',
-    });
-    return reply.status(400).send('Please restart the process.');
+  if (inviteId) {
+    try {
+      await connectUserToOrganization({ user, inviteId });
+    } catch (error) {
+      reply.log.error('error connecting user to organization', {
+        error,
+        inviteId,
+        user,
+      });
+    }
   }
 
-  let tokens: OAuth2Tokens;
-  try {
-    tokens = await github.validateAuthorizationCode(code);
-  } catch (error) {
-    req.log.error('github authorization failed', {
-      error,
-      provider: 'github',
-    });
-    return reply.status(400).send('Please restart the process.');
+  const sessionToken = generateSessionToken();
+  const session = await createSession(sessionToken, user.id);
+  setSessionTokenCookie(
+    (...args) => reply.setCookie(...args),
+    sessionToken,
+    session.expiresAt,
+  );
+  return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+}
+
+// Provider-specific user fetching
+async function fetchGithubUser(accessToken: string): Promise<OAuthUser> {
+  const email = await getGithubEmail(accessToken);
+  if (!email) {
+    throw new LogError('GitHub email not found or not verified');
   }
-  const githubAccessToken = tokens.accessToken();
 
   const userRequest = new Request('https://api.github.com/user');
-  userRequest.headers.set('Authorization', `Bearer ${githubAccessToken}`);
+  userRequest.headers.set('Authorization', `Bearer ${accessToken}`);
   const userResponse = await fetch(userRequest);
 
   const userSchema = z.object({
@@ -111,338 +164,197 @@ export async function githubCallback(
 
   const userResult = userSchema.safeParse(userJson);
   if (!userResult.success) {
-    req.log.error('user schema error', {
-      error: userResult.error.message,
-      userJson,
-      provider: 'github',
+    throw new LogError('Error fetching Github user', {
+      error: userResult.error,
+      githubUser: userJson,
     });
-    return reply.status(400).send(userResult.error.message);
-  }
-  const githubUserId = userResult.data.id;
-  const email = await getGithubEmail(githubAccessToken);
-
-  const existingUser = await db.account.findFirst({
-    where: {
-      OR: [
-        {
-          provider: 'github',
-          providerId: String(githubUserId),
-        },
-        {
-          provider: 'github',
-          providerId: null,
-          email,
-        },
-        {
-          provider: 'oauth',
-          user: {
-            email: email ?? '',
-          },
-        },
-      ],
-    },
-  });
-
-  if (existingUser !== null) {
-    const sessionToken = generateSessionToken();
-    const session = await createSession(sessionToken, existingUser.userId);
-
-    if (existingUser.provider === 'oauth') {
-      await db.account.update({
-        where: {
-          id: existingUser.id,
-        },
-        data: {
-          provider: 'github',
-          providerId: String(githubUserId),
-        },
-      });
-    } else if (existingUser.provider !== 'github') {
-      await db.account.create({
-        data: {
-          provider: 'github',
-          providerId: String(githubUserId),
-          user: {
-            connect: {
-              id: existingUser.userId,
-            },
-          },
-        },
-      });
-    } else if (existingUser.provider === 'github') {
-      await db.account.update({
-        where: {
-          id: existingUser.id,
-        },
-        data: {
-          providerId: String(githubUserId),
-        },
-      });
-    }
-
-    setSessionTokenCookie(
-      (...args) => reply.setCookie(...args),
-      sessionToken,
-      session.expiresAt,
-    );
-    return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
   }
 
-  if (email === null) {
-    req.log.error('github email not found or not verified', {
-      githubUserId,
-      provider: 'github',
-    });
-    return reply.status(400).send('Please verify your GitHub email address.');
-  }
-
-  // (githubUserId, email, username);
-  const user = await await db.user.create({
-    data: {
-      email,
-      firstName: userResult.data.name || userResult.data.login || '',
-      accounts: {
-        create: {
-          provider: 'github',
-          providerId: String(githubUserId),
-        },
-      },
-    },
-  });
-
-  if (inviteId) {
-    try {
-      await connectUserToOrganization({ user, inviteId });
-    } catch (error) {
-      req.log.error(
-        error instanceof Error
-          ? error.message
-          : 'Unknown error connecting user to projects',
-        {
-          inviteId,
-          email: user.email,
-          error,
-        },
-      );
-    }
-  }
-
-  const sessionToken = generateSessionToken();
-  const session = await createSession(sessionToken, user.id);
-  setSessionTokenCookie(
-    (...args) => reply.setCookie(...args),
-    sessionToken,
-    session.expiresAt,
-  );
-  return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+  return {
+    id: String(userResult.data.id),
+    email,
+    firstName: userResult.data.name || userResult.data.login || '',
+  };
 }
 
-export async function googleCallback(
-  req: FastifyRequest<{
-    Querystring: {
-      code: string;
-      state: string;
-    };
-  }>,
-  reply: FastifyReply,
-) {
+async function fetchGoogleUser(tokens: OAuth2Tokens): Promise<OAuthUser> {
+  const claims = Arctic.decodeIdToken(tokens.idToken());
+
+  const claimsSchema = z.object({
+    sub: z.string(),
+    email: z.string(),
+    email_verified: z.boolean(),
+    given_name: z.string().optional(),
+    family_name: z.string().optional(),
+  });
+
+  const claimsResult = claimsSchema.safeParse(claims);
+  if (!claimsResult.success) {
+    throw new LogError('Error fetching Google user', {
+      error: claimsResult.error,
+      claims,
+    });
+  }
+
+  if (!claimsResult.data.email_verified) {
+    throw new LogError('Email not verified with Google');
+  }
+
+  return {
+    id: claimsResult.data.sub,
+    email: claimsResult.data.email,
+    firstName: claimsResult.data.given_name || '',
+    lastName: claimsResult.data.family_name || '',
+  };
+}
+
+interface ValidatedOAuthQuery {
+  code: string;
+  state: string;
+}
+
+async function validateOAuthCallback(
+  req: FastifyRequest,
+  provider: Provider,
+): Promise<ValidatedOAuthQuery> {
   const schema = z.object({
     code: z.string(),
     state: z.string(),
-    inviteId: z.string().nullish(),
   });
 
   const query = schema.safeParse(req.query);
   if (!query.success) {
-    req.log.error('invalid callback query params', {
-      error: query.error.message,
+    throw new LogError('Invalid callback query params', {
+      error: query.error,
       query: req.query,
-      provider: 'google',
+      provider,
     });
-    return reply.status(400).send(query.error.message);
   }
 
-  const { code, state, inviteId } = query.data;
-  const storedState = req.cookies.google_oauth_state ?? null;
-  const codeVerifier = req.cookies.google_code_verifier ?? null;
+  const { code, state } = query.data;
+  const storedState = req.cookies[`${provider}_oauth_state`] ?? null;
+  const codeVerifier =
+    provider === 'google' ? (req.cookies.google_code_verifier ?? null) : null;
 
   if (
     code === null ||
     state === null ||
     storedState === null ||
-    codeVerifier === null
+    (provider === 'google' && codeVerifier === null)
   ) {
-    req.log.error('missing oauth parameters', {
+    throw new LogError('Missing oauth parameters', {
       code: code === null,
       state: state === null,
       storedState: storedState === null,
-      codeVerifier: codeVerifier === null,
-      provider: 'google',
+      codeVerifier: provider === 'google' ? codeVerifier === null : undefined,
+      provider,
     });
-    return reply.status(400).send('Please restart the process.');
   }
+
   if (state !== storedState) {
-    req.log.error('oauth state mismatch', {
+    throw new LogError('OAuth state mismatch', {
       state,
       storedState,
-      provider: 'google',
+      provider,
     });
-    return reply.status(400).send('Please restart the process.');
   }
 
-  let tokens: OAuth2Tokens;
+  return { code, state };
+}
+
+// Main callback handlers
+export async function githubCallback(req: FastifyRequest, reply: FastifyReply) {
   try {
-    tokens = await google.validateAuthorizationCode(code, codeVerifier);
-  } catch (error) {
-    req.log.error('google authorization failed', {
-      error,
-      provider: 'google',
-    });
-    return reply.status(400).send('Please restart the process.');
-  }
-
-  const claims = Arctic.decodeIdToken(tokens.idToken());
-
-  const claimsParser = z.object({
-    sub: z.string(),
-    given_name: z
-      .string()
-      .nullish()
-      .transform((val) => val || ''),
-    family_name: z
-      .string()
-      .nullish()
-      .transform((val) => val || ''),
-    picture: z
-      .string()
-      .nullish()
-      .transform((val) => val || ''),
-    email: z.string(),
-  });
-
-  const claimsResult = claimsParser.safeParse(claims);
-  if (!claimsResult.success) {
-    req.log.error('invalid claims format', {
-      error: claimsResult.error.message,
-      claims,
-      provider: 'google',
-    });
-    return reply.status(400).send(claimsResult.error.message);
-  }
-
-  const { sub: googleId, given_name, family_name, email } = claimsResult.data;
-
-  const existingAccount = await db.account.findFirst({
-    where: {
-      OR: [
-        {
-          provider: 'google',
-          providerId: googleId,
-        },
-        {
-          provider: 'google',
-          providerId: null,
-          email,
-        },
-        {
-          provider: 'oauth',
-          user: {
-            email,
-          },
-        },
-      ],
-    },
-  });
-
-  if (existingAccount !== null) {
-    const sessionToken = generateSessionToken();
-    const session = await createSession(sessionToken, existingAccount.userId);
-
-    if (existingAccount.provider === 'oauth') {
-      await db.account.update({
-        where: {
-          id: existingAccount.id,
-        },
-        data: {
-          provider: 'google',
-          providerId: googleId,
-        },
-      });
-    } else if (existingAccount.provider !== 'google') {
-      await db.account.create({
-        data: {
-          provider: 'google',
-          providerId: googleId,
-          user: {
-            connect: {
-              id: existingAccount.userId,
-            },
-          },
-        },
-      });
-    } else if (existingAccount.provider === 'google') {
-      await db.account.update({
-        where: {
-          id: existingAccount.id,
-        },
-        data: {
-          providerId: googleId,
-        },
-      });
-    }
-
-    setSessionTokenCookie(
-      (...args) => reply.setCookie(...args),
-      sessionToken,
-      session.expiresAt,
-    );
-    return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
-  }
-
-  const user = await db.user.upsert({
-    where: {
-      email,
-    },
-    update: {
-      firstName: given_name,
-      lastName: family_name,
-    },
-    create: {
-      email,
-      firstName: given_name,
-      lastName: family_name,
-      accounts: {
-        create: {
-          provider: 'google',
-          providerId: googleId,
-        },
+    const { code } = await validateOAuthCallback(req, 'github');
+    const inviteId = req.cookies.inviteId;
+    const tokens = await github.validateAuthorizationCode(code);
+    const githubUser = await fetchGithubUser(tokens.accessToken());
+    const account = await db.account.findFirst({
+      where: {
+        OR: [
+          // To keep
+          { provider: 'github', providerId: githubUser.id },
+          // During migration
+          { provider: 'github', providerId: null, email: githubUser.email },
+          { provider: 'oauth', user: { email: githubUser.email } },
+        ],
       },
-    },
-  });
+    });
 
-  if (inviteId) {
-    try {
-      await connectUserToOrganization({ user, inviteId });
-    } catch (error) {
-      req.log.error(
-        error instanceof Error
-          ? error.message
-          : 'Unknown error connecting user to projects',
-        {
-          inviteId,
-          email: user.email,
-          error,
-        },
-      );
+    reply.clearCookie('github_oauth_state');
+
+    if (account) {
+      return await handleExistingUser({
+        account,
+        oauthUser: githubUser,
+        providerName: 'github',
+        reply,
+      });
     }
-  }
 
-  const sessionToken = generateSessionToken();
-  const session = await createSession(sessionToken, user.id);
-  setSessionTokenCookie(
-    (...args) => reply.setCookie(...args),
-    sessionToken,
-    session.expiresAt,
-  );
-  return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+    return await handleNewUser({
+      oauthUser: githubUser,
+      providerName: 'github',
+      inviteId,
+      reply,
+    });
+  } catch (error) {
+    req.log.error(error);
+    return redirectWithError(reply, error);
+  }
+}
+
+export async function googleCallback(req: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { code } = await validateOAuthCallback(req, 'google');
+    const inviteId = req.cookies.inviteId;
+    const codeVerifier = req.cookies.google_code_verifier!;
+    const tokens = await google.validateAuthorizationCode(code, codeVerifier);
+    const googleUser = await fetchGoogleUser(tokens);
+    const existingUser = await db.account.findFirst({
+      where: {
+        OR: [
+          // To keep
+          { provider: 'google', providerId: googleUser.id },
+          // During migration
+          { provider: 'google', providerId: null, email: googleUser.email },
+          { provider: 'oauth', user: { email: googleUser.email } },
+        ],
+      },
+    });
+
+    reply.clearCookie('google_code_verifier');
+    reply.clearCookie('google_oauth_state');
+
+    if (existingUser) {
+      return await handleExistingUser({
+        account: existingUser,
+        oauthUser: googleUser,
+        providerName: 'google',
+        reply,
+      });
+    }
+
+    return await handleNewUser({
+      oauthUser: googleUser,
+      providerName: 'google',
+      inviteId,
+      reply,
+    });
+  } catch (error) {
+    req.log.error(error);
+    return redirectWithError(reply, error);
+  }
+}
+
+function redirectWithError(reply: FastifyReply, error: LogError | unknown) {
+  const url = new URL(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+  url.pathname = '/login';
+  if (error instanceof LogError) {
+    url.searchParams.set('error', error.message);
+  } else {
+    url.searchParams.set('error', 'An error occurred');
+  }
+  url.searchParams.set('correlationId', reply.request.id);
+  return reply.redirect(url.toString());
 }

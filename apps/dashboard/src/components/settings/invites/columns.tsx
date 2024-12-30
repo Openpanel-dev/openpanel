@@ -15,12 +15,16 @@ import { pathOr } from 'ramda';
 import { toast } from 'sonner';
 
 import { ACTIONS } from '@/components/data-table';
+import { clipboard } from '@/utils/clipboard';
 import type { IServiceInvite, IServiceProject } from '@openpanel/db';
 
 export function useColumns(
   projects: IServiceProject[],
 ): ColumnDef<IServiceInvite>[] {
   return [
+    {
+      accessorKey: 'id',
+    },
     {
       accessorKey: 'email',
       header: 'Mail',
@@ -99,6 +103,15 @@ function ActionCell({ row }: { row: Row<IServiceInvite> }) {
         <Button icon={MoreHorizontalIcon} size="icon" variant={'outline'} />
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        <DropdownMenuItem
+          onClick={() => {
+            clipboard(
+              `${window.location.origin}/onboarding?inviteId=${row.original.id}`,
+            );
+          }}
+        >
+          Copy invite link
+        </DropdownMenuItem>
         <DropdownMenuItem
           className="text-destructive"
           onClick={() => {

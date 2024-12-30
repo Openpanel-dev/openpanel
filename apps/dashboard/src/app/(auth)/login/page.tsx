@@ -2,12 +2,20 @@ import { Or } from '@/components/auth/or';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
 import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LinkButton } from '@/components/ui/button';
 import { auth } from '@openpanel/auth/nextjs';
+import { AlertCircle } from 'lucide-react';
 import { redirect } from 'next/navigation';
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: { error?: string; correlationId?: string };
+}) {
   const session = await auth();
+  const error = searchParams.error;
+  const correlationId = searchParams.correlationId;
 
   if (session.userId) {
     return redirect('/');
@@ -16,6 +24,29 @@ export default async function Page() {
   return (
     <div className="flex h-full center-center w-full">
       <div className="col gap-8 max-w-md w-full">
+        {error && (
+          <Alert variant="destructive" className="text-left bg-background">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              <p>{error}</p>
+              {correlationId && (
+                <>
+                  <p>Correlation ID: {correlationId}</p>
+                  <p className="mt-2">
+                    Contact us if you have any issues.{' '}
+                    <a
+                      className="underline font-medium"
+                      href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
+                    >
+                      hello[at]openpanel.dev
+                    </a>
+                  </p>
+                </>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
         <div className="col md:row gap-4">
           <SignInGithub type="sign-in" />
           <SignInGoogle type="sign-in" />
@@ -27,18 +58,6 @@ export default async function Page() {
         <LinkButton variant={'outline'} size="lg" href="/onboarding">
           No account? Sign up today
         </LinkButton>
-        <p className="text-sm text-muted-foreground leading-tight">
-          Having issues logging in?
-          <br />
-          Contact us at{' '}
-          <a
-            href="mailto:hello@openpanel.dev"
-            className="text-primary underline"
-          >
-            hello[at]openpanel.dev
-          </a>
-          . We're not using Clerk (auth provider) anymore.
-        </p>
       </div>
     </div>
   );
