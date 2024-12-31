@@ -43,7 +43,7 @@ const testimonials = [
   },
   {
     verified: true,
-    avatarUrl: '/twitter-greg.jpg',
+    avatarUrl: '/twitter-greg.png',
     name: 'greg hodson 🍜',
     handle: 'h0dson',
     content: ['i second this, openpanel is killing it'],

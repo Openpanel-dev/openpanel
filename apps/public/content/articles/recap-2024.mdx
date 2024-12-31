@@ -1,0 +1,72 @@
+---
+title: Recap of 2024
+description: As we approach the end of the year, I wanted to share a summary of how this year unfolded and how everything began.
+date: 2024-12-30
+tag: Article
+team: Carl-Gerhard Lindesvärd
+cover: /content/recap-2024.jpg
+---
+
+## How It Started
+
+I kicked off OpenPanel in late 2023 after my Mixpanel startup program ended. That's when I got hit with the reality of how expensive product analytics really are (learned that one the hard way).
+
+I was running this simple food recipe app with around 10k monthly users, and triggered around 200-300k events each month. The Mixpanel bill was just crazy for this amount of events, especially since we weren't making any money from the app. I went looking for [Mixpanel alternatives](/articles/alternatives-to-mixpanel) but didn't find anything that was a good fit. So I thought, "Hey, why not build something simple that does the job?"
+
+What started as my little side project turned into something I wanted to use everywhere. My dear friend, [Pontus](https://twitter.com/pontusab) (the brain behind [Midday.ai](https://midday.ai)) pushed me to make it open-source.
+
+And here we are...
+
+## Inspiration
+
+I've always been a fan of Mixpanel - they crush it at product analytics. But I felt they were missing something when it came to web analytics.
+
+I also noticed all these privacy-focused web analytics tools popping up in the last few years, which I love. That's where OpenPanel comes in. I wanted to build something that takes privacy seriously, has both web and product analytics, great support for native apps but is still super easy to use, even if you're new to the whole analytics game.
+
+Still got plenty to do, but I'm pretty stoked with how far it's come.
+
+## The Year
+
+In March this year, I launched OpenPanel in beta mode, free of charge. This was a great decision as it allowed me to gather users and receive valuable feedback. We're still in beta and haven't charged our users.
+
+I am grateful for all the users who have joined and stayed with us throughout the year. OpenPanel has faced some challenges, but we have made immense improvements in the product's stability and reliability.
+
+I have listened to user feedback and added features or made changes accordingly.
+
+From the outset, I aimed to create an affordable service for everyone, with the option to [self-host](https://openpanel.dev/docs/self-hosting/self-hosting) if cost is a concern.
+
+Making OpenPanel [open-source](https://git.new/openpanel) and [self-hosted](https://openpanel.dev/docs/self-hosting/self-hosting) was an easy decision. I believe software thrives when a community builds around it.
+
+### Highlights during the year
+
+- Migrated our infrastructure to kubernetes
+- Moved our Clickhouse to a cluster (several nodes)
+- Moved away from Clerk Auth to make self-hosting MUCH easier
+- Added native sdks for swift and kotlin
+- Over 1,000 projects using OpenPanel
+- Collected over 1 billion events
+- We receive around 7 to 9 million events per day
+- OpenPanel has 3.3k stars on GitHub
+- Over 1,000 commits
+
+## Roadmap
+
+Exciting developments are coming in 2025. Here are some of the priorities:
+
+- Revenue tracking 💸
+- Release Android and iOS apps. 📱
+- Improve report creation. 📊
+- Add more conversion rate charts (conversion is one of the best ways to understand your product). 📈
+- Enable report sharing. 🔗
+- Customize the overview page. 🎨
+- Enhance the real-time view. 📈
+- Group URLs and rewrite them, e.g., `/article/1` to `/article/:id`. 🔗
+- Explore integrations. 🔌
+- Improve the export API. 🌏
+- …and more!
+
+## Summary
+
+Hey, if you've made it this far - thanks for sticking around! If you haven't given OpenPanel a spin yet, now's the perfect time while it's still free.
+
+If you have any questions or feedback, please let me know. I'm always looking for ways to improve OpenPanel.
