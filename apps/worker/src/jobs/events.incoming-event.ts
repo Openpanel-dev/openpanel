@@ -121,7 +121,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     referrer: sessionEnd.payload?.referrer,
     referrerName: sessionEnd.payload?.referrerName,
     referrerType: sessionEnd.payload?.referrerType,
-  }) as IServiceCreateEventPayload
+  }) as IServiceCreateEventPayload;
 
   if (sessionEnd.notFound) {
     await createSessionEnd({ payload });
