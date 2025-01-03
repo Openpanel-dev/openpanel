@@ -4,7 +4,7 @@ import type { z } from 'zod';
 
 import { type TemplateKey, type Templates, templates } from './emails';
 
-const FROM = 'hello@openpanel.dev';
+const FROM = process.env.EMAIL_SENDER ?? 'hello@openpanel.dev';
 
 export async function sendEmail<T extends TemplateKey>(
   template: T,
