@@ -1,16 +1,16 @@
-import React from 'react';
-import { Resend } from 'resend';
-import type { z } from 'zod';
+import React from "react";
+import { Resend } from "resend";
+import type { z } from "zod";
 
-import { type TemplateKey, type Templates, templates } from './emails';
+import { type TemplateKey, type Templates, templates } from "./emails";
 
-const FROM = 'hello@openpanel.dev';
+const FROM = process.env.EMAIL_SENDER ?? "hello@openpanel.dev";
 
 export async function sendEmail<T extends TemplateKey>(
   template: T,
   options: {
     to: string | string[];
-    data: z.infer<Templates[T]['schema']>;
+    data: z.infer<Templates[T]["schema"]>;
   },
 ) {
   if (!process.env.RESEND_API_KEY) {
@@ -23,7 +23,7 @@ export async function sendEmail<T extends TemplateKey>(
   const props = schema.safeParse(data);
 
   if (props.error) {
-    console.error('Failed to parse data', props.error);
+    console.error("Failed to parse data", props.error);
     return null;
   }
 
@@ -43,7 +43,7 @@ export async function sendEmail<T extends TemplateKey>(
 
     return res;
   } catch (error) {
-    console.error('Failed to send email', error);
+    console.error("Failed to send email", error);
     return null;
   }
 }
