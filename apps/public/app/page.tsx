@@ -11,7 +11,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
 export const metadata: Metadata = {
-  title: 'An open-source alternative to Mixpanel',
+  title: 'OpenPanel | An open-source alternative to Mixpanel',
 };
 
 export const experimental_ppr = true;
