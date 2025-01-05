@@ -1,5 +1,7 @@
 import { db } from '../prisma-client';
 
+export type IServiceUser = Awaited<ReturnType<typeof getUserById>>;
+
 export async function getUserById(id: string) {
   return db.user.findUniqueOrThrow({
     where: {

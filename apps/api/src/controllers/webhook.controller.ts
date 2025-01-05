@@ -5,6 +5,10 @@ import {
   sendSlackNotification,
   slackInstaller,
 } from '@openpanel/integrations/src/slack';
+import {
+  PolarWebhookVerificationError,
+  validatePolarEvent,
+} from '@openpanel/payments';
 import { zSlackAuthResponse } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -100,5 +104,61 @@ export async function slackWebhook(
     request.log.error(err);
     const html = fs.readFileSync(path.join(__dirname, 'error.html'), 'utf8');
     return reply.status(500).header('Content-Type', 'text/html').send(html);
+  }
+}
+
+export async function polarWebhook(
+  request: FastifyRequest<{
+    Querystring: unknown;
+  }>,
+  reply: FastifyReply,
+) {
+  try {
+    const event = validatePolarEvent(
+      request.rawBody!,
+      request.headers as Record<string, string>,
+      process.env.POLAR_WEBHOOK_SECRET ?? '',
+    );
+
+    switch (event.type) {
+      case 'subscription.updated': {
+        const metadata = z
+          .object({
+            organizationId: z.string(),
+            userId: z.string(),
+          })
+          .parse(event.data.metadata);
+
+        console.log('event.data', JSON.stringify(event.data, null, 2));
+
+        await db.organization.update({
+          where: {
+            id: metadata.organizationId,
+          },
+          data: {
+            subscriptionId: event.data.id,
+            subscriptionCustomerId: event.data.customer.id,
+            subscriptionPriceId: event.data.priceId,
+            subscriptionProductId: event.data.productId,
+            subscriptionStatus: event.data.status,
+            subscriptionStartsAt: event.data.currentPeriodStart,
+            subscriptionEndsAt: event.data.currentPeriodEnd,
+            subscriptionCreatedByUserId: metadata.userId,
+            subscriptionInterval: event.data.recurringInterval,
+          },
+        });
+
+        break;
+      }
+    }
+
+    reply.status(202).send('');
+  } catch (error) {
+    if (error instanceof PolarWebhookVerificationError) {
+      request.log.error('Polar webhook error', error);
+      reply.status(403).send('');
+    }
+
+    throw error;
   }
 }

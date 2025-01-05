@@ -37,7 +37,15 @@ export function cacheable<T extends (...args: any) => any>(
     const cached = await getRedisCache().get(key);
     if (cached) {
       try {
-        return JSON.parse(cached);
+        return JSON.parse(cached, (_, value) => {
+          if (
+            typeof value === 'string' &&
+            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*Z$/.test(value)
+          ) {
+            return new Date(value);
+          }
+          return value;
+        });
       } catch (e) {
         console.error('Failed to parse cache', e);
       }

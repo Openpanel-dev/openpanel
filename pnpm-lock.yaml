@@ -63,6 +63,9 @@ importers:
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@openpanel/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -87,6 +90,9 @@ importers:
       fastify-metrics:
         specifier: ^11.0.0
         version: 11.0.0(fastify@4.26.1)
+      fastify-raw-body:
+        specifier: ^4.2.1
+        version: 4.3.0
       ico-to-png:
         specifier: ^0.2.1
         version: 0.2.1
@@ -1023,6 +1029,25 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
+  packages/payments:
+    dependencies:
+      '@polar-sh/sdk':
+        specifier: ^0.19.2
+        version: 0.19.2(zod@3.23.8)
+    devDependencies:
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/node':
+        specifier: 20.14.8
+        version: 20.14.8
+      '@types/react':
+        specifier: ^18.2.0
+        version: 18.3.12
+      typescript:
+        specifier: ^5.2.2
+        version: 5.6.3
+
   packages/queue:
     dependencies:
       '@openpanel/db':
@@ -1224,6 +1249,9 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../integrations
+      '@openpanel/payments':
+        specifier: workspace:^
+        version: link:../payments
       '@openpanel/redis':
         specifier: workspace:*
         version: link:../redis
@@ -4023,6 +4051,11 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
+  '@polar-sh/sdk@0.19.2':
+    resolution: {integrity: sha512-n1emRNmhcAzRfVAWBiVVCJ2krBSZ4wANVTRO7hCMchYCkxyV+kiRdjyvBdVG3JpRsS6SR7yBr2+CRJkuHPPeDg==}
+    peerDependencies:
+      zod: '>= 3'
+
   '@prisma/client@5.9.1':
     resolution: {integrity: sha512-caSOnG4kxcSkhqC/2ShV7rEoWwd3XrftokxJqOCMVvia4NYV/TPtJlS9C2os3Igxw/Qyxumj9GBQzcStzECvtQ==}
     engines: {node: '>=16.13'}
@@ -6041,9 +6074,6 @@ packages:
   '@types/mysql@2.15.22':
     resolution: {integrity: sha512-wK1pzsJVVAjYCSZWQoWHziQZbNggXFDUEIGf54g4ZM/ERuP86uGdWeKZWMYlqTPMZfHJJvLPyogXGvCOg87yLQ==}
 
-  '@types/node@20.14.12':
-    resolution: {integrity: sha512-r7wNXakLeSsGT0H1AU863vS2wa5wBOK4bWMjZz2wj+8nBx+m5PeIn0k8AloSLpRuiwdRQZwarZqHE4FNArPuJQ==}
-
   '@types/node@20.14.8':
     resolution: {integrity: sha512-DO+2/jZinXfROG7j7WKFn/3C6nFwxy2lLpgLjEXJz+0XKphZlTLJ14mo8Vfg8X5BWN6XjyESXq+LcYdT7tR3bA==}
 
@@ -7703,6 +7733,10 @@ packages:
 
   fastify-plugin@4.5.1:
     resolution: {integrity: sha512-stRHYGeuqpEZTL1Ef0Ovr2ltazUT9g844X5z/zEBFLG8RYlpDiOCIG+ATvYEp+/zmc7sN29mcIMp8gvYplYPIQ==}
+
+  fastify-raw-body@4.3.0:
+    resolution: {integrity: sha512-F4o8ZIMVx4YoxGfwrZys6wyjl40gF3Yv6AWWRy62ozFAyZBSS831/uyyCAqKYw3tR73g180ryG98yih6To1PUQ==}
+    engines: {node: '>= 10'}
 
   fastify@4.26.1:
     resolution: {integrity: sha512-tznA/G55dsxzM5XChBfcvVSloG2ejeeotfPPJSFaWmHyCDVGMpvf3nRNbsCb/JTBF9RmQFBfuujWt3Nphjesng==}
@@ -10936,6 +10970,9 @@ packages:
 
   standard-as-callback@2.1.0:
     resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
+
+  standardwebhooks@1.0.0:
+    resolution: {integrity: sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==}
 
   statuses@1.5.0:
     resolution: {integrity: sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==}
@@ -15588,6 +15625,11 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
+  '@polar-sh/sdk@0.19.2(zod@3.23.8)':
+    dependencies:
+      standardwebhooks: 1.0.0
+      zod: 3.23.8
+
   '@prisma/client@5.9.1(prisma@5.9.1)':
     optionalDependencies:
       prisma: 5.9.1
@@ -18189,7 +18231,7 @@ snapshots:
 
   '@types/jsonwebtoken@9.0.6':
     dependencies:
-      '@types/node': 20.14.12
+      '@types/node': 20.14.8
 
   '@types/keygrip@1.0.6': {}
 
@@ -18246,10 +18288,6 @@ snapshots:
     dependencies:
       '@types/node': 20.14.8
 
-  '@types/node@20.14.12':
-    dependencies:
-      undici-types: 5.26.5
-
   '@types/node@20.14.8':
     dependencies:
       undici-types: 5.26.5
@@ -18288,7 +18326,7 @@ snapshots:
 
   '@types/react-dom@18.2.19':
     dependencies:
-      '@types/react': 18.2.56
+      '@types/react': 18.3.12
 
   '@types/react-dom@18.3.1':
     dependencies:
@@ -18299,11 +18337,11 @@ snapshots:
       '@types/d3-geo': 2.0.7
       '@types/d3-zoom': 2.0.7
       '@types/geojson': 7946.0.14
-      '@types/react': 18.2.56
+      '@types/react': 18.3.12
 
   '@types/react-syntax-highlighter@15.5.11':
     dependencies:
-      '@types/react': 18.2.56
+      '@types/react': 18.3.12
 
   '@types/react@18.2.56':
     dependencies:
@@ -18318,7 +18356,7 @@ snapshots:
 
   '@types/request-ip@0.0.41':
     dependencies:
-      '@types/node': 20.14.12
+      '@types/node': 20.14.8
 
   '@types/retry@0.12.0': {}
 
@@ -18371,7 +18409,7 @@ snapshots:
 
   '@types/ws@8.5.10':
     dependencies:
-      '@types/node': 20.14.12
+      '@types/node': 20.14.8
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -20351,6 +20389,12 @@ snapshots:
       prom-client: 15.1.2
 
   fastify-plugin@4.5.1: {}
+
+  fastify-raw-body@4.3.0:
+    dependencies:
+      fastify-plugin: 4.5.1
+      raw-body: 2.5.2
+      secure-json-parse: 2.7.0
 
   fastify@4.26.1:
     dependencies:
@@ -24483,6 +24527,11 @@ snapshots:
       type-fest: 0.7.1
 
   standard-as-callback@2.1.0: {}
+
+  standardwebhooks@1.0.0:
+    dependencies:
+      '@stablelib/base64': 1.0.1
+      fast-sha256: 1.3.0
 
   statuses@1.5.0: {}
 

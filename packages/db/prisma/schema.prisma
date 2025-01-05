@@ -36,7 +36,7 @@ model Organization {
   projects        Project[]
   members         Member[]
   createdByUserId String?
-  createdBy       User?           @relation(fields: [createdByUserId], references: [id])
+  createdBy       User?           @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id])
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @default(now()) @updatedAt
   ProjectAccess   ProjectAccess[]
@@ -46,6 +46,20 @@ model Organization {
   integrations    Integration[]
   invites         Invite[]
 
+  // Subscription
+  subscriptionId                String?
+  subscriptionCustomerId        String?
+  subscriptionPriceId           String?
+  subscriptionProductId         String?
+  subscriptionStatus            String?
+  subscriptionStartsAt          DateTime?
+  subscriptionEndsAt            DateTime?
+  subscriptionCreatedByUserId   String?
+  subscriptionCreatedBy         User?     @relation(name: "subscriptionCreatedBy", fields: [subscriptionCreatedByUserId], references: [id])
+  subscriptionPeriodEventsCount Int       @default(0)
+  subscriptionPeriodLimit       Int       @default(0)
+  subscriptionInterval          String?
+
   @@map("organizations")
 }
 
@@ -54,7 +68,8 @@ model User {
   email                String          @unique
   firstName            String?
   lastName             String?
-  createdOrganizations Organization[]
+  createdOrganizations Organization[]  @relation("organizationCreatedBy")
+  subscriptions        Organization[]  @relation("subscriptionCreatedBy")
   membership           Member[]
   sentInvites          Member[]        @relation("invitedBy")
   createdAt            DateTime        @default(now())

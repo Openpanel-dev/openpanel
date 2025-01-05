@@ -4,6 +4,7 @@ interface Props<T> {
   columns: {
     name: string;
     render: (item: T) => React.ReactNode;
+    className?: string;
   }[];
   keyExtractor: (item: T) => string;
   data: T[];
@@ -41,7 +42,9 @@ export function WidgetTable<T>({
         <WidgetTableHead>
           <tr>
             {columns.map((column) => (
-              <th key={column.name}>{column.name}</th>
+              <th key={column.name} className={cn(column.className)}>
+                {column.name}
+              </th>
             ))}
           </tr>
         </WidgetTableHead>
@@ -49,10 +52,14 @@ export function WidgetTable<T>({
           {data.map((item) => (
             <tr
               key={keyExtractor(item)}
-              className="border-b border-border text-right  last:border-0 [&_td:first-child]:text-left [&_td]:p-4"
+              className={
+                'border-b border-border text-right last:border-0 [&_td:first-child]:text-left [&_td]:p-4'
+              }
             >
               {columns.map((column) => (
-                <td key={column.name}>{column.render(item)}</td>
+                <td key={column.name} className={cn(column.className)}>
+                  {column.render(item)}
+                </td>
               ))}
             </tr>
           ))}

@@ -4,7 +4,9 @@ import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import {
+  BanknoteIcon,
   ChartLineIcon,
+  DollarSignIcon,
   GanttChartIcon,
   Globe2Icon,
   LayersIcon,
@@ -18,7 +20,8 @@ import type { LucideIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 import { ProjectLink } from '@/components/links';
-import type { IServiceDashboards } from '@openpanel/db';
+import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
+import { differenceInDays, format } from 'date-fns';
 
 function LinkWithIcon({
   href,
@@ -52,25 +55,59 @@ function LinkWithIcon({
 
 interface LayoutMenuProps {
   dashboards: IServiceDashboards;
+  organization: IServiceOrganization;
 }
-export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
+export default function LayoutMenu({
+  dashboards,
+  organization,
+}: LayoutMenuProps) {
+  const { isTrial, isExpired, subscriptionEndsAt } = organization;
   return (
     <>
-      <ProjectLink
-        href={'/reports'}
-        className={cn(
-          'border rounded p-2 row items-center gap-2 hover:bg-def-200 mb-4',
+      <div className="col border rounded mb-2 divide-y">
+        {isTrial && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization'}
+            className={cn(
+              'rounded p-2 row items-center gap-2 hover:bg-def-200',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-1">
+              <div className="font-medium">
+                Free trial ends in{' '}
+                {differenceInDays(subscriptionEndsAt, new Date())} days
+              </div>
+            </div>
+          </ProjectLink>
         )}
-      >
-        <ChartLineIcon size={20} />
-        <div className="flex-1 col gap-1">
-          <div className="font-medium">Create report</div>
-          <div className="text-sm text-muted-foreground">
-            Visualize your events
+        {isExpired && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization'}
+            className={cn(
+              'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-0.5">
+              <div className="font-medium">Subscription expired</div>
+              <div className="text-sm opacity-80">
+                {differenceInDays(new Date(), subscriptionEndsAt)} days ago
+              </div>
+            </div>
+          </ProjectLink>
+        )}
+        <ProjectLink
+          href={'/reports'}
+          className={cn('rounded p-2 row gap-2 hover:bg-def-200')}
+        >
+          <ChartLineIcon size={20} />
+          <div className="flex-1 col gap-1">
+            <div className="font-medium">Create report</div>
           </div>
-        </div>
-        <PlusIcon size={16} className="text-muted-foreground" />
-      </ProjectLink>
+          <PlusIcon size={16} className="text-muted-foreground" />
+        </ProjectLink>
+      </div>
       <LinkWithIcon icon={WallpaperIcon} label="Overview" href={'/'} />
       <LinkWithIcon
         icon={LayoutPanelTopIcon}

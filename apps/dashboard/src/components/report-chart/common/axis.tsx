@@ -23,11 +23,9 @@ export function getYAxisWidth(value: string | undefined | null) {
 }
 
 export const useYAxisProps = ({
-  data,
   hide,
   tickFormatter,
 }: {
-  data: number[];
   hide?: boolean;
   tickFormatter?: (value: number) => string;
 }) => {

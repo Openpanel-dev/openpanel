@@ -9,7 +9,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import type { getOrganizationBySlug } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/db';
 
 const validator = z.object({
   id: z.string().min(2),
@@ -18,7 +18,7 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 interface EditOrganizationProps {
-  organization: Awaited<ReturnType<typeof getOrganizationBySlug>>;
+  organization: IServiceOrganization;
 }
 export default function EditOrganization({
   organization,
@@ -41,29 +41,27 @@ export default function EditOrganization({
   });
 
   return (
-    <section className="max-w-screen-sm">
-      <form
-        onSubmit={handleSubmit((values) => {
-          mutation.mutate(values);
-        })}
-      >
-        <Widget>
-          <WidgetHead className="flex items-center justify-between">
-            <span className="title">Details</span>
-          </WidgetHead>
-          <WidgetBody className="flex items-end gap-2">
-            <InputWithLabel
-              className="flex-1"
-              label="Name"
-              {...register('name')}
-              defaultValue={organization?.name}
-            />
-            <Button size="sm" type="submit" disabled={!formState.isDirty}>
-              Save
-            </Button>
-          </WidgetBody>
-        </Widget>
-      </form>
-    </section>
+    <form
+      onSubmit={handleSubmit((values) => {
+        mutation.mutate(values);
+      })}
+    >
+      <Widget>
+        <WidgetHead className="flex items-center justify-between">
+          <span className="title">Details</span>
+        </WidgetHead>
+        <WidgetBody className="flex items-end gap-2">
+          <InputWithLabel
+            className="flex-1"
+            label="Name"
+            {...register('name')}
+            defaultValue={organization?.name}
+          />
+          <Button size="sm" type="submit" disabled={!formState.isDirty}>
+            Save
+          </Button>
+        </WidgetBody>
+      </Widget>
+    </form>
   );
 }

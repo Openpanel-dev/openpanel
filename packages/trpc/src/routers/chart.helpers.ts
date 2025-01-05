@@ -32,9 +32,12 @@ import {
   TABLE_NAMES,
   chQuery,
   createSqlBuilder,
+  db,
   formatClickhouseDate,
   getChartSql,
   getEventFiltersWhereClause,
+  getOrganizationByProjectId,
+  getOrganizationByProjectIdCached,
   getProfiles,
 } from '@openpanel/db';
 import type {
@@ -46,6 +49,7 @@ import type {
   IGetChartDataInput,
   IInterval,
 } from '@openpanel/validation';
+import { TRPCNotFoundError } from '../errors';
 
 function getEventLegend(event: IChartEvent) {
   return event.displayName || event.name;
@@ -268,9 +272,17 @@ export function getChartStartEndDate({
   endDate,
   range,
 }: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>) {
-  return startDate && endDate
-    ? { startDate: startDate, endDate: endDate }
-    : getDatesFromRange(range);
+  const ranges = getDatesFromRange(range);
+
+  if (startDate && endDate) {
+    return { startDate: startDate, endDate: endDate };
+  }
+
+  if (!startDate && endDate) {
+    return { startDate: ranges.startDate, endDate: endDate };
+  }
+
+  return ranges;
 }
 
 export function getChartPrevStartEndDate({
@@ -492,6 +504,18 @@ export async function getChartSeries(input: IChartInputWithDates) {
 }
 
 export async function getChart(input: IChartInput) {
+  const organization = await getOrganizationByProjectIdCached(input.projectId);
+
+  if (!organization) {
+    throw TRPCNotFoundError(
+      `Organization not found by project id ${input.projectId} in getChart`,
+    );
+  }
+
+  if (organization.subscriptionCurrentPeriodEnd) {
+    input.endDate = organization.subscriptionCurrentPeriodEnd.toISOString();
+  }
+
   const currentPeriod = getChartStartEndDate(input);
   const previousPeriod = getChartPrevStartEndDate({
     range: input.range,

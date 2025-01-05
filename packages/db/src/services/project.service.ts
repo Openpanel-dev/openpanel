@@ -1,4 +1,5 @@
 import { cacheable } from '@openpanel/redis';
+import { TABLE_NAMES, chQuery } from '../clickhouse-client';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
 
@@ -99,3 +100,10 @@ export async function getProjects({
 
   return projects;
 }
+
+export const getProjectEventsCount = async (projectId: string) => {
+  const res = await chQuery<{ count: number }>(
+    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)}`,
+  );
+  return res[0]?.count;
+};

@@ -92,6 +92,10 @@ const startServer = async () => {
       };
     });
 
+    await fastify.register(import('fastify-raw-body'), {
+      global: false,
+    });
+
     fastify.addHook('preHandler', ipHook);
     fastify.addHook('preHandler', timestampHook);
     fastify.addHook('preHandler', fixHook);
