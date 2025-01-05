@@ -11,20 +11,20 @@ export { createClient };
 const logger = createLogger({ name: 'clickhouse' });
 
 export const TABLE_NAMES = {
-  events: 'events_distributed',
-  profiles: 'profiles_distributed',
-  alias: 'profile_aliases_distributed',
-  self_hosting: 'self_hosting_distributed',
-  events_bots: 'events_bots_distributed',
-  dau_mv: 'dau_mv_distributed',
-  event_names_mv: 'distinct_event_names_mv_distributed',
-  event_property_values_mv: 'event_property_values_mv_distributed',
-  cohort_events_mv: 'cohort_events_mv_distributed',
+  events: 'events',
+  profiles: 'profiles',
+  alias: 'profile_aliases',
+  self_hosting: 'self_hosting',
+  events_bots: 'events_bots',
+  dau_mv: 'dau_mv',
+  event_names_mv: 'distinct_event_names_mv',
+  event_property_values_mv: 'event_property_values_mv',
+  cohort_events_mv: 'cohort_events_mv',
 };
 
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: 30,
-  request_timeout: 30000,
+  request_timeout: 60000,
   keep_alive: {
     enabled: true,
     idle_socket_ttl: 8000,
@@ -38,8 +38,7 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
 };
 
 export const originalCh = createClient({
-  // TODO: remove this after migration
-  url: process.env.CLICKHOUSE_URL_DIRECT ?? process.env.CLICKHOUSE_URL,
+  url: process.env.CLICKHOUSE_URL,
   ...CLICKHOUSE_OPTIONS,
 });
 
