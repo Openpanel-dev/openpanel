@@ -2,12 +2,13 @@ import type { Queue, WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 
 import {
+  _sessionsQueue,
   cronQueue,
   eventsQueue,
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
-import { getRedisQueue } from '@openpanel/redis';
+import { _getRedisQueue, getRedisQueue } from '@openpanel/redis';
 
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -24,6 +25,11 @@ const workerOptions: WorkerOptions = {
 
 export async function bootWorkers() {
   const eventsWorker = new Worker(eventsQueue.name, eventsJob, workerOptions);
+  // TODO: Remove this once we have a new dragonfly instance
+  const _sessionsWorker = new Worker(_sessionsQueue.name, sessionsJob, {
+    ...workerOptions,
+    connection: _getRedisQueue(),
+  });
   const sessionsWorker = new Worker(
     sessionsQueue.name,
     sessionsJob,
@@ -38,6 +44,7 @@ export async function bootWorkers() {
 
   const workers = [
     sessionsWorker,
+    _sessionsWorker,
     eventsWorker,
     cronWorker,
     notificationWorker,

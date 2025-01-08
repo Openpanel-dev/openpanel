@@ -64,3 +64,21 @@ export function getRedisQueue() {
 
   return redisQueue;
 }
+
+// TODO: Remove this once we have migrated all data
+let _redisQueue: Redis;
+export function _getRedisQueue() {
+  if (!_redisQueue) {
+    _redisQueue = createRedisClient(
+      process.env.OLD_REDIS_URL! || process.env.REDIS_URL!,
+      {
+        ...options,
+        enableReadyCheck: false,
+        maxRetriesPerRequest: null,
+        enableOfflineQueue: true,
+      },
+    );
+  }
+
+  return _redisQueue;
+}
