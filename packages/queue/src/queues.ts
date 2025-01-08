@@ -68,6 +68,17 @@ export type CronQueuePayload =
 
 export type CronQueueType = CronQueuePayload['type'];
 
+export const _eventsQueue = new Queue<EventsQueuePayload>('events', {
+  connection: _getRedisQueue(),
+  defaultJobOptions: {
+    removeOnComplete: 10,
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 1000,
+    },
+  },
+});
 export const eventsQueue = new Queue<EventsQueuePayload>('{events}', {
   connection: getRedisQueue(),
   defaultJobOptions: {
