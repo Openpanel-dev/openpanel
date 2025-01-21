@@ -10,6 +10,7 @@ import type {
 
 export type ReportChartContextType = {
   options: Partial<{
+    columns: React.ReactNode[];
     hideID: boolean;
     hideLegend: boolean;
     hideXAxis: boolean;

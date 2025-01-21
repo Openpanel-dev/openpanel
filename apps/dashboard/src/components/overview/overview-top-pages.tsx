@@ -50,6 +50,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       chart: {
         options: {
           renderSerieName,
+          columns: ['URL', 'Views'],
         },
         report: {
           limit: 10,
@@ -89,6 +90,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       btn: 'Entries',
       chart: {
         options: {
+          columns: ['URL', 'Sessions'],
           renderSerieName,
         },
         report: {
@@ -129,6 +131,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       btn: 'Exits',
       chart: {
         options: {
+          columns: ['URL', 'Sessions'],
           renderSerieName,
         },
         report: {

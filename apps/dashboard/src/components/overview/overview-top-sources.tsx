@@ -31,6 +31,9 @@ export default function OverviewTopSources({
       title: 'Top sources',
       btn: 'All',
       chart: {
+        options: {
+          columns: ['Source', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -64,6 +67,9 @@ export default function OverviewTopSources({
       title: 'Top urls',
       btn: 'URLs',
       chart: {
+        options: {
+          columns: ['URL', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -97,6 +103,9 @@ export default function OverviewTopSources({
       title: 'Top types',
       btn: 'Types',
       chart: {
+        options: {
+          columns: ['Type', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -130,6 +139,9 @@ export default function OverviewTopSources({
       title: 'UTM Source',
       btn: 'Source',
       chart: {
+        options: {
+          columns: ['Utm Source', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -163,6 +175,9 @@ export default function OverviewTopSources({
       title: 'UTM Medium',
       btn: 'Medium',
       chart: {
+        options: {
+          columns: ['Utm Medium', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -196,6 +211,9 @@ export default function OverviewTopSources({
       title: 'UTM Campaign',
       btn: 'Campaign',
       chart: {
+        options: {
+          columns: ['Utm Campaign', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -229,6 +247,9 @@ export default function OverviewTopSources({
       title: 'UTM Term',
       btn: 'Term',
       chart: {
+        options: {
+          columns: ['Utm Term', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -262,6 +283,9 @@ export default function OverviewTopSources({
       title: 'UTM Content',
       btn: 'Content',
       chart: {
+        options: {
+          columns: ['Utm Content', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -319,6 +343,7 @@ export default function OverviewTopSources({
               previous: false,
             }}
             options={{
+              ...widget.chart.options,
               renderSerieName: (name) =>
                 name[0] === NOT_SET_VALUE ? 'Direct / Not set' : name[0],
               onClick: (item) => {

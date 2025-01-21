@@ -10,7 +10,7 @@ import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
 import { round } from '@openpanel/common';
 import { NOT_SET_VALUE } from '@openpanel/constants';
@@ -25,10 +25,11 @@ interface Props {
 }
 
 export function Chart({ data }: Props) {
+  const [isOpen, setOpen] = useState<string | null>(null);
   const {
     isEditMode,
     report: { metric, limit },
-    options: { onClick, dropdownMenuContent },
+    options: { onClick, dropdownMenuContent, columns },
   } = useReportChartContext();
   const number = useNumber();
   const series = useMemo(
@@ -44,6 +45,24 @@ export function Chart({ data }: Props) {
         isEditMode ? 'card gap-2 p-4 text-base' : '-m-3 gap-1',
       )}
     >
+      {columns && columns.length > 0 && (
+        <div className="relative z-10 flex w-full flex-1 items-center gap-4 overflow-hidden px-3 pt-2 pb-1">
+          {columns.map((column, index) => {
+            const isLast = columns.length - 1 <= index;
+            return (
+              <div
+                key={column?.toString()}
+                className={cn(
+                  'flex flex-1 items-center gap-2 break-all font-medium',
+                  isLast && 'justify-end text-right',
+                )}
+              >
+                {column}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {series.map((serie) => {
         const isClickable = !serie.names.includes(NOT_SET_VALUE) && onClick;
         const isDropDownEnabled =
@@ -51,15 +70,36 @@ export function Chart({ data }: Props) {
           (dropdownMenuContent?.(serie) || []).length > 0;
 
         return (
-          <DropdownMenu key={serie.id}>
-            <DropdownMenuTrigger asChild disabled={!isDropDownEnabled}>
+          <DropdownMenu
+            key={serie.id}
+            onOpenChange={() =>
+              setOpen((p) => (p === serie.id ? null : serie.id))
+            }
+            open={isOpen === serie.id}
+          >
+            <DropdownMenuTrigger
+              asChild
+              disabled={!isDropDownEnabled}
+              {...(isDropDownEnabled
+                ? {
+                    // We need to disable onPointerDown event to prevent the
+                    // dropdown from opening when the user is scrolling (mobile/tablet).
+                    // We also need to handle open/closed state and chnage this
+                    // when onClick happens
+                    onPointerDown: (e) => e.preventDefault(),
+                    onClick: () => setOpen(serie.id),
+                  }
+                : {})}
+            >
               <div
                 className={cn(
                   'relative',
                   (isClickable || isDropDownEnabled) && 'cursor-pointer',
                 )}
                 {...(isClickable && !isDropDownEnabled
-                  ? { onClick: () => onClick?.(serie) }
+                  ? {
+                      onClick: () => onClick(serie),
+                    }
                   : {})}
               >
                 <div

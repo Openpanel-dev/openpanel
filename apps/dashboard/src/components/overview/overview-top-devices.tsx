@@ -31,6 +31,9 @@ export default function OverviewTopDevices({
       title: 'Top devices',
       btn: 'Devices',
       chart: {
+        options: {
+          columns: ['Device', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -64,6 +67,9 @@ export default function OverviewTopDevices({
       title: 'Top browser',
       btn: 'Browser',
       chart: {
+        options: {
+          columns: ['Browser', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -98,6 +104,7 @@ export default function OverviewTopDevices({
       btn: 'Browser Version',
       chart: {
         options: {
+          columns: ['Version', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },
@@ -139,6 +146,9 @@ export default function OverviewTopDevices({
       title: 'Top OS',
       btn: 'OS',
       chart: {
+        options: {
+          columns: ['OS', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -173,6 +183,7 @@ export default function OverviewTopDevices({
       btn: 'OS Version',
       chart: {
         options: {
+          columns: ['Version', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },
@@ -214,6 +225,9 @@ export default function OverviewTopDevices({
       title: 'Top Brands',
       btn: 'Brands',
       chart: {
+        options: {
+          columns: ['Brand', isPageFilter ? 'Views' : 'Sessions'],
+        },
         report: {
           limit: 10,
           projectId,
@@ -248,6 +262,7 @@ export default function OverviewTopDevices({
       btn: 'Models',
       chart: {
         options: {
+          columns: ['Model', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },

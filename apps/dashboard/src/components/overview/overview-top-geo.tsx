@@ -31,6 +31,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       btn: 'Countries',
       chart: {
         options: {
+          columns: ['Country', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
             return getCountry(name[0]) || NOT_SET_VALUE;
           },
@@ -69,6 +70,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       btn: 'Regions',
       chart: {
         options: {
+          columns: ['Region', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },
@@ -111,6 +113,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       btn: 'Cities',
       chart: {
         options: {
+          columns: ['City', isPageFilter ? 'Views' : 'Sessions'],
           renderSerieName(name) {
             return name[1] || NOT_SET_VALUE;
           },
