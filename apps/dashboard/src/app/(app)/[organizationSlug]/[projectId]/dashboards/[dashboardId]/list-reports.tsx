@@ -32,6 +32,7 @@ import {
 } from '@openpanel/constants';
 import type { IServiceDashboard, getReportsByDashboardId } from '@openpanel/db';
 
+import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 
 interface ListReportsProps {
@@ -42,7 +43,7 @@ interface ListReportsProps {
 export function ListReports({ reports, dashboard }: ListReportsProps) {
   const router = useRouter();
   const params = useAppParams<{ dashboardId: string }>();
-  const { range, startDate, endDate } = useOverviewOptions();
+  const { range, startDate, endDate, interval } = useOverviewOptions();
   const deletion = api.report.delete.useMutation({
     onError: handleError,
     onSuccess() {
@@ -56,6 +57,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
         <h1 className="text-3xl font-semibold">{dashboard.name}</h1>
         <div className="flex items-center justify-end gap-2">
           <OverviewRange />
+          <OverviewInterval />
           <Button
             icon={PlusIcon}
             onClick={() => {
@@ -146,11 +148,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
                     range: range ?? report.range,
                     startDate: startDate ?? report.startDate,
                     endDate: endDate ?? report.endDate,
-                    interval:
-                      getDefaultIntervalByDates(startDate, endDate) ||
-                      (range
-                        ? getDefaultIntervalByRange(range)
-                        : report.interval),
+                    interval: interval ?? report.interval,
                   }}
                 />
               </div>
