@@ -9,8 +9,10 @@ import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { notFound } from 'next/navigation';
 
+import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { getOrganizationBySlug, getShareOverviewById } from '@openpanel/db';
+import { cookies } from 'next/headers';
 
 interface PageProps {
   params: {
@@ -35,20 +37,27 @@ export default async function Page({
   const projectId = share.projectId;
   const organization = await getOrganizationBySlug(share.organizationId);
 
+  if (share.password) {
+    const cookie = cookies().get(`shared-overview-${share.id}`)?.value;
+    if (!cookie) {
+      return <ShareEnterPassword shareId={share.id} />;
+    }
+  }
+
   return (
     <div>
       {searchParams.header !== '0' && (
-        <div className="flex items-center justify-between border-b border-border bg-white p-4">
-          <div className="leading-none">
-            <span className="mb-4">{organization?.name}</span>
+        <div className="flex items-center justify-between border-b border-border bg-background p-4">
+          <div className="col gap-1">
+            <span className="text-sm">{organization?.name}</span>
             <h1 className="text-xl font-medium">{share.project?.name}</h1>
           </div>
           <a
             href="https://openpanel.dev?utm_source=openpanel.dev&utm_medium=share"
-            className="flex flex-col items-end text-lg font-medium"
+            className="col gap-1 items-end"
           >
-            <span className="text-sm">POWERED BY</span>
-            <span>openpanel.dev</span>
+            <span className="text-xs">POWERED BY</span>
+            <span className="text-xl font-medium">openpanel.dev</span>
           </a>
         </div>
       )}

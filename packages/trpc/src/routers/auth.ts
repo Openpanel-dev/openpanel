@@ -1,5 +1,6 @@
 import {
   Arctic,
+  COOKIE_OPTIONS,
   createSession,
   deleteSessionTokenCookie,
   generateSessionToken,
@@ -11,12 +12,18 @@ import {
   verifyPasswordHash,
 } from '@openpanel/auth';
 import { generateSecureId } from '@openpanel/common/server/id';
-import { connectUserToOrganization, db, getUserAccount } from '@openpanel/db';
+import {
+  connectUserToOrganization,
+  db,
+  getShareOverviewById,
+  getUserAccount,
+} from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';
 import {
   zRequestResetPassword,
   zResetPassword,
   zSignInEmail,
+  zSignInShare,
   zSignUpEmail,
 } from '@openpanel/validation';
 import * as bcrypt from 'bcrypt';
@@ -272,4 +279,42 @@ export const authRouter = createTRPCRouter({
   session: publicProcedure.query(async ({ ctx }) => {
     return ctx.session;
   }),
+
+  signInShare: publicProcedure
+    .use(
+      rateLimitMiddleware({
+        max: 3,
+        windowMs: 30_000,
+      }),
+    )
+    .input(zSignInShare)
+    .mutation(async ({ input, ctx }) => {
+      const { password, shareId } = input;
+      const share = await getShareOverviewById(input.shareId);
+
+      if (!share) {
+        throw TRPCNotFoundError('Share not found');
+      }
+
+      if (!share.public) {
+        throw TRPCNotFoundError('Share is not public');
+      }
+
+      if (!share.password) {
+        throw TRPCNotFoundError('Share is not password protected');
+      }
+
+      const validPassword = await verifyPasswordHash(share.password, password);
+
+      if (!validPassword) {
+        throw TRPCAccessError('Incorrect password');
+      }
+
+      ctx.setCookie(`shared-overview-${shareId}`, '1', {
+        maxAge: 60 * 60 * 24 * 7,
+        ...COOKIE_OPTIONS,
+      });
+
+      return true;
+    }),
 });

@@ -334,3 +334,9 @@ export const zRequestResetPassword = z.object({
   email: z.string().email(),
 });
 export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;
+
+export const zSignInShare = z.object({
+  password: z.string().min(1),
+  shareId: z.string().min(1),
+});
+export type ISignInShare = z.infer<typeof zSignInShare>;
