@@ -31,7 +31,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  'fixed z-50 flex flex-col gap-4 overflow-y-auto rounded-lg bg-card p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out max-sm:w-[calc(100%-theme(spacing.8))]',
+  'fixed z-50 flex flex-col gap-4 overflow-y-auto rounded-lg bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out max-sm:w-[calc(100%-theme(spacing.8))]',
   {
     variants: {
       side: {
@@ -70,7 +70,7 @@ const SheetContent = React.forwardRef<
       <SheetPrimitive.Close id="close-sheet" className="hidden" />
       <SheetPrimitive.Close
         onClick={onClose}
-        className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-def-100"
+        className="absolute right-4 top-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-def-100"
       >
         <XIcon className="h-4 w-4" />
         <span className="sr-only">Close</span>
@@ -91,13 +91,7 @@ const SheetHeader = ({
       className,
     )}
     {...props}
-    style={{
-      backgroundImage: `url("data:image/svg+xml,<svg id='patternId' width='100%' height='100%' xmlns='http://www.w3.org/2000/svg'><defs><pattern id='a' patternUnits='userSpaceOnUse' width='20' height='20' patternTransform='scale(2) rotate(85)'><rect x='0' y='0' width='100%' height='100%' fill='hsla(0, 0%, 100%, 0)'/><path d='M 10,-2.55e-7 V 20 Z M -1.1677362e-8,10 H 20 Z'  stroke-width='0.5' stroke='hsla(259, 0%, 52%, 0.46)' fill='none'/></pattern></defs><rect width='800%' height='800%' transform='translate(0,0)' fill='url(%23a)'/></svg>")`,
-      backgroundSize: '100% 100%',
-      backgroundRepeat: 'repeat',
-    }}
   >
-    <div className="absolute inset-0 bg-gradient-to-r from-def-100/95 to-def-100/80" />
     <div className="row relative w-full items-start justify-between">
       {children}
     </div>
@@ -125,7 +119,7 @@ const SheetTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Title
     ref={ref}
-    className={cn('text-3xl font-bold text-foreground', className)}
+    className={cn('text-2xl font-semibold text-foreground', className)}
     {...props}
   />
 ));
