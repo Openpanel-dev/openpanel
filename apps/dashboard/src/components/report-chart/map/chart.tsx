@@ -5,6 +5,8 @@ import { useMemo } from 'react';
 import WorldMap from 'react-svg-worldmap';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { useReportChartContext } from '../context';
 
 interface Props {
@@ -16,6 +18,7 @@ export function Chart({ data }: Props) {
     report: { metric, unit },
   } = useReportChartContext();
   const { series } = useVisibleSeries(data, 100);
+  const [filters, setFilter] = useEventQueryFilters();
 
   const mapData = useMemo(
     () =>
@@ -30,10 +33,15 @@ export function Chart({ data }: Props) {
     <AutoSizer disableHeight>
       {({ width }) => (
         <WorldMap
+          onClickFunction={(event) => {
+            if (event.countryCode) {
+              setFilter('country', event.countryCode);
+            }
+          }}
           size={width}
           data={mapData}
-          color={theme.colors['chart-0']}
-          borderColor={'#103A96'}
+          color={'var(--chart-0)'}
+          borderColor={'hsl(var(--foreground))'}
           value-suffix={unit}
         />
       )}

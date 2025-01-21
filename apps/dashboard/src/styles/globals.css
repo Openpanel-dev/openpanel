@@ -41,6 +41,20 @@
     --ring: 212.73deg 26.83% 83.92%; /* #CDD6E2 */
 
     --radius: 0.5rem;
+
+    --chart-0: #2563EB;
+    --chart-1: #ff7557;
+    --chart-2: #7fe1d8;
+    --chart-3: #f8bc3c;
+    --chart-4: #b3596e;
+    --chart-5: #72bef4;
+    --chart-6: #ffb27a;
+    --chart-7: #0f7ea0;
+    --chart-8: #3ba974;
+    --chart-9: #febbb2;
+    --chart-10: #cb80dc;
+    --chart-11: #5cb7af;
+    --chart-12: #7856ff;
   }
 
   .dark {

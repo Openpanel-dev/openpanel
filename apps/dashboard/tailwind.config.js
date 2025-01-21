@@ -44,8 +44,8 @@ const twColorVariants = ['50', '100', '200', '700', '800', '900'];
 const config = {
   darkMode: 'class',
   safelist: [
-    ...colors.flatMap((color) =>
-      ['text', 'bg'].map((prefix) => `${prefix}-chart-${color}`),
+    ...[...new Array(12)].flatMap((_, index) =>
+      ['text', 'bg'].map((prefix) => `${prefix}-chart-${index}`),
     ),
     ...twColors.flatMap((color) => {
       return twColorVariants.flatMap((variant) => {
@@ -88,6 +88,19 @@ const config = {
     },
     extend: {
       colors: {
+        'chart-0': 'var(--chart-0)',
+        'chart-1': 'var(--chart-1)',
+        'chart-2': 'var(--chart-2)',
+        'chart-3': 'var(--chart-3)',
+        'chart-4': 'var(--chart-4)',
+        'chart-5': 'var(--chart-5)',
+        'chart-6': 'var(--chart-6)',
+        'chart-7': 'var(--chart-7)',
+        'chart-8': 'var(--chart-8)',
+        'chart-9': 'var(--chart-9)',
+        'chart-10': 'var(--chart-10)',
+        'chart-11': 'var(--chart-11)',
+        'chart-12': 'var(--chart-12)',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
