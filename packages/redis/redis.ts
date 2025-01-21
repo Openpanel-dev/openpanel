@@ -2,19 +2,50 @@ import type { RedisOptions } from 'ioredis';
 import Redis from 'ioredis';
 
 const options: RedisOptions = {
-  connectTimeout: 10000,
+  connectTimeout: 10000, // default
+  retryStrategy: (times: number) => {
+    const maxRetryDelay = 5000;
+    const delay = Math.min(times * 100, maxRetryDelay);
+    return delay;
+  },
+  reconnectOnError: (err: Error) => {
+    const reconnectErrors = ['READONLY', 'ETIMEDOUT', 'EPIPE', 'ECONNRESET'];
+    return reconnectErrors.some(
+      (errorType) => err.message.includes(errorType) || err.code === errorType,
+    );
+  },
+  autoResubscribe: true, // default
+  autoResendUnfulfilledCommands: true, // default
+  maxRetriesPerRequest: 20, // default
 };
 
 export { Redis };
 
 const createRedisClient = (
   url: string,
-  overrides: RedisOptions = {},
+  overrides: RedisOptions,
+  name: string,
 ): Redis => {
   const client = new Redis(url, { ...options, ...overrides });
 
   client.on('error', (error) => {
-    console.error('Redis Client Error:', error);
+    console.error(`[redis:${name}] Error:`, error);
+  });
+
+  client.on('ready', () => {
+    console.log(`[redis:${name}] Ready`);
+  });
+
+  client.on('connect', () => {
+    console.log(`[redis:${name}] Connected`);
+  });
+
+  client.on('reconnecting', () => {
+    console.log(`[redis:${name}] Reconnecting`);
+  });
+
+  client.on('end', () => {
+    console.error(`[redis:${name}] Connection closed`);
   });
 
   return client;
@@ -23,7 +54,7 @@ const createRedisClient = (
 let redisCache: Redis;
 export function getRedisCache() {
   if (!redisCache) {
-    redisCache = createRedisClient(process.env.REDIS_URL!, options);
+    redisCache = createRedisClient(process.env.REDIS_URL!, options, 'cache');
   }
 
   return redisCache;
@@ -32,7 +63,7 @@ export function getRedisCache() {
 let redisSub: Redis;
 export function getRedisSub() {
   if (!redisSub) {
-    redisSub = createRedisClient(process.env.REDIS_URL!, options);
+    redisSub = createRedisClient(process.env.REDIS_URL!, options, 'sub');
   }
 
   return redisSub;
@@ -41,7 +72,7 @@ export function getRedisSub() {
 let redisPub: Redis;
 export function getRedisPub() {
   if (!redisPub) {
-    redisPub = createRedisClient(process.env.REDIS_URL!, options);
+    redisPub = createRedisClient(process.env.REDIS_URL!, options, 'pub');
   }
 
   return redisPub;
@@ -59,6 +90,7 @@ export function getRedisQueue() {
         maxRetriesPerRequest: null,
         enableOfflineQueue: true,
       },
+      'queue',
     );
   }
 
@@ -77,6 +109,7 @@ export function _getRedisQueue() {
         maxRetriesPerRequest: null,
         enableOfflineQueue: true,
       },
+      'old_queue',
     );
   }
 
