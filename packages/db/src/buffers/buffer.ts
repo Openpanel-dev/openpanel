@@ -1,7 +1,7 @@
 import { generateId, getSafeJson } from '@openpanel/common';
 import type { ILogger } from '@openpanel/logger';
 import { createLogger } from '@openpanel/logger';
-import { getRedisCache } from '@openpanel/redis';
+import { _getRedisQueue, getRedisCache } from '@openpanel/redis';
 import { pathOr } from 'ramda';
 
 export type Find<T, R = unknown> = (
@@ -121,6 +121,11 @@ export class RedisBuffer<T> {
       .lrange(this.getKey('backup'), 0, -1)
       .del(this.getKey())
       .exec();
+    const result2 = await _getRedisQueue()
+      .multi()
+      .lrange(this.getKey(), 0, -1)
+      .del(this.getKey())
+      .exec();
 
     if (!result) {
       this.logger.error('No result from redis transaction', {
@@ -146,6 +151,17 @@ export class RedisBuffer<T> {
       Array.isArray(lrangePrevious[1])
     ) {
       items.push(...(lrangePrevious[1] as string[]));
+    }
+
+    // TODO: Remove this once we have migrated all data
+    const oldBuffer = (result2?.[0] ? result2[0][1] : []) as string[];
+    if (oldBuffer.length > 0) {
+      this.logger.info('Migrating old buffer', {
+        items: oldBuffer,
+        length: oldBuffer.length,
+      });
+
+      items.push(...oldBuffer);
     }
 
     const parsedItems = items
