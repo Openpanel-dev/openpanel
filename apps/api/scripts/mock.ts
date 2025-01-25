@@ -184,6 +184,9 @@ async function createMock(file: string) {
       data: {
         organizationId: 'openpanel-dev',
         name: project.domain,
+        cors: [project.domain],
+        domain: project.domain,
+        crossDomain: true,
         clients: {
           create: {
             organizationId: 'openpanel-dev',
@@ -191,7 +194,6 @@ async function createMock(file: string) {
             secret: await hashPassword('secret'),
             id: project.clientId,
             type: ClientType.write,
-            cors: project.domain,
           },
         },
       },
@@ -255,6 +257,10 @@ async function simultaneousRequests() {
   trackit(screenView);
   trackit(event);
 }
+const exit = async () => {
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+  process.exit(1);
+};
 
 async function main() {
   const [type, file = 'mock-basic.json'] = process.argv.slice(2);
@@ -268,10 +274,10 @@ async function main() {
       break;
     case 'mock':
       await createMock(file);
+      await exit();
       break;
     default:
       console.log('usage: jiti mock.ts send|mock|sim [file]');
-      process.exit(1);
   }
 }
 

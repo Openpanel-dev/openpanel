@@ -33,6 +33,10 @@ export default function EventDetails({ id }: Props) {
 
   const common = [
     {
+      name: 'Path',
+      value: event.path,
+    },
+    {
       name: 'Origin',
       value: event.origin,
     },
