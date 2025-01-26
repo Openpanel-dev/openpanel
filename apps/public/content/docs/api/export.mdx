@@ -91,7 +91,7 @@ GET /export/charts
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | projectId | string | The ID of the project to fetch chart data from | `abc123` |
-| events | string[] | Array of event names to include in the chart | `["sign_up","purchase"]` |
+| events | string[] | Array of event configurations to include in the chart | `[{"name":"sign_up","filters":[]}]` |
 | breakdowns | object[] | Array of breakdown configurations | `[{"name":"country"}]` |
 | interval | string | Time interval for data points | `day` |
 | range | string | Predefined date range | `last_7_days` |
@@ -103,10 +103,55 @@ GET /export/charts
 | limit | number | Limit the number of results | `10` |
 | offset | number | Offset for pagination | `0` |
 
+#### Events configuration
+
+Each event configuration object has the following properties:
+
+| Property | Type | Description | Required |
+|----------|------|-------------|----------|
+| name | string | Name of the event to track | Yes |
+| filters | Filter[] | Array of filters to apply to the event | No |
+| segment | string | Type of segmentation. Options: `event`, `user`, `session`, `user_average`, `one_event_per_user`, `property_sum`, `property_average` | No (defaults to `event`) |
+| property | string | Property name to analyze when using property-based segments | No |
+
+##### Filter Configuration
+
+Each filter in the `filters` array has the following structure:
+
+| Property | Type | Description | Required |
+|----------|------|-------------|----------|
+| name | string | Name of the property to filter on | Yes |
+| operator | string | Comparison operator. Valid values: `is`, `isNot`, `contains`, `doesNotContain`, `startsWith`, `endsWith`, `regex` | Yes |
+| value | (string \| number \| boolean \| null)[] | Array of values to compare against | Yes |
+
+Example event configuration:
+```json
+{
+  "name": "purchase",
+  "segment": "user",
+  "filters": [
+    {
+      "name": "total",
+      "operator": "is",
+      "value": ["100"]
+    }
+  ]
+}
+```
+
+The operators are used in the SQL builder (`chart.service.ts` lines 262-346) with the following mappings:
+- `is`: Equals comparison
+- `isNot`: Not equals comparison
+- `contains`: LIKE %value%
+- `doesNotContain`: NOT LIKE %value%
+- `startsWith`: LIKE value%
+- `endsWith`: LIKE %value
+- `regex`: Match function
+
 ### Example Request
 
 ```bash
-curl 'https://api.openpanel.dev/export/charts?projectId=abc123&events=["sign_up","purchase"]&interval=day&range=last_30_days&chartType=linear&metric=sum' \
+curl 'https://api.openpanel.dev/export/charts?projectId=abc123&events=[{"name":"screen_view"}]&interval=day&range=last_30_days&chartType=linear&metric=sum' \
   -H 'openpanel-client-id: YOUR_CLIENT_ID' \
   -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
 ```

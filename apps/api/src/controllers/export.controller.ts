@@ -10,7 +10,11 @@ import {
   getEventsCountCached,
 } from '@openpanel/db';
 import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
-import { zChartInput } from '@openpanel/validation';
+import {
+  zChartEvent,
+  zChartEventFilter,
+  zChartInput,
+} from '@openpanel/validation';
 import { omit } from 'ramda';
 
 async function getProjectId(
@@ -140,16 +144,26 @@ export async function events(
   });
 }
 
-const chartSchemeFull = zChartInput.pick({
-  events: true,
-  breakdowns: true,
-  projectId: true,
-  interval: true,
-  range: true,
-  previous: true,
-  startDate: true,
-  endDate: true,
-});
+const chartSchemeFull = zChartInput
+  .pick({
+    breakdowns: true,
+    projectId: true,
+    interval: true,
+    range: true,
+    previous: true,
+    startDate: true,
+    endDate: true,
+  })
+  .extend({
+    events: z.array(
+      z.object({
+        name: z.string(),
+        filters: zChartEvent.shape.filters.optional(),
+        segment: zChartEvent.shape.segment.optional(),
+        property: zChartEvent.shape.property.optional(),
+      }),
+    ),
+  });
 
 export async function charts(
   request: FastifyRequest<{
@@ -167,8 +181,15 @@ export async function charts(
     });
   }
 
+  const { events, ...rest } = query.data;
+
   return getChart({
-    ...query.data,
+    ...rest,
+    events: events.map((event) => ({
+      ...event,
+      segment: event.segment ?? 'event',
+      filters: event.filters ?? [],
+    })),
     chartType: 'linear',
     metric: 'sum',
   });
