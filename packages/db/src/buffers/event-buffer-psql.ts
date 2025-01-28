@@ -1,6 +1,7 @@
-import { generateId, setSuperJson } from '@openpanel/common';
+import { setSuperJson } from '@openpanel/common';
+import { generateSecureId } from '@openpanel/common/server/id';
 import { type ILogger as Logger, createLogger } from '@openpanel/logger';
-import { getRedisCache, getRedisPub } from '@openpanel/redis';
+import { getRedisCache, getRedisPub, runEvery } from '@openpanel/redis';
 import { Prisma } from '@prisma/client';
 import { ch } from '../clickhouse-client';
 import { db } from '../prisma-client';
@@ -11,11 +12,14 @@ import {
 } from '../services/event.service';
 
 export class EventBuffer {
+  private name = 'event';
   private logger: Logger;
-  private lockKey = 'lock:events';
+  private lockKey = `lock:${this.name}`;
   private lockTimeout = 60;
+  private daysToKeep = 2;
+
   constructor() {
-    this.logger = createLogger({ name: 'EventBuffer' });
+    this.logger = createLogger({ name: this.name });
   }
 
   async add(event: IClickhouseEvent) {
@@ -78,7 +82,7 @@ export class EventBuffer {
   }
 
   async tryFlush() {
-    const lockId = generateId();
+    const lockId = generateSecureId('lock');
     const acquired = await getRedisCache().set(
       this.lockKey,
       lockId,
@@ -90,6 +94,7 @@ export class EventBuffer {
       try {
         this.logger.info('Acquired lock. Processing buffer...');
         await this.processBuffer();
+        await this.tryCleanup();
       } catch (error) {
         this.logger.error('Failed to process buffer', { error });
       } finally {
@@ -221,9 +226,21 @@ export class EventBuffer {
     }
   }
 
+  async tryCleanup() {
+    try {
+      await runEvery({
+        interval: 1000 * 60 * 60 * 24,
+        fn: this.cleanup.bind(this),
+        key: `${this.name}-cleanup`,
+      });
+    } catch (error) {
+      this.logger.error('Failed to run cleanup', { error });
+    }
+  }
+
   async cleanup() {
     const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 2);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - this.daysToKeep);
 
     const deleted = await db.eventBuffer.deleteMany({
       where: {

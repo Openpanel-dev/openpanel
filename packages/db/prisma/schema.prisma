@@ -461,3 +461,34 @@ model EventBuffer {
   @@index([projectId, profileId, sessionId, createdAt])
   @@map("event_buffer")
 }
+
+model ProfileBuffer {
+  id          String    @id @default(cuid())
+  projectId   String
+  profileId   String
+  checksum    String
+  /// [IPrismaClickhouseProfile]
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([projectId, profileId])
+  @@index([projectId, processedAt])
+  @@index([checksum])
+  @@map("profile_buffer")
+}
+
+model BotEventBuffer {
+  id          String    @id @default(cuid())
+  projectId   String
+  eventId     String
+  /// [IPrismaClickhouseBotEvent]
+  payload     Json
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([processedAt])
+  @@index([projectId, eventId])
+  @@map("bot_event_buffer")
+}
