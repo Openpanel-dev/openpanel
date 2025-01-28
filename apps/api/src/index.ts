@@ -109,10 +109,6 @@ const startServer = async () => {
 
         if (isGzipped) {
           zlib.gunzip(body, (err, decompressedBody) => {
-            console.log(
-              'decompressedBody',
-              decompressedBody.toString().slice(0, 100),
-            );
             if (err) {
               done(err);
             } else {
