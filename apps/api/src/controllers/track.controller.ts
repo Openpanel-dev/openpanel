@@ -49,7 +49,7 @@ function getIdentity(body: TrackHandlerPayload): IdentifyPayload | undefined {
 
   return (
     identity ||
-    (body.payload.profileId
+    (body?.payload?.profileId
       ? {
           profileId: body.payload.profileId,
         }
@@ -100,7 +100,11 @@ export async function handler(
   const projectId = request.client?.projectId;
 
   if (!projectId) {
-    reply.status(400).send('missing origin');
+    reply.status(400).send({
+      status: 400,
+      error: 'Bad Request',
+      message: 'Missing projectId',
+    });
     return;
   }
 
@@ -195,6 +199,14 @@ export async function handler(
       await decrement({
         payload: request.body.payload,
         projectId,
+      });
+      break;
+    }
+    default: {
+      reply.status(400).send({
+        status: 400,
+        error: 'Bad Request',
+        message: 'Invalid type',
       });
       break;
     }

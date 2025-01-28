@@ -208,6 +208,12 @@ const startServer = async () => {
           error: 'Too Many Requests',
           message: 'You have exceeded the rate limit for this endpoint.',
         });
+      } else if (error.statusCode === 400) {
+        reply.status(400).send({
+          status: 400,
+          error,
+          message: 'The request was invalid.',
+        });
       } else {
         request.log.error('request error', { error });
         reply.status(500).send('Internal server error');

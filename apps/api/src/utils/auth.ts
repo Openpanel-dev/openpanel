@@ -66,6 +66,14 @@ export async function validateSdkRequest(
     throw createError('Ingestion: Missing client id');
   }
 
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      clientId,
+    )
+  ) {
+    throw createError('Ingestion: Clean ID must be a valid UUIDv4');
+  }
+
   const client = await getClientByIdCached(clientId);
 
   if (!client) {
@@ -136,6 +144,15 @@ export async function validateExportRequest(
 ): Promise<IServiceClientWithProject> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      clientId,
+    )
+  ) {
+    throw new Error('Export: Client ID must be a valid UUIDv4');
+  }
+
   const client = await getClientByIdCached(clientId);
 
   if (!client) {
@@ -162,6 +179,15 @@ export async function validateImportRequest(
 ): Promise<IServiceClientWithProject> {
   const clientId = headers['openpanel-client-id'] as string;
   const clientSecret = (headers['openpanel-client-secret'] as string) || '';
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      clientId,
+    )
+  ) {
+    throw new Error('Import: Client ID must be a valid UUIDv4');
+  }
+
   const client = await getClientByIdCached(clientId);
 
   if (!client) {
