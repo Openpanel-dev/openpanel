@@ -2,6 +2,7 @@ import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
 import type { Job } from 'bullmq';
 import { omit } from 'ramda';
 
+import { logger } from '@/utils/logger';
 import { createSessionEnd, getSessionEnd } from '@/utils/session-handler';
 import { isSameDomain, parsePath } from '@openpanel/common';
 import { parseUserAgent } from '@openpanel/common/server';
@@ -20,7 +21,9 @@ const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
   R.mergeDeepRight(a, R.reject(R.anyPass([R.isEmpty, R.isNil]))(b)) as A & B;
 
 async function createEventAndNotify(payload: IServiceCreateEventPayload) {
-  await checkNotificationRulesForEvent(payload);
+  await checkNotificationRulesForEvent(payload).catch((e) => {
+    logger.error('Error checking notification rules', { error: e });
+  });
   return createEvent(payload);
 }
 
@@ -121,7 +124,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     referrer: sessionEnd.payload?.referrer,
     referrerName: sessionEnd.payload?.referrerName,
     referrerType: sessionEnd.payload?.referrerType,
-  }) as IServiceCreateEventPayload
+  }) as IServiceCreateEventPayload;
 
   if (sessionEnd.notFound) {
     await createSessionEnd({ payload });

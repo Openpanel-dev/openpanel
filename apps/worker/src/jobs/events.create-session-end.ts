@@ -145,6 +145,7 @@ export async function createSessionEnd(
     ...sessionStart,
     properties: {
       ...sessionStart.properties,
+      ...(screenViews[0]?.properties ?? {}),
       __bounce: screenViews.length <= 1,
     },
     name: 'session_end',
