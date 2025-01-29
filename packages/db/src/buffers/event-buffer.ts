@@ -222,12 +222,22 @@ export class EventBuffer extends RedisBuffer<BufferType> {
     };
   }
 
+  private getChunks(items: BufferType[], size: number) {
+    const chunks = [];
+    for (let i = 0; i < items.length; i += size) {
+      chunks.push(items.slice(i, i + size));
+    }
+    return chunks;
+  }
+
   protected async insertIntoDB(items: BufferType[]): Promise<void> {
-    await ch.insert({
-      table: TABLE_NAMES.events,
-      values: items,
-      format: 'JSONEachRow',
-    });
+    for (const chunk of this.getChunks(items, 1500)) {
+      await ch.insert({
+        table: TABLE_NAMES.events,
+        values: chunk,
+        format: 'JSONEachRow',
+      });
+    }
   }
 
   public findMany: FindMany<IClickhouseEvent, IServiceEvent> = async (
