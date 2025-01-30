@@ -895,6 +895,9 @@ importers:
       '@prisma/client':
         specifier: ^5.1.1
         version: 5.9.1(prisma@5.9.1)
+      '@prisma/extension-read-replicas':
+        specifier: ^0.4.0
+        version: 0.4.0(@prisma/client@5.9.1(prisma@5.9.1))
       jiti:
         specifier: ^2.4.1
         version: 2.4.1
@@ -4037,6 +4040,11 @@ packages:
 
   '@prisma/engines@5.9.1':
     resolution: {integrity: sha512-gkdXmjxQ5jktxWNdDA5aZZ6R8rH74JkoKq6LD5mACSvxd2vbqWeWIOV0Py5wFC8vofOYShbt6XUeCIUmrOzOnQ==}
+
+  '@prisma/extension-read-replicas@0.4.0':
+    resolution: {integrity: sha512-0KVjOgYJO9ymOACwLXebXB1XZCrfXXZMDkZrdZQOm9rqraC1rguwpPzXUdgv2txMLyJNSe+i5DOruDCU4FfvCA==}
+    peerDependencies:
+      '@prisma/client': ^5.2.0
 
   '@prisma/fetch-engine@5.9.1':
     resolution: {integrity: sha512-l0goQOMcNVOJs1kAcwqpKq3ylvkD9F04Ioe1oJoCqmz05mw22bNAKKGWuDd3zTUoUZr97va0c/UfLNru+PDmNA==}
@@ -10882,12 +10890,15 @@ packages:
 
   sudo-prompt@8.2.5:
     resolution: {integrity: sha512-rlBo3HU/1zAJUrkY6jNxDOC9eVYliG6nS4JA8u8KAshITd07tafMc/Br7xQwCSseXwJ2iCcHCE8SNWX3q8Z+kw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   sudo-prompt@9.1.1:
     resolution: {integrity: sha512-es33J1g2HjMpyAhz8lOR+ICmXXAqTuKbuXuUWLhOLew20oN9oUCgCJx615U/v7aioZg7IX5lIh9x34vwneu4pA==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   sudo-prompt@9.2.1:
     resolution: {integrity: sha512-Mu7R0g4ig9TUuGSxJavny5Rv0egCEtpZRNMrZaYS1vxkiIxGiGUwoezU3LazIQ+KE04hTrTfNPgxU5gzi7F5Pw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   superjson@1.13.3:
     resolution: {integrity: sha512-mJiVjfd2vokfDxsQPOwJ/PtanO87LhpYY88ubI5dUB1Ab58Txbyje3+jpm+/83R/fevaq/107NNhtYBLuoTrFg==}
@@ -15406,6 +15417,10 @@ snapshots:
       '@prisma/engines-version': 5.9.0-32.23fdc5965b1e05fc54e5f26ed3de66776b93de64
       '@prisma/fetch-engine': 5.9.1
       '@prisma/get-platform': 5.9.1
+
+  '@prisma/extension-read-replicas@0.4.0(@prisma/client@5.9.1(prisma@5.9.1))':
+    dependencies:
+      '@prisma/client': 5.9.1(prisma@5.9.1)
 
   '@prisma/fetch-engine@5.9.1':
     dependencies:

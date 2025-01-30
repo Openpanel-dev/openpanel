@@ -22,6 +22,7 @@
     "@openpanel/redis": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@prisma/client": "^5.1.1",
+    "@prisma/extension-read-replicas": "^0.4.0",
     "jiti": "^2.4.1",
     "prisma-json-types-generator": "^3.1.1",
     "ramda": "^0.29.1",
