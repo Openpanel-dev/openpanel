@@ -231,12 +231,13 @@ export class EventBuffer extends RedisBuffer<BufferType> {
   }
 
   protected async insertIntoDB(items: BufferType[]): Promise<void> {
-    for (const chunk of this.getChunks(items, 1500)) {
+    for (const chunk of this.getChunks(items, 500)) {
       await ch.insert({
         table: TABLE_NAMES.events,
         values: chunk,
         format: 'JSONEachRow',
       });
+      await new Promise((resolve) => setTimeout(resolve, 50));
     }
   }
 
