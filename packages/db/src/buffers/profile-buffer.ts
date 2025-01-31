@@ -17,15 +17,24 @@ import type {
 } from '../services/profile.service';
 import type { Find, FindMany } from './buffer';
 import { RedisBuffer } from './buffer';
-
+import { ProfileBuffer as NewProfileBuffer } from './profile-buffer-psql';
 const BATCH_SIZE = process.env.BATCH_SIZE_PROFILES
   ? Number.parseInt(process.env.BATCH_SIZE_PROFILES, 10)
   : 50;
+
+const testNewProfileBuffer = new NewProfileBuffer();
 
 type BufferType = IClickhouseProfile;
 export class ProfileBuffer extends RedisBuffer<BufferType> {
   constructor() {
     super('profiles', BATCH_SIZE);
+  }
+
+  async add(profile: BufferType) {
+    await super.add(profile);
+    if (process.env.TEST_NEW_BUFFER) {
+      await testNewProfileBuffer.add(profile);
+    }
   }
 
   // this will do a couple of things:

@@ -16,8 +16,11 @@ import type {
 } from '../services/event.service';
 import type { Find, FindMany } from './buffer';
 import { RedisBuffer } from './buffer';
+import { EventBuffer as NewEventBuffer } from './event-buffer-psql';
 
 const STALLED_QUEUE_TIMEOUT = 1000 * 60 * 60 * 24;
+
+const testNewEventBuffer = new NewEventBuffer();
 
 type BufferType = IClickhouseEvent;
 export class EventBuffer extends RedisBuffer<BufferType> {
@@ -57,6 +60,9 @@ export class EventBuffer extends RedisBuffer<BufferType> {
 
   public async add(event: BufferType) {
     await super.add(event);
+    if (process.env.TEST_NEW_BUFFER) {
+      await testNewEventBuffer.add(event);
+    }
     if (event.name === 'screen_view') {
       await getRedisCache().set(
         this.getLastEventKey({
