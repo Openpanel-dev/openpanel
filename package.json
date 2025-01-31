@@ -6,6 +6,7 @@
   "author": "Carl-Gerhard Lindesvärd",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "test": "vitest",
     "dock:up": "docker compose up -d",
     "dock:down": "docker compose down",
     "dock:ch": "docker compose exec -it op-ch clickhouse-client -d openpanel",
@@ -42,6 +43,7 @@
     "sharp"
   ],
   "devDependencies": {
-    "@biomejs/biome": "1.9.1"
+    "@biomejs/biome": "1.9.1",
+    "vitest": "^3.0.4"
   }
 }
