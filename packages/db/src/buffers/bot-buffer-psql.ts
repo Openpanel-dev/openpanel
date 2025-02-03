@@ -39,7 +39,7 @@ export class BotBuffer extends BaseBuffer {
         },
       });
 
-      if (unprocessedCount >= this.batchSize) {
+      if (unprocessedCount >= this.batchSize && !process.env.TEST_NEW_BUFFER) {
         await this.tryFlush();
       }
     } catch (error) {
