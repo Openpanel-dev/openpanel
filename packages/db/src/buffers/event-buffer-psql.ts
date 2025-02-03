@@ -13,7 +13,9 @@ import {
 import { BaseBuffer } from './base-buffer';
 
 export class EventBuffer extends BaseBuffer {
-  private daysToKeep = 3;
+  private daysToKeep = process.env.EVENT_BUFFER_DAYS_TO_KEEP
+    ? Number.parseInt(process.env.EVENT_BUFFER_DAYS_TO_KEEP, 10)
+    : 3;
   private batchSize = process.env.EVENT_BUFFER_CHUNK_SIZE
     ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
     : 2000;
@@ -26,7 +28,7 @@ export class EventBuffer extends BaseBuffer {
       name: 'event',
       onFlush: async () => {
         await this.processBuffer();
-        await this.cleanup();
+        await this.tryCleanup();
       },
     });
   }
@@ -205,7 +207,7 @@ export class EventBuffer extends BaseBuffer {
   async tryCleanup() {
     try {
       await runEvery({
-        interval: 1000 * 60 * 60 * 24,
+        interval: 60 * 5, // 5 minutes
         fn: this.cleanup.bind(this),
         key: `${this.name}-cleanup`,
       });
@@ -215,18 +217,26 @@ export class EventBuffer extends BaseBuffer {
   }
 
   async cleanup() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - this.daysToKeep);
+    const olderThan = new Date();
+    olderThan.setDate(olderThan.getDate() - this.daysToKeep);
 
-    const deleted = await db.eventBuffer.deleteMany({
-      where: {
-        processedAt: {
-          lt: thirtyDaysAgo,
-        },
-      },
-    });
+    const deleted = await db.$executeRaw`
+      DELETE FROM event_buffer
+      WHERE 
+      -- 1) if the event has been processed
+      --    and session is completed or has no session
+      (
+        "processedAt" IS NOT NULL
+        AND (
+          "sessionId" IN (SELECT "sessionId" FROM event_buffer WHERE name = 'session_end') 
+          OR "sessionId" IS NULL
+        )
+      )
+      -- 2) if the event is stalled for X days
+      OR "createdAt" < ${olderThan}
+    `;
 
-    this.logger.info('Cleaned up old events', { deleted: deleted.count });
+    this.logger.info('Cleaned up old events', { deleted });
   }
 
   public async getLastScreenView({

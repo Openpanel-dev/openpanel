@@ -10,12 +10,14 @@ import type { IClickhouseProfile } from '../services/profile.service';
 import { BaseBuffer } from './base-buffer';
 
 export class ProfileBuffer extends BaseBuffer {
-  private daysToKeep = 30;
-  private batchSize = process.env.EVENT_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
+  private daysToKeep = process.env.PROFILE_BUFFER_DAYS_TO_KEEP
+    ? Number.parseInt(process.env.PROFILE_BUFFER_DAYS_TO_KEEP, 10)
+    : 7;
+  private batchSize = process.env.PROFILE_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
     : 2000;
-  private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
+  private chunkSize = process.env.PROFILE_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
     : 1000;
 
   constructor() {
@@ -28,9 +30,50 @@ export class ProfileBuffer extends BaseBuffer {
     });
   }
 
-  private generateChecksum(profile: IClickhouseProfile): string {
+  private sortObjectKeys(obj: any): any {
+    // Cache typeof check result
+    const type = typeof obj;
+
+    // Fast-path for primitives
+    if (obj === null || type !== 'object') {
+      return obj;
+    }
+
+    // Fast-path for arrays - process values only
+    if (Array.isArray(obj)) {
+      // Only map if contains objects
+      return obj.some((item) => item && typeof item === 'object')
+        ? obj.map((item) => this.sortObjectKeys(item))
+        : obj;
+    }
+
+    // Get and sort keys once
+    const sortedKeys = Object.keys(obj).sort();
+    const len = sortedKeys.length;
+
+    // Pre-allocate result object
+    const result: any = {};
+
+    // Single loop with cached length
+    for (let i = 0; i < len; i++) {
+      const key = sortedKeys[i]!;
+      const value = obj[key];
+      result[key] =
+        value && typeof value === 'object' ? this.sortObjectKeys(value) : value;
+    }
+
+    return result;
+  }
+
+  private stringify(profile: IClickhouseProfile): string {
     const { created_at, ...rest } = profile;
-    return createHash('sha256').update(JSON.stringify(rest)).digest('hex');
+    const sorted = this.sortObjectKeys(rest);
+    return JSON.stringify(sorted);
+  }
+
+  private generateChecksum(profile: IClickhouseProfile): string {
+    const json = this.stringify(profile);
+    return createHash('sha256').update(json).digest('hex');
   }
 
   async add(profile: IClickhouseProfile) {
@@ -77,7 +120,7 @@ export class ProfileBuffer extends BaseBuffer {
       }
 
       // Update existing profile if its not processed yet
-      if (existingProfile && existingProfile.processedAt === null) {
+      if (existingProfile) {
         await db.profileBuffer.update({
           where: {
             id: existingProfile.id,
@@ -86,7 +129,7 @@ export class ProfileBuffer extends BaseBuffer {
             checksum: this.generateChecksum(mergedProfile),
             payload: mergedProfile,
             updatedAt: new Date(),
-            processedAt: null, // unsure this will get processed (race condition)
+            processedAt: null,
           },
         });
       } else {
@@ -165,7 +208,7 @@ export class ProfileBuffer extends BaseBuffer {
   async tryCleanup() {
     try {
       await runEvery({
-        interval: 1000 * 60 * 60 * 24,
+        interval: 60 * 60, // 1 hour
         fn: this.cleanup.bind(this),
         key: `${this.name}-cleanup`,
       });
@@ -175,13 +218,13 @@ export class ProfileBuffer extends BaseBuffer {
   }
 
   async cleanup() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - this.daysToKeep);
+    const olderThan = new Date();
+    olderThan.setDate(olderThan.getDate() - this.daysToKeep);
 
     const deleted = await db.profileBuffer.deleteMany({
       where: {
         processedAt: {
-          lt: thirtyDaysAgo,
+          lt: olderThan,
         },
       },
     });

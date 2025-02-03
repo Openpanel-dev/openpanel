@@ -1,7 +1,7 @@
 import client from 'prom-client';
 
+import { botBuffer, db, eventBuffer, profileBuffer } from '@openpanel/db';
 import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
 
 const Registry = client.Registry;
 
@@ -66,31 +66,47 @@ queues.forEach((queue) => {
   );
 });
 
-// Buffer
-const buffers = ['events_v2', 'profiles', 'events_bots'];
+register.registerMetric(
+  new client.Gauge({
+    name: `buffer_${eventBuffer.name}_count`,
+    help: 'Number of unprocessed events',
+    async collect() {
+      const metric = await db.eventBuffer.count({
+        where: {
+          processedAt: null,
+        },
+      });
+      this.set(metric);
+    },
+  }),
+);
 
-buffers.forEach((buffer) => {
-  register.registerMetric(
-    new client.Gauge({
-      name: `buffer_${buffer}_count`,
-      help: 'Number of users in the users array',
-      async collect() {
-        const metric = await getRedisCache().llen(`op:buffer:${buffer}`);
-        this.set(metric);
-      },
-    }),
-  );
+register.registerMetric(
+  new client.Gauge({
+    name: `buffer_${profileBuffer.name}_count`,
+    help: 'Number of unprocessed profiles',
+    async collect() {
+      const metric = await db.profileBuffer.count({
+        where: {
+          processedAt: null,
+        },
+      });
+      this.set(metric);
+    },
+  }),
+);
 
-  register.registerMetric(
-    new client.Gauge({
-      name: `buffer_${buffer}_stalled_count`,
-      help: 'Number of users in the users array',
-      async collect() {
-        const metric = await getRedisCache().llen(
-          `op:buffer:${buffer}:stalled`,
-        );
-        this.set(metric);
-      },
-    }),
-  );
-});
+register.registerMetric(
+  new client.Gauge({
+    name: `buffer_${botBuffer.name}_count`,
+    help: 'Number of unprocessed bot events',
+    async collect() {
+      const metric = await db.botEventBuffer.count({
+        where: {
+          processedAt: null,
+        },
+      });
+      this.set(metric);
+    },
+  }),
+);

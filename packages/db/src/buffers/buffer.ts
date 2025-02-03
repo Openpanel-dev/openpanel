@@ -13,6 +13,7 @@ export type FindMany<T, R = unknown> = (
 ) => Promise<R[]>;
 
 export class RedisBuffer<T> {
+  public name: string;
   protected prefix = 'op:buffer';
   protected bufferKey: string;
   private lockKey: string;
@@ -20,6 +21,7 @@ export class RedisBuffer<T> {
   protected logger: ILogger;
 
   constructor(bufferName: string, maxBufferSize: number | null) {
+    this.name = bufferName;
     this.bufferKey = bufferName;
     this.lockKey = `lock:${bufferName}`;
     this.maxBufferSize = maxBufferSize;

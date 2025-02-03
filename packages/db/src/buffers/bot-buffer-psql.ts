@@ -9,8 +9,9 @@ import type { IClickhouseBotEvent } from '../services/event.service';
 import { BaseBuffer } from './base-buffer';
 
 export class BotBuffer extends BaseBuffer {
-  private daysToKeep = 1;
-  private batchSize = 500;
+  private batchSize = process.env.BOT_BUFFER_BATCH_SIZE
+    ? Number.parseInt(process.env.BOT_BUFFER_BATCH_SIZE, 10)
+    : 1000;
 
   constructor() {
     super({
@@ -87,7 +88,7 @@ export class BotBuffer extends BaseBuffer {
   async tryCleanup() {
     try {
       await runEvery({
-        interval: 1000 * 60 * 60 * 24,
+        interval: 60 * 5, // 5 minutes
         fn: this.cleanup.bind(this),
         key: `${this.name}-cleanup`,
       });
@@ -97,13 +98,10 @@ export class BotBuffer extends BaseBuffer {
   }
 
   async cleanup() {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - this.daysToKeep);
-
     const deleted = await db.botEventBuffer.deleteMany({
       where: {
         processedAt: {
-          lt: thirtyDaysAgo,
+          not: null,
         },
       },
     });
