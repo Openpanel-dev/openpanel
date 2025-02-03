@@ -2,6 +2,9 @@ ARG NODE_VERSION=20.15.1
 
 FROM node:${NODE_VERSION}-slim AS base
 
+# FIX: Bad workaround (https://github.com/nodejs/corepack/issues/612)
+ENV COREPACK_INTEGRITY_KEYS=0
+
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 ENV PNPM_HOME="/pnpm"
