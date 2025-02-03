@@ -273,11 +273,11 @@ export async function getEvents(
 }
 
 export async function createEvent(payload: IServiceCreateEventPayload) {
-  if (!payload.profileId) {
+  if (!payload.profileId && payload.deviceId) {
     payload.profileId = payload.deviceId;
   }
 
-  if (payload.profileId !== '') {
+  if (payload.profileId) {
     await upsertProfile({
       id: String(payload.profileId),
       isExternal: payload.profileId !== payload.deviceId,
@@ -310,7 +310,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     profile_id: payload.profileId ? String(payload.profileId) : '',
     project_id: payload.projectId,
     session_id: payload.sessionId,
-    properties: toDots(omit(['_path'], payload.properties)),
+    properties: toDots(payload.properties),
     path: payload.path ?? '',
     origin: payload.origin ?? '',
     created_at: formatClickhouseDate(payload.createdAt),

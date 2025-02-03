@@ -10,17 +10,25 @@ import {
   type IServiceEvent,
   transformEvent,
 } from '../services/event.service';
+import { BaseBuffer } from './base-buffer';
 
-export class EventBuffer {
-  private name = 'event';
-  private logger: Logger;
-  private lockKey = `lock:${this.name}`;
-  private lockTimeout = 60;
-  private daysToKeep = 2;
-  private batchSize = 1000;
+export class EventBuffer extends BaseBuffer {
+  private daysToKeep = 3;
+  private batchSize = process.env.EVENT_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
+    : 2000;
+  private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
+    : 1000;
 
   constructor() {
-    this.logger = createLogger({ name: this.name });
+    super({
+      name: 'event',
+      onFlush: async () => {
+        await this.processBuffer();
+        await this.cleanup();
+      },
+    });
   }
 
   async add(event: IClickhouseEvent) {
@@ -30,22 +38,23 @@ export class EventBuffer {
           projectId: event.project_id,
           eventId: event.id,
           name: event.name,
-          profileId: event.profile_id,
-          sessionId: event.session_id,
+          profileId: event.profile_id || null,
+          sessionId: event.session_id || null,
           payload: event,
         },
       });
 
-      // TODO: UNCOMMENT THIS!!!
-      // this.publishEvent('event:received', event);
-      // if (event.profile_id) {
-      //   getRedisCache().set(
-      //     `live:event:${event.project_id}:${event.profile_id}`,
-      //     '',
-      //     'EX',
-      //     60 * 5,
-      //   );
-      // }
+      if (!process.env.TEST_NEW_BUFFER) {
+        this.publishEvent('event:received', event);
+        if (event.profile_id) {
+          getRedisCache().set(
+            `live:event:${event.project_id}:${event.profile_id}`,
+            '',
+            'EX',
+            60 * 5,
+          );
+        }
+      }
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -70,49 +79,19 @@ export class EventBuffer {
     }
   }
 
-  private async releaseLock(lockId: string): Promise<void> {
-    this.logger.debug('Releasing lock...');
-    const script = `
-      if redis.call("get", KEYS[1]) == ARGV[1] then
-        return redis.call("del", KEYS[1])
-      else
-        return 0
-      end
-    `;
-    await getRedisCache().eval(script, 1, this.lockKey, lockId);
-  }
-
-  async tryFlush() {
-    const lockId = generateSecureId('lock');
-    const acquired = await getRedisCache().set(
-      this.lockKey,
-      lockId,
-      'EX',
-      this.lockTimeout,
-      'NX',
-    );
-    if (acquired === 'OK') {
-      try {
-        this.logger.info('Acquired lock. Processing buffer...');
-        await this.processBuffer();
-        await this.tryCleanup();
-      } catch (error) {
-        this.logger.error('Failed to process buffer', { error });
-      } finally {
-        await this.releaseLock(lockId);
-      }
-    } else {
-      this.logger.warn('Failed to acquire lock. Skipping flush.');
-    }
-  }
-
   async processBuffer() {
+    let now = performance.now();
+    const timer: Record<string, number | undefined> = {
+      fetchUnprocessedEvents: undefined,
+      transformEvents: undefined,
+      insertToClickhouse: undefined,
+      markAsProcessed: undefined,
+    };
     const eventsToProcess = await db.$queryRaw<IPrismaEventBuffer[]>`
-      WITH has_2_special AS (
+      WITH has_more_than_2_events AS (
         SELECT "sessionId"
           FROM event_buffer
           WHERE "processedAt" IS NULL
-            AND name IN ('screen_view', 'session_start', 'session_end')
           GROUP BY "sessionId"
           HAVING COUNT(*) >= 2
       )
@@ -120,30 +99,32 @@ export class EventBuffer {
       FROM event_buffer e
       WHERE e."processedAt" IS NULL
         AND (
-          -- 1) if the event name is NOT in the special set
-          e.name NOT IN ('screen_view', 'session_start', 'session_end')
+          -- 1) all events except screen_view
+          e.name != 'screen_view'
           OR
-          -- 2) if the event name IS in the special set AND
-          --    the session has >= 2 such unprocessed events
-          (
-            e.name IN ('screen_view', 'session_start', 'session_end')
-            AND e."sessionId" IN (SELECT "sessionId" FROM has_2_special)
-          )
+          -- 2) if the session has >= 2 such unprocessed events
+          e."sessionId" IN (SELECT "sessionId" FROM has_more_than_2_events)
         )
-      ORDER BY e."createdAt" ASC  -- or e.id, whichever "oldest first" logic you use
+      ORDER BY e."createdAt" ASC
       LIMIT ${this.batchSize}
     `;
 
+    timer.fetchUnprocessedEvents = performance.now() - now;
+    now = performance.now();
+
     const toInsert = eventsToProcess.reduce<IPrismaEventBuffer[]>(
       (acc, event, index, list) => {
+        // SCREEN VIEW
         if (event.name === 'screen_view') {
-          const nextScreenView = list.find(
-            (e, eIndex) =>
-              (e.name === 'screen_view' || e.name === 'session_end') &&
-              e.sessionId === event.sessionId &&
-              eIndex > index,
-          );
+          const nextScreenView = list
+            .slice(index + 1)
+            .find(
+              (e) =>
+                (e.name === 'screen_view' || e.name === 'session_end') &&
+                e.sessionId === event.sessionId,
+            );
 
+          // Calculate duration
           if (nextScreenView && nextScreenView.name === 'screen_view') {
             event.payload.duration =
               new Date(nextScreenView.createdAt).getTime() -
@@ -155,6 +136,20 @@ export class EventBuffer {
           if (!nextScreenView) {
             return acc;
           }
+        } else {
+          // OTHER EVENTS
+          const currentScreenView = list
+            .slice(0, index)
+            .findLast(
+              (e) =>
+                e.name === 'screen_view' && e.sessionId === event.sessionId,
+            );
+
+          if (currentScreenView) {
+            // Get path related info from the current screen view
+            event.payload.path = currentScreenView.payload.path;
+            event.payload.origin = currentScreenView.payload.origin;
+          }
         }
 
         acc.push(event);
@@ -164,16 +159,28 @@ export class EventBuffer {
       [],
     );
 
+    timer.transformEvents = performance.now() - now;
+    now = performance.now();
+
     if (toInsert.length > 0) {
-      await ch.insert({
-        table: 'events',
-        values: toInsert.map((e) => e.payload),
-        format: 'JSONEachRow',
-      });
+      const events = toInsert.map((e) => e.payload);
+      for (const chunk of this.chunks(events, this.chunkSize)) {
+        await ch.insert({
+          table: 'events',
+          values: chunk,
+          format: 'JSONEachRow',
+        });
+      }
+
+      timer.insertToClickhouse = performance.now() - now;
+      now = performance.now();
 
       for (const event of toInsert) {
         this.publishEvent('event:saved', event.payload);
       }
+
+      timer.markAsProcessed = performance.now() - now;
+      now = performance.now();
 
       await db.eventBuffer.updateMany({
         where: {
@@ -186,8 +193,11 @@ export class EventBuffer {
         },
       });
 
+      timer.markAsProcessed = performance.now() - now;
+
       this.logger.info('Processed events', {
         count: toInsert.length,
+        timer,
       });
     }
   }

@@ -7,16 +7,25 @@ import { mergeDeepRight } from 'ramda';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';
 import { db } from '../prisma-client';
 import type { IClickhouseProfile } from '../services/profile.service';
+import { BaseBuffer } from './base-buffer';
 
-export class ProfileBuffer {
-  private name = 'profile';
-  private logger: Logger;
-  private lockKey = `lock:${this.name}`;
-  private lockTimeout = 60;
+export class ProfileBuffer extends BaseBuffer {
   private daysToKeep = 30;
+  private batchSize = process.env.EVENT_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
+    : 2000;
+  private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
+    : 1000;
 
   constructor() {
-    this.logger = createLogger({ name: this.name });
+    super({
+      name: 'profile',
+      onFlush: async () => {
+        await this.processBuffer();
+        await this.tryCleanup();
+      },
+    });
   }
 
   private generateChecksum(profile: IClickhouseProfile): string {
@@ -27,7 +36,6 @@ export class ProfileBuffer {
   async add(profile: IClickhouseProfile) {
     try {
       const checksum = this.generateChecksum(profile);
-
       // Check if we have this exact profile in buffer
       const existingProfile = await db.profileBuffer.findFirst({
         where: {
@@ -75,8 +83,10 @@ export class ProfileBuffer {
             id: existingProfile.id,
           },
           data: {
+            checksum: this.generateChecksum(mergedProfile),
             payload: mergedProfile,
             updatedAt: new Date(),
+            processedAt: null, // unsure this will get processed (race condition)
           },
         });
       } else {
@@ -110,43 +120,6 @@ export class ProfileBuffer {
     return result[0] || null;
   }
 
-  private async releaseLock(lockId: string): Promise<void> {
-    this.logger.debug('Releasing lock...');
-    const script = `
-      if redis.call("get", KEYS[1]) == ARGV[1] then
-        return redis.call("del", KEYS[1])
-      else
-        return 0
-      end
-    `;
-    await getRedisCache().eval(script, 1, this.lockKey, lockId);
-  }
-
-  async tryFlush() {
-    const lockId = generateSecureId('lock');
-    const acquired = await getRedisCache().set(
-      this.lockKey,
-      lockId,
-      'EX',
-      this.lockTimeout,
-      'NX',
-    );
-
-    if (acquired === 'OK') {
-      try {
-        this.logger.info('Acquired lock. Processing buffer...');
-        await this.processBuffer();
-        await this.tryCleanup();
-      } catch (error) {
-        this.logger.error('Failed to process buffer', { error });
-      } finally {
-        await this.releaseLock(lockId);
-      }
-    } else {
-      this.logger.warn('Failed to acquire lock. Skipping flush.');
-    }
-  }
-
   async processBuffer() {
     const profilesToProcess = await db.profileBuffer.findMany({
       where: {
@@ -155,6 +128,7 @@ export class ProfileBuffer {
       orderBy: {
         createdAt: 'asc',
       },
+      take: this.batchSize,
     });
 
     if (profilesToProcess.length > 0) {
@@ -163,11 +137,13 @@ export class ProfileBuffer {
         return profile;
       });
 
-      await ch.insert({
-        table: TABLE_NAMES.profiles,
-        values: toInsert,
-        format: 'JSONEachRow',
-      });
+      for (const chunk of this.chunks(profilesToProcess, this.chunkSize)) {
+        await ch.insert({
+          table: TABLE_NAMES.profiles,
+          values: chunk,
+          format: 'JSONEachRow',
+        });
+      }
 
       await db.profileBuffer.updateMany({
         where: {

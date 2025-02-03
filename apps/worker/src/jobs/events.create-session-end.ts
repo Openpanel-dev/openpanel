@@ -44,7 +44,7 @@ async function getCompleteSessionWithSessionStart({
   sessionId: string;
   logger: ILogger;
 }): Promise<ReturnType<typeof getEvents>> {
-  const intervals = [6, 12, 24, 72];
+  const intervals = [1, 6, 12, 24, 72];
   let intervalIndex = 0;
   for (const hoursInterval of intervals) {
     const events = await getCompleteSession({
@@ -76,6 +76,7 @@ export async function createSessionEnd(
 
   const payload = job.data.payload;
 
+  // TODO: Get complete session from buffer to offload clickhouse
   const [lastScreenView, eventsInDb] = await Promise.all([
     eventBuffer.getLastScreenView({
       projectId: payload.projectId,
@@ -95,19 +96,6 @@ export async function createSessionEnd(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
-
-  events.map((event, index) => {
-    job.log(
-      [
-        `Index: ${index}`,
-        `Event: ${event.name}`,
-        `Created: ${event.createdAt.toISOString()}`,
-        `DeviceId: ${event.deviceId}`,
-        `Profile: ${event.profileId}`,
-        `Path: ${event.path}`,
-      ].join('\n'),
-    );
-  });
 
   const sessionDuration = events.reduce((acc, event) => {
     return acc + event.duration;

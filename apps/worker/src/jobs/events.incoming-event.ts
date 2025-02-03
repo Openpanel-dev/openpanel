@@ -70,7 +70,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     projectId,
     properties: omit(GLOBAL_PROPERTIES, {
       ...properties,
-      user_agent: userAgent,
+      __user_agent: userAgent,
       __hash: hash,
       __query: query,
     }),

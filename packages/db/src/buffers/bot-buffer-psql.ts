@@ -6,17 +6,20 @@ import { Prisma } from '@prisma/client';
 import { TABLE_NAMES, ch } from '../clickhouse-client';
 import { db } from '../prisma-client';
 import type { IClickhouseBotEvent } from '../services/event.service';
+import { BaseBuffer } from './base-buffer';
 
-export class BotBuffer {
-  private name = 'bot';
-  private lockKey = `lock:${this.name}`;
-  private logger: ILogger;
-  private lockTimeout = 60;
+export class BotBuffer extends BaseBuffer {
   private daysToKeep = 1;
   private batchSize = 500;
 
   constructor() {
-    this.logger = createLogger({ name: this.name });
+    super({
+      name: 'bot',
+      onFlush: async () => {
+        await this.processBuffer();
+        await this.tryCleanup();
+      },
+    });
   }
 
   async add(event: IClickhouseBotEvent) {
@@ -41,43 +44,6 @@ export class BotBuffer {
       }
     } catch (error) {
       this.logger.error('Failed to add bot event', { error });
-    }
-  }
-
-  private async releaseLock(lockId: string): Promise<void> {
-    this.logger.debug('Releasing lock...');
-    const script = `
-      if redis.call("get", KEYS[1]) == ARGV[1] then
-        return redis.call("del", KEYS[1])
-      else
-        return 0
-      end
-    `;
-    await getRedisCache().eval(script, 1, this.lockKey, lockId);
-  }
-
-  async tryFlush() {
-    const lockId = generateSecureId('lock');
-    const acquired = await getRedisCache().set(
-      this.lockKey,
-      lockId,
-      'EX',
-      this.lockTimeout,
-      'NX',
-    );
-
-    if (acquired === 'OK') {
-      try {
-        this.logger.info('Acquired lock. Processing buffer...');
-        await this.processBuffer();
-        await this.tryCleanup();
-      } catch (error) {
-        this.logger.error('Failed to process buffer', { error });
-      } finally {
-        await this.releaseLock(lockId);
-      }
-    } else {
-      this.logger.warn('Failed to acquire lock. Skipping flush.');
     }
   }
 
