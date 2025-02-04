@@ -1,5 +1,5 @@
 import type { ResponseJSON } from '@clickhouse/client';
-import { createClient } from '@clickhouse/client';
+import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import { escape } from 'sqlstring';
 
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
@@ -9,6 +9,41 @@ import type { IInterval } from '@openpanel/validation';
 export { createClient };
 
 const logger = createLogger({ name: 'clickhouse' });
+
+import type { Logger } from '@clickhouse/client';
+
+// All three LogParams types are exported by the client
+interface LogParams {
+  module: string;
+  message: string;
+  args?: Record<string, unknown>;
+}
+type ErrorLogParams = LogParams & { err: Error };
+type WarnLogParams = LogParams & { err?: Error };
+
+class CustomLogger implements Logger {
+  trace({ message, args }: LogParams) {
+    logger.debug(message, args);
+  }
+  debug({ message, args }: LogParams) {
+    if (message.includes('Query:') && args?.response_status === 200) {
+      return;
+    }
+    logger.debug(message, args);
+  }
+  info({ message, args }: LogParams) {
+    logger.info(message, args);
+  }
+  warn({ message, args }: WarnLogParams) {
+    logger.warn(message, args);
+  }
+  error({ message, args, err }: ErrorLogParams) {
+    logger.error(message, {
+      ...args,
+      error: err,
+    });
+  }
+}
 
 export const TABLE_NAMES = {
   events: 'events',
@@ -34,6 +69,10 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   },
   clickhouse_settings: {
     date_time_input_format: 'best_effort',
+  },
+  log: {
+    LoggerClass: CustomLogger,
+    level: ClickHouseLogLevel.DEBUG,
   },
 };
 
