@@ -1,4 +1,4 @@
-import { setSuperJson } from '@openpanel/common';
+import { getSafeJson, setSuperJson } from '@openpanel/common';
 import { getRedisCache, getRedisPub, runEvery } from '@openpanel/redis';
 import { Prisma } from '@prisma/client';
 import { ch } from '../clickhouse-client';
@@ -43,6 +43,18 @@ export class EventBuffer extends BaseBuffer {
           payload: event,
         },
       });
+
+      if (event.name === 'screen_view') {
+        await getRedisCache().set(
+          this.getLastEventKey({
+            projectId: event.project_id,
+            profileId: event.profile_id,
+          }),
+          JSON.stringify(event),
+          'EX',
+          60 * 31,
+        );
+      }
 
       if (!process.env.TEST_NEW_BUFFER) {
         this.publishEvent('event:received', event);
@@ -245,22 +257,43 @@ export class EventBuffer extends BaseBuffer {
     projectId: string;
     profileId: string;
   }): Promise<IServiceEvent | null> {
-    const event = await db.$primary().eventBuffer.findFirst({
-      where: {
-        projectId,
-        profileId,
-        name: 'screen_view',
-      },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        payload: true,
-      },
-    });
+    // const event = await db.$primary().eventBuffer.findFirst({
+    //   where: {
+    //     projectId,
+    //     profileId,
+    //     name: 'screen_view',
+    //   },
+    //   orderBy: { createdAt: 'desc' },
+    //   select: {
+    //     payload: true,
+    //   },
+    // });
+
+    // if (event) {
+    //   return transformEvent(event.payload);
+    // }
+
+    // return null;
+    const event = await getRedisCache().get(
+      this.getLastEventKey({ projectId, profileId }),
+    );
 
     if (event) {
-      return transformEvent(event.payload);
+      const parsed = getSafeJson<IClickhouseEvent>(event);
+      if (parsed) {
+        return transformEvent(parsed);
+      }
     }
-
     return null;
+  }
+
+  getLastEventKey({
+    projectId,
+    profileId,
+  }: {
+    projectId: string;
+    profileId: string;
+  }) {
+    return `session:last_screen_view:${projectId}:${profileId}`;
   }
 }
