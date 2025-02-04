@@ -245,13 +245,16 @@ export class EventBuffer extends BaseBuffer {
     projectId: string;
     profileId: string;
   }): Promise<IServiceEvent | null> {
-    const event = await db.eventBuffer.findFirst({
+    const event = await db.$primary().eventBuffer.findFirst({
       where: {
         projectId,
         profileId,
         name: 'screen_view',
       },
       orderBy: { createdAt: 'desc' },
+      select: {
+        payload: true,
+      },
     });
 
     if (event) {

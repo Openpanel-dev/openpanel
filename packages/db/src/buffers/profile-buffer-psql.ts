@@ -122,6 +122,11 @@ export class ProfileBuffer extends BaseBuffer {
         orderBy: {
           createdAt: 'desc',
         },
+        select: {
+          checksum: true,
+          payload: true,
+          id: true,
+        },
       });
 
       // Last item in buffer is the same as the new profile
