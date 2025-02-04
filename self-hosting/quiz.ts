@@ -123,7 +123,7 @@ function writeEnvFile(envs: {
   const envTemplate = fs.readFileSync(envTemplatePath, 'utf-8');
 
   const newEnvFile = envTemplate
-    .replace('COOKIE_SECRET', envs.COOKIE_SECRET)
+    .replace('$COOKIE_SECRET', envs.COOKIE_SECRET)
     .replace('$CLICKHOUSE_URL', envs.CLICKHOUSE_URL)
     .replace('$REDIS_URL', envs.REDIS_URL)
     .replace('$DATABASE_URL', envs.DATABASE_URL)
