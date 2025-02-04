@@ -14,8 +14,8 @@ export class EventBuffer extends BaseBuffer {
   private daysToKeep = process.env.EVENT_BUFFER_DAYS_TO_KEEP
     ? Number.parseInt(process.env.EVENT_BUFFER_DAYS_TO_KEEP, 10)
     : 3;
-  private batchSize = process.env.EVENT_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
+  private batchSize = process.env.EVENT_BUFFER_BATCH_SIZE
+    ? Number.parseInt(process.env.EVENT_BUFFER_BATCH_SIZE, 10)
     : 2000;
   private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
     ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)

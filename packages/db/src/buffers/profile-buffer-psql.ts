@@ -11,8 +11,8 @@ export class ProfileBuffer extends BaseBuffer {
   private daysToKeep = process.env.PROFILE_BUFFER_DAYS_TO_KEEP
     ? Number.parseInt(process.env.PROFILE_BUFFER_DAYS_TO_KEEP, 10)
     : 7;
-  private batchSize = process.env.PROFILE_BUFFER_CHUNK_SIZE
-    ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
+  private batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE
+    ? Number.parseInt(process.env.PROFILE_BUFFER_BATCH_SIZE, 10)
     : 2000;
   private chunkSize = process.env.PROFILE_BUFFER_CHUNK_SIZE
     ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
