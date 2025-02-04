@@ -113,6 +113,10 @@ export class ProfileBuffer extends BaseBuffer {
       } else if (existingProfile.payload) {
         this.logger.debug('Profile in buffer is different, merging', {
           profileId: profile.id,
+          existingProfile: existingProfile.payload,
+          existingProfileChecksum: existingProfile.checksum,
+          incomingProfile: profile,
+          incomingProfileChecksum: checksum,
         });
         mergedProfile = mergeDeepRight(existingProfile.payload, profile);
       }
@@ -154,6 +158,12 @@ export class ProfileBuffer extends BaseBuffer {
        FROM ${TABLE_NAMES.profiles}
        WHERE project_id = '${profile.project_id}'
          AND id = '${profile.id}'
+         ${
+           // If profile is not external, we know its not older than 2 day
+           profile.is_external === false
+             ? 'AND created_at > now() - INTERVAL 2 DAY'
+             : ''
+         }
        ORDER BY created_at DESC
        LIMIT 1`,
     );
