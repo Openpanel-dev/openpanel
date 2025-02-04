@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { runEvery } from '@openpanel/redis';
-import { mergeDeepRight } from 'ramda';
+import { assocPath, dissocPath, mergeDeepRight } from 'ramda';
 
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';
 import { db } from '../prisma-client';
@@ -28,7 +28,7 @@ export class ProfileBuffer extends BaseBuffer {
     });
   }
 
-  private sortObjectKeys(obj: any): any {
+  private sortObjectKeys(obj: any, exclude: string[][] = []): any {
     // Cache typeof check result
     const type = typeof obj;
 
@@ -63,9 +63,27 @@ export class ProfileBuffer extends BaseBuffer {
     return result;
   }
 
+  private excludeKeys(
+    profile: IClickhouseProfile,
+    exclude: string[][],
+  ): IClickhouseProfile {
+    let filtered = profile;
+    for (const path of exclude) {
+      filtered = dissocPath(path, filtered);
+    }
+    return filtered;
+  }
+
   private stringify(profile: IClickhouseProfile): string {
-    const { created_at, ...rest } = profile;
-    const sorted = this.sortObjectKeys(rest);
+    const exclude = [
+      ['created_at'],
+      ['properties', 'path'],
+      ['properties', 'referrer'],
+      ['properties', 'referrer_name'],
+      ['properties', 'referrer_type'],
+    ];
+    const excluded = this.excludeKeys(profile, exclude);
+    const sorted = this.sortObjectKeys(excluded);
     return JSON.stringify(sorted);
   }
 
