@@ -21,6 +21,11 @@ export async function healthcheck(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
+  if (process.env.DISABLE_HEALTHCHECK) {
+    return reply.status(200).send({
+      ok: true,
+    });
+  }
   const redisRes = await withTimings(getRedisCache().ping());
   const dbRes = await withTimings(db.project.findFirst());
   const queueRes = await withTimings(eventsQueue.getCompleted());
