@@ -278,7 +278,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
   }
 
   if (payload.profileId) {
-    await upsertProfile({
+    const profile = {
       id: String(payload.profileId),
       isExternal: payload.profileId !== payload.deviceId,
       projectId: payload.projectId,
@@ -300,7 +300,14 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
         referrer_name: payload.referrerName,
         referrer_type: payload.referrerType,
       },
-    });
+    };
+
+    if (
+      profile.isExternal ||
+      (profile.isExternal === false && payload.name === 'session_start')
+    ) {
+      await upsertProfile(profile);
+    }
   }
 
   const event: IClickhouseEvent = {
