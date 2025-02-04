@@ -1,5 +1,6 @@
 import { generateSalt } from '@openpanel/common/server';
 import { db, getCurrentSalt } from '@openpanel/db';
+import { getRedisCache } from '@openpanel/redis';
 
 export async function salt() {
   const oldSalt = await getCurrentSalt().catch(() => null);
@@ -17,6 +18,8 @@ export async function salt() {
       },
     },
   });
+
+  await getRedisCache().del('op:salt');
 
   return newSalt;
 }

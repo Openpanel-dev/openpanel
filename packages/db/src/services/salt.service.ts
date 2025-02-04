@@ -1,5 +1,6 @@
 import { generateSalt } from '@openpanel/common/server';
 
+import { getRedisCache } from '@openpanel/redis';
 import { db } from '../prisma-client';
 
 export async function getCurrentSalt() {
@@ -17,6 +18,11 @@ export async function getCurrentSalt() {
 }
 
 export async function getSalts() {
+  const cache = await getRedisCache().get('op:salt');
+  if (cache) {
+    return JSON.parse(cache);
+  }
+
   const [curr, prev] = await db.salt.findMany({
     orderBy: {
       createdAt: 'desc',
@@ -32,10 +38,14 @@ export async function getSalts() {
     throw new Error('No salt found');
   }
 
-  return {
+  const salts = {
     current: curr.salt,
     previous: prev.salt,
   };
+
+  await getRedisCache().set('op:salt', JSON.stringify(salts), 'EX', 60 * 10);
+
+  return salts;
 }
 
 export async function createInitialSalts() {
