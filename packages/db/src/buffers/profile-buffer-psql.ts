@@ -34,7 +34,7 @@ export class ProfileBuffer extends BaseBuffer {
 
     // Fast-path for primitives
     if (obj === null || type !== 'object') {
-      return obj;
+      return String(obj);
     }
 
     // Fast-path for arrays - process values only
@@ -57,7 +57,9 @@ export class ProfileBuffer extends BaseBuffer {
       const key = sortedKeys[i]!;
       const value = obj[key];
       result[key] =
-        value && typeof value === 'object' ? this.sortObjectKeys(value) : value;
+        value && typeof value === 'object'
+          ? this.sortObjectKeys(value)
+          : String(value);
     }
 
     return result;
