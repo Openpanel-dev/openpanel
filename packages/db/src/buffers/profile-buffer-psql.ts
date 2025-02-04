@@ -1,7 +1,5 @@
 import { createHash } from 'node:crypto';
-import { generateSecureId } from '@openpanel/common/server/id';
-import { type ILogger as Logger, createLogger } from '@openpanel/logger';
-import { getRedisCache, runEvery } from '@openpanel/redis';
+import { runEvery } from '@openpanel/redis';
 import { mergeDeepRight } from 'ramda';
 
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';

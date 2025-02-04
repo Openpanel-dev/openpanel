@@ -1,7 +1,4 @@
-import { generateSecureId } from '@openpanel/common/server/id';
-import { type ILogger, createLogger } from '@openpanel/logger';
-import { getRedisCache, runEvery } from '@openpanel/redis';
-import { Prisma } from '@prisma/client';
+import { runEvery } from '@openpanel/redis';
 
 import { TABLE_NAMES, ch } from '../clickhouse-client';
 import { db } from '../prisma-client';

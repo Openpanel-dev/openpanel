@@ -1,6 +1,4 @@
 import { setSuperJson } from '@openpanel/common';
-import { generateSecureId } from '@openpanel/common/server/id';
-import { type ILogger as Logger, createLogger } from '@openpanel/logger';
 import { getRedisCache, getRedisPub, runEvery } from '@openpanel/redis';
 import { Prisma } from '@prisma/client';
 import { ch } from '../clickhouse-client';
@@ -198,7 +196,8 @@ export class EventBuffer extends BaseBuffer {
       timer.markAsProcessed = performance.now() - now;
 
       this.logger.info('Processed events', {
-        count: toInsert.length,
+        inserted: toInsert.length,
+        processed: eventsToProcess.length,
         timer,
       });
     }
