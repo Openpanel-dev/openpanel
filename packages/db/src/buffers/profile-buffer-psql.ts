@@ -79,10 +79,22 @@ export class ProfileBuffer extends BaseBuffer {
   private stringify(profile: IClickhouseProfile): string {
     const exclude = [
       ['created_at'],
+      ['properties', 'brand'],
+      ['properties', 'browser_version'],
+      ['properties', 'browser'],
+      ['properties', 'city'],
+      ['properties', 'country'],
+      ['properties', 'device'],
+      ['properties', 'latitude'],
+      ['properties', 'longitude'],
+      ['properties', 'model'],
+      ['properties', 'os_version'],
+      ['properties', 'os'],
       ['properties', 'path'],
-      ['properties', 'referrer'],
       ['properties', 'referrer_name'],
       ['properties', 'referrer_type'],
+      ['properties', 'referrer'],
+      ['properties', 'region'],
     ];
     const excluded = this.excludeKeys(profile, exclude);
     const sorted = this.sortObjectKeys(excluded);
