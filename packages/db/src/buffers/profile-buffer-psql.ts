@@ -280,4 +280,12 @@ export class ProfileBuffer extends BaseBuffer {
 
     this.logger.info('Cleaned up old profiles', { deleted: deleted.count });
   }
+
+  async getBufferSize() {
+    return db.profileBuffer.count({
+      where: {
+        processedAt: null,
+      },
+    });
+  }
 }

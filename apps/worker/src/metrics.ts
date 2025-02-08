@@ -71,11 +71,7 @@ register.registerMetric(
     name: `buffer_${eventBuffer.name}_count`,
     help: 'Number of unprocessed events',
     async collect() {
-      const metric = await db.eventBuffer.count({
-        where: {
-          processedAt: null,
-        },
-      });
+      const metric = await eventBuffer.getBufferSize();
       this.set(metric);
     },
   }),
@@ -86,11 +82,7 @@ register.registerMetric(
     name: `buffer_${profileBuffer.name}_count`,
     help: 'Number of unprocessed profiles',
     async collect() {
-      const metric = await db.profileBuffer.count({
-        where: {
-          processedAt: null,
-        },
-      });
+      const metric = await profileBuffer.getBufferSize();
       this.set(metric);
     },
   }),
@@ -101,11 +93,7 @@ register.registerMetric(
     name: `buffer_${botBuffer.name}_count`,
     help: 'Number of unprocessed bot events',
     async collect() {
-      const metric = await db.botEventBuffer.count({
-        where: {
-          processedAt: null,
-        },
-      });
+      const metric = await botBuffer.getBufferSize();
       this.set(metric);
     },
   }),

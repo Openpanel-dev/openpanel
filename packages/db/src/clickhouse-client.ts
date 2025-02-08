@@ -86,73 +86,55 @@ const cleanQuery = (query?: string) =>
     ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
     : undefined;
 
-const createChildLogger = (property: string, args?: any[]) => {
-  if (property === 'insert') {
-    return logger.child({
-      property,
-      table: args?.[0]?.table,
-      values: (args?.[0]?.values || []).length,
-    });
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 500,
+): Promise<T> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const res = await operation();
+      if (attempt > 0) {
+        logger.info('Retry operation succeeded', { attempt });
+      }
+      return res;
+    } catch (error: any) {
+      lastError = error;
+
+      if (
+        error.message.includes('Connect') ||
+        error.message.includes('socket hang up') ||
+        error.message.includes('Timeout error')
+      ) {
+        const delay = baseDelay * 2 ** attempt;
+        logger.warn(
+          `Attempt ${attempt + 1}/${maxRetries} failed, retrying in ${delay}ms`,
+          {
+            error: error.message,
+          },
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      throw error; // Non-retriable error
+    }
   }
 
-  return logger.child({
-    property,
-    table: args?.[0]?.table,
-    query: cleanQuery(args?.[0]?.query),
-  });
-};
+  throw lastError;
+}
 
 export const ch = new Proxy(originalCh, {
   get(target, property, receiver) {
-    if (property === 'insert' || property === 'query') {
-      return async (...args: any[]) => {
-        const childLogger = createChildLogger(property, args);
+    const value = Reflect.get(target, property, receiver);
 
-        if (property === 'insert') {
-          childLogger.info('insert info');
-        }
-
-        try {
-          // First attempt
-          if (property in target) {
-            // @ts-expect-error
-            return await target[property](...args);
-          }
-        } catch (error: unknown) {
-          if (
-            error instanceof Error &&
-            (error.message.includes('Connect') ||
-              error.message.includes('socket hang up') ||
-              error.message.includes('Timeout error'))
-          ) {
-            childLogger.error('First failed attempt', {
-              error,
-            });
-            await new Promise((resolve) => setTimeout(resolve, 500));
-            try {
-              // Retry once
-              childLogger.info(`Retrying ${property}`);
-              if (property in target) {
-                // @ts-expect-error
-                return await target[property](...args);
-              }
-            } catch (retryError) {
-              childLogger.error('Second failed attempt', retryError);
-              throw retryError; // Rethrow or handle as needed
-            }
-          } else {
-            childLogger.error('Failed without retry', {
-              ...args[0],
-              error,
-            });
-
-            // Handle other errors or rethrow them
-            throw error;
-          }
-        }
-      };
+    if (property === 'insert') {
+      return (...args: any[]) => withRetry(() => value.apply(target, args));
     }
-    return Reflect.get(target, property, receiver);
+
+    return value;
   },
 });
 

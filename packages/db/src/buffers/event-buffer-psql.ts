@@ -296,4 +296,12 @@ export class EventBuffer extends BaseBuffer {
   }) {
     return `session:last_screen_view:${projectId}:${profileId}`;
   }
+
+  async getBufferSize() {
+    return db.eventBuffer.count({
+      where: {
+        processedAt: null,
+      },
+    });
+  }
 }

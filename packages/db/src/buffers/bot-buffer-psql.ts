@@ -105,4 +105,12 @@ export class BotBuffer extends BaseBuffer {
 
     this.logger.info('Cleaned up old bot events', { deleted: deleted.count });
   }
+
+  public async getBufferSize() {
+    return db.botEventBuffer.count({
+      where: {
+        processedAt: null,
+      },
+    });
+  }
 }
