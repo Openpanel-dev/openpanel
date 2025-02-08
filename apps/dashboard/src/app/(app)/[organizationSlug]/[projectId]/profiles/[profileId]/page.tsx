@@ -4,7 +4,7 @@ import { Padding } from '@/components/ui/padding';
 import { getProfileName } from '@/utils/getters';
 import { notFound } from 'next/navigation';
 
-import { getProfileByIdCached } from '@openpanel/db';
+import { getProfileById, getProfileByIdCached } from '@openpanel/db';
 
 import MostEventsServer from './most-events';
 import PopularRoutesServer from './popular-routes';
@@ -30,7 +30,10 @@ interface PageProps {
 export default async function Page({
   params: { projectId, profileId },
 }: PageProps) {
-  const profile = await getProfileByIdCached(profileId, projectId);
+  const profile = await getProfileById(
+    decodeURIComponent(profileId),
+    projectId,
+  );
 
   if (!profile) {
     return notFound();
