@@ -90,7 +90,12 @@ for i, sessionId in ipairs(sessionIds) do
   
   if #events == 0 then
     table.insert(sessionsToRemove, sessionId)
-  elseif #events >= minEvents then  -- Use the parameter instead of hardcoded value
+    -- If we have collected 100 sessions to remove, remove them now
+    if #sessionsToRemove >= 100 then
+      redis.call('ZREM', sessionSortedKey, unpack(sessionsToRemove))
+      sessionsToRemove = {}
+    end
+  elseif #events >= minEvents then
     result[resultIndex] = { sessionId = sessionId, events = events }
     resultIndex = resultIndex + 1
     totalEvents = totalEvents + #events
@@ -100,6 +105,7 @@ for i, sessionId in ipairs(sessionIds) do
   end
 end
 
+-- Remove any remaining sessions
 if #sessionsToRemove > 0 then
   redis.call('ZREM', sessionSortedKey, unpack(sessionsToRemove))
 end
