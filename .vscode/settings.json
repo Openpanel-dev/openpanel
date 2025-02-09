@@ -23,7 +23,10 @@
   "tailwindCSS.experimental.classRegex": [
     ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
     ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
-    ["\\b\\w+ClassName\\s*=\\s*[\"'`]([^\"'`]*)[\"'`]", "[\"'`]([^\"'`]*)[\"'`]" ]
+    [
+      "\\b\\w+ClassName\\s*=\\s*[\"'`]([^\"'`]*)[\"'`]",
+      "[\"'`]([^\"'`]*)[\"'`]"
+    ]
   ],
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "typescript.tsdk": "node_modules/typescript/lib",
