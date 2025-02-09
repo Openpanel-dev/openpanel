@@ -283,12 +283,9 @@ return "OK"
     }
 
     for (const session of parsed) {
-      // Might be redundant check
-      if (session.events.length > 1) {
-        sessions[session.sessionId] = session.events
-          .map((e) => getSafeJson<IClickhouseEvent>(e))
-          .filter((e): e is IClickhouseEvent => e !== null);
-      }
+      sessions[session.sessionId] = session.events
+        .map((e) => getSafeJson<IClickhouseEvent>(e))
+        .filter((e): e is IClickhouseEvent => e !== null);
     }
 
     return sessions;
@@ -336,7 +333,7 @@ return "OK"
       let now = performance.now();
       const [sessions, regularQueueEvents] = await Promise.all([
         // (A) Fetch session events
-        this.getEligableSessions({ minEventsInSession: 2 }),
+        this.getEligableSessions({ minEventsInSession: 1 }),
         // (B) Fetch no-session events
         redis.lrange(this.regularQueueKey, 0, this.batchSize / 2 - 1),
       ]);
