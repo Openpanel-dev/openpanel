@@ -24,6 +24,7 @@ import {
   healthcheck,
   healthcheckQueue,
 } from './controllers/healthcheck.controller';
+import { fixHook } from './hooks/fix.hook';
 import { ipHook } from './hooks/ip.hook';
 import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
@@ -93,6 +94,7 @@ const startServer = async () => {
 
     fastify.addHook('preHandler', ipHook);
     fastify.addHook('preHandler', timestampHook);
+    fastify.addHook('preHandler', fixHook);
     fastify.addHook('onRequest', requestIdHook);
     fastify.addHook('onResponse', requestLoggingHook);
 
