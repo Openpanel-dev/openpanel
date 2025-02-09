@@ -93,7 +93,7 @@ export async function getSessionEndJob(args: {
 } | null> {
   const { priority, retryCount = 0 } = args;
 
-  if (retryCount > 10) {
+  if (retryCount >= 6) {
     throw new Error('Failed to get session end');
   }
 
@@ -109,12 +109,37 @@ export async function getSessionEndJob(args: {
       return { deviceId, job };
     }
 
-    if (state === 'completed' || state === 'failed') {
+    if (state === 'failed') {
+      await job.retry();
+      await job.waitUntilFinished(sessionsQueueEvents, 1000 * 10);
+      return getSessionEndJob({
+        ...args,
+        priority,
+        retryCount,
+      });
+    }
+
+    if (state === 'completed') {
       await job.remove();
+      return getSessionEndJob({
+        ...args,
+        priority,
+        retryCount,
+      });
     }
 
     if (state === 'active' || state === 'waiting') {
       await job.waitUntilFinished(sessionsQueueEvents, 1000 * 10);
+      return getSessionEndJob({
+        ...args,
+        priority,
+        retryCount,
+      });
+    }
+
+    // Shady state here, just remove it and retry
+    if (state === 'unknown') {
+      await job.remove();
       return getSessionEndJob({
         ...args,
         priority,
@@ -145,7 +170,8 @@ export async function getSessionEndJob(args: {
 
   // If no job found and not priority, retry
   if (!priority) {
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    const backoffDelay = 50 * 2 ** retryCount;
+    await new Promise((resolve) => setTimeout(resolve, backoffDelay));
     return getSessionEndJob({ ...args, priority, retryCount: retryCount + 1 });
   }
 

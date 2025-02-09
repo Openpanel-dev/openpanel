@@ -303,6 +303,10 @@ return "OK"
       return sessions;
     }
 
+    if (!Array.isArray(parsed)) {
+      return sessions;
+    }
+
     for (const session of parsed) {
       sessions[session.sessionId] = session.events
         .map((e) => getSafeJson<IClickhouseEvent>(e))

@@ -271,7 +271,7 @@ async function track({
         // Prioritize 'screen_view' events by setting no delay
         // This ensures that session starts are created from 'screen_view' events
         // rather than other events, maintaining accurate session tracking
-        delay: payload.name === 'screen_view' ? undefined : 1000,
+        delay: isScreenView ? undefined : 1000,
       },
     );
   }
