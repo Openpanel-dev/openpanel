@@ -247,34 +247,31 @@ async function track({
     'NX',
   );
 
-  // TODO: remove this
-  if (process.env.DISABLE_ADD_JOBS === undefined) {
-    eventsQueue.add(
-      'event',
-      {
-        type: 'incomingEvent',
-        payload: {
-          projectId,
-          headers,
-          event: {
-            ...payload,
-            timestamp,
-            isTimestampFromThePast,
-          },
-          geo,
-          currentDeviceId,
-          previousDeviceId,
-          priority: locked === 'OK',
+  eventsQueue.add(
+    'event',
+    {
+      type: 'incomingEvent',
+      payload: {
+        projectId,
+        headers,
+        event: {
+          ...payload,
+          timestamp,
+          isTimestampFromThePast,
         },
+        geo,
+        currentDeviceId,
+        previousDeviceId,
+        priority: locked === 'OK',
       },
-      {
-        // Prioritize 'screen_view' events by setting no delay
-        // This ensures that session starts are created from 'screen_view' events
-        // rather than other events, maintaining accurate session tracking
-        delay: isScreenView ? undefined : 1000,
-      },
-    );
-  }
+    },
+    {
+      // Prioritize 'screen_view' events by setting no delay
+      // This ensures that session starts are created from 'screen_view' events
+      // rather than other events, maintaining accurate session tracking
+      delay: isScreenView ? undefined : 1000,
+    },
+  );
 }
 
 async function identify({

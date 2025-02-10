@@ -76,7 +76,6 @@ export async function createSessionEnd(
 
   const payload = job.data.payload;
 
-  // TODO: Get complete session from buffer to offload clickhouse
   const [lastScreenView, eventsInDb] = await Promise.all([
     eventBuffer.getLastScreenView({
       projectId: payload.projectId,
