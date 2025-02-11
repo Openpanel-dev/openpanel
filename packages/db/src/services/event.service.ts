@@ -235,8 +235,7 @@ export function transformMinimalEvent(
 }
 
 export async function getLiveVisitors(projectId: string) {
-  const keys = await getRedisCache().keys(`live:event:${projectId}:*`);
-  return keys.length;
+  return getRedisCache().scard(`live:visitors:${projectId}`);
 }
 
 export async function getEvents(

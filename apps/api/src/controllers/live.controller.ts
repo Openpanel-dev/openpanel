@@ -76,7 +76,7 @@ export function wsVisitors(
   const { params } = req;
 
   getRedisSub().subscribe('event:received');
-  getRedisSub().psubscribe('__key*:expired');
+  getRedisSub().psubscribe('__keyevent@0__:expired');
 
   const message = (channel: string, message: string) => {
     if (channel === 'event:received') {
@@ -89,6 +89,10 @@ export function wsVisitors(
     }
   };
   const pmessage = (pattern: string, channel: string, message: string) => {
+    if (!message.startsWith('live:visitors:')) {
+      return null;
+    }
+
     const [projectId] = getLiveEventInfo(message);
     if (projectId && projectId === params.projectId) {
       getLiveVisitors(params.projectId).then((count) => {
@@ -102,7 +106,7 @@ export function wsVisitors(
 
   connection.socket.on('close', () => {
     getRedisSub().unsubscribe('event:saved');
-    getRedisSub().punsubscribe('__key*:expired');
+    getRedisSub().punsubscribe('__keyevent@0__:expired');
     getRedisSub().off('message', message);
     getRedisSub().off('pmessage', pmessage);
   });

@@ -246,12 +246,8 @@ return "OK"
       }
 
       if (event.profile_id) {
-        multi.set(
-          `live:event:${event.project_id}:${event.profile_id}`,
-          '',
-          'EX',
-          60 * 5,
-        );
+        multi.sadd(`live:visitors:${event.project_id}`, event.profile_id);
+        multi.expire(`live:visitors:${event.project_id}`, 60 * 5); // 5 minutes
       }
 
       if (!_multi) {
