@@ -1,22 +1,17 @@
 'use client';
 
-import AnimateHeight from '@/components/animate-height';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
-import TagInput from '@/components/forms/tag-input';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { CheckboxInput } from '@/components/ui/checkbox';
 import { Combobox } from '@/components/ui/combobox';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { useAppParams } from '@/hooks/useAppParams';
 import { api, handleError } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SaveIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';

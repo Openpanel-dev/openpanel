@@ -2,8 +2,8 @@ import crypto from 'node:crypto';
 import type { z } from 'zod';
 
 import { stripTrailingSlash } from '@openpanel/common';
-import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
 import type { ProjectType } from '@openpanel/db';
+import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/common/server';
@@ -114,7 +114,6 @@ export const onboardingRouter = createTRPCRouter({
           organizationId: organization.id,
           projectId: project.id,
           type: 'write',
-          cors: input.domain ? stripTrailingSlash(input.domain) : null,
           secret: await hashPassword(secret),
         },
       });

@@ -196,7 +196,7 @@ export interface IServiceEventMinimal {
 }
 
 interface GetEventsOptions {
-  profile?: boolean | Prisma.ProfileSelect;
+  profile?: boolean;
   meta?: boolean | Prisma.EventMetaSelect;
 }
 
