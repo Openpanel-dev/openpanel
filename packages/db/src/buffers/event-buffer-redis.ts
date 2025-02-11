@@ -54,6 +54,8 @@ export class EventBuffer extends BaseBuffer {
       )
     : 1000;
 
+  private activeVisitorsExpiration = 60 * 5; // 5 minutes
+
   private sessionEvents = ['screen_view', 'session_end'];
 
   // LIST - Stores events without sessions
@@ -246,8 +248,11 @@ return "OK"
       }
 
       if (event.profile_id) {
-        multi.sadd(`live:visitors:${event.project_id}`, event.profile_id);
-        multi.expire(`live:visitors:${event.project_id}`, 60 * 5); // 5 minutes
+        this.incrementActiveVisitorCount(
+          multi,
+          event.project_id,
+          event.profile_id,
+        );
       }
 
       if (!_multi) {
@@ -688,5 +693,45 @@ return "OK"
       15, // increase when we know it's stable
     );
     return count;
+  }
+
+  private async incrementActiveVisitorCount(
+    multi: ReturnType<Redis['multi']>,
+    projectId: string,
+    profileId: string,
+  ) {
+    // Add/update visitor with current timestamp as score
+    const now = Date.now();
+    const zsetKey = `live:visitors:${projectId}`;
+    return (
+      multi
+        // To keep the count
+        .zadd(zsetKey, now, profileId)
+        // To trigger the expiration listener
+        .set(
+          `live:visitor:${projectId}:${profileId}`,
+          '1',
+          'EX',
+          this.activeVisitorsExpiration,
+        )
+    );
+  }
+
+  public async getActiveVisitorCount(projectId: string): Promise<number> {
+    const redis = getRedisCache();
+    const zsetKey = `live:visitors:${projectId}`;
+    const cutoff = Date.now() - this.activeVisitorsExpiration * 1000;
+
+    const multi = redis.multi();
+    multi
+      .zremrangebyscore(zsetKey, '-inf', cutoff)
+      .zcount(zsetKey, cutoff, '+inf');
+
+    const [, count] = (await multi.exec()) as [
+      [Error | null, any],
+      [Error | null, number],
+    ];
+
+    return count[1] || 0;
   }
 }

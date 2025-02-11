@@ -39,7 +39,7 @@ export default function useWS<T>(
     onMessage(event) {
       try {
         const data = getSuperJson<T>(event.data);
-        if (data) {
+        if (data !== null && data !== undefined) {
           debouncedOnMessage(data);
         }
       } catch (error) {

@@ -6,8 +6,8 @@ import { getSuperJson } from '@openpanel/common';
 import type { IServiceEvent, Notification } from '@openpanel/db';
 import {
   TABLE_NAMES,
+  eventBuffer,
   getEvents,
-  getLiveVisitors,
   getProfileByIdCached,
   transformMinimalEvent,
 } from '@openpanel/db';
@@ -82,20 +82,20 @@ export function wsVisitors(
     if (channel === 'event:received') {
       const event = getSuperJson<IServiceEvent>(message);
       if (event?.projectId === params.projectId) {
-        getLiveVisitors(params.projectId).then((count) => {
+        eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
           connection.socket.send(String(count));
         });
       }
     }
   };
   const pmessage = (pattern: string, channel: string, message: string) => {
-    if (!message.startsWith('live:visitors:')) {
+    if (!message.startsWith('live:visitor:')) {
       return null;
     }
 
     const [projectId] = getLiveEventInfo(message);
     if (projectId && projectId === params.projectId) {
-      getLiveVisitors(params.projectId).then((count) => {
+      eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
         connection.socket.send(String(count));
       });
     }

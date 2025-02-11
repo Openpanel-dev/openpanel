@@ -1,9 +1,9 @@
-import { mergeDeepRight, omit, uniq } from 'ramda';
+import { mergeDeepRight, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import { cacheable, getRedisCache } from '@openpanel/redis';
+import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { botBuffer, eventBuffer } from '../buffers';
@@ -232,10 +232,6 @@ export function transformMinimalEvent(
     meta: event.meta,
     minimal: true,
   };
-}
-
-export async function getLiveVisitors(projectId: string) {
-  return getRedisCache().scard(`live:visitors:${projectId}`);
 }
 
 export async function getEvents(
