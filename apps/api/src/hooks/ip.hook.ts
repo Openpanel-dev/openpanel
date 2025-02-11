@@ -1,4 +1,4 @@
-import { getClientIp } from '@/utils/parseIp';
+import { getClientIp } from '@/utils/parse-ip';
 import type {
   FastifyReply,
   FastifyRequest,

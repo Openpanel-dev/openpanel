@@ -1,4 +1,4 @@
-import { getClientIp, parseIp } from '@/utils/parseIp';
+import { getClientIp, parseIp } from '@/utils/parse-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { generateDeviceId } from '@openpanel/common/server';

@@ -1,5 +1,5 @@
-import type { GeoLocation } from '@/utils/parseIp';
-import { getClientIp, parseIp } from '@/utils/parseIp';
+import type { GeoLocation } from '@/utils/parse-ip';
+import { getClientIp, parseIp } from '@/utils/parse-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 

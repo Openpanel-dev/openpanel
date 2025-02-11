@@ -1,6 +1,7 @@
+import crypto from 'node:crypto';
+import { getRedisCache } from '@openpanel/redis';
 import type { FastifyRequest } from 'fastify';
 import requestIp from 'request-ip';
-
 import { logger } from './logger';
 
 interface RemoteIpLookupResponse {
@@ -19,7 +20,7 @@ export interface GeoLocation {
   latitude: number | undefined;
 }
 
-const geo: GeoLocation = {
+const DEFAULT_GEO: GeoLocation = {
   country: undefined,
   city: undefined,
   region: undefined,
@@ -35,29 +36,45 @@ export function getClientIp(req: FastifyRequest) {
 
 export async function parseIp(ip?: string): Promise<GeoLocation> {
   if (!ip || ignore.includes(ip)) {
-    return geo;
+    return DEFAULT_GEO;
+  }
+
+  const hash = crypto.createHash('sha256').update(ip).digest('hex');
+  const cached = await getRedisCache().get(`geo:${hash}`);
+
+  if (cached) {
+    return JSON.parse(cached);
   }
 
   try {
     const res = await fetch(`${process.env.GEO_IP_HOST}/${ip}`, {
-      signal: AbortSignal.timeout(2000),
+      signal: AbortSignal.timeout(4000),
     });
 
     if (!res.ok) {
-      return geo;
+      return DEFAULT_GEO;
     }
 
     const json = (await res.json()) as RemoteIpLookupResponse;
 
-    return {
+    const geo = {
       country: json.country,
       city: json.city,
       region: json.stateprov,
       longitude: json.longitude,
       latitude: json.latitude,
     };
+
+    await getRedisCache().set(
+      `geo:${hash}`,
+      JSON.stringify(geo),
+      'EX',
+      60 * 30,
+    );
+
+    return geo;
   } catch (error) {
     logger.error('Failed to fetch geo location for ip', { error });
-    return geo;
+    return DEFAULT_GEO;
   }
 }
