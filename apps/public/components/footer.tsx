@@ -8,6 +8,8 @@ import { Tag } from './tag';
 import { Button } from './ui/button';
 
 export function Footer() {
+  const year = new Date().getFullYear();
+
   return (
     <div className="mt-32">
       <section className="overflow-hidden relative bg-foreground dark:bg-background-dark text-background dark:text-foreground rounded-xl p-0 pb-32 pt-16 max-w-7xl mx-auto">
@@ -145,7 +147,7 @@ export function Footer() {
 
         <div className="text-muted-foreground border-t pt-4 mt-16 gap-8 relative bg-background/70 pb-32">
           <div className="container col md:row justify-between">
-            <div>Copyright © 2024 OpenPanel. All rights reserved.</div>
+            <div>Copyright © {year} OpenPanel. All rights reserved.</div>
             <div className="col lg:row gap-2 md:gap-4">
               <Link href="/sitemap.xml">Sitemap</Link>
               <Link href="/privacy">Privacy Policy</Link>
