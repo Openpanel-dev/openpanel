@@ -28,9 +28,18 @@ const isPublicRoute = createRouteMatcher([
   '/reset-password(.*)?',
   '/sso-callback(.*)?',
   '/onboarding',
+  '/maintenance',
 ]);
 
 export default (request: NextRequest) => {
+  // Check for maintenance mode
+  if (
+    process.env.MAINTENANCE === 'true' &&
+    !request.nextUrl.pathname.startsWith('/maintenance')
+  ) {
+    return NextResponse.redirect(new URL('/maintenance', request.url));
+  }
+
   if (request.method === 'GET') {
     const response = NextResponse.next();
     const token = request.cookies.get('session')?.value ?? null;
