@@ -5,7 +5,7 @@ import { printBoxMessage } from './helpers';
 
 async function migrate() {
   const args = process.argv.slice(2);
-  const migration = args[0];
+  const migration = args.filter((arg) => !arg.startsWith('--'))[0];
 
   const migrationsDir = path.join(__dirname, '..', 'code-migrations');
   const migrations = fs.readdirSync(migrationsDir).filter((file) => {
@@ -22,7 +22,7 @@ async function migrate() {
 
     for (const file of migrations) {
       if (finishedMigrations.some((migration) => migration.name === file)) {
-        printBoxMessage('⏭️  Skipping Migration  ⏭️', [`${file}`]);
+        printBoxMessage('✅  Already Migrated  ✅', [`${file}`]);
         continue;
       }
 

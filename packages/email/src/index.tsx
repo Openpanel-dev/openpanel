@@ -13,11 +13,6 @@ export async function sendEmail<T extends TemplateKey>(
     data: z.infer<Templates[T]['schema']>;
   },
 ) {
-  if (!process.env.RESEND_API_KEY) {
-    return null;
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
   const { to, data } = options;
   const { subject, Component, schema } = templates[template];
   const props = schema.safeParse(data);
@@ -26,6 +21,14 @@ export async function sendEmail<T extends TemplateKey>(
     console.error('Failed to parse data', props.error);
     return null;
   }
+
+  if (!process.env.RESEND_API_KEY) {
+    console.log('No RESEND_API_KEY found, here is the data');
+    console.log(data);
+    return null;
+  }
+
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   try {
     const res = await resend.emails.send({

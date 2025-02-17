@@ -5,7 +5,7 @@ import {
   getRedisPub,
   runEvery,
 } from '@openpanel/redis';
-import { ch } from '../clickhouse-client';
+import { ch } from '../clickhouse/client';
 import {
   type IClickhouseEvent,
   type IServiceEvent,

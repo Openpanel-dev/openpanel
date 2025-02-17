@@ -3,13 +3,11 @@
   "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
-    "goose": "pnpm with-env ./migrations/goose",
     "codegen": "pnpm with-env prisma generate",
     "migrate": "pnpm with-env prisma migrate dev",
-    "migrate:deploy:db:code": "pnpm with-env jiti ./code-migrations/migrate.ts",
+    "migrate:deploy:code": "pnpm with-env jiti ./code-migrations/migrate.ts",
     "migrate:deploy:db": "pnpm with-env prisma migrate deploy",
-    "migrate:deploy:ch": "pnpm goose up",
-    "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:db:code && pnpm migrate:deploy:ch",
+    "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:code",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },

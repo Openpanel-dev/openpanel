@@ -3,7 +3,7 @@ import { getSafeJson } from '@openpanel/common';
 import { type Redis, getRedisCache } from '@openpanel/redis';
 import { dissocPath, mergeDeepRight, omit, whereEq } from 'ramda';
 
-import { TABLE_NAMES, ch, chQuery } from '../clickhouse-client';
+import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
 import type { IClickhouseProfile } from '../services/profile.service';
 import { BaseBuffer } from './base-buffer';
 import { isPartialMatch } from './partial-json-match';

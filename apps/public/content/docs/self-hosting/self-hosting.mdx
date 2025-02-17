@@ -1,12 +1,9 @@
 ---
-title: Self-hosting
+title: Get started with self-hosting
 description: This is a simple guide how to get started with OpenPanel on your own VPS.
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
-
-<Callout>OpenPanel is not stable yet. If you still want to self-host you can go ahead. Bear in mind that new changes might give a little headache to keep up with.</Callout>
-<Callout>From version 0.0.5 we have removed Clerk.com. If you are upgrading from a previous version, you will need to export your users from Clerk and import them into OpenPanel. Read more about it here: [Migrating from Clerk](/docs/self-hosting/migrating-from-clerk)</Callout>
 
 ## Instructions
 
@@ -54,8 +51,8 @@ cd openpanel/self-hosting
 
 1. Install docker
 2. Install node
-3. Install pnpm
-4. Run the `npx jiti ./quiz.ts` script inside the self-hosting folder
+3. Install npm
+4. Run the `npm run quiz` script inside the self-hosting folder
 
 </Step>
 <Step>
@@ -110,6 +107,7 @@ Some of OpenPanel's features require e-mail. We use Resend as our transactional 
 <Callout>This is nothing that is required for the basic setup, but it is required for some features.</Callout>
 
 Features that require e-mail:
+
 - Password reset
 - Invitations
 - more will be added over time
@@ -121,3 +119,61 @@ If you use a managed Redis service, you may need to set the `notify-keyspace-eve
 Without this setting we wont be able to listen for expired keys which we use for caluclating currently active vistors.
 
 > You will see a warning in the logs if this needs to be set manually.
+
+### Registration / Invitations
+
+By default registrations are disabled after the first user is created.
+
+You can change this by setting the `ALLOW_REGISTRATION` environment variable to `true`.
+
+```bash title=".env"
+ALLOW_REGISTRATION=true
+```
+
+Invitations are enabled by default. You can also disable invitations by setting the `ALLOW_INVITATION` environment variable to `false`.
+
+```bash title=".env"
+ALLOW_INVITATION=false
+```
+
+## Helpful scripts
+
+OpenPanel comes with several utility scripts to help manage your self-hosted instance:
+
+### Basic Operations
+
+```bash
+./start    # Start all OpenPanel services
+./stop     # Stop all OpenPanel services
+./logs     # View real-time logs from all services
+```
+
+### Maintenance
+
+```bash
+./rebuild <service-name>    # Rebuild and restart a specific service
+                            # Example: ./rebuild op-dashboard
+```
+
+### Troubleshooting
+
+```bash
+./danger_wipe_everything   # ⚠️ Removes all containers, volumes, and data
+                           # Only use this if you want to start fresh!
+```
+
+<Callout>
+The `danger_wipe_everything` script will delete all your OpenPanel data including databases, configurations, and cached files. Use with extreme caution!
+</Callout>
+
+All these scripts should be run from within the `self-hosting` directory. Make sure the scripts are executable (`chmod +x script-name` if needed).
+
+## Updating
+
+To grab the latest and greatest from OpenPanel you should just run the `./update` script inside the self-hosting folder.
+
+<Callout>
+  If you don't have the `./update` script, you can run `git pull` and then `./update`
+</Callout>
+
+Also read any changes in the [changelog](/changelog) and apply them to your instance.

@@ -15,10 +15,6 @@ RUN corepack enable && apt-get update && \
     && apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN curl -fsSL \
-    https://raw.githubusercontent.com/pressly/goose/master/install.sh |\
-    sh 
-
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
 ENV PNPM_HOME="/pnpm"

@@ -1,0 +1,23 @@
+---
+title: Changelog for self-hosting
+description: This is a list of changes that have been made to the self-hosting setup.
+---
+
+## 1.0.0 (stable)
+
+OpenPanel self-hosting is now in a stable state and should not be any breaking changes in the future.
+
+If you are upgrading from a previous version, you should keep an eye on the logs since it well tell you if you need to take any actions. Its not mandatory but its recommended since it might bite you in the *ss later.
+
+### New environment variables.
+
+<Callout>
+If you upgrading from a previous version, you'll need to edit your `.env` file if you want to use these new variables.
+</Callout>
+
+- `ALLOW_REGISTRATION` - If set to `false` new users will not be able to register (only the first user can register).
+- `ALLOW_INVITATION` - If set to `false` new users will not be able to be invited.
+
+## 0.0.6
+
+Removed Clerk.com and added self-hosted authentication.

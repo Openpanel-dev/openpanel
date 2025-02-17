@@ -47,7 +47,7 @@ docker compose cp ./users-dump.csv op-api:/app/packages/db/code-migrations/users
 <Step>
 Run the migration:
 ```bash
-docker compose exec -it op-api bash -c "cd /app/packages/db && pnpm migrate:deploy:db:code 2-accounts.ts"
+docker compose exec -it op-api bash -c "cd /app/packages/db && pnpm migrate:deploy:code 2-accounts.ts"
 ```
 </Step>
 </Steps>

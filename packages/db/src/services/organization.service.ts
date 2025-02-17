@@ -143,6 +143,10 @@ export async function connectUserToOrganization({
     throw new Error('Invite not found');
   }
 
+  if (process.env.ALLOW_INVITATION === 'false') {
+    throw new Error('Invitations are not allowed');
+  }
+
   if (invite.expiresAt < new Date()) {
     throw new Error('Invite expired');
   }

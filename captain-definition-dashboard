@@ -1,4 +1,0 @@
-{
-  "schemaVersion": 2,
-  "dockerfilePath": "./apps/dashboard/Dockerfile"
-}

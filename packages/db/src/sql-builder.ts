@@ -1,4 +1,4 @@
-import { TABLE_NAMES } from './clickhouse-client';
+import { TABLE_NAMES } from './clickhouse/client';
 
 export interface SqlBuilderObject {
   where: Record<string, string>;

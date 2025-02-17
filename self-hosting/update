@@ -1,0 +1,11 @@
+#!/bin/bash
+
+git pull
+
+echo "Pulling latest docker images"
+docker compose pull
+
+echo "Restarting services"
+docker compose restart
+
+echo "Done"

@@ -11,7 +11,7 @@ import {
   ch,
   chQuery,
   formatClickhouseDate,
-} from '../clickhouse-client';
+} from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
 
 export type IProfileMetrics = {

@@ -12,7 +12,7 @@ import {
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
-} from '../clickhouse-client';
+} from '../clickhouse/client';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';

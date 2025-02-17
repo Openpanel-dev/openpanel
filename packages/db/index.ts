@@ -1,5 +1,5 @@
 export * from './src/prisma-client';
-export * from './src/clickhouse-client';
+export * from './src/clickhouse/client';
 export * from './src/sql-builder';
 export * from './src/services/chart.service';
 export * from './src/services/clients.service';

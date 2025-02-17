@@ -274,8 +274,9 @@ async function initiateOnboarding() {
     {
       type: 'input',
       name: 'CPUS',
-      default: os.cpus().length,
-      message: 'How many CPUs do you have?',
+      default: Math.max(Math.floor(os.cpus().length / 2), 1),
+      message:
+        'How many workers do you want to spawn (in many cases 1-2 is enough)?',
       validate: (value) => {
         const parsed = Number.parseInt(value, 10);
 
@@ -364,6 +365,7 @@ async function initiateOnboarding() {
       '\t- ./stop (example: ./stop)',
       '\t- ./logs (example: ./logs)',
       '\t- ./rebuild (example: ./rebuild op-dashboard)',
+      '\t- ./update (example: ./update) pulls the latest docker images and restarts the service',
       '',
       '2. Danger zone!',
       '\t- ./danger_wipe_everything (example: ./danger_wipe_everything)',

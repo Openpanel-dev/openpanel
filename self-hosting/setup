@@ -12,12 +12,6 @@ install_nvm_and_node() {
     nvm use $NODE_VERSION
 }
 
-# Function to install pnpm
-install_pnpm() {
-    echo "Installing pnpm..."
-    npm install -g pnpm
-}
-
 # Function to install Docker
 install_docker() {
     echo "Installing Docker..."
@@ -87,10 +81,5 @@ else
 fi
 
 
-# Check if pnpm is installed
-if ! command -v pnpm >/dev/null 2>&1; then
-    install_pnpm
-fi
-
-pnpm --ignore-workspace install
-./node_modules/.bin/jiti quiz.ts
+npm install
+npm run quiz

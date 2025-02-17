@@ -1,13 +1,74 @@
 ---
 title: Introduction to OpenPanel
-description: The OpenPanel SDKs provide a set of core methods that allow you to track events, identify users, and more. Here's an overview of the key methods available in the SDKs.
+description: Get started with OpenPanel's powerful analytics platform that combines the best of product and web analytics in one simple solution.
 ---
 
 <Callout>
-  While all OpenPanel SDKs share a common set of core methods, some may have
-  syntax variations or additional methods specific to their environment. This
-  documentation provides an overview of the base methods and available SDKs.
+  OpenPanel is currently in beta and free to use. We're constantly improving our
+  platform based on user feedback.
 </Callout>
+
+## What is OpenPanel?
+
+OpenPanel is an open-source analytics platform that combines product analytics (like Mixpanel) with web analytics (like Plausible) into one simple solution. Whether you're tracking website visitors or analyzing user behavior in your app, OpenPanel provides the insights you need without the complexity.
+
+## Key Features
+
+### Web Analytics
+- **Real-time data**: See visitor activity as it happens
+- **Traffic sources**: Understand where your visitors come from
+- **Geographic insights**: Track visitor locations and trends
+- **Device analytics**: Monitor usage across different devices
+- **Page performance**: Analyze your most visited pages
+
+### Product Analytics
+- **Event tracking**: Monitor user actions and interactions
+- **User profiles**: Build detailed user journey insights
+- **Funnels**: Analyze conversion paths
+- **Retention**: Track user engagement over time
+- **Custom properties**: Add context to your events
+
+## Getting Started
+
+1. **Installation**: Choose your preferred method:
+   - [Script tag](/docs/sdks/script) - Quickest way to get started
+   - [Web SDK](/docs/sdks/web) - For more control and TypeScript support
+   - [React](/docs/sdks/react) - Native React integration
+   - [Next.js](/docs/sdks/nextjs) - Optimized for Next.js apps
+
+2. **Core Methods**:
+   ```js
+   // Track an event
+   track('button_clicked', { 
+     buttonId: 'signup',
+     location: 'header'
+   });
+
+   // Identify a user
+   identify({
+     profileId: 'user123',
+     email: 'user@example.com',
+     firstName: 'John'
+   });
+   ```
+
+## Privacy First
+
+OpenPanel is built with privacy in mind:
+- No cookies required
+- GDPR and CCPA compliant
+- Self-hosting option available
+- Full control over your data
+
+## Open Source
+
+OpenPanel is fully open-source and available on [GitHub](https://github.com/Openpanel-dev/openpanel). We believe in transparency and community-driven development.
+
+## Need Help?
+
+- Join our [Discord community](https://discord.gg/openpanel)
+- Check our [GitHub issues](https://github.com/Openpanel-dev/openpanel/issues)
+- Email us at [hello@openpanel.dev](mailto:hello@openpanel.dev)
 
 ## Core Methods
 

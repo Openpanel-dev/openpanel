@@ -13,7 +13,7 @@ import {
   TABLE_NAMES,
   formatClickhouseDate,
   toDate,
-} from '../clickhouse-client';
+} from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
 
 export function transformPropertyKey(property: string) {

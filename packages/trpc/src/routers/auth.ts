@@ -37,6 +37,38 @@ import {
 
 const zProvider = z.enum(['email', 'google', 'github']);
 
+async function getIsRegistrationAllowed(inviteId?: string | null) {
+  // ALLOW_REGISTRATION is always undefined in cloud
+  if (process.env.ALLOW_REGISTRATION === undefined) {
+    return true;
+  }
+
+  // Self-hosting logic
+  // 1. First user is always allowed
+  const count = await db.user.count();
+  if (count === 0) {
+    return true;
+  }
+
+  // 2. If there is an invite, check if it is valid
+  if (inviteId) {
+    if (process.env.ALLOW_INVITATION === 'false') {
+      return false;
+    }
+
+    const invite = await db.invite.findUnique({
+      where: {
+        id: inviteId,
+      },
+    });
+
+    return !!invite;
+  }
+
+  // 3. Otherwise, check if general registration is allowed
+  return process.env.ALLOW_REGISTRATION !== 'false';
+}
+
 export const authRouter = createTRPCRouter({
   signOut: publicProcedure.mutation(async ({ ctx }) => {
     deleteSessionTokenCookie(ctx.setCookie);
@@ -46,7 +78,15 @@ export const authRouter = createTRPCRouter({
   }),
   signInOAuth: publicProcedure
     .input(z.object({ provider: zProvider, inviteId: z.string().nullish() }))
-    .mutation(({ input, ctx }) => {
+    .mutation(async ({ input, ctx }) => {
+      const isRegistrationAllowed = await getIsRegistrationAllowed(
+        input.inviteId,
+      );
+
+      if (!isRegistrationAllowed) {
+        throw TRPCAccessError('Registrations are not allowed');
+      }
+
       const { provider } = input;
 
       if (input.inviteId) {
@@ -95,6 +135,14 @@ export const authRouter = createTRPCRouter({
   signUpEmail: publicProcedure
     .input(zSignUpEmail)
     .mutation(async ({ input, ctx }) => {
+      const isRegistrationAllowed = await getIsRegistrationAllowed(
+        input.inviteId,
+      );
+
+      if (!isRegistrationAllowed) {
+        throw TRPCAccessError('Registrations are not allowed');
+      }
+
       const provider = 'email';
       const user = await getUserAccount({
         email: input.email,

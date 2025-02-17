@@ -1,5 +1,9 @@
 {
   "title": "Self-hosting",
   "defaultOpen": true,
-  "pages": ["self-hosting", "migrating-from-clerk"]
+  "pages": [
+    "[Get started](/docs/self-hosting/self-hosting)",
+    "changelog",
+    "migrating-from-clerk"
+  ]
 }
