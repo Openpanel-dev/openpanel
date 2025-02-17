@@ -5,6 +5,25 @@ import bcrypt from 'bcrypt';
 import inquirer from 'inquirer';
 import yaml from 'js-yaml';
 
+let envs = {
+  CLICKHOUSE_URL: '',
+  REDIS_URL: '',
+  DATABASE_URL: '',
+  DOMAIN_NAME: '',
+  COOKIE_SECRET: generatePassword(32),
+  RESEND_API_KEY: '',
+  EMAIL_SENDER: '',
+};
+
+type EnvVars = typeof envs;
+
+const addEnvs = (env: Partial<EnvVars>) => {
+  envs = {
+    ...envs,
+    ...env,
+  };
+};
+
 function generatePassword(length: number) {
   const charset =
     'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -111,13 +130,7 @@ function removeServiceFromDockerCompose(serviceName: string) {
   fs.writeFileSync(dockerComposePath, newYaml);
 }
 
-function writeEnvFile(envs: {
-  CLICKHOUSE_URL: string;
-  REDIS_URL: string;
-  DATABASE_URL: string;
-  DOMAIN_NAME: string;
-  COOKIE_SECRET: string;
-}) {
+function writeEnvFile(envs: EnvVars) {
   const envTemplatePath = path.resolve(__dirname, '.env.template');
   const envPath = path.resolve(__dirname, '.env');
   const envTemplate = fs.readFileSync(envTemplatePath, 'utf-8');
@@ -132,7 +145,9 @@ function writeEnvFile(envs: {
     .replace(
       '$NEXT_PUBLIC_API_URL',
       `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`,
-    );
+    )
+    .replace('$RESEND_API_KEY', envs.RESEND_API_KEY)
+    .replace('$EMAIL_SENDER', envs.EMAIL_SENDER);
 
   fs.writeFileSync(
     envPath,
@@ -175,10 +190,10 @@ async function initiateOnboarding() {
 
   // Domain name
 
-  const domainNameResponse = await inquirer.prompt([
+  const domain = await inquirer.prompt([
     {
       type: 'input',
-      name: 'domainName',
+      name: 'DOMAIN_NAME',
       message: "What's the domain name you want to use?",
       default: process.env.DEBUG ? 'http://localhost' : undefined,
       prefix: '🌐',
@@ -191,6 +206,8 @@ async function initiateOnboarding() {
       },
     },
   ]);
+
+  addEnvs(domain);
 
   // Dependencies
 
@@ -205,7 +222,6 @@ async function initiateOnboarding() {
     },
   ]);
 
-  let envs: Record<string, string> = {};
   if (!dependenciesResponse.dependencies.includes('Clickhouse')) {
     const clickhouseResponse = await inquirer.prompt([
       {
@@ -217,10 +233,7 @@ async function initiateOnboarding() {
       },
     ]);
 
-    envs = {
-      ...envs,
-      ...clickhouseResponse,
-    };
+    addEnvs(clickhouseResponse);
   }
 
   if (!dependenciesResponse.dependencies.includes('Redis')) {
@@ -232,10 +245,8 @@ async function initiateOnboarding() {
         default: process.env.DEBUG ? 'redis://op-kv:6379' : undefined,
       },
     ]);
-    envs = {
-      ...envs,
-      ...redisResponse,
-    };
+
+    addEnvs(redisResponse);
   }
 
   if (!dependenciesResponse.dependencies.includes('Postgres')) {
@@ -250,10 +261,8 @@ async function initiateOnboarding() {
           : undefined,
       },
     ]);
-    envs = {
-      ...envs,
-      ...dbResponse,
-    };
+
+    addEnvs(dbResponse);
   }
 
   // Proxy
@@ -293,6 +302,45 @@ async function initiateOnboarding() {
     },
   ]);
 
+  const resend = await inquirer.prompt<{
+    RESEND_API_KEY: string;
+  }>([
+    {
+      type: 'input',
+      name: 'RESEND_API_KEY',
+      message: 'Enter your Resend API key (optional):',
+    },
+  ]);
+
+  if (resend.RESEND_API_KEY) {
+    const emailSender = await inquirer.prompt<{
+      email: string;
+    }>([
+      {
+        type: 'input',
+        name: 'EMAIL_SENDER',
+        default: `no-reply@${envs.DOMAIN_NAME.replace(/https?:\/\//, '')}`,
+        message: 'The email which will be used to send out emails:',
+        validate: (value) => {
+          if (!value) {
+            return 'Field is required';
+          }
+
+          if (!value.includes('@')) {
+            return 'Please enter a valid email';
+          }
+
+          return true;
+        },
+      },
+    ]);
+
+    addEnvs({
+      ...resend,
+      ...emailSender,
+    });
+  }
+
   const basicAuth = await inquirer.prompt<{
     password: string;
   }>([
@@ -324,8 +372,10 @@ async function initiateOnboarding() {
     DATABASE_URL:
       envs.DATABASE_URL ||
       'postgresql://postgres:postgres@op-db:5432/postgres?schema=public',
-    DOMAIN_NAME: domainNameResponse.domainName,
-    COOKIE_SECRET: generatePassword(32),
+    DOMAIN_NAME: envs.DOMAIN_NAME,
+    COOKIE_SECRET: envs.COOKIE_SECRET,
+    RESEND_API_KEY: envs.RESEND_API_KEY || '',
+    EMAIL_SENDER: envs.EMAIL_SENDER || '',
   });
 
   console.log('Updating docker-compose.yml file...\n');
@@ -350,7 +400,7 @@ async function initiateOnboarding() {
   if (proxyResponse.proxy === 'Bring my own') {
     removeServiceFromDockerCompose('op-proxy');
   } else {
-    writeCaddyfile(domainNameResponse.domainName, basicAuth.password);
+    writeCaddyfile(envs.DOMAIN_NAME, basicAuth.password);
   }
 
   searchAndReplaceDockerCompose([['$OP_WORKER_REPLICAS', cpus.CPUS]]);
