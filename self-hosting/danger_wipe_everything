@@ -10,7 +10,7 @@ echo "Cleaning up Docker resources for project: $PROJECT_NAME"
 
 # Stop and remove containers, networks, and volumes
 echo "Stopping and removing containers, networks, and volumes..."
-docker-compose down --volumes --remove-orphans
+docker compose down --volumes --remove-orphans
 
 # Remove any remaining project-specific volumes
 echo "Removing any remaining project volumes..."
@@ -21,7 +21,7 @@ fi
 
 # Remove project-specific images
 echo "Removing project-specific images..."
-project_images=$(docker-compose config --images)
+project_images=$(docker compose config --images)
 if [ -n "$project_images" ]; then
     docker rmi $project_images
 fi
