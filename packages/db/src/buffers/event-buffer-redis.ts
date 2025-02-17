@@ -101,9 +101,11 @@ for i, sessionId in ipairs(sessionIds) do
     result[resultIndex] = { sessionId = sessionId, events = events }
     resultIndex = resultIndex + 1
     totalEvents = totalEvents + #events
-    if totalEvents >= batchSize then
-      break
-    end
+  end
+  
+  -- Only check if we should break AFTER processing the entire session
+  if totalEvents >= batchSize then
+    break
   end
 end
 
