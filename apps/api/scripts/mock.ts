@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import * as faker from '@faker-js/faker';
+import { generateId } from '@openpanel/common';
 import { hashPassword } from '@openpanel/common/server';
 import { ClientType, db } from '@openpanel/db';
 import { v4 as uuidv4 } from 'uuid';
@@ -74,7 +75,7 @@ function generatePath(): string {
 
 async function trackit(event: Event) {
   console.log('trackit', JSON.stringify(event.track, null, 2));
-  await fetch('http://localhost:3333/track', {
+  const res = await fetch('http://localhost:3333/track', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -82,6 +83,13 @@ async function trackit(event: Event) {
     },
     body: JSON.stringify(event.track),
   });
+
+  if (res.ok) {
+    return true;
+  }
+
+  console.error('Failed to track event', res.status, res.statusText);
+  return false;
 }
 
 function generateScreenViews({
@@ -143,7 +151,10 @@ function scrambleEvents(events: Event[]) {
 let lastTriggeredIndex = 0;
 
 async function triggerEvents(generatedEvents: any[]) {
-  const EVENTS_PER_SECOND = 100; // Adjust this value to set the desired events per second
+  const EVENTS_PER_SECOND = Number.parseInt(
+    process.env.EVENTS_PER_SECOND || '100',
+    10,
+  );
   const INTERVAL_MS = 1000 / EVENTS_PER_SECOND;
 
   if (lastTriggeredIndex >= generatedEvents.length) {
@@ -170,11 +181,15 @@ async function triggerEvents(generatedEvents: any[]) {
   );
 
   if (remainingEvents > 0) {
-    setTimeout(() => triggerEvents(generatedEvents), INTERVAL_MS);
-  } else {
-    console.log('All events triggered.');
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        triggerEvents(generatedEvents);
+        resolve(null);
+      }, INTERVAL_MS);
+    });
   }
 
+  console.log('All events triggered.');
   console.log(`Total events to trigger: ${generatedEvents.length}`);
 }
 
@@ -202,7 +217,7 @@ async function createMock(file: string) {
 
   fs.writeFileSync(
     file,
-    JSON.stringify(scrambleEvents(generateEvents()), null, 2),
+    JSON.stringify(insertFakeEvents(scrambleEvents(generateEvents())), null, 2),
     'utf-8',
   );
 }
@@ -230,12 +245,18 @@ function insertFakeEvents(events: Event[]) {
   };
   const newEvents = [];
   for (const event of events) {
+    (event.track.payload.properties as any).__group = generateId();
     newEvents.push(event);
-    if (Math.random() < 0.6) {
+
+    if (event.track.payload.name === 'screen_view' && Math.random() < 0.5) {
       const fakeEvent = JSON.parse(JSON.stringify(blueprint));
       fakeEvent.track.payload.name = faker.allFakers.en.lorem.word();
+      fakeEvent.headers = event.headers;
       delete fakeEvent.track.payload.properties;
       newEvents.push(fakeEvent);
+      fakeEvent.track.payload.properties = {
+        __group: (event.track.payload.properties as any).__group,
+      };
     }
   }
 
@@ -249,13 +270,19 @@ async function simultaneousRequests() {
   event.track.payload.name = 'click_button';
   delete event.track.payload.properties.__referrer;
 
-  await trackit(event);
-  await trackit(event);
-  trackit(screenView);
-  trackit(screenView);
-  await trackit(event);
-  trackit(screenView);
-  trackit(event);
+  await Promise.all([
+    trackit(event),
+    trackit({
+      ...event,
+      track: {
+        ...event.track,
+        payload: {
+          ...event.track.payload,
+          name: 'text',
+        },
+      },
+    }),
+  ]);
 }
 const exit = async () => {
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -267,7 +294,7 @@ async function main() {
 
   switch (type) {
     case 'send':
-      await triggerEvents(insertFakeEvents(require(`./${file}`)));
+      await triggerEvents(require(`./${file}`));
       break;
     case 'sim':
       await simultaneousRequests();
