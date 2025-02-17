@@ -25,7 +25,7 @@ export async function up() {
     'profile_aliases_distributed',
   );
 
-  const isSelfHosting = !!process.env.SELF_HOSTING;
+  const isSelfHosting = !!process.env.SELF_HOSTED;
   const isClustered = !isSelfHosting;
 
   const isSelfHostingPostCluster =
