@@ -19,4 +19,11 @@
     <listen_host>0.0.0.0</listen_host>
     <interserver_listen_host>0.0.0.0</interserver_listen_host>
     <interserver_http_host>op-ch</interserver_http_host>
+
+    <!-- Not used anymore, but kept for backwards compatibility -->
+    <macros>
+        <shard>1</shard>
+        <replica>replica1</replica>
+        <cluster>openpanel_cluster</cluster>
+    </macros>
 </clickhouse>
