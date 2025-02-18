@@ -134,6 +134,7 @@ export async function createSessionEnd(
     screenViews,
     sessionDuration,
     events,
+    lastScreenView: lastScreenView ? lastScreenView : 'none',
   });
 
   return createEvent({
