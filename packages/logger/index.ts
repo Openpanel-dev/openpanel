@@ -48,7 +48,10 @@ export function createLogger({ name }: { name: string }): ILogger {
         const lowerKey = key.toLowerCase();
         if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
           acc[key] = '[REDACTED]';
-        } else if (typeof obj[key] === 'object') {
+        } else if (
+          typeof obj[key] === 'object' &&
+          !(obj[key] instanceof Date)
+        ) {
           acc[key] = redactObject(obj[key]);
         } else {
           acc[key] = obj[key];
