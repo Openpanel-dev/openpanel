@@ -8,7 +8,7 @@
     <br />
     <a href="https://openpanel.dev">Website</a>
     ·
-    <a href="https://docs.openpanel.dev">Docs</a>
+    <a href="https://openpanel.dev/docs">Docs</a>
     ·
     <a href="https://dashboard.openpanel.dev">Sign in</a>
     ·
@@ -48,7 +48,7 @@ Openpanel is a powerful analytics platform that captures and visualizes user beh
 
 OpenPanel can be self-hosted and we have tried to make it as simple as possible.
 
-You can find the how to [here](https://docs.openpanel.dev/docs/self-hosting)
+You can find the how to [here](https://openpanel.dev/docs/self-hosting/self-hosting)
 
 **Give us a star if you like it!**
 

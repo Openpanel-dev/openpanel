@@ -26,7 +26,7 @@ export function CreateClientSuccess({ id, secret }: Props) {
           Read our{' '}
           <a
             target="_blank"
-            href="https://docs.openpanel.dev"
+            href="https://openpanel.dev/docs"
             className="underline"
             rel="noreferrer"
           >
