@@ -2,38 +2,65 @@
 
 APP=$1
 VERSION=$2
+PRERELEASE=$3  # New parameter for pre-release tag
 
 if [ -z "$APP" ]; then
     echo "Please provide an app name as an argument."
-    echo "Usage: $0 <app_name> <version>"
+    echo "Usage: $0 <app_name> <version> [pre-release-tag]"
     exit 1
 fi
 
 # Check if version is provided
 if [ -z "$VERSION" ]; then
     echo "Please provide a version number as an argument."
-    echo "Usage: $0 $APP <version>"
+    echo "Usage: $0 $APP <version> [pre-release-tag]"
+    exit 1
+fi
+
+# Add warning prompt
+if [ -z "$PRERELEASE" ]; then
+    read -p "You're building WITHOUT any pre-release ($VERSION). Do you wish to continue (y/N)? " -n 1 -r
+else
+    read -p "You're building WITH pre-release ($VERSION-$PRERELEASE). Do you wish to continue (y/N)? " -n 1 -r
+fi
+echo    # Move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    echo "Aborting..."
     exit 1
 fi
 
 # Ensure Docker Buildx is available and set up a builder
-docker buildx create --use --name multi-arch-builder || true
+docker buildx rm multi-arch-builder 2>/dev/null || true  # Remove existing builder if it exists
+docker buildx create --name multi-arch-builder --use || true
 
 # Function to build a multi-architecture image
 build_image() {
     local app=$1
     local image_name="lindesvard/openpanel-$app"
     
-    echo "Building multi-architecture image for $image_name:$VERSION"
     
-    docker buildx build \
-        --platform linux/amd64,linux/arm64 \
-        -t "$image_name:$VERSION" \
-        -t "$image_name:latest" \
-        --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
-        -f "apps/$app/Dockerfile" \
-        --push \
-        .
+    # Prepare tags based on whether PRERELEASE is provided
+    if [ -z "$PRERELEASE" ]; then
+        echo "Building multi-architecture image for $image_name:$VERSION"
+        docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t "$image_name:$VERSION" \
+            -t "$image_name:latest" \
+            --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+            -f "apps/$app/Dockerfile" \
+            --push \
+            .
+    else
+        echo "Building multi-architecture image for $image_name:$VERSION-$PRERELEASE"
+        docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t "$image_name:$VERSION-$PRERELEASE" \
+            --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+            -f "apps/$app/Dockerfile" \
+            --push \
+            .
+    fi
     
     if [ $? -ne 0 ]; then
         echo "Failed to build $image_name:$VERSION"
