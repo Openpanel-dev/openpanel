@@ -20,10 +20,16 @@ const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
   R.mergeDeepRight(a, R.reject(R.anyPass([R.isEmpty, R.isNil]))(b)) as A & B;
 
-async function createEventAndNotify(payload: IServiceCreateEventPayload) {
+async function createEventAndNotify(
+  payload: IServiceCreateEventPayload,
+  jobData: Job<EventsQueuePayloadIncomingEvent>['data']['payload'],
+) {
   await checkNotificationRulesForEvent(payload).catch((e) => {
     logger.error('Error checking notification rules', { error: e });
   });
+
+  logger.info('Creating event', { event: payload, jobData });
+
   return createEvent(payload);
 }
 
@@ -107,7 +113,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       : null;
 
     const payload = merge(omit(['properties'], event ?? {}), baseEvent);
-    return createEventAndNotify(payload as IServiceEvent);
+    return createEventAndNotify(payload as IServiceEvent, job.data.payload);
   }
 
   const sessionEnd = await getSessionEnd({
@@ -130,5 +136,5 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     await createSessionEnd({ payload });
   }
 
-  return createEventAndNotify(payload);
+  return createEventAndNotify(payload, job.data.payload);
 }

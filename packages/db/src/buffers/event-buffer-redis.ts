@@ -220,7 +220,7 @@ return "OK"
             }),
             eventJson,
             'EX',
-            60 * 31,
+            60 * 60,
           );
 
           addEventToSession();
@@ -511,11 +511,13 @@ return "OK"
 
     const flush: IClickhouseEvent[] = [];
     const pending: IClickhouseEvent[] = [];
+    let hasSessionEnd = false;
 
     for (let i = 0; i < events.length; i++) {
       const event = events[i]!;
 
       if (event.name === 'session_end') {
+        hasSessionEnd = true;
         flush.push(event);
       } else {
         // For screen_view events, look for next event
@@ -526,6 +528,8 @@ return "OK"
               new Date(next.created_at).getTime() -
               new Date(event.created_at).getTime();
           }
+          flush.push(event);
+        } else if (hasSessionEnd) {
           flush.push(event);
         } else {
           pending.push(event);

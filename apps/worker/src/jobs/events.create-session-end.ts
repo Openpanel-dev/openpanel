@@ -128,6 +128,14 @@ export async function createSessionEnd(
 
   await checkNotificationRulesForSessionEnd(events);
 
+  logger.info('Creating session_end', {
+    sessionStart,
+    lastEvent,
+    screenViews,
+    sessionDuration,
+    events,
+  });
+
   return createEvent({
     ...sessionStart,
     properties: {
