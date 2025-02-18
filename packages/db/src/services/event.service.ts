@@ -579,35 +579,6 @@ export function getConversionEventNames(projectId: string) {
   });
 }
 
-export async function getLastScreenViewFromProfileId({
-  profileId,
-  projectId,
-}: {
-  profileId: string;
-  projectId: string;
-}) {
-  if (!profileId) {
-    return null;
-  }
-
-  const eventInBuffer = await eventBuffer.getLastScreenView({
-    projectId,
-    profileId,
-  });
-
-  if (eventInBuffer) {
-    return eventInBuffer;
-  }
-
-  const [eventInDb] = profileId
-    ? await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)} AND created_at >= now() - INTERVAL 30 MINUTE ORDER BY created_at DESC LIMIT 1`,
-      )
-    : [];
-
-  return eventInDb || null;
-}
-
 export async function getTopPages({
   projectId,
   cursor,

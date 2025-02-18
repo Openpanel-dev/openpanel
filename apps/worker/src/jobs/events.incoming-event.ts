@@ -7,8 +7,11 @@ import { createSessionEnd, getSessionEnd } from '@/utils/session-handler';
 import { isSameDomain, parsePath } from '@openpanel/common';
 import { parseUserAgent } from '@openpanel/common/server';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
-import { checkNotificationRulesForEvent, createEvent } from '@openpanel/db';
-import { getLastScreenViewFromProfileId } from '@openpanel/db';
+import {
+  checkNotificationRulesForEvent,
+  createEvent,
+  eventBuffer,
+} from '@openpanel/db';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import * as R from 'ramda';
 
@@ -106,7 +109,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   // if timestamp is from the past we dont want to create a new session
   if (uaInfo.isServer || isTimestampFromThePast) {
     const event = profileId
-      ? await getLastScreenViewFromProfileId({
+      ? await eventBuffer.getLastScreenView({
           profileId,
           projectId,
         })
@@ -124,13 +127,21 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     profileId,
   });
 
+  const lastScreenView = await eventBuffer.getLastScreenView({
+    projectId,
+    sessionId: sessionEnd.payload.sessionId,
+  });
+
   const payload: IServiceCreateEventPayload = merge(baseEvent, {
     deviceId: sessionEnd.payload.deviceId,
     sessionId: sessionEnd.payload.sessionId,
     referrer: sessionEnd.payload?.referrer,
     referrerName: sessionEnd.payload?.referrerName,
     referrerType: sessionEnd.payload?.referrerType,
-  }) as IServiceCreateEventPayload;
+    // if the path is not set, use the last screen view path
+    path: baseEvent.path || lastScreenView?.path || '',
+    origin: baseEvent.origin || lastScreenView?.origin || '',
+  } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
 
   if (sessionEnd.notFound) {
     await createSessionEnd({ payload });

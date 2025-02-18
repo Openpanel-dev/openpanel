@@ -79,7 +79,7 @@ export async function createSessionEnd(
   const [lastScreenView, eventsInDb] = await Promise.all([
     eventBuffer.getLastScreenView({
       projectId: payload.projectId,
-      profileId: payload.profileId || payload.deviceId,
+      sessionId: payload.sessionId,
     }),
     getCompleteSessionWithSessionStart({
       projectId: payload.projectId,

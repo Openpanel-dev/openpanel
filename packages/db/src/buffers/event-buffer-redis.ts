@@ -386,33 +386,10 @@ return "OK"
       timer.processSessionEvents = performance.now() - now;
       now = performance.now();
 
-      // (C) Sort events by creation time.
-      eventsToClickhouse.sort(
-        (a, b) =>
-          new Date(a.created_at || 0).getTime() -
-          new Date(b.created_at || 0).getTime(),
-      );
-
       // (B) Process no-session events
       for (const eventStr of regularQueueEvents) {
         const event = getSafeJson<IClickhouseEvent>(eventStr);
         if (event) {
-          const sessionEvents = sessions[event.session_id] || [];
-          const screenView = sessionEvents.findLast((sessionEvent) => {
-            const isScreenView = sessionEvent.name === 'screen_view';
-            const isBeforeEvent =
-              new Date(sessionEvent.created_at).getTime() <
-              new Date(event.created_at).getTime();
-
-            return isScreenView && isBeforeEvent;
-          });
-
-          if (screenView) {
-            event.path = screenView.path;
-            event.origin = screenView.origin;
-            event.properties.__inherit_from = screenView.id;
-          }
-
           eventsToClickhouse.push(event);
         }
       }
@@ -584,25 +561,45 @@ return "OK"
   }
 
   /**
-   * Retrieve the latest screen_view event for a given project/profile.
+   * Retrieve the latest screen_view event for a given project/profile or project/session
    */
   public async getLastScreenView({
     projectId,
-    profileId,
-  }: {
-    projectId: string;
-    profileId: string;
-  }): Promise<IServiceEvent | null> {
-    const redis = getRedisCache();
-    const eventStr = await redis.get(
-      this.getLastEventKey({ projectId, profileId }),
-    );
-    if (eventStr) {
-      const parsed = getSafeJson<IClickhouseEvent>(eventStr);
-      if (parsed) {
-        return transformEvent(parsed);
+    ...rest
+  }:
+    | {
+        projectId: string;
+        profileId: string;
+      }
+    | {
+        projectId: string;
+        sessionId: string;
+      }): Promise<IServiceEvent | null> {
+    if ('profileId' in rest) {
+      const redis = getRedisCache();
+      const eventStr = await redis.get(
+        this.getLastEventKey({ projectId, profileId: rest.profileId }),
+      );
+      if (eventStr) {
+        const parsed = getSafeJson<IClickhouseEvent>(eventStr);
+        if (parsed) {
+          return transformEvent(parsed);
+        }
       }
     }
+
+    if ('sessionId' in rest) {
+      const redis = getRedisCache();
+      const sessionKey = this.getSessionKey(rest.sessionId);
+      const lastEvent = await redis.lindex(sessionKey, -1);
+      if (lastEvent) {
+        const parsed = getSafeJson<IClickhouseEvent>(lastEvent);
+        if (parsed) {
+          return transformEvent(parsed);
+        }
+      }
+    }
+
     return null;
   }
 
