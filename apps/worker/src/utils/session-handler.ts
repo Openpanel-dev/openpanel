@@ -27,6 +27,11 @@ export async function createSessionEnd({
     {
       delay: SESSION_TIMEOUT,
       jobId: getSessionEndJobId(payload.projectId, payload.deviceId),
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 200,
+      },
     },
   );
 

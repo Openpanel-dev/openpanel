@@ -49,7 +49,7 @@ export async function postEvent(
     'NX',
   );
 
-  eventsQueue.add(
+  await eventsQueue.add(
     'event',
     {
       type: 'incomingEvent',
@@ -68,6 +68,11 @@ export async function postEvent(
       },
     },
     {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 200,
+      },
       // Prioritize 'screen_view' events by setting no delay
       // This ensures that session starts are created from 'screen_view' events
       // rather than other events, maintaining accurate session tracking
