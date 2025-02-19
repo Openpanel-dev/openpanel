@@ -1,20 +1,29 @@
 'use client';
 
 import { clipboard } from '@/utils/clipboard';
+import { cn } from '@/utils/cn';
 import { CopyIcon } from 'lucide-react';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
+import bash from 'react-syntax-highlighter/dist/cjs/languages/hljs/bash';
 import ts from 'react-syntax-highlighter/dist/cjs/languages/hljs/typescript';
 import docco from 'react-syntax-highlighter/dist/cjs/styles/hljs/vs2015';
 
 SyntaxHighlighter.registerLanguage('typescript', ts);
+SyntaxHighlighter.registerLanguage('bash', bash);
 
 interface SyntaxProps {
   code: string;
+  className?: string;
+  language?: 'typescript' | 'bash';
 }
 
-export default function Syntax({ code }: SyntaxProps) {
+export default function Syntax({
+  code,
+  className,
+  language = 'typescript',
+}: SyntaxProps) {
   return (
-    <div className="group relative">
+    <div className={cn('group relative rounded-lg', className)}>
       <button
         type="button"
         className="absolute right-1 top-1 rounded bg-card p-2 opacity-0 transition-opacity group-hover:opacity-100 row items-center gap-2"
@@ -28,8 +37,9 @@ export default function Syntax({ code }: SyntaxProps) {
       <SyntaxHighlighter
         // wrapLongLines
         style={docco}
+        language={language}
         customStyle={{
-          borderRadius: '0.5rem',
+          borderRadius: 'var(--radius)',
           padding: '1rem',
           paddingTop: '0.5rem',
           paddingBottom: '0.5rem',
