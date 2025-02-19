@@ -225,13 +225,13 @@ return "OK"
 
           addEventToSession();
         } else if (event.name === 'session_end') {
-          // // Delete last screen view
-          // multi.del(
-          //   this.getLastEventKey({
-          //     projectId: event.project_id,
-          //     profileId: event.profile_id,
-          //   }),
-          // );
+          // Delete last screen view
+          multi.del(
+            this.getLastEventKey({
+              projectId: event.project_id,
+              profileId: event.profile_id,
+            }),
+          );
 
           // Check if session has any events
           const eventCount = await redis.llen(sessionKey);
