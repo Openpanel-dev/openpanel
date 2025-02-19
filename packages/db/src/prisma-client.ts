@@ -4,6 +4,12 @@ import { readReplicas } from '@prisma/extension-read-replicas';
 export * from '@prisma/client';
 
 const getPrismaClient = () => {
+  if (process.env.NODE_ENV === 'test') {
+    return new PrismaClient({
+      log: ['error'],
+    });
+  }
+
   return new PrismaClient({
     log: ['error'],
   }).$extends(
