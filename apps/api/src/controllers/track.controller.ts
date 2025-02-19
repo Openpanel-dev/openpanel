@@ -29,6 +29,7 @@ export function getStringHeaders(headers: FastifyRequest['headers']) {
         'openpanel-sdk-name',
         'openpanel-sdk-version',
         'openpanel-client-id',
+        'request-id',
       ],
       headers,
     ),

@@ -72,6 +72,7 @@ export async function createSessionEnd(
   const logger = baseLogger.child({
     payload: job.data.payload,
     jobId: job.id,
+    reqId: job.data.payload.properties?.__reqId ?? 'unknown',
   });
 
   const payload = job.data.payload;

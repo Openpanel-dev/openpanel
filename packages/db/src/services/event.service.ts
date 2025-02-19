@@ -143,6 +143,8 @@ export interface IServiceEvent {
   properties: Record<string, unknown> & {
     hash?: string;
     query?: Record<string, unknown>;
+    __reqId?: string;
+    __user_agent?: string;
   };
   createdAt: Date;
   country?: string | undefined;

@@ -40,7 +40,12 @@ export async function parseIp(ip?: string): Promise<GeoLocation> {
   }
 
   const hash = crypto.createHash('sha256').update(ip).digest('hex');
-  const cached = await getRedisCache().get(`geo:${hash}`);
+  const cached = await getRedisCache()
+    .get(`geo:${hash}`)
+    .catch(() => {
+      logger.warn('Failed to get geo location from cache', { hash });
+      return null;
+    });
 
   if (cached) {
     return JSON.parse(cached);
@@ -69,7 +74,7 @@ export async function parseIp(ip?: string): Promise<GeoLocation> {
       `geo:${hash}`,
       JSON.stringify(geo),
       'EX',
-      60 * 30,
+      60 * 60 * 24,
     );
 
     return geo;

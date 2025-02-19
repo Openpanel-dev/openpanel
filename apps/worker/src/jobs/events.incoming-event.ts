@@ -2,7 +2,7 @@ import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
 import type { Job } from 'bullmq';
 import { omit } from 'ramda';
 
-import { logger } from '@/utils/logger';
+import { logger as baseLogger } from '@/utils/logger';
 import { createSessionEnd, getSessionEnd } from '@/utils/session-handler';
 import { isSameDomain, parsePath } from '@openpanel/common';
 import { parseUserAgent } from '@openpanel/common/server';
@@ -12,6 +12,7 @@ import {
   createEvent,
   eventBuffer,
 } from '@openpanel/db';
+import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import * as R from 'ramda';
 
@@ -26,6 +27,7 @@ const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
 async function createEventAndNotify(
   payload: IServiceCreateEventPayload,
   jobData: Job<EventsQueuePayloadIncomingEvent>['data']['payload'],
+  logger: ILogger,
 ) {
   await checkNotificationRulesForEvent(payload).catch((e) => {
     logger.error('Error checking notification rules', { error: e });
@@ -47,6 +49,10 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     priority,
   } = job.data.payload;
   const properties = body.properties ?? {};
+  const reqId = headers['request-id'] ?? 'unknown';
+  const logger = baseLogger.child({
+    reqId,
+  });
   const getProperty = (name: string): string | undefined => {
     // replace thing is just for older sdks when we didn't have `__`
     // remove when kiddokitchen app (24.09.02) is not used anymore
@@ -82,6 +88,7 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       __user_agent: userAgent,
       __hash: hash,
       __query: query,
+      __reqId: reqId,
     }),
     createdAt,
     duration: 0,
@@ -116,7 +123,11 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
       : null;
 
     const payload = merge(omit(['properties'], event ?? {}), baseEvent);
-    return createEventAndNotify(payload as IServiceEvent, job.data.payload);
+    return createEventAndNotify(
+      payload as IServiceEvent,
+      job.data.payload,
+      logger,
+    );
   }
 
   const sessionEnd = await getSessionEnd({
@@ -147,5 +158,5 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     await createSessionEnd({ payload });
   }
 
-  return createEventAndNotify(payload, job.data.payload);
+  return createEventAndNotify(payload, job.data.payload, logger);
 }
