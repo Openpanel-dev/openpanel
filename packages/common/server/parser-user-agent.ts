@@ -109,6 +109,21 @@ function isServer(res: UAParser.IResult) {
 }
 
 export function getDevice(ua: string) {
+  // Samsung mobile devices use SM-[A,G,N,etc]XXX pattern
+  if (/SM-[ABDEFGJMNRWZ][0-9]+/i.test(ua)) {
+    return 'mobile';
+  }
+
+  // Samsung tablets use SM-TXXX pattern
+  if (/SM-T[0-9]+/i.test(ua)) {
+    return 'tablet';
+  }
+
+  // LG mobile devices use LG-XXXX pattern
+  if (/LG-[A-Z0-9]+/i.test(ua)) {
+    return 'mobile';
+  }
+
   const mobile1 =
     /(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i.test(
       ua,
@@ -118,9 +133,11 @@ export function getDevice(ua: string) {
       ua.slice(0, 4),
     );
   const tablet =
-    /tablet|ipad|android(?!.*mobile)|xoom|sch-i800|kindle|silk|playbook/i.test(
-      ua,
-    );
+    /tablet|ipad|xoom|sch-i800|kindle|silk|playbook/i.test(ua) ||
+    (/android/i.test(ua) &&
+      !/mobile/i.test(ua) &&
+      !/SM-[ABDEFGJMNRWZ][0-9]+/i.test(ua) &&
+      !/LG-[A-Z0-9]+/i.test(ua));
 
   if (mobile1 || mobile2) {
     return 'mobile';
