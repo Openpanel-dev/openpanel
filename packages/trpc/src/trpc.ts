@@ -116,7 +116,27 @@ const enforceAccess = t.middleware(async ({ ctx, next, rawInput }) => {
 
 export const createTRPCRouter = t.router;
 
-export const publicProcedure = t.procedure;
+const loggerMiddleware = t.middleware(
+  async ({ ctx, next, rawInput, path, input, type }) => {
+    // Only log mutations
+    if (type === 'mutation') {
+      ctx.req.log.info('TRPC mutation', {
+        path,
+        rawInput,
+        input,
+        userId: ctx.session?.userId,
+        organizationId: has('organizationId', rawInput)
+          ? rawInput.organizationId
+          : undefined,
+        projectId: has('projectId', rawInput) ? rawInput.projectId : undefined,
+      });
+    }
+    return next();
+  },
+);
+
+export const publicProcedure = t.procedure.use(loggerMiddleware);
 export const protectedProcedure = t.procedure
   .use(enforceUserIsAuthed)
-  .use(enforceAccess);
+  .use(enforceAccess)
+  .use(loggerMiddleware);
