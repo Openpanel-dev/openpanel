@@ -1,4 +1,5 @@
 import { deepMergeObjects } from '@openpanel/common';
+import type { ILogger } from '@openpanel/logger';
 // import { getSafeJson } from '@openpanel/json';
 import { type Redis, getRedisCache } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
@@ -53,13 +54,15 @@ export class ProfileBuffer extends BaseBuffer {
   }
 
   async add(profile: IClickhouseProfile) {
-    try {
-      this.logger.debug('Adding profile', {
-        projectId: profile.project_id,
-        profileId: profile.id,
-      });
+    const logger = this.logger.child({
+      projectId: profile.project_id,
+      profileId: profile.id,
+    });
 
-      const existingProfile = await this.fetchFromCache(profile);
+    try {
+      logger.debug('Adding profile');
+
+      const existingProfile = await this.fetchFromCache(profile, logger);
 
       const mergedProfile: IClickhouseProfile = existingProfile
         ? deepMergeObjects(existingProfile, profile)
@@ -129,11 +132,8 @@ export class ProfileBuffer extends BaseBuffer {
 
   private async fetchFromCache(
     profile: IClickhouseProfile,
+    logger: ILogger,
   ): Promise<IClickhouseProfile | null> {
-    this.logger.debug('Fetching profile from Redis', {
-      projectId: profile.project_id,
-      profileId: profile.id,
-    });
     const cacheKey = this.getProfileCacheKey({
       profileId: profile.id,
       projectId: profile.project_id,
@@ -143,24 +143,19 @@ export class ProfileBuffer extends BaseBuffer {
     if (existingProfile) {
       const parsedProfile = getSafeJson<IClickhouseProfile>(existingProfile);
       if (parsedProfile) {
-        this.logger.debug('Profile found in Redis', {
-          projectId: profile.project_id,
-          profileId: profile.id,
-        });
+        logger.debug('Profile found in Redis');
         return parsedProfile;
       }
     }
 
-    return this.fetchFromClickhouse(profile);
+    return this.fetchFromClickhouse(profile, logger);
   }
 
   private async fetchFromClickhouse(
     profile: IClickhouseProfile,
+    logger: ILogger,
   ): Promise<IClickhouseProfile | null> {
-    this.logger.debug('Fetching profile from Clickhouse', {
-      projectId: profile.project_id,
-      profileId: profile.id,
-    });
+    logger.debug('Fetching profile from Clickhouse');
     const result = await chQuery<IClickhouseProfile>(
       `SELECT *
        FROM ${TABLE_NAMES.profiles}
@@ -175,10 +170,8 @@ export class ProfileBuffer extends BaseBuffer {
        LIMIT 1`,
     );
 
-    this.logger.debug('Clickhouse fetch result', {
+    logger.debug('Clickhouse fetch result', {
       found: !!result[0],
-      projectId: profile.project_id,
-      profileId: profile.id,
     });
     return result[0] || null;
   }
