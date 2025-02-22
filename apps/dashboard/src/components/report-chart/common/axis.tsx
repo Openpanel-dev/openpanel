@@ -22,10 +22,7 @@ export function getYAxisWidth(value: string | undefined | null) {
   return charLength * value.length + charLength;
 }
 
-export const useYAxisProps = ({
-  hide,
-  tickFormatter,
-}: {
+export const useYAxisProps = (options?: {
   hide?: boolean;
   tickFormatter?: (value: number) => string;
 }) => {
@@ -36,12 +33,14 @@ export const useYAxisProps = ({
 
   return {
     ...AXIS_FONT_PROPS,
-    width: hide ? 0 : width,
+    width: options?.hide ? 0 : width,
     axisLine: false,
     tickLine: false,
     allowDecimals: false,
     tickFormatter: (value: number) => {
-      const tick = tickFormatter ? tickFormatter(value) : number.short(value);
+      const tick = options?.tickFormatter
+        ? options.tickFormatter(value)
+        : number.short(value);
       const newWidth = getYAxisWidth(tick);
       ref.current.push(newWidth);
       setWidthDebounced(Math.max(...ref.current));

@@ -60,6 +60,9 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../../packages/integrations
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../../packages/json
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -199,6 +202,9 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../../packages/integrations
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../../packages/json
       '@openpanel/nextjs':
         specifier: 1.0.3
         version: 1.0.3(next@14.2.1(@babel/core@7.24.5)(@opentelemetry/api@1.8.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -473,6 +479,9 @@ importers:
         specifier: ^3.22.4
         version: 3.22.4
     devDependencies:
+      '@openpanel/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@openpanel/trpc':
         specifier: workspace:*
         version: link:../../packages/trpc
@@ -657,6 +666,9 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../../packages/integrations
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../../packages/json
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -886,6 +898,9 @@ importers:
       '@openpanel/constants':
         specifier: workspace:*
         version: link:../constants
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../json
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../logger
@@ -1007,6 +1022,25 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
+  packages/json:
+    dependencies:
+      superjson:
+        specifier: ^1.13.3
+        version: 1.13.3
+    devDependencies:
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@openpanel/validation':
+        specifier: workspace:*
+        version: link:../validation
+      '@types/node':
+        specifier: 20.14.8
+        version: 20.14.8
+      typescript:
+        specifier: ^5.2.2
+        version: 5.6.3
+
   packages/logger:
     dependencies:
       '@hyperdx/node-opentelemetry':
@@ -1032,8 +1066,8 @@ importers:
   packages/payments:
     dependencies:
       '@polar-sh/sdk':
-        specifier: ^0.19.2
-        version: 0.19.2(zod@3.23.8)
+        specifier: ^0.26.1
+        version: 0.26.1(zod@3.23.8)
     devDependencies:
       '@openpanel/tsconfig':
         specifier: workspace:*
@@ -1075,10 +1109,16 @@ importers:
 
   packages/redis:
     dependencies:
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../json
       ioredis:
         specifier: ^5.4.1
         version: 5.4.1
     devDependencies:
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../db
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -4051,8 +4091,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@polar-sh/sdk@0.19.2':
-    resolution: {integrity: sha512-n1emRNmhcAzRfVAWBiVVCJ2krBSZ4wANVTRO7hCMchYCkxyV+kiRdjyvBdVG3JpRsS6SR7yBr2+CRJkuHPPeDg==}
+  '@polar-sh/sdk@0.26.1':
+    resolution: {integrity: sha512-OEaxiNJaxpeNi7LANHR5S71BAyORk6W0lwkfHcrGyMGS9VDdgXnZjB8QZ3tFSXbQvt3yZdHShX6pPC8xOxNvFw==}
     peerDependencies:
       zod: '>= 3'
 
@@ -15625,7 +15665,7 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@polar-sh/sdk@0.19.2(zod@3.23.8)':
+  '@polar-sh/sdk@0.26.1(zod@3.23.8)':
     dependencies:
       standardwebhooks: 1.0.0
       zod: 3.23.8

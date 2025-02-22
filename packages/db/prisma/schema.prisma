@@ -47,18 +47,21 @@ model Organization {
   invites         Invite[]
 
   // Subscription
-  subscriptionId                String?
-  subscriptionCustomerId        String?
-  subscriptionPriceId           String?
-  subscriptionProductId         String?
-  subscriptionStatus            String?
-  subscriptionStartsAt          DateTime?
-  subscriptionEndsAt            DateTime?
-  subscriptionCreatedByUserId   String?
-  subscriptionCreatedBy         User?     @relation(name: "subscriptionCreatedBy", fields: [subscriptionCreatedByUserId], references: [id])
-  subscriptionPeriodEventsCount Int       @default(0)
-  subscriptionPeriodLimit       Int       @default(0)
-  subscriptionInterval          String?
+  subscriptionId                          String?
+  subscriptionCustomerId                  String?
+  subscriptionPriceId                     String?
+  subscriptionProductId                   String?
+  /// [IPrismaSubscriptionStatus]
+  subscriptionStatus                      String?
+  subscriptionStartsAt                    DateTime?
+  subscriptionEndsAt                      DateTime?
+  subscriptionCanceledAt                  DateTime?
+  subscriptionCreatedByUserId             String?
+  subscriptionCreatedBy                   User?     @relation(name: "subscriptionCreatedBy", fields: [subscriptionCreatedByUserId], references: [id])
+  subscriptionPeriodEventsCount           Int       @default(0)
+  subscriptionPeriodEventsCountExceededAt DateTime?
+  subscriptionPeriodEventsLimit           Int       @default(0)
+  subscriptionInterval                    String?
 
   @@map("organizations")
 }

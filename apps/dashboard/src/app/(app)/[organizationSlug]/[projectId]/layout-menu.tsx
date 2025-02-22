@@ -13,6 +13,7 @@ import {
   LayoutPanelTopIcon,
   PlusIcon,
   ScanEyeIcon,
+  ServerIcon,
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ import type { LucideIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 import { ProjectLink } from '@/components/links';
+import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
 import { differenceInDays, format } from 'date-fns';
 
@@ -61,13 +63,34 @@ export default function LayoutMenu({
   dashboards,
   organization,
 }: LayoutMenuProps) {
-  const { isTrial, isExpired, subscriptionEndsAt } = organization;
+  const number = useNumber();
+  const {
+    isTrial,
+    isExpired,
+    isExceeded,
+    subscriptionEndsAt,
+    subscriptionPeriodEventsCount,
+    subscriptionPeriodEventsLimit,
+  } = organization;
   return (
     <>
       <div className="col border rounded mb-2 divide-y">
+        {process.env.SELF_HOSTED && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row items-center gap-2 pointer-events-none',
+            )}
+          >
+            <ServerIcon size={20} />
+            <div className="flex-1 col gap-1">
+              <div className="font-medium">Self-hosted</div>
+            </div>
+          </ProjectLink>
+        )}
         {isTrial && subscriptionEndsAt && (
           <ProjectLink
-            href={'/settings/organization'}
+            href={'/settings/organization?tab=billing'}
             className={cn(
               'rounded p-2 row items-center gap-2 hover:bg-def-200',
             )}
@@ -83,7 +106,7 @@ export default function LayoutMenu({
         )}
         {isExpired && subscriptionEndsAt && (
           <ProjectLink
-            href={'/settings/organization'}
+            href={'/settings/organization?tab=billing'}
             className={cn(
               'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
             )}
@@ -93,6 +116,23 @@ export default function LayoutMenu({
               <div className="font-medium">Subscription expired</div>
               <div className="text-sm opacity-80">
                 {differenceInDays(new Date(), subscriptionEndsAt)} days ago
+              </div>
+            </div>
+          </ProjectLink>
+        )}
+        {isExceeded && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-0.5">
+              <div className="font-medium">Events limit exceeded</div>
+              <div className="text-sm opacity-80">
+                {number.format(subscriptionPeriodEventsCount)} /{' '}
+                {number.format(subscriptionPeriodEventsLimit)}
               </div>
             </div>
           </ProjectLink>

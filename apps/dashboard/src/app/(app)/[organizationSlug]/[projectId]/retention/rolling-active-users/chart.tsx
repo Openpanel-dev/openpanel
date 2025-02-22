@@ -59,9 +59,7 @@ const Chart = ({ data }: Props) => {
     mau: data.monthly.find((m) => m.date === d.date)?.users,
   }));
   const xAxisProps = useXAxisProps({ interval: 'day' });
-  const yAxisProps = useYAxisProps({
-    data: data.monthly.map((d) => d.users),
-  });
+  const yAxisProps = useYAxisProps();
   return (
     <div className="aspect-video max-h-[300px] w-full p-4">
       <ResponsiveContainer>

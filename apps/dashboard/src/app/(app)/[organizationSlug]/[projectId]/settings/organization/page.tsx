@@ -25,6 +25,7 @@ export default async function Page({
   params: { organizationSlug: organizationId },
   searchParams,
 }: PageProps) {
+  const isBillingEnabled = !process.env.SELF_HOSTED;
   const tab = parseAsStringEnum(['org', 'billing', 'members', 'invites'])
     .withDefault('org')
     .parseServerSide(searchParams.tab);
@@ -73,9 +74,11 @@ export default async function Page({
         <PageTabsLink href={'?tab=org'} isActive={tab === 'org'}>
           Organization
         </PageTabsLink>
-        <PageTabsLink href={'?tab=billing'} isActive={tab === 'billing'}>
-          Billing
-        </PageTabsLink>
+        {isBillingEnabled && (
+          <PageTabsLink href={'?tab=billing'} isActive={tab === 'billing'}>
+            Billing
+          </PageTabsLink>
+        )}
         <PageTabsLink href={'?tab=members'} isActive={tab === 'members'}>
           Members
         </PageTabsLink>
@@ -85,7 +88,7 @@ export default async function Page({
       </PageTabs>
 
       {tab === 'org' && <Organization organization={organization} />}
-      {tab === 'billing' && (
+      {tab === 'billing' && isBillingEnabled && (
         <div className="max-w-screen-sm col gap-8">
           <Billing organization={organization} />
           <Usage organization={organization} />

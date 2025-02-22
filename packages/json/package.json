@@ -1,17 +1,17 @@
 {
-  "name": "@openpanel/payments",
+  "name": "@openpanel/json",
   "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.26.1"
+    "superjson": "^1.13.3"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
+    "@openpanel/validation": "workspace:*",
     "@types/node": "20.14.8",
-    "@types/react": "^18.2.0",
     "typescript": "^5.2.2"
   }
 }

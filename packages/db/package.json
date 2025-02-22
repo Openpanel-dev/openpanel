@@ -15,6 +15,7 @@
     "@clickhouse/client": "^1.2.0",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
+    "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/queue": "workspace:^",
     "@openpanel/redis": "workspace:*",

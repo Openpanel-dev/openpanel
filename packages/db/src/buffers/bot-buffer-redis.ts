@@ -1,6 +1,6 @@
-import { type Redis, getRedisCache, runEvery } from '@openpanel/redis';
+import { type Redis, getRedisCache } from '@openpanel/redis';
 
-import { getSafeJson } from '@openpanel/common';
+import { getSafeJson } from '@openpanel/json';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import type { IClickhouseBotEvent } from '../services/event.service';
 import { BaseBuffer } from './base-buffer';

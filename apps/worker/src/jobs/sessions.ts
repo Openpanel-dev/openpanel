@@ -5,7 +5,8 @@ import type { SessionsQueuePayload } from '@openpanel/queue';
 import { logger } from '@/utils/logger';
 import {
   db,
-  getOrganizationEventsCount,
+  getOrganizationBillingEventsCount,
+  getOrganizationByProjectIdCached,
   getProjectEventsCount,
 } from '@openpanel/db';
 import { cacheable } from '@openpanel/redis';
@@ -42,7 +43,7 @@ const updateEventsCount = cacheable(async function updateEventsCount(
   }
 
   const organizationEventsCount =
-    await getOrganizationEventsCount(organization);
+    await getOrganizationBillingEventsCount(organization);
   const projectEventsCount = await getProjectEventsCount(projectId);
 
   if (projectEventsCount) {
@@ -63,7 +64,17 @@ const updateEventsCount = cacheable(async function updateEventsCount(
       },
       data: {
         subscriptionPeriodEventsCount: organizationEventsCount,
+        subscriptionPeriodEventsCountExceededAt:
+          organizationEventsCount >
+            organization.subscriptionPeriodEventsLimit &&
+          !organization.subscriptionPeriodEventsCountExceededAt
+            ? new Date()
+            : organizationEventsCount <=
+                organization.subscriptionPeriodEventsLimit
+              ? null
+              : organization.subscriptionPeriodEventsCountExceededAt,
       },
     });
+    await getOrganizationByProjectIdCached.clear(projectId);
   }
 }, 60 * 60);

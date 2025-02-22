@@ -3,11 +3,98 @@ import { Polar } from '@polar-sh/sdk';
 export {
   validateEvent as validatePolarEvent,
   WebhookVerificationError as PolarWebhookVerificationError,
+  // @ts-expect-error
 } from '@polar-sh/sdk/webhooks';
 
-export type { ProductPrice } from '@polar-sh/sdk/models/components';
+export type IPolarProduct = Awaited<ReturnType<typeof getProduct>>;
+export type IPolarPrice = IPolarProduct['prices'][number];
 
 export const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
   server: 'sandbox', // Use this option if you're using the sandbox environment - else use 'production' or omit the parameter
 });
+
+export async function getProducts() {
+  const products = await polar.products.list({
+    limit: 100,
+    isArchived: false,
+    sorting: ['price_amount'],
+  });
+  return products.result.items;
+}
+
+export async function getProduct(id: string) {
+  return polar.products.get({ id });
+}
+
+export async function createPortal({
+  customerId,
+}: {
+  customerId: string;
+}) {
+  return polar.customerSessions.create({
+    customerId,
+  });
+}
+
+export async function createCheckout({
+  priceId,
+  organizationId,
+  projectId,
+  user,
+  ipAddress,
+}: {
+  priceId: string;
+  organizationId: string;
+  projectId?: string;
+  user: {
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  };
+  ipAddress: string;
+}) {
+  return polar.checkouts.create({
+    productPriceId: priceId,
+    successUrl: projectId
+      ? `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings?tab=billing`
+      : `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/settings?tab=billing`,
+    customerEmail: user.email,
+    customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),
+    customerIpAddress: ipAddress,
+    metadata: {
+      organizationId,
+      userId: user.id,
+    },
+  });
+}
+
+export function cancelSubscription(subscriptionId: string) {
+  return polar.subscriptions.update({
+    id: subscriptionId,
+    subscriptionUpdate: {
+      cancelAtPeriodEnd: true,
+      revoke: null,
+    },
+  });
+}
+
+export function reactivateSubscription(subscriptionId: string) {
+  return polar.subscriptions.update({
+    id: subscriptionId,
+    subscriptionUpdate: {
+      cancelAtPeriodEnd: false,
+      revoke: null,
+    },
+  });
+}
+
+export function changeSubscription(subscriptionId: string, productId: string) {
+  return polar.subscriptions.update({
+    id: subscriptionId,
+    subscriptionUpdate: {
+      productId,
+    },
+  });
+}

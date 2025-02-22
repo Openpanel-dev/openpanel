@@ -32,7 +32,6 @@ export function Chart({ data }: Props) {
 
   const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
   const yAxisProps = useYAxisProps({
-    data: [100],
     hide: hideYAxis,
     tickFormatter: (value) => `${value}%`,
   });

@@ -57,9 +57,7 @@ function Tooltip({ payload }: any) {
 
 const Chart = ({ data }: Props) => {
   const xAxisProps = useXAxisProps();
-  const yAxisProps = useYAxisProps({
-    data: data.map((d) => d.retention),
-  });
+  const yAxisProps = useYAxisProps();
   return (
     <div className="aspect-video max-h-[300px] w-full p-4">
       <ResponsiveContainer>

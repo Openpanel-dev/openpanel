@@ -105,7 +105,6 @@ export function Chart({ data }: Props) {
   }, [series]);
 
   const yAxisProps = useYAxisProps({
-    data: [data.metrics.max],
     hide: hideYAxis,
   });
   const xAxisProps = useXAxisProps({

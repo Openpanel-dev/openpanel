@@ -4,7 +4,7 @@ import debounce from 'lodash.debounce';
 import { use, useEffect, useMemo, useState } from 'react';
 import useWebSocket from 'react-use-websocket';
 
-import { getSuperJson } from '@openpanel/common';
+import { getSuperJson } from '@openpanel/json';
 
 type UseWSOptions = {
   debounce?: {

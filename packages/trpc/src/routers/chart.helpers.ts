@@ -512,15 +512,19 @@ export async function getChart(input: IChartInput) {
     );
   }
 
-  if (organization.subscriptionCurrentPeriodEnd) {
-    input.endDate = organization.subscriptionCurrentPeriodEnd.toISOString();
-  }
-
   const currentPeriod = getChartStartEndDate(input);
   const previousPeriod = getChartPrevStartEndDate({
     range: input.range,
     ...currentPeriod,
   });
+
+  // If the current period end date is after the subscription chart end date, we need to use the subscription chart end date
+  if (
+    organization.subscriptionChartEndDate &&
+    new Date(currentPeriod.endDate) > organization.subscriptionChartEndDate
+  ) {
+    currentPeriod.endDate = organization.subscriptionChartEndDate.toISOString();
+  }
 
   const promises = [getChartSeries({ ...input, ...currentPeriod })];
 

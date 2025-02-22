@@ -21,6 +21,7 @@
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/integrations": "workspace:^",
+    "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",

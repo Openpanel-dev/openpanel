@@ -25,7 +25,7 @@ async function createOrGetOrganization(
         name: input.organization,
         createdByUserId: user.id,
         subscriptionEndsAt: addDays(new Date(), 30),
-        subscriptionStatus: 'trial',
+        subscriptionStatus: 'trialing',
       },
     });
   }

@@ -7,8 +7,10 @@ import {
 } from '@openpanel/integrations/src/slack';
 import {
   PolarWebhookVerificationError,
+  getProduct,
   validatePolarEvent,
 } from '@openpanel/payments';
+import { publishEvent } from '@openpanel/redis';
 import { zSlackAuthResponse } from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
@@ -129,7 +131,32 @@ export async function polarWebhook(
           })
           .parse(event.data.metadata);
 
-        console.log('event.data', JSON.stringify(event.data, null, 2));
+        const product = await getProduct(event.data.productId);
+        const eventsLimit = product.metadata?.eventsLimit;
+        const subscriptionPeriodEventsLimit =
+          typeof eventsLimit === 'number' ? eventsLimit : undefined;
+
+        if (!subscriptionPeriodEventsLimit) {
+          request.log.warn('No events limit found for product', { product });
+        }
+
+        // If we get a cancel event and we cant find it we should ignore it
+        // Since we only have one subscription per organization but you can have several in polar
+        // we dont want to override the existing subscription with a canceled one
+        // TODO: might be other events that we should handle like this?!
+        if (event.data.status === 'canceled') {
+          const orgSubscription = await db.organization.findFirst({
+            where: {
+              subscriptionCustomerId: event.data.customer.id,
+              subscriptionId: event.data.id,
+              subscriptionStatus: 'active',
+            },
+          });
+
+          if (!orgSubscription) {
+            return reply.status(202).send('OK');
+          }
+        }
 
         await db.organization.update({
           where: {
@@ -142,20 +169,27 @@ export async function polarWebhook(
             subscriptionProductId: event.data.productId,
             subscriptionStatus: event.data.status,
             subscriptionStartsAt: event.data.currentPeriodStart,
+            subscriptionCanceledAt: event.data.canceledAt,
             subscriptionEndsAt: event.data.currentPeriodEnd,
             subscriptionCreatedByUserId: metadata.userId,
             subscriptionInterval: event.data.recurringInterval,
+            subscriptionPeriodEventsCount: 0,
+            subscriptionPeriodEventsLimit,
           },
+        });
+
+        await publishEvent('organization', 'subscription_updated', {
+          organizationId: metadata.organizationId,
         });
 
         break;
       }
     }
 
-    reply.status(202).send('');
+    reply.status(202).send('OK');
   } catch (error) {
     if (error instanceof PolarWebhookVerificationError) {
-      request.log.error('Polar webhook error', error);
+      request.log.error('Polar webhook error', { error });
       reply.status(403).send('');
     }
 

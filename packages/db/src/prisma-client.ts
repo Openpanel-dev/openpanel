@@ -37,9 +37,21 @@ const getPrismaClient = () => {
       result: {
         organization: {
           subscriptionStatus: {
-            needs: { subscriptionStatus: true },
+            needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
             compute(org) {
-              return org.subscriptionStatus || 'trial';
+              return org.subscriptionStatus || 'trialing';
+            },
+          },
+          hasSubscription: {
+            needs: { subscriptionStatus: true, subscriptionEndsAt: true },
+            compute(org) {
+              if (
+                [null, 'canceled', 'trialing'].includes(org.subscriptionStatus)
+              ) {
+                return false;
+              }
+
+              return true;
             },
           },
           slug: {
@@ -48,32 +60,58 @@ const getPrismaClient = () => {
               return org.id;
             },
           },
+          subscriptionChartEndDate: {
+            needs: {
+              subscriptionEndsAt: true,
+              subscriptionPeriodEventsCountExceededAt: true,
+            },
+            compute(org) {
+              if (
+                org.subscriptionEndsAt &&
+                org.subscriptionPeriodEventsCountExceededAt
+              ) {
+                return org.subscriptionEndsAt >
+                  org.subscriptionPeriodEventsCountExceededAt
+                  ? org.subscriptionPeriodEventsCountExceededAt
+                  : org.subscriptionEndsAt;
+              }
+
+              if (org.subscriptionEndsAt) {
+                return org.subscriptionEndsAt;
+              }
+
+              return new Date();
+            },
+          },
           isTrial: {
             needs: { subscriptionStatus: true, subscriptionEndsAt: true },
             compute(org) {
               const isSubscriptionInFuture =
                 org.subscriptionEndsAt && org.subscriptionEndsAt > new Date();
               return (
-                org.subscriptionStatus === 'trial' && isSubscriptionInFuture
+                (org.subscriptionStatus === 'trialing' ||
+                  org.subscriptionStatus === null) &&
+                isSubscriptionInFuture
               );
             },
           },
           isExpired: {
             needs: { subscriptionEndsAt: true },
             compute(org) {
-              const isSubscriptionInFuture =
-                org.subscriptionEndsAt && org.subscriptionEndsAt > new Date();
-              return !isSubscriptionInFuture && org.subscriptionEndsAt;
+              return (
+                org.subscriptionEndsAt && org.subscriptionEndsAt < new Date()
+              );
             },
           },
           isExceeded: {
             needs: {
               subscriptionPeriodEventsCount: true,
-              subscriptionPeriodLimit: true,
+              subscriptionPeriodEventsLimit: true,
             },
             compute(org) {
               return (
-                org.subscriptionPeriodEventsCount > org.subscriptionPeriodLimit
+                org.subscriptionPeriodEventsCount >
+                org.subscriptionPeriodEventsLimit
               );
             },
           },

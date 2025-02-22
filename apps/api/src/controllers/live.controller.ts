@@ -1,66 +1,22 @@
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyRequest } from 'fastify';
 import superjson from 'superjson';
 import type * as WebSocket from 'ws';
 
-import { getSuperJson } from '@openpanel/common';
-import type { IServiceEvent, Notification } from '@openpanel/db';
 import {
-  TABLE_NAMES,
   eventBuffer,
-  getEvents,
   getProfileByIdCached,
   transformMinimalEvent,
 } from '@openpanel/db';
-import { getRedisCache, getRedisPub, getRedisSub } from '@openpanel/redis';
+import { setSuperJson } from '@openpanel/json';
+import {
+  psubscribeToPublishedEvent,
+  subscribeToPublishedEvent,
+} from '@openpanel/redis';
 import { getProjectAccess } from '@openpanel/trpc';
+import { getOrganizationAccess } from '@openpanel/trpc/src/access';
 
 export function getLiveEventInfo(key: string) {
   return key.split(':').slice(2) as [string, string];
-}
-
-export async function testVisitors(
-  req: FastifyRequest<{
-    Params: {
-      projectId: string;
-    };
-  }>,
-  reply: FastifyReply,
-) {
-  const events = await getEvents(
-    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`,
-  );
-  const event = events[Math.floor(Math.random() * events.length)];
-  if (!event) {
-    return reply.status(404).send('No event found');
-  }
-  event.projectId = req.params.projectId;
-  getRedisPub().publish('event:received', superjson.stringify(event));
-  getRedisCache().set(
-    `live:event:${event.projectId}:${Math.random() * 1000}`,
-    '',
-    'EX',
-    10,
-  );
-  reply.status(202).send(event);
-}
-
-export async function testEvents(
-  req: FastifyRequest<{
-    Params: {
-      projectId: string;
-    };
-  }>,
-  reply: FastifyReply,
-) {
-  const events = await getEvents(
-    `SELECT * FROM ${TABLE_NAMES.events} LIMIT 500`,
-  );
-  const event = events[Math.floor(Math.random() * events.length)];
-  if (!event) {
-    return reply.status(404).send('No event found');
-  }
-  getRedisPub().publish('event:saved', superjson.stringify(event));
-  reply.status(202).send(event);
 }
 
 export function wsVisitors(
@@ -75,40 +31,29 @@ export function wsVisitors(
 ) {
   const { params } = req;
 
-  getRedisSub().subscribe('event:received');
-  getRedisSub().psubscribe('__keyevent@0__:expired');
-
-  const message = (channel: string, message: string) => {
-    if (channel === 'event:received') {
-      const event = getSuperJson<IServiceEvent>(message);
-      if (event?.projectId === params.projectId) {
-        eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
-          connection.socket.send(String(count));
-        });
-      }
-    }
-  };
-  const pmessage = (pattern: string, channel: string, message: string) => {
-    if (!message.startsWith('live:visitor:')) {
-      return null;
-    }
-
-    const [projectId] = getLiveEventInfo(message);
-    if (projectId && projectId === params.projectId) {
+  const unsubscribe = subscribeToPublishedEvent('events', 'saved', (event) => {
+    if (event?.projectId === params.projectId) {
       eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
         connection.socket.send(String(count));
       });
     }
-  };
+  });
 
-  getRedisSub().on('message', message);
-  getRedisSub().on('pmessage', pmessage);
+  const punsubscribe = psubscribeToPublishedEvent(
+    '__keyevent@0__:expired',
+    (key) => {
+      const [projectId] = getLiveEventInfo(key);
+      if (projectId && projectId === params.projectId) {
+        eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
+          connection.socket.send(String(count));
+        });
+      }
+    },
+  );
 
   connection.socket.on('close', () => {
-    getRedisSub().unsubscribe('event:saved');
-    getRedisSub().punsubscribe('__keyevent@0__:expired');
-    getRedisSub().off('message', message);
-    getRedisSub().off('pmessage', pmessage);
+    unsubscribe();
+    punsubscribe();
   });
 }
 
@@ -122,13 +67,12 @@ export async function wsProjectEvents(
     };
     Querystring: {
       token?: string;
-      type?: string;
+      type?: 'saved' | 'received';
     };
   }>,
 ) {
   const { params, query } = req;
   const type = query.type || 'saved';
-  const subscribeToEvent = `event:${type}`;
 
   if (!['saved', 'received'].includes(type)) {
     connection.socket.send('Invalid type');
@@ -148,12 +92,11 @@ export async function wsProjectEvents(
     projectId: params.projectId,
   });
 
-  getRedisSub().subscribe(subscribeToEvent);
-
-  const message = async (channel: string, message: string) => {
-    if (channel === subscribeToEvent) {
-      const event = getSuperJson<IServiceEvent>(message);
-      if (event?.projectId === params.projectId) {
+  const unsubscribe = subscribeToPublishedEvent(
+    'events',
+    type,
+    async (event) => {
+      if (event.projectId === params.projectId) {
         const profile = await getProfileByIdCached(
           event.profileId,
           event.projectId,
@@ -169,15 +112,10 @@ export async function wsProjectEvents(
           ),
         );
       }
-    }
-  };
+    },
+  );
 
-  getRedisSub().on('message', message as any);
-
-  connection.socket.on('close', () => {
-    getRedisSub().unsubscribe(subscribeToEvent);
-    getRedisSub().off('message', message as any);
-  });
+  connection.socket.on('close', () => unsubscribe());
 }
 
 export async function wsProjectNotifications(
@@ -188,12 +126,9 @@ export async function wsProjectNotifications(
     Params: {
       projectId: string;
     };
-    Querystring: {
-      token?: string;
-    };
   }>,
 ) {
-  const { params, query } = req;
+  const { params } = req;
   const userId = req.session?.userId;
 
   if (!userId) {
@@ -201,8 +136,6 @@ export async function wsProjectNotifications(
     connection.socket.close();
     return;
   }
-
-  const subscribeToEvent = 'notification';
 
   const access = await getProjectAccess({
     userId,
@@ -215,21 +148,56 @@ export async function wsProjectNotifications(
     return;
   }
 
-  getRedisSub().subscribe(subscribeToEvent);
-
-  const message = async (channel: string, message: string) => {
-    if (channel === subscribeToEvent) {
-      const notification = getSuperJson<Notification>(message);
-      if (notification?.projectId === params.projectId) {
+  const unsubscribe = subscribeToPublishedEvent(
+    'notification',
+    'created',
+    (notification) => {
+      if (notification.projectId === params.projectId) {
         connection.socket.send(superjson.stringify(notification));
       }
-    }
-  };
+    },
+  );
 
-  getRedisSub().on('message', message as any);
+  connection.socket.on('close', () => unsubscribe());
+}
 
-  connection.socket.on('close', () => {
-    getRedisSub().unsubscribe(subscribeToEvent);
-    getRedisSub().off('message', message as any);
+export async function wsOrganizationEvents(
+  connection: {
+    socket: WebSocket;
+  },
+  req: FastifyRequest<{
+    Params: {
+      organizationId: string;
+    };
+  }>,
+) {
+  const { params } = req;
+  const userId = req.session?.userId;
+
+  if (!userId) {
+    connection.socket.send('No active session');
+    connection.socket.close();
+    return;
+  }
+
+  const access = await getOrganizationAccess({
+    userId,
+    organizationId: params.organizationId,
   });
+
+  if (!access) {
+    connection.socket.send('No access');
+    connection.socket.close();
+    return;
+  }
+
+  const unsubscribe = subscribeToPublishedEvent(
+    'organization',
+    'subscription_updated',
+    (message) => {
+      connection.socket.send(setSuperJson(message));
+    },
+  );
+
+  connection.socket.on('close', () => unsubscribe());
 }
