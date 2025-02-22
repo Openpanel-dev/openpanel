@@ -10,6 +10,7 @@ import {
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
+import client from 'prom-client';
 
 import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
@@ -20,6 +21,9 @@ import { logger } from './utils/logger';
 sourceMapSupport.install();
 
 async function start() {
+  const collectDefaultMetrics = client.collectDefaultMetrics;
+  collectDefaultMetrics({ register });
+
   const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);
   const app = express();
 
