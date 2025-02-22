@@ -26,6 +26,7 @@ const getPrismaClient = () => {
             logger.info('Prisma operation', {
               operation,
               args,
+              model,
             });
           }
           return query(args);
