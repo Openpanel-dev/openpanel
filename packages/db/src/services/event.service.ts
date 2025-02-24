@@ -6,7 +6,7 @@ import { toDots } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
-import { botBuffer, eventBuffer } from '../buffers';
+import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
 import {
   TABLE_NAMES,
   chQuery,
@@ -246,8 +246,13 @@ export async function getEvents(
     const ids = events.map((e) => e.profile_id);
     const profiles = await getProfiles(ids, projectId);
 
+    const map = new Map<string, IServiceProfile>();
+    for (const profile of profiles) {
+      map.set(profile.id, profile);
+    }
+
     for (const event of events) {
-      event.profile = profiles.find((p) => p.id === event.profile_id);
+      event.profile = map.get(event.profile_id);
     }
   }
 
@@ -262,8 +267,12 @@ export async function getEvents(
       },
       select: options.meta === true ? undefined : options.meta,
     });
+    const map = new Map<string, EventMeta>();
+    for (const meta of metas) {
+      map.set(meta.name, meta);
+    }
     for (const event of events) {
-      event.meta = metas.find((m) => m.name === event.name);
+      event.meta = map.get(event.name);
     }
   }
   return events.map(transformEvent);
@@ -339,6 +348,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_version: payload.sdkVersion ?? '',
   };
 
+  await sessionBuffer.add(event);
   await eventBuffer.add(event);
 
   return {
@@ -373,7 +383,7 @@ export async function getEventList({
 
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
-  sb.where.projectId = `project_id = ${escape(projectId)}`;
+  sb.where.projectId = `e.project_id = ${escape(projectId)}`;
   const select = mergeDeepRight(
     {
       id: true,
@@ -402,7 +412,8 @@ export async function getEventList({
     sb.select.deviceId = 'device_id';
   }
   if (select.profileId) {
-    sb.select.profileId = 'profile_id';
+    sb.select.profileId = 's.profile_id as profile_id';
+    sb.joins.sessions = 'JOIN sessions s ON e.session_id = s.id';
   }
   if (select.projectId) {
     sb.select.projectId = 'project_id';
@@ -481,15 +492,15 @@ export async function getEventList({
   }
 
   if (profileId) {
-    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
+    sb.where.deviceId = `(e.device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
   }
 
   if (startDate && endDate) {
-    sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
+    sb.where.created_at = `toDate(e.created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
   }
 
   if (events && events.length > 0) {
-    sb.where.events = `name IN (${join(
+    sb.where.events = `e.name IN (${join(
       events.map((event) => escape(event)),
       ',',
     )})`;
@@ -507,11 +518,11 @@ export async function getEventList({
   // }
 
   sb.orderBy.created_at =
-    'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
+    'toDate(created_at) DESC, created_at DESC, s.profile_id DESC, name DESC';
 
   return getEvents(getSql(), {
-    profile: select.profile ?? true,
     meta: select.meta ?? true,
+    profile: select.profile ?? true,
   });
 }
 

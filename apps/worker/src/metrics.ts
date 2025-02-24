@@ -1,6 +1,12 @@
 import client from 'prom-client';
 
-import { botBuffer, db, eventBuffer, profileBuffer } from '@openpanel/db';
+import {
+  botBuffer,
+  db,
+  eventBuffer,
+  profileBuffer,
+  sessionBuffer,
+} from '@openpanel/db';
 import { cronQueue, eventsQueue, sessionsQueue } from '@openpanel/queue';
 
 const Registry = client.Registry;
@@ -94,6 +100,17 @@ register.registerMetric(
     help: 'Number of unprocessed bot events',
     async collect() {
       const metric = await botBuffer.getBufferSize();
+      this.set(metric);
+    },
+  }),
+);
+
+register.registerMetric(
+  new client.Gauge({
+    name: `buffer_${sessionBuffer.name}_count`,
+    help: 'Number of unprocessed sessions',
+    async collect() {
+      const metric = await sessionBuffer.getBufferSize();
       this.set(metric);
     },
   }),

@@ -11,6 +11,7 @@ export * from './src/services/project.service';
 export * from './src/services/reports.service';
 export * from './src/services/salt.service';
 export * from './src/services/share.service';
+export * from './src/services/session.service';
 export * from './src/services/user.service';
 export * from './src/services/reference.service';
 export * from './src/services/id.service';
