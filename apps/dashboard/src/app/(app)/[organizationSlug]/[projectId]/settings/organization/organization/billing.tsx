@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
+import { Tooltiper } from '@/components/ui/tooltip';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { useAppParams } from '@/hooks/useAppParams';
@@ -34,7 +35,9 @@ export default function Billing({ organization }: Props) {
   const [customerSessionToken, setCustomerSessionToken] = useQueryState(
     'customer_session_token',
   );
-  const productsQuery = api.subscription.products.useQuery();
+  const productsQuery = api.subscription.products.useQuery({
+    organizationId: organization.id,
+  });
   const portalMutation = api.subscription.portal.useMutation({
     onSuccess(data) {
       if (data?.url) {
@@ -100,6 +103,24 @@ export default function Billing({ organization }: Props) {
               if (!price) {
                 return null;
               }
+
+              if (price.amountType === 'free') {
+                return (
+                  <div className="row gap-2 whitespace-nowrap">
+                    <div className="items-center text-right justify-end gap-4 flex-1 row">
+                      <span>Free</span>
+                      <CheckoutButton
+                        disabled={item.disabled}
+                        key={price.id}
+                        price={price}
+                        organization={organization}
+                        projectId={projectId}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
               if (price.amountType !== 'fixed') {
                 return null;
               }
@@ -118,6 +139,7 @@ export default function Billing({ organization }: Props) {
                       {recurringInterval === 'year' ? 'year' : 'month'}
                     </span>
                     <CheckoutButton
+                      disabled={item.disabled}
                       key={price.id}
                       price={price}
                       organization={organization}
@@ -236,10 +258,12 @@ function CheckoutButton({
   price,
   organization,
   projectId,
+  disabled,
 }: {
   price: IPolarPrice;
   organization: IServiceOrganization;
   projectId: string;
+  disabled?: string | null;
 }) {
   const isCurrentPrice = organization.subscriptionPriceId === price.id;
   const checkout = api.subscription.checkout.useMutation({
@@ -273,40 +297,48 @@ function CheckoutButton({
   const isBuyable = !isCanceled && !isActive;
 
   return (
-    <Button
-      key={price.id}
-      onClick={() => {
-        if (isBuyable || isCanceled) {
-          checkout.mutate({
-            projectId,
-            organizationId: organization.id,
-            productPriceId: price!.id,
-            productId: price.productId,
-          });
-        } else if (isActive) {
-          cancelSubscription.mutate({
-            organizationId: organization.id,
-          });
-        }
-      }}
-      variant={
-        isCanceled
-          ? 'default'
-          : isActive
-            ? 'ghost'
-            : isBuyable
-              ? 'cta'
-              : 'default'
-      }
-      loading={cancelSubscription.isLoading || checkout.isLoading}
+    <Tooltiper
+      content={disabled}
+      tooltipClassName="max-w-xs"
+      side="left"
+      disabled={!disabled}
     >
-      {isCanceled
-        ? 'Reactivate'
-        : isActive
-          ? 'Cancel subscription'
-          : isBuyable
-            ? 'Activate'
-            : 'default'}
-    </Button>
+      <Button
+        disabled={disabled !== null && isBuyable}
+        key={price.id}
+        onClick={() => {
+          if (isBuyable || isCanceled) {
+            checkout.mutate({
+              projectId,
+              organizationId: organization.id,
+              productPriceId: price!.id,
+              productId: price.productId,
+            });
+          } else if (isActive) {
+            cancelSubscription.mutate({
+              organizationId: organization.id,
+            });
+          }
+        }}
+        variant={
+          isCanceled
+            ? 'default'
+            : isActive
+              ? 'ghost'
+              : isBuyable
+                ? 'cta'
+                : 'default'
+        }
+        loading={cancelSubscription.isLoading || checkout.isLoading}
+      >
+        {isCanceled
+          ? 'Reactivate'
+          : isActive
+            ? 'Cancel subscription'
+            : isBuyable
+              ? 'Activate'
+              : 'default'}
+      </Button>
+    </Tooltiper>
   );
 }

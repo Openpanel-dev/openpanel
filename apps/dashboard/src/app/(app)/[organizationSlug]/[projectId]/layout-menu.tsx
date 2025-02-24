@@ -92,7 +92,7 @@ export default function LayoutMenu({
           <ProjectLink
             href={'/settings/organization?tab=billing'}
             className={cn(
-              'rounded p-2 row items-center gap-2 hover:bg-def-200',
+              'rounded p-2 row items-center gap-2 hover:bg-def-200 text-destructive',
             )}
           >
             <BanknoteIcon size={20} />
@@ -124,7 +124,7 @@ export default function LayoutMenu({
           <ProjectLink
             href={'/settings/organization?tab=billing'}
             className={cn(
-              'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
+              'rounded p-2 row gap-2 hover:bg-def-200 text-destructive',
             )}
           >
             <BanknoteIcon size={20} />

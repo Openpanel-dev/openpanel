@@ -65,9 +65,32 @@ export const subscriptionRouter = createTRPCRouter({
       };
     }),
 
-  products: protectedProcedure.query(async () => {
-    return await getCache('polar:products', 60 * 60 * 24, () => getProducts());
-  }),
+  products: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      const organization = await db.organization.findUniqueOrThrow({
+        where: {
+          id: input.organizationId,
+        },
+        select: {
+          subscriptionPeriodEventsCount: true,
+        },
+      });
+
+      return (
+        await getCache('polar:products', 60 * 60 * 24, () => getProducts())
+      ).map((product) => {
+        const eventsLimit = product.metadata.eventsLimit;
+        return {
+          ...product,
+          disabled:
+            typeof eventsLimit === 'number' &&
+            organization.subscriptionPeriodEventsCount >= eventsLimit
+              ? 'This product is not applicable since you have exceeded the limits for this subscription.'
+              : null,
+        };
+      });
+    }),
 
   usage: protectedProcedure
     .input(

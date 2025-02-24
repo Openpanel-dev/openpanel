@@ -123,6 +123,25 @@ export async function polarWebhook(
     );
 
     switch (event.type) {
+      case 'order.created': {
+        const metadata = z
+          .object({
+            organizationId: z.string(),
+          })
+          .parse(event.data.metadata);
+
+        if (event.data.billingReason === 'subscription_cycle') {
+          await db.organization.update({
+            where: {
+              id: metadata.organizationId,
+            },
+            data: {
+              subscriptionPeriodEventsCount: 0,
+            },
+          });
+        }
+        break;
+      }
       case 'subscription.updated': {
         const metadata = z
           .object({
@@ -173,7 +192,6 @@ export async function polarWebhook(
             subscriptionEndsAt: event.data.currentPeriodEnd,
             subscriptionCreatedByUserId: metadata.userId,
             subscriptionInterval: event.data.recurringInterval,
-            subscriptionPeriodEventsCount: 0,
             subscriptionPeriodEventsLimit,
           },
         });
@@ -195,4 +213,13 @@ export async function polarWebhook(
 
     throw error;
   }
+}
+
+function isToday(date: Date) {
+  const today = new Date();
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
 }

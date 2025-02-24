@@ -12,7 +12,19 @@ async function main() {
   const products = await getProducts();
   for (const price of PRICING) {
     if (price.price === 0) {
-      console.log('Skipping free product');
+      await polar.products.create({
+        organizationId: process.env.POLAR_ORGANIZATION_ID!,
+        name: `${formatEventsCount(price.events)} events per month (FREE)`,
+        recurringInterval: 'month',
+        prices: [
+          {
+            amountType: 'free',
+          },
+        ],
+        metadata: {
+          eventsLimit: price.events,
+        },
+      });
       continue;
     }
 

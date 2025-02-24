@@ -11,6 +11,7 @@ import { db, transformOrganization } from '@openpanel/db';
 import InvitesServer from './invites';
 import MembersServer from './members';
 import Billing from './organization/billing';
+import { BillingFaq } from './organization/billing-faq';
 import Organization from './organization/organization';
 import Usage from './organization/usage';
 
@@ -92,6 +93,7 @@ export default async function Page({
         <div className="max-w-screen-sm col gap-8">
           <Billing organization={organization} />
           <Usage organization={organization} />
+          <BillingFaq />
         </div>
       )}
       {tab === 'members' && <MembersServer organizationId={organizationId} />}

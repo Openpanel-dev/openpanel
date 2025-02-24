@@ -10,12 +10,12 @@ import Link from 'next/link';
 import * as React from 'react';
 
 const buttonVariants = cva(
-  'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:translate-y-[-1px]',
   {
     variants: {
       variant: {
         default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-        cta: 'bg-highlight text-white hover:bg-highlight',
+        cta: 'bg-highlight text-white hover:bg-highlight/80',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive/90',
         outline:
