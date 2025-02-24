@@ -7,6 +7,7 @@ export interface SqlBuilderObject {
   groupBy: Record<string, string>;
   orderBy: Record<string, string>;
   from: string;
+  joins: Record<string, string>;
   limit: number | undefined;
   offset: number | undefined;
 }
@@ -17,11 +18,12 @@ export function createSqlBuilder() {
 
   const sb: SqlBuilderObject = {
     where: {},
-    from: TABLE_NAMES.events,
+    from: `${TABLE_NAMES.events} e`,
     select: {},
     groupBy: {},
     orderBy: {},
     having: {},
+    joins: {},
     limit: undefined,
     offset: undefined,
   };
@@ -39,6 +41,8 @@ export function createSqlBuilder() {
     Object.keys(sb.orderBy).length ? `ORDER BY ${join(sb.orderBy, ', ')}` : '';
   const getLimit = () => (sb.limit ? `LIMIT ${sb.limit}` : '');
   const getOffset = () => (sb.offset ? `OFFSET ${sb.offset}` : '');
+  const getJoins = () =>
+    Object.keys(sb.joins).length ? join(sb.joins, ' ') : '';
 
   return {
     sb,
@@ -49,10 +53,12 @@ export function createSqlBuilder() {
     getGroupBy,
     getOrderBy,
     getHaving,
+    getJoins,
     getSql: () => {
       const sql = [
         getSelect(),
         getFrom(),
+        getJoins(),
         getWhere(),
         getGroupBy(),
         getHaving(),

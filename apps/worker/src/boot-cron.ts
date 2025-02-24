@@ -29,6 +29,11 @@ export async function bootCron() {
       type: 'flushProfiles',
       pattern: 1000 * 60,
     },
+    {
+      name: 'flush',
+      type: 'flushSessions',
+      pattern: 1000 * 10,
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
