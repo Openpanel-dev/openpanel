@@ -1,6 +1,6 @@
 import { cn } from '@/utils/cn';
 
-interface Props<T> {
+export interface Props<T> {
   columns: {
     name: string;
     render: (item: T) => React.ReactNode;
@@ -9,6 +9,8 @@ interface Props<T> {
   keyExtractor: (item: T) => string;
   data: T[];
   className?: string;
+  eachColumn?: (item: T) => React.ReactNode;
+  columnClassName?: string;
 }
 
 export const WidgetTableHead = ({
@@ -21,7 +23,7 @@ export const WidgetTableHead = ({
   return (
     <thead
       className={cn(
-        'text-def-1000 sticky top-0 z-10 border-b border-border bg-def-100  [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-left [&_th]:font-medium',
+        'text-def-1000 sticky top-0 z-10 border-b border-border bg-def-100  [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-right [&_th:first-child]:text-left [&_th]:font-medium',
         className,
       )}
     >
@@ -35,36 +37,69 @@ export function WidgetTable<T>({
   columns,
   data,
   keyExtractor,
+  eachColumn,
+  columnClassName,
 }: Props<T>) {
   return (
     <div className="w-full overflow-x-auto">
-      <table className={cn('w-full', className)}>
-        <WidgetTableHead>
-          <tr>
-            {columns.map((column) => (
-              <th key={column.name} className={cn(column.className)}>
-                {column.name}
-              </th>
-            ))}
-          </tr>
-        </WidgetTableHead>
-        <tbody>
-          {data.map((item) => (
-            <tr
-              key={keyExtractor(item)}
-              className={
-                'border-b border-border text-right last:border-0 [&_td:first-child]:text-left [&_td]:p-4'
-              }
+      <div className={cn('w-full', className)}>
+        <div
+          className={cn(
+            'border-b border-border text-right last:border-0 [&_div:first-child]:text-left grid',
+            '[&>div]:p-2',
+            columnClassName,
+          )}
+          style={{
+            gridTemplateColumns:
+              columns.length > 1
+                ? `1fr ${columns
+                    .slice(1)
+                    .map((col) => 'auto')
+                    .join(' ')}`
+                : '1fr',
+          }}
+        >
+          {columns.map((column) => (
+            <div
+              key={column.name}
+              className={cn(column.className, 'font-medium font-sans text-sm')}
             >
-              {columns.map((column) => (
-                <td key={column.name} className={cn(column.className)}>
-                  {column.render(item)}
-                </td>
-              ))}
-            </tr>
+              {column.name}
+            </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+        <div className="col">
+          {data.map((item) => (
+            <div
+              key={keyExtractor(item)}
+              className={cn(
+                'border-b border-border text-right last:border-0 [&_div:first-child]:text-left grid relative',
+                '[&>div]:p-2',
+                columnClassName,
+              )}
+              style={{
+                gridTemplateColumns:
+                  columns.length > 1
+                    ? `1fr ${columns
+                        .slice(1)
+                        .map((col) => 'auto')
+                        .join(' ')}`
+                    : '1fr',
+              }}
+            >
+              {eachColumn?.(item)}
+              {columns.map((column) => (
+                <div
+                  key={column.name}
+                  className={cn(column.className, 'relative')}
+                >
+                  {column.render(item)}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

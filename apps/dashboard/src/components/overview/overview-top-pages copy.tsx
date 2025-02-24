@@ -194,7 +194,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          {widget.key === 'top' ? (
+          {widget.key === 'bot' ? (
             <OverviewTopBots projectId={projectId} />
           ) : (
             <ReportChart
@@ -225,7 +225,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
             />
           )}
         </WidgetBody>
-        {/* {widget.chart?.report?.name && (
+        {widget.chart?.report?.name && (
           <WidgetFooter>
             <OverviewDetailsButton chart={widget.chart.report} />
             <OverviewChartToggle {...{ chartType, setChartType }} />
@@ -240,7 +240,7 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
               {domain ? 'Hide domain' : 'Show domain'}
             </Button>
           </WidgetFooter>
-        )} */}
+        )}
       </Widget>
     </>
   );

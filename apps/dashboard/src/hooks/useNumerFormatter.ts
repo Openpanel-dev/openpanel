@@ -66,6 +66,9 @@ export function useNumber() {
       if (unit === 'min') {
         return fancyMinutes(value);
       }
+      if (unit === '%') {
+        return `${format(round(value * 100, 1))}${unit ? ` ${unit}` : ''}`;
+      }
       return `${format(value)}${unit ? ` ${unit}` : ''}`;
     },
   };

@@ -7,6 +7,7 @@ import { integrationRouter } from './routers/integration';
 import { notificationRouter } from './routers/notification';
 import { onboardingRouter } from './routers/onboarding';
 import { organizationRouter } from './routers/organization';
+import { overviewRouter } from './routers/overview';
 import { profileRouter } from './routers/profile';
 import { projectRouter } from './routers/project';
 import { referenceRouter } from './routers/reference';
@@ -39,6 +40,7 @@ export const appRouter = createTRPCRouter({
   integration: integrationRouter,
   auth: authRouter,
   subscription: subscriptionRouter,
+  overview: overviewRouter,
 });
 
 // export type definition of API

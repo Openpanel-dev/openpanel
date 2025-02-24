@@ -218,7 +218,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
             <OverviewLiveHistogram projectId={projectId} />
           </div>
         </div>
-        <div className="card col-span-6 p-4">
+        {/* <div className="card col-span-6 p-4">
           <ReportChart
             key={selectedMetric.id}
             options={{
@@ -233,7 +233,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               lineType: 'linear',
             }}
           />
-        </div>
+        </div> */}
       </div>
     </>
   );
