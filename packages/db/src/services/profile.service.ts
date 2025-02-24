@@ -188,30 +188,6 @@ export function transformProfile({
   };
 }
 
-export async function createProfileAlias({
-  projectId,
-  alias,
-  profileId,
-}: {
-  projectId: string;
-  alias: string;
-  profileId: string;
-}) {
-  await getProfileIdCached.clear({ profileId, projectId });
-  await ch.insert({
-    table: TABLE_NAMES.alias,
-    format: 'JSONEachRow',
-    values: [
-      {
-        projectId,
-        profile_id: profileId,
-        alias,
-        created_at: new Date(),
-      },
-    ],
-  });
-}
-
 export async function upsertProfile(
   {
     id,
@@ -240,31 +216,3 @@ export async function upsertProfile(
     isFromEvent,
   );
 }
-
-export async function getProfileId({
-  profileId,
-  projectId,
-}: {
-  profileId: number | string | undefined;
-  projectId: string;
-}) {
-  if (!profileId) {
-    return '';
-  }
-
-  const res = await chQuery<{
-    alias: string;
-    profile_id: string;
-    project_id: string;
-  }>(
-    `SELECT * FROM ${TABLE_NAMES.alias} WHERE project_id = '${projectId}' AND (alias = '${profileId}' OR profile_id = '${profileId}')`,
-  );
-
-  if (res[0]) {
-    return res[0].profile_id;
-  }
-
-  return String(profileId);
-}
-
-export const getProfileIdCached = cacheable(getProfileId, 60 * 30);

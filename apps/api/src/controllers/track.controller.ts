@@ -4,17 +4,10 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
-import {
-  createProfileAlias,
-  getProfileById,
-  getProfileIdCached,
-  getSalts,
-  upsertProfile,
-} from '@openpanel/db';
+import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
 import { getRedisCache } from '@openpanel/redis';
 import type {
-  AliasPayload,
   DecrementPayload,
   IdentifyPayload,
   IncrementPayload,
@@ -110,12 +103,7 @@ export async function handler(
   }
 
   const identity = getIdentity(request.body);
-  const profileId = identity?.profileId
-    ? await getProfileIdCached({
-        projectId,
-        profileId: identity?.profileId,
-      })
-    : undefined;
+  const profileId = identity?.profileId;
 
   // We might get a profileId from the alias table
   // If we do, we should use that instead of the one from the payload
@@ -183,9 +171,10 @@ export async function handler(
       break;
     }
     case 'alias': {
-      await alias({
-        payload: request.body.payload,
-        projectId,
+      reply.status(400).send({
+        status: 400,
+        error: 'Bad Request',
+        message: 'Alias is not supported',
       });
       break;
     }
@@ -302,20 +291,6 @@ async function identify({
       ...(geo ?? {}),
       ...uaInfo,
     },
-  });
-}
-
-async function alias({
-  payload,
-  projectId,
-}: {
-  payload: AliasPayload;
-  projectId: string;
-}) {
-  await createProfileAlias({
-    alias: payload.alias,
-    profileId: payload.profileId,
-    projectId,
   });
 }
 
