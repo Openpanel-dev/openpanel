@@ -11,6 +11,7 @@ export { createClient };
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
+import { getTimezoneFromDateString } from '@openpanel/common';
 
 // All three LogParams types are exported by the client
 interface LogParams {
@@ -209,4 +210,31 @@ export function toDate(str: string, interval?: IInterval) {
 
 export function convertClickhouseDateToJs(date: string) {
   return new Date(`${date.replace(' ', 'T')}Z`);
+}
+
+export function formatClickhouseToInterval(node: string, interval: IInterval) {
+  switch (interval) {
+    case 'minute': {
+      return `toStartOfMinute(${node})`;
+    }
+    case 'hour': {
+      return `toStartOfHour(${node})`;
+    }
+    case 'day': {
+      return `toStartOfDay(${node})`;
+    }
+    case 'week': {
+      return `toStartOfWeek(${node})`;
+    }
+    case 'month': {
+      return `toStartOfMonth(${node})`;
+    }
+  }
+}
+
+export function formatClickhouseToTimezone(
+  date: string,
+  dateOrColumn: 'date' | 'column' = 'date',
+) {
+  return `toTimeZone(${dateOrColumn === 'date' ? `toDateTime(${escape(formatClickhouseDate(date))})` : date}, '${getTimezoneFromDateString(date)}')`;
 }

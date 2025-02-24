@@ -328,9 +328,14 @@ export async function getFunnelData({
   });
 
   const innerSql = `SELECT
-    ${funnelGroup},
+    ${
+      payload.funnelGroup === 'session_id'
+        ? 'session_id'
+        : 's.profile_id as profile_id'
+    },
     windowFunnel(${funnelWindow}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
-  FROM ${TABLE_NAMES.events}
+  FROM ${TABLE_NAMES.events} e
+  ${payload.funnelGroup === 'profile_id' ? 'JOIN sessions s ON e.session_id = s.id' : ''}
   WHERE 
     project_id = ${escape(projectId)} AND 
     created_at >= '${formatClickhouseDate(startDate)}' AND 

@@ -17,31 +17,41 @@ import {
 import { createSqlBuilder } from '../sql-builder';
 
 export function transformPropertyKey(property: string) {
-  if (property.startsWith('properties.')) {
-    if (property.includes('*')) {
-      return property
-        .replace(/^properties\./, '')
-        .replace('.*.', '.%.')
-        .replace(/\[\*\]$/, '.%')
-        .replace(/\[\*\].?/, '.%.');
-    }
-    return `properties['${property.replace(/^properties\./, '')}']`;
+  const propertyPatterns = ['properties', 'profile.properties'];
+  const match = propertyPatterns.find((pattern) =>
+    property.startsWith(`${pattern}.`),
+  );
+
+  if (!match) {
+    return property;
   }
 
-  return property;
+  if (property.includes('*')) {
+    return property
+      .replace(/^properties\./, '')
+      .replace('.*.', '.%.')
+      .replace(/\[\*\]$/, '.%')
+      .replace(/\[\*\].?/, '.%.');
+  }
+
+  return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
 export function getSelectPropertyKey(property: string) {
-  if (property.startsWith('properties.')) {
-    if (property.includes('*')) {
-      return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-        transformPropertyKey(property),
-      )})))`;
-    }
-    return `properties['${property.replace(/^properties\./, '')}']`;
+  const propertyPatterns = ['properties', 'profile.properties'];
+
+  const match = propertyPatterns.find((pattern) =>
+    property.startsWith(`${pattern}.`),
+  );
+  if (!match) return property;
+
+  if (property.includes('*')) {
+    return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${match}, ${escape(
+      transformPropertyKey(property),
+    )})))`;
   }
 
-  return property;
+  return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
 export function getChartSql({
@@ -54,8 +64,16 @@ export function getChartSql({
   chartType,
   limit,
 }: IGetChartDataInput) {
-  const { sb, join, getWhere, getFrom, getSelect, getOrderBy, getGroupBy } =
-    createSqlBuilder();
+  const {
+    sb,
+    join,
+    getWhere,
+    getFrom,
+    getJoins,
+    getSelect,
+    getOrderBy,
+    getGroupBy,
+  } = createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
   sb.where.projectId = `project_id = ${escape(projectId)}`;
@@ -65,6 +83,14 @@ export function getChartSql({
     sb.where.eventName = `name = ${escape(event.name)}`;
   } else {
     sb.select.label_0 = `'*' as label_0`;
+  }
+
+  const anyFilterOnProfile = event.filters.some((filter) =>
+    filter.name.startsWith('profile.properties.'),
+  );
+
+  if (anyFilterOnProfile) {
+    sb.joins.profiles = 'JOIN profiles profile ON e.profile_id = profile.id';
   }
 
   sb.select.count = 'count(*) as count';
@@ -149,10 +175,10 @@ export function getChartSql({
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
 
-    return `${getSelect()} ${getFrom()} ${getGroupBy()} ${getOrderBy()}`;
+    return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
   }
 
-  return `${getSelect()} ${getFrom()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
+  return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
 }
 
 export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
@@ -172,7 +198,10 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
       return;
     }
 
-    if (name.startsWith('properties.')) {
+    if (
+      name.startsWith('properties.') ||
+      name.startsWith('profile.properties.')
+    ) {
       const propertyKey = getSelectPropertyKey(name);
       const isWildcard = propertyKey.includes('%');
       const whereFrom = getSelectPropertyKey(name);
