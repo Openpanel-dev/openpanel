@@ -212,27 +212,33 @@ export async function createProfileAlias({
   });
 }
 
-export async function upsertProfile({
-  id,
-  firstName,
-  lastName,
-  email,
-  avatar,
-  properties,
-  projectId,
-  isExternal,
-}: IServiceUpsertProfile) {
-  return profileBuffer.add({
+export async function upsertProfile(
+  {
     id,
-    first_name: firstName!,
-    last_name: lastName!,
-    email: email!,
-    avatar: avatar!,
-    properties: properties as Record<string, string | undefined>,
-    project_id: projectId,
-    created_at: formatClickhouseDate(new Date()),
-    is_external: isExternal,
-  });
+    firstName,
+    lastName,
+    email,
+    avatar,
+    properties,
+    projectId,
+    isExternal,
+  }: IServiceUpsertProfile,
+  isFromEvent = false,
+) {
+  return profileBuffer.add(
+    {
+      id,
+      first_name: firstName!,
+      last_name: lastName!,
+      email: email!,
+      avatar: avatar!,
+      properties: properties as Record<string, string | undefined>,
+      project_id: projectId,
+      created_at: formatClickhouseDate(new Date()),
+      is_external: isExternal,
+    },
+    isFromEvent,
+  );
 }
 
 export async function getProfileId({

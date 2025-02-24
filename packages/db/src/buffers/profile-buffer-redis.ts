@@ -53,7 +53,7 @@ export class ProfileBuffer extends BaseBuffer {
     return `${this.redisProfilePrefix}${projectId}:${profileId}`;
   }
 
-  async add(profile: IClickhouseProfile) {
+  async add(profile: IClickhouseProfile, isFromEvent = false) {
     const logger = this.logger.child({
       projectId: profile.project_id,
       profileId: profile.id,
@@ -63,6 +63,11 @@ export class ProfileBuffer extends BaseBuffer {
       logger.debug('Adding profile');
 
       const existingProfile = await this.fetchFromCache(profile, logger);
+
+      if (isFromEvent && existingProfile) {
+        logger.debug('Profile already created, skipping');
+        return;
+      }
 
       const mergedProfile: IClickhouseProfile = existingProfile
         ? deepMergeObjects(existingProfile, profile)

@@ -303,7 +303,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
       profile.isExternal ||
       (profile.isExternal === false && payload.name === 'session_start')
     ) {
-      await upsertProfile(profile);
+      await upsertProfile(profile, true);
     }
   }
 
