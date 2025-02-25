@@ -59,7 +59,7 @@ export function Pricing() {
             </Button>
           </div>
 
-          <div className="col justify-between pt-14">
+          <div className="col justify-between pt-14 gap-4">
             <PricingSlider />
 
             <div className="text-sm text-muted-foreground">

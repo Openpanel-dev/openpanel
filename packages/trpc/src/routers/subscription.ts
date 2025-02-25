@@ -8,6 +8,7 @@ import {
   changeSubscription,
   createCheckout,
   createPortal,
+  getProduct,
   getProducts,
   reactivateSubscription,
 } from '@openpanel/payments';
@@ -20,6 +21,18 @@ import { TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const subscriptionRouter = createTRPCRouter({
+  getCurrent: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      const organization = await getOrganizationBySlug(input.organizationId);
+
+      if (!organization.subscriptionProductId) {
+        return null;
+      }
+
+      return getProduct(organization.subscriptionProductId);
+    }),
+
   checkout: protectedProcedure
     .input(zCheckout)
     .mutation(async ({ input, ctx }) => {

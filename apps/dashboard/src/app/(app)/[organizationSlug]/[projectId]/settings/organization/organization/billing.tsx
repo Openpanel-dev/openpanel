@@ -18,7 +18,6 @@ import useWS from '@/hooks/useWS';
 import { api } from '@/trpc/client';
 import type { IServiceOrganization } from '@openpanel/db';
 import type { IPolarPrice } from '@openpanel/payments';
-import { format } from 'date-fns';
 import { Loader2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQueryState } from 'nuqs';
@@ -37,13 +36,6 @@ export default function Billing({ organization }: Props) {
   );
   const productsQuery = api.subscription.products.useQuery({
     organizationId: organization.id,
-  });
-  const portalMutation = api.subscription.portal.useMutation({
-    onSuccess(data) {
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    },
   });
 
   useWS(`/live/organization/${organization.id}`, (event) => {
@@ -68,7 +60,7 @@ export default function Billing({ organization }: Props) {
     }
   }, [organization.subscriptionInterval]);
 
-  function render() {
+  function renderBillingTable() {
     if (productsQuery.isLoading) {
       return (
         <div className="center-center p-8">
@@ -157,77 +149,27 @@ export default function Billing({ organization }: Props) {
 
   return (
     <>
-      <div>
-        <Widget className="w-full">
-          <WidgetHead className="flex items-center justify-between">
-            <span className="title">Billing</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {recurringInterval === 'year'
-                  ? 'Yearly (2 months free)'
-                  : 'Monthly'}
-              </span>
-              <Switch
-                checked={recurringInterval === 'year'}
-                onCheckedChange={(checked) =>
-                  setRecurringInterval(checked ? 'year' : 'month')
-                }
-              />
-            </div>
-          </WidgetHead>
-          <WidgetBody>
-            <div className="-m-4">
-              {organization.isTrial && organization.subscriptionEndsAt && (
-                <div className="p-4 py-2 bg-orange-500 text-white font-medium">
-                  <p>
-                    Your organization is on a free trial. It ends on{' '}
-                    {format(organization.subscriptionEndsAt, 'PPP')}
-                  </p>
-                </div>
-              )}
-              {organization.isExpired && organization.subscriptionEndsAt && (
-                <div className="p-4 py-2 bg-red-500 text-white font-medium">
-                  <p>
-                    Your subscription has expired. You can reactivate it by
-                    choosing a new plan below.
-                  </p>
-                  <p>
-                    It expired on{' '}
-                    {format(organization.subscriptionEndsAt, 'PPP')}
-                  </p>
-                </div>
-              )}
-              {organization.subscriptionStatus === 'active' &&
-                organization.subscriptionCanceledAt &&
-                organization.subscriptionEndsAt && (
-                  <div className="p-4 py-2 bg-red-500 text-white font-medium">
-                    <p>
-                      You have canceled your subscription. You can reactivate it
-                      by choosing a new plan below.
-                    </p>
-                    <p>
-                      It'll expire on{' '}
-                      {format(organization.subscriptionEndsAt, 'PPP')}
-                    </p>
-                  </div>
-                )}
-              {render()}
-            </div>
-          </WidgetBody>
-        </Widget>
-        <button
-          className="text-center mt-2 w-full hover:underline"
-          type="button"
-          onClick={() =>
-            portalMutation.mutate({
-              organizationId: organization.id,
-            })
-          }
-        >
-          Manage your subscription with
-          <span className="font-medium ml-1">Polar Customer Portal</span>
-        </button>
-      </div>
+      <Widget className="w-full">
+        <WidgetHead className="flex items-center justify-between">
+          <span className="title">Billing</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              {recurringInterval === 'year'
+                ? 'Yearly (2 months free)'
+                : 'Monthly'}
+            </span>
+            <Switch
+              checked={recurringInterval === 'year'}
+              onCheckedChange={(checked) =>
+                setRecurringInterval(checked ? 'year' : 'month')
+              }
+            />
+          </div>
+        </WidgetHead>
+        <WidgetBody>
+          <div className="-m-4">{renderBillingTable()}</div>
+        </WidgetBody>
+      </Widget>
       <Dialog
         open={!!customerSessionToken}
         onOpenChange={(open) => {
@@ -277,16 +219,6 @@ function CheckoutButton({
       }
     },
   });
-  const cancelSubscription = api.subscription.cancelSubscription.useMutation({
-    onSuccess(res) {
-      toast.success('Subscription cancelled', {
-        description: 'It might take a few seconds to update',
-      });
-    },
-    onError(error) {
-      toast.error(error.message);
-    },
-  });
 
   const isCanceled =
     organization.subscriptionStatus === 'active' &&
@@ -294,7 +226,6 @@ function CheckoutButton({
     organization.subscriptionCanceledAt;
   const isActive =
     organization.subscriptionStatus === 'active' && isCurrentPrice;
-  const isBuyable = !isCanceled && !isActive;
 
   return (
     <Tooltiper
@@ -304,40 +235,21 @@ function CheckoutButton({
       disabled={!disabled}
     >
       <Button
-        disabled={disabled !== null && isBuyable}
+        disabled={disabled !== null || (isActive && !isCanceled)}
         key={price.id}
         onClick={() => {
-          if (isBuyable || isCanceled) {
-            checkout.mutate({
-              projectId,
-              organizationId: organization.id,
-              productPriceId: price!.id,
-              productId: price.productId,
-            });
-          } else if (isActive) {
-            cancelSubscription.mutate({
-              organizationId: organization.id,
-            });
-          }
+          checkout.mutate({
+            projectId,
+            organizationId: organization.id,
+            productPriceId: price!.id,
+            productId: price.productId,
+          });
         }}
-        variant={
-          isCanceled
-            ? 'default'
-            : isActive
-              ? 'ghost'
-              : isBuyable
-                ? 'cta'
-                : 'default'
-        }
-        loading={cancelSubscription.isLoading || checkout.isLoading}
+        loading={checkout.isLoading}
+        className="w-28"
+        variant={isActive ? 'outline' : 'default'}
       >
-        {isCanceled
-          ? 'Reactivate'
-          : isActive
-            ? 'Cancel subscription'
-            : isBuyable
-              ? 'Activate'
-              : 'default'}
+        {isCanceled ? 'Reactivate' : isActive ? 'Active' : 'Activate'}
       </Button>
     </Tooltiper>
   );

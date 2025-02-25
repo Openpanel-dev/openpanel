@@ -15,6 +15,7 @@
     "migrate": "pnpm -r --filter db run migrate",
     "migrate:deploy": "pnpm -r --filter db run migrate:deploy",
     "dev": "pnpm -r --parallel testing",
+    "dev:public": "pnpm -r --filter public dev",
     "format": "biome format .",
     "format:fix": "biome format --write .",
     "lint": "biome check .",

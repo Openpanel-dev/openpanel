@@ -12,6 +12,7 @@ import InvitesServer from './invites';
 import MembersServer from './members';
 import Billing from './organization/billing';
 import { BillingFaq } from './organization/billing-faq';
+import CurrentSubscription from './organization/current-subscription';
 import Organization from './organization/organization';
 import Usage from './organization/usage';
 
@@ -90,10 +91,13 @@ export default async function Page({
 
       {tab === 'org' && <Organization organization={organization} />}
       {tab === 'billing' && isBillingEnabled && (
-        <div className="max-w-screen-sm col gap-8">
-          <Billing organization={organization} />
-          <Usage organization={organization} />
-          <BillingFaq />
+        <div className="flex flex-col-reverse md:flex-row gap-8 max-w-screen-lg">
+          <div className="col gap-8 w-full">
+            <Billing organization={organization} />
+            <Usage organization={organization} />
+            <BillingFaq />
+          </div>
+          <CurrentSubscription organization={organization} />
         </div>
       )}
       {tab === 'members' && <MembersServer organizationId={organizationId} />}
