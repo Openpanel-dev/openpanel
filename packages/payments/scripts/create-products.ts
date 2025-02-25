@@ -1,6 +1,5 @@
-import type { ProductCreate } from '@polar-sh/sdk/dist/commonjs/models/components/productcreate';
+import type { ProductCreate } from '@polar-sh/sdk/models/components/productcreate';
 import { PRICING, getProducts, polar } from '../';
-
 function formatEventsCount(events: number) {
   return new Intl.NumberFormat('en-gb', {
     notation: 'compact',

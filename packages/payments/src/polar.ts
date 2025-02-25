@@ -3,7 +3,6 @@ import { Polar } from '@polar-sh/sdk';
 export {
   validateEvent as validatePolarEvent,
   WebhookVerificationError as PolarWebhookVerificationError,
-  // @ts-expect-error
 } from '@polar-sh/sdk/webhooks';
 
 export type IPolarProduct = Awaited<ReturnType<typeof getProduct>>;

@@ -1,6 +1,7 @@
+import type { SocketStream } from '@fastify/websocket';
 import type { FastifyRequest } from 'fastify';
 import superjson from 'superjson';
-import type * as WebSocket from 'ws';
+import type { WebSocket } from 'ws';
 
 import {
   eventBuffer,
@@ -15,14 +16,20 @@ import {
 import { getProjectAccess } from '@openpanel/trpc';
 import { getOrganizationAccess } from '@openpanel/trpc/src/access';
 
+type WebSocketConnection = SocketStream & {
+  socket: WebSocket & {
+    on(event: 'close', listener: () => void): void;
+    send(data: string): void;
+    close(): void;
+  };
+};
+
 export function getLiveEventInfo(key: string) {
   return key.split(':').slice(2) as [string, string];
 }
 
 export function wsVisitors(
-  connection: {
-    socket: WebSocket;
-  },
+  connection: WebSocketConnection,
   req: FastifyRequest<{
     Params: {
       projectId: string;
@@ -58,9 +65,7 @@ export function wsVisitors(
 }
 
 export async function wsProjectEvents(
-  connection: {
-    socket: WebSocket;
-  },
+  connection: WebSocketConnection,
   req: FastifyRequest<{
     Params: {
       projectId: string;
@@ -119,9 +124,7 @@ export async function wsProjectEvents(
 }
 
 export async function wsProjectNotifications(
-  connection: {
-    socket: WebSocket;
-  },
+  connection: WebSocketConnection,
   req: FastifyRequest<{
     Params: {
       projectId: string;
@@ -162,9 +165,7 @@ export async function wsProjectNotifications(
 }
 
 export async function wsOrganizationEvents(
-  connection: {
-    socket: WebSocket;
-  },
+  connection: WebSocketConnection,
   req: FastifyRequest<{
     Params: {
       organizationId: string;
