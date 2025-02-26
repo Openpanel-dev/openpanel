@@ -167,7 +167,22 @@ export default function Billing({ organization }: Props) {
           </div>
         </WidgetHead>
         <WidgetBody>
-          <div className="-m-4">{renderBillingTable()}</div>
+          <div className="-m-4">
+            {renderBillingTable()}
+            <div className="text-center p-4 border-t">
+              <p>Do you need higher limits? </p>
+              <p>
+                Reach out to{' '}
+                <a
+                  className="underline font-medium"
+                  href="mailto:hello@openpanel.dev"
+                >
+                  hello@openpanel.dev
+                </a>{' '}
+                and we'll help you out.
+              </p>
+            </div>
+          </div>
         </WidgetBody>
       </Widget>
       <Dialog

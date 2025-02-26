@@ -13,13 +13,24 @@ export const polar = new Polar({
   server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
 });
 
+export const getSuccessUrl = (
+  baseUrl: string,
+  organizationId: string,
+  projectId?: string,
+) =>
+  projectId
+    ? `${baseUrl}/${organizationId}/${projectId}/settings?tab=billing`
+    : `${baseUrl}/${organizationId}`;
+
 export async function getProducts() {
   const products = await polar.products.list({
     limit: 100,
     isArchived: false,
     sorting: ['price_amount'],
   });
-  return products.result.items;
+  return products.result.items.filter((product) => {
+    return product.metadata.custom !== true;
+  });
 }
 
 export async function getProduct(id: string) {
@@ -56,9 +67,11 @@ export async function createCheckout({
 }) {
   return polar.checkouts.create({
     productPriceId: priceId,
-    successUrl: projectId
-      ? `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings?tab=billing`
-      : `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/settings?tab=billing`,
+    successUrl: getSuccessUrl(
+      process.env.NEXT_PUBLIC_DASHBOARD_URL!,
+      organizationId,
+      projectId,
+    ),
     customerEmail: user.email,
     customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),
     customerIpAddress: ipAddress,

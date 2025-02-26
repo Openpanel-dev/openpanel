@@ -68,6 +68,7 @@ export default function LayoutMenu({
     isTrial,
     isExpired,
     isExceeded,
+    isCanceled,
     subscriptionEndsAt,
     subscriptionPeriodEventsCount,
     subscriptionPeriodEventsLimit,
@@ -114,6 +115,22 @@ export default function LayoutMenu({
             <BanknoteIcon size={20} />
             <div className="flex-1 col gap-0.5">
               <div className="font-medium">Subscription expired</div>
+              <div className="text-sm opacity-80">
+                {differenceInDays(new Date(), subscriptionEndsAt)} days ago
+              </div>
+            </div>
+          </ProjectLink>
+        )}
+        {isCanceled && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-0.5">
+              <div className="font-medium">Subscription canceled</div>
               <div className="text-sm opacity-80">
                 {differenceInDays(new Date(), subscriptionEndsAt)} days ago
               </div>

@@ -189,7 +189,12 @@ export async function polarWebhook(
             subscriptionStatus: event.data.status,
             subscriptionStartsAt: event.data.currentPeriodStart,
             subscriptionCanceledAt: event.data.canceledAt,
-            subscriptionEndsAt: event.data.currentPeriodEnd,
+            subscriptionEndsAt:
+              event.data.status === 'canceled'
+                ? event.data.cancelAtPeriodEnd
+                  ? event.data.currentPeriodEnd
+                  : event.data.canceledAt
+                : event.data.currentPeriodEnd,
             subscriptionCreatedByUserId: metadata.userId,
             subscriptionInterval: event.data.recurringInterval,
             subscriptionPeriodEventsLimit,

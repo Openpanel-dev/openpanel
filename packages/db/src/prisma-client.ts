@@ -1,10 +1,30 @@
 import { createLogger } from '@openpanel/logger';
-import { PrismaClient } from '@prisma/client';
+import { type Organization, PrismaClient } from '@prisma/client';
 import { readReplicas } from '@prisma/extension-read-replicas';
 
 export * from '@prisma/client';
 
 const logger = createLogger({ name: 'db' });
+
+const isWillBeCanceled = (
+  organization: Pick<
+    Organization,
+    'subscriptionStatus' | 'subscriptionCanceledAt' | 'subscriptionEndsAt'
+  >,
+) =>
+  organization.subscriptionStatus === 'active' &&
+  organization.subscriptionCanceledAt &&
+  organization.subscriptionEndsAt;
+
+const isCanceled = (
+  organization: Pick<
+    Organization,
+    'subscriptionStatus' | 'subscriptionCanceledAt'
+  >,
+) =>
+  organization.subscriptionStatus === 'canceled' &&
+  organization.subscriptionCanceledAt &&
+  organization.subscriptionCanceledAt < new Date();
 
 const getPrismaClient = () => {
   const prisma = new PrismaClient({
@@ -95,9 +115,37 @@ const getPrismaClient = () => {
               );
             },
           },
-          isExpired: {
-            needs: { subscriptionEndsAt: true },
+          isCanceled: {
+            needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
             compute(org) {
+              return isCanceled(org);
+            },
+          },
+          isWillBeCanceled: {
+            needs: {
+              subscriptionStatus: true,
+              subscriptionCanceledAt: true,
+              subscriptionEndsAt: true,
+            },
+            compute(org) {
+              return isWillBeCanceled(org);
+            },
+          },
+          isExpired: {
+            needs: {
+              subscriptionEndsAt: true,
+              subscriptionStatus: true,
+              subscriptionCanceledAt: true,
+            },
+            compute(org) {
+              if (isCanceled(org)) {
+                return false;
+              }
+
+              if (isWillBeCanceled(org)) {
+                return false;
+              }
+
               return (
                 org.subscriptionEndsAt && org.subscriptionEndsAt < new Date()
               );
@@ -170,6 +218,8 @@ const getPrismaClient = () => {
         },
       },
     });
+
+  return prisma;
 };
 
 const globalForPrisma = globalThis as unknown as {

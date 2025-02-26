@@ -78,11 +78,6 @@ export default function CurrentSubscription({ organization }: Props) {
     productQuery.refetch();
   });
 
-  const isCanceled =
-    organization.subscriptionStatus === 'active' &&
-    organization.subscriptionCanceledAt &&
-    organization.subscriptionEndsAt;
-
   function render() {
     if (productQuery.isLoading) {
       return (
@@ -114,13 +109,13 @@ export default function CurrentSubscription({ organization }: Props) {
         <div className="gap-4 col">
           <div className="row justify-between">
             <div>Name</div>
-            <div className="font-medium">{product.name}</div>
+            <div className="text-right font-medium">{product.name}</div>
           </div>
           {price.amountType === 'fixed' ? (
             <>
               <div className="row justify-between">
                 <div>Price</div>
-                <div className="font-medium font-mono">
+                <div className="text-right font-medium font-mono">
                   {number.currency(price.priceAmount / 100)}
                 </div>
               </div>
@@ -129,27 +124,27 @@ export default function CurrentSubscription({ organization }: Props) {
             <>
               <div className="row justify-between">
                 <div>Price</div>
-                <div className="font-medium font-mono">FREE</div>
+                <div className="text-right font-medium font-mono">FREE</div>
               </div>
             </>
           )}
           <div className="row justify-between">
             <div>Billing Cycle</div>
-            <div className="font-medium">
+            <div className="text-right font-medium">
               {price.recurringInterval === 'month' ? 'Monthly' : 'Yearly'}
             </div>
           </div>
           {typeof product.metadata.eventsLimit === 'number' && (
             <div className="row justify-between">
               <div>Events per mount</div>
-              <div className="font-medium font-mono">
+              <div className="text-right font-medium font-mono">
                 {number.format(product.metadata.eventsLimit)}
               </div>
             </div>
           )}
         </div>
         <div className="col gap-2">
-          {isCanceled ? (
+          {organization.isWillBeCanceled || organization.isCanceled ? (
             <Button
               loading={checkout.isLoading}
               onClick={() => {
@@ -201,7 +196,7 @@ export default function CurrentSubscription({ organization }: Props) {
                     organization.isExpired ||
                     (organization.subscriptionStatus !== 'active' &&
                       'bg-destructive'),
-                  isCanceled && 'bg-orange-400',
+                  organization.isWillBeCanceled && 'bg-orange-400',
                 )}
               />
               <div
@@ -211,7 +206,7 @@ export default function CurrentSubscription({ organization }: Props) {
                     organization.isExpired ||
                     (organization.subscriptionStatus !== 'active' &&
                       'bg-destructive'),
-                  isCanceled && 'bg-orange-400',
+                  organization.isWillBeCanceled && 'bg-orange-400',
                 )}
               />
             </div>
@@ -239,7 +234,7 @@ export default function CurrentSubscription({ organization }: Props) {
               </AlertDescription>
             </Alert>
           )}
-          {isCanceled && (
+          {organization.isWillBeCanceled && (
             <Alert variant="warning">
               <AlertTitle>Subscription canceled</AlertTitle>
               <AlertDescription>
@@ -252,21 +247,32 @@ export default function CurrentSubscription({ organization }: Props) {
               </AlertDescription>
             </Alert>
           )}
+          {organization.isCanceled && (
+            <Alert variant="warning">
+              <AlertTitle>Subscription canceled</AlertTitle>
+              <AlertDescription>
+                Your subscription was canceled on{' '}
+                {format(organization.subscriptionCanceledAt!, 'PPP')}
+              </AlertDescription>
+            </Alert>
+          )}
           {render()}
         </WidgetBody>
       </Widget>
-      <button
-        className="text-center mt-2 w-2/3 hover:underline self-center"
-        type="button"
-        onClick={() =>
-          portalMutation.mutate({
-            organizationId: organization.id,
-          })
-        }
-      >
-        Manage your subscription with
-        <span className="font-medium ml-1">Polar Customer Portal</span>
-      </button>
+      {organization.hasSubscription && (
+        <button
+          className="text-center mt-2 w-2/3 hover:underline self-center"
+          type="button"
+          onClick={() =>
+            portalMutation.mutate({
+              organizationId: organization.id,
+            })
+          }
+        >
+          Manage your subscription with
+          <span className="font-medium ml-1">Polar Customer Portal</span>
+        </button>
+      )}
     </div>
   );
 }
