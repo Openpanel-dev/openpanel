@@ -1,5 +1,7 @@
+import { Polar } from '@polar-sh/sdk';
 import type { ProductCreate } from '@polar-sh/sdk/models/components/productcreate';
-import { PRICING, getProducts, polar } from '../';
+import inquirer from 'inquirer';
+import { PRICING } from '../';
 
 export function formatEventsCount(events: number) {
   return new Intl.NumberFormat('en-gb', {
@@ -7,29 +9,103 @@ export function formatEventsCount(events: number) {
   }).format(events);
 }
 
+interface Answers {
+  isProduction: boolean;
+  polarOrganizationId: string;
+  polarApiKey: string;
+}
+
+async function promptForInput() {
+  const answers = await inquirer.prompt<Answers>([
+    {
+      type: 'list',
+      name: 'isProduction',
+      message: 'Is this for production?',
+      choices: [
+        { name: 'Yes', value: true },
+        { name: 'No', value: false },
+      ],
+      default: true,
+    },
+    {
+      type: 'string',
+      name: 'polarOrganizationId',
+      message: 'Enter your Polar organization ID:',
+    },
+    {
+      type: 'string',
+      name: 'polarApiKey',
+      message: 'Enter your Polar API key:',
+      validate: (input: string) => {
+        if (!input) return 'API key is required';
+        return true;
+      },
+    },
+  ]);
+
+  return answers;
+}
+
 async function main() {
+  const input = await promptForInput();
+
+  const polar = new Polar({
+    accessToken: input.polarApiKey!,
+    server: input.isProduction ? 'production' : 'sandbox',
+  });
+
+  async function getProducts() {
+    const products = await polar.products.list({
+      limit: 100,
+      isArchived: false,
+      sorting: ['price_amount'],
+    });
+    return products.result.items.filter((product) => {
+      return product.metadata.custom !== true;
+    });
+  }
+
   const isDry = process.argv.includes('--dry');
   const products = await getProducts();
   for (const price of PRICING) {
     if (price.price === 0) {
-      await polar.products.create({
-        organizationId: process.env.POLAR_ORGANIZATION_ID!,
-        name: `${formatEventsCount(price.events)} events per month (FREE)`,
-        recurringInterval: 'month',
-        prices: [
-          {
-            amountType: 'free',
+      const exists = products.find(
+        (p) =>
+          p.metadata?.eventsLimit === price.events &&
+          p.recurringInterval === 'month',
+      );
+      if (exists) {
+        console.log('Free product already exists:');
+        console.log(' - ID:', exists.id);
+        console.log(' - Name:', exists.name);
+      } else {
+        const product = await polar.products.create({
+          organizationId: input.polarApiKey.includes('_oat_')
+            ? undefined
+            : input.polarOrganizationId,
+          name: `${formatEventsCount(price.events)} events per month (FREE)`,
+          recurringInterval: 'month',
+          prices: [
+            {
+              amountType: 'free',
+            },
+          ],
+          metadata: {
+            eventsLimit: price.events,
           },
-        ],
-        metadata: {
-          eventsLimit: price.events,
-        },
-      });
+        });
+        console.log('Free product created:');
+        console.log(' - ID:', product.id);
+        console.log(' - Name:', product.name);
+      }
+
       continue;
     }
 
     const productCreate: ProductCreate = {
-      organizationId: process.env.POLAR_ORGANIZATION_ID!,
+      organizationId: input.polarApiKey.includes('_oat_')
+        ? undefined
+        : input.polarOrganizationId,
       name: `${formatEventsCount(price.events)} events per month`,
       prices: [
         {

@@ -1,4 +1,5 @@
 import { db } from '@openpanel/db';
+import { Polar } from '@polar-sh/sdk';
 import type { ProductCreate } from '@polar-sh/sdk/models/components/productcreate';
 import inquirer from 'inquirer';
 import inquirerAutocomplete from 'inquirer-autocomplete-prompt';
@@ -12,12 +13,13 @@ type Interval = 'month' | 'year';
 
 interface Answers {
   isProduction: boolean;
-  apiKey: string;
   organizationId: string;
   userId: string;
   interval: Interval;
   price: number;
   eventsLimit: number;
+  polarOrganizationId: string;
+  polarApiKey: string;
 }
 
 async function promptForInput() {
@@ -42,7 +44,12 @@ async function promptForInput() {
     },
     {
       type: 'string',
-      name: 'apiKey',
+      name: 'polarOrganizationId',
+      message: 'Enter your Polar organization ID:',
+    },
+    {
+      type: 'string',
+      name: 'polarApiKey',
       message: 'Enter your Polar API key:',
       validate: (input: string) => {
         if (!input) return 'API key is required';
@@ -145,6 +152,11 @@ async function main() {
   console.log('Creating custom pricing...');
   const input = await promptForInput();
 
+  const polar = new Polar({
+    accessToken: input.polarApiKey!,
+    server: input.isProduction ? 'production' : 'sandbox',
+  });
+
   const organization = await db.organization.findUniqueOrThrow({
     where: {
       id: input.organizationId,
@@ -190,7 +202,9 @@ async function main() {
   }
 
   const product = await polar.products.create({
-    organizationId: process.env.POLAR_ORGANIZATION_ID!,
+    organizationId: input.polarApiKey.includes('_oat_')
+      ? undefined
+      : input.polarOrganizationId,
     name: `Custom product for ${organization.name}`,
     recurringInterval: 'month',
     prices: [
