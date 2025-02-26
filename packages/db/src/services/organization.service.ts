@@ -203,7 +203,7 @@ export async function getOrganizationBillingEventsCount(
 
   sb.select.count = 'COUNT(*) AS count';
   sb.where.projectIds = `project_id IN (${organization.projects.map((project) => escape(project.id)).join(',')})`;
-  sb.where.createdAt = `BETWEEN ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
+  sb.where.createdAt = `created_at BETWEEN ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
 
   const res = await chQuery<{ count: number }>(getSql());
   return res[0]?.count;
