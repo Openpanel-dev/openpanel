@@ -1,7 +1,4 @@
-import { TABLE_NAMES, chQuery } from '@openpanel/db';
-import { cacheable } from '@openpanel/redis';
 import Link from 'next/link';
-import { Suspense } from 'react';
 import { VerticalLine } from '../line';
 import { PlusLine } from '../line';
 import { HorizontalLine } from '../line';
@@ -17,26 +14,22 @@ function shortNumber(num: number) {
   if (num >= 1e12) return `${+(num / 1e12).toFixed(1)}T`;
 }
 
-const getProjectsWithCount = cacheable(async function getProjectsWithCount() {
-  const projects = await chQuery<{ project_id: string; count: number }>(
-    `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`,
-  );
-  const last24h = await chQuery<{ count: number }>(
-    `SELECT count(*) as count from ${TABLE_NAMES.events} WHERE created_at > now() - interval '24 hours'`,
-  );
-  return { projects, last24hCount: last24h[0]?.count || 0 };
-}, 60 * 60);
-
 export async function Stats() {
-  const { projects, last24hCount } = await getProjectsWithCount();
-  const projectCount = projects.length;
-  const eventCount = projects.reduce((acc, { count }) => acc + count, 0);
+  const { projectsCount, eventsCount, eventsLast24hCount } = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/misc/stats`,
+  )
+    .then((res) => res.json())
+    .catch(() => ({
+      projectsCount: 0,
+      eventsCount: 0,
+      eventsLast24hCount: 0,
+    }));
 
   return (
     <StatsPure
-      projectCount={projectCount}
-      eventCount={eventCount}
-      last24hCount={last24hCount}
+      projectCount={projectsCount}
+      eventCount={eventsCount}
+      last24hCount={eventsLast24hCount}
     />
   );
 }

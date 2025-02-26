@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: 'OpenPanel | An open-source alternative to Mixpanel',
 };
 
-export const experimental_ppr = true;
+// export const experimental_ppr = true;
 
 export default function HomePage() {
   return (
@@ -26,11 +26,7 @@ export default function HomePage() {
         <Testimonials />
         <Suspense
           fallback={
-            <StatsPure
-              projectCount={882}
-              eventCount={634_000_000}
-              last24hCount={7_000_000}
-            />
+            <StatsPure projectCount={0} eventCount={0} last24hCount={0} />
           }
         >
           <Stats />

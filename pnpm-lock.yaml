@@ -548,15 +548,9 @@ importers:
       '@number-flow/react':
         specifier: 0.3.5
         version: 0.3.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@openpanel/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@openpanel/nextjs':
         specifier: ^1.0.5
         version: 1.0.5(next@15.0.3(@opentelemetry/api@1.8.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@openpanel/redis':
-        specifier: workspace:*
-        version: link:../../packages/redis
       '@openpanel/sdk-info':
         specifier: workspace:^
         version: link:../../packages/sdks/_info

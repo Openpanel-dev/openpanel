@@ -5,8 +5,8 @@ import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
 
 import { createHash } from '@openpanel/common/server';
-import { TABLE_NAMES, ch, formatClickhouseDate } from '@openpanel/db';
-import { getRedisCache } from '@openpanel/redis';
+import { TABLE_NAMES, ch, chQuery, formatClickhouseDate } from '@openpanel/db';
+import { cacheable, getCache, getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
   url: string;
@@ -151,4 +151,22 @@ export async function ping(
       error: 'Failed to insert ping',
     });
   }
+}
+
+export async function stats(request: FastifyRequest, reply: FastifyReply) {
+  const res = await getCache('api:stats', 60 * 60, async () => {
+    const projects = await chQuery<{ project_id: string; count: number }>(
+      `SELECT project_id, count(*) as count from ${TABLE_NAMES.events} GROUP by project_id order by count()`,
+    );
+    const last24h = await chQuery<{ count: number }>(
+      `SELECT count(*) as count from ${TABLE_NAMES.events} WHERE created_at > now() - interval '24 hours'`,
+    );
+    return { projects, last24hCount: last24h[0]?.count || 0 };
+  });
+
+  reply.status(200).send({
+    projectsCount: res.projects.length,
+    eventsCount: res.projects.reduce((acc, { count }) => acc + count, 0),
+    eventsLast24hCount: res.last24hCount,
+  });
 }

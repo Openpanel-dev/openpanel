@@ -10,6 +10,12 @@ const miscRouter: FastifyPluginCallback = (fastify, opts, done) => {
 
   fastify.route({
     method: 'GET',
+    url: '/stats',
+    handler: controller.stats,
+  });
+
+  fastify.route({
+    method: 'GET',
     url: '/favicon',
     handler: controller.getFavicon,
   });

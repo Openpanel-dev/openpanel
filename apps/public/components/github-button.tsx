@@ -14,9 +14,13 @@ function formatStars(stars: number) {
 }
 
 export function GithubButton() {
-  const [stars, setStars] = useState(3_263);
+  const [stars, setStars] = useState(3_700);
   useEffect(() => {
-    getGithubRepoInfo().then((res) => setStars(res.stargazers_count));
+    getGithubRepoInfo().then((res) => {
+      if (res?.stargazers_count) {
+        setStars(res.stargazers_count);
+      }
+    });
   }, []);
   return (
     <Button variant={'secondary'} asChild>
