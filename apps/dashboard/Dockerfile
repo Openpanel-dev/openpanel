@@ -34,6 +34,7 @@ COPY pnpm-lock.yaml pnpm-lock.yaml
 COPY pnpm-workspace.yaml pnpm-workspace.yaml
 COPY apps/dashboard/package.json apps/dashboard/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY packages/json/package.json packages/json/package.json
 COPY packages/redis/package.json packages/redis/package.json
 COPY packages/queue/package.json packages/queue/package.json
 COPY packages/common/package.json packages/common/package.json

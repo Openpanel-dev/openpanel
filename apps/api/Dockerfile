@@ -30,6 +30,7 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/db/package.json packages/db/
 COPY packages/trpc/package.json packages/trpc/
 COPY packages/auth/package.json packages/auth/
+COPY packages/json/package.json packages/json/
 COPY packages/email/package.json packages/email/
 COPY packages/queue/package.json packages/queue/
 COPY packages/redis/package.json packages/redis/
@@ -92,7 +93,7 @@ COPY --from=build /app/apps/api ./apps/api
 COPY --from=build /app/packages/db ./packages/db
 COPY --from=build /app/packages/auth ./packages/auth
 COPY --from=build /app/packages/trpc ./packages/trpc
-COPY --from=build /app/packages/auth ./packages/auth
+COPY --from=build /app/packages/json ./packages/json
 COPY --from=build /app/packages/email ./packages/email
 COPY --from=build /app/packages/queue ./packages/queue
 COPY --from=build /app/packages/redis ./packages/redis
