@@ -11,6 +11,7 @@ import {
 
 import { stripTrailingSlash } from '@openpanel/common';
 import { zProject } from '@openpanel/validation';
+import { addDays, addHours } from 'date-fns';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
@@ -91,27 +92,58 @@ export const projectRouter = createTRPCRouter({
         },
       });
     }),
-  remove: protectedProcedure
+  delete: protectedProcedure
     .input(
       z.object({
-        id: z.string(),
+        projectId: z.string(),
       }),
     )
     .mutation(async ({ input, ctx }) => {
       const access = await getProjectAccess({
         userId: ctx.session.userId,
-        projectId: input.id,
+        projectId: input.projectId,
       });
 
       if (!access) {
         throw TRPCAccessError('You do not have access to this project');
       }
 
-      await db.project.delete({
+      await db.project.update({
         where: {
-          id: input.id,
+          id: input.projectId,
+        },
+        data: {
+          deleteAt: addHours(new Date(), 24),
         },
       });
+
+      return true;
+    }),
+  cancelDeletion: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      await db.project.update({
+        where: {
+          id: input.projectId,
+        },
+        data: {
+          deleteAt: null,
+        },
+      });
+
       return true;
     }),
 });

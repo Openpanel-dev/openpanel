@@ -60,11 +60,16 @@ export type CronQueuePayloadPing = {
   type: 'ping';
   payload: undefined;
 };
+export type CronQueuePayloadProject = {
+  type: 'deleteProjects';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
   | CronQueuePayloadFlushProfiles
-  | CronQueuePayloadPing;
+  | CronQueuePayloadPing
+  | CronQueuePayloadProject;
 
 export type CronQueueType = CronQueuePayload['type'];
 
