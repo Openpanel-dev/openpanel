@@ -1,9 +1,13 @@
 import {
+  type ch,
   chQuery,
   formatClickhouseDate,
   formatClickhouseToInterval,
+  getEventFiltersWhereClause,
+  overviewService,
 } from '@openpanel/db';
 import {
+  type IChartEventFilter,
   type IChartRange,
   zChartEventFilter,
   zChartInput,
@@ -104,7 +108,7 @@ WHERE sign = 1  -- Only count the latest version of each session
       ? `AND ${input.filters
           .map((filter) => {
             if (filter.name === 'path') {
-              return `has(screen_views, '${filter.value}')`;
+              return `(has(screen_views, '${filter.value}') OR has(screen_views, '${filter.value}'))`;
             }
             return `${filter.name} = '${filter.value}'`;
           })
@@ -117,8 +121,6 @@ WITH FILL
 FROM ${formatClickhouseToInterval(`'${formatClickhouseDate(input.startDate)}'::DateTime`, input.interval)}
 TO '${formatClickhouseDate(input.endDate)}'::DateTime
 STEP toIntervalDay(1);`;
-
-  console.log('sql', sql);
 
   const metrics = await chQuery<{
     bounce_rate: number;
@@ -135,85 +137,14 @@ STEP toIntervalDay(1);`;
 
 const getTopPages = getCurrentAndPrevious<
   IGetTopPagesInput,
-  {
-    origin: string;
-    path: string;
-    avg_duration: number;
-    bounce_rate: number;
-    total_sessions: number;
-    total_screen_views: number;
-    screen_views: number;
-  }[]
+  Awaited<ReturnType<typeof overviewService.getTopPages>>
 >(async (input) => {
-  const sql = `
-  WITH page_stats AS (
-    SELECT
-        origin as origin,
-        path as path,
-        count(*) as count,
-        round(avg(duration)/1000, 2) as avg_duration
-    FROM events e
-    WHERE
-        project_id = '${input.projectId}'
-        AND name = 'screen_view'
-        AND toDate(created_at) >= toDate('${formatClickhouseDate(input.startDate)}')
-        AND toDate(created_at) <= toDate('${formatClickhouseDate(input.endDate)}')
-    GROUP BY origin, path
-  ),
-  total_sessions AS (
-    SELECT
-        count(*) as total_sessions,
-        sum(screen_view_count) as total_screen_views
-    FROM sessions
-    WHERE
-        project_id = '${input.projectId}'
-        AND toDate(created_at) >= toDate('${formatClickhouseDate(input.startDate)}')
-        AND toDate(created_at) <= toDate('${formatClickhouseDate(input.endDate)}')
-  ),
-  bounce_stats AS (
-    SELECT
-        entry_path,
-        round(
-          countIf(is_bounce = 1 AND sign = 1) * 100.0 / 
-          countIf(sign = 1), 
-          2
-        ) as bounce_rate
-    FROM sessions
-    WHERE
-        project_id = '${input.projectId}'
-        AND sign = 1
-        AND toDate(created_at) >= toDate('${formatClickhouseDate(input.startDate)}')
-        AND toDate(created_at) <= toDate('${formatClickhouseDate(input.endDate)}')
-        AND entry_path IN (SELECT path FROM page_stats)
-    GROUP BY entry_path
-  )
-  SELECT
-    p.origin,
-    p.path,
-    p.count as screen_views,
-    p.avg_duration,
-    COALESCE(b.bounce_rate, 0) as bounce_rate,
-    ts.total_sessions,
-    ts.total_screen_views
-  FROM page_stats p
-  LEFT JOIN bounce_stats b ON p.path = b.entry_path
-  LEFT JOIN total_sessions ts ON 1 = 1
-  ORDER BY p.count DESC
-  LIMIT 10`;
-
-  console.log('sql', sql);
-
-  const metrics = await chQuery<{
-    origin: string;
-    path: string;
-    avg_duration: number;
-    bounce_rate: number;
-    total_sessions: number;
-    total_screen_views: number;
-    screen_views: number;
-  }>(sql);
-
-  return metrics;
+  return overviewService.getTopPages({
+    startDate: new Date(input.startDate),
+    endDate: new Date(input.endDate),
+    filters: input.filters,
+    projectId: input.projectId,
+  });
 });
 
 export const overviewRouter = createTRPCRouter({
