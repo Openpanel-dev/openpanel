@@ -1,4 +1,4 @@
-import { getSafeJson } from '@openpanel/common';
+import { getSafeJson } from '@openpanel/json';
 
 export const parseQueryString = (obj: Record<string, any>): any => {
   return Object.fromEntries(

@@ -1,8 +1,9 @@
-import { getSafeJson, setSuperJson } from '@openpanel/common';
+import { getSafeJson, setSuperJson } from '@openpanel/json';
 import {
   type Redis,
   getRedisCache,
   getRedisPub,
+  publishEvent,
   runEvery,
 } from '@openpanel/redis';
 import { ch } from '../clickhouse/client';
@@ -260,26 +261,9 @@ return "OK"
       if (!_multi) {
         await multi.exec();
       }
-      await this.publishEvent('event:received', event);
+      await publishEvent('events', 'received', transformEvent(event), multi);
     } catch (error) {
       this.logger.error('Failed to add event to Redis buffer', { error });
-    }
-  }
-
-  private async publishEvent(
-    channel: string,
-    event: IClickhouseEvent,
-    multi?: ReturnType<Redis['multi']>,
-  ) {
-    try {
-      await (multi || getRedisPub()).publish(
-        channel,
-        setSuperJson(
-          transformEvent(event) as unknown as Record<string, unknown>,
-        ),
-      );
-    } catch (error) {
-      this.logger.warn('Failed to publish event', { error });
     }
   }
 
@@ -429,7 +413,7 @@ return "OK"
       // (E) Publish "saved" events.
       const pubMulti = getRedisPub().multi();
       for (const event of eventsToClickhouse) {
-        await this.publishEvent('event:saved', event, pubMulti);
+        await publishEvent('events', 'saved', transformEvent(event), pubMulti);
       }
       await pubMulti.exec();
 

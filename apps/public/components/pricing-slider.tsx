@@ -1,6 +1,7 @@
 'use client';
 import NumberFlow from '@number-flow/react';
 
+import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Slider } from './ui/slider';
 
@@ -14,8 +15,6 @@ const PRICING = [
   { price: 180, events: 2_500_000 },
   { price: 250, events: 5_000_000 },
   { price: 400, events: 10_000_000 },
-  // { price: 650, events: 20_000_000 },
-  // { price: 900, events: 30_000_000 },
 ];
 
 export function PricingSlider() {
@@ -31,7 +30,7 @@ export function PricingSlider() {
         step={1}
         tooltip={
           match
-            ? `${formatNumber(match.events)} events`
+            ? `${formatNumber(match.events)} events per month`
             : `More than ${formatNumber(PRICING[PRICING.length - 1].events)} events`
         }
         onValueChange={(value) => setIndex(value[0])}
@@ -39,20 +38,36 @@ export function PricingSlider() {
 
       {match ? (
         <div>
-          <NumberFlow
-            className="text-5xl"
-            value={match.price}
-            format={{
-              style: 'currency',
-              currency: 'USD',
-              maximumFractionDigits: 0,
-            }}
-            locales={'en-US'}
-          />
-          <span className="text-sm text-muted-foreground ml-2">/ month</span>
+          <div>
+            <NumberFlow
+              className="text-5xl"
+              value={match.price}
+              format={{
+                style: 'currency',
+                currency: 'USD',
+                maximumFractionDigits: 0,
+              }}
+              locales={'en-US'}
+            />
+            <span className="text-sm text-muted-foreground ml-2">/ month</span>
+          </div>
+          <span
+            className={cn(
+              'text-sm text-muted-foreground italic opacity-100',
+              match.price === 0 && 'opacity-0',
+            )}
+          >
+            + VAT if applicable
+          </span>
         </div>
       ) : (
-        <div>Contact us hello@openpanel.dev</div>
+        <div className="text-lg">
+          Contact us at{' '}
+          <a className="underline" href="mailto:hello@openpanel.dev">
+            hello@openpanel.dev
+          </a>{' '}
+          to get a custom quote.
+        </div>
       )}
     </>
   );

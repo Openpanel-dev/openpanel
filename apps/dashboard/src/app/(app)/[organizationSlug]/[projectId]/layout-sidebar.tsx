@@ -14,6 +14,7 @@ import type {
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 
+import { useAppParams } from '@/hooks/useAppParams';
 import Link from 'next/link';
 import LayoutMenu from './layout-menu';
 import LayoutProjectSelector from './layout-project-selector';
@@ -31,6 +32,8 @@ export function LayoutSidebar({
 }: LayoutSidebarProps) {
   const [active, setActive] = useState(false);
   const pathname = usePathname();
+  const { organizationId } = useAppParams();
+  const organization = organizations.find((o) => o.id === organizationId)!;
 
   useEffect(() => {
     setActive(false);
@@ -76,7 +79,7 @@ export function LayoutSidebar({
           <SettingsToggle />
         </div>
         <div className="flex flex-grow flex-col gap-2 overflow-auto p-4">
-          <LayoutMenu dashboards={dashboards} />
+          <LayoutMenu dashboards={dashboards} organization={organization} />
         </div>
         <div className="fixed bottom-0 left-0 right-0">
           <div className="h-8 w-full bg-gradient-to-t from-card to-card/0" />

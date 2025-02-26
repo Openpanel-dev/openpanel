@@ -19,5 +19,13 @@ declare global {
     type IPrismaClickhouseEvent = IClickhouseEvent;
     type IPrismaClickhouseProfile = IClickhouseProfile;
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;
+    type IPrismaSubscriptionStatus =
+      | 'incomplete'
+      | 'incomplete_expired'
+      | 'trialing'
+      | 'active'
+      | 'past_due'
+      | 'canceled'
+      | 'unpaid';
   }
 }

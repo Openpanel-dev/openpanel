@@ -20,7 +20,7 @@ export default function Confirm({
   return (
     <ModalContent>
       <ModalHeader title={title} />
-      <p>{text}</p>
+      <p className="text-lg -mt-2">{text}</p>
       <ButtonContainer>
         <Button
           variant="outline"

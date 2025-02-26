@@ -26,11 +26,25 @@ export const shortNumber =
     }).format(value);
   };
 
+export const formatCurrency =
+  (locale: string) =>
+  (amount: number, currency = 'USD') => {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
 export function useNumber() {
-  const locale = 'en-gb';
+  const locale = 'en-US';
   const format = formatNumber(locale);
   const short = shortNumber(locale);
+  const currency = formatCurrency(locale);
+
   return {
+    currency,
     format,
     short,
     shortWithUnit: (value: number | null | undefined, unit?: string | null) => {

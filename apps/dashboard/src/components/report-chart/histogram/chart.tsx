@@ -49,7 +49,6 @@ export function Chart({ data }: Props) {
   const { series, setVisibleSeries } = useVisibleSeries(data);
   const rechartData = useRechartDataModel(series);
   const yAxisProps = useYAxisProps({
-    data: [data.metrics.max],
     hide: hideYAxis,
   });
   const xAxisProps = useXAxisProps({

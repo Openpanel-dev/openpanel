@@ -36,15 +36,36 @@ model Organization {
   projects        Project[]
   members         Member[]
   createdByUserId String?
-  createdBy       User?           @relation(fields: [createdByUserId], references: [id])
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @default(now()) @updatedAt
+  createdBy       User?           @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id])
   ProjectAccess   ProjectAccess[]
   Client          Client[]
   Dashboard       Dashboard[]
   ShareOverview   ShareOverview[]
   integrations    Integration[]
   invites         Invite[]
+
+  // Subscription
+  subscriptionId                          String?
+  subscriptionCustomerId                  String?
+  subscriptionPriceId                     String?
+  subscriptionProductId                   String?
+  /// [IPrismaSubscriptionStatus]
+  subscriptionStatus                      String?
+  subscriptionStartsAt                    DateTime?
+  subscriptionEndsAt                      DateTime?
+  subscriptionCanceledAt                  DateTime?
+  subscriptionCreatedByUserId             String?
+  subscriptionCreatedBy                   User?     @relation(name: "subscriptionCreatedBy", fields: [subscriptionCreatedByUserId], references: [id])
+  subscriptionPeriodEventsCount           Int       @default(0)
+  subscriptionPeriodEventsCountExceededAt DateTime?
+  subscriptionPeriodEventsLimit           Int       @default(0)
+  subscriptionInterval                    String?
+
+  // When deleteAt > now(), the organization will be deleted
+  deleteAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@map("organizations")
 }
@@ -54,7 +75,8 @@ model User {
   email                String          @unique
   firstName            String?
   lastName             String?
-  createdOrganizations Organization[]
+  createdOrganizations Organization[]  @relation("organizationCreatedBy")
+  subscriptions        Organization[]  @relation("subscriptionCreatedBy")
   membership           Member[]
   sentInvites          Member[]        @relation("invitedBy")
   createdAt            DateTime        @default(now())
@@ -157,6 +179,9 @@ model Project {
   notificationRules NotificationRule[]
   notifications     Notification[]
 
+  // When deleteAt > now(), the project will be deleted
+  deleteAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
@@ -204,7 +229,7 @@ model Client {
   secret         String?
   type           ClientType   @default(write)
   projectId      String?
-  project        Project?     @relation(fields: [projectId], references: [id])
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
 
@@ -240,7 +265,7 @@ model Dashboard {
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
   projectId      String
-  project        Project      @relation(fields: [projectId], references: [id])
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reports        Report[]
 
   createdAt DateTime @default(now())
@@ -269,7 +294,7 @@ model Report {
   unit         String?
   metric       Metric    @default(sum)
   projectId    String
-  project      Project   @relation(fields: [projectId], references: [id])
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
   previous     Boolean   @default(false)
   criteria     String?
   funnelGroup  String?
@@ -287,7 +312,7 @@ model Report {
 model ShareOverview {
   id             String       @unique
   projectId      String       @unique
-  project        Project      @relation(fields: [projectId], references: [id])
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   organization   Organization @relation(fields: [organizationId], references: [id])
   organizationId String
   public         Boolean      @default(false)
@@ -305,7 +330,7 @@ model EventMeta {
   color      String?
   icon       String?
   projectId  String
-  project    Project  @relation(fields: [projectId], references: [id])
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -320,7 +345,7 @@ model Reference {
   description String?
   date        DateTime @default(now())
   projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -338,7 +363,7 @@ model NotificationRule {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
   projectId     String
-  project       Project        @relation(fields: [projectId], references: [id])
+  project       Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   integrations  Integration[]
   sendToApp     Boolean        @default(false)
   sendToEmail   Boolean        @default(false)
@@ -355,7 +380,7 @@ model NotificationRule {
 model Notification {
   id                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId          String
-  project            Project           @relation(fields: [projectId], references: [id])
+  project            Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
   title              String
   message            String
   isReadAt           DateTime?

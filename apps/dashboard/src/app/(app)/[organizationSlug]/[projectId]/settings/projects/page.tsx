@@ -8,6 +8,7 @@ import {
 } from '@openpanel/db';
 
 import { notFound } from 'next/navigation';
+import DeleteProject from './delete-project';
 import EditProjectDetails from './edit-project-details';
 import EditProjectFilters from './edit-project-filters';
 import ProjectClients from './project-clients';
@@ -34,6 +35,7 @@ export default async function Page({ params: { projectId } }: PageProps) {
         <EditProjectDetails project={project} />
         <EditProjectFilters project={project} />
         <ProjectClients project={project} />
+        <DeleteProject project={project} />
       </div>
     </Padding>
   );

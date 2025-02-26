@@ -15,7 +15,6 @@ import {
 } from 'recharts';
 
 import { average, round } from '@openpanel/common';
-import { fix } from 'mathjs';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { useReportChartContext } from '../context';
 import { RetentionTooltip } from './tooltip';
@@ -33,7 +32,6 @@ export function Chart({ data }: Props) {
 
   const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
   const yAxisProps = useYAxisProps({
-    data: [100],
     hide: hideYAxis,
     tickFormatter: (value) => `${value}%`,
   });

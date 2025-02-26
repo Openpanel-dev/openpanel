@@ -340,3 +340,11 @@ export const zSignInShare = z.object({
   shareId: z.string().min(1),
 });
 export type ISignInShare = z.infer<typeof zSignInShare>;
+
+export const zCheckout = z.object({
+  productPriceId: z.string(),
+  organizationId: z.string(),
+  projectId: z.string().nullish(),
+  productId: z.string(),
+});
+export type ICheckout = z.infer<typeof zCheckout>;

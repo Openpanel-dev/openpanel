@@ -1,21 +1,12 @@
 import { deepMergeObjects } from '@openpanel/common';
+import { getSafeJson } from '@openpanel/json';
 import type { ILogger } from '@openpanel/logger';
-// import { getSafeJson } from '@openpanel/json';
 import { type Redis, getRedisCache } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
 import type { IClickhouseProfile } from '../services/profile.service';
 import { BaseBuffer } from './base-buffer';
-
-// TODO: Use @openpanel/json when polar is merged
-function getSafeJson<T>(str: string): T | null {
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    return null;
-  }
-}
 
 export class ProfileBuffer extends BaseBuffer {
   private batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE

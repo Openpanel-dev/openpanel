@@ -1,11 +1,11 @@
 import type { Job } from 'bullmq';
 
-import { setSuperJson } from '@openpanel/common';
 import { db } from '@openpanel/db';
 import { sendDiscordNotification } from '@openpanel/integrations/src/discord';
 import { sendSlackNotification } from '@openpanel/integrations/src/slack';
+import { setSuperJson } from '@openpanel/json';
 import type { NotificationQueuePayload } from '@openpanel/queue';
-import { getRedisPub } from '@openpanel/redis';
+import { getRedisPub, publishEvent } from '@openpanel/redis';
 
 export async function notificationJob(job: Job<NotificationQueuePayload>) {
   switch (job.data.type) {
@@ -13,7 +13,7 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
       const { notification } = job.data.payload;
 
       if (notification.sendToApp) {
-        getRedisPub().publish('notification', setSuperJson(notification));
+        publishEvent('notification', 'created', notification);
         // empty for now
         return;
       }

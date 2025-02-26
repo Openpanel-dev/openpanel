@@ -12,10 +12,10 @@ import { projectRouter } from './routers/project';
 import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
 import { shareRouter } from './routers/share';
+import { subscriptionRouter } from './routers/subscription';
 import { ticketRouter } from './routers/ticket';
 import { userRouter } from './routers/user';
 import { createTRPCRouter } from './trpc';
-
 /**
  * This is the primary router for your server.
  *
@@ -38,6 +38,7 @@ export const appRouter = createTRPCRouter({
   notification: notificationRouter,
   integration: integrationRouter,
   auth: authRouter,
+  subscription: subscriptionRouter,
 });
 
 // export type definition of API

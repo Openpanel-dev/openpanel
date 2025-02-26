@@ -6,11 +6,15 @@ import { notFound } from 'next/navigation';
 import { parseAsStringEnum } from 'nuqs/server';
 
 import { auth } from '@openpanel/auth/nextjs';
-import { db } from '@openpanel/db';
+import { db, transformOrganization } from '@openpanel/db';
 
-import EditOrganization from './edit-organization';
 import InvitesServer from './invites';
 import MembersServer from './members';
+import Billing from './organization/billing';
+import { BillingFaq } from './organization/billing-faq';
+import CurrentSubscription from './organization/current-subscription';
+import Organization from './organization/organization';
+import Usage from './organization/usage';
 
 interface PageProps {
   params: {
@@ -23,7 +27,8 @@ export default async function Page({
   params: { organizationSlug: organizationId },
   searchParams,
 }: PageProps) {
-  const tab = parseAsStringEnum(['org', 'members', 'invites'])
+  const isBillingEnabled = !process.env.SELF_HOSTED;
+  const tab = parseAsStringEnum(['org', 'billing', 'members', 'invites'])
     .withDefault('org')
     .parseServerSide(searchParams.tab);
   const session = await auth();
@@ -71,6 +76,11 @@ export default async function Page({
         <PageTabsLink href={'?tab=org'} isActive={tab === 'org'}>
           Organization
         </PageTabsLink>
+        {isBillingEnabled && (
+          <PageTabsLink href={'?tab=billing'} isActive={tab === 'billing'}>
+            Billing
+          </PageTabsLink>
+        )}
         <PageTabsLink href={'?tab=members'} isActive={tab === 'members'}>
           Members
         </PageTabsLink>
@@ -79,7 +89,17 @@ export default async function Page({
         </PageTabsLink>
       </PageTabs>
 
-      {tab === 'org' && <EditOrganization organization={organization} />}
+      {tab === 'org' && <Organization organization={organization} />}
+      {tab === 'billing' && isBillingEnabled && (
+        <div className="flex flex-col-reverse md:flex-row gap-8 max-w-screen-lg">
+          <div className="col gap-8 w-full">
+            <Billing organization={organization} />
+            <Usage organization={organization} />
+            <BillingFaq />
+          </div>
+          <CurrentSubscription organization={organization} />
+        </div>
+      )}
       {tab === 'members' && <MembersServer organizationId={organizationId} />}
       {tab === 'invites' && <InvitesServer organizationId={organizationId} />}
     </Padding>

@@ -110,7 +110,6 @@ export function Chart({ data }: Props) {
 
   const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
   const yAxisProps = useYAxisProps({
-    data: [data.metrics.max],
     hide: hideYAxis,
   });
   return (

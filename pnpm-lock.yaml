@@ -60,9 +60,15 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../../packages/integrations
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../../packages/json
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@openpanel/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -87,6 +93,9 @@ importers:
       fastify-metrics:
         specifier: ^11.0.0
         version: 11.0.0(fastify@4.26.1)
+      fastify-raw-body:
+        specifier: ^4.2.1
+        version: 4.3.0
       ico-to-png:
         specifier: ^0.2.1
         version: 0.2.1
@@ -155,8 +164,8 @@ importers:
         specifier: ^9.0.8
         version: 9.0.8
       '@types/ws':
-        specifier: ^8.5.10
-        version: 8.5.10
+        specifier: ^8.5.14
+        version: 8.5.14
       js-yaml:
         specifier: ^4.1.0
         version: 4.1.0
@@ -193,6 +202,9 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../../packages/integrations
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../../packages/json
       '@openpanel/nextjs':
         specifier: 1.0.3
         version: 1.0.3(next@14.2.1(@babel/core@7.24.5)(@opentelemetry/api@1.8.0)(react-dom@18.2.0(react@18.2.0))(react@18.2.0))(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -467,6 +479,9 @@ importers:
         specifier: ^3.22.4
         version: 3.22.4
     devDependencies:
+      '@openpanel/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@openpanel/trpc':
         specifier: workspace:*
         version: link:../../packages/trpc
@@ -651,6 +666,9 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../../packages/integrations
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../../packages/json
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
@@ -880,6 +898,9 @@ importers:
       '@openpanel/constants':
         specifier: workspace:*
         version: link:../constants
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../json
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../logger
@@ -1001,6 +1022,25 @@ importers:
         specifier: ^5.2.2
         version: 5.3.3
 
+  packages/json:
+    dependencies:
+      superjson:
+        specifier: ^1.13.3
+        version: 1.13.3
+    devDependencies:
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@openpanel/validation':
+        specifier: workspace:*
+        version: link:../validation
+      '@types/node':
+        specifier: 20.14.8
+        version: 20.14.8
+      typescript:
+        specifier: ^5.2.2
+        version: 5.6.3
+
   packages/logger:
     dependencies:
       '@hyperdx/node-opentelemetry':
@@ -1022,6 +1062,40 @@ importers:
       typescript:
         specifier: ^5.2.2
         version: 5.3.3
+
+  packages/payments:
+    dependencies:
+      '@polar-sh/sdk':
+        specifier: ^0.26.1
+        version: 0.26.1(zod@3.23.8)
+    devDependencies:
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../db
+      '@openpanel/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/typescript
+      '@types/inquirer':
+        specifier: ^9.0.7
+        version: 9.0.7
+      '@types/inquirer-autocomplete-prompt':
+        specifier: ^3.0.3
+        version: 3.0.3
+      '@types/node':
+        specifier: 20.14.8
+        version: 20.14.8
+      '@types/react':
+        specifier: ^18.2.0
+        version: 18.3.12
+      inquirer:
+        specifier: ^9.3.5
+        version: 9.3.6
+      inquirer-autocomplete-prompt:
+        specifier: ^3.0.1
+        version: 3.0.1(inquirer@9.3.6)
+      typescript:
+        specifier: ^5.2.2
+        version: 5.6.3
 
   packages/queue:
     dependencies:
@@ -1050,10 +1124,16 @@ importers:
 
   packages/redis:
     dependencies:
+      '@openpanel/json':
+        specifier: workspace:*
+        version: link:../json
       ioredis:
         specifier: ^5.4.1
         version: 5.4.1
     devDependencies:
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../db
       '@openpanel/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/typescript
@@ -1224,6 +1304,9 @@ importers:
       '@openpanel/integrations':
         specifier: workspace:^
         version: link:../integrations
+      '@openpanel/payments':
+        specifier: workspace:^
+        version: link:../payments
       '@openpanel/redis':
         specifier: workspace:*
         version: link:../redis
@@ -4023,6 +4106,11 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
+  '@polar-sh/sdk@0.26.1':
+    resolution: {integrity: sha512-OEaxiNJaxpeNi7LANHR5S71BAyORk6W0lwkfHcrGyMGS9VDdgXnZjB8QZ3tFSXbQvt3yZdHShX6pPC8xOxNvFw==}
+    peerDependencies:
+      zod: '>= 3'
+
   '@prisma/client@5.9.1':
     resolution: {integrity: sha512-caSOnG4kxcSkhqC/2ShV7rEoWwd3XrftokxJqOCMVvia4NYV/TPtJlS9C2os3Igxw/Qyxumj9GBQzcStzECvtQ==}
     engines: {node: '>=16.13'}
@@ -5975,6 +6063,12 @@ packages:
   '@types/http-errors@2.0.4':
     resolution: {integrity: sha512-D0CFMMtydbJAegzOyHjtiKPLlvnm3iTZyZRSZoLq2mRhDdmLfIWOCYPfQJ4cu2erKghU++QvjcUjp/5h7hESpA==}
 
+  '@types/inquirer-autocomplete-prompt@3.0.3':
+    resolution: {integrity: sha512-OQCW09mEECgvhcppbQRgZSmWskWv58l+WwyUvWB1oxTu3CZj8keYSDZR9U8owUzJ5Zeux5kacN9iVPJLXcoLXg==}
+
+  '@types/inquirer@9.0.7':
+    resolution: {integrity: sha512-Q0zyBupO6NxGRZut/JdmqYKOnN95Eg5V8Csg3PGKkP+FnvsUZx1jAyK7fztIszxxMuoBA6E3KXWvdZVXIpx60g==}
+
   '@types/is-stream@1.1.0':
     resolution: {integrity: sha512-jkZatu4QVbR60mpIzjINmtS1ZF4a/FqdTUTBeQDVOQ2PYyidtwFKr0B5G6ERukKwliq+7mIXvxyppwzG5EgRYg==}
 
@@ -6040,9 +6134,6 @@ packages:
 
   '@types/mysql@2.15.22':
     resolution: {integrity: sha512-wK1pzsJVVAjYCSZWQoWHziQZbNggXFDUEIGf54g4ZM/ERuP86uGdWeKZWMYlqTPMZfHJJvLPyogXGvCOg87yLQ==}
-
-  '@types/node@20.14.12':
-    resolution: {integrity: sha512-r7wNXakLeSsGT0H1AU863vS2wa5wBOK4bWMjZz2wj+8nBx+m5PeIn0k8AloSLpRuiwdRQZwarZqHE4FNArPuJQ==}
 
   '@types/node@20.14.8':
     resolution: {integrity: sha512-DO+2/jZinXfROG7j7WKFn/3C6nFwxy2lLpgLjEXJz+0XKphZlTLJ14mo8Vfg8X5BWN6XjyESXq+LcYdT7tR3bA==}
@@ -6128,6 +6219,9 @@ packages:
   '@types/tedious@4.0.14':
     resolution: {integrity: sha512-KHPsfX/FoVbUGbyYvk1q9MMQHLPeRZhRJZdO45Q4YjvFkv4hMNghCWTvy7rdKessBsmtz4euWCWAB6/tVpI1Iw==}
 
+  '@types/through@0.0.33':
+    resolution: {integrity: sha512-HsJ+z3QuETzP3cswwtzt2vEIiHBk/dCcHGhbmG5X3ecnwFD/lPrMpliGXxSCg03L9AhrdwA4Oz/qfspkDW+xGQ==}
+
   '@types/triple-beam@1.3.5':
     resolution: {integrity: sha512-6WaYesThRMCl19iryMYP7/x2OVgCtbIVflDGFpWnb9irXI3UjYE4AzmYuiUKY1AJstGijoY+MgUszMgRxIYTYw==}
 
@@ -6152,8 +6246,8 @@ packages:
   '@types/ws@7.4.7':
     resolution: {integrity: sha512-JQbbmxZTZehdc2iszGKs5oC3NFnjeay7mtAWrdt7qNtAVK0g19muApzAy4bm9byz79xa2ZnO/BOBC2R8RC5Lww==}
 
-  '@types/ws@8.5.10':
-    resolution: {integrity: sha512-vmQSUcfalpIq0R9q7uTo2lXs6eGIpt9wtnLdMv9LVpIjCA/+ufZRozlVoVelIYixx1ugCBKDhn89vnsEGOCx9A==}
+  '@types/ws@8.5.14':
+    resolution: {integrity: sha512-bd/YFLW+URhBzMXurx7lWByOu+xzU9+kb3RboOteXYDfW+tr+JZa99OyNmPINEGB/ahzKrEuc8rcv4gnpJmxTw==}
 
   '@types/yargs-parser@21.0.3':
     resolution: {integrity: sha512-I4q9QU9MQv4oEOz4tAHJtNz1cwuLxn2F3xcc2iV5WdqLPpUnj30aUuxt1mAxYTG+oe8CZMV/+6rU4S4gRDzqtQ==}
@@ -6251,6 +6345,10 @@ packages:
   ansi-escapes@4.3.2:
     resolution: {integrity: sha512-gKXj5ALrKWQLsYG9jlTRmR/xKluxHV+Z9QEwNIgCfM1/uwPMCuzVVnh5mwTd+OuBZcwSIMbqssNWRm1lE51QaQ==}
     engines: {node: '>=8'}
+
+  ansi-escapes@6.2.1:
+    resolution: {integrity: sha512-4nJ3yixlEthEJ9Rk4vPcdBRkZvQZlYyu8j4/Mqz5sgIkddmEnH2Yj2ZrnP9S3tQOvSNRUIgVNF/1yPpRAGNRig==}
+    engines: {node: '>=14.16'}
 
   ansi-fragments@0.2.1:
     resolution: {integrity: sha512-DykbNHxuXQwUDRv5ibc2b0x7uw7wmwOGLBUd5RmaQ5z8Lhx19vwvKV+FAsM5rEA6dEcHxX+/Ad5s9eF2k2bB+w==}
@@ -7704,6 +7802,10 @@ packages:
   fastify-plugin@4.5.1:
     resolution: {integrity: sha512-stRHYGeuqpEZTL1Ef0Ovr2ltazUT9g844X5z/zEBFLG8RYlpDiOCIG+ATvYEp+/zmc7sN29mcIMp8gvYplYPIQ==}
 
+  fastify-raw-body@4.3.0:
+    resolution: {integrity: sha512-F4o8ZIMVx4YoxGfwrZys6wyjl40gF3Yv6AWWRy62ozFAyZBSS831/uyyCAqKYw3tR73g180ryG98yih6To1PUQ==}
+    engines: {node: '>= 10'}
+
   fastify@4.26.1:
     resolution: {integrity: sha512-tznA/G55dsxzM5XChBfcvVSloG2ejeeotfPPJSFaWmHyCDVGMpvf3nRNbsCb/JTBF9RmQFBfuujWt3Nphjesng==}
 
@@ -7734,6 +7836,10 @@ packages:
 
   fetch-retry@4.1.1:
     resolution: {integrity: sha512-e6eB7zN6UBSwGVwrbWVH+gdLnkW9WwHhmq2YDK1Sh30pzx1onRVGBvogTlUeWxwTa+L86NYdo4hFkh7O8ZjSnA==}
+
+  figures@5.0.0:
+    resolution: {integrity: sha512-ej8ksPF4x6e5wvK9yevct0UCXh8TTFlWGVLlgjZuoBH1HwjIfKE/IdL5mq89sFA7zELi1VhKpmtDnrs7zWyeyg==}
+    engines: {node: '>=14'}
 
   filelist@1.0.4:
     resolution: {integrity: sha512-w1cEuf3S+DrLCQL7ET6kz+gmlJdbq9J7yXCSjK/OZCPA+qEN1WyF4ZAf0YYJa4/shHJra2t/d/r8SV4Ji+x+8Q==}
@@ -8268,6 +8374,12 @@ packages:
       react: ^16.8 || ^17.0 || ^18.0
       react-dom: ^16.8 || ^17.0 || ^18.0
 
+  inquirer-autocomplete-prompt@3.0.1:
+    resolution: {integrity: sha512-DQBXwX2fVQPVUzu4v4lGgtNgyjcX2+rTyphb2MeSOQh3xUayKAfHAF4y0KgsMi06m6ZiR3xIOdzMZMfQgX2m9w==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      inquirer: ^9.1.0
+
   inquirer@9.3.6:
     resolution: {integrity: sha512-riK/iQB2ctwkpWYgjjWIRv3MBLt2gzb2Sj0JNQNbyTXgyXsLWcDPJ5WS5ZDTCx7BRFnJsARtYh+58fjP5M2Y0Q==}
     engines: {node: '>=18'}
@@ -8493,6 +8605,10 @@ packages:
   is-unicode-supported@0.1.0:
     resolution: {integrity: sha512-knxG2q4UC3u8stRGyAVJCOdxFmv5DZiRcdlIaAQXAbSfJya+OhopNotLQrstBhququ4ZpuKbDc/8S6mgXgPFPw==}
     engines: {node: '>=10'}
+
+  is-unicode-supported@1.3.0:
+    resolution: {integrity: sha512-43r2mRvz+8JRIKnWJ+3j8JtjRKZ6GmjzfaE/qiBJnikNnYv/6bagRJ1kUhNk8R5EX/GkobD+r+sfxCPJsiKBLQ==}
+    engines: {node: '>=12'}
 
   is-valid-path@0.1.1:
     resolution: {integrity: sha512-+kwPrVDu9Ms03L90Qaml+79+6DZHqHyRoANI6IsZJ/g8frhnfchDOBCa0RbQ6/kdHt5CS5OeIEyrYznNuVN+8A==}
@@ -10644,6 +10760,10 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
+  run-async@2.4.1:
+    resolution: {integrity: sha512-tvVnVv01b8c1RrA6Ep7JkStj85Guv/YrMcwqYQnwjsAS2cTmmPGBBjAjpCW7RrSodNSoE2/qg9O4bceNvUuDgQ==}
+    engines: {node: '>=0.12.0'}
+
   run-async@3.0.0:
     resolution: {integrity: sha512-540WwVDOMxA6dN6We19EcT9sc3hkXPw5mzRNGM3FkdN/vtE9NFvj5lFAPNwUDmJjXidm3v7TC1cTE7t17Ulm1Q==}
     engines: {node: '>=0.12.0'}
@@ -10936,6 +11056,9 @@ packages:
 
   standard-as-callback@2.1.0:
     resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
+
+  standardwebhooks@1.0.0:
+    resolution: {integrity: sha512-BbHGOQK9olHPMvQNHWul6MYlrRTAOKn03rOe4A8O3CLWhNf4YHBqq2HJKKC+sfqpxiBY52pNeesD6jIiLDz8jg==}
 
   statuses@1.5.0:
     resolution: {integrity: sha512-OpZ3zP+jT1PI7I8nemJX4AKmAX070ZkYPVWV/AaKTJl+tXCTGyVdC1a4SL8RUQYEwk/f34ZX8UTykN68FwrqAA==}
@@ -15588,6 +15711,11 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
+  '@polar-sh/sdk@0.26.1(zod@3.23.8)':
+    dependencies:
+      standardwebhooks: 1.0.0
+      zod: 3.23.8
+
   '@prisma/client@5.9.1(prisma@5.9.1)':
     optionalDependencies:
       prisma: 5.9.1
@@ -18167,6 +18295,15 @@ snapshots:
 
   '@types/http-errors@2.0.4': {}
 
+  '@types/inquirer-autocomplete-prompt@3.0.3':
+    dependencies:
+      '@types/inquirer': 9.0.7
+
+  '@types/inquirer@9.0.7':
+    dependencies:
+      '@types/through': 0.0.33
+      rxjs: 7.8.1
+
   '@types/is-stream@1.1.0':
     dependencies:
       '@types/node': 20.14.8
@@ -18189,7 +18326,7 @@ snapshots:
 
   '@types/jsonwebtoken@9.0.6':
     dependencies:
-      '@types/node': 20.14.12
+      '@types/node': 20.14.8
 
   '@types/keygrip@1.0.6': {}
 
@@ -18246,10 +18383,6 @@ snapshots:
     dependencies:
       '@types/node': 20.14.8
 
-  '@types/node@20.14.12':
-    dependencies:
-      undici-types: 5.26.5
-
   '@types/node@20.14.8':
     dependencies:
       undici-types: 5.26.5
@@ -18288,7 +18421,7 @@ snapshots:
 
   '@types/react-dom@18.2.19':
     dependencies:
-      '@types/react': 18.2.56
+      '@types/react': 18.3.12
 
   '@types/react-dom@18.3.1':
     dependencies:
@@ -18299,11 +18432,11 @@ snapshots:
       '@types/d3-geo': 2.0.7
       '@types/d3-zoom': 2.0.7
       '@types/geojson': 7946.0.14
-      '@types/react': 18.2.56
+      '@types/react': 18.3.12
 
   '@types/react-syntax-highlighter@15.5.11':
     dependencies:
-      '@types/react': 18.2.56
+      '@types/react': 18.3.12
 
   '@types/react@18.2.56':
     dependencies:
@@ -18318,7 +18451,7 @@ snapshots:
 
   '@types/request-ip@0.0.41':
     dependencies:
-      '@types/node': 20.14.12
+      '@types/node': 20.14.8
 
   '@types/retry@0.12.0': {}
 
@@ -18351,6 +18484,10 @@ snapshots:
     dependencies:
       '@types/node': 20.14.8
 
+  '@types/through@0.0.33':
+    dependencies:
+      '@types/node': 20.14.8
+
   '@types/triple-beam@1.3.5': {}
 
   '@types/tsscmp@1.0.2': {}
@@ -18369,9 +18506,9 @@ snapshots:
     dependencies:
       '@types/node': 20.14.8
 
-  '@types/ws@8.5.10':
+  '@types/ws@8.5.14':
     dependencies:
-      '@types/node': 20.14.12
+      '@types/node': 20.14.8
 
   '@types/yargs-parser@21.0.3': {}
 
@@ -18478,6 +18615,8 @@ snapshots:
   ansi-escapes@4.3.2:
     dependencies:
       type-fest: 0.21.3
+
+  ansi-escapes@6.2.1: {}
 
   ansi-fragments@0.2.1:
     dependencies:
@@ -20352,6 +20491,12 @@ snapshots:
 
   fastify-plugin@4.5.1: {}
 
+  fastify-raw-body@4.3.0:
+    dependencies:
+      fastify-plugin: 4.5.1
+      raw-body: 2.5.2
+      secure-json-parse: 2.7.0
+
   fastify@4.26.1:
     dependencies:
       '@fastify/ajv-compiler': 3.5.0
@@ -20413,6 +20558,11 @@ snapshots:
       web-streams-polyfill: 3.3.3
 
   fetch-retry@4.1.1: {}
+
+  figures@5.0.0:
+    dependencies:
+      escape-string-regexp: 5.0.0
+      is-unicode-supported: 1.3.0
 
   filelist@1.0.4:
     dependencies:
@@ -21076,6 +21226,15 @@ snapshots:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
 
+  inquirer-autocomplete-prompt@3.0.1(inquirer@9.3.6):
+    dependencies:
+      ansi-escapes: 6.2.1
+      figures: 5.0.0
+      inquirer: 9.3.6
+      picocolors: 1.1.1
+      run-async: 2.4.1
+      rxjs: 7.8.1
+
   inquirer@9.3.6:
     dependencies:
       '@inquirer/figures': 1.0.4
@@ -21279,6 +21438,8 @@ snapshots:
       which-typed-array: 1.1.14
 
   is-unicode-supported@0.1.0: {}
+
+  is-unicode-supported@1.3.0: {}
 
   is-valid-path@0.1.1:
     dependencies:
@@ -24133,6 +24294,8 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.12.0
       fsevents: 2.3.3
 
+  run-async@2.4.1: {}
+
   run-async@3.0.0: {}
 
   run-parallel@1.2.0:
@@ -24483,6 +24646,11 @@ snapshots:
       type-fest: 0.7.1
 
   standard-as-callback@2.1.0: {}
+
+  standardwebhooks@1.0.0:
+    dependencies:
+      '@stablelib/base64': 1.0.1
+      fast-sha256: 1.3.0
 
   statuses@1.5.0: {}
 

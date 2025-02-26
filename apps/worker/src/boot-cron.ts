@@ -15,6 +15,11 @@ export async function bootCron() {
       pattern: '0 0 * * *',
     },
     {
+      name: 'deleteProjects',
+      type: 'deleteProjects',
+      pattern: '0 * * * *',
+    },
+    {
       name: 'flush',
       type: 'flushEvents',
       pattern: 1000 * 10,

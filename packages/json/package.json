@@ -1,0 +1,17 @@
+{
+  "name": "@openpanel/json",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "superjson": "^1.13.3"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@openpanel/validation": "workspace:*",
+    "@types/node": "20.14.8",
+    "typescript": "^5.2.2"
+  }
+}

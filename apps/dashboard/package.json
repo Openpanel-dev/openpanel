@@ -19,6 +19,7 @@
     "@openpanel/constants": "workspace:^",
     "@openpanel/db": "workspace:^",
     "@openpanel/integrations": "workspace:^",
+    "@openpanel/json": "workspace:*",
     "@openpanel/nextjs": "1.0.3",
     "@openpanel/queue": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",
@@ -114,6 +115,7 @@
   "devDependencies": {
     "@openpanel/trpc": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
+    "@openpanel/payments": "workspace:*",
     "@types/bcrypt": "^5.0.2",
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.isequal": "^4.5.8",

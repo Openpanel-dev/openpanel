@@ -4,13 +4,16 @@ import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import {
+  BanknoteIcon,
   ChartLineIcon,
+  DollarSignIcon,
   GanttChartIcon,
   Globe2Icon,
   LayersIcon,
   LayoutPanelTopIcon,
   PlusIcon,
   ScanEyeIcon,
+  ServerIcon,
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
@@ -18,7 +21,9 @@ import type { LucideIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 import { ProjectLink } from '@/components/links';
-import type { IServiceDashboards } from '@openpanel/db';
+import { useNumber } from '@/hooks/useNumerFormatter';
+import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
+import { differenceInDays, format } from 'date-fns';
 
 function LinkWithIcon({
   href,
@@ -52,25 +57,114 @@ function LinkWithIcon({
 
 interface LayoutMenuProps {
   dashboards: IServiceDashboards;
+  organization: IServiceOrganization;
 }
-export default function LayoutMenu({ dashboards }: LayoutMenuProps) {
+export default function LayoutMenu({
+  dashboards,
+  organization,
+}: LayoutMenuProps) {
+  const number = useNumber();
+  const {
+    isTrial,
+    isExpired,
+    isExceeded,
+    isCanceled,
+    subscriptionEndsAt,
+    subscriptionPeriodEventsCount,
+    subscriptionPeriodEventsLimit,
+  } = organization;
   return (
     <>
-      <ProjectLink
-        href={'/reports'}
-        className={cn(
-          'border rounded p-2 row items-center gap-2 hover:bg-def-200 mb-4',
+      <div className="col border rounded mb-2 divide-y">
+        {process.env.SELF_HOSTED && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row items-center gap-2 pointer-events-none',
+            )}
+          >
+            <ServerIcon size={20} />
+            <div className="flex-1 col gap-1">
+              <div className="font-medium">Self-hosted</div>
+            </div>
+          </ProjectLink>
         )}
-      >
-        <ChartLineIcon size={20} />
-        <div className="flex-1 col gap-1">
-          <div className="font-medium">Create report</div>
-          <div className="text-sm text-muted-foreground">
-            Visualize your events
+        {isTrial && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row items-center gap-2 hover:bg-def-200 text-destructive',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-1">
+              <div className="font-medium">
+                Free trial ends in{' '}
+                {differenceInDays(subscriptionEndsAt, new Date())} days
+              </div>
+            </div>
+          </ProjectLink>
+        )}
+        {isExpired && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-0.5">
+              <div className="font-medium">Subscription expired</div>
+              <div className="text-sm opacity-80">
+                {differenceInDays(new Date(), subscriptionEndsAt)} days ago
+              </div>
+            </div>
+          </ProjectLink>
+        )}
+        {isCanceled && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-0.5">
+              <div className="font-medium">Subscription canceled</div>
+              <div className="text-sm opacity-80">
+                {differenceInDays(new Date(), subscriptionEndsAt)} days ago
+              </div>
+            </div>
+          </ProjectLink>
+        )}
+        {isExceeded && subscriptionEndsAt && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row gap-2 hover:bg-def-200 text-destructive',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-0.5">
+              <div className="font-medium">Events limit exceeded</div>
+              <div className="text-sm opacity-80">
+                {number.format(subscriptionPeriodEventsCount)} /{' '}
+                {number.format(subscriptionPeriodEventsLimit)}
+              </div>
+            </div>
+          </ProjectLink>
+        )}
+        <ProjectLink
+          href={'/reports'}
+          className={cn('rounded p-2 row gap-2 hover:bg-def-200')}
+        >
+          <ChartLineIcon size={20} />
+          <div className="flex-1 col gap-1">
+            <div className="font-medium">Create report</div>
           </div>
-        </div>
-        <PlusIcon size={16} className="text-muted-foreground" />
-      </ProjectLink>
+          <PlusIcon size={16} className="text-muted-foreground" />
+        </ProjectLink>
+      </div>
       <LinkWithIcon icon={WallpaperIcon} label="Overview" href={'/'} />
       <LinkWithIcon
         icon={LayoutPanelTopIcon}

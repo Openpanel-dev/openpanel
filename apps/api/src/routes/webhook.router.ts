@@ -7,6 +7,14 @@ const webhookRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/slack',
     handler: controller.slackWebhook,
   });
+  fastify.route({
+    method: 'POST',
+    url: '/polar',
+    handler: controller.polarWebhook,
+    config: {
+      rawBody: true,
+    },
+  });
   done();
 };
 

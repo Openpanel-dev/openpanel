@@ -2,16 +2,17 @@ import crypto from 'node:crypto';
 import type { z } from 'zod';
 
 import { stripTrailingSlash } from '@openpanel/common';
-import type { ProjectType } from '@openpanel/db';
 import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
+import type { IServiceUser, ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/common/server';
+import { addDays } from 'date-fns';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 async function createOrGetOrganization(
   input: z.infer<typeof zOnboardingProject>,
-  userId: string,
+  user: IServiceUser,
 ) {
   if (input.organizationId) {
     return await getOrganizationBySlug(input.organizationId);
@@ -22,7 +23,9 @@ async function createOrGetOrganization(
       data: {
         id: await getId('organization', input.organization),
         name: input.organization,
-        createdByUserId: userId,
+        createdByUserId: user.id,
+        subscriptionEndsAt: addDays(new Date(), 30),
+        subscriptionStatus: 'trialing',
       },
     });
   }
@@ -72,10 +75,8 @@ export const onboardingRouter = createTRPCRouter({
       if (input.app) types.push('app');
       if (input.backend) types.push('backend');
 
-      const [organization, user] = await Promise.all([
-        createOrGetOrganization(input, ctx.session.userId),
-        getUserById(ctx.session.userId),
-      ]);
+      const user = await getUserById(ctx.session.userId);
+      const organization = await createOrGetOrganization(input, user);
 
       if (!organization?.id) {
         throw new Error('Organization slug is missing');

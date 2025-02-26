@@ -1,5 +1,28 @@
 import { getRedisCache } from './redis';
 
+export async function getCache<T>(
+  key: string,
+  expireInSec: number,
+  fn: () => Promise<T>,
+): Promise<T> {
+  const hit = await getRedisCache().get(key);
+  if (hit) {
+    return JSON.parse(hit, (_, value) => {
+      if (
+        typeof value === 'string' &&
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*Z$/.test(value)
+      ) {
+        return new Date(value);
+      }
+      return value;
+    });
+  }
+
+  const data = await fn();
+  await getRedisCache().setex(key, expireInSec, JSON.stringify(data));
+  return data;
+}
+
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
   expireInSec: number,
@@ -37,7 +60,15 @@ export function cacheable<T extends (...args: any) => any>(
     const cached = await getRedisCache().get(key);
     if (cached) {
       try {
-        return JSON.parse(cached);
+        return JSON.parse(cached, (_, value) => {
+          if (
+            typeof value === 'string' &&
+            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*Z$/.test(value)
+          ) {
+            return new Date(value);
+          }
+          return value;
+        });
       } catch (e) {
         console.error('Failed to parse cache', e);
       }
