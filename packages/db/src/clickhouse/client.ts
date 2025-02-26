@@ -186,9 +186,16 @@ export function formatClickhouseDate(
   skipTime = false,
 ): string {
   if (skipTime) {
-    return new Date(date).toISOString().split('T')[0]!;
+    return new Date(date)
+      .toISOString()
+      .split('T')[0]!
+      .replace(/\.\d\d\d/, '');
   }
-  return new Date(date).toISOString().replace('T', ' ').replace(/Z+$/, '');
+  return new Date(date)
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/Z+$/, '')
+    .replace(/\.\d\d\d/, '');
 }
 
 export function toDate(str: string, interval?: IInterval) {

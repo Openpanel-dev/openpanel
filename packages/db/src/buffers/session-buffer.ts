@@ -1,6 +1,6 @@
 import { type Redis, getRedisCache, runEvery } from '@openpanel/redis';
 
-import { getSafeJson } from '@openpanel/common';
+import { getSafeJson } from '@openpanel/json';
 import { assocPath, clone } from 'ramda';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import type { IClickhouseEvent } from '../services/event.service';

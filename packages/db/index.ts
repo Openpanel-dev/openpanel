@@ -19,3 +19,5 @@ export * from './src/services/retention.service';
 export * from './src/services/notification.service';
 export * from './src/buffers';
 export * from './src/types';
+export * from './src/clickhouse/query-builder';
+export * from './src/services/overview.service';
