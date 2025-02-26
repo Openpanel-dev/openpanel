@@ -75,6 +75,5 @@ const updateEventsCount = cacheable(async function updateEventsCount(
               : organization.subscriptionPeriodEventsCountExceededAt,
       },
     });
-    await getOrganizationByProjectIdCached.clear(projectId);
   }
 }, 60 * 60);
