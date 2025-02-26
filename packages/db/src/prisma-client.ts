@@ -100,7 +100,8 @@ const getPrismaClient = () => {
                 return org.subscriptionEndsAt;
               }
 
-              return new Date();
+              // Hedge against edge cases :D
+              return new Date(Date.now() + 1000 * 60 * 60 * 24);
             },
           },
           isTrial: {
