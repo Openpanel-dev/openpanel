@@ -1,4 +1,5 @@
 import { cacheable } from '@openpanel/redis';
+import { escape } from 'sqlstring';
 import { TABLE_NAMES, chQuery } from '../clickhouse/client';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
