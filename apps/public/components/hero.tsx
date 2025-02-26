@@ -17,7 +17,7 @@ export function Hero() {
         <div className="max-w-2xl col gap-4 pt-44 text-center mx-auto ">
           <Tag className="self-center">
             <DollarSignIcon className="size-4" />
-            Free during beta
+            Release 1.0 is live!
           </Tag>
           <h1 className="text-4xl md:text-6xl font-bold leading-[1.1]">
             An open-source alternative to <span>Mixpanel</span>
