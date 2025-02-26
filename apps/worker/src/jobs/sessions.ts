@@ -6,7 +6,6 @@ import { logger } from '@/utils/logger';
 import {
   db,
   getOrganizationBillingEventsCount,
-  getOrganizationByProjectIdCached,
   getProjectEventsCount,
 } from '@openpanel/db';
 import { cacheable } from '@openpanel/redis';
@@ -76,4 +75,6 @@ const updateEventsCount = cacheable(async function updateEventsCount(
       },
     });
   }
+
+  return true;
 }, 60 * 60);
