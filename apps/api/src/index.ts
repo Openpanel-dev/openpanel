@@ -96,10 +96,10 @@ const startServer = async () => {
       global: false,
     });
 
-    fastify.addHook('preHandler', ipHook);
-    fastify.addHook('preHandler', timestampHook);
-    fastify.addHook('preHandler', fixHook);
     fastify.addHook('onRequest', requestIdHook);
+    fastify.addHook('onRequest', timestampHook);
+    fastify.addHook('onRequest', ipHook);
+    fastify.addHook('onRequest', fixHook);
     fastify.addHook('onResponse', requestLoggingHook);
 
     fastify.register(compress, {
