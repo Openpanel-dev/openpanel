@@ -51,9 +51,18 @@ export const projectRouter = createTRPCRouter({
         data: {
           name: input.name,
           crossDomain: input.crossDomain,
-          filters: input.filters,
-          domain: input.domain ? stripTrailingSlash(input.domain) : null,
-          cors: input.cors?.map((c) => stripTrailingSlash(c)) || [],
+          filters:
+            input.filters === undefined ? undefined : input.filters || [],
+          domain:
+            input.domain === undefined
+              ? undefined
+              : input.domain
+                ? stripTrailingSlash(input.domain)
+                : null,
+          cors:
+            input.cors === undefined
+              ? undefined
+              : input.cors.map((c) => stripTrailingSlash(c)) || [],
         },
         include: {
           clients: {

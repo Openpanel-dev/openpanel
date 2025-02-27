@@ -32,7 +32,7 @@ const validator = zProject.pick({
 type IForm = z.infer<typeof validator>;
 
 export default function EditProjectDetails({ project }: Props) {
-  const [hasDomain, setHasDomain] = useState(true);
+  const [hasDomain, setHasDomain] = useState(project.domain !== null);
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
@@ -101,7 +101,7 @@ export default function EditProjectDetails({ project }: Props) {
           </div>
           <AnimateHeight open={hasDomain}>
             <Input
-              placeholder="Domain"
+              placeholder="https://example.com"
               {...form.register('domain')}
               className="mb-4"
               error={form.formState.errors.domain?.message}
@@ -112,7 +112,10 @@ export default function EditProjectDetails({ project }: Props) {
               name="cors"
               control={form.control}
               render={({ field }) => (
-                <WithLabel label="Cors">
+                <WithLabel
+                  label="Cors"
+                  error={form.formState.errors.cors?.message}
+                >
                   <TagInput
                     {...field}
                     id="Cors"
