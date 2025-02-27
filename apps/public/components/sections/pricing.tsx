@@ -66,8 +66,7 @@ export function Pricing() {
               <strong className="text-background/80 dark:text-foreground/80">
                 All features are included upfront - no hidden costs.
               </strong>{' '}
-              You choose how many events to track each month. During the beta
-              phase, everything is offered for free to users.
+              You choose how many events to track each month.
             </div>
           </div>
         </div>
