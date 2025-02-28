@@ -257,7 +257,7 @@ export async function handler(
     }
   }
 
-  reply.status(200).send('ok');
+  reply.status(200).send();
 }
 
 type TrackPayload = {
