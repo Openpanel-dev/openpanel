@@ -1,0 +1,183 @@
+---
+title: How to Self-Host OpenPanel Analytics Platform
+description: Learn how to self-host OpenPanel web analytics platform. Step-by-step guide to install and configure your own analytics server for better privacy and cost savings.
+date: 2025-02-28
+cover: /content/how-to-self-host-openpanel.jpg
+tag: Guide
+team: OpenPanel Team
+---
+import { Callout } from 'fumadocs-ui/components/callout';
+
+## TLDR
+
+Run the script below, you can also watch the video were we show the entire process (at the bottom of the page).
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+cd openpanel/self-hosting
+./setup
+./start
+```
+
+## Why Self-Host Your Own Analytics Platform?
+
+Looking for a [Mixpanel alternative](/articles/alternatives-to-mixpanel)? Self-hosting your own web analytics and product analytics platform comes with several benefits. Let's break down the pros and cons of running your own analytics server.
+
+### Cost Benefits
+
+Self-hosting your own web analytics solution is typically much more cost-effective than cloud-based alternatives, especially as your traffic grows. This is one of the primary reasons organizations choose to self-host their analytics.
+
+### Data Privacy and Control
+
+When you self-host OpenPanel, you maintain complete control over your website statistics and visitor data. This makes it easier to:
+
+- Ensure GDPR and privacy compliance
+- Keep sensitive analytics data within your infrastructure
+- Maintain full ownership of your website traffic data
+- Customize data retention policies
+
+### Self-hosting is ideal if you
+
+- Are comfortable managing a server
+- Need customizable web traffic monitoring
+- Want direct database access to your analytics data
+- Prefer open-source analytics solutions
+
+## Considering cloud
+
+OpenPanel offers a cloud version of the platform, which is a hosted solution that you don't need to self-host. This might be the better option if you don't want to manage your own server.
+
+It can actually be cheaper as well depending on traffic and server provider you choose.
+
+## Prerequisites
+
+Before installing your self-hosted analytics platform, you'll need:
+
+- A server to host OpenPanel. We recommend using Hetzner ([**use our referral link**](https://hetzner.cloud/?ref=7Hq0H5mQh7tM) to support our work) as they offer reliable and cost-effective hosting solutions.
+- A domain name pointed to your server's IP address. If you're using Cloudflare as your DNS provider, make sure to disable the proxy mode (gray cloud) and use DNS only mode (orange cloud) for the domain or subdomain you'll use for OpenPanel.
+- Basic command line experience
+
+## How to self-host OpenPanel
+
+Now that you have a server and a domain name, you can start the installation process.
+
+### Step 1: SSH into your server
+
+Let's SSH into your newly (or already existing) server. If its fresh from the server provider, we recommend to make some changes to secure it. We have a guide on [how to secure your server](/articles/how-to-secure-ubuntu-server) that you can follow.
+
+```bash
+ssh root@your-server-ip
+```
+
+### Step 2: Pull source code
+
+Now we need to pull OpenPanel's source code which is open-sourced and available on [GitHub](https://github.com/openpanel-dev/openpanel).
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+```
+
+### Step 3: installation
+
+After you have pulled the source code, you should have a folder named `openpanel` in your server. Lets jump into that and then the self-hosting folder.
+
+```bash
+cd openpanel/self-hosting
+```
+
+Inside this folder you usually run all commands related to your installation, weather you need to restart something or check if there is any available updates.
+
+Now let's start the quiz/wizard which will guide you through the installation process. This will first ensure that you have docker and node installed, if not it will install them for you.
+
+After that it'll run `npm install` and `npm run quiz` which will ask you some questions about your installation.
+
+The questions are below and should be self-explanatory.
+
+- **Ask for your domain name (must start with http:// or https://)**
+  - The domain name were you can access your OpenPanel instance.
+- **Configure which dependencies to install (Clickhouse, Redis, PostgreSQL)**
+  - You can choose to install all of them or just the ones you need (if you already have some of them running on your server you could re-use them)
+- **Set up proxy settings (Caddy with SSL or bring your own)**
+  - This will set up the proxy settings for your OpenPanel instance. We recommend using Caddy with SSL option.
+- **Configure worker count for processing**
+  - This will configure the number of workers for your OpenPanel instance. Typically this should be fine with 1-2 (you can change this later in docker-compose.yml file)
+- **Set up resend api token (optional)**
+  - If you leave this blank some features will be disabled (email sending)
+- **Create basic auth credentials for the worker dashboard**
+  - This will create basic auth credentials for the worker dashboard (Bullboard).
+
+```bash
+./setup
+```
+
+### Step 4: Start OpenPanel
+
+Now that you have answered the questions, you can start OpenPanel with the following command.
+
+We usually follow up with `./logs` to check if everything is running fine.
+
+```bash
+./start
+
+# Check if everything is running fine
+./logs
+```
+
+### Step 5: Access OpenPanel
+
+Now that OpenPanel is running, you can access it by going to the domain name you chose in the quiz.
+
+
+## Available Commands
+
+OpenPanel comes with several utility scripts to manage your installation:
+
+### Basic Operations
+```bash
+./start                   # Start all OpenPanel services
+./stop                    # Stop all OpenPanel services
+./logs                    # View real-time logs from all services
+./update                  # Pull latest changes and restart services
+./rebuild <service>       # Rebuild and restart a specific service
+                          # Example: ./rebuild op-dashboard
+./danger_wipe_everything  # ⚠️ Removes all containers, volumes, and data
+```
+
+## Environment Variables
+
+<Callout>
+If you change the `.env` file, you need to restart the services for the changes to take effect.
+</Callout>
+
+You can customize your OpenPanel installation by modifying the `.env` file in the self-hosting directory. 
+
+Typically its only these two that you need to change:
+
+```
+# Disable new user registration (will always allow the first user to register)
+ALLOW_REGISTRATION="false" 
+
+# Allow registrations through invites even tho registration is disabled
+ALLOW_INVITATION="true"
+```
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/R4yoddV5BGw?si=S6qPAz2QO6QJEB7T" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+## Troubleshooting Common Issues
+
+### Connection Issues
+If you can't access your analytics dashboard after installation:
+- Verify your domain DNS settings
+- Check if all Docker containers are running with `docker compose ps`
+- Ensure your firewall allows traffic to the necessary ports
+
+### Performance Optimization
+For high-traffic websites:
+- Adjust worker count in docker-compose.yml
+- Monitor database performance
+
+### Updates and Maintenance
+To keep your analytics platform running smoothly:
+- Regularly check for updates using `./update`
+- Monitor disk usage
+- Back up your data periodically
