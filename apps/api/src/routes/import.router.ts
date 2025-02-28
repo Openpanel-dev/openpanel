@@ -4,7 +4,7 @@ import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
 
 import { Prisma } from '@openpanel/db';
 
-const importRouter: FastifyPluginCallback = (fastify, opts, done) => {
+const importRouter: FastifyPluginCallback = async (fastify) => {
   fastify.addHook('preHandler', async (req: FastifyRequest, reply) => {
     try {
       const client = await validateImportRequest(req.headers);
@@ -34,8 +34,6 @@ const importRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/events',
     handler: controller.importEvents,
   });
-
-  done();
 };
 
 export default importRouter;

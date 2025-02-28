@@ -6,7 +6,7 @@ import { path, assocPath, pathOr, pick } from 'ramda';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
+import { getLock } from '@openpanel/redis';
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -230,12 +230,10 @@ async function track({
   const isScreenView = payload.name === 'screen_view';
   // this will ensure that we don't have multiple events creating sessions
   const LOCK_DURATION = 1000;
-  const locked = await getRedisCache().set(
+  const locked = await getLock(
     `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
     'locked',
-    'PX',
     LOCK_DURATION,
-    'NX',
   );
 
   await eventsQueue.add(
@@ -253,7 +251,7 @@ async function track({
         geo,
         currentDeviceId,
         previousDeviceId,
-        priority: locked === 'OK',
+        priority: locked,
       },
     },
     {

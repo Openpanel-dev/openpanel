@@ -1,7 +1,7 @@
 import * as controller from '@/controllers/misc.controller';
 import type { FastifyPluginCallback } from 'fastify';
 
-const miscRouter: FastifyPluginCallback = (fastify, opts, done) => {
+const miscRouter: FastifyPluginCallback = async (fastify) => {
   fastify.route({
     method: 'POST',
     url: '/ping',
@@ -25,8 +25,6 @@ const miscRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/favicon/clear',
     handler: controller.clearFavicons,
   });
-
-  done();
 };
 
 export default miscRouter;

@@ -76,7 +76,7 @@ async function handleExistingUser({
     sessionToken,
     session.expiresAt,
   );
-  return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+  return reply.redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
 }
 
 async function handleNewUser({
@@ -138,7 +138,7 @@ async function handleNewUser({
     sessionToken,
     session.expiresAt,
   );
-  return reply.status(302).redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+  return reply.redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
 }
 
 // Provider-specific user fetching

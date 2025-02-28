@@ -64,3 +64,8 @@ export function getRedisQueue() {
 
   return redisQueue;
 }
+
+export async function getLock(key: string, value: string, timeout: number) {
+  const lock = await getRedisCache().set(key, value, 'PX', timeout, 'NX');
+  return lock === 'OK';
+}

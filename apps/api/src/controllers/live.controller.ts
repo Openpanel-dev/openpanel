@@ -1,8 +1,7 @@
-import type { SocketStream } from '@fastify/websocket';
 import type { FastifyRequest } from 'fastify';
 import superjson from 'superjson';
-import type { WebSocket } from 'ws';
 
+import type { WebSocket } from '@fastify/websocket';
 import {
   eventBuffer,
   getProfileByIdCached,
@@ -16,20 +15,12 @@ import {
 import { getProjectAccess } from '@openpanel/trpc';
 import { getOrganizationAccess } from '@openpanel/trpc/src/access';
 
-type WebSocketConnection = SocketStream & {
-  socket: WebSocket & {
-    on(event: 'close', listener: () => void): void;
-    send(data: string): void;
-    close(): void;
-  };
-};
-
 export function getLiveEventInfo(key: string) {
   return key.split(':').slice(2) as [string, string];
 }
 
 export function wsVisitors(
-  connection: WebSocketConnection,
+  socket: WebSocket,
   req: FastifyRequest<{
     Params: {
       projectId: string;
@@ -37,11 +28,10 @@ export function wsVisitors(
   }>,
 ) {
   const { params } = req;
-
   const unsubscribe = subscribeToPublishedEvent('events', 'saved', (event) => {
     if (event?.projectId === params.projectId) {
       eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
-        connection.socket.send(String(count));
+        socket.send(String(count));
       });
     }
   });
@@ -52,20 +42,20 @@ export function wsVisitors(
       const [projectId] = getLiveEventInfo(key);
       if (projectId && projectId === params.projectId) {
         eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
-          connection.socket.send(String(count));
+          socket.send(String(count));
         });
       }
     },
   );
 
-  connection.socket.on('close', () => {
+  socket.on('close', () => {
     unsubscribe();
     punsubscribe();
   });
 }
 
 export async function wsProjectEvents(
-  connection: WebSocketConnection,
+  socket: WebSocket,
   req: FastifyRequest<{
     Params: {
       projectId: string;
@@ -80,15 +70,15 @@ export async function wsProjectEvents(
   const type = query.type || 'saved';
 
   if (!['saved', 'received'].includes(type)) {
-    connection.socket.send('Invalid type');
-    connection.socket.close();
+    socket.send('Invalid type');
+    socket.close();
     return;
   }
 
   const userId = req.session?.userId;
   if (!userId) {
-    connection.socket.send('No active session');
-    connection.socket.close();
+    socket.send('No active session');
+    socket.close();
     return;
   }
 
@@ -106,7 +96,7 @@ export async function wsProjectEvents(
           event.profileId,
           event.projectId,
         );
-        connection.socket.send(
+        socket.send(
           superjson.stringify(
             access
               ? {
@@ -120,11 +110,11 @@ export async function wsProjectEvents(
     },
   );
 
-  connection.socket.on('close', () => unsubscribe());
+  socket.on('close', () => unsubscribe());
 }
 
 export async function wsProjectNotifications(
-  connection: WebSocketConnection,
+  socket: WebSocket,
   req: FastifyRequest<{
     Params: {
       projectId: string;
@@ -135,8 +125,8 @@ export async function wsProjectNotifications(
   const userId = req.session?.userId;
 
   if (!userId) {
-    connection.socket.send('No active session');
-    connection.socket.close();
+    socket.send('No active session');
+    socket.close();
     return;
   }
 
@@ -146,8 +136,8 @@ export async function wsProjectNotifications(
   });
 
   if (!access) {
-    connection.socket.send('No access');
-    connection.socket.close();
+    socket.send('No access');
+    socket.close();
     return;
   }
 
@@ -156,16 +146,16 @@ export async function wsProjectNotifications(
     'created',
     (notification) => {
       if (notification.projectId === params.projectId) {
-        connection.socket.send(superjson.stringify(notification));
+        socket.send(superjson.stringify(notification));
       }
     },
   );
 
-  connection.socket.on('close', () => unsubscribe());
+  socket.on('close', () => unsubscribe());
 }
 
 export async function wsOrganizationEvents(
-  connection: WebSocketConnection,
+  socket: WebSocket,
   req: FastifyRequest<{
     Params: {
       organizationId: string;
@@ -176,8 +166,8 @@ export async function wsOrganizationEvents(
   const userId = req.session?.userId;
 
   if (!userId) {
-    connection.socket.send('No active session');
-    connection.socket.close();
+    socket.send('No active session');
+    socket.close();
     return;
   }
 
@@ -187,8 +177,8 @@ export async function wsOrganizationEvents(
   });
 
   if (!access) {
-    connection.socket.send('No access');
-    connection.socket.close();
+    socket.send('No access');
+    socket.close();
     return;
   }
 
@@ -196,9 +186,9 @@ export async function wsOrganizationEvents(
     'organization',
     'subscription_updated',
     (message) => {
-      connection.socket.send(setSuperJson(message));
+      socket.send(setSuperJson(message));
     },
   );
 
-  connection.socket.on('close', () => unsubscribe());
+  socket.on('close', () => unsubscribe());
 }

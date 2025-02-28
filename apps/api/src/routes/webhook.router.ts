@@ -1,7 +1,7 @@
 import * as controller from '@/controllers/webhook.controller';
 import type { FastifyPluginCallback } from 'fastify';
 
-const webhookRouter: FastifyPluginCallback = (fastify, opts, done) => {
+const webhookRouter: FastifyPluginCallback = async (fastify) => {
   fastify.route({
     method: 'GET',
     url: '/slack',
@@ -15,7 +15,6 @@ const webhookRouter: FastifyPluginCallback = (fastify, opts, done) => {
       rawBody: true,
     },
   });
-  done();
 };
 
 export default webhookRouter;

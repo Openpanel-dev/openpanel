@@ -2,9 +2,11 @@ import * as controller from '@/controllers/event.controller';
 import type { FastifyPluginCallback } from 'fastify';
 
 import { clientHook } from '@/hooks/client.hook';
+import { deduplicateHook } from '@/hooks/deduplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
 
-const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
+const eventRouter: FastifyPluginCallback = async (fastify) => {
+  fastify.addHook('preHandler', deduplicateHook);
   fastify.addHook('preHandler', clientHook);
   fastify.addHook('preHandler', isBotHook);
 
@@ -13,7 +15,6 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/',
     handler: controller.postEvent,
   });
-  done();
 };
 
 export default eventRouter;

@@ -5,14 +5,9 @@ import type {
   HookHandlerDoneFunction,
 } from 'fastify';
 
-export function ipHook(
-  request: FastifyRequest,
-  reply: FastifyReply,
-  done: HookHandlerDoneFunction,
-) {
+export async function ipHook(request: FastifyRequest) {
   const ip = getClientIp(request);
   if (ip) {
     request.clientIp = ip;
   }
-  done();
 }

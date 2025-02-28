@@ -2,36 +2,31 @@ import * as controller from '@/controllers/live.controller';
 import fastifyWS from '@fastify/websocket';
 import type { FastifyPluginCallback } from 'fastify';
 
-// TODO: `as any` is a workaround since it starts to break after changed module resolution to bundler
-// which is needed for @polar/sdk (dont have time to resolve this now)
-const liveRouter: FastifyPluginCallback = (fastify, opts, done) => {
+const liveRouter: FastifyPluginCallback = async (fastify) => {
   fastify.register(fastifyWS);
 
-  fastify.register((fastify, _, done) => {
+  fastify.register(async (fastify) => {
     fastify.get(
       '/organization/:organizationId',
       { websocket: true },
-      controller.wsOrganizationEvents as any,
+      controller.wsOrganizationEvents,
     );
     fastify.get(
       '/visitors/:projectId',
       { websocket: true },
-      controller.wsVisitors as any,
+      controller.wsVisitors,
     );
     fastify.get(
       '/events/:projectId',
       { websocket: true },
-      controller.wsProjectEvents as any,
+      controller.wsProjectEvents,
     );
     fastify.get(
       '/notifications/:projectId',
       { websocket: true },
-      controller.wsProjectNotifications as any,
+      controller.wsProjectNotifications,
     );
-    done();
   });
-
-  done();
 };
 
 export default liveRouter;

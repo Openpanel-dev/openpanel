@@ -1,4 +1,3 @@
-import zlib from 'node:zlib';
 import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors, { type FastifyCorsOptions } from '@fastify/cors';
@@ -59,7 +58,7 @@ const startServer = async () => {
     const fastify = Fastify({
       maxParamLength: 15_000,
       bodyLimit: 1048576 * 500, // 500MB
-      logger: logger as unknown as FastifyBaseLogger,
+      loggerInstance: logger as unknown as FastifyBaseLogger,
       disableRequestLogging: true,
       genReqId: (req) =>
         req.headers['request-id']
@@ -107,61 +106,26 @@ const startServer = async () => {
       encodings: ['gzip', 'deflate'],
     });
 
-    fastify.addContentTypeParser(
-      'application/json',
-      { parseAs: 'buffer' },
-      (req, body, done) => {
-        const isGzipped = req.headers['content-encoding'] === 'gzip';
-
-        if (isGzipped) {
-          zlib.gunzip(body, (err, decompressedBody) => {
-            if (err) {
-              done(err);
-            } else {
-              try {
-                const json = JSON.parse(decompressedBody.toString());
-                done(null, json);
-              } catch (parseError) {
-                done(new Error('Invalid JSON'));
-              }
-            }
-          });
-        } else {
-          try {
-            const json = JSON.parse(body.toString());
-            done(null, json);
-          } catch (parseError) {
-            done(new Error('Invalid JSON'));
-          }
-        }
-      },
-    );
-
     // Dashboard API
-    fastify.register((instance, opts, done) => {
+    fastify.register(async (instance) => {
       instance.register(cookie, {
         secret: process.env.COOKIE_SECRET ?? '',
         hook: 'onRequest',
         parseOptions: {},
       });
 
-      instance.addHook('onRequest', (req, reply, done) => {
+      instance.addHook('onRequest', async (req) => {
         if (req.cookies?.session) {
-          validateSessionToken(req.cookies.session)
-            .then((session) => {
-              if (session.session) {
-                req.session = session;
-              }
-            })
-            .catch(() => {
-              req.session = EMPTY_SESSION;
-            })
-            .finally(() => {
-              done();
-            });
+          try {
+            const session = await validateSessionToken(req.cookies.session);
+            if (session.session) {
+              req.session = session;
+            }
+          } catch (e) {
+            req.session = EMPTY_SESSION;
+          }
         } else {
           req.session = EMPTY_SESSION;
-          done();
         }
       });
 
@@ -184,11 +148,10 @@ const startServer = async () => {
       instance.register(webhookRouter, { prefix: '/webhook' });
       instance.register(oauthRouter, { prefix: '/oauth' });
       instance.register(miscRouter, { prefix: '/misc' });
-      done();
     });
 
     // Public API
-    fastify.register((instance, opts, done) => {
+    fastify.register(async (instance) => {
       instance.register(metricsPlugin, { endpoint: '/metrics' });
       instance.register(eventRouter, { prefix: '/event' });
       instance.register(profileRouter, { prefix: '/profile' });
@@ -200,7 +163,6 @@ const startServer = async () => {
       instance.get('/', (_request, reply) =>
         reply.send({ name: 'openpanel sdk api' }),
       );
-      done();
     });
 
     fastify.setErrorHandler((error, request, reply) => {

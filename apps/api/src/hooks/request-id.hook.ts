@@ -4,13 +4,8 @@ import type {
   HookHandlerDoneFunction,
 } from 'fastify';
 
-export function requestIdHook(
-  request: FastifyRequest,
-  reply: FastifyReply,
-  done: HookHandlerDoneFunction,
-) {
+export async function requestIdHook(request: FastifyRequest) {
   if (!request.headers['request-id']) {
     request.headers['request-id'] = request.id;
   }
-  done();
 }

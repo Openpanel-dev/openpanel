@@ -4,7 +4,7 @@ import { activateRateLimiter } from '@/utils/rate-limiter';
 import { Prisma } from '@openpanel/db';
 import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
 
-const exportRouter: FastifyPluginCallback = async (fastify, opts, done) => {
+const exportRouter: FastifyPluginCallback = async (fastify) => {
   await activateRateLimiter({
     fastify,
     max: 10,
@@ -46,7 +46,6 @@ const exportRouter: FastifyPluginCallback = async (fastify, opts, done) => {
     url: '/charts',
     handler: controller.charts,
   });
-  done();
 };
 
 export default exportRouter;

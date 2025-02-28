@@ -1,8 +1,4 @@
-import type {
-  FastifyReply,
-  FastifyRequest,
-  HookHandlerDoneFunction,
-} from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, pick } from 'ramda';
 
 const ignoreLog = ['/healthcheck', '/metrics', '/misc'];
@@ -19,16 +15,15 @@ const getTrpcInput = (
   }
 };
 
-export function requestLoggingHook(
+export async function requestLoggingHook(
   request: FastifyRequest,
   reply: FastifyReply,
-  done: HookHandlerDoneFunction,
 ) {
   if (ignoreMethods.includes(request.method)) {
-    return done();
+    return;
   }
   if (ignoreLog.some((path) => request.url.startsWith(path))) {
-    return done();
+    return;
   }
   if (request.url.includes('trpc')) {
     request.log.info('request done', {
@@ -54,5 +49,4 @@ export function requestLoggingHook(
       body: request.body,
     });
   }
-  done();
 }

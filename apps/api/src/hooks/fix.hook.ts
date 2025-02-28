@@ -1,14 +1,6 @@
-import type {
-  FastifyReply,
-  FastifyRequest,
-  HookHandlerDoneFunction,
-} from 'fastify';
+import type { FastifyRequest } from 'fastify';
 
-export function fixHook(
-  request: FastifyRequest,
-  reply: FastifyReply,
-  done: HookHandlerDoneFunction,
-) {
+export async function fixHook(request: FastifyRequest) {
   const ua = request.headers['user-agent'];
   // Swift SDK issue: https://github.com/Openpanel-dev/swift-sdk/commit/d588fa761a36a33f3b78eb79d83bfd524e3c7144
   if (ua) {
@@ -21,5 +13,4 @@ export function fixHook(
       );
     }
   }
-  done();
 }

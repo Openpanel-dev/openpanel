@@ -1,7 +1,7 @@
 import * as controller from '@/controllers/oauth-callback.controller';
 import type { FastifyPluginCallback } from 'fastify';
 
-const router: FastifyPluginCallback = (fastify, opts, done) => {
+const router: FastifyPluginCallback = async (fastify) => {
   fastify.route({
     method: 'GET',
     url: '/github/callback',
@@ -12,7 +12,6 @@ const router: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/google/callback',
     handler: controller.googleCallback,
   });
-  done();
 };
 
 export default router;

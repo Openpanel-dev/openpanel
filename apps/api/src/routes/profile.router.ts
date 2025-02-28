@@ -1,9 +1,11 @@
 import * as controller from '@/controllers/profile.controller';
 import { clientHook } from '@/hooks/client.hook';
+import { deduplicateHook } from '@/hooks/deduplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
 import type { FastifyPluginCallback } from 'fastify';
 
-const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
+const eventRouter: FastifyPluginCallback = async (fastify) => {
+  fastify.addHook('preHandler', deduplicateHook);
   fastify.addHook('preHandler', clientHook);
   fastify.addHook('preHandler', isBotHook);
 
@@ -24,7 +26,6 @@ const eventRouter: FastifyPluginCallback = (fastify, opts, done) => {
     url: '/decrement',
     handler: controller.decrementProfileProperty,
   });
-  done();
 };
 
 export default eventRouter;

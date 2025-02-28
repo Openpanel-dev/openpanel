@@ -1,14 +1,5 @@
-import type {
-  FastifyReply,
-  FastifyRequest,
-  HookHandlerDoneFunction,
-} from 'fastify';
+import type { FastifyRequest } from 'fastify';
 
-export function timestampHook(
-  request: FastifyRequest,
-  reply: FastifyReply,
-  done: HookHandlerDoneFunction,
-) {
+export async function timestampHook(request: FastifyRequest) {
   request.timestamp = Date.now();
-  done();
 }

@@ -4,7 +4,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { generateDeviceId } from '@openpanel/common/server';
 import { getSalts } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
+import { getLock } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
 import { getStringHeaders, getTimestamp } from './track.controller';
@@ -42,12 +42,10 @@ export async function postEvent(
   const isScreenView = request.body.name === 'screen_view';
   // this will ensure that we don't have multiple events creating sessions
   const LOCK_DURATION = 1000;
-  const locked = await getRedisCache().set(
+  const locked = await getLock(
     `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
     'locked',
-    'PX',
     LOCK_DURATION,
-    'NX',
   );
 
   await eventsQueue.add(
@@ -65,7 +63,7 @@ export async function postEvent(
         geo,
         currentDeviceId,
         previousDeviceId,
-        priority: locked === 'OK',
+        priority: locked,
       },
     },
     {
