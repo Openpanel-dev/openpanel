@@ -3,6 +3,7 @@ import { getClientIp, parseIp } from '@/utils/parse-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
+import { checkDuplicatedEvent, isDuplicatedEvent } from '@/utils/deduplicate';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { eventsQueue } from '@openpanel/queue';
@@ -131,6 +132,21 @@ export async function handler(
           })
         : '';
 
+      if (
+        await checkDuplicatedEvent({
+          reply,
+          payload: {
+            ...request.body,
+            timestamp,
+            previousDeviceId,
+            currentDeviceId,
+          },
+          projectId,
+        })
+      ) {
+        return;
+      }
+
       const promises = [
         track({
           payload: request.body.payload,
@@ -161,6 +177,19 @@ export async function handler(
       break;
     }
     case 'identify': {
+      if (
+        await checkDuplicatedEvent({
+          reply,
+          payload: {
+            ...request.body,
+            timestamp,
+          },
+          projectId,
+        })
+      ) {
+        return;
+      }
+
       const geo = await parseIp(ip);
       await identify({
         payload: request.body.payload,
@@ -179,6 +208,19 @@ export async function handler(
       break;
     }
     case 'increment': {
+      if (
+        await checkDuplicatedEvent({
+          reply,
+          payload: {
+            ...request.body,
+            timestamp,
+          },
+          projectId,
+        })
+      ) {
+        return;
+      }
+
       await increment({
         payload: request.body.payload,
         projectId,
@@ -186,6 +228,19 @@ export async function handler(
       break;
     }
     case 'decrement': {
+      if (
+        await checkDuplicatedEvent({
+          reply,
+          payload: {
+            ...request.body,
+            timestamp,
+          },
+          projectId,
+        })
+      ) {
+        return;
+      }
+
       await decrement({
         payload: request.body.payload,
         projectId,
@@ -201,6 +256,8 @@ export async function handler(
       break;
     }
   }
+
+  reply.status(200).send('ok');
 }
 
 type TrackPayload = {

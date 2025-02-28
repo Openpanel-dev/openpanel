@@ -7,6 +7,7 @@ import { eventsQueue } from '@openpanel/queue';
 import { getLock } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
+import { checkDuplicatedEvent } from '@/utils/deduplicate';
 import { getStringHeaders, getTimestamp } from './track.controller';
 
 export async function postEvent(
@@ -38,6 +39,21 @@ export async function postEvent(
     ip,
     ua,
   });
+
+  if (
+    await checkDuplicatedEvent({
+      reply,
+      payload: {
+        ...request.body,
+        timestamp,
+        previousDeviceId,
+        currentDeviceId,
+      },
+      projectId,
+    })
+  ) {
+    return;
+  }
 
   const isScreenView = request.body.name === 'screen_view';
   // this will ensure that we don't have multiple events creating sessions
