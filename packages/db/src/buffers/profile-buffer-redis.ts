@@ -69,18 +69,11 @@ export class ProfileBuffer extends BaseBuffer {
       const existingProfile = await this.fetchProfile(profile, logger);
 
       const mergedProfile: IClickhouseProfile = existingProfile
-        ? deepMergeObjects(existingProfile, profile)
+        ? deepMergeObjects(existingProfile, omit(['created_at'], profile))
         : profile;
 
-      // Avoid unnecessary updates:
-      // If the profile is less than X minutes old
-      // and the profiles are the same
-      if (profile.created_at && existingProfile?.created_at) {
-        const a = new Date(profile.created_at);
-        const b = new Date(existingProfile.created_at);
-        const diffTime = Math.abs(a.getTime() - b.getTime());
+      if (profile && existingProfile) {
         if (
-          diffTime < 1000 * 60 * 10 &&
           shallowEqual(
             omit(['created_at'], existingProfile),
             omit(['created_at'], mergedProfile),

@@ -4,7 +4,7 @@ import type { FastifyPluginCallback } from 'fastify';
 import { clientHook } from '@/hooks/client.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
 
-const trackRouter: FastifyPluginCallback = (fastify) => {
+const trackRouter: FastifyPluginCallback = async (fastify) => {
   fastify.addHook('preHandler', clientHook);
   fastify.addHook('preHandler', isBotHook);
 
