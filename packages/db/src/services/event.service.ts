@@ -9,16 +9,22 @@ import type { IChartEventFilter } from '@openpanel/validation';
 import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
 import {
   TABLE_NAMES,
+  ch,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../clickhouse/client';
+import { clix } from '../clickhouse/query-builder';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
 import type { IServiceProfile } from './profile.service';
-import { getProfiles, upsertProfile } from './profile.service';
+import {
+  getProfiles,
+  transformProfile,
+  upsertProfile,
+} from './profile.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -348,8 +354,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_version: payload.sdkVersion ?? '',
   };
 
-  await sessionBuffer.add(event);
-  await eventBuffer.add(event);
+  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
 
   return {
     document: event,
@@ -379,150 +384,107 @@ export async function getEventList({
   endDate,
   select: incomingSelect,
 }: GetEventListOptions) {
-  const { sb, getSql, join } = createSqlBuilder();
+  const result = clix(ch)
+    .with(
+      'cte_events',
+      clix(ch)
+        .select([])
+        .from(TABLE_NAMES.events)
+        .where('project_id', '=', projectId)
+        .andWhere('created_at', '<', '2025-03-06 07:19:05.412')
+        .orderBy('created_at', 'DESC')
+        .limit(50)
+        .offset(cursor ?? 0),
+    )
+    .with(
+      'cte_sessions',
+      clix(ch)
+        .select(['profile_id', 'id'])
+        .from('sessions')
+        .where('project_id', '=', projectId)
+        .where('created_at', 'BETWEEN', [
+          clix.exp(
+            clix(ch).select(['min(created_at)']).from('cte_events').toSQL(),
+          ),
+          clix.exp(
+            clix(ch).select(['max(created_at)']).from('cte_events').toSQL(),
+          ),
+        ]),
+    )
+    .with(
+      'cte_profiles',
+      clix(ch)
+        .select([
+          'id',
+          'project_id',
+          'max(created_at) as created_at',
+          'any(first_name) as first_name',
+          'any(last_name) as last_name',
+          'any(email) as email',
+          'any(avatar) as avatar',
+          'any(properties) as properties',
+          'any(is_external) as is_external',
+        ])
+        .from('profiles FINAL')
+        .where('project_id', '=', projectId)
+        .where(
+          'id',
+          'IN',
+          clix.exp(
+            clix(ch).select(['profile_id']).from('cte_sessions').toSQL(),
+          ),
+        )
+        .groupBy(['id', 'project_id']),
+    )
+    .select<
+      IClickhouseEvent & {
+        first_name: string;
+        last_name: string;
+      }
+    >(
+      Object.keys(incomingSelect ?? {})
+        .filter(Boolean)
+        .flatMap((key) => {
+          if (key === 'profile') {
+            return [
+              'p.first_name',
+              'p.last_name',
+              'p.id as profile_id',
+              'p.email as email',
+              'p.avatar as avatar',
+              'p.is_external as is_external',
+              'p.properties as profile_properties',
+              'p.project_id as profile_project_id',
+              'p.created_at as profile_created_at',
+            ];
+          }
+          return [`e.${key} as ${key}`];
+        }),
+    )
+    .from('cte_events e')
+    .leftJoin('cte_sessions s', 'e.session_id = s.id')
+    .leftJoin('cte_profiles p', 's.profile_id = p.id')
+    .orderBy('e.created_at', 'DESC')
+    .limit(take)
+    .execute();
 
-  sb.limit = take;
-  sb.offset = Math.max(0, (cursor ?? 0) * take);
-  sb.where.projectId = `e.project_id = ${escape(projectId)}`;
-  const select = mergeDeepRight(
-    {
-      id: true,
-      name: true,
-      deviceId: true,
-      profileId: true,
-      projectId: true,
-      createdAt: true,
-      path: true,
-      duration: true,
-      city: true,
-      country: true,
-      os: true,
-      browser: true,
-    },
-    incomingSelect ?? {},
-  );
-
-  if (select.id) {
-    sb.select.id = 'id';
-  }
-  if (select.name) {
-    sb.select.name = 'name';
-  }
-  if (select.deviceId) {
-    sb.select.deviceId = 'device_id';
-  }
-  if (select.profileId) {
-    sb.select.profileId = 's.profile_id as profile_id';
-    sb.joins.sessions = 'JOIN sessions s ON e.session_id = s.id';
-  }
-  if (select.projectId) {
-    sb.select.projectId = 'project_id';
-  }
-  if (select.sessionId) {
-    sb.select.sessionId = 'session_id';
-  }
-  if (select.properties) {
-    sb.select.properties = 'properties';
-  }
-  if (select.createdAt) {
-    sb.select.createdAt = 'created_at';
-  }
-  if (select.country) {
-    sb.select.country = 'country';
-  }
-  if (select.city) {
-    sb.select.city = 'city';
-  }
-  if (select.region) {
-    sb.select.region = 'region';
-  }
-  if (select.longitude) {
-    sb.select.longitude = 'longitude';
-  }
-  if (select.latitude) {
-    sb.select.latitude = 'latitude';
-  }
-  if (select.os) {
-    sb.select.os = 'os';
-  }
-  if (select.osVersion) {
-    sb.select.osVersion = 'os_version';
-  }
-  if (select.browser) {
-    sb.select.browser = 'browser';
-  }
-  if (select.browserVersion) {
-    sb.select.browserVersion = 'browser_version';
-  }
-  if (select.device) {
-    sb.select.device = 'device';
-  }
-  if (select.brand) {
-    sb.select.brand = 'brand';
-  }
-  if (select.model) {
-    sb.select.model = 'model';
-  }
-  if (select.duration) {
-    sb.select.duration = 'duration';
-  }
-  if (select.path) {
-    sb.select.path = 'path';
-  }
-  if (select.origin) {
-    sb.select.origin = 'origin';
-  }
-  if (select.referrer) {
-    sb.select.referrer = 'referrer';
-  }
-  if (select.referrerName) {
-    sb.select.referrerName = 'referrer_name';
-  }
-  if (select.referrerType) {
-    sb.select.referrerType = 'referrer_type';
-  }
-  if (select.importedAt) {
-    sb.select.importedAt = 'imported_at';
-  }
-  if (select.sdkName) {
-    sb.select.sdkName = 'sdk_name';
-  }
-  if (select.sdkVersion) {
-    sb.select.sdkVersion = 'sdk_version';
-  }
-
-  if (profileId) {
-    sb.where.deviceId = `(e.device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
-  }
-
-  if (startDate && endDate) {
-    sb.where.created_at = `toDate(e.created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
-  }
-
-  if (events && events.length > 0) {
-    sb.where.events = `e.name IN (${join(
-      events.map((event) => escape(event)),
-      ',',
-    )})`;
-  }
-
-  if (filters) {
-    sb.where = {
-      ...sb.where,
-      ...getEventFiltersWhereClause(filters),
-    };
-  }
-
-  // if (cursor) {
-  //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
-  // }
-
-  sb.orderBy.created_at =
-    'toDate(created_at) DESC, created_at DESC, s.profile_id DESC, name DESC';
-
-  return getEvents(getSql(), {
-    meta: select.meta ?? true,
-    profile: select.profile ?? true,
+  return (await result).map((event) => {
+    return transformEvent({
+      ...event,
+      profile: incomingSelect?.profile
+        ? transformProfile({
+            id: event.profile_id,
+            first_name: event.first_name,
+            last_name: event.last_name,
+            email: event.email,
+            avatar: event.avatar,
+            properties: event.profile_properties,
+            project_id: event.profile_project_id,
+            created_at: event.profile_created_at,
+            is_external: event.is_external,
+          })
+        : undefined,
+    });
   });
 }
 

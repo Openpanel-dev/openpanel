@@ -84,7 +84,31 @@ export const eventRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      return getEventList(input);
+      return getEventList({
+        ...input,
+        select: {
+          name: true,
+          profile: true,
+          path: true,
+          referrer: true,
+          referrer_name: true,
+          created_at: true,
+          referrer_type: true,
+          country: true,
+          city: true,
+          duration: true,
+          os: true,
+          os_version: true,
+          browser: true,
+          browser_version: true,
+          device: true,
+          brand: true,
+        },
+      }).then((events) => {
+        console.log(events);
+
+        return events;
+      });
     }),
   conversions: protectedProcedure
     .input(

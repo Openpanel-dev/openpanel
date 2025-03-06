@@ -1,5 +1,6 @@
 import { type Redis, getRedisCache, runEvery } from '@openpanel/redis';
 
+import { toDots } from '@openpanel/common';
 import { getSafeJson } from '@openpanel/json';
 import { assocPath, clone } from 'ramda';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
@@ -40,16 +41,24 @@ export class SessionBuffer extends BaseBuffer {
     const existingSession = await this.getExistingSession(event.session_id);
 
     if (existingSession) {
-      const oldSession = assocPath(['sign'], 0, clone(existingSession));
+      const oldSession = assocPath(['sign'], -1, clone(existingSession));
       const newSession = assocPath(['sign'], 1, clone(existingSession));
 
       newSession.ended_at = event.created_at;
       newSession.version = existingSession.version + 1;
+      if (!newSession.entry_path) {
+        newSession.entry_path = event.path;
+        newSession.entry_origin = event.origin;
+      }
       newSession.exit_path = event.path;
       newSession.exit_origin = event.origin;
       newSession.duration =
         new Date(newSession.ended_at).getTime() -
         new Date(newSession.created_at).getTime();
+      newSession.properties = toDots({
+        ...(event.properties || {}),
+        ...(newSession.properties || {}),
+      });
       // newSession.revenue += event.properties?.__revenue ?? 0;
 
       if (event.name === 'screen_view') {
@@ -121,6 +130,7 @@ export class SessionBuffer extends BaseBuffer {
           : '',
         sign: 1,
         version: 1,
+        properties: toDots(event.properties || {}),
       },
     ];
   }

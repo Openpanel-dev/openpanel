@@ -1,20 +1,24 @@
 'use client';
 
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
-import { getCountry } from '@/translations/countries';
 import { cn } from '@/utils/cn';
 import { useState } from 'react';
 
-import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
+import { useNumber } from '@/hooks/useNumerFormatter';
+import { pushModal } from '@/modals';
+import { api } from '@/trpc/client';
+import { ChevronRightIcon } from 'lucide-react';
 import { ReportChart } from '../report-chart';
+import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
-import { OverviewChartToggle } from './overview-chart-toggle';
+import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
+import { OverviewWidgetTableGeneric } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
-import { useOverviewWidget } from './useOverviewWidget';
+import { useOverviewWidgetV2 } from './useOverviewWidget';
 
 interface OverviewTopGeoProps {
   projectId: string;
@@ -25,132 +29,31 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
   const [chartType, setChartType] = useState<IChartType>('bar');
   const [filters, setFilter] = useEventQueryFilters();
   const isPageFilter = filters.find((filter) => filter.name === 'path');
-  const [widget, setWidget, widgets] = useOverviewWidget('geo', {
-    countries: {
+  const [widget, setWidget, widgets] = useOverviewWidgetV2('geo', {
+    country: {
       title: 'Top countries',
       btn: 'Countries',
-      chart: {
-        options: {
-          columns: ['Country', isPageFilter ? 'Views' : 'Sessions'],
-          renderSerieName(name) {
-            return getCountry(name[0]) || NOT_SET_VALUE;
-          },
-        },
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          events: [
-            {
-              segment: 'event',
-              filters,
-              id: 'A',
-              name: isPageFilter ? 'screen_view' : 'session_start',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'country',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval: interval,
-          name: 'Top countries',
-          range: range,
-          previous: previous,
-          metric: 'sum',
-        },
-      },
     },
-    regions: {
+    region: {
       title: 'Top regions',
       btn: 'Regions',
-      chart: {
-        options: {
-          columns: ['Region', isPageFilter ? 'Views' : 'Sessions'],
-          renderSerieName(name) {
-            return name[1] || NOT_SET_VALUE;
-          },
-        },
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          events: [
-            {
-              segment: 'event',
-              filters,
-              id: 'A',
-              name: isPageFilter ? 'screen_view' : 'session_start',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'country',
-            },
-            {
-              id: 'B',
-              name: 'region',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval: interval,
-          name: 'Top regions',
-          range: range,
-          previous: previous,
-          metric: 'sum',
-        },
-      },
     },
-    cities: {
+    city: {
       title: 'Top cities',
       btn: 'Cities',
-      chart: {
-        options: {
-          columns: ['City', isPageFilter ? 'Views' : 'Sessions'],
-          renderSerieName(name) {
-            return name[1] || NOT_SET_VALUE;
-          },
-        },
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          events: [
-            {
-              segment: 'event',
-              filters,
-              id: 'A',
-              name: isPageFilter ? 'screen_view' : 'session_start',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'country',
-            },
-            {
-              id: 'B',
-              name: 'city',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval: interval,
-          name: 'Top cities',
-          range: range,
-          previous: previous,
-          metric: 'sum',
-        },
-      },
     },
+  });
+
+  const number = useNumber();
+
+  const query = api.overview.topGeneric.useQuery({
+    projectId,
+    interval,
+    range,
+    filters,
+    column: widget.key,
+    startDate,
+    endDate,
   });
 
   return (
@@ -158,6 +61,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
           <div className="title">{widget.title}</div>
+
           <WidgetButtons>
             {widgets.map((w) => (
               <button
@@ -172,35 +76,53 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <ReportChart
-            options={{
-              hideID: true,
-              onClick: (item) => {
-                switch (widget.key) {
-                  case 'countries':
-                    setWidget('regions');
-                    setFilter('country', item.names[0]);
-                    break;
-                  case 'regions':
-                    setWidget('cities');
-                    setFilter('region', item.names[1]);
-                    break;
-                  case 'cities':
-                    setFilter('city', item.names[1]);
-                    break;
-                }
+          <OverviewWidgetTableGeneric
+            className="-m-4"
+            data={query.data ?? []}
+            column={{
+              name: OVERVIEW_COLUMNS_NAME[widget.key],
+              render(item) {
+                return (
+                  <div className="row items-center gap-2 min-w-0 relative">
+                    <SerieIcon name={item.prefix || item.name} />
+                    <button
+                      type="button"
+                      className="truncate"
+                      onClick={() => {
+                        if (widget.key === 'country') {
+                          setWidget('region');
+                        } else if (widget.key === 'region') {
+                          setWidget('city');
+                        }
+                        setFilter(widget.key, item.name);
+                      }}
+                    >
+                      {item.prefix && (
+                        <span className="mr-1 row inline-flex items-center gap-1">
+                          <span>{item.prefix}</span>
+                          <span>
+                            <ChevronRightIcon className="size-3" />
+                          </span>
+                        </span>
+                      )}
+                      {item.name || 'Not set'}
+                    </button>
+                  </div>
+                );
               },
-              ...widget.chart.options,
-            }}
-            report={{
-              ...widget.chart.report,
-              previous: false,
             }}
           />
         </WidgetBody>
         <WidgetFooter>
-          <OverviewDetailsButton chart={widget.chart.report} />
-          <OverviewChartToggle {...{ chartType, setChartType }} />
+          <OverviewDetailsButton
+            onClick={() =>
+              pushModal('OverviewTopGenericModal', {
+                projectId,
+                column: widget.key,
+              })
+            }
+          />
+          {/* <OverviewChartToggle {...{ chartType, setChartType }} /> */}
         </WidgetFooter>
       </Widget>
       <Widget className="col-span-6 md:col-span-3">

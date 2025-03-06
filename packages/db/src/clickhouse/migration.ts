@@ -39,10 +39,10 @@ export const chMigrationClient = createClient({
   request_timeout: 3600000, // 1 hour in milliseconds
   keep_alive: {
     enabled: true,
-    idle_socket_ttl: 8000,
   },
   compression: {
     request: true,
+    response: true,
   },
   clickhouse_settings: {
     wait_end_of_query: 1,

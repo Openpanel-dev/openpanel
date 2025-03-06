@@ -91,3 +91,65 @@ export function PreviousDiffIndicator({
     </>
   );
 }
+
+interface PreviousDiffIndicatorPureProps {
+  diff?: number | null | undefined;
+  state?: string | null | undefined;
+  inverted?: boolean;
+  size?: 'sm' | 'lg' | 'md';
+  className?: string;
+  showPrevious?: boolean;
+}
+
+export function PreviousDiffIndicatorPure({
+  diff,
+  state,
+  inverted,
+  size = 'sm',
+  className,
+  showPrevious = true,
+}: PreviousDiffIndicatorPureProps) {
+  const variant = getDiffIndicator(
+    inverted,
+    state,
+    'bg-emerald-300',
+    'bg-rose-300',
+    undefined,
+  );
+
+  if (diff === null || diff === undefined || !showPrevious) {
+    return null;
+  }
+
+  const renderIcon = () => {
+    if (state === 'positive') {
+      return <ArrowUpIcon strokeWidth={3} size={10} color="#000" />;
+    }
+    if (state === 'negative') {
+      return <ArrowDownIcon strokeWidth={3} size={10} color="#000" />;
+    }
+    return null;
+  };
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-1 font-mono font-medium',
+        size === 'lg' && 'gap-2',
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          'flex size-4 items-center justify-center rounded-full',
+          variant,
+          size === 'lg' && 'size-8',
+          size === 'md' && 'size-6',
+        )}
+      >
+        {renderIcon()}
+      </div>
+      {diff.toFixed(1)}%
+    </div>
+  );
+}

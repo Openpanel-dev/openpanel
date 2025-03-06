@@ -175,8 +175,16 @@ export function getChartSql({
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
 
+    console.log(
+      `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
+    );
+
     return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
   }
+
+  console.log(
+    `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
+  );
 
   return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
 }

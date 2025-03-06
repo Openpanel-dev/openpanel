@@ -102,7 +102,14 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
     [setFilters],
   );
 
-  return [filters, setFilter, setFilters] as const;
+  const removeFilter = useCallback(
+    (name: string) => {
+      setFilters((prev) => prev.filter((filter) => filter.name !== name));
+    },
+    [setFilters],
+  );
+
+  return [filters, setFilter, setFilters, removeFilter] as const;
 }
 
 export const eventQueryNamesFilter = parseAsArrayOf(parseAsString).withDefault(

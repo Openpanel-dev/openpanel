@@ -14,6 +14,18 @@ const Loading = () => (
 );
 
 const modals = {
+  OverviewTopPagesModal: dynamic(
+    () => import('../components/overview/overview-top-pages-modal'),
+    {
+      loading: Loading,
+    },
+  ),
+  OverviewTopGenericModal: dynamic(
+    () => import('../components/overview/overview-top-generic-modal'),
+    {
+      loading: Loading,
+    },
+  ),
   RequestPasswordReset: dynamic(() => import('./request-reset-password'), {
     loading: Loading,
   }),

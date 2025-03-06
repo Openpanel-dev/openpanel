@@ -288,15 +288,16 @@ export function getChartStartEndDate({
 export function getChartPrevStartEndDate({
   startDate,
   endDate,
+  // range,
 }: {
   startDate: string;
   endDate: string;
-  range: IChartRange;
+  // range: IChartRange;
 }) {
   const diff = differenceInMilliseconds(new Date(endDate), new Date(startDate));
   return {
-    startDate: formatISO(subMilliseconds(new Date(startDate), diff - 1)),
-    endDate: formatISO(subMilliseconds(new Date(endDate), diff - 1)),
+    startDate: formatISO(subMilliseconds(new Date(startDate), diff + 1000)),
+    endDate: formatISO(subMilliseconds(new Date(endDate), diff + 1000)),
   };
 }
 

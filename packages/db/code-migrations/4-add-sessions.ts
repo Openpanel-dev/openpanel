@@ -1,27 +1,19 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  ch,
-  chQuery,
-  convertClickhouseDateToJs,
-  formatClickhouseDate,
-} from '@/clickhouse/client';
-import type { IClickhouseEvent } from '@/services/event.service';
-import type { IClickhouseSession } from '@/services/session.service';
-import { getRedisCache } from '@openpanel/redis';
+import { formatClickhouseDate } from '../src/clickhouse/client';
 import {
   createTable,
   runClickhouseMigrationCommands,
 } from '../src/clickhouse/migration';
-import { printBoxMessage } from './helpers';
+import { getIsCluster } from './helpers';
 
 export async function up() {
-  const isSelfHosting = !!process.env.SELF_HOSTED;
-  const isClustered = !isSelfHosting;
+  const isClustered = getIsCluster();
 
   const sqls: string[] = [
     ...createTable({
       name: 'sessions',
+      engine: 'VersionedCollapsingMergeTree(sign, version)',
       columns: [
         '`id` String',
         '`project_id` String CODEC(ZSTD(3))',
@@ -35,7 +27,6 @@ export async function up() {
         '`exit_origin` LowCardinality(String)',
         '`exit_path` String CODEC(ZSTD(3))',
         '`screen_view_count` Int32',
-        '`screen_views` Array(String)',
         '`revenue` Float64',
         '`event_count` Int32',
         '`duration` UInt32',
@@ -58,8 +49,10 @@ export async function up() {
         '`utm_term` String CODEC(ZSTD(3))',
         '`referrer` String CODEC(ZSTD(3))',
         '`referrer_name` String CODEC(ZSTD(3))',
+        '`referrer_type` LowCardinality(String)',
         '`sign` Int8',
-        '`version` UInt6',
+        '`version` UInt64',
+        '`properties` Map(String, String) CODEC(ZSTD(3))',
       ],
       orderBy: ['project_id', 'toDate(created_at)', 'profile_id', 'id'],
       partitionBy: 'toYYYYMM(created_at)',
@@ -73,8 +66,10 @@ export async function up() {
     }),
   ];
 
+  sqls.push(...createOldSessions());
+
   fs.writeFileSync(
-    path.join(__dirname, '3-init-ch.sql'),
+    path.join(__filename.replace('.ts', '.sql')),
     sqls
       .map((sql) =>
         sql
@@ -86,168 +81,78 @@ export async function up() {
       .join('\n\n---\n\n'),
   );
 
-  printBoxMessage('Will start migration for self-hosting setup.', [
-    'This will move all data from the old tables to the new ones.',
-    'This might take a while depending on your server.',
-  ]);
-
   if (!process.argv.includes('--dry')) {
     await runClickhouseMigrationCommands(sqls);
   }
-
-  await createOldSessions();
 }
 
-async function createOldSessions() {
-  let startDate = new Date('2022-01-01');
-  while (true) {
-    if (startDate > new Date()) {
-      break;
-    }
-
+function createOldSessions() {
+  let startDate = new Date('2024-03-01');
+  const sqls: string[] = [];
+  while (startDate <= new Date()) {
     const endDate = startDate;
-    startDate = new Date(startDate.getTime() + 1000 * 60 * 60 * 24 * 30);
-    const sql = `WITH unique_sessions AS (
-                  SELECT distinct session_id FROM openpanel.events WHERE created_at <= '${formatClickhouseDate(startDate)}' and created_at > '${formatClickhouseDate(endDate)}' and session_id != '' AND session_id NOT LIKE 'session_%' AND project_id = 'strackr'
-                )
-                SELECT * FROM openpanel.events WHERE session_id IN (SELECT session_id FROM unique_sessions)
-    `;
-
-    const events = await chQuery<IClickhouseEvent>(sql);
-
-    console.log('events', events);
-    console.log('events', events.length);
-
-    const stats = new Map<string, IClickhouseSession>();
-
-    // Process events chronologically
-    const sortedEvents = events.sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-    );
-
-    for (const event of sortedEvents) {
-      if (
-        !event.session_id ||
-        ['session_start', 'session_end'].includes(event.name)
-      ) {
-        continue;
-      }
-
-      const sessionId = event.session_id;
-      const existingSession = stats.get(sessionId);
-      const eventDate = convertClickhouseDateToJs(event.created_at);
-
-      if (!existingSession) {
-        // Initialize new session
-        stats.set(sessionId, {
-          id: sessionId,
-          project_id: event.project_id,
-          profile_id: event.profile_id,
-          device_id: event.device_id,
-          event_count: event.name === 'screen_view' ? 0 : 1,
-          screen_view_count: event.name === 'screen_view' ? 1 : 0,
-          screen_views: event.name === 'screen_view' ? [event.path] : [],
-          entry_path: event.path,
-          entry_origin: event.origin,
-          exit_path: event.path,
-          exit_origin: event.origin,
-          created_at: formatClickhouseDate(eventDate),
-          ended_at: formatClickhouseDate(eventDate),
-          referrer: event.referrer,
-          referrer_name: event.referrer_name,
-          referrer_type: event.referrer_type,
-          country: event.country,
-          device: event.device,
-          os: event.os,
-          browser: event.browser,
-          brand: event.brand,
-          model: event.model,
-          utm_medium: event.properties['__query.utm_medium']
-            ? String(event.properties['__query.utm_medium'])
-            : '',
-          utm_source: event.properties['__query.utm_source']
-            ? String(event.properties['__query.utm_source'])
-            : '',
-          utm_campaign: event.properties['__query.utm_campaign']
-            ? String(event.properties['__query.utm_campaign'])
-            : '',
-          browser_version: event.browser_version,
-          os_version: event.os_version,
-          region: event.region,
-          city: event.city,
-          longitude: event.longitude ?? null,
-          latitude: event.latitude ?? null,
-          utm_content: event.properties['__query.utm_content']
-            ? String(event.properties['__query.utm_content'])
-            : '',
-          utm_term: event.properties['__query.utm_term']
-            ? String(event.properties['__query.utm_term'])
-            : '',
-          is_bounce: true,
-          duration: event.duration,
-          revenue: 0,
-          sign: 1,
-          version: 1,
-        });
-      } else {
-        // Create new version of the session
-        const newSession: IClickhouseSession = {
-          ...existingSession,
-          sign: 1,
-          version: existingSession.version + 1,
-          ended_at: formatClickhouseDate(eventDate),
-          exit_path: event.path,
-          exit_origin: event.origin,
-        };
-
-        // Update session data
-        if (event.profile_id && event.profile_id !== event.device_id) {
-          newSession.profile_id = event.profile_id;
-        }
-
-        if (event.name === 'screen_view') {
-          newSession.screen_views.push(event.path);
-          newSession.screen_view_count += 1;
-          if (newSession.screen_view_count > 1) {
-            newSession.is_bounce = false;
-          }
-        } else {
-          newSession.event_count += 1;
-        }
-
-        newSession.duration =
-          eventDate.getTime() -
-          convertClickhouseDateToJs(newSession.created_at).getTime();
-
-        // Store both versions
-        stats.set(sessionId, newSession);
-      }
-    }
-
-    const values = Array.from(stats.values());
-
-    await ch.insert({
-      table: 'sessions',
-      values,
-      format: 'JSONEachRow',
-    });
-
-    const today = new Date();
-    for (const value of values) {
-      if (
-        new Date(value.created_at).getFullYear() === today.getFullYear() &&
-        new Date(value.created_at).getMonth() === today.getMonth() &&
-        new Date(value.created_at).getDate() === today.getDate()
-      ) {
-        console.log('Adding session to Redis', value.id);
-        await getRedisCache().set(
-          `session:${value.id}`,
-          JSON.stringify(value),
-          'EX',
-          60 * 60,
-        );
-      }
-    }
+    startDate = new Date(startDate.getTime() + 1000 * 60 * 60 * 24);
+    sqls.push(`
+      INSERT INTO openpanel.sessions
+        WITH unique_sessions AS (
+          SELECT session_id, min(created_at) as first_event_at
+          FROM openpanel.events
+          WHERE 
+            created_at BETWEEN '${formatClickhouseDate(endDate)}' AND '${formatClickhouseDate(startDate)}'
+            AND session_id != ''
+          GROUP BY session_id
+          HAVING first_event_at >= '${formatClickhouseDate(endDate)}'
+        )
+        SELECT 
+          any(e.session_id) as id,
+          any(e.project_id) as project_id,
+          any(e.profile_id) as profile_id,
+          any(e.device_id) as device_id,
+          argMin(e.created_at, e.created_at) as created_at,
+          argMax(e.created_at, e.created_at) as ended_at,
+          if(
+            argMaxIf(e.properties['__bounce'], e.created_at, e.name = 'session_end') = '',
+            if(countIf(e.name = 'screen_view') > 1, true, false),
+            argMaxIf(e.properties['__bounce'], e.created_at, e.name = 'session_end') = 'true'
+          ) as is_bounce,
+          argMinIf(e.origin, e.created_at, e.name = 'session_start') as entry_origin,
+          argMinIf(e.path, e.created_at, e.name = 'session_start') as entry_path,
+          argMaxIf(e.origin, e.created_at, e.name = 'session_end' OR e.name = 'screen_view') as exit_origin,
+          argMaxIf(e.path, e.created_at, e.name = 'session_end' OR e.name = 'screen_view') as exit_path,
+          countIf(e.name = 'screen_view') as screen_view_count,
+          0 as revenue,
+          countIf(e.name != 'screen_view' AND e.name != 'session_start' AND e.name != 'session_end') as event_count,
+          sumIf(e.duration, name = 'session_end') AS duration,
+          argMinIf(e.country, e.created_at, e.name = 'session_start') as country,
+          argMinIf(e.region, e.created_at, e.name = 'session_start') as region,
+          argMinIf(e.city, e.created_at, e.name = 'session_start') as city,
+          argMinIf(e.longitude, e.created_at, e.name = 'session_start') as longitude,
+          argMinIf(e.latitude, e.created_at, e.name = 'session_start') as latitude,
+          argMinIf(e.device, e.created_at, e.name = 'session_start') as device,
+          argMinIf(e.brand, e.created_at, e.name = 'session_start') as brand,
+          argMinIf(e.model, e.created_at, e.name = 'session_start') as model,
+          argMinIf(e.browser, e.created_at, e.name = 'session_start') as browser,
+          argMinIf(e.browser_version, e.created_at, e.name = 'session_start') as browser_version,
+          argMinIf(e.os, e.created_at, e.name = 'session_start') as os,
+          argMinIf(e.os_version, e.created_at, e.name = 'session_start') as os_version,
+          argMinIf(e.properties['__utm_medium'], e.created_at, e.name = 'session_start') as utm_medium,
+          argMinIf(e.properties['__utm_source'], e.created_at, e.name = 'session_start') as utm_source,
+          argMinIf(e.properties['__utm_campaign'], e.created_at, e.name = 'session_start') as utm_campaign,
+          argMinIf(e.properties['__utm_content'], e.created_at, e.name = 'session_start') as utm_content,
+          argMinIf(e.properties['__utm_term'], e.created_at, e.name = 'session_start') as utm_term,
+          argMinIf(e.referrer, e.created_at, e.name = 'session_start') as referrer,
+          argMinIf(e.referrer_name, e.created_at, e.name = 'session_start') as referrer_name,
+          argMinIf(e.referrer_type, e.created_at, e.name = 'session_start') as referrer_type,
+          1 as sign,
+          1 as version,
+          argMinIf(e.properties, e.created_at, e.name = 'session_start') as properties
+        FROM events e
+        WHERE 
+          e.session_id IN (SELECT session_id FROM unique_sessions)
+          AND e.created_at BETWEEN '${formatClickhouseDate(endDate)}' AND '${formatClickhouseDate(new Date(startDate.getTime() + 1000 * 60 * 60 * 24 * 3))}'
+        GROUP BY e.session_id
+      `);
   }
+
+  return sqls;
 }
