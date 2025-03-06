@@ -28,7 +28,7 @@ services:
       - 8080:8080
 
   op-ch:
-    image: clickhouse/clickhouse-server:24.3.2-alpine
+    image: clickhouse/clickhouse-server:24.12.2.29-alpine
     restart: always
     volumes:
       - ./docker/data/op-ch-data:/var/lib/clickhouse

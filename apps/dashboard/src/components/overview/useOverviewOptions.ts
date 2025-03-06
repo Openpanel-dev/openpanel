@@ -3,6 +3,7 @@ import {
   parseAsInteger,
   parseAsString,
   parseAsStringEnum,
+  parseAsStringLiteral,
   useQueryState,
 } from 'nuqs';
 

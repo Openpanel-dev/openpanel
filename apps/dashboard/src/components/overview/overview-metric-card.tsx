@@ -6,34 +6,53 @@ import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
 
-import { average, sum } from '@openpanel/common';
-import type { IChartMetric } from '@openpanel/validation';
+import { average, getPreviousMetric, sum } from '@openpanel/common';
+import type { IChartMetric, Metrics } from '@openpanel/validation';
+import {
+  PreviousDiffIndicator,
+  PreviousDiffIndicatorPure,
+  getDiffIndicator,
+} from '../report-chart/common/previous-diff-indicator';
+import { Tooltiper } from '../ui/tooltip';
 
 interface MetricCardProps {
-  data: RouterOutputs['overview']['stats'];
-  dataKey: keyof RouterOutputs['overview']['stats'][number];
+  id: string;
+  data: {
+    current: number;
+    previous?: number;
+  }[];
+  metric: {
+    current: number;
+    previous?: number | null;
+  };
   unit?: string;
   label: string;
-  summary?: 'avg' | 'sum';
+  onClick?: () => void;
+  active?: boolean;
+  inverted?: boolean;
 }
 
 export function OverviewMetricCard({
+  id,
   data,
-  dataKey,
+  metric,
   unit,
   label,
-  summary = 'avg',
+  onClick,
+  active,
+  inverted = false,
 }: MetricCardProps) {
   const number = useNumber();
+  const { current, previous } = metric;
 
-  const renderValue = (value: number, unitClassName?: string) => {
+  const renderValue = (value: number, unitClassName?: string, short = true) => {
     if (unit === 'min') {
       return <>{fancyMinutes(value)}</>;
     }
 
     return (
       <>
-        {number.short(value)}
+        {short ? number.short(value) : number.format(value)}
         {unit && <span className={unitClassName}>{unit}</span>}
       </>
     );
@@ -41,91 +60,100 @@ export function OverviewMetricCard({
 
   // const previous = serie.metrics.previous?.[metric];
 
-  // const graphColors = getDiffIndicator(
-  //   previousIndicatorInverted,
-  //   previous?.state,
-  //   '#6ee7b7', // green
-  //   '#fda4af', // red
-  //   '#93c5fd', // blue
-  // );
+  const graphColors = getDiffIndicator(
+    inverted,
+    getPreviousMetric(current, previous)?.state,
+    '#6ee7b7', // green
+    '#fda4af', // red
+    '#93c5fd', // blue
+  );
 
-  const graphColors = '#6ee7b7'; // green
+  console.log('state', id, getPreviousMetric(current, previous), {
+    current,
+    previous,
+  });
 
   return (
-    <button
-      type="button"
-      className={cn(
-        'col-span-2 flex-1 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
-        // index === metric && 'bg-def-100',
-      )}
-      onClick={() => {
-        // setMetric(index);
-      }}
+    <Tooltiper
+      content={
+        <span>
+          {label}:{' '}
+          <span className="font-semibold">
+            {renderValue(current, 'ml-1 font-light text-xl', false)}
+          </span>
+        </span>
+      }
+      asChild
+      sideOffset={-20}
     >
-      <div className={cn('group relative p-4')}>
-        <div
-          className={cn(
-            'pointer-events-none absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
-          )}
-        >
-          <AutoSizer>
-            {({ width, height }) => (
-              <AreaChart
-                width={width}
-                height={height / 4}
-                data={data}
-                style={{ marginTop: (height / 4) * 3 }}
-              >
-                <defs>
-                  <linearGradient
-                    id={`colorUv${dataKey}`}
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop
-                      offset="0%"
-                      stopColor={graphColors}
-                      stopOpacity={0.2}
-                    />
-                    <stop
-                      offset="100%"
-                      stopColor={graphColors}
-                      stopOpacity={0.05}
-                    />
-                  </linearGradient>
-                </defs>
-                <Area
-                  dataKey={dataKey}
-                  type="step"
-                  fill={`url(#colorUv${dataKey})`}
-                  fillOpacity={1}
-                  stroke={graphColors}
-                  strokeWidth={1}
-                  isAnimationActive={false}
-                />
-              </AreaChart>
+      <button
+        type="button"
+        className={cn(
+          'col-span-2 flex-1 shadow-[0_0_0_0.5px] shadow-border md:col-span-1',
+          active && 'bg-def-100',
+        )}
+        onClick={onClick}
+      >
+        <div className={cn('group relative p-4')}>
+          <div
+            className={cn(
+              'pointer-events-none absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
             )}
-          </AutoSizer>
+          >
+            <AutoSizer>
+              {({ width, height }) => (
+                <AreaChart
+                  width={width}
+                  height={height / 4}
+                  data={data}
+                  style={{ marginTop: (height / 4) * 3 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id={`colorUv${id}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor={graphColors}
+                        stopOpacity={0.2}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={graphColors}
+                        stopOpacity={0.05}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <Area
+                    dataKey={'current'}
+                    type="step"
+                    fill={`url(#colorUv${id})`}
+                    fillOpacity={1}
+                    stroke={graphColors}
+                    strokeWidth={1}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              )}
+            </AutoSizer>
+          </div>
+          <OverviewMetricCardNumber
+            label={label}
+            value={renderValue(current, 'ml-1 font-light text-xl')}
+            enhancer={
+              <PreviousDiffIndicatorPure
+                inverted={inverted}
+                {...getPreviousMetric(current, previous)}
+              />
+            }
+          />
         </div>
-        <OverviewMetricCardNumber
-          label={label}
-          value={renderValue(
-            summary === 'avg'
-              ? average(data.map((item) => item[dataKey] as number))
-              : sum(data.map((item) => item[dataKey] as number)),
-            'ml-1 font-light text-xl',
-          )}
-          // enhancer={
-          //   <PreviousDiffIndicator
-          //     {...previous}
-          //     className="text-sm text-muted-foreground"
-          //   />
-          // }
-        />
-      </div>
-    </button>
+      </button>
+    </Tooltiper>
   );
 }
 

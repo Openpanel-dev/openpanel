@@ -20,7 +20,8 @@ export function OverviewFiltersButtons({
   nuqsOptions,
 }: OverviewFiltersButtonsProps) {
   const [events, setEvents] = useEventQueryNamesFilter(nuqsOptions);
-  const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
+  const [filters, setFilter, setFilters, removeFilter] =
+    useEventQueryFilters(nuqsOptions);
   if (filters.length === 0 && events.length === 0) return null;
   return (
     <div className={cn('flex flex-wrap gap-2', className)}>
@@ -46,7 +47,7 @@ export function OverviewFiltersButtons({
             size="sm"
             variant="outline"
             icon={X}
-            onClick={() => setFilter(filter.name, [], 'is')}
+            onClick={() => removeFilter(filter.name)}
           >
             <span className="mr-1">{getPropertyLabel(filter.name)} is</span>
             <strong className="font-semibold">{filter.value.join(', ')}</strong>

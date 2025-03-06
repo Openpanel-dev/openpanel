@@ -42,6 +42,8 @@ import { logger } from './utils/logger';
 
 sourceMapSupport.install();
 
+process.env.TZ = 'UTC';
+
 declare module 'fastify' {
   interface FastifyRequest {
     client: IServiceClientWithProject | null;

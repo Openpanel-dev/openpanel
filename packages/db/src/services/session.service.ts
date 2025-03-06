@@ -37,4 +37,5 @@ export type IClickhouseSession = {
   revenue: number;
   sign: 1 | 0;
   version: number;
+  properties: Record<string, string>;
 };

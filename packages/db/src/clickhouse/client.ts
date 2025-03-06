@@ -165,12 +165,12 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
     }),
   };
 
-  logger.info('query info', {
-    query: cleanQuery(query),
-    rows: json.rows,
-    stats: response.statistics,
-    elapsed: Date.now() - start,
-  });
+  // console.log('query info', {
+  //   query: cleanQuery(query),
+  //   rows: json.rows,
+  //   stats: response.statistics,
+  //   elapsed: Date.now() - start,
+  // });
 
   return response;
 }

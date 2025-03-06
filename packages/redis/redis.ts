@@ -1,3 +1,4 @@
+import { getSuperJson, setSuperJson } from '@openpanel/json';
 import type { RedisOptions } from 'ioredis';
 import Redis from 'ioredis';
 
@@ -7,20 +8,59 @@ const options: RedisOptions = {
 
 export { Redis };
 
+export interface ExtendedRedis extends Redis {
+  getJson: <T = any>(key: string) => Promise<T | null>;
+  setJson: <T = any>(
+    key: string,
+    expireInSec: number,
+    value: T,
+  ) => Promise<void>;
+}
+
 const createRedisClient = (
   url: string,
   overrides: RedisOptions = {},
-): Redis => {
-  const client = new Redis(url, { ...options, ...overrides });
+): ExtendedRedis => {
+  const client = new Redis(url, {
+    ...options,
+    ...overrides,
+  }) as ExtendedRedis;
 
   client.on('error', (error) => {
     console.error('Redis Client Error:', error);
   });
 
+  client.getJson = async <T = any>(key: string): Promise<T | null> => {
+    const value = await client.get(key);
+    if (value) {
+      const res = getSuperJson(value) as T;
+      if (res && Array.isArray(res) && res.length === 0) {
+        return null;
+      }
+
+      if (res && typeof res === 'object' && Object.keys(res).length === 0) {
+        return null;
+      }
+
+      if (res) {
+        return res;
+      }
+    }
+    return null;
+  };
+
+  client.setJson = async <T = any>(
+    key: string,
+    expireInSec: number,
+    value: T,
+  ): Promise<void> => {
+    await client.setex(key, expireInSec, setSuperJson(value));
+  };
+
   return client;
 };
 
-let redisCache: Redis;
+let redisCache: ExtendedRedis;
 export function getRedisCache() {
   if (!redisCache) {
     redisCache = createRedisClient(process.env.REDIS_URL!, options);
@@ -29,7 +69,7 @@ export function getRedisCache() {
   return redisCache;
 }
 
-let redisSub: Redis;
+let redisSub: ExtendedRedis;
 export function getRedisSub() {
   if (!redisSub) {
     redisSub = createRedisClient(process.env.REDIS_URL!, options);
@@ -38,7 +78,7 @@ export function getRedisSub() {
   return redisSub;
 }
 
-let redisPub: Redis;
+let redisPub: ExtendedRedis;
 export function getRedisPub() {
   if (!redisPub) {
     redisPub = createRedisClient(process.env.REDIS_URL!, options);
@@ -47,7 +87,7 @@ export function getRedisPub() {
   return redisPub;
 }
 
-let redisQueue: Redis;
+let redisQueue: ExtendedRedis;
 export function getRedisQueue() {
   if (!redisQueue) {
     // Use different redis for queues (self-hosting will re-use the same redis instance)

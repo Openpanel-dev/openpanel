@@ -1,7 +1,8 @@
-import type { ClickHouseClient } from '@clickhouse/client';
+import type { ClickHouseClient, ResponseJSON } from '@clickhouse/client';
+import type { IInterval } from '@openpanel/validation';
 import { escape } from 'sqlstring';
 
-type SqlValue = string | number | boolean | Date | null;
+type SqlValue = string | number | boolean | Date | null | Expression;
 type SqlParam = SqlValue | SqlValue[];
 type Operator =
   | '='
@@ -31,7 +32,7 @@ type WhereCondition = {
   isGroup?: boolean;
 };
 
-type ConditionalCallback = (query: Query) => Query;
+type ConditionalCallback = (query: Query) => void;
 
 class Expression {
   constructor(private expression: string) {}
@@ -41,11 +42,12 @@ class Expression {
   }
 }
 
-export class Query {
+export class Query<T = any> {
   private _select: string[] = [];
   private _from?: string;
   private _where: WhereCondition[] = [];
   private _groupBy: string[] = [];
+  private _rollup = false;
   private _having: { condition: string; operator: 'AND' | 'OR' }[] = [];
   private _orderBy: {
     column: string;
@@ -63,13 +65,34 @@ export class Query {
     final?: boolean;
   }[] = [];
   private _skipNext = false;
+  private _fill?: {
+    from: string | Date;
+    to: string | Date;
+    step: string;
+  };
+  private _transform?: Record<string, (item: T) => any>;
 
   constructor(private client: ClickHouseClient) {}
 
   // Select methods
-  select(columns: string[]): this {
-    if (this._skipNext) return this;
-    this._select = columns;
+  select<U>(
+    columns: (string | null | undefined | false)[],
+    type: 'merge' | 'replace' = 'replace',
+  ): Query<U> {
+    if (this._skipNext) return this as unknown as Query<U>;
+    if (type === 'merge') {
+      this._select = [
+        ...this._select,
+        ...columns.filter((col): col is string => Boolean(col)),
+      ];
+    } else {
+      this._select = columns.filter((col): col is string => Boolean(col));
+    }
+    return this as unknown as Query<U>;
+  }
+
+  rollup(): this {
+    this._rollup = true;
     return this;
   }
 
@@ -83,7 +106,7 @@ export class Query {
   // Where methods
   private escapeValue(value: SqlParam): string {
     if (value === null) return 'NULL';
-    if (value instanceof Expression) return value.toString();
+    if (value instanceof Expression) return `(${value.toString()})`;
     if (Array.isArray(value)) {
       return `(${value.map((v) => this.escapeValue(v)).join(', ')})`;
     }
@@ -117,10 +140,10 @@ export class Query {
         throw new Error('BETWEEN operator requires an array of two values');
       case 'IN':
       case 'NOT IN':
-        if (!Array.isArray(value)) {
+        if (!Array.isArray(value) && !(value instanceof Expression)) {
           throw new Error(`${operator} operator requires an array value`);
         }
-        return `${column} ${operator} ${this.escapeValue(value)}`;
+        return `${column} ${operator} (${this.escapeValue(value)})`;
       default:
         return `${column} ${operator} ${this.escapeValue(value!)}`;
     }
@@ -133,7 +156,9 @@ export class Query {
   }
 
   rawWhere(condition: string): this {
-    this._where.push({ condition, operator: 'AND' });
+    if (condition) {
+      this._where.push({ condition, operator: 'AND' });
+    }
     return this;
   }
 
@@ -144,8 +169,8 @@ export class Query {
   }
 
   // Group by methods
-  groupBy(columns: string[]): this {
-    this._groupBy = columns;
+  groupBy(columns: (string | null | undefined | false)[]): this {
+    this._groupBy = columns.filter((col): col is string => Boolean(col));
     return this;
   }
 
@@ -176,9 +201,17 @@ export class Query {
   }
 
   // Limit and offset
-  limit(limit: number, offset?: number): this {
-    this._limit = limit;
-    if (offset !== undefined) this._offset = offset;
+  limit(limit?: number): this {
+    if (limit !== undefined) {
+      this._limit = limit;
+    }
+    return this;
+  }
+
+  offset(offset?: number): this {
+    if (offset !== undefined) {
+      this._offset = offset;
+    }
     return this;
   }
 
@@ -193,8 +226,32 @@ export class Query {
     return this;
   }
 
+  // Fill
+  fill(from: string | Date, to: string | Date, step: string): this {
+    this._fill = {
+      from: this.escapeDate(from),
+      to: this.escapeDate(to),
+      step: step,
+    };
+    return this;
+  }
+
+  private escapeDate(value: string | Date): string {
+    if (value instanceof Date) {
+      return clix.datetime(value);
+    }
+
+    return value.replaceAll(/\d{4}-\d{2}-\d{2}([\s\:\d\.]+)?/g, (match) => {
+      return escape(match);
+    });
+  }
+
   // Add join methods
   join(table: string, condition: string, final = false): this {
+    return this.joinWithType('INNER', table, condition, final);
+  }
+
+  innerJoin(table: string, condition: string, final = false): this {
     return this.joinWithType('INNER', table, condition, final);
   }
 
@@ -220,7 +277,12 @@ export class Query {
     condition: string,
     final = false,
   ): this {
-    this._joins.push({ type, table, condition, final });
+    this._joins.push({
+      type,
+      table,
+      condition: this.escapeDate(condition),
+      final,
+    });
     return this;
   }
 
@@ -258,7 +320,7 @@ export class Query {
 
     // SELECT
     if (this._select.length > 0) {
-      parts.push('SELECT', this._select.join(', '));
+      parts.push('SELECT', this._select.map(this.escapeDate).join(', '));
     } else {
       parts.push('SELECT *');
     }
@@ -287,6 +349,10 @@ export class Query {
       parts.push('GROUP BY', this._groupBy.join(', '));
     }
 
+    if (this._rollup) {
+      parts.push('WITH ROLLUP');
+    }
+
     // HAVING
     if (this._having.length > 0) {
       const conditions = this._having.map((h, i) => {
@@ -302,6 +368,23 @@ export class Query {
         return `${col} ${o.direction}`;
       });
       parts.push('ORDER BY', orderBy.join(', '));
+    }
+
+    // Add FILL clause after ORDER BY
+    if (this._fill) {
+      const fromDate =
+        this._fill.from instanceof Date
+          ? clix.datetime(this._fill.from)
+          : this._fill.from;
+      const toDate =
+        this._fill.to instanceof Date
+          ? clix.datetime(this._fill.to)
+          : this._fill.to;
+
+      parts.push('WITH FILL');
+      parts.push(`FROM ${fromDate}`);
+      parts.push(`TO ${toDate}`);
+      parts.push(`STEP ${this._fill.step}`);
     }
 
     // LIMIT & OFFSET
@@ -323,15 +406,63 @@ export class Query {
     return parts.join(' ');
   }
 
+  transformJson<E extends ResponseJSON<any>>(json: E): E {
+    const keys = Object.keys(json.data[0] || {});
+    const response = {
+      ...json,
+      data: json.data.map((item) => {
+        return keys.reduce((acc, key) => {
+          const meta = json.meta?.find((m) => m.name === key);
+          const transformer = this._transform?.[key];
+
+          if (transformer) {
+            return {
+              ...acc,
+              [key]: transformer(item),
+            };
+          }
+
+          return {
+            ...acc,
+            [key]:
+              item[key] && meta?.type.includes('Int')
+                ? Number.parseFloat(item[key] as string)
+                : item[key],
+          };
+        }, {} as T);
+      }),
+    };
+    return response;
+  }
+
+  transform(transformations: Record<string, (item: T) => any>): this {
+    this._transform = transformations;
+    return this;
+  }
+
   // Execution methods
-  async execute<T = any>(): Promise<T[]> {
+  async execute(): Promise<T[]> {
     const query = this.buildQuery();
-    console.log('QUERY', query);
-    const result = await this.client.query({
-      query,
-      format: 'JSONEachRow',
-    });
-    return result.json<T>();
+    console.log('TEST QUERY ----->');
+    console.log(query);
+    console.log('<----------');
+    const perf = performance.now();
+    try {
+      const result = await this.client.query({
+        query,
+      });
+      const json = await result.json<T>();
+      const perf2 = performance.now();
+      console.log(`PERF: ${perf2 - perf}ms`);
+      return this.transformJson(json).data;
+    } catch (error) {
+      console.log('ERROR ----->');
+      console.log(error);
+      console.log('<----------');
+      console.log(query);
+      console.log('<----------');
+      throw error;
+    }
   }
 
   // Debug methods
@@ -360,6 +491,50 @@ export class Query {
     if (condition) {
       callback(this);
     }
+    return this;
+  }
+
+  clone(): Query<T> {
+    return new Query(this.client).merge(this);
+  }
+
+  // Add merge method
+  merge(query: Query): this {
+    if (this._skipNext) return this;
+
+    this._from = query._from;
+
+    this._select = [...this._select, ...query._select];
+
+    // Merge WHERE conditions
+    this._where = [...this._where, ...query._where];
+
+    // Merge CTEs
+    this._ctes = [...this._ctes, ...query._ctes];
+
+    // Merge JOINS
+    this._joins = [...this._joins, ...query._joins];
+
+    // Merge settings
+    this._settings = { ...this._settings, ...query._settings };
+
+    // Take the most restrictive LIMIT
+    if (query._limit !== undefined) {
+      this._limit =
+        this._limit === undefined
+          ? query._limit
+          : Math.min(this._limit, query._limit);
+    }
+
+    // Merge ORDER BY
+    this._orderBy = [...this._orderBy, ...query._orderBy];
+
+    // Merge GROUP BY
+    this._groupBy = [...this._groupBy, ...query._groupBy];
+
+    // Merge HAVING conditions
+    this._having = [...this._having, ...query._having];
+
     return this;
   }
 }
@@ -421,9 +596,92 @@ export function clix(client: ClickHouseClient): Query {
 }
 
 clix.exp = (expr: string) => new Expression(expr);
-clix.date = (date: string | Date) => new Date(date).toISOString().slice(0, 10);
-clix.datetime = (date: string | Date) =>
-  new Date(date).toISOString().slice(0, 23).replace('T', ' ');
+clix.date = (date: string | Date, wrapper?: string) => {
+  const dateStr = new Date(date).toISOString().slice(0, 10);
+  return wrapper ? `${wrapper}(${dateStr})` : dateStr;
+};
+clix.datetime = (date: string | Date, wrapper?: string) => {
+  const datetime = new Date(date).toISOString().slice(0, 19).replace('T', ' ');
+  return wrapper ? `${wrapper}(${datetime})` : datetime;
+};
+clix.dynamicDatetime = (date: string | Date, interval: IInterval) => {
+  if (interval === 'month' || interval === 'week') {
+    return clix.date(date);
+  }
+  return clix.datetime(date);
+};
 
+clix.toStartOf = (node: string, interval: IInterval) => {
+  switch (interval) {
+    case 'minute': {
+      return `toStartOfMinute(${node})`;
+    }
+    case 'hour': {
+      return `toStartOfHour(${node})`;
+    }
+    case 'day': {
+      return `toStartOfDay(${node})`;
+    }
+    case 'week': {
+      return `toStartOfWeek(${node})`;
+    }
+    case 'month': {
+      return `toStartOfMonth(${node})`;
+    }
+  }
+};
+clix.toStartOfInterval = (
+  node: string,
+  interval: IInterval,
+  origin: string | Date,
+) => {
+  switch (interval) {
+    case 'minute': {
+      return `toStartOfInterval(toDateTime(${node}), INTERVAL 1 minute, toDateTime(${clix.datetime(origin)}))`;
+    }
+    case 'hour': {
+      return `toStartOfInterval(toDateTime(${node}), INTERVAL 1 hour, toDateTime(${clix.datetime(origin)}))`;
+    }
+    case 'day': {
+      return `toStartOfInterval(toDateTime(${node}), INTERVAL 1 day, toDateTime(${clix.datetime(origin)}))`;
+    }
+    case 'week': {
+      return `toStartOfInterval(toDateTime(${node}), INTERVAL 1 week, toDateTime(${clix.datetime(origin)}))`;
+    }
+    case 'month': {
+      return `toStartOfInterval(toDateTime(${node}), INTERVAL 1 month, toDateTime(${clix.datetime(origin)}))`;
+    }
+  }
+};
+clix.toInterval = (node: string, interval: IInterval) => {
+  switch (interval) {
+    case 'minute': {
+      return `toIntervalMinute(${node})`;
+    }
+    case 'hour': {
+      return `toIntervalHour(${node})`;
+    }
+    case 'day': {
+      return `toIntervalDay(${node})`;
+    }
+    case 'week': {
+      return `toIntervalWeek(${node})`;
+    }
+    case 'month': {
+      return `toIntervalMonth(${node})`;
+    }
+  }
+};
+clix.toDate = (node: string, interval: IInterval) => {
+  switch (interval) {
+    case 'week':
+    case 'month': {
+      return `toDate(${node})`;
+    }
+    default: {
+      return `toDateTime(${node})`;
+    }
+  }
+};
 // Export types
 export type { SqlValue, SqlParam, Operator };
