@@ -9,11 +9,12 @@ type Props = {
 };
 
 const Conversions = ({ projectId }: Props) => {
-  const query = api.event.conversions.useQuery(
+  const query = api.event.conversions.useInfiniteQuery(
     {
       projectId,
     },
     {
+      getNextPageParam: (lastPage) => lastPage.meta.next,
       keepPreviousData: true,
     },
   );

@@ -13,13 +13,14 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 
 interface Props {
   id: string;
+  createdAt?: Date;
+  projectId: string;
 }
 
-export default function EventDetails({ id }: Props) {
-  const { projectId } = useAppParams();
+export default function EventDetails({ id, createdAt, projectId }: Props) {
   const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
-  const query = api.event.byId.useQuery({ id, projectId });
+  const query = api.event.byId.useQuery({ id, projectId, createdAt });
 
   if (query.isLoading || query.isFetching) {
     return null;

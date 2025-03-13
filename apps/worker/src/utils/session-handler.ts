@@ -77,6 +77,21 @@ export async function getSessionEnd({
       throw new Error('Invalid session end job');
     }
 
+    // If the profile_id is set and it's different from the device_id, we need to update the profile_id
+    if (
+      sessionEnd.job.data.payload.profileId !== profileId &&
+      sessionEnd.job.data.payload.profileId ===
+        sessionEnd.job.data.payload.deviceId
+    ) {
+      await sessionEnd.job.updateData({
+        ...sessionEnd.job.data,
+        payload: {
+          ...sessionEnd.job.data.payload,
+          profileId,
+        },
+      });
+    }
+
     await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
   }
 

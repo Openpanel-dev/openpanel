@@ -106,7 +106,7 @@ function createOldSessions() {
         SELECT 
           any(e.session_id) as id,
           any(e.project_id) as project_id,
-          any(e.profile_id) as profile_id,
+          if(any(nullIf(e.profile_id, e.device_id)) IS NULL, any(e.profile_id), any(nullIf(e.profile_id, e.device_id))) as profile_id,
           any(e.device_id) as device_id,
           argMin(e.created_at, e.created_at) as created_at,
           argMax(e.created_at, e.created_at) as ended_at,

@@ -15,6 +15,7 @@ export function useColumns() {
   const number = useNumber();
   const columns: ColumnDef<IServiceEvent>[] = [
     {
+      size: 300,
       accessorKey: 'name',
       header: 'Name',
       cell({ row }) {
@@ -50,29 +51,29 @@ export function useColumns() {
 
         return (
           <div className="flex items-center gap-2">
-            <TooltipComplete content="Click to edit" side="left">
-              <button
-                type="button"
-                className="transition-transform hover:scale-105"
-                onClick={() => {
-                  pushModal('EditEvent', {
-                    id: row.original.id,
-                  });
-                }}
-              >
-                <EventIcon
-                  size="sm"
-                  name={row.original.name}
-                  meta={row.original.meta}
-                />
-              </button>
-            </TooltipComplete>
+            <button
+              type="button"
+              className="transition-transform hover:scale-105"
+              onClick={() => {
+                pushModal('EditEvent', {
+                  id: row.original.id,
+                });
+              }}
+            >
+              <EventIcon
+                size="sm"
+                name={row.original.name}
+                meta={row.original.meta}
+              />
+            </button>
             <span className="flex gap-2">
               <button
                 type="button"
                 onClick={() => {
                   pushModal('EventDetails', {
                     id: row.original.id,
+                    createdAt: row.original.createdAt,
+                    projectId: row.original.projectId,
                   });
                 }}
                 className="font-medium"
@@ -86,41 +87,13 @@ export function useColumns() {
       },
     },
     {
-      accessorKey: 'country',
-      header: 'Country',
+      accessorKey: 'createdAt',
+      header: 'Created at',
+      size: 170,
       cell({ row }) {
-        const { country, city } = row.original;
+        const date = row.original.createdAt;
         return (
-          <div className="inline-flex min-w-full flex-none items-center gap-2">
-            <SerieIcon name={country} />
-            <span>{city}</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: 'os',
-      header: 'OS',
-      cell({ row }) {
-        const { os } = row.original;
-        return (
-          <div className="flex min-w-full items-center gap-2">
-            <SerieIcon name={os} />
-            <span>{os}</span>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: 'browser',
-      header: 'Browser',
-      cell({ row }) {
-        const { browser } = row.original;
-        return (
-          <div className="inline-flex min-w-full flex-none items-center gap-2">
-            <SerieIcon name={browser} />
-            <span>{browser}</span>
-          </div>
+          <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
         );
       },
     },
@@ -134,8 +107,8 @@ export function useColumns() {
         }
         return (
           <ProjectLink
-            href={`/profiles/${profile?.id}`}
-            className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap font-medium hover:underline"
+            href={`/profiles/${profile.id}`}
+            className="whitespace-nowrap font-medium hover:underline"
           >
             {getProfileName(profile)}
           </ProjectLink>
@@ -143,12 +116,44 @@ export function useColumns() {
       },
     },
     {
-      accessorKey: 'createdAt',
-      header: 'Created at',
+      accessorKey: 'country',
+      header: 'Country',
+      size: 150,
       cell({ row }) {
-        const date = row.original.createdAt;
+        const { country, city } = row.original;
         return (
-          <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
+          <div className="row items-center gap-2 min-w-0">
+            <SerieIcon name={country} />
+            <span className="truncate">{city}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'os',
+      header: 'OS',
+      size: 130,
+      cell({ row }) {
+        const { os } = row.original;
+        return (
+          <div className="row items-center gap-2 min-w-0">
+            <SerieIcon name={os} />
+            <span className="truncate">{os}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'browser',
+      header: 'Browser',
+      size: 110,
+      cell({ row }) {
+        const { browser } = row.original;
+        return (
+          <div className="row items-center gap-2 min-w-0">
+            <SerieIcon name={browser} />
+            <span className="truncate">{browser}</span>
+          </div>
         );
       },
     },

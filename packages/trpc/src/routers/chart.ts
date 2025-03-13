@@ -3,7 +3,6 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import {
-  type IClickhouseProfile,
   TABLE_NAMES,
   chQuery,
   createSqlBuilder,
@@ -81,16 +80,6 @@ export const chartRouter = createTRPCRouter({
         ORDER BY created_at DESC`,
       );
 
-      const profiles = await chQuery<IClickhouseProfile>(
-        `SELECT * FROM ${TABLE_NAMES.profiles} WHERE project_id = ${escape(projectId)} AND created_at > now() - INTERVAL 1 MONTH`,
-      );
-      const profileProperties = profiles.flatMap((profile) =>
-        Object.entries(profile.properties).map(([key, value]) => ({
-          key: `profile.properties.${key}`,
-          value: value,
-        })),
-      );
-
       const properties = res
         .map((item) => item.property_key)
         .map((item) => item.replace(/\.([0-9]+)\./g, '.*.'))
@@ -119,7 +108,6 @@ export const chartRouter = createTRPCRouter({
         'device',
         'brand',
         'model',
-        ...profileProperties.map((p) => p.key),
       );
 
       return pipe(
@@ -143,27 +131,16 @@ export const chartRouter = createTRPCRouter({
         };
       }
 
-      const profiles = await chQuery<IClickhouseProfile>(
-        `SELECT * FROM ${TABLE_NAMES.profiles} WHERE project_id = ${escape(projectId)} AND created_at > now() - INTERVAL 1 MONTH`,
-      );
-      const profileProperties = profiles.flatMap((profile) =>
-        Object.entries(profile.properties).map(([key, value]) => ({
-          key: `profile.properties.${key}`,
-          value: value,
-        })),
-      );
-
       const values: string[] = [];
 
-      if (!property.startsWith('profile.properties.')) {
-        if (property.startsWith('properties.')) {
-          const propertyKey = property.replace(/^properties\./, '');
+      if (property.startsWith('properties.')) {
+        const propertyKey = property.replace(/^properties\./, '');
 
-          const res = await chQuery<{
-            property_value: string;
-            created_at: string;
-          }>(
-            `SELECT 
+        const res = await chQuery<{
+          property_value: string;
+          created_at: string;
+        }>(
+          `SELECT 
             distinct property_value, 
             max(created_at) as created_at 
           FROM ${TABLE_NAMES.event_property_values_mv}
@@ -172,40 +149,30 @@ export const chartRouter = createTRPCRouter({
           ${event && event !== '*' ? `AND name = ${escape(event)}` : ''}
           GROUP BY property_value 
           ORDER BY created_at DESC`,
-          );
+        );
 
-          values.push(...res.map((e) => e.property_value));
-        } else {
-          const { sb, getSql } = createSqlBuilder();
-          sb.where.project_id = `project_id = ${escape(projectId)}`;
-          if (event !== '*') {
-            sb.where.event = `name = ${escape(event)}`;
-          }
-          sb.select.values = `distinct ${getSelectPropertyKey(property)} as values`;
-          sb.where.date = `${toDate('created_at', 'month')} > now() - INTERVAL 6 MONTH`;
-          sb.orderBy.created_at = 'created_at DESC';
-          sb.limit = 100_000;
-          const events = await chQuery<{ values: string[] }>(getSql());
-
-          values.push(
-            ...pipe(
-              (data: typeof events) => map(prop('values'), data),
-              flatten,
-              uniq,
-              sort((a, b) => a.length - b.length),
-            )(events),
-          );
+        values.push(...res.map((e) => e.property_value));
+      } else {
+        const { sb, getSql } = createSqlBuilder();
+        sb.where.project_id = `project_id = ${escape(projectId)}`;
+        if (event !== '*') {
+          sb.where.event = `name = ${escape(event)}`;
         }
-      }
-      console.log('profileProperties', profileProperties);
+        sb.select.values = `distinct ${getSelectPropertyKey(property)} as values`;
+        sb.where.date = `${toDate('created_at', 'month')} > now() - INTERVAL 6 MONTH`;
+        sb.orderBy.created_at = 'created_at DESC';
+        sb.limit = 100_000;
+        const events = await chQuery<{ values: string[] }>(getSql());
 
-      values.push(
-        ...uniq(
-          profileProperties
-            .filter((p) => p.value !== null && p.key === property)
-            .map((p) => p.value!),
-        ),
-      );
+        values.push(
+          ...pipe(
+            (data: typeof events) => map(prop('values'), data),
+            flatten,
+            uniq,
+            sort((a, b) => a.length - b.length),
+          )(events),
+        );
+      }
 
       return {
         values,
@@ -214,10 +181,7 @@ export const chartRouter = createTRPCRouter({
 
   funnel: protectedProcedure.input(zChartInput).query(async ({ input }) => {
     const currentPeriod = getChartStartEndDate(input);
-    const previousPeriod = getChartPrevStartEndDate({
-      range: input.range,
-      ...currentPeriod,
-    });
+    const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
       getFunnelData({ ...input, ...currentPeriod }),

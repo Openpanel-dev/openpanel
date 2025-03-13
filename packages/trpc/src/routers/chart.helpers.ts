@@ -288,11 +288,9 @@ export function getChartStartEndDate({
 export function getChartPrevStartEndDate({
   startDate,
   endDate,
-  // range,
 }: {
   startDate: string;
   endDate: string;
-  // range: IChartRange;
 }) {
   const diff = differenceInMilliseconds(new Date(endDate), new Date(startDate));
   return {
@@ -308,7 +306,10 @@ export async function getFunnelData({
   ...payload
 }: IChartInput) {
   const funnelWindow = (payload.funnelWindow || 24) * 3600;
-  const funnelGroup = payload.funnelGroup || 'session_id';
+  const funnelGroup =
+    payload.funnelGroup === 'profile_id'
+      ? [`COALESCE(nullIf(s.profile_id, ''), e.profile_id)`, 'profile_id']
+      : ['session_id', 'session_id'];
 
   if (!startDate || !endDate) {
     throw new Error('startDate and endDate are required');
@@ -328,21 +329,19 @@ export async function getFunnelData({
     return getWhere().replace('WHERE ', '');
   });
 
+  const commonWhere = `project_id = ${escape(projectId)} AND 
+    created_at >= '${formatClickhouseDate(startDate)}' AND 
+    created_at <= '${formatClickhouseDate(endDate)}'`;
+
   const innerSql = `SELECT
-    ${
-      payload.funnelGroup === 'session_id'
-        ? 'session_id'
-        : 's.profile_id as profile_id'
-    },
+    ${funnelGroup[0]} AS ${funnelGroup[1]},
     windowFunnel(${funnelWindow}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
   FROM ${TABLE_NAMES.events} e
-  ${payload.funnelGroup === 'profile_id' ? 'JOIN sessions s ON e.session_id = s.id' : ''}
+  ${funnelGroup[0] === 'session_id' ? '' : `LEFT JOIN (SELECT profile_id, id FROM sessions WHERE ${commonWhere}) AS s ON s.id = e.session_id`}
   WHERE 
-    project_id = ${escape(projectId)} AND 
-    created_at >= '${formatClickhouseDate(startDate)}' AND 
-    created_at <= '${formatClickhouseDate(endDate)}' AND
+    ${commonWhere} AND
     name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  GROUP BY ${funnelGroup}`;
+  GROUP BY ${funnelGroup[0]}`;
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;
 
@@ -519,10 +518,7 @@ export async function getChart(input: IChartInput) {
   }
 
   const currentPeriod = getChartStartEndDate(input);
-  const previousPeriod = getChartPrevStartEndDate({
-    range: input.range,
-    ...currentPeriod,
-  });
+  const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
   // If the current period end date is after the subscription chart end date, we need to use the subscription chart end date
   if (
