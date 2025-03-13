@@ -157,9 +157,6 @@ export class OverviewService {
       views_per_session: number;
     }[];
   }> {
-    console.log('METRICS START_DATE', startDate);
-    console.log('METRICS END_DATE  ', endDate);
-
     const where = this.getRawWhereClause('sessions', filters);
 
     if (this.isPageFilter(filters)) {
@@ -275,7 +272,7 @@ export class OverviewService {
           return {
             metrics: {
               bounce_rate: metricsWithData?.bounce_rate ?? 0,
-              unique_visitors: metricsWithData?.unique_visitors ?? 0,
+              unique_visitors: metricsWithData?.overall_unique_visitors ?? 0,
               total_sessions: metricsWithData?.overall_total_sessions ?? 0,
               avg_session_duration: average(
                 res.map((item) => item.avg_session_duration),
@@ -395,8 +392,6 @@ export class OverviewService {
     cursor = 1,
     limit = 10,
   }: IGetTopPagesInput) {
-    console.log('TOP PAGES START_DATE', startDate);
-    console.log('TOP PAGES END_DATE  ', endDate);
     const pageStatsQuery = clix(this.client)
       .select([
         'origin',

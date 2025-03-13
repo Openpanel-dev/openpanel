@@ -11,6 +11,7 @@ import { last } from 'ramda';
 import { getPreviousMetric, round } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 
+import { useNumber } from '@/hooks/useNumerFormatter';
 import { PreviousDiffIndicator } from '../common/previous-diff-indicator';
 import { useReportChartContext } from '../context';
 import { MetricCardNumber } from '../metric/metric-card';
@@ -36,6 +37,7 @@ export function Chart({
     previous,
   },
 }: Props) {
+  const number = useNumber();
   const { isEditMode } = useReportChartContext();
   const mostDropoffs = findMostDropoffs(steps);
   const lastStep = last(steps)!;
@@ -50,39 +52,39 @@ export function Chart({
         )}
       >
         <div className="flex items-center gap-8 p-4 px-8">
-          <div className="flex flex-1 items-center gap-8 min-w-0">
-            <MetricCardNumber
-              label="Converted"
-              value={lastStep.count}
-              enhancer={
-                <PreviousDiffIndicator
-                  size="md"
-                  {...getPreviousMetric(lastStep.count, prevLastStep?.count)}
-                />
-              }
-            />
-            <MetricCardNumber
-              label="Percent"
-              value={`${totalSessions ? round((lastStep.count / totalSessions) * 100, 2) : 0}%`}
-              enhancer={
-                <PreviousDiffIndicator
-                  size="md"
-                  {...getPreviousMetric(lastStep.count, prevLastStep?.count)}
-                />
-              }
-            />
-            <MetricCardNumber
-              className="flex-1"
-              label="Most dropoffs"
-              value={mostDropoffs.event.displayName}
-              enhancer={
-                <PreviousDiffIndicator
-                  size="md"
-                  {...getPreviousMetric(lastStep.count, prevLastStep?.count)}
-                />
-              }
-            />
-          </div>
+          <MetricCardNumber
+            className="flex-1"
+            label="Converted"
+            value={lastStep.count}
+            enhancer={
+              <PreviousDiffIndicator
+                size="md"
+                {...getPreviousMetric(lastStep.count, prevLastStep?.count)}
+              />
+            }
+          />
+          <MetricCardNumber
+            className="flex-1"
+            label="Percent"
+            value={`${totalSessions ? round((lastStep.count / totalSessions) * 100, 2) : 0}%`}
+            enhancer={
+              <PreviousDiffIndicator
+                size="md"
+                {...getPreviousMetric(lastStep.count, prevLastStep?.count)}
+              />
+            }
+          />
+          <MetricCardNumber
+            className="flex-1"
+            label="Most dropoffs"
+            value={mostDropoffs.event.displayName}
+            enhancer={
+              <PreviousDiffIndicator
+                size="md"
+                {...getPreviousMetric(lastStep.count, prevLastStep?.count)}
+              />
+            }
+          />
         </div>
       </div>
       <div className="col divide-y divide-def-200">
@@ -109,7 +111,9 @@ export function Chart({
                         <span>
                           Last period:{' '}
                           <span className="font-mono">
-                            {previous?.steps?.[index]?.previousCount}
+                            {number.format(
+                              previous?.steps?.[index]?.previousCount,
+                            )}
                           </span>
                         </span>
                         <PreviousDiffIndicator
@@ -127,7 +131,7 @@ export function Chart({
                       </span>
                       <div className="flex items-center gap-4">
                         <span className="text-lg font-mono">
-                          {step.previousCount}
+                          {number.format(step.previousCount)}
                         </span>
                       </div>
                     </div>
@@ -139,7 +143,9 @@ export function Chart({
                         <span>
                           Last period:{' '}
                           <span className="font-mono">
-                            {previous?.steps?.[index]?.dropoffCount}
+                            {number.format(
+                              previous?.steps?.[index]?.dropoffCount,
+                            )}
                           </span>
                         </span>
                         <PreviousDiffIndicator
@@ -164,7 +170,7 @@ export function Chart({
                           )}
                         >
                           {isMostDropoffs && <AlertCircleIcon size={14} />}
-                          {step.dropoffCount}
+                          {number.format(step.dropoffCount)}
                         </span>
                       </div>
                     </div>
@@ -176,7 +182,7 @@ export function Chart({
                         <span>
                           Last period:{' '}
                           <span className="font-mono">
-                            {previous?.steps?.[index]?.count}
+                            {number.format(previous?.steps?.[index]?.count)}
                           </span>
                         </span>
                         <PreviousDiffIndicator
@@ -193,7 +199,9 @@ export function Chart({
                         Current:
                       </span>
                       <div className="flex items-center gap-4">
-                        <span className="text-lg font-mono">{step.count}</span>
+                        <span className="text-lg font-mono">
+                          {number.format(step.count)}
+                        </span>
                       </div>
                     </div>
                   </TooltipComplete>
@@ -204,7 +212,7 @@ export function Chart({
                         <span>
                           Last period:{' '}
                           <span className="font-mono">
-                            {previous?.steps?.[index]?.count}
+                            {number.format(previous?.steps?.[index]?.count)}
                           </span>
                         </span>
                         <PreviousDiffIndicator

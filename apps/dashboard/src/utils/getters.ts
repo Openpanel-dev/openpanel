@@ -8,16 +8,16 @@ export function getProfileName(
     return '';
   }
 
-  if (!profile.isExternal) {
-    if (short) {
+  const name =
+    [profile.firstName, profile.lastName].filter(Boolean).join(' ') ||
+    profile.email;
+
+  if (!name) {
+    if (short && profile.id.length > 10) {
       return `${profile.id.slice(0, 4)}...${profile.id.slice(-4)}`;
     }
     return profile.id;
   }
 
-  return (
-    [profile.firstName, profile.lastName].filter(Boolean).join(' ') ||
-    profile.email ||
-    profile.id
-  );
+  return name;
 }

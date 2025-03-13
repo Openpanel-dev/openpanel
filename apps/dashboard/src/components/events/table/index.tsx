@@ -1,64 +1,82 @@
-import { DataTable } from '@/components/data-table';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { Pagination } from '@/components/pagination';
-import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/ui/table';
-import type { UseQueryResult } from '@tanstack/react-query';
-import { GanttChartIcon } from 'lucide-react';
-import { column } from 'mathjs';
-import type { Dispatch, SetStateAction } from 'react';
+import type {
+  UseInfiniteQueryResult,
+  UseQueryResult,
+} from '@tanstack/react-query';
+import { GanttChartIcon, Loader2Icon } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
-import type { IServiceEvent } from '@openpanel/db';
-
+import type { RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
+import { useInViewport } from 'react-in-viewport';
 import { useColumns } from './columns';
+import { EventsDataTable } from './events-data-table';
 
 type Props =
   | {
-      query: UseQueryResult<IServiceEvent[]>;
+      query: UseInfiniteQueryResult<RouterOutputs['event']['events']>;
     }
   | {
-      query: UseQueryResult<IServiceEvent[]>;
-      cursor: number;
-      setCursor: Dispatch<SetStateAction<number>>;
+      query: UseQueryResult<RouterOutputs['event']['events']>;
     };
 
 export const EventsTable = ({ query, ...props }: Props) => {
   const columns = useColumns();
-  const { data, isFetching, isLoading } = query;
+  const { isLoading } = query;
+  const ref = useRef<HTMLDivElement>(null);
+  const { inViewport, enterCount } = useInViewport(ref, undefined, {
+    disconnectOnLeave: true,
+  });
+  const isInfiniteQuery = 'fetchNextPage' in query;
+  const data =
+    (isInfiniteQuery
+      ? query.data?.pages?.flatMap((p) => p.items)
+      : query.data?.items) ?? [];
+
+  const hasNextPage = isInfiniteQuery
+    ? query.data?.pages[query.data.pages.length - 1]?.meta.next
+    : query.data?.meta.next;
+
+  useEffect(() => {
+    if (
+      hasNextPage &&
+      isInfiniteQuery &&
+      data.length > 0 &&
+      inViewport &&
+      enterCount > 0 &&
+      query.isFetchingNextPage === false
+    ) {
+      query.fetchNextPage();
+    }
+  }, [inViewport, enterCount, hasNextPage]);
 
   if (isLoading) {
     return <TableSkeleton cols={columns.length} />;
   }
 
-  if (data?.length === 0) {
+  if (data.length === 0) {
     return (
       <FullPageEmptyState title="No events here" icon={GanttChartIcon}>
         <p>Could not find any events</p>
-        {'cursor' in props && props.cursor !== 0 && (
-          <Button
-            className="mt-8"
-            variant="outline"
-            onClick={() => props.setCursor((p) => p - 1)}
-          >
-            Go to previous page
-          </Button>
-        )}
       </FullPageEmptyState>
     );
   }
 
   return (
     <>
-      <DataTable data={data ?? []} columns={columns} />
-      {'cursor' in props && (
-        <Pagination
-          className="mt-2"
-          setCursor={props.setCursor}
-          cursor={props.cursor}
-          count={Number.POSITIVE_INFINITY}
-          take={50}
-          loading={isFetching}
-        />
+      <EventsDataTable data={data} columns={columns} />
+      {isInfiniteQuery && (
+        <div className="w-full h-10 center-center pt-10" ref={ref}>
+          <div
+            className={cn(
+              'size-8 bg-background rounded-full center-center border opacity-0 transition-opacity',
+              isInfiniteQuery && query.isFetchingNextPage && 'opacity-100',
+            )}
+          >
+            <Loader2Icon className="size-4 animate-spin" />
+          </div>
+        </div>
       )}
     </>
   );

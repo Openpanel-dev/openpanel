@@ -58,8 +58,6 @@ export function OverviewMetricCard({
     );
   };
 
-  // const previous = serie.metrics.previous?.[metric];
-
   const graphColors = getDiffIndicator(
     inverted,
     getPreviousMetric(current, previous)?.state,
@@ -67,11 +65,6 @@ export function OverviewMetricCard({
     '#fda4af', // red
     '#93c5fd', // blue
   );
-
-  console.log('state', id, getPreviousMetric(current, previous), {
-    current,
-    previous,
-  });
 
   return (
     <Tooltiper

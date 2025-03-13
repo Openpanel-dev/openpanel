@@ -31,6 +31,10 @@ export interface OverviewFiltersDrawerContentProps {
   mode: 'profiles' | 'events';
 }
 
+const excludePropertyFilter = (name: string) => {
+  return ['*', 'duration', 'created_at', 'has_profile'].includes(name);
+};
+
 export function OverviewFiltersDrawerContent({
   projectId,
   nuqsOptions,
@@ -60,10 +64,12 @@ export function OverviewFiltersDrawerContent({
               value={event}
               onChange={setEvent}
               // First items is * which is only used for report editing
-              items={eventNames.slice(1).map((item) => ({
-                label: item.name,
-                value: item.name,
-              }))}
+              items={eventNames
+                .filter((item) => !excludePropertyFilter(item.name))
+                .map((item) => ({
+                  label: item.name,
+                  value: item.name,
+                }))}
               placeholder="Select event"
             />
           )}

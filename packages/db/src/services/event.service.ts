@@ -1,9 +1,9 @@
-import { mergeDeepRight, uniq } from 'ramda';
+import { path, assocPath, last, mergeDeepRight, pick, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import { cacheable } from '@openpanel/redis';
+import { cacheable, getCache } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
@@ -14,12 +14,12 @@ import {
   convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../clickhouse/client';
-import { clix } from '../clickhouse/query-builder';
+import { type Query, clix } from '../clickhouse/query-builder';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import type { IServiceProfile } from './profile.service';
+import type { IClickhouseProfile, IServiceProfile } from './profile.service';
 import {
   getProfiles,
   transformProfile,
@@ -126,11 +126,11 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     referrer: event.referrer,
     referrerName: event.referrer_name,
     referrerType: event.referrer_type,
-    profile: event.profile,
     meta: event.meta,
     importedAt: event.imported_at ? new Date(event.imported_at) : undefined,
     sdkName: event.sdk_name,
     sdkVersion: event.sdk_version,
+    profile: event.profile,
   };
 }
 
@@ -263,16 +263,17 @@ export async function getEvents(
   }
 
   if (options.meta && projectId) {
-    const names = uniq(events.map((e) => e.name));
-    const metas = await db.eventMeta.findMany({
-      where: {
-        name: {
-          in: names,
-        },
-        projectId,
+    const metas = await getCache(
+      `event-metas-${projectId}`,
+      60 * 5,
+      async () => {
+        return db.eventMeta.findMany({
+          where: {
+            projectId,
+          },
+        });
       },
-      select: options.meta === true ? undefined : options.meta,
-    });
+    );
     const map = new Map<string, EventMeta>();
     for (const meta of metas) {
       map.set(meta.name, meta);
@@ -365,7 +366,7 @@ export interface GetEventListOptions {
   projectId: string;
   profileId?: string;
   take: number;
-  cursor?: number;
+  cursor?: number | Date;
   events?: string[] | null;
   filters?: IChartEventFilter[];
   startDate?: Date;
@@ -384,107 +385,155 @@ export async function getEventList({
   endDate,
   select: incomingSelect,
 }: GetEventListOptions) {
-  const result = clix(ch)
-    .with(
-      'cte_events',
-      clix(ch)
-        .select([])
-        .from(TABLE_NAMES.events)
-        .where('project_id', '=', projectId)
-        .andWhere('created_at', '<', '2025-03-06 07:19:05.412')
-        .orderBy('created_at', 'DESC')
-        .limit(50)
-        .offset(cursor ?? 0),
-    )
-    .with(
-      'cte_sessions',
-      clix(ch)
-        .select(['profile_id', 'id'])
-        .from('sessions')
-        .where('project_id', '=', projectId)
-        .where('created_at', 'BETWEEN', [
-          clix.exp(
-            clix(ch).select(['min(created_at)']).from('cte_events').toSQL(),
-          ),
-          clix.exp(
-            clix(ch).select(['max(created_at)']).from('cte_events').toSQL(),
-          ),
-        ]),
-    )
-    .with(
-      'cte_profiles',
-      clix(ch)
-        .select([
-          'id',
-          'project_id',
-          'max(created_at) as created_at',
-          'any(first_name) as first_name',
-          'any(last_name) as last_name',
-          'any(email) as email',
-          'any(avatar) as avatar',
-          'any(properties) as properties',
-          'any(is_external) as is_external',
-        ])
-        .from('profiles FINAL')
-        .where('project_id', '=', projectId)
-        .where(
-          'id',
-          'IN',
-          clix.exp(
-            clix(ch).select(['profile_id']).from('cte_sessions').toSQL(),
-          ),
-        )
-        .groupBy(['id', 'project_id']),
-    )
-    .select<
-      IClickhouseEvent & {
-        first_name: string;
-        last_name: string;
-      }
-    >(
-      Object.keys(incomingSelect ?? {})
-        .filter(Boolean)
-        .flatMap((key) => {
-          if (key === 'profile') {
-            return [
-              'p.first_name',
-              'p.last_name',
-              'p.id as profile_id',
-              'p.email as email',
-              'p.avatar as avatar',
-              'p.is_external as is_external',
-              'p.properties as profile_properties',
-              'p.project_id as profile_project_id',
-              'p.created_at as profile_created_at',
-            ];
-          }
-          return [`e.${key} as ${key}`];
-        }),
-    )
-    .from('cte_events e')
-    .leftJoin('cte_sessions s', 'e.session_id = s.id')
-    .leftJoin('cte_profiles p', 's.profile_id = p.id')
-    .orderBy('e.created_at', 'DESC')
-    .limit(take)
-    .execute();
+  const { sb, getSql, join } = createSqlBuilder();
 
-  return (await result).map((event) => {
-    return transformEvent({
-      ...event,
-      profile: incomingSelect?.profile
-        ? transformProfile({
-            id: event.profile_id,
-            first_name: event.first_name,
-            last_name: event.last_name,
-            email: event.email,
-            avatar: event.avatar,
-            properties: event.profile_properties,
-            project_id: event.profile_project_id,
-            created_at: event.profile_created_at,
-            is_external: event.is_external,
-          })
-        : undefined,
-    });
+  if (typeof cursor === 'number') {
+    sb.offset = Math.max(0, (cursor ?? 0) * take);
+  } else if (cursor instanceof Date) {
+    sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
+  }
+
+  sb.limit = take;
+  sb.where.projectId = `project_id = ${escape(projectId)}`;
+  const select = mergeDeepRight(
+    {
+      id: true,
+      name: true,
+      deviceId: true,
+      profileId: true,
+      sessionId: true,
+      projectId: true,
+      createdAt: true,
+      path: true,
+      duration: true,
+      city: true,
+      country: true,
+      os: true,
+      browser: true,
+    },
+    incomingSelect ?? {},
+  );
+
+  if (select.id) {
+    sb.select.id = 'id';
+  }
+  if (select.name) {
+    sb.select.name = 'name';
+  }
+  if (select.deviceId) {
+    sb.select.deviceId = 'device_id';
+  }
+  if (select.profileId) {
+    sb.select.profileId = 'profile_id';
+  }
+  if (select.projectId) {
+    sb.select.projectId = 'project_id';
+  }
+  if (select.sessionId) {
+    sb.select.sessionId = 'session_id';
+  }
+  if (select.properties) {
+    sb.select.properties = 'properties';
+  }
+  if (select.createdAt) {
+    sb.select.createdAt = 'created_at';
+  }
+  if (select.country) {
+    sb.select.country = 'country';
+  }
+  if (select.city) {
+    sb.select.city = 'city';
+  }
+  if (select.region) {
+    sb.select.region = 'region';
+  }
+  if (select.longitude) {
+    sb.select.longitude = 'longitude';
+  }
+  if (select.latitude) {
+    sb.select.latitude = 'latitude';
+  }
+  if (select.os) {
+    sb.select.os = 'os';
+  }
+  if (select.osVersion) {
+    sb.select.osVersion = 'os_version';
+  }
+  if (select.browser) {
+    sb.select.browser = 'browser';
+  }
+  if (select.browserVersion) {
+    sb.select.browserVersion = 'browser_version';
+  }
+  if (select.device) {
+    sb.select.device = 'device';
+  }
+  if (select.brand) {
+    sb.select.brand = 'brand';
+  }
+  if (select.model) {
+    sb.select.model = 'model';
+  }
+  if (select.duration) {
+    sb.select.duration = 'duration';
+  }
+  if (select.path) {
+    sb.select.path = 'path';
+  }
+  if (select.origin) {
+    sb.select.origin = 'origin';
+  }
+  if (select.referrer) {
+    sb.select.referrer = 'referrer';
+  }
+  if (select.referrerName) {
+    sb.select.referrerName = 'referrer_name';
+  }
+  if (select.referrerType) {
+    sb.select.referrerType = 'referrer_type';
+  }
+  if (select.importedAt) {
+    sb.select.importedAt = 'imported_at';
+  }
+  if (select.sdkName) {
+    sb.select.sdkName = 'sdk_name';
+  }
+  if (select.sdkVersion) {
+    sb.select.sdkVersion = 'sdk_version';
+  }
+
+  if (profileId) {
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
+  }
+
+  if (startDate && endDate) {
+    sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
+  }
+
+  if (events && events.length > 0) {
+    sb.where.events = `name IN (${join(
+      events.map((event) => escape(event)),
+      ',',
+    )})`;
+  }
+
+  if (filters) {
+    sb.where = {
+      ...sb.where,
+      ...getEventFiltersWhereClause(filters),
+    };
+  }
+
+  // if (cursor) {
+  //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
+  // }
+
+  sb.orderBy.created_at =
+    'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
+
+  return getEvents(getSql(), {
+    profile: select.profile ?? true,
+    meta: select.meta ?? true,
   });
 }
 
@@ -580,3 +629,320 @@ export async function getTopPages({
 
   return res;
 }
+
+export interface IEventServiceGetList {
+  projectId: string;
+  profileId?: string;
+  cursor?: Date;
+  filters?: IChartEventFilter[];
+}
+
+class EventService {
+  constructor(private client: typeof ch) {}
+
+  query<T>({
+    projectId,
+    profileId,
+    where,
+    select,
+    limit,
+    orderBy,
+  }: {
+    projectId: string;
+    profileId?: string;
+    where?: {
+      profile?: (query: Query<T>) => void;
+      event?: (query: Query<T>) => void;
+      session?: (query: Query<T>) => void;
+    };
+    select: {
+      profile?: Partial<SelectHelper<IServiceProfile>>;
+      event: Partial<SelectHelper<IServiceEvent>>;
+    };
+    limit?: number;
+    orderBy?: keyof IClickhouseEvent;
+  }) {
+    const events = clix(this.client)
+      .select<
+        Partial<IClickhouseEvent> & {
+          // profile
+          profileId: string;
+          profile_firstName: string;
+          profile_lastName: string;
+          profile_avatar: string;
+          profile_isExternal: boolean;
+          profile_createdAt: string;
+        }
+      >([
+        select.event.id && 'e.id as id',
+        select.event.deviceId && 'e.device_id as device_id',
+        select.event.name && 'e.name as name',
+        select.event.path && 'e.path as path',
+        select.event.duration && 'e.duration as duration',
+        select.event.country && 'e.country as country',
+        select.event.city && 'e.city as city',
+        select.event.os && 'e.os as os',
+        select.event.browser && 'e.browser as browser',
+        select.event.createdAt && 'e.created_at as created_at',
+        select.event.projectId && 'e.project_id as project_id',
+        'e.session_id as session_id',
+        'e.profile_id as profile_id',
+      ])
+      .from('events e')
+      .where('project_id', '=', projectId)
+      .when(!!where?.event, where?.event)
+      // Do not limit if profileId, we will limit later since we need the "correct" profileId
+      .when(!!limit && !profileId, (q) => q.limit(limit!))
+      .orderBy('toDate(created_at)', 'DESC')
+      .orderBy('created_at', 'DESC');
+
+    const sessions = clix(this.client)
+      .select(['id as session_id', 'profile_id'])
+      .from('sessions')
+      .where('sign', '=', 1)
+      .where('project_id', '=', projectId)
+      .when(!!where?.session, where?.session)
+      .when(!!profileId, (q) => q.where('profile_id', '=', profileId));
+
+    const profiles = clix(this.client)
+      .select([
+        'id',
+        'any(created_at) as created_at',
+        `any(nullIf(first_name, '')) as first_name`,
+        `any(nullIf(last_name, '')) as last_name`,
+        `any(nullIf(email, '')) as email`,
+        `any(nullIf(avatar, '')) as avatar`,
+        'last_value(is_external) as is_external',
+      ])
+      .from('profiles')
+      .where('project_id', '=', projectId)
+      .where(
+        'id',
+        'IN',
+        clix.exp(
+          clix(this.client)
+            .select(['profile_id'])
+            .from(
+              clix.exp(
+                clix(this.client)
+                  .select(['profile_id'])
+                  .from('cte_sessions')
+                  .union(
+                    clix(this.client).select(['profile_id']).from('cte_events'),
+                  ),
+              ),
+            )
+            .groupBy(['profile_id']),
+        ),
+      )
+      .groupBy(['id', 'project_id'])
+      .when(!!where?.profile, where?.profile);
+
+    return clix(this.client)
+      .with('cte_events', events)
+      .with('cte_sessions', sessions)
+      .with('cte_profiles', profiles)
+      .select<
+        Partial<IClickhouseEvent> & {
+          // profile
+          profileId: string;
+          profile_firstName: string;
+          profile_lastName: string;
+          profile_avatar: string;
+          profile_isExternal: boolean;
+          profile_createdAt: string;
+        }
+      >([
+        select.event.id && 'e.id as id',
+        select.event.deviceId && 'e.device_id as device_id',
+        select.event.name && 'e.name as name',
+        select.event.path && 'e.path as path',
+        select.event.duration && 'e.duration as duration',
+        select.event.country && 'e.country as country',
+        select.event.city && 'e.city as city',
+        select.event.os && 'e.os as os',
+        select.event.browser && 'e.browser as browser',
+        select.event.createdAt && 'e.created_at as created_at',
+        select.event.projectId && 'e.project_id as project_id',
+        select.event.sessionId && 'e.session_id as session_id',
+        select.event.profileId && 'e.profile_id as event_profile_id',
+        // Profile
+        select.profile?.id && 'p.id as profile_id',
+        select.profile?.firstName && 'p.first_name as profile_first_name',
+        select.profile?.lastName && 'p.last_name as profile_last_name',
+        select.profile?.avatar && 'p.avatar as profile_avatar',
+        select.profile?.isExternal && 'p.is_external as profile_is_external',
+        select.profile?.createdAt && 'p.created_at as profile_created_at',
+        select.profile?.email && 'p.email as profile_email',
+        select.profile?.properties && 'p.properties as profile_properties',
+      ])
+      .from('cte_events e')
+      .leftJoin('cte_sessions s', 'e.session_id = s.session_id')
+      .leftJoin(
+        'cte_profiles p',
+        's.profile_id = p.id AND p.is_external = true',
+      )
+      .when(!!profileId, (q) => {
+        q.where('s.profile_id', '=', profileId);
+        q.limit(limit!);
+      });
+  }
+
+  transformFromQuery(res: any[]) {
+    return res
+      .map((item) => {
+        return Object.entries(item).reduce(
+          (acc, [prop, val]) => {
+            if (prop === 'event_profile_id' && val) {
+              if (!item.profile_id) {
+                return assocPath(['profile', 'id'], val, acc);
+              }
+            }
+
+            if (
+              prop.startsWith('profile_') &&
+              !path(['profile', prop.replace('profile_', '')], acc)
+            ) {
+              return assocPath(
+                ['profile', prop.replace('profile_', '')],
+                val,
+                acc,
+              );
+            }
+            return assocPath([prop], val, acc);
+          },
+          {
+            profile: {},
+          } as IClickhouseEvent,
+        );
+      })
+      .map(transformEvent);
+  }
+
+  async getById({
+    projectId,
+    id,
+    createdAt,
+  }: {
+    projectId: string;
+    id: string;
+    createdAt?: Date;
+  }) {
+    return clix(this.client)
+      .select<IClickhouseEvent>(['*'])
+      .from('events')
+      .where('project_id', '=', projectId)
+      .when(!!createdAt, (q) => {
+        if (createdAt) {
+          q.where('created_at', 'BETWEEN', [
+            new Date(createdAt.getTime() - 1000),
+            new Date(createdAt.getTime() + 1000),
+          ]);
+        }
+      })
+      .where('id', '=', id)
+      .limit(1)
+      .execute()
+      .then((res) => {
+        if (!res[0]) {
+          return null;
+        }
+
+        return transformEvent(res[0]);
+      });
+  }
+
+  async getList({
+    projectId,
+    profileId,
+    cursor,
+    filters,
+    limit = 50,
+    startDate,
+    endDate,
+  }: IEventServiceGetList & {
+    limit?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }) {
+    const date = cursor || new Date();
+    const query = this.query({
+      projectId,
+      profileId,
+      limit,
+      orderBy: 'created_at',
+      select: {
+        event: {
+          deviceId: true,
+          profileId: true,
+          id: true,
+          name: true,
+          createdAt: true,
+          duration: true,
+          country: true,
+          city: true,
+          os: true,
+          browser: true,
+          path: true,
+          sessionId: true,
+        },
+        profile: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          isExternal: true,
+        },
+      },
+      where: {
+        event: (q) => {
+          if (startDate && endDate) {
+            q.where('created_at', 'BETWEEN', [
+              startDate ?? new Date(date.getTime() - 1000 * 60 * 60 * 24 * 3.5),
+              cursor ?? endDate,
+            ]);
+          } else {
+            q.where('created_at', '<', date);
+          }
+          if (filters) {
+            q.rawWhere(
+              Object.values(getEventFiltersWhereClause(filters)).join(' AND '),
+            );
+          }
+        },
+        session: (q) => {
+          if (startDate && endDate) {
+            q.where('created_at', 'BETWEEN', [
+              startDate ?? new Date(date.getTime() - 1000 * 60 * 60 * 24 * 3.5),
+              endDate ?? date,
+            ]);
+          } else {
+            q.where('created_at', '<', date);
+          }
+        },
+      },
+    })
+      .orderBy('toDate(created_at)', 'DESC')
+      .orderBy('created_at', 'DESC');
+
+    const results = await query.execute();
+
+    // Current page items (middle chunk)
+    const items = results.slice(0, limit);
+
+    // Check if there's a next page
+    const hasNext = results.length >= limit;
+
+    return {
+      items: this.transformFromQuery(items).map((item) => ({
+        ...item,
+        projectId: projectId,
+      })),
+      meta: {
+        next: hasNext ? last(items)?.created_at : null,
+      },
+    };
+  }
+}
+
+export const eventService = new EventService(ch);

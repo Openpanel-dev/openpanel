@@ -44,7 +44,8 @@ class Expression {
 
 export class Query<T = any> {
   private _select: string[] = [];
-  private _from?: string;
+  private _except: string[] = [];
+  private _from?: string | Expression;
   private _where: WhereCondition[] = [];
   private _groupBy: string[] = [];
   private _rollup = false;
@@ -60,9 +61,9 @@ export class Query<T = any> {
   private _ctes: CTE[] = [];
   private _joins: {
     type: JoinType;
-    table: string;
+    table: string | Expression;
     condition: string;
-    final?: boolean;
+    alias?: string;
   }[] = [];
   private _skipNext = false;
   private _fill?: {
@@ -71,7 +72,7 @@ export class Query<T = any> {
     step: string;
   };
   private _transform?: Record<string, (item: T) => any>;
-
+  private _union?: Query;
   constructor(private client: ClickHouseClient) {}
 
   // Select methods
@@ -91,15 +92,25 @@ export class Query<T = any> {
     return this as unknown as Query<U>;
   }
 
+  except(columns: string[]): this {
+    this._except = [...this._except, ...columns];
+    return this;
+  }
+
   rollup(): this {
     this._rollup = true;
     return this;
   }
 
   // From methods
-  from(table: string, final = false): this {
+  from(table: string | Expression, final = false): this {
     this._from = table;
     this._final = final;
+    return this;
+  }
+
+  union(query: Query): this {
+    this._union = query;
     return this;
   }
 
@@ -247,41 +258,58 @@ export class Query<T = any> {
   }
 
   // Add join methods
-  join(table: string, condition: string, final = false): this {
-    return this.joinWithType('INNER', table, condition, final);
+  join(table: string | Expression, condition: string, alias?: string): this {
+    return this.joinWithType('INNER', table, condition, alias);
   }
 
-  innerJoin(table: string, condition: string, final = false): this {
-    return this.joinWithType('INNER', table, condition, final);
+  innerJoin(
+    table: string | Expression,
+    condition: string,
+    alias?: string,
+  ): this {
+    return this.joinWithType('INNER', table, condition, alias);
   }
 
-  leftJoin(table: string, condition: string, final = false): this {
-    return this.joinWithType('LEFT', table, condition, final);
+  leftJoin(
+    table: string | Expression,
+    condition: string,
+    alias?: string,
+  ): this {
+    return this.joinWithType('LEFT', table, condition, alias);
   }
 
-  rightJoin(table: string, condition: string, final = false): this {
-    return this.joinWithType('RIGHT', table, condition, final);
+  rightJoin(
+    table: string | Expression,
+    condition: string,
+    alias?: string,
+  ): this {
+    return this.joinWithType('RIGHT', table, condition, alias);
   }
 
-  fullJoin(table: string, condition: string, final = false): this {
-    return this.joinWithType('FULL', table, condition, final);
+  fullJoin(
+    table: string | Expression,
+    condition: string,
+    alias?: string,
+  ): this {
+    return this.joinWithType('FULL', table, condition, alias);
   }
 
-  crossJoin(table: string, final = false): this {
-    return this.joinWithType('CROSS', table, '', final);
+  crossJoin(table: string | Expression, alias?: string): this {
+    return this.joinWithType('CROSS', table, '', alias);
   }
 
   private joinWithType(
     type: JoinType,
-    table: string,
+    table: string | Expression,
     condition: string,
-    final = false,
+    alias?: string,
   ): this {
+    if (this._skipNext) return this;
     this._joins.push({
       type,
       table,
       condition: this.escapeDate(condition),
-      final,
+      alias,
     });
     return this;
   }
@@ -325,16 +353,24 @@ export class Query<T = any> {
       parts.push('SELECT *');
     }
 
+    if (this._except.length > 0) {
+      parts.push('EXCEPT', `(${this._except.map(this.escapeDate).join(', ')})`);
+    }
+
     // FROM
     if (this._from) {
-      parts.push(`FROM ${this._from}${this._final ? ' FINAL' : ''}`);
+      if (this._from instanceof Expression) {
+        parts.push(`FROM (${this._from.toString()})`);
+      } else {
+        parts.push(`FROM ${this._from}${this._final ? ' FINAL' : ''}`);
+      }
 
       // Add joins
       this._joins.forEach((join) => {
-        const finalClause = join.final ? ' FINAL' : '';
-        const conditionStr = join.condition ? ` ON ${join.condition}` : '';
+        const aliasClause = join.alias ? ` ${join.alias} ` : ' ';
+        const conditionStr = join.condition ? `ON ${join.condition}` : '';
         parts.push(
-          `${join.type} JOIN ${join.table}${finalClause}${conditionStr}`,
+          `${join.type} JOIN ${join.table instanceof Expression ? `(${join.table.toString()})` : join.table}${aliasClause}${conditionStr}`,
         );
       });
     }
@@ -401,6 +437,10 @@ export class Query<T = any> {
         .map(([key, value]) => `${key} = ${value}`)
         .join(', ');
       parts.push(`SETTINGS ${settings}`);
+    }
+
+    if (this._union) {
+      parts.push('UNION ALL', this._union.buildQuery());
     }
 
     return parts.join(' ');
@@ -476,7 +516,7 @@ export class Query<T = any> {
     return this;
   }
 
-  if(condition: boolean): this {
+  if(condition: any): this {
     this._skipNext = !condition;
     return this;
   }
@@ -487,8 +527,8 @@ export class Query<T = any> {
   }
 
   // Add method for callback-style conditionals
-  when(condition: boolean, callback: ConditionalCallback): this {
-    if (condition) {
+  when(condition: boolean, callback?: ConditionalCallback): this {
+    if (condition && callback) {
       callback(this);
     }
     return this;
@@ -505,6 +545,8 @@ export class Query<T = any> {
     this._from = query._from;
 
     this._select = [...this._select, ...query._select];
+
+    this._except = [...this._except, ...query._except];
 
     // Merge WHERE conditions
     this._where = [...this._where, ...query._where];
@@ -595,7 +637,8 @@ export function clix(client: ClickHouseClient): Query {
   return new Query(client);
 }
 
-clix.exp = (expr: string) => new Expression(expr);
+clix.exp = (expr: string | Query<any>) =>
+  new Expression(expr instanceof Query ? expr.toSQL() : expr);
 clix.date = (date: string | Date, wrapper?: string) => {
   const dateStr = new Date(date).toISOString().slice(0, 10);
   return wrapper ? `${wrapper}(${dateStr})` : dateStr;

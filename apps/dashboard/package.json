@@ -51,6 +51,7 @@
     "@tailwindcss/typography": "^0.5.15",
     "@tanstack/react-query": "^4.36.1",
     "@tanstack/react-table": "^8.11.8",
+    "@tanstack/react-virtual": "^3.13.2",
     "@trpc/client": "^10.45.2",
     "@trpc/next": "^10.45.2",
     "@trpc/react-query": "^10.45.2",
@@ -113,9 +114,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@openpanel/payments": "workspace:*",
     "@openpanel/trpc": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
-    "@openpanel/payments": "workspace:*",
     "@types/bcrypt": "^5.0.2",
     "@types/lodash.debounce": "^4.0.9",
     "@types/lodash.isequal": "^4.5.8",

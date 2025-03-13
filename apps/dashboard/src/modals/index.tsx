@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader } from 'lucide-react';
+import { Loader2Icon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { createPushModal } from 'pushmodal';
 
@@ -9,7 +9,7 @@ import { ModalContent } from './Modal/Container';
 
 const Loading = () => (
   <ModalContent className="flex items-center justify-center p-16">
-    <Loader className="animate-spin" size={40} />
+    <Loader2Icon className="animate-spin" size={40} />
   </ModalContent>
 );
 

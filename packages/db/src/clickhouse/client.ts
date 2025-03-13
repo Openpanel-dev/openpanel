@@ -165,12 +165,12 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
     }),
   };
 
-  // console.log('query info', {
-  //   query: cleanQuery(query),
-  //   rows: json.rows,
-  //   stats: response.statistics,
-  //   elapsed: Date.now() - start,
-  // });
+  logger.info('query info', {
+    query: cleanQuery(query),
+    rows: json.rows,
+    stats: response.statistics,
+    elapsed: Date.now() - start,
+  });
 
   return response;
 }
@@ -217,31 +217,4 @@ export function toDate(str: string, interval?: IInterval) {
 
 export function convertClickhouseDateToJs(date: string) {
   return new Date(`${date.replace(' ', 'T')}Z`);
-}
-
-export function formatClickhouseToInterval(node: string, interval: IInterval) {
-  switch (interval) {
-    case 'minute': {
-      return `toStartOfMinute(${node})`;
-    }
-    case 'hour': {
-      return `toStartOfHour(${node})`;
-    }
-    case 'day': {
-      return `toStartOfDay(${node})`;
-    }
-    case 'week': {
-      return `toStartOfWeek(${node})`;
-    }
-    case 'month': {
-      return `toStartOfMonth(${node})`;
-    }
-  }
-}
-
-export function formatClickhouseToTimezone(
-  date: string,
-  dateOrColumn: 'date' | 'column' = 'date',
-) {
-  return `toTimeZone(${dateOrColumn === 'date' ? `toDateTime(${escape(formatClickhouseDate(date))})` : date}, '${getTimezoneFromDateString(date)}')`;
 }

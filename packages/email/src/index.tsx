@@ -17,7 +17,7 @@ export async function sendEmail<T extends TemplateKey>(
   const { subject, Component, schema } = templates[template];
   const props = schema.safeParse(data);
 
-  if (props.error) {
+  if (!props.success) {
     console.error('Failed to parse data', props.error);
     return null;
   }
