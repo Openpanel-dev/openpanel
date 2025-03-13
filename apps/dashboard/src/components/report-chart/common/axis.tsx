@@ -72,7 +72,15 @@ export const useXAxisProps = (
     scale: 'utc',
     domain: ['dataMin', 'dataMax'] as AxisDomain,
     tickFormatter:
-      interval === 'auto' ? undefined : (m: string) => formatDate(new Date(m)),
+      interval === 'auto'
+        ? undefined
+        : (m: string) => {
+            if (['dataMin', 'dataMax'].includes(m)) {
+              return m;
+            }
+
+            return formatDate(new Date(m));
+          },
     type: 'number' as const,
     tickLine: false,
     minTickGap: 20,
