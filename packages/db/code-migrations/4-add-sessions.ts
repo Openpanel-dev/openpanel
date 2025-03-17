@@ -54,7 +54,7 @@ export async function up() {
         '`version` UInt64',
         '`properties` Map(String, String) CODEC(ZSTD(3))',
       ],
-      orderBy: ['project_id', 'toDate(created_at)', 'profile_id', 'id'],
+      orderBy: ['project_id', 'id', 'toDate(created_at)', 'profile_id'],
       partitionBy: 'toYYYYMM(created_at)',
       settings: {
         index_granularity: 8192,

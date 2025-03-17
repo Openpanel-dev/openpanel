@@ -15,7 +15,10 @@ import { Widget, WidgetBody } from '../widget';
 import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
-import { OverviewWidgetTableGeneric } from './overview-widget-table';
+import {
+  OverviewWidgetTableGeneric,
+  OverviewWidgetTableLoading,
+} from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
@@ -338,29 +341,33 @@ export default function OverviewTopDevices({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <OverviewWidgetTableGeneric
-            className="-m-4"
-            data={query.data ?? []}
-            column={{
-              name: OVERVIEW_COLUMNS_NAME[widget.key],
-              render(item) {
-                return (
-                  <div className="row items-center gap-2 min-w-0 relative">
-                    <SerieIcon name={item.name || NOT_SET_VALUE} />
-                    <button
-                      type="button"
-                      className="truncate"
-                      onClick={() => {
-                        setFilter(widget.key, item.name);
-                      }}
-                    >
-                      {item.name || 'Direct / Not set'}
-                    </button>
-                  </div>
-                );
-              },
-            }}
-          />
+          {query.isLoading ? (
+            <OverviewWidgetTableLoading className="-m-4" />
+          ) : (
+            <OverviewWidgetTableGeneric
+              className="-m-4"
+              data={query.data ?? []}
+              column={{
+                name: OVERVIEW_COLUMNS_NAME[widget.key],
+                render(item) {
+                  return (
+                    <div className="row items-center gap-2 min-w-0 relative">
+                      <SerieIcon name={item.name || NOT_SET_VALUE} />
+                      <button
+                        type="button"
+                        className="truncate"
+                        onClick={() => {
+                          setFilter(widget.key, item.name);
+                        }}
+                      >
+                        {item.name || 'Not set'}
+                      </button>
+                    </div>
+                  );
+                },
+              }}
+            />
+          )}
         </WidgetBody>
         <WidgetFooter>
           <OverviewDetailsButton

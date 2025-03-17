@@ -104,7 +104,7 @@ export const eventRouter = createTRPCRouter({
         const profile = map.get(item.sessionId);
         if (profile && (item.profile?.isExternal === false || !item.profile)) {
           item.profile = clone(profile);
-          if (item.profile) {
+          if (item?.profile?.firstName) {
             item.profile.firstName = `* ${item.profile.firstName}`;
           }
         }

@@ -4,14 +4,12 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
-import Map from '@/app/(app)/[organizationSlug]/[projectId]/realtime/map/map';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { type RouterOutputs, api } from '@/trpc/client';
-import type { IToolTipProps } from '@/types';
 import { getChartColor } from '@/utils/theme';
-import { getPreviousMetric, sum } from '@openpanel/common';
-import React, { Suspense } from 'react';
+import { getPreviousMetric } from '@openpanel/common';
+import React from 'react';
 import {
   CartesianGrid,
   Line,
@@ -23,7 +21,7 @@ import {
 import { createChartTooltip } from '../charts/chart-tooltip';
 import { useXAxisProps, useYAxisProps } from '../report-chart/common/axis';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
-import { AspectRatio } from '../ui/aspect-ratio';
+import { Skeleton } from '../skeleton';
 import { OverviewLiveHistogram } from './overview-live-histogram';
 import { OverviewMetricCard } from './overview-metric-card';
 
@@ -76,7 +74,6 @@ export default function OverviewMetricsV2({ projectId }: OverviewMetricsProps) {
   const [filters] = useEventQueryFilters();
 
   const activeMetric = TITLES[metric]!;
-
   const overviewQuery = api.overview.stats.useQuery({
     projectId,
     range,
@@ -115,6 +112,7 @@ export default function OverviewMetricsV2({ projectId }: OverviewMetricsProps) {
                 previous: item[`prev_${title.key}`],
               }))}
               active={metric === index}
+              isLoading={overviewQuery.isLoading}
             />
           ))}
 
@@ -132,6 +130,7 @@ export default function OverviewMetricsV2({ projectId }: OverviewMetricsProps) {
             {activeMetric.title}
           </div>
           <div className="w-full h-[150px]">
+            {overviewQuery.isLoading && <Skeleton className="h-full w-full" />}
             <TooltipProvider metric={activeMetric}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>

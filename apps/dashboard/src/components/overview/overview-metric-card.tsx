@@ -13,6 +13,7 @@ import {
   PreviousDiffIndicatorPure,
   getDiffIndicator,
 } from '../report-chart/common/previous-diff-indicator';
+import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
 
 interface MetricCardProps {
@@ -30,6 +31,7 @@ interface MetricCardProps {
   onClick?: () => void;
   active?: boolean;
   inverted?: boolean;
+  isLoading?: boolean;
 }
 
 export function OverviewMetricCard({
@@ -41,6 +43,7 @@ export function OverviewMetricCard({
   onClick,
   active,
   inverted = false,
+  isLoading = false,
 }: MetricCardProps) {
   const number = useNumber();
   const { current, previous } = metric;
@@ -143,6 +146,7 @@ export function OverviewMetricCard({
                 {...getPreviousMetric(current, previous)}
               />
             }
+            isLoading={isLoading}
           />
         </div>
       </button>
@@ -155,11 +159,13 @@ export function OverviewMetricCardNumber({
   value,
   enhancer,
   className,
+  isLoading,
 }: {
   label: React.ReactNode;
   value: React.ReactNode;
   enhancer?: React.ReactNode;
   className?: string;
+  isLoading?: boolean;
 }) {
   return (
     <div className={cn('flex min-w-0 flex-col gap-2', className)}>
@@ -168,10 +174,17 @@ export function OverviewMetricCardNumber({
           <span className="truncate text-muted-foreground">{label}</span>
         </div>
       </div>
-      <div className="flex items-end justify-between gap-4">
-        <div className="truncate font-mono text-3xl font-bold">{value}</div>
-        {enhancer}
-      </div>
+      {isLoading ? (
+        <div className="flex items-end justify-between gap-4">
+          <Skeleton className="h-6 w-16" />
+          <Skeleton className="h-6 w-12" />
+        </div>
+      ) : (
+        <div className="flex items-end justify-between gap-4">
+          <div className="truncate font-mono text-3xl font-bold">{value}</div>
+          {enhancer}
+        </div>
+      )}
     </div>
   );
 }

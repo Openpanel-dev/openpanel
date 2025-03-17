@@ -9,7 +9,7 @@ export interface Props<T> {
   keyExtractor: (item: T) => string;
   data: T[];
   className?: string;
-  eachColumn?: (item: T) => React.ReactNode;
+  eachRow?: (item: T) => React.ReactNode;
   columnClassName?: string;
 }
 
@@ -37,7 +37,7 @@ export function WidgetTable<T>({
   columns,
   data,
   keyExtractor,
-  eachColumn,
+  eachRow,
   columnClassName,
 }: Props<T>) {
   return (
@@ -87,11 +87,11 @@ export function WidgetTable<T>({
                     : '1fr',
               }}
             >
-              {eachColumn?.(item)}
+              {eachRow?.(item)}
               {columns.map((column) => (
                 <div
                   key={column.name}
-                  className={cn(column.className, 'relative')}
+                  className={cn(column.className, 'relative h-8')}
                 >
                   {column.render(item)}
                 </div>

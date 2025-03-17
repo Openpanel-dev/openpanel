@@ -16,6 +16,7 @@ import OverviewDetailsButton from './overview-details-button';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
 import {
   OverviewWidgetTableBots,
+  OverviewWidgetTableLoading,
   OverviewWidgetTablePages,
 } from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
@@ -95,14 +96,21 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          {widget.key === 'bot' ? (
-            <OverviewWidgetTableBots className="-m-4" data={data ?? []} />
+          {query.isLoading ? (
+            <OverviewWidgetTableLoading className="-m-4" />
           ) : (
-            <OverviewWidgetTablePages
-              className="-m-4"
-              data={data ?? []}
-              lastColumnName={widget.meta.columns.sessions}
-            />
+            <>
+              {widget.key === 'bot' ? (
+                <OverviewWidgetTableBots className="-m-4" data={data ?? []} />
+              ) : (
+                <OverviewWidgetTablePages
+                  className="-m-4"
+                  data={data ?? []}
+                  lastColumnName={widget.meta.columns.sessions}
+                  showDomain={!!domain}
+                />
+              )}
+            </>
           )}
         </WidgetBody>
         <WidgetFooter>

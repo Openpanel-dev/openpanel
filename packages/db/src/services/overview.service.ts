@@ -158,7 +158,6 @@ export class OverviewService {
     }[];
   }> {
     const where = this.getRawWhereClause('sessions', filters);
-
     if (this.isPageFilter(filters)) {
       // Session aggregation with bounce rates
       const sessionAggQuery = clix(this.client)
@@ -452,8 +451,7 @@ export class OverviewService {
         'p.path = b.entry_path AND p.origin = b.entry_origin',
       )
       .orderBy('sessions', 'DESC')
-      .limit(limit)
-      .offset((cursor - 1) * limit);
+      .limit(limit);
 
     const totalSessions = await this.getTotalSessions({
       projectId,

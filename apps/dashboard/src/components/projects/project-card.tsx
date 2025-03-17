@@ -52,7 +52,7 @@ function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
 
 async function ProjectChart({ id }: { id: string }) {
   const chart = await chQuery<{ value: number; date: string }>(
-    `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(id)} AND name = 'session_start' AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`,
+    `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM ${TABLE_NAMES.sessions} WHERE sign = 1 AND project_id = ${escape(id)} AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`,
   );
 
   return (
@@ -73,27 +73,27 @@ function Metric({ value, label }: { value: React.ReactNode; label: string }) {
 
 async function ProjectMetrics({ id }: { id: string }) {
   const [metrics] = await chQuery<{
-    total: number;
+    months_3: number;
     month: number;
     day: number;
   }>(
     `
       SELECT
       (
-        SELECT count(DISTINCT profile_id) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(id)}
-      ) as total, 
+        SELECT uniq(DISTINCT profile_id) as count FROM ${TABLE_NAMES.sessions} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '6 months'
+      ) as months_3, 
       (
-        SELECT count(DISTINCT profile_id) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 month'
+        SELECT uniq(DISTINCT profile_id) as count FROM ${TABLE_NAMES.sessions} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 month'
       ) as month,
       (
-        SELECT count(DISTINCT profile_id) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 day'
+        SELECT uniq(DISTINCT profile_id) as count FROM ${TABLE_NAMES.sessions} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 day'
       ) as day
     `,
   );
 
   return (
     <FadeIn className="flex gap-4">
-      <Metric label="Total" value={shortNumber('en')(metrics?.total)} />
+      <Metric label="3 months" value={shortNumber('en')(metrics?.months_3)} />
       <Metric label="Month" value={shortNumber('en')(metrics?.month)} />
       <Metric label="24h" value={shortNumber('en')(metrics?.day)} />
     </FadeIn>

@@ -70,6 +70,8 @@ export const operators = {
   startsWith: 'Starts with',
   endsWith: 'Ends with',
   regex: 'Regex',
+  isNull: 'Is null',
+  isNotNull: 'Is not null',
 } as const;
 
 export const chartTypes = {

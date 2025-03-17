@@ -4,6 +4,7 @@ import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { ExternalLinkIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
 import { WidgetTable, type Props as WidgetTableProps } from '../widget-table';
 
@@ -23,13 +24,13 @@ export const OverviewWidgetTable = <T,>({
       <WidgetTable
         data={data ?? []}
         keyExtractor={keyExtractor}
-        className={'text-sm min-h-[358px]'}
+        className={'text-sm min-h-[358px] @container'}
         columnClassName="px-2 group/row items-center"
-        eachColumn={(item) => {
+        eachRow={(item) => {
           return (
-            <div className="absolute inset-1 inset-x-3 !p-0">
+            <div className="absolute inset-0 !p-0">
               <div
-                className="h-full bg-def-200 rounded-sm group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900 transition-colors"
+                className="h-full bg-def-200 group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900 transition-colors relative"
                 style={{
                   width: `${getColumnPercentage(item) * 100}%`,
                 }}
@@ -43,7 +44,10 @@ export const OverviewWidgetTable = <T,>({
             className: cn(
               index === 0
                 ? 'w-full flex-1 font-medium min-w-0'
-                : 'text-right w-20 font-mono',
+                : 'text-right justify-end row w-20 font-mono',
+              index !== 0 &&
+                index !== columns.length - 1 &&
+                'hidden @[310px]:row',
               column.className,
             ),
           };
@@ -53,9 +57,46 @@ export const OverviewWidgetTable = <T,>({
   );
 };
 
-function getPath(path: string) {
+export function OverviewWidgetTableLoading({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <OverviewWidgetTable
+      className={className}
+      data={[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+      keyExtractor={(item) => item.toString()}
+      getColumnPercentage={() => 0}
+      columns={[
+        {
+          name: 'Path',
+          render: () => <Skeleton className="h-4 w-1/3" />,
+        },
+        {
+          name: 'BR',
+          render: () => <Skeleton className="h-4 w-[30px]" />,
+        },
+        {
+          name: 'Duration',
+          render: () => <Skeleton className="h-4 w-[30px]" />,
+        },
+        {
+          name: 'Sessions',
+          render: () => <Skeleton className="h-4 w-[30px]" />,
+        },
+      ]}
+    />
+  );
+}
+
+function getPath(path: string, showDomain = false) {
   try {
-    return new URL(path).pathname;
+    const url = new URL(path);
+    if (showDomain) {
+      return url.hostname + url.pathname;
+    }
+    return url.pathname;
   } catch {
     return path;
   }
@@ -65,6 +106,7 @@ export function OverviewWidgetTablePages({
   data,
   lastColumnName,
   className,
+  showDomain = false,
 }: {
   className?: string;
   lastColumnName: string;
@@ -76,6 +118,7 @@ export function OverviewWidgetTablePages({
     bounce_rate: number;
     sessions: number;
   }[];
+  showDomain?: boolean;
 }) {
   const [filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
@@ -101,7 +144,14 @@ export function OverviewWidgetTablePages({
                       setFilter('origin', item.origin);
                     }}
                   >
-                    {getPath(item.path)}
+                    {showDomain ? (
+                      <>
+                        <span className="opacity-40">{item.origin}</span>
+                        <span>{item.path}</span>
+                      </>
+                    ) : (
+                      item.path
+                    )}
                   </button>
                   <a
                     href={item.origin + item.path}
