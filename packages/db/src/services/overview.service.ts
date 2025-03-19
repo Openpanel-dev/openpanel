@@ -113,7 +113,7 @@ export class OverviewService {
           .select<{
             total_sessions: number;
           }>(['sum(sign) as total_sessions'])
-          .from(TABLE_NAMES.sessions)
+          .from(TABLE_NAMES.sessions, true)
           .where('project_id', '=', projectId)
           .where('created_at', 'BETWEEN', [
             clix.datetime(startDate),
@@ -165,7 +165,7 @@ export class OverviewService {
           `${clix.toStartOfInterval('created_at', interval, startDate)} AS date`,
           'round((countIf(is_bounce = 1 AND sign = 1) * 100.) / countIf(sign = 1), 2) AS bounce_rate',
         ])
-        .from(TABLE_NAMES.sessions)
+        .from(TABLE_NAMES.sessions, true)
         .where('sign', '=', 1)
         .where('project_id', '=', projectId)
         .where('created_at', 'BETWEEN', [
@@ -222,20 +222,18 @@ export class OverviewService {
           overall_bounce_rate: number;
         }>([
           `${clix.toStartOfInterval('e.created_at', interval, startDate)} AS date`,
-          'ds.bounce_rate AS bounce_rate',
+          'ds.bounce_rate as bounce_rate',
           'uniq(e.profile_id) AS unique_visitors',
           'uniq(e.session_id) AS total_sessions',
           'round(avgIf(duration, duration > 0), 2) / 1000 AS _avg_session_duration',
           'if(isNaN(_avg_session_duration), 0, _avg_session_duration) AS avg_session_duration',
           'count(*) AS total_screen_views',
           'round((count(*) * 1.) / uniq(e.session_id), 2) AS views_per_session',
-          'overall_unique_visitors.unique_visitors AS overall_unique_visitors',
-          'overall_unique_visitors.total_sessions AS overall_total_sessions',
-          'overall_bounce_rate.bounce_rate AS overall_bounce_rate',
+          '(SELECT unique_visitors FROM overall_unique_visitors) AS overall_unique_visitors',
+          '(SELECT total_sessions FROM overall_unique_visitors) AS overall_total_sessions',
+          '(SELECT bounce_rate FROM overall_bounce_rate) AS overall_bounce_rate',
         ])
         .from(`${TABLE_NAMES.events} AS e`)
-        .leftJoin('overall_unique_visitors', '1 = 1')
-        .leftJoin('overall_bounce_rate', '1 = 1')
         .leftJoin(
           'daily_stats AS ds',
           `${clix.toStartOfInterval('e.created_at', interval, startDate)} = ds.date`,
@@ -247,13 +245,7 @@ export class OverviewService {
           clix.datetime(endDate),
         ])
         .rawWhere(this.getRawWhereClause('events', filters))
-        .groupBy([
-          'date',
-          'ds.bounce_rate',
-          'overall_unique_visitors.unique_visitors',
-          'overall_unique_visitors.total_sessions',
-          'overall_bounce_rate.bounce_rate',
-        ])
+        .groupBy(['date', 'ds.bounce_rate'])
         .orderBy('date', 'ASC')
         .fill(
           clix.toStartOfInterval(clix.datetime(startDate), interval, startDate),
@@ -265,14 +257,17 @@ export class OverviewService {
         })
         .execute()
         .then((res) => {
-          const metricsWithData = res.find(
-            (item) => item.overall_bounce_rate !== 0,
+          const anyRowWithData = res.find(
+            (item) =>
+              item.overall_bounce_rate !== null ||
+              item.overall_total_sessions !== null ||
+              item.overall_unique_visitors !== null,
           );
           return {
             metrics: {
-              bounce_rate: metricsWithData?.bounce_rate ?? 0,
-              unique_visitors: metricsWithData?.overall_unique_visitors ?? 0,
-              total_sessions: metricsWithData?.overall_total_sessions ?? 0,
+              bounce_rate: anyRowWithData?.overall_bounce_rate ?? 0,
+              unique_visitors: anyRowWithData?.overall_unique_visitors ?? 0,
+              total_sessions: anyRowWithData?.overall_total_sessions ?? 0,
               avg_session_duration: average(
                 res.map((item) => item.avg_session_duration),
               ),
@@ -353,31 +348,30 @@ export class OverviewService {
 
   getRawWhereClause(type: 'events' | 'sessions', filters: IChartEventFilter[]) {
     const where = getEventFiltersWhereClause(
-      filters
-        .map((item) => {
-          if (type === 'sessions') {
-            if (item.name === 'path') {
-              return { ...item, name: 'entry_path' };
-            }
-            if (item.name === 'origin') {
-              return { ...item, name: 'entry_origin' };
-            }
-            if (item.name.startsWith('properties.__query.utm_')) {
-              return {
-                ...item,
-                name: item.name.replace('properties.__query.utm_', 'utm_'),
-              };
-            }
-            return item;
+      filters.map((item) => {
+        if (type === 'sessions') {
+          if (item.name === 'path') {
+            return { ...item, name: 'entry_path' };
+          }
+          if (item.name === 'origin') {
+            return { ...item, name: 'entry_origin' };
+          }
+          if (item.name.startsWith('properties.__query.utm_')) {
+            return {
+              ...item,
+              name: item.name.replace('properties.__query.utm_', 'utm_'),
+            };
           }
           return item;
-        })
-        .filter((item) => {
-          if (this.isPageFilter(filters) && type === 'sessions') {
-            return item.name !== 'entry_path' && item.name !== 'entry_origin';
-          }
-          return true;
-        }),
+        }
+        return item;
+      }),
+      // .filter((item) => {
+      //   if (this.isPageFilter(filters) && type === 'sessions') {
+      //     return item.name !== 'entry_path' && item.name !== 'entry_origin';
+      //   }
+      //   return true;
+      // }),
     );
 
     return Object.values(where).join(' AND ');
@@ -417,7 +411,7 @@ export class OverviewService {
         'entry_origin',
         'coalesce(round(countIf(is_bounce = 1 AND sign = 1) * 100.0 / countIf(sign = 1), 2), 0) as bounce_rate',
       ])
-      .from(TABLE_NAMES.sessions)
+      .from(TABLE_NAMES.sessions, true)
       .where('sign', '=', 1)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
@@ -460,12 +454,7 @@ export class OverviewService {
       filters,
     });
 
-    return mainQuery.execute().then((res) => {
-      return res.map((item) => ({
-        ...item,
-        total_sessions: totalSessions,
-      }));
-    });
+    return mainQuery.execute();
   }
 
   async getTopEntryExit({
@@ -502,7 +491,7 @@ export class OverviewService {
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) as bounce_rate',
         'sum(sign) as sessions',
       ])
-      .from(TABLE_NAMES.sessions)
+      .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
         clix.datetime(startDate),
@@ -535,12 +524,7 @@ export class OverviewService {
       filters,
     });
 
-    return mainQuery.execute().then((res) => {
-      return res.map((item) => ({
-        ...item,
-        total_sessions: totalSessions,
-      }));
-    });
+    return mainQuery.execute();
   }
 
   private getDistinctSessions({
@@ -606,18 +590,17 @@ export class OverviewService {
         avg_session_duration: number;
       }>([
         prefixColumn && `${prefixColumn} as prefix`,
-        `${column} as name`,
+        `nullIf(${column}, '') as name`,
         'sum(sign) as sessions',
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) AS bounce_rate',
         'round(avgIf(duration, duration > 0 AND sign > 0), 2)/1000 AS avg_session_duration',
       ])
-      .from(TABLE_NAMES.sessions)
+      .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
         clix.datetime(startDate),
         clix.datetime(endDate),
       ])
-      .rawWhere(this.getRawWhereClause('sessions', filters))
       .groupBy([prefixColumn, column].filter(Boolean))
       .having('sum(sign)', '>', 0)
       .orderBy('sessions', 'DESC')
@@ -636,7 +619,7 @@ export class OverviewService {
           clix.exp('(SELECT session_id FROM distinct_sessions)'),
         );
     } else {
-      // mainQuery.rawWhere(this.getRawWhereClause('sessions', filters));
+      mainQuery.rawWhere(this.getRawWhereClause('sessions', filters));
     }
 
     const [res, totalSessions] = await Promise.all([
@@ -649,10 +632,7 @@ export class OverviewService {
       }),
     ]);
 
-    return res.map((item) => ({
-      ...item,
-      total_sessions: totalSessions,
-    }));
+    return res;
   }
 }
 

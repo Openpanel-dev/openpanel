@@ -9,6 +9,7 @@ import type { IChartType } from '@openpanel/validation';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { pushModal } from '@/modals';
 import { api } from '@/trpc/client';
+import { NOT_SET_VALUE } from '@openpanel/constants';
 import { ChevronRightIcon } from 'lucide-react';
 import { ReportChart } from '../report-chart';
 import { SerieIcon } from '../report-chart/common/serie-icon';
@@ -90,7 +91,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
                 render(item) {
                   return (
                     <div className="row items-center gap-2 min-w-0 relative">
-                      <SerieIcon name={item.prefix || item.name} />
+                      <SerieIcon
+                        name={item.prefix || item.name || NOT_SET_VALUE}
+                      />
                       <button
                         type="button"
                         className="truncate"

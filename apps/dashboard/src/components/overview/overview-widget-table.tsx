@@ -77,10 +77,10 @@ export function OverviewWidgetTableLoading({
           name: 'BR',
           render: () => <Skeleton className="h-4 w-[30px]" />,
         },
-        {
-          name: 'Duration',
-          render: () => <Skeleton className="h-4 w-[30px]" />,
-        },
+        // {
+        //   name: 'Duration',
+        //   render: () => <Skeleton className="h-4 w-[30px]" />,
+        // },
         {
           name: 'Sessions',
           render: () => <Skeleton className="h-4 w-[30px]" />,
@@ -122,12 +122,13 @@ export function OverviewWidgetTablePages({
 }) {
   const [filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
+  const maxSessions = Math.max(...data.map((item) => item.sessions));
   return (
     <OverviewWidgetTable
       className={className}
       data={data ?? []}
       keyExtractor={(item) => item.path + item.origin}
-      getColumnPercentage={(item) => item.sessions / item.total_sessions}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
           name: 'Path',
@@ -212,12 +213,13 @@ export function OverviewWidgetTableBots({
 }) {
   const [filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
+  const maxSessions = Math.max(...data.map((item) => item.sessions));
   return (
     <OverviewWidgetTable
       className={className}
       data={data ?? []}
       keyExtractor={(item) => item.path + item.origin}
-      getColumnPercentage={(item) => item.sessions / item.total_sessions}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
           name: 'Path',
@@ -289,12 +291,13 @@ export function OverviewWidgetTableGeneric({
   };
 }) {
   const number = useNumber();
+  const maxSessions = Math.max(...data.map((item) => item.sessions));
   return (
     <OverviewWidgetTable
       className={className}
       data={data ?? []}
       keyExtractor={(item) => item.name}
-      getColumnPercentage={(item) => item.sessions / item.total_sessions}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         column,
         {
@@ -304,12 +307,12 @@ export function OverviewWidgetTableGeneric({
             return number.shortWithUnit(item.bounce_rate, '%');
           },
         },
-        {
-          name: 'Duration',
-          render(item) {
-            return number.shortWithUnit(item.avg_session_duration, 'min');
-          },
-        },
+        // {
+        //   name: 'Duration',
+        //   render(item) {
+        //     return number.shortWithUnit(item.avg_session_duration, 'min');
+        //   },
+        // },
         {
           name: 'Sessions',
           render(item) {

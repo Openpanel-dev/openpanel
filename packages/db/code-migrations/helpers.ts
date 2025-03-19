@@ -3,7 +3,9 @@ export function printBoxMessage(title: string, lines: (string | unknown)[]) {
   console.log('│');
   if (title) {
     console.log(`│  ${title}`);
-    console.log('│');
+    if (lines.length) {
+      console.log('│');
+    }
   }
   lines.forEach((line) => {
     console.log(`│  ${line}`);
@@ -23,4 +25,8 @@ export function getIsCluster() {
 
 export function getIsSelfHosting() {
   return !!process.env.SELF_HOSTED;
+}
+
+export function getIsDry() {
+  return process.argv.includes('--dry');
 }

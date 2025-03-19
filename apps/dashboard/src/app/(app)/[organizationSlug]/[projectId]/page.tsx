@@ -1,7 +1,6 @@
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import ServerLiveCounter from '@/components/overview/live-counter';
-import OverviewMetrics from '@/components/overview/overview-metrics';
 import OverviewShareServer from '@/components/overview/overview-share';
 import OverviewTopDevices from '@/components/overview/overview-top-devices';
 import OverviewTopEvents from '@/components/overview/overview-top-events';

@@ -88,8 +88,9 @@ export async function up() {
 
 function createOldSessions() {
   let startDate = new Date('2024-03-01');
+  const endDate = new Date();
   const sqls: string[] = [];
-  while (startDate <= new Date()) {
+  while (startDate <= endDate) {
     const endDate = startDate;
     startDate = new Date(startDate.getTime() + 1000 * 60 * 60 * 24);
     sqls.push(`

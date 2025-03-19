@@ -142,6 +142,8 @@ export function OverviewMetricCard({
             value={renderValue(current, 'ml-1 font-light text-xl')}
             enhancer={
               <PreviousDiffIndicatorPure
+                className="text-sm"
+                size="sm"
                 inverted={inverted}
                 {...getPreviousMetric(current, previous)}
               />

@@ -141,7 +141,7 @@ export function PreviousDiffIndicatorPure({
     >
       <div
         className={cn(
-          'flex size-4 items-center justify-center rounded-full',
+          'flex size-2.5 items-center justify-center rounded-full',
           variant,
           size === 'lg' && 'size-8',
           size === 'md' && 'size-6',

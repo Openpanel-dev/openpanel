@@ -61,7 +61,7 @@ const TITLES = [
     inverted: true,
   },
   {
-    title: 'Avg. Session Duration',
+    title: 'Session Duration',
     key: 'avg_session_duration',
     unit: 'min',
     inverted: false,
