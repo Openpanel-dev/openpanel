@@ -29,7 +29,9 @@ export async function getProducts() {
     sorting: ['price_amount'],
   });
   return products.result.items.filter((product) => {
-    return product.metadata.custom !== true;
+    return (
+      product.metadata.custom !== 'true' && product.metadata.custom !== true
+    );
   });
 }
 
