@@ -70,6 +70,15 @@ const Map = ({ markers }: Props) => {
     });
   }, []);
 
+  useEffect(() => {
+    if (ref.current) {
+      setSize({
+        width: ref.current.clientWidth,
+        height: ref.current.clientHeight,
+      });
+    }
+  }, []);
+
   const adjustSizeBasedOnZoom = (size: number) => {
     const minMultiplier = 1;
     const maxMultiplier = 7;
