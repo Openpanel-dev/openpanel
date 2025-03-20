@@ -9,9 +9,9 @@ import type { IClickhouseSession } from '../services/session.service';
 import { BaseBuffer } from './base-buffer';
 
 export class SessionBuffer extends BaseBuffer {
-  private batchSize = process.env.BOT_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.BOT_BUFFER_BATCH_SIZE, 10)
-    : 2;
+  private batchSize = process.env.SESSION_BUFFER_BATCH_SIZE
+    ? Number.parseInt(process.env.SESSION_BUFFER_BATCH_SIZE, 10)
+    : 1000;
 
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
