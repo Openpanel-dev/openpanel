@@ -19,6 +19,7 @@ export function ProjectLink({
           /^\//,
           '',
         )}`}
+        prefetch
       >
         {children}
       </Link>
