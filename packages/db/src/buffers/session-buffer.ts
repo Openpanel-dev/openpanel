@@ -55,6 +55,12 @@ export class SessionBuffer extends BaseBuffer {
       newSession.duration =
         new Date(newSession.ended_at).getTime() -
         new Date(newSession.created_at).getTime();
+      if (newSession.duration < 0) {
+        this.logger.warn('Session duration is negative', {
+          session: newSession,
+        });
+        newSession.duration = 0;
+      }
       newSession.properties = toDots({
         ...(event.properties || {}),
         ...(newSession.properties || {}),
