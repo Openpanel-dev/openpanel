@@ -56,6 +56,8 @@ export function EventListItem(props: EventListItemProps) {
           if (!isMinimal) {
             pushModal('EventDetails', {
               id: props.id,
+              projectId,
+              createdAt,
             });
           }
         }}

@@ -1,24 +1,30 @@
-import { mergeDeepRight, uniq } from 'ramda';
+import { path, assocPath, last, mergeDeepRight, pick, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { toDots } from '@openpanel/common';
-import { cacheable } from '@openpanel/redis';
+import { cacheable, getCache } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
-import { botBuffer, eventBuffer } from '../buffers';
+import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
 import {
   TABLE_NAMES,
+  ch,
   chQuery,
   convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../clickhouse/client';
+import { type Query, clix } from '../clickhouse/query-builder';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import type { IServiceProfile } from './profile.service';
-import { getProfiles, upsertProfile } from './profile.service';
+import type { IClickhouseProfile, IServiceProfile } from './profile.service';
+import {
+  getProfiles,
+  transformProfile,
+  upsertProfile,
+} from './profile.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -120,11 +126,11 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     referrer: event.referrer,
     referrerName: event.referrer_name,
     referrerType: event.referrer_type,
-    profile: event.profile,
     meta: event.meta,
     importedAt: event.imported_at ? new Date(event.imported_at) : undefined,
     sdkName: event.sdk_name,
     sdkVersion: event.sdk_version,
+    profile: event.profile,
   };
 }
 
@@ -246,24 +252,34 @@ export async function getEvents(
     const ids = events.map((e) => e.profile_id);
     const profiles = await getProfiles(ids, projectId);
 
+    const map = new Map<string, IServiceProfile>();
+    for (const profile of profiles) {
+      map.set(profile.id, profile);
+    }
+
     for (const event of events) {
-      event.profile = profiles.find((p) => p.id === event.profile_id);
+      event.profile = map.get(event.profile_id);
     }
   }
 
   if (options.meta && projectId) {
-    const names = uniq(events.map((e) => e.name));
-    const metas = await db.eventMeta.findMany({
-      where: {
-        name: {
-          in: names,
-        },
-        projectId,
+    const metas = await getCache(
+      `event-metas-${projectId}`,
+      60 * 5,
+      async () => {
+        return db.eventMeta.findMany({
+          where: {
+            projectId,
+          },
+        });
       },
-      select: options.meta === true ? undefined : options.meta,
-    });
+    );
+    const map = new Map<string, EventMeta>();
+    for (const meta of metas) {
+      map.set(meta.name, meta);
+    }
     for (const event of events) {
-      event.meta = metas.find((m) => m.name === event.name);
+      event.meta = map.get(event.name);
     }
   }
   return events.map(transformEvent);
@@ -339,7 +355,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_version: payload.sdkVersion ?? '',
   };
 
-  await eventBuffer.add(event);
+  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
 
   return {
     document: event,
@@ -350,7 +366,7 @@ export interface GetEventListOptions {
   projectId: string;
   profileId?: string;
   take: number;
-  cursor?: number;
+  cursor?: number | Date;
   events?: string[] | null;
   filters?: IChartEventFilter[];
   startDate?: Date;
@@ -371,8 +387,13 @@ export async function getEventList({
 }: GetEventListOptions) {
   const { sb, getSql, join } = createSqlBuilder();
 
+  if (typeof cursor === 'number') {
+    sb.offset = Math.max(0, (cursor ?? 0) * take);
+  } else if (cursor instanceof Date) {
+    sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
+  }
+
   sb.limit = take;
-  sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.where.projectId = `project_id = ${escape(projectId)}`;
   const select = mergeDeepRight(
     {
@@ -380,6 +401,7 @@ export async function getEventList({
       name: true,
       deviceId: true,
       profileId: true,
+      sessionId: true,
       projectId: true,
       createdAt: true,
       path: true,
@@ -607,3 +629,320 @@ export async function getTopPages({
 
   return res;
 }
+
+export interface IEventServiceGetList {
+  projectId: string;
+  profileId?: string;
+  cursor?: Date;
+  filters?: IChartEventFilter[];
+}
+
+class EventService {
+  constructor(private client: typeof ch) {}
+
+  query<T>({
+    projectId,
+    profileId,
+    where,
+    select,
+    limit,
+    orderBy,
+  }: {
+    projectId: string;
+    profileId?: string;
+    where?: {
+      profile?: (query: Query<T>) => void;
+      event?: (query: Query<T>) => void;
+      session?: (query: Query<T>) => void;
+    };
+    select: {
+      profile?: Partial<SelectHelper<IServiceProfile>>;
+      event: Partial<SelectHelper<IServiceEvent>>;
+    };
+    limit?: number;
+    orderBy?: keyof IClickhouseEvent;
+  }) {
+    const events = clix(this.client)
+      .select<
+        Partial<IClickhouseEvent> & {
+          // profile
+          profileId: string;
+          profile_firstName: string;
+          profile_lastName: string;
+          profile_avatar: string;
+          profile_isExternal: boolean;
+          profile_createdAt: string;
+        }
+      >([
+        select.event.id && 'e.id as id',
+        select.event.deviceId && 'e.device_id as device_id',
+        select.event.name && 'e.name as name',
+        select.event.path && 'e.path as path',
+        select.event.duration && 'e.duration as duration',
+        select.event.country && 'e.country as country',
+        select.event.city && 'e.city as city',
+        select.event.os && 'e.os as os',
+        select.event.browser && 'e.browser as browser',
+        select.event.createdAt && 'e.created_at as created_at',
+        select.event.projectId && 'e.project_id as project_id',
+        'e.session_id as session_id',
+        'e.profile_id as profile_id',
+      ])
+      .from('events e')
+      .where('project_id', '=', projectId)
+      .when(!!where?.event, where?.event)
+      // Do not limit if profileId, we will limit later since we need the "correct" profileId
+      .when(!!limit && !profileId, (q) => q.limit(limit!))
+      .orderBy('toDate(created_at)', 'DESC')
+      .orderBy('created_at', 'DESC');
+
+    const sessions = clix(this.client)
+      .select(['id as session_id', 'profile_id'])
+      .from('sessions')
+      .where('sign', '=', 1)
+      .where('project_id', '=', projectId)
+      .when(!!where?.session, where?.session)
+      .when(!!profileId, (q) => q.where('profile_id', '=', profileId));
+
+    const profiles = clix(this.client)
+      .select([
+        'id',
+        'any(created_at) as created_at',
+        `any(nullIf(first_name, '')) as first_name`,
+        `any(nullIf(last_name, '')) as last_name`,
+        `any(nullIf(email, '')) as email`,
+        `any(nullIf(avatar, '')) as avatar`,
+        'last_value(is_external) as is_external',
+      ])
+      .from('profiles')
+      .where('project_id', '=', projectId)
+      .where(
+        'id',
+        'IN',
+        clix.exp(
+          clix(this.client)
+            .select(['profile_id'])
+            .from(
+              clix.exp(
+                clix(this.client)
+                  .select(['profile_id'])
+                  .from('cte_sessions')
+                  .union(
+                    clix(this.client).select(['profile_id']).from('cte_events'),
+                  ),
+              ),
+            )
+            .groupBy(['profile_id']),
+        ),
+      )
+      .groupBy(['id', 'project_id'])
+      .when(!!where?.profile, where?.profile);
+
+    return clix(this.client)
+      .with('cte_events', events)
+      .with('cte_sessions', sessions)
+      .with('cte_profiles', profiles)
+      .select<
+        Partial<IClickhouseEvent> & {
+          // profile
+          profileId: string;
+          profile_firstName: string;
+          profile_lastName: string;
+          profile_avatar: string;
+          profile_isExternal: boolean;
+          profile_createdAt: string;
+        }
+      >([
+        select.event.id && 'e.id as id',
+        select.event.deviceId && 'e.device_id as device_id',
+        select.event.name && 'e.name as name',
+        select.event.path && 'e.path as path',
+        select.event.duration && 'e.duration as duration',
+        select.event.country && 'e.country as country',
+        select.event.city && 'e.city as city',
+        select.event.os && 'e.os as os',
+        select.event.browser && 'e.browser as browser',
+        select.event.createdAt && 'e.created_at as created_at',
+        select.event.projectId && 'e.project_id as project_id',
+        select.event.sessionId && 'e.session_id as session_id',
+        select.event.profileId && 'e.profile_id as event_profile_id',
+        // Profile
+        select.profile?.id && 'p.id as profile_id',
+        select.profile?.firstName && 'p.first_name as profile_first_name',
+        select.profile?.lastName && 'p.last_name as profile_last_name',
+        select.profile?.avatar && 'p.avatar as profile_avatar',
+        select.profile?.isExternal && 'p.is_external as profile_is_external',
+        select.profile?.createdAt && 'p.created_at as profile_created_at',
+        select.profile?.email && 'p.email as profile_email',
+        select.profile?.properties && 'p.properties as profile_properties',
+      ])
+      .from('cte_events e')
+      .leftJoin('cte_sessions s', 'e.session_id = s.session_id')
+      .leftJoin(
+        'cte_profiles p',
+        's.profile_id = p.id AND p.is_external = true',
+      )
+      .when(!!profileId, (q) => {
+        q.where('s.profile_id', '=', profileId);
+        q.limit(limit!);
+      });
+  }
+
+  transformFromQuery(res: any[]) {
+    return res
+      .map((item) => {
+        return Object.entries(item).reduce(
+          (acc, [prop, val]) => {
+            if (prop === 'event_profile_id' && val) {
+              if (!item.profile_id) {
+                return assocPath(['profile', 'id'], val, acc);
+              }
+            }
+
+            if (
+              prop.startsWith('profile_') &&
+              !path(['profile', prop.replace('profile_', '')], acc)
+            ) {
+              return assocPath(
+                ['profile', prop.replace('profile_', '')],
+                val,
+                acc,
+              );
+            }
+            return assocPath([prop], val, acc);
+          },
+          {
+            profile: {},
+          } as IClickhouseEvent,
+        );
+      })
+      .map(transformEvent);
+  }
+
+  async getById({
+    projectId,
+    id,
+    createdAt,
+  }: {
+    projectId: string;
+    id: string;
+    createdAt?: Date;
+  }) {
+    return clix(this.client)
+      .select<IClickhouseEvent>(['*'])
+      .from('events')
+      .where('project_id', '=', projectId)
+      .when(!!createdAt, (q) => {
+        if (createdAt) {
+          q.where('created_at', 'BETWEEN', [
+            new Date(createdAt.getTime() - 1000),
+            new Date(createdAt.getTime() + 1000),
+          ]);
+        }
+      })
+      .where('id', '=', id)
+      .limit(1)
+      .execute()
+      .then((res) => {
+        if (!res[0]) {
+          return null;
+        }
+
+        return transformEvent(res[0]);
+      });
+  }
+
+  async getList({
+    projectId,
+    profileId,
+    cursor,
+    filters,
+    limit = 50,
+    startDate,
+    endDate,
+  }: IEventServiceGetList & {
+    limit?: number;
+    startDate?: Date;
+    endDate?: Date;
+  }) {
+    const date = cursor || new Date();
+    const query = this.query({
+      projectId,
+      profileId,
+      limit,
+      orderBy: 'created_at',
+      select: {
+        event: {
+          deviceId: true,
+          profileId: true,
+          id: true,
+          name: true,
+          createdAt: true,
+          duration: true,
+          country: true,
+          city: true,
+          os: true,
+          browser: true,
+          path: true,
+          sessionId: true,
+        },
+        profile: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          avatar: true,
+          isExternal: true,
+        },
+      },
+      where: {
+        event: (q) => {
+          if (startDate && endDate) {
+            q.where('created_at', 'BETWEEN', [
+              startDate ?? new Date(date.getTime() - 1000 * 60 * 60 * 24 * 3.5),
+              cursor ?? endDate,
+            ]);
+          } else {
+            q.where('created_at', '<', date);
+          }
+          if (filters) {
+            q.rawWhere(
+              Object.values(getEventFiltersWhereClause(filters)).join(' AND '),
+            );
+          }
+        },
+        session: (q) => {
+          if (startDate && endDate) {
+            q.where('created_at', 'BETWEEN', [
+              startDate ?? new Date(date.getTime() - 1000 * 60 * 60 * 24 * 3.5),
+              endDate ?? date,
+            ]);
+          } else {
+            q.where('created_at', '<', date);
+          }
+        },
+      },
+    })
+      .orderBy('toDate(created_at)', 'DESC')
+      .orderBy('created_at', 'DESC');
+
+    const results = await query.execute();
+
+    // Current page items (middle chunk)
+    const items = results.slice(0, limit);
+
+    // Check if there's a next page
+    const hasNext = results.length >= limit;
+
+    return {
+      items: this.transformFromQuery(items).map((item) => ({
+        ...item,
+        projectId: projectId,
+      })),
+      meta: {
+        next: hasNext ? last(items)?.created_at : null,
+      },
+    };
+  }
+}
+
+export const eventService = new EventService(ch);

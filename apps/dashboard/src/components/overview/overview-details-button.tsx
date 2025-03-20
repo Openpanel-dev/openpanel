@@ -1,25 +1,12 @@
-import { pushModal } from '@/modals';
 import { ScanEyeIcon } from 'lucide-react';
 
-import type { IChartProps } from '@openpanel/validation';
+import { Button, type ButtonProps } from '../ui/button';
 
-import { Button } from '../ui/button';
+type Props = Omit<ButtonProps, 'children'>;
 
-type Props = {
-  chart: IChartProps;
-};
-
-const OverviewDetailsButton = ({ chart }: Props) => {
+const OverviewDetailsButton = (props: Props) => {
   return (
-    <Button
-      size="icon"
-      variant="ghost"
-      onClick={() => {
-        pushModal('OverviewChartDetails', {
-          chart: chart,
-        });
-      }}
-    >
+    <Button size="icon" variant="ghost" {...props}>
       <ScanEyeIcon size={18} />
     </Button>
   );

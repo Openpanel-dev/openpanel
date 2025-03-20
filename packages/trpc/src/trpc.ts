@@ -140,3 +140,39 @@ export const protectedProcedure = t.procedure
   .use(enforceUserIsAuthed)
   .use(enforceAccess)
   .use(loggerMiddleware);
+
+const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
+  __brand: 'middlewareMarker';
+};
+
+export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
+  t.middleware(async ({ ctx, next, path, type, rawInput, input }) => {
+    if (type !== 'query') {
+      return next();
+    }
+    let key = `trpc:${path}:`;
+    if (rawInput) {
+      key += JSON.stringify(rawInput).replace(/\"/g, "'");
+    }
+    const cache = await getRedisCache().getJson(key);
+    if (cache) {
+      return {
+        ok: true,
+        data: cache,
+        ctx,
+        marker: middlewareMarker,
+      };
+    }
+    const result = await next();
+
+    // @ts-expect-error
+    if (result.data) {
+      getRedisCache().setJson(
+        key,
+        typeof cbOrTtl === 'function' ? cbOrTtl(input) : cbOrTtl,
+        // @ts-expect-error
+        result.data,
+      );
+    }
+    return result;
+  });

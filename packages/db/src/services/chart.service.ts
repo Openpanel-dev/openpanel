@@ -17,31 +17,41 @@ import {
 import { createSqlBuilder } from '../sql-builder';
 
 export function transformPropertyKey(property: string) {
-  if (property.startsWith('properties.')) {
-    if (property.includes('*')) {
-      return property
-        .replace(/^properties\./, '')
-        .replace('.*.', '.%.')
-        .replace(/\[\*\]$/, '.%')
-        .replace(/\[\*\].?/, '.%.');
-    }
-    return `properties['${property.replace(/^properties\./, '')}']`;
+  const propertyPatterns = ['properties', 'profile.properties'];
+  const match = propertyPatterns.find((pattern) =>
+    property.startsWith(`${pattern}.`),
+  );
+
+  if (!match) {
+    return property;
   }
 
-  return property;
+  if (property.includes('*')) {
+    return property
+      .replace(/^properties\./, '')
+      .replace('.*.', '.%.')
+      .replace(/\[\*\]$/, '.%')
+      .replace(/\[\*\].?/, '.%.');
+  }
+
+  return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
 export function getSelectPropertyKey(property: string) {
-  if (property.startsWith('properties.')) {
-    if (property.includes('*')) {
-      return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(properties, ${escape(
-        transformPropertyKey(property),
-      )})))`;
-    }
-    return `properties['${property.replace(/^properties\./, '')}']`;
+  const propertyPatterns = ['properties', 'profile.properties'];
+
+  const match = propertyPatterns.find((pattern) =>
+    property.startsWith(`${pattern}.`),
+  );
+  if (!match) return property;
+
+  if (property.includes('*')) {
+    return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${match}, ${escape(
+      transformPropertyKey(property),
+    )})))`;
   }
 
-  return property;
+  return `${match}['${property.replace(new RegExp(`^${match}.`), '')}']`;
 }
 
 export function getChartSql({
@@ -54,8 +64,16 @@ export function getChartSql({
   chartType,
   limit,
 }: IGetChartDataInput) {
-  const { sb, join, getWhere, getFrom, getSelect, getOrderBy, getGroupBy } =
-    createSqlBuilder();
+  const {
+    sb,
+    join,
+    getWhere,
+    getFrom,
+    getJoins,
+    getSelect,
+    getOrderBy,
+    getGroupBy,
+  } = createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
   sb.where.projectId = `project_id = ${escape(projectId)}`;
@@ -66,6 +84,14 @@ export function getChartSql({
   } else {
     sb.select.label_0 = `'*' as label_0`;
   }
+
+  // const anyFilterOnProfile = event.filters.some((filter) =>
+  //   filter.name.startsWith('profile.properties.'),
+  // );
+
+  // if (anyFilterOnProfile) {
+  //   sb.joins.profiles = 'JOIN profiles profile ON e.profile_id = profile.id';
+  // }
 
   sb.select.count = 'count(*) as count';
   switch (interval) {
@@ -149,10 +175,18 @@ export function getChartSql({
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
 
-    return `${getSelect()} ${getFrom()} ${getGroupBy()} ${getOrderBy()}`;
+    console.log(
+      `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
+    );
+
+    return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
   }
 
-  return `${getSelect()} ${getFrom()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
+  console.log(
+    `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
+  );
+
+  return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
 }
 
 export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
@@ -161,7 +195,13 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
     const id = `f${index}`;
     const { name, value, operator } = filter;
 
-    if (value.length === 0) return;
+    if (
+      value.length === 0 &&
+      operator !== 'isNull' &&
+      operator !== 'isNotNull'
+    ) {
+      return;
+    }
 
     if (name === 'has_profile') {
       if (value.includes('true')) {
@@ -172,7 +212,10 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
       return;
     }
 
-    if (name.startsWith('properties.')) {
+    if (
+      name.startsWith('properties.') ||
+      name.startsWith('profile.properties.')
+    ) {
       const propertyKey = getSelectPropertyKey(name);
       const isWildcard = propertyKey.includes('%');
       const whereFrom = getSelectPropertyKey(name);
@@ -284,6 +327,23 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           }
           break;
         }
+        case 'isNull': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> x = '' OR x IS NULL, ${whereFrom})`;
+          } else {
+            where[id] = `(${whereFrom} = '' OR ${whereFrom} IS NULL)`;
+          }
+          break;
+        }
+        case 'isNotNull': {
+          if (isWildcard) {
+            where[id] =
+              `arrayExists(x -> x != '' AND x IS NOT NULL, ${whereFrom})`;
+          } else {
+            where[id] = `(${whereFrom} != '' AND ${whereFrom} IS NOT NULL)`;
+          }
+          break;
+        }
       }
     } else {
       switch (operator) {
@@ -295,6 +355,14 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               .map((val) => escape(String(val).trim()))
               .join(', ')})`;
           }
+          break;
+        }
+        case 'isNull': {
+          where[id] = `(${name} = '' OR ${name} IS NULL)`;
+          break;
+        }
+        case 'isNotNull': {
+          where[id] = `(${name} != '' AND ${name} IS NOT NULL)`;
           break;
         }
         case 'isNot': {

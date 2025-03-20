@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader } from 'lucide-react';
+import { Loader2Icon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { createPushModal } from 'pushmodal';
 
@@ -9,11 +9,23 @@ import { ModalContent } from './Modal/Container';
 
 const Loading = () => (
   <ModalContent className="flex items-center justify-center p-16">
-    <Loader className="animate-spin" size={40} />
+    <Loader2Icon className="animate-spin" size={40} />
   </ModalContent>
 );
 
 const modals = {
+  OverviewTopPagesModal: dynamic(
+    () => import('../components/overview/overview-top-pages-modal'),
+    {
+      loading: Loading,
+    },
+  ),
+  OverviewTopGenericModal: dynamic(
+    () => import('../components/overview/overview-top-generic-modal'),
+    {
+      loading: Loading,
+    },
+  ),
   RequestPasswordReset: dynamic(() => import('./request-reset-password'), {
     loading: Loading,
   }),

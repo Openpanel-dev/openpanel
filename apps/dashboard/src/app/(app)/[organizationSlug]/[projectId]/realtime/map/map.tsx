@@ -49,23 +49,12 @@ const Map = ({ markers }: Props) => {
   const boundingBox = getBoundingBox(hull);
   const [zoom] = useAnimatedState(
     markers.length === 1
-      ? 20
+      ? 1
       : determineZoom(boundingBox, size ? size?.height / size?.width : 1),
   );
 
   const [long] = useAnimatedState(center.long);
   const [lat] = useAnimatedState(center.lat);
-
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      if (ref.current) {
-        setSize({
-          width: ref.current.clientWidth,
-          height: ref.current.clientHeight,
-        });
-      }
-    });
-  }, [isFullscreen]);
 
   useEffect(() => {
     return bind(window, {
@@ -95,20 +84,12 @@ const Map = ({ markers }: Props) => {
   const theme = useTheme();
 
   return (
-    <div
-      className={cn(
-        'fixed bottom-0 left-0 right-0 top-0',
-        !isFullscreen && 'lg:left-72',
-      )}
-      ref={ref}
-    >
+    <div className={cn('absolute bottom-0 left-0 right-0 top-0')} ref={ref}>
       {size === null ? (
         <></>
       ) : (
         <>
           <ComposableMap
-            width={size?.width}
-            height={size?.height}
             projection="geoMercator"
             projectionConfig={{
               rotate: [0, 0, 0],

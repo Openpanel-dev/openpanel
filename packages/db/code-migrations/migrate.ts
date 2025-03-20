@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { ch, db } from '../index';
-import { printBoxMessage } from './helpers';
+import { db } from '../index';
+import { getIsDry, getIsSelfHosting, printBoxMessage } from './helpers';
 
 async function migrate() {
   const args = process.argv.slice(2);
@@ -15,11 +15,38 @@ async function migrate() {
     );
   });
 
+  const finishedMigrations = await db.codeMigration.findMany();
+
+  printBoxMessage('📋 Plan', [
+    '\t✅ Finished:',
+    ...finishedMigrations.map(
+      (migration) => `\t- ${migration.name} (${migration.createdAt})`,
+    ),
+    '',
+    '\t🔄 Will run now:',
+    ...migrations
+      .filter(
+        (migration) =>
+          !finishedMigrations.some(
+            (finishedMigration) => finishedMigration.name === migration,
+          ),
+      )
+      .map((migration) => `\t- ${migration}`),
+  ]);
+
+  printBoxMessage('🌍 Environment', [
+    `POSTGRES:   ${process.env.DATABASE_URL}`,
+    `CLICKHOUSE: ${process.env.CLICKHOUSE_URL}`,
+  ]);
+
+  if (!getIsSelfHosting()) {
+    printBoxMessage('🕒 Migrations starts in 10 seconds', []);
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+  }
+
   if (migration) {
     await runMigration(migrationsDir, migration);
   } else {
-    const finishedMigrations = await db.codeMigration.findMany();
-
     for (const file of migrations) {
       if (finishedMigrations.some((migration) => migration.name === file)) {
         printBoxMessage('✅  Already Migrated  ✅', [`${file}`]);
@@ -39,17 +66,19 @@ async function runMigration(migrationsDir: string, file: string) {
   try {
     const migration = await import(path.join(migrationsDir, file));
     await migration.up();
-    await db.codeMigration.upsert({
-      where: {
-        name: file,
-      },
-      update: {
-        name: file,
-      },
-      create: {
-        name: file,
-      },
-    });
+    if (!getIsDry()) {
+      await db.codeMigration.upsert({
+        where: {
+          name: file,
+        },
+        update: {
+          name: file,
+        },
+        create: {
+          name: file,
+        },
+      });
+    }
   } catch (error) {
     printBoxMessage('❌  Migration Failed  ❌', [
       `Error running migration ${file}:`,

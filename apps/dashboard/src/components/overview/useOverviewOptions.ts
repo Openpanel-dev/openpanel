@@ -78,6 +78,7 @@ export function useOverviewOptions() {
         setStartDate(null);
         setEndDate(null);
         setStorageItem('range', value);
+        setInterval(null);
       }
       setRange(value);
     },

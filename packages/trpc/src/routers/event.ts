@@ -3,16 +3,21 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import {
+  type IServiceProfile,
   TABLE_NAMES,
   chQuery,
   convertClickhouseDateToJs,
   db,
+  eventService,
+  formatClickhouseDate,
   getEventList,
   getEvents,
   getTopPages,
 } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
 
+import { addMinutes, subMinutes } from 'date-fns';
+import { clone } from 'ramda';
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
@@ -48,51 +53,83 @@ export const eventRouter = createTRPCRouter({
       z.object({
         id: z.string(),
         projectId: z.string(),
+        createdAt: z.date().optional(),
       }),
     )
-    .query(async ({ input: { id, projectId } }) => {
-      const res = await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE id = ${escape(id)} AND project_id = ${escape(projectId)};`,
-        {
-          meta: true,
-        },
-      );
+    .query(async ({ input: { id, projectId, createdAt } }) => {
+      const res = await eventService.getById({
+        projectId,
+        id,
+        createdAt,
+      });
 
-      if (!res?.[0]) {
+      if (!res) {
         throw new TRPCError({
           code: 'NOT_FOUND',
           message: 'Event not found',
         });
       }
 
-      return res[0];
+      return res;
     }),
 
   events: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
-        cursor: z.number().optional(),
         profileId: z.string().optional(),
-        take: z.number().default(50),
-        events: z.array(z.string()).optional(),
+        cursor: z.string().optional(),
         filters: z.array(zChartEventFilter).default([]),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
-        meta: z.boolean().optional(),
-        profile: z.boolean().optional(),
       }),
     )
     .query(async ({ input }) => {
-      return getEventList(input);
+      const items = await getEventList({
+        ...input,
+        take: 50,
+        cursor: input.cursor ? new Date(input.cursor) : undefined,
+      });
+
+      // Hacky join to get profile for entire session
+      // TODO: Replace this with a join on the session table
+      const map = new Map<string, IServiceProfile>(); // sessionId -> profileId
+      for (const item of items) {
+        if (item.sessionId && item.profile?.isExternal === true) {
+          map.set(item.sessionId, item.profile);
+        }
+      }
+
+      for (const item of items) {
+        const profile = map.get(item.sessionId);
+        if (profile && (item.profile?.isExternal === false || !item.profile)) {
+          item.profile = clone(profile);
+          if (item?.profile?.firstName) {
+            item.profile.firstName = `* ${item.profile.firstName}`;
+          }
+        }
+      }
+
+      const lastItem = items[items.length - 1];
+
+      return {
+        items,
+        meta: {
+          next:
+            items.length === 50 && lastItem
+              ? lastItem.createdAt.toISOString()
+              : null,
+        },
+      };
     }),
   conversions: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
+        cursor: z.string().optional(),
       }),
     )
-    .query(async ({ input: { projectId } }) => {
+    .query(async ({ input: { projectId, cursor } }) => {
       const conversions = await db.eventMeta.findMany({
         where: {
           projectId,
@@ -101,16 +138,30 @@ export const eventRouter = createTRPCRouter({
       });
 
       if (conversions.length === 0) {
-        return [];
+        return {
+          items: [],
+          meta: {
+            next: null,
+          },
+        };
       }
 
-      return getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND name IN (${conversions.map((c) => escape(c.name)).join(', ')}) ORDER BY created_at DESC LIMIT 20;`,
+      const items = await getEvents(
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE ${cursor ? `created_at <= '${formatClickhouseDate(cursor)}' AND` : ''} project_id = ${escape(projectId)} AND name IN (${conversions.map((c) => escape(c.name)).join(', ')}) ORDER BY toDate(created_at) DESC, created_at DESC LIMIT 50;`,
         {
           profile: true,
           meta: true,
         },
       );
+
+      const lastItem = items[items.length - 1];
+
+      return {
+        items,
+        meta: {
+          next: lastItem ? lastItem.createdAt.toISOString() : null,
+        },
+      };
     }),
 
   bots: publicProcedure

@@ -80,7 +80,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
             if (filter.name === name) {
               return {
                 ...filter,
-                operator,
+                operator: newValue.length === 0 ? 'isNull' : operator,
                 value: newValue,
               };
             }
@@ -93,7 +93,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
           {
             id: name,
             name,
-            operator,
+            operator: newValue.length === 0 ? 'isNull' : operator,
             value: newValue,
           },
         ];
@@ -102,7 +102,14 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
     [setFilters],
   );
 
-  return [filters, setFilter, setFilters] as const;
+  const removeFilter = useCallback(
+    (name: string) => {
+      setFilters((prev) => prev.filter((filter) => filter.name !== name));
+    },
+    [setFilters],
+  );
+
+  return [filters, setFilter, setFilters, removeFilter] as const;
 }
 
 export const eventQueryNamesFilter = parseAsArrayOf(parseAsString).withDefault(

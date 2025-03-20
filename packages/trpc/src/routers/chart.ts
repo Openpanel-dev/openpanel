@@ -181,10 +181,7 @@ export const chartRouter = createTRPCRouter({
 
   funnel: protectedProcedure.input(zChartInput).query(async ({ input }) => {
     const currentPeriod = getChartStartEndDate(input);
-    const previousPeriod = getChartPrevStartEndDate({
-      range: input.range,
-      ...currentPeriod,
-    });
+    const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
       getFunnelData({ ...input, ...currentPeriod }),

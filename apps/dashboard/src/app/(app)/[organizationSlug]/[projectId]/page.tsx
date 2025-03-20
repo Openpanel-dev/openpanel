@@ -1,7 +1,6 @@
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import ServerLiveCounter from '@/components/overview/live-counter';
-import OverviewMetrics from '@/components/overview/overview-metrics';
 import OverviewShareServer from '@/components/overview/overview-share';
 import OverviewTopDevices from '@/components/overview/overview-top-devices';
 import OverviewTopEvents from '@/components/overview/overview-top-events';
@@ -10,6 +9,7 @@ import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 
 import { OverviewInterval } from '@/components/overview/overview-interval';
+import OverviewMetricsV2 from '@/components/overview/overview-metrics-v2';
 import { OverviewRange } from '@/components/overview/overview-range';
 
 interface PageProps {
@@ -36,7 +36,8 @@ export default function Page({ params: { projectId } }: PageProps) {
         <OverviewFiltersButtons />
       </div>
       <div className="grid grid-cols-6 gap-4 p-4 pt-0">
-        <OverviewMetrics projectId={projectId} />
+        {/* <OverviewMetrics projectId={projectId} /> */}
+        <OverviewMetricsV2 projectId={projectId} />
         <OverviewTopSources projectId={projectId} />
         <OverviewTopPages projectId={projectId} />
         <OverviewTopDevices projectId={projectId} />

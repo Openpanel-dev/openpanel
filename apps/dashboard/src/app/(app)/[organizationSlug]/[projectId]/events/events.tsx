@@ -5,13 +5,13 @@ import EventListener from '@/components/events/event-listener';
 import { EventsTable } from '@/components/events/table';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
-import {
-  useEventQueryFilters,
-  useEventQueryNamesFilter,
-} from '@/hooks/useEventQueryFilters';
+import { Button } from '@/components/ui/button';
+import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { pushModal } from '@/modals';
 import { api } from '@/trpc/client';
-import { Loader2Icon } from 'lucide-react';
-import { parseAsInteger, useQueryState } from 'nuqs';
+import { format } from 'date-fns';
+import { CalendarIcon, Loader2Icon } from 'lucide-react';
+import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 
 type Props = {
   projectId: string;
@@ -20,21 +20,22 @@ type Props = {
 
 const Events = ({ projectId, profileId }: Props) => {
   const [filters] = useEventQueryFilters();
-  const [eventNames] = useEventQueryNamesFilter();
-  const [cursor, setCursor] = useQueryState(
-    'cursor',
-    parseAsInteger.withDefault(0),
+  const [startDate, setStartDate] = useQueryState(
+    'startDate',
+    parseAsIsoDateTime,
   );
-  const query = api.event.events.useQuery(
+
+  const [endDate, setEndDate] = useQueryState('endDate', parseAsIsoDateTime);
+  const query = api.event.events.useInfiniteQuery(
     {
-      cursor,
       projectId,
-      take: 50,
-      events: eventNames,
       filters,
       profileId,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
     },
     {
+      getNextPageParam: (lastPage) => lastPage.meta.next,
       keepPreviousData: true,
     },
   );
@@ -43,6 +44,25 @@ const Events = ({ projectId, profileId }: Props) => {
     <div>
       <TableButtons>
         <EventListener onRefresh={() => query.refetch()} />
+        <Button
+          variant="outline"
+          size="sm"
+          icon={CalendarIcon}
+          onClick={() => {
+            pushModal('DateRangerPicker', {
+              onChange: ({ startDate, endDate }) => {
+                setStartDate(startDate);
+                setEndDate(endDate);
+              },
+              startDate: startDate || undefined,
+              endDate: endDate || undefined,
+            });
+          }}
+        >
+          {startDate && endDate
+            ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`
+            : 'Date range'}
+        </Button>
         <OverviewFiltersDrawer
           mode="events"
           projectId={projectId}
@@ -58,7 +78,7 @@ const Events = ({ projectId, profileId }: Props) => {
           </div>
         )}
       </TableButtons>
-      <EventsTable query={query} cursor={cursor} setCursor={setCursor} />
+      <EventsTable query={query} />
     </div>
   );
 };

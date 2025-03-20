@@ -2,178 +2,80 @@
 
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
-import { ExternalLinkIcon, FilterIcon, Globe2Icon } from 'lucide-react';
+import { Globe2Icon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useState } from 'react';
 
-import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
-import { ReportChart } from '../report-chart';
+import { pushModal } from '@/modals';
+import { api } from '@/trpc/client';
 import { Button } from '../ui/button';
-import { Tooltiper } from '../ui/tooltip';
 import { Widget, WidgetBody } from '../widget';
-import { OverviewChartToggle } from './overview-chart-toggle';
 import OverviewDetailsButton from './overview-details-button';
-import OverviewTopBots from './overview-top-bots';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
+import {
+  OverviewWidgetTableBots,
+  OverviewWidgetTableLoading,
+  OverviewWidgetTablePages,
+} from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
-import { useOverviewWidget } from './useOverviewWidget';
+import { useOverviewWidgetV2 } from './useOverviewWidget';
 
 interface OverviewTopPagesProps {
   projectId: string;
 }
+
 export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
-  const [chartType, setChartType] = useState<IChartType>('bar');
-  const [filters, setFilter] = useEventQueryFilters();
+  const [filters] = useEventQueryFilters();
   const [domain, setDomain] = useQueryState('d', parseAsBoolean);
-  const renderSerieName = (names: string[]) => {
-    if (domain) {
-      if (names[0] === NOT_SET_VALUE) {
-        return names[1];
-      }
-
-      return names.join('');
-    }
-    return (
-      <Tooltiper content={names.join('')} side="left" className="text-left">
-        {names[1] || NOT_SET_VALUE}
-      </Tooltiper>
-    );
-  };
-  const [widget, setWidget, widgets] = useOverviewWidget('pages', {
-    top: {
+  const [widget, setWidget, widgets] = useOverviewWidgetV2('pages', {
+    page: {
       title: 'Top pages',
       btn: 'Top pages',
-      chart: {
-        options: {
-          renderSerieName,
-          columns: ['URL', 'Views'],
-        },
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          events: [
-            {
-              segment: 'event',
-              filters,
-              id: 'A',
-              name: 'screen_view',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'origin',
-            },
-            {
-              id: 'B',
-              name: 'path',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval,
-          name: 'Top pages',
-          range,
-          previous,
-          metric: 'sum',
+      meta: {
+        columns: {
+          sessions: 'Sessions',
         },
       },
     },
-    entries: {
+    entry: {
       title: 'Entry Pages',
       btn: 'Entries',
-      chart: {
-        options: {
-          columns: ['URL', 'Sessions'],
-          renderSerieName,
-        },
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          events: [
-            {
-              segment: 'event',
-              filters,
-              id: 'A',
-              name: 'session_start',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'origin',
-            },
-            {
-              id: 'B',
-              name: 'path',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval,
-          name: 'Entry Pages',
-          range,
-          previous,
-          metric: 'sum',
+      meta: {
+        columns: {
+          sessions: 'Entries',
         },
       },
     },
-    exits: {
+    exit: {
       title: 'Exit Pages',
       btn: 'Exits',
-      chart: {
-        options: {
-          columns: ['URL', 'Sessions'],
-          renderSerieName,
-        },
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          events: [
-            {
-              segment: 'event',
-              filters,
-              id: 'A',
-              name: 'session_end',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'origin',
-            },
-            {
-              id: 'B',
-              name: 'path',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval,
-          name: 'Exit Pages',
-          range,
-          previous,
-          metric: 'sum',
+      meta: {
+        columns: {
+          sessions: 'Exits',
         },
       },
     },
-    bot: {
-      title: 'Bots',
-      btn: 'Bots',
-      // @ts-expect-error
-      chart: null,
-    },
+    // bot: {
+    //   title: 'Bots',
+    //   btn: 'Bots',
+    // },
   });
+
+  const query = api.overview.topPages.useQuery({
+    projectId,
+    filters,
+    startDate,
+    endDate,
+    mode: widget.key,
+    range,
+    interval,
+  });
+
+  const data = query.data;
 
   return (
     <>
@@ -194,53 +96,36 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          {widget.key === 'bot' ? (
-            <OverviewTopBots projectId={projectId} />
+          {query.isLoading ? (
+            <OverviewWidgetTableLoading className="-m-4" />
           ) : (
-            <ReportChart
-              options={{
-                hideID: true,
-                dropdownMenuContent: (serie) => [
-                  {
-                    title: 'Visit page',
-                    icon: ExternalLinkIcon,
-                    onClick: () => {
-                      window.open(serie.names.join(''), '_blank');
-                    },
-                  },
-                  {
-                    title: 'Set filter',
-                    icon: FilterIcon,
-                    onClick: () => {
-                      setFilter('path', serie.names[1]);
-                    },
-                  },
-                ],
-                ...widget.chart.options,
-              }}
-              report={{
-                ...widget.chart.report,
-                previous: false,
-              }}
-            />
+            <>
+              {/*<OverviewWidgetTableBots className="-m-4" data={data ?? []} />*/}
+              <OverviewWidgetTablePages
+                className="-m-4"
+                data={data ?? []}
+                lastColumnName={widget.meta.columns.sessions}
+                showDomain={!!domain}
+              />
+            </>
           )}
         </WidgetBody>
-        {widget.chart?.report?.name && (
-          <WidgetFooter>
-            <OverviewDetailsButton chart={widget.chart.report} />
-            <OverviewChartToggle {...{ chartType, setChartType }} />
-            <div className="flex-1" />
-            <Button
-              variant={'ghost'}
-              onClick={() => {
-                setDomain((p) => !p);
-              }}
-              icon={Globe2Icon}
-            >
-              {domain ? 'Hide domain' : 'Show domain'}
-            </Button>
-          </WidgetFooter>
-        )}
+        <WidgetFooter>
+          <OverviewDetailsButton
+            onClick={() => pushModal('OverviewTopPagesModal', { projectId })}
+          />
+          {/* <OverviewChartToggle {...{ chartType, setChartType }} /> */}
+          <div className="flex-1" />
+          <Button
+            variant={'ghost'}
+            onClick={() => {
+              setDomain((p) => !p);
+            }}
+            icon={Globe2Icon}
+          >
+            {domain ? 'Hide domain' : 'Show domain'}
+          </Button>
+        </WidgetFooter>
       </Widget>
     </>
   );

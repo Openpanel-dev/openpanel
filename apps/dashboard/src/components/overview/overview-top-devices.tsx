@@ -7,11 +7,18 @@ import { useState } from 'react';
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IChartType } from '@openpanel/validation';
 
-import { ReportChart } from '../report-chart';
+import { useNumber } from '@/hooks/useNumerFormatter';
+import { pushModal } from '@/modals';
+import { api } from '@/trpc/client';
+import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
-import { OverviewChartToggle } from './overview-chart-toggle';
+import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
+import {
+  OverviewWidgetTableGeneric,
+  OverviewWidgetTableLoading,
+} from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidget } from './useOverviewWidget';
 
@@ -27,7 +34,7 @@ export default function OverviewTopDevices({
   const [chartType, setChartType] = useState<IChartType>('bar');
   const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
-    devices: {
+    device: {
       title: 'Top devices',
       btn: 'Devices',
       chart: {
@@ -221,7 +228,7 @@ export default function OverviewTopDevices({
         },
       },
     },
-    brands: {
+    brand: {
       title: 'Top Brands',
       btn: 'Brands',
       chart: {
@@ -257,7 +264,7 @@ export default function OverviewTopDevices({
         },
       },
     },
-    models: {
+    model: {
       title: 'Top Models',
       btn: 'Models',
       chart: {
@@ -302,11 +309,24 @@ export default function OverviewTopDevices({
     },
   });
 
+  const number = useNumber();
+
+  const query = api.overview.topGeneric.useQuery({
+    projectId,
+    interval,
+    range,
+    filters,
+    column: widget.key,
+    startDate,
+    endDate,
+  });
+
   return (
     <>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
           <div className="title">{widget.title}</div>
+
           <WidgetButtons>
             {widgets.map((w) => (
               <button
@@ -321,39 +341,44 @@ export default function OverviewTopDevices({
           </WidgetButtons>
         </WidgetHead>
         <WidgetBody>
-          <ReportChart
-            options={{
-              ...widget.chart.options,
-              hideID: true,
-              onClick: (item) => {
-                switch (widget.key) {
-                  case 'devices':
-                    setFilter('device', item.names[0]);
-                    break;
-                  case 'browser':
-                    setFilter('browser', item.names[0]);
-                    break;
-                  case 'browser_version':
-                    setFilter('browser_version', item.names[1]);
-                    break;
-                  case 'os':
-                    setFilter('os', item.names[0]);
-                    break;
-                  case 'os_version':
-                    setFilter('os_version', item.names[1]);
-                    break;
-                }
-              },
-            }}
-            report={{
-              ...widget.chart.report,
-              previous: false,
-            }}
-          />
+          {query.isLoading ? (
+            <OverviewWidgetTableLoading className="-m-4" />
+          ) : (
+            <OverviewWidgetTableGeneric
+              className="-m-4"
+              data={query.data ?? []}
+              column={{
+                name: OVERVIEW_COLUMNS_NAME[widget.key],
+                render(item) {
+                  return (
+                    <div className="row items-center gap-2 min-w-0 relative">
+                      <SerieIcon name={item.name || NOT_SET_VALUE} />
+                      <button
+                        type="button"
+                        className="truncate"
+                        onClick={() => {
+                          setFilter(widget.key, item.name);
+                        }}
+                      >
+                        {item.name || 'Not set'}
+                      </button>
+                    </div>
+                  );
+                },
+              }}
+            />
+          )}
         </WidgetBody>
         <WidgetFooter>
-          <OverviewDetailsButton chart={widget.chart.report} />
-          <OverviewChartToggle {...{ chartType, setChartType }} />
+          <OverviewDetailsButton
+            onClick={() =>
+              pushModal('OverviewTopGenericModal', {
+                projectId,
+                column: widget.key,
+              })
+            }
+          />
+          {/* <OverviewChartToggle {...{ chartType, setChartType }} /> */}
         </WidgetFooter>
       </Widget>
     </>

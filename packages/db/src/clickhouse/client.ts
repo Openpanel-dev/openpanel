@@ -11,6 +11,7 @@ export { createClient };
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
+import { getTimezoneFromDateString } from '@openpanel/common';
 
 // All three LogParams types are exported by the client
 interface LogParams {
@@ -55,6 +56,7 @@ export const TABLE_NAMES = {
   event_names_mv: 'distinct_event_names_mv',
   event_property_values_mv: 'event_property_values_mv',
   cohort_events_mv: 'cohort_events_mv',
+  sessions: 'sessions',
 };
 
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
