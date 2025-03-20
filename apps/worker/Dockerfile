@@ -33,6 +33,7 @@ COPY packages/queue/package.json ./packages/queue/
 COPY packages/logger/package.json ./packages/logger/
 COPY packages/common/package.json ./packages/common/
 COPY packages/constants/package.json ./packages/constants/
+COPY packages/validation/package.json ./packages/validation/
 COPY packages/integrations/package.json packages/integrations/
 
 # BUILD
@@ -76,6 +77,7 @@ COPY --from=build /app/packages/redis ./packages/redis
 COPY --from=build /app/packages/logger ./packages/logger
 COPY --from=build /app/packages/queue ./packages/queue
 COPY --from=build /app/packages/common ./packages/common
+COPY --from=build /app/packages/validation ./packages/validation
 COPY --from=build /app/packages/integrations ./packages/integrations
 RUN pnpm db:codegen
 
