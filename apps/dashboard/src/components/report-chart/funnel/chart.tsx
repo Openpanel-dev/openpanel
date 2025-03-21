@@ -28,7 +28,10 @@ const findMostDropoffs = (
 };
 
 type Props = {
-  data: RouterOutputs['chart']['funnel'];
+  data: {
+    current: RouterOutputs['chart']['funnel']['current'][number];
+    previous: RouterOutputs['chart']['funnel']['current'][number] | null;
+  };
 };
 
 export function Chart({

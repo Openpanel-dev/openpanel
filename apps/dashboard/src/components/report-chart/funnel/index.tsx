@@ -22,6 +22,7 @@ export function ReportFunnelChart() {
       startDate,
       endDate,
       previous,
+      breakdowns,
     },
     isLazyLoading,
   } = useReportChartContext();
@@ -32,7 +33,7 @@ export function ReportFunnelChart() {
     projectId,
     interval: 'day',
     chartType: 'funnel',
-    breakdowns: [],
+    breakdowns,
     funnelWindow,
     funnelGroup,
     previous,
@@ -53,11 +54,28 @@ export function ReportFunnelChart() {
     return <Error />;
   }
 
-  if (res.data.current.steps.length === 0) {
+  if (res.data.current.length === 0) {
     return <Empty />;
   }
 
-  return <Chart data={res.data} />;
+  return (
+    <div className="col gap-4">
+      {res.data.current.map((item) => (
+        <div key={item.id}>
+          <div className="text-lg font-semibold">
+            {item.breakdowns.join(', ')}
+          </div>
+          <Chart
+            data={{
+              current: item,
+              previous: null,
+            }}
+            key={item.id}
+          />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function Loading() {
