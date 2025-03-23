@@ -1,3 +1,4 @@
+import { ifNaN } from '@openpanel/common';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 import { last, reverse } from 'ramda';
 import { escape } from 'sqlstring';
@@ -222,9 +223,10 @@ export class FunnelService {
             }[],
           )
           .map((step, index, list) => {
-            const next = list[index + 1];
             return {
               ...step,
+              percent: ifNaN(step.percent, 0),
+              dropoffPercent: ifNaN(step.dropoffPercent, 0),
               isHighestDropoff: (() => {
                 // Skip if current step has no dropoff
                 if (!step?.dropoffCount) return false;

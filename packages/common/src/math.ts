@@ -27,3 +27,8 @@ export const max = (arr: (number | null | undefined)[]): number =>
   Math.max(...arr.filter(isNumber));
 
 export const isFloat = (n: number) => n % 1 !== 0;
+
+export const ifNaN = <T extends number>(
+  n: number | null | undefined,
+  defaultValue: T,
+): T => (Number.isNaN(n) ? defaultValue : (n as T));
