@@ -144,13 +144,19 @@ export function OverviewWidgetTablePages({
                       setFilter('origin', item.origin);
                     }}
                   >
-                    {showDomain ? (
+                    {item.path ? (
                       <>
-                        <span className="opacity-40">{item.origin}</span>
-                        <span>{item.path}</span>
+                        {showDomain ? (
+                          <>
+                            <span className="opacity-40">{item.origin}</span>
+                            <span>{item.path}</span>
+                          </>
+                        ) : (
+                          item.path
+                        )}
                       </>
                     ) : (
-                      item.path
+                      <span className="opacity-40">Not set</span>
                     )}
                   </button>
                   <a

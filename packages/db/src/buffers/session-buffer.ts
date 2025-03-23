@@ -46,12 +46,18 @@ export class SessionBuffer extends BaseBuffer {
 
       newSession.ended_at = event.created_at;
       newSession.version = existingSession.version + 1;
-      if (!newSession.entry_path) {
+      if (!newSession.entry_path && event.path) {
         newSession.entry_path = event.path;
+      }
+      if (!newSession.entry_origin && event.origin) {
         newSession.entry_origin = event.origin;
       }
-      newSession.exit_path = event.path;
-      newSession.exit_origin = event.origin;
+      if (event.path) {
+        newSession.exit_path = event.path;
+      }
+      if (event.origin) {
+        newSession.exit_origin = event.origin;
+      }
       newSession.duration =
         new Date(newSession.ended_at).getTime() -
         new Date(newSession.created_at).getTime();
