@@ -59,7 +59,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
         | undefined
         | null
         | (string | number | boolean | undefined | null)[],
-      operator: IChartEventFilterOperator = 'is',
+      operator: IChartEventFilterOperator,
     ) => {
       setFilters((prev) => {
         const exists = prev.find((filter) => filter.name === name);
@@ -80,7 +80,10 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
             if (filter.name === name) {
               return {
                 ...filter,
-                operator: newValue.length === 0 ? 'isNull' : operator,
+                operator:
+                  !operator && newValue.length === 0
+                    ? 'isNull'
+                    : (operator ?? 'is'),
                 value: newValue,
               };
             }
@@ -93,7 +96,10 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
           {
             id: name,
             name,
-            operator: newValue.length === 0 ? 'isNull' : operator,
+            operator:
+              !operator && newValue.length === 0
+                ? 'isNull'
+                : (operator ?? 'is'),
             value: newValue,
           },
         ];

@@ -9,6 +9,7 @@ import { useNumber } from '@/hooks/useNumerFormatter';
 import { type RouterOutputs, api } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
+import type { IInterval } from '@openpanel/validation';
 import React from 'react';
 import {
   CartesianGrid,
@@ -89,7 +90,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       timestamp: new Date(item.date).getTime(),
     })) || [];
 
-  const xAxisProps = useXAxisProps({ interval: 'day' });
+  const xAxisProps = useXAxisProps({ interval });
   const yAxisProps = useYAxisProps();
 
   return (
@@ -131,7 +132,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           </div>
           <div className="w-full h-[150px]">
             {overviewQuery.isLoading && <Skeleton className="h-full w-full" />}
-            <TooltipProvider metric={activeMetric}>
+            <TooltipProvider metric={activeMetric} interval={interval}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
                   <Tooltip />
@@ -215,9 +216,10 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
   RouterOutputs['overview']['stats']['series'][number],
   {
     metric: (typeof TITLES)[number];
+    interval: IInterval;
   }
->(({ context: { metric }, data }) => {
-  const formatDate = useFormatDateInterval('day');
+>(({ context: { metric, interval }, data }) => {
+  const formatDate = useFormatDateInterval(interval);
   const number = useNumber();
 
   return (

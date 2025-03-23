@@ -6,7 +6,7 @@ import {
   useQueryState,
 } from 'nuqs';
 
-import { getStorageItem, setStorageItem } from '@/utils/storage';
+import { setStorageItem } from '@/utils/storage';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
@@ -15,7 +15,6 @@ import {
 } from '@openpanel/constants';
 import type { IChartRange } from '@openpanel/validation';
 import { mapKeys } from '@openpanel/validation';
-import { useEffect } from 'react';
 
 const nuqsOptions = { history: 'push' } as const;
 
@@ -44,13 +43,6 @@ export function useOverviewOptions() {
       clearOnDefault: false,
     }),
   );
-
-  useEffect(() => {
-    const range = getStorageItem('range', '7d');
-    if (range !== '7d') {
-      setRange(range);
-    }
-  }, []);
 
   const interval =
     overrideInterval ||

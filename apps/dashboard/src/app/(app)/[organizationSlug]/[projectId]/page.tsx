@@ -8,6 +8,7 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 
+import { OverviewHydrateOptions } from '@/components/overview/overview-hydrate-options';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import OverviewMetrics from '@/components/overview/overview-metrics';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -21,6 +22,7 @@ interface PageProps {
 export default function Page({ params: { projectId } }: PageProps) {
   return (
     <>
+      <OverviewHydrateOptions />
       <div className="col gap-2 p-4">
         <div className="flex justify-between gap-2">
           <div className="flex gap-2">
