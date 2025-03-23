@@ -290,32 +290,6 @@ export const chartRouter = createTRPCRouter({
         return `name IN (${event.map((e) => escape(e)).join(',')})`;
       };
 
-      // const dropoffsSelect = range(1, diffInterval + 1)
-      //   .map(
-      //     (index) =>
-      //       `arrayFilter(x -> NOT has(interval_${index}_users, x), interval_${index - 1}_users) AS interval_${index}_dropoffs`,
-      //   )
-      //   .join(',\n');
-
-      // const dropoffCountsSelect = range(1, diffInterval + 1)
-      //   .map(
-      //     (index) =>
-      //       `length(interval_${index}_dropoffs) AS interval_${index}_dropoff_count`,
-      //   )
-      //   .join(',\n');
-
-      // SELECT
-      //     project_id,
-      //     profile_id AS userID,
-      //     name,
-      //     toDate(created_at) AS cohort_interval
-      // FROM events_v2
-      // WHERE profile_id != device_id
-      //   AND ${whereEventNameIs(firstEvent)}
-      //       AND project_id = ${escape(projectId)}
-      //       AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}')
-      // GROUP BY project_id, name, cohort_interval, userID
-
       const cohortQuery = `
         WITH 
         cohort_users AS (
@@ -328,15 +302,27 @@ export const chartRouter = createTRPCRouter({
             AND project_id = ${escape(projectId)}
             AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}')
         ),
-        retention_matrix AS (
+        last_event AS
+        (
+            SELECT
+                profile_id,
+                project_id,
+                toDate(created_at) AS event_date
+            FROM cohort_events_mv
+            WHERE ${whereEventNameIs(secondEvent)}
+            AND project_id = ${escape(projectId)}
+            AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}') + INTERVAL ${diffInterval} ${sqlInterval}
+        ),
+        retention_matrix AS
+        (
           SELECT
-            c.cohort_interval,
-            e.profile_id,
-            dateDiff('${sqlInterval}', c.cohort_interval, ${sqlToStartOf}(e.created_at)) AS x_after_cohort
-          FROM cohort_users AS c
-          INNER JOIN ${TABLE_NAMES.cohort_events_mv} AS e ON c.userID = e.profile_id
-          WHERE (${whereEventNameIs(secondEvent)}) AND (e.project_id = ${escape(projectId)}) 
-          AND ((e.created_at >= c.cohort_interval) AND (e.created_at <= (c.cohort_interval + INTERVAL ${diffInterval} ${sqlInterval})))
+              f.cohort_interval,
+              l.profile_id,
+              dateDiff('${sqlInterval}', f.cohort_interval, ${sqlToStartOf}(l.event_date)) AS x_after_cohort
+          FROM cohort_users AS f
+          INNER JOIN last_event AS l ON f.userID = l.profile_id
+          WHERE (l.event_date >= f.cohort_interval) 
+          AND (l.event_date <= (f.cohort_interval + INTERVAL ${diffInterval} ${sqlInterval}))
         ),
         interval_users AS (
           SELECT
