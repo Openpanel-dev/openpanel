@@ -7,6 +7,7 @@ import {
   chQuery,
   createSqlBuilder,
   db,
+  funnelService,
   getSelectPropertyKey,
   toDate,
 } from '@openpanel/db';
@@ -184,9 +185,9 @@ export const chartRouter = createTRPCRouter({
     const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
-      getFunnelData({ ...input, ...currentPeriod }),
+      funnelService.getFunnel({ ...input, ...currentPeriod }),
       input.previous
-        ? getFunnelData({ ...input, ...previousPeriod })
+        ? funnelService.getFunnel({ ...input, ...previousPeriod })
         : Promise.resolve(null),
     ]);
 

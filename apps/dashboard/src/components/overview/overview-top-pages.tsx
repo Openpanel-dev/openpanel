@@ -95,14 +95,13 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
             ))}
           </WidgetButtons>
         </WidgetHead>
-        <WidgetBody>
+        <WidgetBody className="p-0">
           {query.isLoading ? (
-            <OverviewWidgetTableLoading className="-m-4" />
+            <OverviewWidgetTableLoading />
           ) : (
             <>
-              {/*<OverviewWidgetTableBots className="-m-4" data={data ?? []} />*/}
+              {/*<OverviewWidgetTableBots data={data ?? []} />*/}
               <OverviewWidgetTablePages
-                className="-m-4"
                 data={data ?? []}
                 lastColumnName={widget.meta.columns.sessions}
                 showDomain={!!domain}

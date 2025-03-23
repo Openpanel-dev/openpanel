@@ -25,7 +25,7 @@ export const OverviewWidgetTable = <T,>({
         data={data ?? []}
         keyExtractor={keyExtractor}
         className={'text-sm min-h-[358px] @container'}
-        columnClassName="px-2 group/row items-center"
+        columnClassName="group/row [&>*:first-child]:pl-4 [&>*:last-child]:pr-4 [&_th]:pt-3"
         eachRow={(item) => {
           return (
             <div className="absolute inset-0 !p-0">
@@ -43,11 +43,11 @@ export const OverviewWidgetTable = <T,>({
             ...column,
             className: cn(
               index === 0
-                ? 'w-full flex-1 font-medium min-w-0'
-                : 'text-right justify-end row w-20 font-mono',
+                ? 'text-left w-full font-medium min-w-0'
+                : 'text-right w-20 font-mono',
               index !== 0 &&
                 index !== columns.length - 1 &&
-                'hidden @[310px]:row',
+                'hidden @[310px]:table-cell',
               column.className,
             ),
           };

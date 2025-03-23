@@ -1,6 +1,6 @@
 'use client';
 
-import { api } from '@/trpc/client';
+import { type RouterOutputs, api } from '@/trpc/client';
 
 import type { IChartInput } from '@openpanel/validation';
 
@@ -9,7 +9,7 @@ import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
-import { Chart } from './chart';
+import { Chart, Summary, Tables } from './chart';
 
 export function ReportFunnelChart() {
   const {
@@ -22,6 +22,7 @@ export function ReportFunnelChart() {
       startDate,
       endDate,
       previous,
+      breakdowns,
     },
     isLazyLoading,
   } = useReportChartContext();
@@ -32,7 +33,7 @@ export function ReportFunnelChart() {
     projectId,
     interval: 'day',
     chartType: 'funnel',
-    breakdowns: [],
+    breakdowns,
     funnelWindow,
     funnelGroup,
     previous,
@@ -41,7 +42,6 @@ export function ReportFunnelChart() {
     endDate,
   };
   const res = api.chart.funnel.useQuery(input, {
-    keepPreviousData: true,
     enabled: !isLazyLoading,
   });
 
@@ -53,11 +53,25 @@ export function ReportFunnelChart() {
     return <Error />;
   }
 
-  if (res.data.current.steps.length === 0) {
+  if (res.data.current.length === 0) {
     return <Empty />;
   }
 
-  return <Chart data={res.data} />;
+  return (
+    <div className="col gap-4">
+      {res.data.current.length > 1 && <Summary data={res.data} />}
+      <Chart data={res.data} />
+      {res.data.current.map((item, index) => (
+        <Tables
+          key={item.id}
+          data={{
+            current: item,
+            previous: res.data.previous?.[index] ?? null,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 function Loading() {

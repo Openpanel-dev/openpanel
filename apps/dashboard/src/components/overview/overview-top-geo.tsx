@@ -79,12 +79,11 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             ))}
           </WidgetButtons>
         </WidgetHead>
-        <WidgetBody>
+        <WidgetBody className="p-0">
           {query.isLoading ? (
-            <OverviewWidgetTableLoading className="-m-4" />
+            <OverviewWidgetTableLoading />
           ) : (
             <OverviewWidgetTableGeneric
-              className="-m-4"
               data={query.data ?? []}
               column={{
                 name: OVERVIEW_COLUMNS_NAME[widget.key],

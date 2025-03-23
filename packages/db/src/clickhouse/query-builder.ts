@@ -154,7 +154,7 @@ export class Query<T = any> {
         if (!Array.isArray(value) && !(value instanceof Expression)) {
           throw new Error(`${operator} operator requires an array value`);
         }
-        return `${column} ${operator} (${this.escapeValue(value)})`;
+        return `${column} ${operator} ${this.escapeValue(value)}`;
       default:
         return `${column} ${operator} ${this.escapeValue(value!)}`;
     }
