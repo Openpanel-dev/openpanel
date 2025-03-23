@@ -59,7 +59,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
         | undefined
         | null
         | (string | number | boolean | undefined | null)[],
-      operator: IChartEventFilterOperator,
+      operator?: IChartEventFilterOperator,
     ) => {
       setFilters((prev) => {
         const exists = prev.find((filter) => filter.name === name);
