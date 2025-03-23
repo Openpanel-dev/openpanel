@@ -185,9 +185,9 @@ export const chartRouter = createTRPCRouter({
     const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
-      funnelService.getFunnelData({ ...input, ...currentPeriod }),
+      funnelService.getFunnel({ ...input, ...currentPeriod }),
       input.previous
-        ? funnelService.getFunnelData({ ...input, ...previousPeriod })
+        ? funnelService.getFunnel({ ...input, ...previousPeriod })
         : Promise.resolve(null),
     ]);
 

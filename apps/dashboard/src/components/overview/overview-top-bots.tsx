@@ -30,45 +30,42 @@ const OverviewTopBots = ({ projectId }: Props) => {
 
   return (
     <>
-      <div className="-m-4">
-        <WidgetTable
-          className="max-w-full [&_td:first-child]:w-full [&_th]:text-sm [&_tr]:text-sm"
-          data={data}
-          keyExtractor={(item) => item.id}
-          columns={[
-            {
-              name: 'Path',
-              render(item) {
-                return (
-                  <Tooltiper asChild content={item.path}>
-                    <span className="w-full">{getPath(item.path)}</span>
+      <WidgetTable
+        className="max-w-full [&_td:first-child]:w-full [&_th]:text-sm [&_tr]:text-sm"
+        data={data}
+        keyExtractor={(item) => item.id}
+        columns={[
+          {
+            name: 'Path',
+            render(item) {
+              return (
+                <Tooltiper asChild content={item.path}>
+                  <span className="w-full">{getPath(item.path)}</span>
+                </Tooltiper>
+              );
+            },
+          },
+          {
+            name: 'Date',
+            render(item) {
+              return (
+                <div className="flex gap-2 whitespace-nowrap">
+                  <Tooltiper asChild content={`${item.type}`}>
+                    <div>{item.name}</div>
                   </Tooltiper>
-                );
-              },
+                  <Tooltiper
+                    asChild
+                    content={`${item.createdAt.toLocaleString()}`}
+                  >
+                    <div>{item.createdAt.toLocaleDateString()}</div>
+                  </Tooltiper>
+                </div>
+              );
             },
-            {
-              name: 'Date',
-              render(item) {
-                return (
-                  <div className="flex gap-2 whitespace-nowrap">
-                    <Tooltiper asChild content={`${item.type}`}>
-                      <div>{item.name}</div>
-                    </Tooltiper>
-                    <Tooltiper
-                      asChild
-                      content={`${item.createdAt.toLocaleString()}`}
-                    >
-                      <div>{item.createdAt.toLocaleDateString()}</div>
-                    </Tooltiper>
-                  </div>
-                );
-              },
-            },
-          ]}
-        />
-      </div>
+          },
+        ]}
+      />
       <Pagination
-        className="mt-4"
         cursor={cursor}
         setCursor={setCursor}
         count={count}

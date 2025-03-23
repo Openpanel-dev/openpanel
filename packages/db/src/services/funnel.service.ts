@@ -5,7 +5,10 @@ import { ch } from '../clickhouse/client';
 import { TABLE_NAMES } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
-import { getEventFiltersWhereClause } from './chart.service';
+import {
+  getEventFiltersWhereClause,
+  getSelectPropertyKey,
+} from './chart.service';
 
 export class FunnelService {
   constructor(private client: typeof ch) {}
@@ -68,13 +71,13 @@ export class FunnelService {
     // Group by breakdown values
     const series = funnel.reduce(
       (acc, f) => {
-        const key = breakdowns.map((b) => f[b.name]).join('|');
+        const key = breakdowns.map((b, index) => f[`b_${index}`]).join('|');
         if (!acc[key]) {
           acc[key] = [];
         }
         acc[key]!.push({
           id: key,
-          breakdowns: breakdowns.map((b) => f[b.name]),
+          breakdowns: breakdowns.map((b, index) => f[`b_${index}`]),
           level: f.level,
           count: f.count,
         });
@@ -94,7 +97,7 @@ export class FunnelService {
     return Object.values(series);
   }
 
-  async getFunnelData({
+  async getFunnel({
     projectId,
     startDate,
     endDate,
@@ -119,7 +122,9 @@ export class FunnelService {
     const funnelCte = clix(this.client)
       .select([
         `${group[0]} AS ${group[1]}`,
-        ...breakdowns.map((b) => `${b.name} as ${b.name}`),
+        ...breakdowns.map(
+          (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
+        ),
         `windowFunnel(${funnelWindowSeconds}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level`,
       ])
       .from(TABLE_NAMES.events, false)
@@ -133,7 +138,7 @@ export class FunnelService {
         'IN',
         events.map((e) => e.name),
       )
-      .groupBy([group[1], ...breakdowns.map((b) => b.name)]);
+      .groupBy([group[1], ...breakdowns.map((b, index) => `b_${index}`)]);
 
     // Create the sessions CTE if needed
     const sessionsCte =
@@ -160,61 +165,100 @@ export class FunnelService {
         level: number;
         count: number;
         [key: string]: any;
-      }>(['level', ...breakdowns.map((b) => b.name), 'count() as count'])
+      }>([
+        'level',
+        ...breakdowns.map((b, index) => `b_${index}`),
+        'count() as count',
+      ])
       .from('funnel')
       .where('level', '!=', 0)
-      .groupBy(['level', ...breakdowns.map((b) => b.name)])
+      .groupBy(['level', ...breakdowns.map((b, index) => `b_${index}`)])
       .orderBy('level', 'DESC');
 
     const funnelData = await funnelQuery.execute();
-    console.log('funnelData', funnelData);
     const funnelSeries = this.toSeries(funnelData, breakdowns);
-    console.log('funnelSeries', funnelSeries);
 
-    return funnelSeries.map((data) => {
-      const maxLevel = events.length;
-      const filledFunnelRes = this.fillFunnel(
-        data.map((d) => ({ level: d.level, count: d.count })),
-        maxLevel,
-      );
+    return funnelSeries
+      .map((data) => {
+        const maxLevel = events.length;
+        const filledFunnelRes = this.fillFunnel(
+          data.map((d) => ({ level: d.level, count: d.count })),
+          maxLevel,
+        );
 
-      const totalSessions = last(filledFunnelRes)?.count ?? 0;
-      const steps = reverse(filledFunnelRes).reduce(
-        (acc, item, index, list) => {
-          const prev = list[index - 1] ?? { count: totalSessions };
-          const event = events[item.level - 1]!;
-          return [
-            ...acc,
-            {
-              event: {
-                ...event,
-                displayName: event.displayName ?? event.name,
-              },
-              count: item.count,
-              percent: (item.count / totalSessions) * 100,
-              dropoffCount: prev.count - item.count,
-              dropoffPercent: 100 - (item.count / prev.count) * 100,
-              previousCount: prev.count,
+        const totalSessions = last(filledFunnelRes)?.count ?? 0;
+        const steps = reverse(filledFunnelRes)
+          .reduce(
+            (acc, item, index, list) => {
+              const prev = list[index - 1] ?? { count: totalSessions };
+              const next = list[index + 1];
+              const event = events[item.level - 1]!;
+              return [
+                ...acc,
+                {
+                  event: {
+                    ...event,
+                    displayName: event.displayName ?? event.name,
+                  },
+                  count: item.count,
+                  percent: (item.count / totalSessions) * 100,
+                  dropoffCount: next ? item.count - next.count : null,
+                  dropoffPercent: next
+                    ? ((item.count - next.count) / item.count) * 100
+                    : null,
+                  previousCount: prev.count,
+                  nextCount: next?.count ?? null,
+                },
+              ];
             },
-          ];
-        },
-        [] as {
-          event: IChartEvent & { displayName: string };
-          count: number;
-          percent: number;
-          dropoffCount: number;
-          dropoffPercent: number;
-          previousCount: number;
-        }[],
-      );
+            [] as {
+              event: IChartEvent & { displayName: string };
+              count: number;
+              percent: number;
+              dropoffCount: number | null;
+              dropoffPercent: number | null;
+              previousCount: number;
+              nextCount: number | null;
+            }[],
+          )
+          .map((step, index, list) => {
+            const next = list[index + 1];
+            return {
+              ...step,
+              isHighestDropoff: (() => {
+                // Skip if current step has no dropoff
+                if (!step?.dropoffCount) return false;
 
-      return {
-        id: data[0]?.id ?? 'none',
-        breakdowns: data[0]?.breakdowns ?? [],
-        steps,
-        totalSessions,
-      };
-    });
+                // Get maximum dropoff count, excluding 0s
+                const maxDropoff = Math.max(
+                  ...list
+                    .map((s) => s.dropoffCount || 0)
+                    .filter((count) => count > 0),
+                );
+
+                // Check if this is the first step with the highest dropoff
+                return (
+                  step.dropoffCount === maxDropoff &&
+                  list.findIndex((s) => s.dropoffCount === maxDropoff) === index
+                );
+              })(),
+            };
+          });
+
+        return {
+          id: data[0]?.id ?? 'none',
+          breakdowns: data[0]?.breakdowns ?? [],
+          steps,
+          totalSessions,
+          lastStep: last(steps)!,
+          mostDropoffsStep: steps.find((step) => step.isHighestDropoff)!,
+        };
+      })
+      .sort((a, b) => {
+        const aTotal = a.steps.reduce((acc, step) => acc + step.count, 0);
+        const bTotal = b.steps.reduce((acc, step) => acc + step.count, 0);
+        return bTotal - aTotal;
+      });
   }
 }
 
