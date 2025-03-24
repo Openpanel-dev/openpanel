@@ -37,6 +37,7 @@ const OverviewTopBots = ({ projectId }: Props) => {
         columns={[
           {
             name: 'Path',
+            width: 'w-full',
             render(item) {
               return (
                 <Tooltiper asChild content={item.path}>
@@ -47,6 +48,7 @@ const OverviewTopBots = ({ projectId }: Props) => {
           },
           {
             name: 'Date',
+            width: '100px',
             render(item) {
               return (
                 <div className="flex gap-2 whitespace-nowrap">

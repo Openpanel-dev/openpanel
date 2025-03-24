@@ -95,9 +95,11 @@ export function WidgetTable<T>({
                         ? 'text-right'
                         : 'text-left',
                       column.className,
-                      column.width === '1fr' && 'w-full min-w-0',
+                      column.width === 'w-full' && 'w-full min-w-0',
                     )}
-                    style={{ width: column.width }}
+                    style={
+                      column.width !== 'w-full' ? { width: column.width } : {}
+                    }
                   >
                     {column.render(item, index)}
                   </div>

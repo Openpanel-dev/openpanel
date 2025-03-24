@@ -72,7 +72,7 @@ export function OverviewWidgetTableLoading({
         {
           name: 'Path',
           render: () => <Skeleton className="h-4 w-1/3" />,
-          width: '1fr',
+          width: 'w-full',
         },
         {
           name: 'BR',
@@ -134,7 +134,7 @@ export function OverviewWidgetTablePages({
       columns={[
         {
           name: 'Path',
-          width: '1fr',
+          width: 'w-full',
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
@@ -233,7 +233,7 @@ export function OverviewWidgetTableBots({
       columns={[
         {
           name: 'Path',
-          width: '1fr',
+          width: 'w-full',
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
@@ -296,7 +296,6 @@ export function OverviewWidgetTableGeneric({
   data: RouterOutputs['overview']['topGeneric'];
   column: {
     name: string;
-    width: string;
     render: (
       item: RouterOutputs['overview']['topGeneric'][number],
     ) => React.ReactNode;
@@ -311,7 +310,10 @@ export function OverviewWidgetTableGeneric({
       keyExtractor={(item) => item.name}
       getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
-        column,
+        {
+          ...column,
+          width: 'w-full',
+        },
         {
           name: 'BR',
           width: '60px',

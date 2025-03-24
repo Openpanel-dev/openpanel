@@ -212,7 +212,7 @@ export function Tables({
                   <span className="truncate">{item.event.displayName}</span>
                 </div>
               ),
-              width: '1fr',
+              width: 'w-full',
               className: 'text-left font-mono font-semibold',
             },
             {
