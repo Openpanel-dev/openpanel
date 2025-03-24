@@ -83,10 +83,10 @@ export default function Billing({ organization }: Props) {
         columns={[
           {
             name: 'Tier',
+            className: 'text-left',
             render(item) {
               return <div className="font-medium">{item.name}</div>;
             },
-            className: 'w-full',
           },
           {
             name: 'Price',
