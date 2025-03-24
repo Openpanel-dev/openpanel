@@ -69,6 +69,7 @@ async function main() {
 
   const isDry = process.argv.includes('--dry');
   const products = await getProducts();
+  const createProducts = [];
   for (const price of PRICING) {
     if (price.price === 0) {
       const exists = products.find(
@@ -126,12 +127,14 @@ async function main() {
       const monthlyProductExists = products.find(
         (p) =>
           p.metadata?.eventsLimit === price.events &&
-          p.recurringInterval === 'month',
+          p.recurringInterval === 'month' &&
+          p.name === productCreate.name,
       );
       const yearlyProductExists = products.find(
         (p) =>
           p.metadata?.eventsLimit === price.events &&
-          p.recurringInterval === 'year',
+          p.recurringInterval === 'year' &&
+          p.name === `${productCreate.name} (yearly)`,
       );
 
       if (monthlyProductExists) {
@@ -148,6 +151,7 @@ async function main() {
         console.log(' - Prices:', monthlyProduct.prices);
         console.log(' - Recurring Interval:', monthlyProduct.recurringInterval);
         console.log(' - Events Limit:', monthlyProduct.metadata?.eventsLimit);
+        createProducts.push(monthlyProduct);
       }
 
       if (yearlyProductExists) {
@@ -165,6 +169,7 @@ async function main() {
         ) {
           productCreate.prices[0]!.priceAmount = price.price * 100 * 10;
         }
+        // console.log('CREATE YEARLY', productCreate);
         const yearlyProduct = await polar.products.create(productCreate);
         console.log('Yearly product created:');
         console.log(' - ID:', yearlyProduct.id);
@@ -172,9 +177,22 @@ async function main() {
         console.log(' - Prices:', yearlyProduct.prices);
         console.log(' - Recurring Interval:', yearlyProduct.recurringInterval);
         console.log(' - Events Limit:', yearlyProduct.metadata?.eventsLimit);
+        createProducts.push(yearlyProduct);
       }
     }
     console.log('---');
+  }
+
+  if (createProducts.length > 0) {
+    console.log('Create below products:');
+    for (const product of createProducts) {
+      console.log('Product created:');
+      console.log(' - ID:', product.id);
+      console.log(' - Name:', product.name);
+      console.log(' - Prices:', product.prices);
+      console.log(' - Recurring Interval:', product.recurringInterval);
+      console.log(' - Events Limit:', product.metadata?.eventsLimit);
+    }
   }
 }
 

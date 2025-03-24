@@ -129,7 +129,7 @@ export default function Billing({ organization }: Props) {
                         style: 'currency',
                         currency: price.priceCurrency,
                         minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
+                        maximumFractionDigits: 1,
                       }).format(price.priceAmount / 100)}
                       {' / '}
                       {recurringInterval === 'year' ? 'year' : 'month'}
