@@ -33,7 +33,7 @@ export const formatCurrency =
       style: 'currency',
       currency: currency,
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 1,
     }).format(amount);
   };
 
