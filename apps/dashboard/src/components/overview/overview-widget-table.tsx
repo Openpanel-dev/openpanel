@@ -24,11 +24,11 @@ export const OverviewWidgetTable = <T,>({
       <WidgetTable
         data={data ?? []}
         keyExtractor={keyExtractor}
-        className={'text-sm min-h-[358px] @container'}
-        columnClassName="group/row [&>*:first-child]:pl-4 [&>*:last-child]:pr-4 [&_th]:pt-3"
+        className={'text-sm min-h-[358px] @container [&_.head]:pt-3'}
+        columnClassName="[&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4"
         eachRow={(item) => {
           return (
-            <div className="absolute inset-0 !p-0">
+            <div className="absolute top-0 left-0 !p-0 w-full h-full">
               <div
                 className="h-full bg-def-200 group-hover/row:bg-blue-200 dark:group-hover/row:bg-blue-900 transition-colors relative"
                 style={{
@@ -44,7 +44,7 @@ export const OverviewWidgetTable = <T,>({
             className: cn(
               index === 0
                 ? 'text-left w-full font-medium min-w-0'
-                : 'text-right w-20 font-mono',
+                : 'text-right font-mono',
               index !== 0 &&
                 index !== columns.length - 1 &&
                 'hidden @[310px]:table-cell',
@@ -72,10 +72,12 @@ export function OverviewWidgetTableLoading({
         {
           name: 'Path',
           render: () => <Skeleton className="h-4 w-1/3" />,
+          width: '1fr',
         },
         {
           name: 'BR',
           render: () => <Skeleton className="h-4 w-[30px]" />,
+          width: '60px',
         },
         // {
         //   name: 'Duration',
@@ -84,6 +86,7 @@ export function OverviewWidgetTableLoading({
         {
           name: 'Sessions',
           render: () => <Skeleton className="h-4 w-[30px]" />,
+          width: '84px',
         },
       ]}
     />
@@ -131,6 +134,7 @@ export function OverviewWidgetTablePages({
       columns={[
         {
           name: 'Path',
+          width: '1fr',
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
@@ -173,20 +177,21 @@ export function OverviewWidgetTablePages({
         },
         {
           name: 'BR',
-          className: 'w-16',
+          width: '60px',
           render(item) {
             return number.shortWithUnit(item.bounce_rate, '%');
           },
         },
         {
           name: 'Duration',
+          width: '75px',
           render(item) {
             return number.shortWithUnit(item.avg_duration, 'min');
           },
         },
         {
           name: lastColumnName,
-          // className: 'w-28',
+          width: '84px',
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -228,6 +233,7 @@ export function OverviewWidgetTableBots({
       columns={[
         {
           name: 'Path',
+          width: '1fr',
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
@@ -256,7 +262,7 @@ export function OverviewWidgetTableBots({
         },
         {
           name: 'Bot',
-          // className: 'w-28',
+          width: '60px',
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -267,7 +273,7 @@ export function OverviewWidgetTableBots({
         },
         {
           name: 'Date',
-          // className: 'w-28',
+          width: '60px',
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -290,6 +296,7 @@ export function OverviewWidgetTableGeneric({
   data: RouterOutputs['overview']['topGeneric'];
   column: {
     name: string;
+    width: string;
     render: (
       item: RouterOutputs['overview']['topGeneric'][number],
     ) => React.ReactNode;
@@ -307,7 +314,7 @@ export function OverviewWidgetTableGeneric({
         column,
         {
           name: 'BR',
-          className: 'w-16',
+          width: '60px',
           render(item) {
             return number.shortWithUnit(item.bounce_rate, '%');
           },
@@ -320,6 +327,7 @@ export function OverviewWidgetTableGeneric({
         // },
         {
           name: 'Sessions',
+          width: '84px',
           render(item) {
             return (
               <div className="row gap-2 justify-end">

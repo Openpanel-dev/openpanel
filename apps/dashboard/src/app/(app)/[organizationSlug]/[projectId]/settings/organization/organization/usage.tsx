@@ -114,10 +114,9 @@ export default function Usage({ organization }: Props) {
                 subscriptionPeriodEventsLimit === 0
                   ? '👀'
                   : number.formatWithUnit(
-                      (1 -
+                      1 -
                         subscriptionPeriodEventsCount /
-                          subscriptionPeriodEventsLimit) *
-                        100,
+                          subscriptionPeriodEventsLimit,
                       '%',
                     )
               }

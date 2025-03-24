@@ -107,6 +107,15 @@ export default function CurrentSubscription({ organization }: Props) {
     return (
       <>
         <div className="gap-4 col">
+          {price.amountType === 'free' && (
+            <Alert variant="warning">
+              <AlertTitle>Free plan is removed</AlertTitle>
+              <AlertDescription>
+                We've removed the free plan. You can upgrade to a paid plan to
+                continue using OpenPanel.
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="row justify-between">
             <div>Name</div>
             <div className="text-right font-medium">{product.name}</div>

@@ -212,12 +212,14 @@ export function Tables({
                   <span className="truncate">{item.event.displayName}</span>
                 </div>
               ),
+              width: '1fr',
               className: 'text-left font-mono font-semibold',
             },
             {
               name: 'Completed',
               render: (item) => number.format(item.count),
               className: 'text-right font-mono',
+              width: '82px',
             },
             {
               name: 'Dropped after',
@@ -226,11 +228,13 @@ export function Tables({
                   ? number.format(item.dropoffCount)
                   : null,
               className: 'text-right font-mono',
+              width: '110px',
             },
             {
               name: 'Conversion',
               render: (item) => number.formatWithUnit(item.percent / 100, '%'),
               className: 'text-right font-mono font-semibold',
+              width: '90px',
             },
           ]}
         />

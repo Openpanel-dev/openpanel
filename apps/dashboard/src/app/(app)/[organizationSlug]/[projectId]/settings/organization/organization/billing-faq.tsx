@@ -10,9 +10,13 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 
 const questions = [
   {
-    question: "What's the free tier?",
+    question: 'Does OpenPanel have a free tier?',
     answer: [
-      'You get 5000 events per month for free. This is mostly for you to try out OpenPanel but also for solo developers or people who want to try out OpenPanel without committing to a paid plan.',
+      'For our Cloud plan we offer a 14 days free trial, this is mostly for you to be able to try out OpenPanel before committing to a paid plan.',
+      'OpenPanel is also open-source and you can self-host it for free!',
+      '',
+      'Why does OpenPanel not have a free tier?',
+      'We want to make sure that OpenPanel is used by people who are serious about using it. We also need to invest time and resources to maintain the platform and provide support to our users.',
     ],
   },
   {

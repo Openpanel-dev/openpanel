@@ -5,6 +5,7 @@ export interface Props<T> {
     name: React.ReactNode;
     render: (item: T, index: number) => React.ReactNode;
     className?: string;
+    width: string;
   }[];
   keyExtractor: (item: T) => string;
   data: T[];
@@ -40,58 +41,71 @@ export function WidgetTable<T>({
   eachRow,
   columnClassName,
 }: Props<T>) {
+  const gridTemplateColumns =
+    columns.length > 1
+      ? `1fr ${columns
+          .slice(1)
+          .map(() => 'auto')
+          .join(' ')}`
+      : '1fr';
+
   return (
     <div className="w-full overflow-x-auto">
       <div className={cn('w-full', className)}>
-        <table className="w-full table-fixed">
-          <thead>
-            <tr
+        {/* Header */}
+        <div
+          className={cn('grid border-b border-border head', columnClassName)}
+          style={{ gridTemplateColumns }}
+        >
+          {columns.map((column) => (
+            <div
+              key={column.name?.toString()}
               className={cn(
-                'border-b border-border text-right last:border-0 [&_td:first-child]:text-left',
-                '[&>td]:p-2',
+                'p-2 font-medium font-sans text-sm whitespace-nowrap cell',
+                columns.length > 1 && column !== columns[0]
+                  ? 'text-right'
+                  : 'text-left',
+                column.className,
+              )}
+              style={{ width: column.width }}
+            >
+              {column.name}
+            </div>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div className="flex flex-col body">
+          {data.map((item, index) => (
+            <div
+              key={keyExtractor(item)}
+              className={cn(
+                'group/row relative border-b border-border last:border-0 h-8',
                 columnClassName,
               )}
             >
-              {columns.map((column) => (
-                <th
-                  key={column.name?.toString()}
-                  className={cn(
-                    column.className,
-                    'font-medium font-sans text-sm p-2 whitespace-nowrap',
-                  )}
-                >
-                  {column.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((item, index) => (
-              <tr
-                key={keyExtractor(item)}
-                className={cn(
-                  'h-8 border-b border-border text-right last:border-0 [&_td:first-child]:text-left relative',
-                  '[&>td]:p-2',
-                  columnClassName,
-                )}
-              >
-                {columns.map((column, columnIndex) => (
-                  <td
+              {eachRow?.(item, index)}
+              <div className="grid" style={{ gridTemplateColumns }}>
+                {columns.map((column) => (
+                  <div
                     key={column.name?.toString()}
                     className={cn(
-                      'h-8',
-                      columnIndex !== 0 && 'relative z-5',
+                      'p-2 relative cell',
+                      columns.length > 1 && column !== columns[0]
+                        ? 'text-right'
+                        : 'text-left',
                       column.className,
+                      column.width === '1fr' && 'w-full min-w-0',
                     )}
+                    style={{ width: column.width }}
                   >
-                    {columnIndex === 0 && eachRow?.(item, index)}
                     {column.render(item, index)}
-                  </td>
+                  </div>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -11,10 +11,13 @@ import {
 
 const questions = [
   {
-    question: 'Is OpenPanel free?',
+    question: 'Does OpenPanel have a free tier?',
     answer: [
-      'Yes and no, we have a free tier if you send less then 10k events per month, if you need more, you can upgrade to a paid plan.',
-      'OpenPanel is open-source and free to self-hosting.',
+      'For our Cloud plan we offer a 14 days free trial, this is mostly for you to be able to try out OpenPanel before committing to a paid plan.',
+      'OpenPanel is also open-source and you can self-host it for free!',
+      '',
+      'Why does OpenPanel not have a free tier?',
+      'We want to make sure that OpenPanel is used by people who are serious about using it. We also need to invest time and resources to maintain the platform and provide support to our users.',
     ],
   },
   {

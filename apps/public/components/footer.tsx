@@ -19,7 +19,7 @@ export function Footer() {
           <SectionHeader
             tag={<Tag>Discover User Insights</Tag>}
             title="Effortless web & product analytics"
-            description="Simplify your web & product analytics with our user-friendly platform. Collect, analyze, and optimize your data in minutes, for free."
+            description="Simplify your web & product analytics with our user-friendly platform. Collect, analyze, and optimize your data in minutes."
           />
           <Button size="lg" variant="secondary" asChild>
             <Link href="https://dashboard.openpanel.dev/onboarding">

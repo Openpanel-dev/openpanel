@@ -4,7 +4,7 @@ export type IPrice = {
 };
 
 export const PRICING: IPrice[] = [
-  { price: 0, events: 5_000 },
+  { price: 2.5, events: 5_000 },
   { price: 5, events: 10_000 },
   { price: 20, events: 100_000 },
   { price: 30, events: 250_000 },

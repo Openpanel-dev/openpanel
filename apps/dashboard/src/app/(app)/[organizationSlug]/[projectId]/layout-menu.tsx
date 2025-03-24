@@ -21,6 +21,7 @@ import type { LucideIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 import { ProjectLink } from '@/components/links';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
 import { differenceInDays, format } from 'date-fns';
@@ -72,10 +73,29 @@ export default function LayoutMenu({
     subscriptionEndsAt,
     subscriptionPeriodEventsCount,
     subscriptionPeriodEventsLimit,
+    subscriptionProductId,
   } = organization;
   return (
     <>
       <div className="col border rounded mb-2 divide-y">
+        {(subscriptionProductId === '036efa2a-b3b4-4c75-b24a-9cac6bb8893b' ||
+          subscriptionProductId === 'a18b4bee-d3db-4404-be6f-fba2f042d9ed') && (
+          <ProjectLink
+            href={'/settings/organization?tab=billing'}
+            className={cn(
+              'rounded p-2 row items-center gap-2 hover:bg-def-200 text-destructive',
+            )}
+          >
+            <BanknoteIcon size={20} />
+            <div className="flex-1 col gap-1">
+              <div className="font-medium">Free plan is removed</div>
+              <div className="text-sm opacity-80">
+                We've removed the free plan. You can upgrade to a paid plan to
+                continue using OpenPanel.
+              </div>
+            </div>
+          </ProjectLink>
+        )}
         {process.env.SELF_HOSTED && (
           <ProjectLink
             href={'/settings/organization?tab=billing'}

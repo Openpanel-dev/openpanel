@@ -47,9 +47,9 @@ export default function Billing({ organization }: Props) {
   );
 
   const products = useMemo(() => {
-    return (productsQuery.data || []).filter(
-      (product) => product.recurringInterval === recurringInterval,
-    );
+    return (productsQuery.data || [])
+      .filter((product) => product.recurringInterval === recurringInterval)
+      .filter((product) => product.prices.some((p) => p.amountType !== 'free'));
   }, [productsQuery.data, recurringInterval]);
 
   useEffect(() => {
@@ -77,19 +77,22 @@ export default function Billing({ organization }: Props) {
     }
     return (
       <WidgetTable
-        className="w-full max-w-full [&_td]:text-left"
+        className="w-full max-w-full [&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4"
+        columnClassName="!h-auto"
         data={products}
         keyExtractor={(item) => item.id}
         columns={[
           {
             name: 'Tier',
             className: 'text-left',
+            width: 'auto',
             render(item) {
               return <div className="font-medium">{item.name}</div>;
             },
           },
           {
             name: 'Price',
+            width: 'auto',
             render(item) {
               const price = item.prices[0];
               if (!price) {
@@ -97,20 +100,21 @@ export default function Billing({ organization }: Props) {
               }
 
               if (price.amountType === 'free') {
-                return (
-                  <div className="row gap-2 whitespace-nowrap">
-                    <div className="items-center text-right justify-end gap-4 flex-1 row">
-                      <span>Free</span>
-                      <CheckoutButton
-                        disabled={item.disabled}
-                        key={price.id}
-                        price={price}
-                        organization={organization}
-                        projectId={projectId}
-                      />
-                    </div>
-                  </div>
-                );
+                return null;
+                // return (
+                //   <div className="row gap-2 whitespace-nowrap">
+                //     <div className="items-center text-right justify-end gap-4 flex-1 row">
+                //       <span>Free</span>
+                //       <CheckoutButton
+                //         disabled={item.disabled}
+                //         key={price.id}
+                //         price={price}
+                //         organization={organization}
+                //         projectId={projectId}
+                //       />
+                //     </div>
+                //   </div>
+                // );
               }
 
               if (price.amountType !== 'fixed') {
