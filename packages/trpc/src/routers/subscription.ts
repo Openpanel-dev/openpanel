@@ -53,16 +53,25 @@ export const subscriptionRouter = createTRPCRouter({
         organization.subscriptionId &&
         organization.subscriptionStatus === 'active'
       ) {
-        if (organization.subscriptionCanceledAt) {
-          await reactivateSubscription(organization.subscriptionId);
+        const existingProduct = organization.subscriptionProductId
+          ? await getProduct(organization.subscriptionProductId)
+          : null;
+
+        // If the existing product is free, cancel the subscription and then jump to the checkout
+        if (existingProduct?.prices.some((p) => p.amountType === 'free')) {
+          await cancelSubscription(organization.subscriptionId);
         } else {
+          if (organization.subscriptionCanceledAt) {
+            await reactivateSubscription(organization.subscriptionId);
+            return null;
+          }
+
           await changeSubscription(
             organization.subscriptionId,
             input.productId,
           );
+          return null;
         }
-
-        return null;
       }
 
       const checkout = await createCheckout({

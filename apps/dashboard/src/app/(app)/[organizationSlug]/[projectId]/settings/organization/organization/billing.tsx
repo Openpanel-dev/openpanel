@@ -15,6 +15,7 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { useAppParams } from '@/hooks/useAppParams';
 import useWS from '@/hooks/useWS';
+import { showConfirm } from '@/modals';
 import { api } from '@/trpc/client';
 import type { IServiceOrganization } from '@openpanel/db';
 import type { IPolarPrice } from '@openpanel/payments';
@@ -257,12 +258,23 @@ function CheckoutButton({
         disabled={disabled !== null || (isActive && !isCanceled)}
         key={price.id}
         onClick={() => {
-          checkout.mutate({
-            projectId,
-            organizationId: organization.id,
-            productPriceId: price!.id,
-            productId: price.productId,
-          });
+          const createCheckout = () =>
+            checkout.mutate({
+              projectId,
+              organizationId: organization.id,
+              productPriceId: price!.id,
+              productId: price.productId,
+            });
+
+          if (organization.subscriptionStatus === 'active') {
+            showConfirm({
+              title: 'Are you sure?',
+              text: `You're about the change your subscription.`,
+              onConfirm: () => createCheckout(),
+            });
+          } else {
+            createCheckout();
+          }
         }}
         loading={checkout.isLoading}
         className="w-28"
