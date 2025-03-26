@@ -57,7 +57,9 @@ export default function SideEffects({ organization }: SideEffectsProps) {
               </>
             }
           />
-          <Billing organization={organization} />
+          <div className="-mx-4 mt-4">
+            <Billing organization={organization} />
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -132,7 +132,7 @@ export default function Billing({ organization }: Props) {
 
               return (
                 <div className="row gap-2 whitespace-nowrap">
-                  <div className="items-center text-right justify-end gap-4 flex-1 row">
+                  <div className="items-center text-right justify-end gap-4 flex-1 col md:row">
                     <span>
                       {new Intl.NumberFormat('en-US', {
                         style: 'currency',

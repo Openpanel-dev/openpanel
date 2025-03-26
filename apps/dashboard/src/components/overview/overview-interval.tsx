@@ -15,6 +15,7 @@ export function OverviewInterval() {
 
   return (
     <Combobox
+      className="hidden md:flex"
       icon={ClockIcon}
       placeholder="Interval"
       onChange={(value) => {
