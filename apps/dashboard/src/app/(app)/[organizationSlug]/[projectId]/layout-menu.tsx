@@ -97,7 +97,7 @@ export default function LayoutMenu({
             </div>
           </ProjectLink>
         )}
-        {!process.env.SELF_HOSTED && (
+        {process.env.SELF_HOSTED && (
           <a
             className="rounded p-2 row items-center gap-2 hover:bg-def-200"
             href="https://openpanel.dev/supporter"
@@ -218,11 +218,13 @@ export default function LayoutMenu({
           ))}
         </div>
       </div>
-      <div className="mt-auto w-full">
-        <div className={cn('text-sm w-full text-center')}>
-          Self-hosted instance
+      {process.env.SELF_HOSTED && (
+        <div className="mt-auto w-full ">
+          <div className={cn('text-sm w-full text-center')}>
+            Self-hosted instance
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

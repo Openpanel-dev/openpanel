@@ -53,6 +53,9 @@ export function Footer() {
               <li>
                 <Link href="/contact">Contact</Link>
               </li>
+              <li>
+                <Link href="/supporter">Become a supporter</Link>
+              </li>
             </ul>
           </div>
 
