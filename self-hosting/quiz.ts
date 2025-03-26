@@ -178,6 +178,9 @@ async function initiateOnboarding() {
     `${T}1. Docker and Docker Compose installed on your machine.`,
     `${T}2. A domain name that you can use for this setup and point it to this machine's ip`,
     'For more information you can read our article on self-hosting at https://openpanel.dev/docs/self-hosting/self-hosting\n',
+    '',
+    '',
+    'Consider supporting us by becoming a supporter: https://openpanel.dev/supporter (pay what you want and help us keep the lights on)',
   ];
 
   console.log(

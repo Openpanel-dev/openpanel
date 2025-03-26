@@ -9,6 +9,7 @@ import {
   DollarSignIcon,
   GanttChartIcon,
   Globe2Icon,
+  HeartHandshakeIcon,
   LayersIcon,
   LayoutPanelTopIcon,
   PlusIcon,
@@ -96,18 +97,16 @@ export default function LayoutMenu({
             </div>
           </ProjectLink>
         )}
-        {process.env.SELF_HOSTED && (
-          <ProjectLink
-            href={'/settings/organization?tab=billing'}
-            className={cn(
-              'rounded p-2 row items-center gap-2 pointer-events-none',
-            )}
+        {!process.env.SELF_HOSTED && (
+          <a
+            className="rounded p-2 row items-center gap-2 hover:bg-def-200"
+            href="https://openpanel.dev/supporter"
           >
-            <ServerIcon size={20} />
+            <HeartHandshakeIcon size={20} />
             <div className="flex-1 col gap-1">
-              <div className="font-medium">Self-hosted</div>
+              <div className="font-medium">Become a supporter</div>
             </div>
-          </ProjectLink>
+          </a>
         )}
         {isTrial && subscriptionEndsAt && (
           <ProjectLink
@@ -217,6 +216,11 @@ export default function LayoutMenu({
               href={`/dashboards/${item.id}`}
             />
           ))}
+        </div>
+      </div>
+      <div className="mt-auto w-full">
+        <div className={cn('text-sm w-full text-center')}>
+          Self-hosted instance
         </div>
       </div>
     </>
