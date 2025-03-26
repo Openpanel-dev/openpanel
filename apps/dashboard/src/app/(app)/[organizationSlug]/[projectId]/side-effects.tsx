@@ -1,11 +1,65 @@
 'use client';
 
 import { pushModal, useOnPushModal } from '@/modals';
-import { differenceInDays } from 'date-fns';
-import { useEffect } from 'react';
+import { differenceInDays, differenceInHours } from 'date-fns';
+import { useEffect, useState } from 'react';
 
+import { ProjectLink } from '@/components/links';
+import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { ModalHeader } from '@/modals/Modal/Container';
+import type { IServiceOrganization } from '@openpanel/db';
 import { useOpenPanel } from '@openpanel/nextjs';
+import Billing from './settings/organization/organization/billing';
 
-export default function SideEffects() {
-  return null;
+interface SideEffectsProps {
+  organization: IServiceOrganization;
+}
+
+export default function SideEffects({ organization }: SideEffectsProps) {
+  const op = useOpenPanel();
+  const willEndInHours = organization.subscriptionEndsAt
+    ? differenceInHours(organization.subscriptionEndsAt, new Date())
+    : null;
+  const [isTrialDialogOpen, setIsTrialDialogOpen] = useState<boolean>(
+    willEndInHours !== null &&
+      organization.subscriptionStatus === 'trialing' &&
+      organization.subscriptionEndsAt !== null &&
+      willEndInHours <= 48,
+  );
+
+  useEffect(() => {
+    if (isTrialDialogOpen) {
+      op.track('trial_expires_soon');
+    }
+  }, [isTrialDialogOpen]);
+
+  return (
+    <>
+      <Dialog open={isTrialDialogOpen} onOpenChange={setIsTrialDialogOpen}>
+        <DialogContent className="max-w-xl">
+          <ModalHeader
+            onClose={() => setIsTrialDialogOpen(false)}
+            title={
+              willEndInHours !== null && willEndInHours > 0
+                ? `Your trial is ending in ${willEndInHours} hours`
+                : 'Your trial has ended'
+            }
+            text={
+              <>
+                Please upgrade your plan to continue using OpenPanel. Select a
+                tier which is appropriate for your needs or{' '}
+                <ProjectLink
+                  href="/settings/organization/billing"
+                  className="underline text-foreground"
+                >
+                  manage billing
+                </ProjectLink>
+              </>
+            }
+          />
+          <Billing organization={organization} />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

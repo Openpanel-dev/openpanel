@@ -18,6 +18,7 @@ import useWS from '@/hooks/useWS';
 import { showConfirm } from '@/modals';
 import { api } from '@/trpc/client';
 import type { IServiceOrganization } from '@openpanel/db';
+import { useOpenPanel } from '@openpanel/nextjs';
 import type { IPolarPrice } from '@openpanel/payments';
 import { Loader2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -32,6 +33,7 @@ type Props = {
 export default function Billing({ organization }: Props) {
   const router = useRouter();
   const { projectId } = useAppParams();
+  const op = useOpenPanel();
   const [customerSessionToken, setCustomerSessionToken] = useQueryState(
     'customer_session_token',
   );
@@ -60,6 +62,12 @@ export default function Billing({ organization }: Props) {
       );
     }
   }, [organization.subscriptionInterval]);
+
+  useEffect(() => {
+    if (customerSessionToken) {
+      op.track('subscription_created');
+    }
+  }, [customerSessionToken]);
 
   function renderBillingTable() {
     if (productsQuery.isLoading) {
@@ -227,6 +235,7 @@ function CheckoutButton({
   projectId: string;
   disabled?: string | null;
 }) {
+  const op = useOpenPanel();
   const isCurrentPrice = organization.subscriptionPriceId === price.id;
   const checkout = api.subscription.checkout.useMutation({
     onSuccess(data) {
@@ -270,9 +279,15 @@ function CheckoutButton({
             showConfirm({
               title: 'Are you sure?',
               text: `You're about the change your subscription.`,
-              onConfirm: () => createCheckout(),
+              onConfirm: () => {
+                op.track('subscription_change');
+                createCheckout();
+              },
             });
           } else {
+            op.track('subscription_checkout', {
+              product: price.productId,
+            });
             createCheckout();
           }
         }}

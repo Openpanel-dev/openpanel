@@ -30,7 +30,9 @@ export default async function AppLayout({
     getDashboardsByProjectId(projectId),
   ]);
 
-  if (!organizations.find((item) => item.id === organizationId)) {
+  const organization = organizations.find((item) => item.id === organizationId);
+
+  if (!organization) {
     return (
       <FullPageEmptyState title="Not found" className="min-h-screen">
         The organization you were looking for could not be found.
@@ -58,7 +60,7 @@ export default async function AppLayout({
         }}
       />
       <LayoutContent>{children}</LayoutContent>
-      <SideEffects />
+      <SideEffects organization={organization} />
     </div>
   );
 }
