@@ -49,7 +49,7 @@ export default function SideEffects({ organization }: SideEffectsProps) {
                 Please upgrade your plan to continue using OpenPanel. Select a
                 tier which is appropriate for your needs or{' '}
                 <ProjectLink
-                  href="/settings/organization/billing"
+                  href="/settings/organization?tab=billing"
                   className="underline text-foreground"
                 >
                   manage billing
