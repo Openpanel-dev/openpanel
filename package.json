@@ -21,7 +21,11 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "lint:workspace": "pnpm dlx sherif@latest",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "update-simple-git-hooks": "npx simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-push": "pnpm typecheck"
   },
   "dependencies": {
     "@hyperdx/node-opentelemetry": "^0.8.1",
@@ -46,6 +50,7 @@
     "sharp"
   ],
   "devDependencies": {
-    "@biomejs/biome": "1.9.1"
+    "@biomejs/biome": "1.9.1",
+    "simple-git-hooks": "^2.12.1"
   }
 }
