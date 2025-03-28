@@ -31,7 +31,7 @@ type Props = {
   };
 };
 
-const Metric = ({
+export const Metric = ({
   label,
   value,
   enhancer,
@@ -218,7 +218,7 @@ export function Tables({
             {
               name: 'Completed',
               render: (item) => number.format(item.count),
-              className: 'text-right font-mono',
+              className: 'text-right font-mono hidden @xl:block',
               width: '82px',
             },
             {
@@ -227,7 +227,7 @@ export function Tables({
                 item.dropoffCount !== null && item.dropoffPercent !== null
                   ? number.format(item.dropoffCount)
                   : null,
-              className: 'text-right font-mono',
+              className: 'text-right font-mono hidden @xl:block',
               width: '110px',
             },
             {
@@ -341,7 +341,8 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
 const { Tooltip, TooltipProvider } = createChartTooltip<
   RechartData,
   Record<string, unknown>
->(({ data }) => {
+>(({ data: dataArray }) => {
+  const data = dataArray[0]!;
   const number = useNumber();
   const variants = Object.keys(data).filter((key) =>
     key.startsWith('step:data:'),

@@ -53,7 +53,7 @@ export function ReportTable({
 
   return (
     <>
-      <Stats className="my-4">
+      <Stats className="my-4 grid grid-cols-1 @xl:grid-cols-3 @4xl:grid-cols-6">
         <StatsCard title="Total" value={number.format(data.metrics.sum)} />
         <StatsCard
           title="Average"

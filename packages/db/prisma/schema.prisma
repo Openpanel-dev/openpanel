@@ -230,7 +230,7 @@ model Client {
   type           ClientType   @default(write)
   projectId      String?
   project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
 
   createdAt DateTime @default(now())
@@ -257,6 +257,7 @@ enum ChartType {
   map
   funnel
   retention
+  conversion
 }
 
 model Dashboard {

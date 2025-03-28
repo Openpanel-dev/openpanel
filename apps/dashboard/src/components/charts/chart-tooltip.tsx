@@ -9,7 +9,7 @@ export function createChartTooltip<
   Tooltip: React.ComponentType<
     {
       context: PropsFromContext;
-      data: PropsFromTooltip;
+      data: PropsFromTooltip[];
     } & TooltipProps<number, string>
   >,
 ) {
@@ -24,7 +24,7 @@ export function createChartTooltip<
 
   const InnerTooltip = (tooltip: TooltipProps<number, string>) => {
     const context = useContext();
-    const data = tooltip.payload?.[0]?.payload;
+    const data = tooltip.payload?.map((p) => p.payload) ?? [];
 
     if (!data || !tooltip.active) {
       return null;

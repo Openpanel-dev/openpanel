@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   TABLE_NAMES,
   chQuery,
+  conversionService,
   createSqlBuilder,
   db,
   funnelService,
@@ -32,7 +33,6 @@ import {
   getChart,
   getChartPrevStartEndDate,
   getChartStartEndDate,
-  getFunnelData,
 } from './chart.helpers';
 
 function utc(date: string | Date) {
@@ -193,6 +193,29 @@ export const chartRouter = createTRPCRouter({
 
     return {
       current,
+      previous,
+    };
+  }),
+
+  conversion: protectedProcedure.input(zChartInput).query(async ({ input }) => {
+    const currentPeriod = getChartStartEndDate(input);
+    const previousPeriod = getChartPrevStartEndDate(currentPeriod);
+
+    const [current, previous] = await Promise.all([
+      conversionService.getConversion({ ...input, ...currentPeriod }),
+      input.previous
+        ? conversionService.getConversion({ ...input, ...previousPeriod })
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      current: current.map((serie, sIndex) => ({
+        ...serie,
+        data: serie.data.map((d, dIndex) => ({
+          ...d,
+          previousRate: previous?.[sIndex]?.data?.[dIndex]?.rate,
+        })),
+      })),
       previous,
     };
   }),

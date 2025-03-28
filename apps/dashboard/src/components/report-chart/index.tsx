@@ -8,6 +8,7 @@ import { ReportAreaChart } from './area';
 import { ReportBarChart } from './bar';
 import type { ReportChartProps } from './context';
 import { ReportChartProvider } from './context';
+import { ReportConversionChart } from './conversion';
 import { ReportFunnelChart } from './funnel';
 import { ReportHistogramChart } from './histogram';
 import { ReportLineChart } from './line';
@@ -51,6 +52,8 @@ export function ReportChart(props: ReportChartProps) {
         return <ReportFunnelChart />;
       case 'retention':
         return <ReportRetentionChart />;
+      case 'conversion':
+        return <ReportConversionChart />;
       default:
         return null;
     }

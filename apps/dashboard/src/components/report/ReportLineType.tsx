@@ -15,9 +15,12 @@ export function ReportLineType({ className }: ReportLineTypeProps) {
   const chartType = useSelector((state) => state.report.chartType);
   const type = useSelector((state) => state.report.lineType);
 
-  if (chartType !== 'linear' && chartType !== 'area') {
+  if (
+    chartType !== 'conversion' &&
+    chartType !== 'linear' &&
+    chartType !== 'area'
+  )
     return null;
-  }
 
   return (
     <Combobox

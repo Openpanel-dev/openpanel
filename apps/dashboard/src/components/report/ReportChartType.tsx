@@ -9,6 +9,7 @@ import {
   LineChartIcon,
   type LucideIcon,
   PieChartIcon,
+  TrendingUpIcon,
   UsersIcon,
 } from 'lucide-react';
 
@@ -52,6 +53,7 @@ export function ReportChartType({ className }: ReportChartTypeProps) {
     metric: GaugeIcon,
     retention: UsersIcon,
     map: Globe2Icon,
+    conversion: TrendingUpIcon,
   };
 
   return (
@@ -76,10 +78,11 @@ export function ReportChartType({ className }: ReportChartTypeProps) {
               <DropdownMenuItem
                 key={item.value}
                 onClick={() => dispatch(changeChartType(item.value))}
+                className="group"
               >
                 {item.label}
                 <DropdownMenuShortcut>
-                  <Icon className="size-4" />
+                  <Icon className="size-4 group-hover:text-blue-500 group-hover:scale-125 transition-all group-hover:rotate-12" />
                 </DropdownMenuShortcut>
               </DropdownMenuItem>
             );

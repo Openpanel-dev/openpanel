@@ -10,21 +10,25 @@ export function Stats({
   return (
     <div className="@container">
       <div
-        className={cn(
-          'grid overflow-hidden rounded border bg-background @xl:grid-cols-3 @4xl:grid-cols-6',
-          className,
-        )}
+        className={cn('overflow-hidden rounded border bg-card', className)}
         {...props}
       />
     </div>
   );
 }
 
-export function StatsCard({ title, value }: { title: string; value: string }) {
+export function StatsCard({
+  title,
+  value,
+  enhancer,
+}: { title: string; value: React.ReactNode; enhancer?: React.ReactNode }) {
   return (
     <div className="col gap-2 p-4 ring-[0.5px] ring-border">
-      <div className="text-muted-foreground">{title}</div>
-      <div className="truncate font-mono text-2xl font-bold">{value}</div>
+      <div className="text-muted-foreground text-sm">{title}</div>
+      <div className="row justify-between gap-4">
+        <div className="font-mono text-lg font-bold leading-snug">{value}</div>
+        <div>{enhancer}</div>
+      </div>
     </div>
   );
 }

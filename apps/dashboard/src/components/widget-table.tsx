@@ -80,7 +80,7 @@ export function WidgetTable<T>({
             <div
               key={keyExtractor(item)}
               className={cn(
-                'group/row relative border-b border-border last:border-0 h-8',
+                'group/row relative border-b border-border last:border-0 h-8 overflow-hidden',
                 columnClassName,
               )}
             >

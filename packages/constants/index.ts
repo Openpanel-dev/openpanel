@@ -84,6 +84,7 @@ export const chartTypes = {
   map: 'Map',
   funnel: 'Funnel',
   retention: 'Retention',
+  conversion: 'Conversion',
 } as const;
 
 export const lineTypes = {

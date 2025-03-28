@@ -24,12 +24,21 @@ export async function deleteProjects() {
     });
   }
 
-  await ch.command({
-    query: `DELETE FROM ${TABLE_NAMES.events} WHERE project_id IN (${projects.map((project) => escape(project.id)).join(',')});`,
-    clickhouse_settings: {
-      lightweight_deletes_sync: 0,
-    },
-  });
+  if (process.env.SELF_HOSTED) {
+    await ch.command({
+      query: `DELETE FROM ${TABLE_NAMES.events} WHERE project_id IN (${projects.map((project) => escape(project.id)).join(',')});`,
+      clickhouse_settings: {
+        lightweight_deletes_sync: 0,
+      },
+    });
+  } else {
+    await ch.command({
+      query: `DELETE FROM ${TABLE_NAMES.events}_replicated ON CLUSTER '{cluster}' WHERE project_id IN (${projects.map((project) => escape(project.id)).join(',')});`,
+      clickhouse_settings: {
+        lightweight_deletes_sync: 0,
+      },
+    });
+  }
 
   logger.info(`Deleted ${projects.length} projects`, {
     projects,

@@ -9,7 +9,10 @@ import { ReportSettings } from './ReportSettings';
 
 export function ReportSidebar() {
   const { chartType } = useSelector((state) => state.report);
-  const showFormula = chartType !== 'funnel' && chartType !== 'retention';
+  const showFormula =
+    chartType !== 'conversion' &&
+    chartType !== 'funnel' &&
+    chartType !== 'retention';
   const showBreakdown = chartType !== 'retention';
   return (
     <>
