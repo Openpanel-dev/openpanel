@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/worker",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "scripts": {
     "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
     "testing": "WORKER_PORT=9999 pnpm dev",
