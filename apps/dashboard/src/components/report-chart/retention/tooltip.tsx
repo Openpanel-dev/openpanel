@@ -31,7 +31,7 @@ export function RetentionTooltip({ active, payload }: Props) {
       <div className="flex justify-between">
         <span className="text-muted-foreground">Retention Rate:</span>
         <span className="font-medium">
-          {number.formatWithUnit(percentage, '%')}
+          {number.formatWithUnit(percentage / 100, '%')}
         </span>
       </div>
       <div className="flex justify-between">

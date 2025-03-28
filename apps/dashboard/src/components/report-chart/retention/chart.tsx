@@ -36,11 +36,12 @@ export function Chart({ data }: Props) {
     tickFormatter: (value) => `${value}%`,
   });
   const averageRow = data[0];
-  const averageRetentionRate = average(averageRow?.percentages || [], true);
-  const rechartData = averageRow?.percentages.map((item, index, list) => ({
+  const averageRetentionRate =
+    average(averageRow?.percentages || [], true) * 100;
+  const rechartData = averageRow?.percentages.map((item, index) => ({
     days: index,
-    percentage: item,
-    value: averageRow.values[index],
+    percentage: item * 100,
+    value: averageRow.values?.[index],
     sum: averageRow.sum,
   }));
 

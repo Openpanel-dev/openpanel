@@ -402,9 +402,7 @@ function processCohortData(
       cohort_interval: row.cohort_interval,
       sum,
       values: values,
-      percentages: values.map((value) =>
-        sum > 0 ? round((value / sum) * 100, 2) : 0,
-      ),
+      percentages: values.map((value) => (sum > 0 ? round(value / sum, 2) : 0)),
     };
   });
 
