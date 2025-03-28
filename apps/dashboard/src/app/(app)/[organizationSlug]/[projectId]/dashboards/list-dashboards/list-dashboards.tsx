@@ -23,6 +23,7 @@ import {
   PieChartIcon,
   PlusIcon,
   Trash,
+  TrendingUpIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -113,6 +114,7 @@ export function ListDashboards({ dashboards }: ListDashboardsProps) {
                         funnel: ConeIcon,
                         area: AreaChartIcon,
                         retention: ChartScatterIcon,
+                        conversion: TrendingUpIcon,
                       }[report.chartType];
 
                       return (
