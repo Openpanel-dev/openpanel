@@ -8,6 +8,7 @@ import { zOnboardingProject } from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/common/server';
 import { addDays } from 'date-fns';
+import { addTrialEndingSoonJob, miscQueue } from '../../../queue';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 async function createOrGetOrganization(
@@ -18,16 +19,27 @@ async function createOrGetOrganization(
     return await getOrganizationBySlug(input.organizationId);
   }
 
+  const TRIAL_DURATION_IN_DAYS = 30;
+
   if (input.organization) {
-    return db.organization.create({
+    const organization = await db.organization.create({
       data: {
         id: await getId('organization', input.organization),
         name: input.organization,
         createdByUserId: user.id,
-        subscriptionEndsAt: addDays(new Date(), 30),
+        subscriptionEndsAt: addDays(new Date(), TRIAL_DURATION_IN_DAYS),
         subscriptionStatus: 'trialing',
       },
     });
+
+    if (!process.env.SELF_HOSTED) {
+      await addTrialEndingSoonJob(
+        organization.id,
+        1000 * 60 * 60 * 24 * TRIAL_DURATION_IN_DAYS * 0.9,
+      );
+    }
+
+    return organization;
   }
 
   return null;

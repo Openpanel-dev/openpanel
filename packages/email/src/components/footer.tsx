@@ -22,8 +22,8 @@ export function Footer() {
 
         <br />
 
-        <Row>
-          <Column className="align-middle w-[40px]">
+        <Row className="mt-4">
+          <Column className="w-8">
             <Link href="https://git.new/openpanel">
               <Img
                 src={`${baseUrl}/icons/github.png`}
@@ -33,7 +33,7 @@ export function Footer() {
               />
             </Link>
           </Column>
-          <Column className="align-middle w-[40px]">
+          <Column className="w-8">
             <Link href="https://x.com/openpaneldev">
               <Img
                 src={`${baseUrl}/icons/x.png`}
@@ -43,8 +43,7 @@ export function Footer() {
               />
             </Link>
           </Column>
-
-          <Column className="align-middle">
+          <Column className="w-8">
             <Link href="https://go.openpanel.dev/discord">
               <Img
                 src={`${baseUrl}/icons/discord.png`}
@@ -54,8 +53,7 @@ export function Footer() {
               />
             </Link>
           </Column>
-
-          <Column className="align-middle">
+          <Column className="w-auto">
             <Link href="mailto:hello@openpanel.dev">
               <Img
                 src={`${baseUrl}/icons/email.png`}

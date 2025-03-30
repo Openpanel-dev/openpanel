@@ -4,6 +4,7 @@ import { Worker } from 'bullmq';
 import {
   cronQueue,
   eventsQueue,
+  miscQueue,
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
@@ -13,6 +14,7 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
+import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
 import { logger } from './utils/logger';
@@ -35,12 +37,14 @@ export async function bootWorkers() {
     notificationJob,
     workerOptions,
   );
+  const miscWorker = new Worker(miscQueue.name, miscJob, workerOptions);
 
   const workers = [
     sessionsWorker,
     eventsWorker,
     cronWorker,
     notificationWorker,
+    miscWorker,
   ];
 
   workers.forEach((worker) => {
@@ -105,12 +109,7 @@ export async function bootWorkers() {
     try {
       const time = performance.now();
       await waitForQueueToEmpty(cronQueue);
-      await Promise.all([
-        cronWorker.close(),
-        eventsWorker.close(),
-        sessionsWorker.close(),
-        notificationWorker.close(),
-      ]);
+      await Promise.all(workers.map((worker) => worker.close()));
       logger.info('workers closed successfully', {
         elapsed: performance.now() - time,
       });

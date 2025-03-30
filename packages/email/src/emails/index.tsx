@@ -3,6 +3,7 @@ import { EmailInvite, zEmailInvite } from './email-invite';
 import EmailResetPassword, {
   zEmailResetPassword,
 } from './email-reset-password';
+import TrailEndingSoon, { zTrailEndingSoon } from './trial-ending-soon';
 
 export const templates = {
   invite: {
@@ -16,6 +17,12 @@ export const templates = {
       'Reset your password',
     Component: EmailResetPassword,
     schema: zEmailResetPassword,
+  },
+  'trial-ending-soon': {
+    subject: (data: z.infer<typeof zTrailEndingSoon>) =>
+      'Your trial is ending soon',
+    Component: TrailEndingSoon,
+    schema: zTrailEndingSoon,
   },
 } as const;
 

@@ -76,6 +76,15 @@ export type CronQueuePayload =
   | CronQueuePayloadPing
   | CronQueuePayloadProject;
 
+export type MiscQueuePayloadTrialEndingSoon = {
+  type: 'trialEndingSoon';
+  payload: {
+    organizationId: string;
+  };
+};
+
+export type MiscQueuePayload = MiscQueuePayloadTrialEndingSoon;
+
 export type CronQueueType = CronQueuePayload['type'];
 
 export const eventsQueue = new Queue<EventsQueuePayload>('events', {
@@ -107,6 +116,13 @@ export const cronQueue = new Queue<CronQueuePayload>('cron', {
   },
 });
 
+export const miscQueue = new Queue<MiscQueuePayload>('misc', {
+  connection: getRedisQueue(),
+  defaultJobOptions: {
+    removeOnComplete: 10,
+  },
+});
+
 export type NotificationQueuePayload = {
   type: 'sendNotification';
   payload: {
@@ -123,3 +139,18 @@ export const notificationQueue = new Queue<NotificationQueuePayload>(
     },
   },
 );
+
+export function addTrialEndingSoonJob(organizationId: string, delay: number) {
+  return miscQueue.add(
+    'misc',
+    {
+      type: 'trialEndingSoon',
+      payload: {
+        organizationId,
+      },
+    },
+    {
+      delay,
+    },
+  );
+}

@@ -7,6 +7,7 @@ import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
   eventsQueue,
+  miscQueue,
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
@@ -36,6 +37,7 @@ async function start() {
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
         new BullMQAdapter(notificationQueue),
+        new BullMQAdapter(miscQueue),
       ],
       serverAdapter: serverAdapter,
     });
