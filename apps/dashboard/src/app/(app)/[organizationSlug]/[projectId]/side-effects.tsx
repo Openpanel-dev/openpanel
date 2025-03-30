@@ -1,11 +1,10 @@
 'use client';
 
-import { pushModal, useOnPushModal } from '@/modals';
-import { differenceInDays, differenceInHours } from 'date-fns';
+import { differenceInHours } from 'date-fns';
 import { useEffect, useState } from 'react';
 
 import { ProjectLink } from '@/components/links';
-import { Dialog, DialogContent, DialogHeader } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ModalHeader } from '@/modals/Modal/Container';
 import type { IServiceOrganization } from '@openpanel/db';
 import { useOpenPanel } from '@openpanel/nextjs';
@@ -16,6 +15,7 @@ interface SideEffectsProps {
 }
 
 export default function SideEffects({ organization }: SideEffectsProps) {
+  const [mounted, setMounted] = useState(false);
   const op = useOpenPanel();
   const willEndInHours = organization.subscriptionEndsAt
     ? differenceInHours(organization.subscriptionEndsAt, new Date())
@@ -28,10 +28,19 @@ export default function SideEffects({ organization }: SideEffectsProps) {
   );
 
   useEffect(() => {
+    if (!mounted) {
+      setMounted(true);
+    }
+
     if (isTrialDialogOpen) {
       op.track('trial_expires_soon');
     }
   }, [isTrialDialogOpen]);
+
+  // Avoids hydration errors
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <>
