@@ -38,6 +38,7 @@ import {
   getEventFiltersWhereClause,
   getOrganizationByProjectId,
   getOrganizationByProjectIdCached,
+  getOrganizationSubscriptionChartEndDate,
   getProfiles,
 } from '@openpanel/db';
 import type {
@@ -509,23 +510,16 @@ export async function getChartSeries(input: IChartInputWithDates) {
 }
 
 export async function getChart(input: IChartInput) {
-  const organization = await getOrganizationByProjectIdCached(input.projectId);
-
-  if (!organization) {
-    throw TRPCNotFoundError(
-      `Organization not found by project id ${input.projectId} in getChart`,
-    );
-  }
-
   const currentPeriod = getChartStartEndDate(input);
   const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
-  // If the current period end date is after the subscription chart end date, we need to use the subscription chart end date
-  if (
-    organization.subscriptionChartEndDate &&
-    new Date(currentPeriod.endDate) > organization.subscriptionChartEndDate
-  ) {
-    currentPeriod.endDate = organization.subscriptionChartEndDate.toISOString();
+  const endDate = await getOrganizationSubscriptionChartEndDate(
+    input.projectId,
+    currentPeriod.endDate,
+  );
+
+  if (endDate) {
+    currentPeriod.endDate = endDate;
   }
 
   const promises = [getChartSeries({ ...input, ...currentPeriod })];

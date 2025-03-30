@@ -237,3 +237,22 @@ export const getOrganizationBillingEventsCountSerieCached = cacheable(
   getOrganizationBillingEventsCountSerie,
   60 * 10,
 );
+
+export async function getOrganizationSubscriptionChartEndDate(
+  projectId: string,
+  endDate: string,
+) {
+  const organization = await getOrganizationByProjectIdCached(projectId);
+  if (!organization) {
+    return null;
+  }
+  // If the current period end date is after the subscription chart end date, we need to use the subscription chart end date
+  if (
+    organization.subscriptionChartEndDate &&
+    new Date(endDate) > organization.subscriptionChartEndDate
+  ) {
+    return organization.subscriptionChartEndDate.toISOString();
+  }
+
+  return endDate;
+}

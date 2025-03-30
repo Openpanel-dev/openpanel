@@ -135,7 +135,8 @@ export default function LayoutMenu({
             <div className="flex-1 col gap-0.5">
               <div className="font-medium">Subscription expired</div>
               <div className="text-sm opacity-80">
-                {differenceInDays(new Date(), subscriptionEndsAt)} days ago
+                You can still use OpenPanel but you won't have access to new
+                incoming data.
               </div>
             </div>
           </ProjectLink>

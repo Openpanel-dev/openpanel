@@ -1,10 +1,13 @@
 import {
+  getOrganizationByProjectIdCached,
+  getOrganizationSubscriptionChartEndDate,
   overviewService,
   zGetMetricsInput,
   zGetTopGenericInput,
   zGetTopPagesInput,
 } from '@openpanel/db';
 import { type IChartRange, zRange } from '@openpanel/validation';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { cacheMiddleware, createTRPCRouter, publicProcedure } from '../trpc';
 import {
@@ -29,6 +32,7 @@ function getCurrentAndPrevious<
     startDate?: string | null;
     endDate?: string | null;
     range: IChartRange;
+    projectId: string;
   },
 >(input: T, fetchPrevious = false) {
   const current = getChartStartEndDate(input);
@@ -40,6 +44,13 @@ function getCurrentAndPrevious<
     current: R;
     previous: R | null;
   }> => {
+    const endDate = await getOrganizationSubscriptionChartEndDate(
+      input.projectId,
+      current.endDate,
+    );
+    if (endDate) {
+      current.endDate = endDate;
+    }
     const res = await Promise.all([
       fn({
         ...input,
