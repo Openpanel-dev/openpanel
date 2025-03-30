@@ -50,6 +50,10 @@ function getCurrentAndPrevious<
     );
     if (endDate) {
       current.endDate = endDate;
+      // Only expired trial scenarios
+      if (new Date(current.startDate) > new Date(current.endDate)) {
+        current.startDate = current.endDate;
+      }
     }
     const res = await Promise.all([
       fn({

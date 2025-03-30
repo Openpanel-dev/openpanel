@@ -219,9 +219,13 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     interval: IInterval;
   }
 >(({ context: { metric, interval }, data: dataArray }) => {
-  const data = dataArray[0]!;
+  const data = dataArray[0];
   const formatDate = useFormatDateInterval(interval);
   const number = useNumber();
+
+  if (!data) {
+    return null;
+  }
 
   return (
     <>
