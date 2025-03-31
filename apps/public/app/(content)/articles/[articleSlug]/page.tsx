@@ -1,5 +1,6 @@
 import { url, getAuthor } from '@/app/layout.config';
 import { SingleSwirl } from '@/components/Swirls';
+import { ArticleCard } from '@/components/article-card';
 import { Logo } from '@/components/logo';
 import { SectionHeader } from '@/components/section';
 import { Toc } from '@/components/toc';
@@ -62,6 +63,13 @@ export default async function Page({
   const Body = article?.data.body;
   const author = getAuthor(article?.data.team);
   const goBackUrl = '/articles';
+
+  const relatedArticles = (await articleSource.getPages())
+    .filter(
+      (item) =>
+        item.data.tag === article?.data.tag && item.url !== article?.url,
+    )
+    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
   if (!Body) {
     return notFound();
@@ -160,6 +168,26 @@ export default async function Page({
               <Body />
             </div>
           </div>
+
+          {relatedArticles.length > 0 && (
+            <div className="my-16">
+              <h3 className="text-2xl font-bold mb-8">Related articles</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {relatedArticles.map((item) => (
+                  <ArticleCard
+                    key={item.url}
+                    url={item.url}
+                    title={item.data.title}
+                    tag={item.data.tag}
+                    cover={item.data.cover}
+                    team={item.data.team}
+                    date={item.data.date}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="absolute top-0 -right-[300px] w-[300px] pl-12 h-full article:block hidden">
             <div className="sticky top-32 col gap-8">
               <Toc toc={article?.data.toc} />

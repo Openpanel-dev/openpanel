@@ -14,7 +14,7 @@ export default function Layout({
       <main className="overflow-hidden">
         <HeroContainer className="h-screen pointer-events-none" />
         <div className="absolute h-screen inset-0 radial-gradient-dot-pages select-none pointer-events-none" />
-        <div className="-mt-[calc(100vh-100px)] relative min-h-[500px] pb-12">
+        <div className="-mt-[calc(100vh-100px)] relative min-h-[500px] pb-12 -mb-24">
           {children}
         </div>
       </main>

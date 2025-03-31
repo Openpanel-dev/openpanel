@@ -9,7 +9,7 @@ export function Figure({
     <figure className="-mx-4">
       <Image
         src={src}
-        alt={alt}
+        alt={alt || caption}
         width={1200}
         height={800}
         className="rounded-lg"

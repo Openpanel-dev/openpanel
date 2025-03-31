@@ -1,0 +1,121 @@
+---
+title: How to Create and Use Funnels
+description: Funnels are powerful tools that help you understand how users move through your website or app. In this guide, we'll walk you through everything you need to know about creating and using funnels effectively.
+tag: Guide
+team: OpenPanel Team
+date: 2025-03-31
+cover: /content/funnels.jpg
+---
+import { Figure } from "@/components/figure";
+
+Funnels are powerful tools that help you understand how users move through your website or app. In this guide, we'll walk you through everything you need to know about creating and using funnels effectively.
+
+## What is a Funnel?
+
+Think about a kitchen funnel - it's wide at the top and gets narrow at the bottom. Analytics funnels work the same way. They show you how many people start a process and how many continue through each step. In a recipe website, for instance, users might start by viewing a recipe, then save it, and finally mark it as cooked. At each step, some people will drop off, making the funnel narrower - just like a real funnel.
+
+## Why Do You Need Funnels?
+
+Understanding user behavior is crucial for any website or app. Funnels give you a clear picture of where users are getting stuck or leaving your process. This knowledge is invaluable because it shows you exactly where to make improvements. Instead of guessing what might be wrong, you can see precisely where users lose interest or encounter problems.
+
+<Figure
+  src="/content/funnel/funnel-3.png"
+  caption="Example of funnel insights"
+/>
+
+## Creating Your First Funnel
+
+Creating a funnel is straightforward. Let me walk you through the process:
+
+### 1. Create a report
+
+As with any report you will need to click "Create report" to get going
+
+<Figure
+  src="/content/funnel/funnel-1.png"
+  caption="Create a report button is located at the top left of the page."
+/>
+
+### 2. Pick events
+
+Let's start with picking the events you want for your funnel. You can pick a `screen_view` event with a custom filter on (eg. `path = /login`) and than pick another events which is `sign_up`.
+
+**Our funnel will look like this:**
+
+1. Pick all `screen_view` which has `path = /login`
+2. And than triggered `sign_up`
+
+<Figure
+  src="/content/funnel/funnel-2.png"
+  caption="Find the Pick events button"
+/>
+
+<Figure
+  src="/content/funnel/funnel-3.png"
+  caption="Step-by-step funnel creation guide"
+/>
+
+### 3. Change report type
+
+Before you change report type you'll see a linear chart with a line for each event you have picked, to get a funnel you can easily switch to Funnel (look at the image).
+
+<Figure
+  src="/content/funnel/funnel-4.png"
+  caption="Step-by-step funnel creation guide"
+/>
+
+### 4. Understanding Your Funnel Results
+
+When your funnel is ready, you'll see a visualization that tells an important story. Let's say 1,000 people view a recipe - that's the top of your funnel. If 175 of those people save the recipe, your conversion rate is 17.5%. This number tells you how well this part of your process is working.
+
+> In this example we just did a 2-step-funnel, you can have as many steps as you want, but we recommend around 3-5.
+
+<Figure
+  src="/content/funnel/funnel-5.png"
+  caption="Your funnel is completed"
+/>
+
+## Making Your Funnel Work Better
+
+The real power of funnels comes from how you use them to improve your website or app. Start by looking for big drops between steps - these are your opportunities for improvement. In OpenPanel we mark what step could be most improved. If you notice that many people leave after viewing a recipe but before saving it, you might want to make the save button more visible or add features that make saving more appealing.
+
+Keep your funnels simple at first. Focus on tracking 2-4 important steps rather than trying to track everything at once. Check your funnel data regularly, perhaps weekly, and compare different time periods to see if your changes are making things better.
+
+## Real-World Funnel Examples
+
+Let's look at some common ways to use funnels. A recipe website might track the journey from viewing a recipe to actually cooking it. An online store would follow the path from viewing a product to completing a purchase. A signup process might track users from visiting the homepage through confirming their email.
+
+These examples show how versatile funnels can be. The key is choosing steps that matter most for your goals.
+
+## Tips for Success
+
+Success with funnels comes from starting small and being consistent. Begin with one simple funnel that tracks your most important process. Check it regularly and look for patterns. When you make changes to your website or app, watch how they affect your funnel metrics.
+
+Remember that every small improvement counts. If you can help just a few more people complete each step, these small wins add up to big improvements over time.
+
+### A/B testing
+
+A/B testing your funnels is a powerful way to compare different versions of your product and make data-driven decisions. OpenPanel makes this easy with the Breakdown feature, which works similar to a `GROUP BY` in SQL - it splits your funnel data into different groups for comparison.
+
+**Here's how it works:**
+
+1. Create your funnel as normal
+2. Click on "Breakdown" in the settings
+3. Choose the property you want to compare (like 'version', 'variant', or 'experiment_group')
+4. View the results side by side
+
+In the example below, we've broken down our funnel by a `version` property to compare two different versions of our product. Version `v2` shows a conversion rate of 7% compared to `v1`'s 5.4% - **that's a 29% improvement!** This kind of clear comparison makes it much easier to:
+
+- Validate new features
+- Test different user interfaces
+- Measure the impact of changes
+- Make confident decisions about which version to keep
+
+<Figure 
+  src="/content/funnel/funnel-breakdown.png"
+  caption="A/B test comparison showing version v2 performing better than v1"
+/>
+
+Remember to run your tests for long enough to get statistically significant results. A good rule of thumb is to wait until you have at least 1,000 users in each group before making any major decisions based on the data.
+
+Pro tip: You can use multiple breakdowns to segment your data even further. For example, you might want to compare versions across different countries or device types to ensure your improvements work well for all users.
