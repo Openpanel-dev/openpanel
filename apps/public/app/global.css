@@ -214,3 +214,11 @@ h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
   font-size: inherit;
   border: none;
 }
+
+div[data-radix-scroll-area-viewport] > div[data-radix-scroll-area-content] {
+  max-height: 400px;
+}
+
+div[data-radix-scroll-area-viewport] > div[data-radix-scroll-area-content] pre{
+  max-height: none;
+}
