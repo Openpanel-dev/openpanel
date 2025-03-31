@@ -133,7 +133,9 @@ export async function connectUserToOrganization({
   user: User;
   inviteId: string;
 }) {
-  const invite = await db.invite.findUnique({
+  // Use primary since before this we might have just created the invite
+  // If we use replica it might not find the invite
+  const invite = await db.$primary().invite.findUnique({
     where: {
       id: inviteId,
     },
