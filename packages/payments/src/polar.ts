@@ -84,14 +84,25 @@ export async function createCheckout({
   });
 }
 
-export function cancelSubscription(subscriptionId: string) {
-  return polar.subscriptions.update({
-    id: subscriptionId,
-    subscriptionUpdate: {
-      cancelAtPeriodEnd: true,
-      revoke: null,
-    },
-  });
+export async function cancelSubscription(subscriptionId: string) {
+  try {
+    return await polar.subscriptions.update({
+      id: subscriptionId,
+      subscriptionUpdate: {
+        cancelAtPeriodEnd: true,
+        revoke: null,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      // Don't throw an error if the subscription is already canceled
+      if (error.name === 'AlreadyCanceledSubscription') {
+        return polar.subscriptions.get({ id: subscriptionId });
+      }
+    }
+
+    throw error;
+  }
 }
 
 export function reactivateSubscription(subscriptionId: string) {

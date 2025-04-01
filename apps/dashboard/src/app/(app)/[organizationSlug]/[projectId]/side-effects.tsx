@@ -8,6 +8,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { ModalHeader } from '@/modals/Modal/Container';
 import type { IServiceOrganization } from '@openpanel/db';
 import { useOpenPanel } from '@openpanel/nextjs';
+import { FREE_PRODUCT_IDS } from '@openpanel/payments';
 import Billing from './settings/organization/organization/billing';
 
 interface SideEffectsProps {
@@ -20,22 +21,36 @@ export default function SideEffects({ organization }: SideEffectsProps) {
   const willEndInHours = organization.subscriptionEndsAt
     ? differenceInHours(organization.subscriptionEndsAt, new Date())
     : null;
-  const [isTrialDialogOpen, setIsTrialDialogOpen] = useState<boolean>(
-    willEndInHours !== null &&
-      organization.subscriptionStatus === 'trialing' &&
-      organization.subscriptionEndsAt !== null &&
-      willEndInHours <= 48,
-  );
+  const [isTrialDialogOpen, setIsTrialDialogOpen] = useState<boolean>(false);
+  const [isFreePlan, setIsFreePlan] = useState<boolean>(false);
 
   useEffect(() => {
     if (!mounted) {
       setMounted(true);
     }
+  }, []);
 
-    if (isTrialDialogOpen) {
+  useEffect(() => {
+    if (
+      willEndInHours !== null &&
+      organization.subscriptionStatus === 'trialing' &&
+      organization.subscriptionEndsAt !== null &&
+      willEndInHours <= 48
+    ) {
+      setIsTrialDialogOpen(true);
       op.track('trial_expires_soon');
     }
-  }, [isTrialDialogOpen]);
+  }, [mounted, organization]);
+
+  useEffect(() => {
+    if (
+      organization.subscriptionProductId &&
+      FREE_PRODUCT_IDS.includes(organization.subscriptionProductId)
+    ) {
+      setIsFreePlan(true);
+      op.track('free_plan_removed');
+    }
+  }, [mounted, organization]);
 
   // Avoids hydration errors
   if (!mounted) {
@@ -53,6 +68,29 @@ export default function SideEffects({ organization }: SideEffectsProps) {
                 ? `Your trial is ending in ${willEndInHours} hours`
                 : 'Your trial has ended'
             }
+            text={
+              <>
+                Please upgrade your plan to continue using OpenPanel. Select a
+                tier which is appropriate for your needs or{' '}
+                <ProjectLink
+                  href="/settings/organization?tab=billing"
+                  className="underline text-foreground"
+                >
+                  manage billing
+                </ProjectLink>
+              </>
+            }
+          />
+          <div className="-mx-4 mt-4">
+            <Billing organization={organization} />
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isFreePlan} onOpenChange={setIsFreePlan}>
+        <DialogContent className="max-w-xl">
+          <ModalHeader
+            onClose={() => setIsFreePlan(false)}
+            title={'Free plan has been removed'}
             text={
               <>
                 Please upgrade your plan to continue using OpenPanel. Select a

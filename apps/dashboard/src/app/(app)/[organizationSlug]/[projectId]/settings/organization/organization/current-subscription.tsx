@@ -22,7 +22,7 @@ import Confirm from '@/modals/Confirm';
 import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import type { IServiceOrganization } from '@openpanel/db';
-import type { IPolarPrice } from '@openpanel/payments';
+import { FREE_PRODUCT_IDS, type IPolarPrice } from '@openpanel/payments';
 import { format } from 'date-fns';
 import { Loader2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -152,41 +152,44 @@ export default function CurrentSubscription({ organization }: Props) {
             </div>
           )}
         </div>
-        <div className="col gap-2">
-          {organization.isWillBeCanceled || organization.isCanceled ? (
-            <Button
-              loading={checkout.isLoading}
-              onClick={() => {
-                checkout.mutate({
-                  projectId,
-                  organizationId: organization.id,
-                  productPriceId: price!.id,
-                  productId: price.productId,
-                });
-              }}
-            >
-              Reactivate subscription
-            </Button>
-          ) : (
-            <Button
-              variant="destructive"
-              loading={cancelSubscription.isLoading}
-              onClick={() => {
-                showConfirm({
-                  title: 'Cancel subscription',
-                  text: 'Are you sure you want to cancel your subscription?',
-                  onConfirm() {
-                    cancelSubscription.mutate({
+        {organization.subscriptionProductId &&
+          !FREE_PRODUCT_IDS.includes(organization.subscriptionProductId) && (
+            <div className="col gap-2">
+              {organization.isWillBeCanceled || organization.isCanceled ? (
+                <Button
+                  loading={checkout.isLoading}
+                  onClick={() => {
+                    checkout.mutate({
+                      projectId,
                       organizationId: organization.id,
+                      productPriceId: price!.id,
+                      productId: price.productId,
                     });
-                  },
-                });
-              }}
-            >
-              Cancel subscription
-            </Button>
+                  }}
+                >
+                  Reactivate subscription
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  loading={cancelSubscription.isLoading}
+                  onClick={() => {
+                    showConfirm({
+                      title: 'Cancel subscription',
+                      text: 'Are you sure you want to cancel your subscription?',
+                      onConfirm() {
+                        cancelSubscription.mutate({
+                          organizationId: organization.id,
+                        });
+                      },
+                    });
+                  }}
+                >
+                  Cancel subscription
+                </Button>
+              )}
+            </div>
           )}
-        </div>
       </>
     );
   }

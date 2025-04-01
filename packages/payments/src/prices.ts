@@ -16,3 +16,8 @@ export const PRICING: IPrice[] = [
   // { price: 650, events: 20_000_000 },
   // { price: 900, events: 30_000_000 },
 ];
+
+export const FREE_PRODUCT_IDS = [
+  'a18b4bee-d3db-4404-be6f-fba2f042d9ed', // Prod
+  '036efa2a-b3b4-4c75-b24a-9cac6bb8893b', // Sandbox
+];
