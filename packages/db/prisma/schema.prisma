@@ -36,7 +36,7 @@ model Organization {
   projects        Project[]
   members         Member[]
   createdByUserId String?
-  createdBy       User?           @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id])
+  createdBy       User?           @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   ProjectAccess   ProjectAccess[]
   Client          Client[]
   Dashboard       Dashboard[]
@@ -129,7 +129,7 @@ model Member {
   userId         String?
   user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitedById    String?
-  invitedBy      User?        @relation("invitedBy", fields: [invitedById], references: [id])
+  invitedBy      User?        @relation("invitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   meta           Json?
@@ -142,7 +142,7 @@ model Member {
 model Invite {
   id             String       @id
   email          String
-  createdBy      User         @relation(fields: [createdById], references: [id])
+  createdBy      User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
   createdById    String
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -263,7 +263,7 @@ enum ChartType {
 model Dashboard {
   id             String       @id @default(dbgenerated("gen_random_uuid()"))
   name           String
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
   projectId      String
   project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -302,7 +302,7 @@ model Report {
   funnelWindow Float?
 
   dashboardId String
-  dashboard   Dashboard @relation(fields: [dashboardId], references: [id])
+  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -314,7 +314,7 @@ model ShareOverview {
   id             String       @unique
   projectId      String       @unique
   project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
   public         Boolean      @default(false)
   password       String?
@@ -389,10 +389,10 @@ model Notification {
   updatedAt          DateTime          @default(now()) @updatedAt
   sendToApp          Boolean           @default(false)
   sendToEmail        Boolean           @default(false)
-  integration        Integration?      @relation(fields: [integrationId], references: [id])
+  integration        Integration?      @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   integrationId      String?           @db.Uuid
   notificationRuleId String?           @db.Uuid
-  notificationRule   NotificationRule? @relation(fields: [notificationRuleId], references: [id])
+  notificationRule   NotificationRule? @relation(fields: [notificationRuleId], references: [id], onDelete: Cascade)
   /// [IPrismaNotificationPayload]
   payload            Json?
 
@@ -404,7 +404,7 @@ model Integration {
   name              String
   /// [IPrismaIntegrationConfig]
   config            Json
-  organization      Organization       @relation(fields: [organizationId], references: [id])
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId    String
   notificationRules NotificationRule[]
   notifications     Notification[]
@@ -417,7 +417,7 @@ model Integration {
 model ResetPassword {
   id        String   @id
   accountId String
-  account   Account  @relation(fields: [accountId], references: [id])
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

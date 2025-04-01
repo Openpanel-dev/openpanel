@@ -25,7 +25,7 @@ export async function cronJob(job: Job<CronQueuePayload>) {
       return await ping();
     }
     case 'deleteProjects': {
-      return await deleteProjects();
+      return await deleteProjects(job);
     }
   }
 }
