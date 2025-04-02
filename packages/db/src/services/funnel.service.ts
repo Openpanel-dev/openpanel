@@ -16,7 +16,7 @@ export class FunnelService {
 
   private getFunnelGroup(group?: string) {
     return group === 'profile_id'
-      ? [`COALESCE(nullIf(s.profile_id, ''), e.profile_id)`, 'profile_id']
+      ? [`COALESCE(nullIf(s.profile_id, ''), profile_id)`, 'profile_id']
       : ['session_id', 'session_id'];
   }
 
@@ -155,11 +155,14 @@ export class FunnelService {
         : null;
 
     // Base funnel query with CTEs
-    const funnelQuery = clix(this.client).with('funnel', funnelCte);
+    const funnelQuery = clix(this.client);
 
     if (sessionsCte) {
+      funnelCte.join('sessions s', 's.id = session_id');
       funnelQuery.with('sessions', sessionsCte);
     }
+
+    funnelQuery.with('funnel', funnelCte);
 
     funnelQuery
       .select<{
