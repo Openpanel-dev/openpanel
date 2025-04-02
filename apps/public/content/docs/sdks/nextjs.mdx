@@ -78,7 +78,7 @@ This options needs to be a stringified function and cannot access any variables 
 
 To take advantage of typescript you can do the following. _Note `toString`_
 ```tsx /.toString();/
-import { type OpenPanelOptions } from '@openpanel/nextjs';
+import { type TrackHandlerPayload } from '@openpanel/nextjs';
 
 const opFilter = ((event: TrackHandlerPayload) => {
   return event.type === 'track' && event.payload.name === 'my_event';
