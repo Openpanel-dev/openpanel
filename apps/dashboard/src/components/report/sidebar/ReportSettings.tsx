@@ -37,7 +37,7 @@ export function ReportSettings() {
       fields.push('unit');
     }
 
-    if (chartType === 'funnel') {
+    if (chartType === 'funnel' || chartType === 'conversion') {
       fields.push('funnelGroup');
       fields.push('funnelWindow');
     }

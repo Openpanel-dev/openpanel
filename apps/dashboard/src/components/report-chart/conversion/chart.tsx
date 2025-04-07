@@ -17,7 +17,7 @@ import {
 import { createChartTooltip } from '@/components/charts/chart-tooltip';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
-import { getPreviousMetric } from '@openpanel/common';
+import { average, getPreviousMetric, round } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';
 import { Fragment } from 'react';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
@@ -60,6 +60,12 @@ export function Chart({ data }: Props) {
   const yAxisProps = useYAxisProps({
     hide: hideYAxis,
   });
+
+  const averageConversionRate = average(
+    data.current.map((serie) => {
+      return average(serie.data.map((item) => item.rate));
+    }, 0),
+  );
 
   return (
     <TooltipProvider conversion={data} interval={interval}>
@@ -118,6 +124,23 @@ export function Chart({ data }: Props) {
                 </Fragment>
               );
             })}
+            {typeof averageConversionRate === 'number' &&
+              averageConversionRate && (
+                <ReferenceLine
+                  y={averageConversionRate}
+                  stroke={getChartColor(1)}
+                  strokeWidth={2}
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.5}
+                  strokeLinecap="round"
+                  label={{
+                    value: `Average (${round(averageConversionRate, 2)} %)`,
+                    fill: getChartColor(1),
+                    position: 'insideBottomRight',
+                    fontSize: 12,
+                  }}
+                />
+              )}
           </LineChart>
         </ResponsiveContainer>
       </div>
