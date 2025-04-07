@@ -158,7 +158,7 @@ export class FunnelService {
     const funnelQuery = clix(this.client);
 
     if (sessionsCte) {
-      funnelCte.join('sessions s', 's.id = session_id');
+      funnelCte.leftJoin('sessions s', 's.id = session_id');
       funnelQuery.with('sessions', sessionsCte);
     }
 
