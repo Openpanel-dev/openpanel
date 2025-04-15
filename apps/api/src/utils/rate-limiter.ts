@@ -1,14 +1,16 @@
 import { getRedisCache } from '@openpanel/redis';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 
-export async function activateRateLimiter({
+export async function activateRateLimiter<T extends FastifyRequest>({
   fastify,
   max,
   timeWindow,
+  keyGenerator,
 }: {
   fastify: FastifyInstance;
   max: number;
   timeWindow?: string;
+  keyGenerator?: (req: T) => string | undefined;
 }) {
   await fastify.register(import('@fastify/rate-limit'), {
     max,
@@ -22,6 +24,12 @@ export async function activateRateLimiter({
     },
     redis: getRedisCache(),
     keyGenerator(req) {
+      if (keyGenerator) {
+        const key = keyGenerator(req as T);
+        if (key) {
+          return key;
+        }
+      }
       return (req.headers['openpanel-client-id'] ||
         req.headers['x-real-ip'] ||
         req.headers['x-client-ip'] ||

@@ -15,6 +15,7 @@ import {
   PlusIcon,
   ScanEyeIcon,
   ServerIcon,
+  SparklesIcon,
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
@@ -23,6 +24,7 @@ import { usePathname } from 'next/navigation';
 
 import { ProjectLink } from '@/components/links';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { CommandShortcut } from '@/components/ui/command';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import type { IServiceDashboards, IServiceOrganization } from '@openpanel/db';
 import { differenceInDays, format } from 'date-fns';
@@ -175,14 +177,24 @@ export default function LayoutMenu({
           </ProjectLink>
         )}
         <ProjectLink
+          href={'/chat'}
+          className={cn('rounded p-2 row gap-2 hover:bg-def-200 items-center')}
+        >
+          <SparklesIcon size={20} />
+          <div className="flex-1 col gap-1">
+            <div className="font-medium">Ask AI</div>
+          </div>
+          <CommandShortcut>⌘K</CommandShortcut>
+        </ProjectLink>
+        <ProjectLink
           href={'/reports'}
-          className={cn('rounded p-2 row gap-2 hover:bg-def-200')}
+          className={cn('rounded p-2 row gap-2 hover:bg-def-200 items-center')}
         >
           <ChartLineIcon size={20} />
           <div className="flex-1 col gap-1">
             <div className="font-medium">Create report</div>
           </div>
-          <PlusIcon size={16} className="text-muted-foreground" />
+          <CommandShortcut>⌘J</CommandShortcut>
         </ProjectLink>
       </div>
       <LinkWithIcon icon={WallpaperIcon} label="Overview" href={'/'} />

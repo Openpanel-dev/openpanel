@@ -19,27 +19,48 @@ export function objectToZodEnums<K extends string>(
 export const mapKeys = objectToZodEnums;
 
 export const zChartEventFilter = z.object({
-  id: z.string().optional(),
-  name: z.string(),
-  operator: z.enum(objectToZodEnums(operators)),
-  value: z.array(z.string().or(z.number()).or(z.boolean()).or(z.null())),
+  id: z.string().optional().describe('Unique identifier for the filter'),
+  name: z.string().describe('The property name to filter on'),
+  operator: z
+    .enum(objectToZodEnums(operators))
+    .describe('The operator to use for the filter'),
+  value: z
+    .array(z.string().or(z.number()).or(z.boolean()).or(z.null()))
+    .describe('The values to filter on'),
 });
 
 export const zChartEvent = z.object({
-  id: z.string().optional(),
-  name: z.string(),
-  displayName: z.string().optional(),
-  property: z.string().optional(),
-  segment: z.enum([
-    'event',
-    'user',
-    'session',
-    'user_average',
-    'one_event_per_user',
-    'property_sum',
-    'property_average',
-  ]),
-  filters: z.array(zChartEventFilter).default([]),
+  id: z
+    .string()
+    .optional()
+    .describe('Unique identifier for the chart event configuration'),
+  name: z.string().describe('The name of the event as tracked in the system'),
+  displayName: z
+    .string()
+    .optional()
+    .describe('A user-friendly name for display purposes'),
+  property: z
+    .string()
+    .optional()
+    .describe(
+      'Optional property of the event used for specific segment calculations (e.g., value for property_sum/average)',
+    ),
+  segment: z
+    .enum([
+      'event',
+      'user',
+      'session',
+      'user_average',
+      'one_event_per_user',
+      'property_sum',
+      'property_average',
+    ])
+    .default('event')
+    .describe('Defines how the event data should be segmented or aggregated'),
+  filters: z
+    .array(zChartEventFilter)
+    .default([])
+    .describe('Filters applied specifically to this event'),
 });
 export const zChartBreakdown = z.object({
   id: z.string().optional(),
@@ -62,29 +83,94 @@ export const zRange = z.enum(objectToZodEnums(timeWindows));
 export const zCriteria = z.enum(['on_or_after', 'on']);
 
 export const zChartInput = z.object({
-  chartType: zChartType.default('linear'),
-  interval: zTimeInterval.default('day'),
-  events: zChartEvents,
-  breakdowns: zChartBreakdowns.default([]),
-  range: zRange.default('30d'),
-  previous: z.boolean().default(false),
-  formula: z.string().optional(),
-  metric: zMetric.default('sum'),
-  projectId: z.string(),
-  startDate: z.string().nullish(),
-  endDate: z.string().nullish(),
-  limit: z.number().optional(),
-  offset: z.number().optional(),
-  criteria: zCriteria.optional(),
-  funnelGroup: z.string().optional(),
-  funnelWindow: z.number().optional(),
+  chartType: zChartType
+    .default('linear')
+    .describe('What type of chart should be displayed'),
+  interval: zTimeInterval
+    .default('day')
+    .describe(
+      'The time interval for data aggregation (e.g., day, week, month)',
+    ),
+  events: zChartEvents.describe(
+    'Array of events to be tracked and displayed in the chart',
+  ),
+  breakdowns: zChartBreakdowns
+    .default([])
+    .describe('Array of dimensions to break down the data by'),
+  range: zRange
+    .default('30d')
+    .describe('The time range for which data should be displayed'),
+  previous: z
+    .boolean()
+    .default(false)
+    .describe('Whether to show data from the previous period for comparison'),
+  formula: z
+    .string()
+    .optional()
+    .describe('Custom formula for calculating derived metrics'),
+  metric: zMetric
+    .default('sum')
+    .describe(
+      'The aggregation method for the metric (e.g., sum, count, average)',
+    ),
+  projectId: z.string().describe('The ID of the project this chart belongs to'),
+  startDate: z
+    .string()
+    .nullish()
+    .describe(
+      'Custom start date for the data range (overrides range if provided)',
+    ),
+  endDate: z
+    .string()
+    .nullish()
+    .describe(
+      'Custom end date for the data range (overrides range if provided)',
+    ),
+  limit: z
+    .number()
+    .optional()
+    .describe('Limit how many series should be returned'),
+  offset: z
+    .number()
+    .optional()
+    .describe('Skip how many series should be returned'),
+  criteria: zCriteria
+    .optional()
+    .describe('Filtering criteria for retention chart (e.g., on_or_after, on)'),
+  funnelGroup: z
+    .string()
+    .optional()
+    .describe(
+      'Group identifier for funnel analysis, e.g. "profile_id" or "session_id"',
+    ),
+  funnelWindow: z
+    .number()
+    .optional()
+    .describe('Time window in hours for funnel analysis'),
 });
 
 export const zReportInput = zChartInput.extend({
-  name: z.string(),
-  lineType: zLineType,
-  unit: z.string().optional(),
+  name: z.string().describe('The user-defined name for the report'),
+  lineType: zLineType.describe('The visual style of the line in the chart'),
+  unit: z
+    .string()
+    .optional()
+    .describe(
+      "Optional unit of measurement for the chart's Y-axis (e.g., $, %, users)",
+    ),
 });
+
+export const zChartInputAI = zReportInput
+  .omit({
+    startDate: true,
+    endDate: true,
+    lineType: true,
+    unit: true,
+  })
+  .extend({
+    startDate: z.string().describe('The start date for the report'),
+    endDate: z.string().describe('The end date for the report'),
+  });
 
 export const zInviteUser = z.object({
   email: z.string().email(),

@@ -11,6 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.10",
+    "@ai-sdk/openai": "^1.3.12",
     "@fastify/compress": "^8.0.1",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.0.0",
@@ -19,6 +21,7 @@
     "@node-rs/argon2": "^2.0.2",
     "@openpanel/auth": "workspace:^",
     "@openpanel/common": "workspace:*",
+    "@openpanel/constants": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/integrations": "workspace:^",
     "@openpanel/json": "workspace:*",
@@ -29,6 +32,7 @@
     "@openpanel/trpc": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@trpc/server": "^10.45.2",
+    "ai": "^4.2.10",
     "bcrypt": "^5.1.1",
     "fast-json-stable-hash": "^1.0.3",
     "fastify": "^5.2.1",
@@ -45,7 +49,7 @@
     "svix": "^1.24.0",
     "url-metadata": "^4.1.1",
     "uuid": "^9.0.1",
-    "zod": "^3.22.4"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.0.1",

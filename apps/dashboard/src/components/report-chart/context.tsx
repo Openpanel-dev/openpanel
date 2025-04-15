@@ -39,6 +39,7 @@ type ReportChartContextProviderProps = ReportChartContextType & {
 
 export type ReportChartProps = Partial<ReportChartContextType> & {
   report: IChartInput;
+  lazy?: boolean;
 };
 
 const context = createContext<ReportChartContextType | null>(null);

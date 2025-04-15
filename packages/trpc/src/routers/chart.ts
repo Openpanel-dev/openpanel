@@ -28,7 +28,12 @@ import {
 } from 'date-fns';
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
-import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
+import {
+  cacheMiddleware,
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+} from '../trpc';
 import {
   getChart,
   getChartPrevStartEndDate,
@@ -41,6 +46,8 @@ function utc(date: string | Date) {
   }
   return formatISO(date).replace('T', ' ').slice(0, 19);
 }
+
+const cacher = cacheMiddleware(60);
 
 export const chartRouter = createTRPCRouter({
   events: protectedProcedure
@@ -220,13 +227,27 @@ export const chartRouter = createTRPCRouter({
     };
   }),
 
-  chart: publicProcedure.input(zChartInput).query(async ({ input, ctx }) => {
-    if (ctx.session.userId) {
-      const access = await getProjectAccessCached({
-        projectId: input.projectId,
-        userId: ctx.session.userId,
-      });
-      if (!access) {
+  chart: publicProcedure
+    .use(cacher)
+    .input(zChartInput)
+    .query(async ({ input, ctx }) => {
+      if (ctx.session.userId) {
+        const access = await getProjectAccessCached({
+          projectId: input.projectId,
+          userId: ctx.session.userId,
+        });
+        if (!access) {
+          const share = await db.shareOverview.findFirst({
+            where: {
+              projectId: input.projectId,
+            },
+          });
+
+          if (!share) {
+            throw TRPCAccessError('You do not have access to this project');
+          }
+        }
+      } else {
         const share = await db.shareOverview.findFirst({
           where: {
             projectId: input.projectId,
@@ -237,20 +258,9 @@ export const chartRouter = createTRPCRouter({
           throw TRPCAccessError('You do not have access to this project');
         }
       }
-    } else {
-      const share = await db.shareOverview.findFirst({
-        where: {
-          projectId: input.projectId,
-        },
-      });
 
-      if (!share) {
-        throw TRPCAccessError('You do not have access to this project');
-      }
-    }
-
-    return getChart(input);
-  }),
+      return getChart(input);
+    }),
   cohort: protectedProcedure
     .input(
       z.object({

@@ -54,34 +54,34 @@ function AllProviders({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ThemeProvider
-      attribute="class"
-      disableTransitionOnChange
-      defaultTheme="system"
-    >
-      {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
-        <OpenPanelComponent
-          clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
-          trackScreenViews
-          trackOutgoingLinks
-          trackAttributes
-        />
-      )}
-      <ReduxProvider store={storeRef.current}>
-        <api.Provider client={trpcClient} queryClient={queryClient}>
-          <QueryClientProvider client={queryClient}>
-            <NuqsAdapter>
+    <NuqsAdapter>
+      <ThemeProvider
+        attribute="class"
+        disableTransitionOnChange
+        defaultTheme="system"
+      >
+        {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
+          <OpenPanelComponent
+            clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
+            trackScreenViews
+            trackOutgoingLinks
+            trackAttributes
+          />
+        )}
+        <ReduxProvider store={storeRef.current}>
+          <api.Provider client={trpcClient} queryClient={queryClient}>
+            <QueryClientProvider client={queryClient}>
               <TooltipProvider delayDuration={200}>
                 {children}
                 <NotificationProvider />
                 <Toaster />
                 <ModalProvider />
               </TooltipProvider>
-            </NuqsAdapter>
-          </QueryClientProvider>
-        </api.Provider>
-      </ReduxProvider>
-    </ThemeProvider>
+            </QueryClientProvider>
+          </api.Provider>
+        </ReduxProvider>
+      </ThemeProvider>
+    </NuqsAdapter>
   );
 }
 

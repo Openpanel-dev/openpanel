@@ -28,6 +28,7 @@ import { ipHook } from './hooks/ip.hook';
 import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
 import { timestampHook } from './hooks/timestamp.hook';
+import aiRouter from './routes/ai.router';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
 import importRouter from './routes/import.router';
@@ -37,6 +38,7 @@ import oauthRouter from './routes/oauth-callback.router';
 import profileRouter from './routes/profile.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
+import { HttpError } from './utils/errors';
 import { logger } from './utils/logger';
 
 sourceMapSupport.install();
@@ -74,7 +76,14 @@ const startServer = async () => {
         callback: (error: Error | null, options: FastifyCorsOptions) => void,
       ) => {
         // TODO: set prefix on dashboard routes
-        const corsPaths = ['/trpc', '/live', '/webhook', '/oauth', '/misc'];
+        const corsPaths = [
+          '/trpc',
+          '/live',
+          '/webhook',
+          '/oauth',
+          '/misc',
+          '/ai',
+        ];
 
         const isPrivatePath = corsPaths.some((path) =>
           req.url.startsWith(path),
@@ -150,6 +159,7 @@ const startServer = async () => {
       instance.register(webhookRouter, { prefix: '/webhook' });
       instance.register(oauthRouter, { prefix: '/oauth' });
       instance.register(miscRouter, { prefix: '/misc' });
+      instance.register(aiRouter, { prefix: '/ai' });
     });
 
     // Public API
@@ -168,7 +178,19 @@ const startServer = async () => {
     });
 
     fastify.setErrorHandler((error, request, reply) => {
-      if (error.statusCode === 429) {
+      if (error instanceof HttpError) {
+        request.log.error(`${error.message}`, error);
+        if (process.env.NODE_ENV === 'production' && error.status === 500) {
+          request.log.error('request error', { error });
+          reply.status(500).send('Internal server error');
+        } else {
+          reply.status(error.status).send({
+            status: error.status,
+            error: error.error,
+            message: error.message,
+          });
+        }
+      } else if (error.statusCode === 429) {
         reply.status(429).send({
           status: 429,
           error: 'Too Many Requests',

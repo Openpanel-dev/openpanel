@@ -1,5 +1,6 @@
 'use client';
 
+import { cn } from '@/utils/cn';
 import { useSelectedLayoutSegments } from 'next/navigation';
 
 const NOT_MIGRATED_PAGES = ['reports'];
@@ -16,6 +17,13 @@ export default function LayoutContent({
   }
 
   return (
-    <div className="pb-20 transition-all max-lg:mt-12 lg:pl-72">{children}</div>
+    <div
+      className={cn(
+        'pb-20 transition-all max-lg:mt-12 lg:pl-72',
+        segments.includes('chat') && 'pb-0',
+      )}
+    >
+      {children}
+    </div>
   );
 }

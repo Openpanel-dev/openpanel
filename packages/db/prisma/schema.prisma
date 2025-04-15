@@ -30,6 +30,17 @@ enum ProjectType {
   backend
 }
 
+model Chat {
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
+  messages  Json
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("chats")
+}
+
 model Organization {
   id              String          @id @default(dbgenerated("gen_random_uuid()"))
   name            String
@@ -184,6 +195,7 @@ model Project {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
+  Chat      Chat[]
 
   @@map("projects")
 }

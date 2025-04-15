@@ -28,7 +28,7 @@
     "sqlstring": "^2.3.3",
     "superjson": "^1.13.3",
     "uuid": "^9.0.1",
-    "zod": "^3.22.4"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",

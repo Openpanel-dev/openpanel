@@ -4,6 +4,7 @@ import type {
   zChartBreakdown,
   zChartEvent,
   zChartInput,
+  zChartInputAI,
   zChartType,
   zCriteria,
   zLineType,
@@ -14,6 +15,7 @@ import type {
 } from './index';
 
 export type IChartInput = z.infer<typeof zChartInput>;
+export type IChartInputAi = z.infer<typeof zChartInputAI>;
 export type IChartProps = z.infer<typeof zReportInput> & {
   name: string;
   lineType: IChartLineType;

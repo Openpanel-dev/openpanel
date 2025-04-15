@@ -7,8 +7,10 @@ import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
+  changeChartType,
   changeDateRanges,
   changeEndDate,
+  changeInterval,
   changeStartDate,
   ready,
   reset,
@@ -74,7 +76,13 @@ export default function ReportEditor({
           </div>
         </SheetTrigger>
         <div className="col-span-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-          <ReportChartType className="min-w-0 flex-1" />
+          <ReportChartType
+            className="min-w-0 flex-1"
+            onChange={(type) => {
+              dispatch(changeChartType(type));
+            }}
+            value={report.chartType}
+          />
           <TimeWindowPicker
             className="min-w-0 flex-1"
             onChange={(value) => {
@@ -90,7 +98,13 @@ export default function ReportEditor({
             endDate={report.endDate}
             startDate={report.startDate}
           />
-          <ReportInterval className="min-w-0 flex-1" />
+          <ReportInterval
+            className="min-w-0 flex-1"
+            interval={report.interval}
+            onChange={(newInterval) => dispatch(changeInterval(newInterval))}
+            range={report.range}
+            chartType={report.chartType}
+          />
           <ReportLineType className="min-w-0 flex-1" />
         </div>
         <div className="col-start-2 row-start-1 text-right md:col-start-6">

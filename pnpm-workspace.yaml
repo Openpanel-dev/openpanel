@@ -1,4 +1,8 @@
 packages:
-  - 'apps/*'
-  - 'packages/**'
-  - 'tooling/*'
+  - "apps/*"
+  - "packages/**"
+  - "tooling/*"
+
+# Define a catalog of version ranges.
+catalog:
+  zod: ^3.24.2

@@ -1,9 +1,10 @@
 'use client';
 
 import { mergeDeepRight } from 'ramda';
-import React, { useEffect, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 
+import { shallowEqual } from 'react-redux';
 import { ReportAreaChart } from './area';
 import { ReportBarChart } from './bar';
 import type { ReportChartProps } from './context';
@@ -17,7 +18,7 @@ import { ReportMetricChart } from './metric';
 import { ReportPieChart } from './pie';
 import { ReportRetentionChart } from './retention';
 
-export function ReportChart(props: ReportChartProps) {
+export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const once = useRef(false);
   const { inViewport } = useInViewport(ref, undefined, {
@@ -30,7 +31,7 @@ export function ReportChart(props: ReportChartProps) {
     }
   }, [inViewport]);
 
-  const loaded = once.current || inViewport;
+  const loaded = lazy ? once.current || inViewport : true;
 
   const renderReportChart = () => {
     switch (props.report.chartType) {
@@ -69,4 +70,4 @@ export function ReportChart(props: ReportChartProps) {
       </ReportChartProvider>
     </div>
   );
-}
+};

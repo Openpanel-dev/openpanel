@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 import { chartTypes } from '@openpanel/constants';
-import { objectToZodEnums } from '@openpanel/validation';
+import { type IChartType, objectToZodEnums } from '@openpanel/validation';
 
 import {
   DropdownMenu,
@@ -32,10 +32,14 @@ import { changeChartType } from './reportSlice';
 
 interface ReportChartTypeProps {
   className?: string;
+  value: IChartType;
+  onChange: (type: IChartType) => void;
 }
-export function ReportChartType({ className }: ReportChartTypeProps) {
-  const dispatch = useDispatch();
-  const type = useSelector((state) => state.report.chartType);
+export function ReportChartType({
+  className,
+  value,
+  onChange,
+}: ReportChartTypeProps) {
   const items = objectToZodEnums(chartTypes).map((key) => ({
     label: chartTypes[key],
     value: key,
@@ -61,10 +65,10 @@ export function ReportChartType({ className }: ReportChartTypeProps) {
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          icon={Icons[type]}
+          icon={Icons[value]}
           className={cn('justify-start', className)}
         >
-          {items.find((item) => item.value === type)?.label}
+          {items.find((item) => item.value === value)?.label}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
@@ -77,7 +81,7 @@ export function ReportChartType({ className }: ReportChartTypeProps) {
             return (
               <DropdownMenuItem
                 key={item.value}
-                onClick={() => dispatch(changeChartType(item.value))}
+                onClick={() => onChange(item.value)}
                 className="group"
               >
                 {item.label}

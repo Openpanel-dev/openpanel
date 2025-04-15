@@ -34,9 +34,6 @@
     "typescript": "^5.2.2",
     "winston": "^3.14.2"
   },
-  "resolutions": {
-    "zod": "3.22.4"
-  },
   "trustedDependencies": [
     "@biomejs/biome",
     "@prisma/client",

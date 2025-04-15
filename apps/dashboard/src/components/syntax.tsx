@@ -5,22 +5,26 @@ import { cn } from '@/utils/cn';
 import { CopyIcon } from 'lucide-react';
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import bash from 'react-syntax-highlighter/dist/cjs/languages/hljs/bash';
+import json from 'react-syntax-highlighter/dist/cjs/languages/hljs/json';
 import ts from 'react-syntax-highlighter/dist/cjs/languages/hljs/typescript';
 import docco from 'react-syntax-highlighter/dist/cjs/styles/hljs/vs2015';
 
 SyntaxHighlighter.registerLanguage('typescript', ts);
+SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('bash', bash);
 
 interface SyntaxProps {
   code: string;
   className?: string;
-  language?: 'typescript' | 'bash';
+  language?: 'typescript' | 'bash' | 'json';
+  wrapLines?: boolean;
 }
 
 export default function Syntax({
   code,
   className,
   language = 'typescript',
+  wrapLines = false,
 }: SyntaxProps) {
   return (
     <div className={cn('group relative rounded-lg', className)}>
@@ -35,7 +39,7 @@ export default function Syntax({
         <CopyIcon size={12} />
       </button>
       <SyntaxHighlighter
-        // wrapLongLines
+        wrapLongLines={wrapLines}
         style={docco}
         language={language}
         customStyle={{
