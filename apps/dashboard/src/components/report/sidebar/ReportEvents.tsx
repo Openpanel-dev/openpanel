@@ -25,9 +25,10 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { shortId } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type { IChartEvent } from '@openpanel/validation';
-import { GanttChartIcon, HandIcon, Users } from 'lucide-react';
+import { FilterIcon, GanttChartIcon, HandIcon, Users } from 'lucide-react';
 import {
   addEvent,
   changeEvent,
@@ -35,9 +36,9 @@ import {
   reorderEvents,
 } from '../reportSlice';
 import { EventPropertiesCombobox } from './EventPropertiesCombobox';
+import { PropertiesCombobox } from './PropertiesCombobox';
 import type { ReportEventMoreProps } from './ReportEventMore';
 import { ReportEventMore } from './ReportEventMore';
-import { FiltersCombobox } from './filters/FiltersCombobox';
 import { FiltersList } from './filters/FiltersList';
 
 function SortableEvent({
@@ -158,7 +159,37 @@ function SortableEvent({
               </button>
             </DropdownMenuComposed>
           )}
-          {showAddFilter && <FiltersCombobox event={event} />}
+          {showAddFilter && (
+            <PropertiesCombobox
+              event={event}
+              onSelect={(action) => {
+                dispatch(
+                  changeEvent({
+                    ...event,
+                    filters: [
+                      ...event.filters,
+                      {
+                        id: shortId(),
+                        name: action.value,
+                        operator: 'is',
+                        value: [],
+                      },
+                    ],
+                  }),
+                );
+              }}
+            >
+              {(setOpen) => (
+                <button
+                  onClick={() => setOpen((p) => !p)}
+                  type="button"
+                  className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
+                >
+                  <FilterIcon size={12} /> Add filter
+                </button>
+              )}
+            </PropertiesCombobox>
+          )}
 
           {showSegment &&
             (event.segment === 'property_average' ||

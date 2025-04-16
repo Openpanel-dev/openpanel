@@ -88,8 +88,11 @@ export function getChartSql({
   const anyFilterOnProfile = event.filters.some((filter) =>
     filter.name.startsWith('profile.'),
   );
+  const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
+    breakdown.name.startsWith('profile.'),
+  );
 
-  if (anyFilterOnProfile) {
+  if (anyFilterOnProfile || anyBreakdownOnProfile) {
     sb.joins.profiles = `LEFT ANY JOIN (SELECT * FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${escape(projectId)}) as profile on profile.id = profile_id`;
   }
 
@@ -130,6 +133,7 @@ export function getChartSql({
     sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}) IN (
       SELECT ${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}
       FROM ${TABLE_NAMES.events}
+      ${getJoins()}
       ${getWhere()}
       GROUP BY ${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}
       ORDER BY count(*) DESC

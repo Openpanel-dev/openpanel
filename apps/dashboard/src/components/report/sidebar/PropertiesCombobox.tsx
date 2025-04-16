@@ -10,18 +10,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useEventProperties } from '@/hooks/useEventProperties';
-import { useDispatch } from '@/redux';
-import { shortId } from '@openpanel/common';
 import type { IChartEvent } from '@openpanel/validation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FilterIcon } from 'lucide-react';
 import { ArrowLeftIcon, DatabaseIcon, UserIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
-import { useEffect, useState } from 'react';
-import { changeEvent } from '../../reportSlice';
+import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
-interface FiltersComboboxProps {
-  event: IChartEvent;
+interface PropertiesComboboxProps {
+  event?: IChartEvent;
+  children: (setOpen: Dispatch<SetStateAction<boolean>>) => React.ReactNode;
+  onSelect: (action: {
+    value: string;
+    label: string;
+    description: string;
+  }) => void;
 }
 
 function SearchHeader({
@@ -44,24 +46,23 @@ function SearchHeader({
         placeholder="Search"
         value={value}
         onChange={(e) => onSearch(e.target.value)}
+        autoFocus
       />
     </div>
   );
 }
 
-export function FiltersCombobox({ event }: FiltersComboboxProps) {
-  const dispatch = useDispatch();
+export function PropertiesCombobox({
+  event,
+  children,
+  onSelect,
+}: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const [open, setOpen] = useState(false);
-  const properties = useEventProperties(
-    {
-      event: event.name,
-      projectId,
-    },
-    {
-      enabled: !!event.name,
-    },
-  );
+  const properties = useEventProperties({
+    event: event?.name,
+    projectId,
+  });
   const [state, setState] = useState<'index' | 'event' | 'profile'>('index');
   const [search, setSearch] = useState('');
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
@@ -99,27 +100,14 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
     description: string;
   }) => {
     setOpen(false);
-    dispatch(
-      changeEvent({
-        ...event,
-        filters: [
-          ...event.filters,
-          {
-            id: shortId(),
-            name: action.value,
-            operator: 'is',
-            value: [],
-          },
-        ],
-      }),
-    );
+    onSelect(action);
   };
 
   const renderIndex = () => {
     return (
       <DropdownMenuGroup>
-        <SearchHeader onSearch={() => {}} value={search} />
-        <DropdownMenuSeparator />
+        {/* <SearchHeader onSearch={() => {}} value={search} /> */}
+        {/* <DropdownMenuSeparator /> */}
         <DropdownMenuItem
           className="group justify-between"
           onClick={(e) => {
@@ -229,15 +217,7 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
         setOpen(open);
       }}
     >
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
-          onClick={() => setOpen((p) => !p)}
-        >
-          <FilterIcon size={12} /> Add filter
-        </button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>{children(setOpen)}</DropdownMenuTrigger>
       <DropdownMenuContent className="max-w-80" align="start">
         <AnimatePresence mode="wait" initial={false}>
           {state === 'index' && (
