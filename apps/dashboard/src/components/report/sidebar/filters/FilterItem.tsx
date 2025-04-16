@@ -3,12 +3,11 @@ import { RenderDots } from '@/components/ui/RenderDots';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
+import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useMappings } from '@/hooks/useMappings';
 import { usePropertyValues } from '@/hooks/usePropertyValues';
 import { useDispatch, useSelector } from '@/redux';
-import { SlidersHorizontal, Trash } from 'lucide-react';
-
 import { operators } from '@openpanel/constants';
 import type {
   IChartEvent,
@@ -17,8 +16,7 @@ import type {
   IChartEventFilterValue,
 } from '@openpanel/validation';
 import { mapKeys } from '@openpanel/validation';
-
-import { InputEnter } from '@/components/ui/input-enter';
+import { SlidersHorizontal, Trash } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
 
 interface FilterProps {
@@ -105,7 +103,7 @@ export function FilterItem({ filter, event }: FilterProps) {
       onRemove={onRemove}
       onChangeValue={onChangeValue}
       onChangeOperator={onChangeOperator}
-      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-200 first:border-t"
+      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
     />
   );
 }

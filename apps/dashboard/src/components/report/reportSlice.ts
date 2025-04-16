@@ -278,6 +278,17 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.funnelWindow = action.payload || undefined;
     },
+    reorderEvents(
+      state,
+      action: PayloadAction<{ fromIndex: number; toIndex: number }>,
+    ) {
+      state.dirty = true;
+      const { fromIndex, toIndex } = action.payload;
+      const [movedEvent] = state.events.splice(fromIndex, 1);
+      if (movedEvent) {
+        state.events.splice(toIndex, 0, movedEvent);
+      }
+    },
   },
 });
 
@@ -307,6 +318,7 @@ export const {
   changeUnit,
   changeFunnelGroup,
   changeFunnelWindow,
+  reorderEvents,
 } = reportSlice.actions;
 
 export default reportSlice.reducer;

@@ -1,22 +1,58 @@
-import { Combobox } from '@/components/ui/combobox';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useEventProperties } from '@/hooks/useEventProperties';
-import { useDispatch, useSelector } from '@/redux';
-import { FilterIcon } from 'lucide-react';
-
+import { useDispatch } from '@/redux';
 import { shortId } from '@openpanel/common';
 import type { IChartEvent } from '@openpanel/validation';
-
+import { AnimatePresence, motion } from 'framer-motion';
+import { FilterIcon } from 'lucide-react';
+import { ArrowLeftIcon, DatabaseIcon, UserIcon } from 'lucide-react';
+import VirtualList from 'rc-virtual-list';
+import { useEffect, useState } from 'react';
 import { changeEvent } from '../../reportSlice';
 
 interface FiltersComboboxProps {
   event: IChartEvent;
 }
 
+function SearchHeader({
+  onBack,
+  onSearch,
+  value,
+}: {
+  onBack?: () => void;
+  onSearch: (value: string) => void;
+  value: string;
+}) {
+  return (
+    <div className="row items-center gap-1">
+      {!!onBack && (
+        <Button variant="ghost" size="icon" onClick={onBack}>
+          <ArrowLeftIcon className="size-4" />
+        </Button>
+      )}
+      <Input
+        placeholder="Search"
+        value={value}
+        onChange={(e) => onSearch(e.target.value)}
+      />
+    </div>
+  );
+}
+
 export function FiltersCombobox({ event }: FiltersComboboxProps) {
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
-
+  const [open, setOpen] = useState(false);
   const properties = useEventProperties(
     {
       event: event.name,
@@ -26,39 +62,219 @@ export function FiltersCombobox({ event }: FiltersComboboxProps) {
       enabled: !!event.name,
     },
   );
+  const [state, setState] = useState<'index' | 'event' | 'profile'>('index');
+  const [search, setSearch] = useState('');
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
+
+  useEffect(() => {
+    if (!open) {
+      setState('index');
+    }
+  }, [open]);
+
+  // Mock data for the lists
+  const profileActions = properties
+    .filter((property) => property.startsWith('profile'))
+    .map((property) => ({
+      value: property,
+      label: property.split('.').pop() ?? property,
+      description: property.split('.').slice(0, -1).join('.'),
+    }));
+  const eventActions = properties
+    .filter((property) => !property.startsWith('profile'))
+    .map((property) => ({
+      value: property,
+      label: property.split('.').pop() ?? property,
+      description: property.split('.').slice(0, -1).join('.'),
+    }));
+
+  const handleStateChange = (newState: 'index' | 'event' | 'profile') => {
+    setDirection(newState === 'index' ? 'backward' : 'forward');
+    setState(newState);
+  };
+
+  const handleSelect = (action: {
+    value: string;
+    label: string;
+    description: string;
+  }) => {
+    setOpen(false);
+    dispatch(
+      changeEvent({
+        ...event,
+        filters: [
+          ...event.filters,
+          {
+            id: shortId(),
+            name: action.value,
+            operator: 'is',
+            value: [],
+          },
+        ],
+      }),
+    );
+  };
+
+  const renderIndex = () => {
+    return (
+      <DropdownMenuGroup>
+        <SearchHeader onSearch={() => {}} value={search} />
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="group justify-between"
+          onClick={(e) => {
+            e.preventDefault();
+            handleStateChange('event');
+          }}
+        >
+          Event properties
+          <DatabaseIcon className="size-4 group-hover:text-blue-500 group-hover:scale-125 transition-all group-hover:rotate-12" />
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="group justify-between"
+          onClick={(e) => {
+            e.preventDefault();
+            handleStateChange('profile');
+          }}
+        >
+          Profile properties
+          <UserIcon className="size-4 group-hover:text-blue-500 group-hover:scale-125 transition-all group-hover:rotate-12" />
+        </DropdownMenuItem>
+      </DropdownMenuGroup>
+    );
+  };
+
+  const renderEvent = () => {
+    const filteredActions = eventActions.filter(
+      (action) =>
+        action.label.toLowerCase().includes(search.toLowerCase()) ||
+        action.description.toLowerCase().includes(search.toLowerCase()),
+    );
+
+    return (
+      <div className="col">
+        <SearchHeader
+          onBack={() => handleStateChange('index')}
+          onSearch={setSearch}
+          value={search}
+        />
+        <DropdownMenuSeparator />
+        <VirtualList
+          height={300}
+          data={filteredActions}
+          itemHeight={40}
+          itemKey="id"
+        >
+          {(action) => (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-2 hover:bg-accent cursor-pointer rounded-md col gap-px"
+              onClick={() => handleSelect(action)}
+            >
+              <div className="font-medium">{action.label}</div>
+              <div className="text-sm text-muted-foreground">
+                {action.description}
+              </div>
+            </motion.div>
+          )}
+        </VirtualList>
+      </div>
+    );
+  };
+
+  const renderProfile = () => {
+    const filteredActions = profileActions.filter(
+      (action) =>
+        action.label.toLowerCase().includes(search.toLowerCase()) ||
+        action.description.toLowerCase().includes(search.toLowerCase()),
+    );
+
+    return (
+      <div className="flex flex-col">
+        <SearchHeader
+          onBack={() => handleStateChange('index')}
+          onSearch={setSearch}
+          value={search}
+        />
+        <DropdownMenuSeparator />
+        <VirtualList
+          height={300}
+          data={filteredActions}
+          itemHeight={40}
+          itemKey="id"
+        >
+          {(action) => (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-2 hover:bg-accent cursor-pointer rounded-md col gap-px"
+              onClick={() => handleSelect(action)}
+            >
+              <div className="font-medium">{action.label}</div>
+              <div className="text-sm text-muted-foreground">
+                {action.description}
+              </div>
+            </motion.div>
+          )}
+        </VirtualList>
+      </div>
+    );
+  };
 
   return (
-    <Combobox
-      searchable
-      placeholder="Select a filter"
-      value=""
-      items={properties.map((item) => ({
-        label: item,
-        value: item,
-      }))}
-      onChange={(value) => {
-        dispatch(
-          changeEvent({
-            ...event,
-            filters: [
-              ...event.filters,
-              {
-                id: shortId(),
-                name: value,
-                operator: 'is',
-                value: [],
-              },
-            ],
-          }),
-        );
+    <DropdownMenu
+      open={open}
+      onOpenChange={(open) => {
+        setOpen(open);
       }}
     >
-      <button
-        type="button"
-        className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
-      >
-        <FilterIcon size={12} /> Add filter
-      </button>
-    </Combobox>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
+          onClick={() => setOpen((p) => !p)}
+        >
+          <FilterIcon size={12} /> Add filter
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="max-w-80" align="start">
+        <AnimatePresence mode="wait" initial={false}>
+          {state === 'index' && (
+            <motion.div
+              key="index"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.05 }}
+            >
+              {renderIndex()}
+            </motion.div>
+          )}
+          {state === 'event' && (
+            <motion.div
+              key="event"
+              initial={{ opacity: 0, x: direction === 'forward' ? 20 : -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction === 'forward' ? -20 : 20 }}
+              transition={{ duration: 0.05 }}
+            >
+              {renderEvent()}
+            </motion.div>
+          )}
+          {state === 'profile' && (
+            <motion.div
+              key="profile"
+              initial={{ opacity: 0, x: direction === 'forward' ? 20 : -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction === 'forward' ? -20 : 20 }}
+              transition={{ duration: 0.05 }}
+            >
+              {renderProfile()}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

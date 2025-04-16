@@ -3,8 +3,11 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import {
+  type IServiceProfile,
   TABLE_NAMES,
+  ch,
   chQuery,
+  clix,
   conversionService,
   createSqlBuilder,
   db,
@@ -77,6 +80,24 @@ export const chartRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { projectId, event } }) => {
+      const profiles = await clix(ch)
+        .select<Pick<IServiceProfile, 'properties'>>(['properties'])
+        .from(TABLE_NAMES.profiles)
+        .where('project_id', '=', projectId)
+        .where('is_external', '=', true)
+        .orderBy('created_at', 'DESC')
+        .limit(100)
+        .execute();
+
+      const profileProperties: string[] = [];
+      for (const p of profiles) {
+        for (const property of Object.keys(p.properties)) {
+          if (!profileProperties.includes(`profile.properties.${property}`)) {
+            profileProperties.push(`profile.properties.${property}`);
+          }
+        }
+      }
+
       const res = await chQuery<{ property_key: string; created_at: string }>(
         `SELECT 
           distinct property_key, 
@@ -116,6 +137,11 @@ export const chartRouter = createTRPCRouter({
         'device',
         'brand',
         'model',
+        'profile.id',
+        'profile.first_name',
+        'profile.last_name',
+        'profile.email',
+        ...profileProperties,
       );
 
       return pipe(

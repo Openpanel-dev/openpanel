@@ -85,13 +85,13 @@ export function getChartSql({
     sb.select.label_0 = `'*' as label_0`;
   }
 
-  // const anyFilterOnProfile = event.filters.some((filter) =>
-  //   filter.name.startsWith('profile.properties.'),
-  // );
+  const anyFilterOnProfile = event.filters.some((filter) =>
+    filter.name.startsWith('profile.'),
+  );
 
-  // if (anyFilterOnProfile) {
-  //   sb.joins.profiles = 'JOIN profiles profile ON e.profile_id = profile.id';
-  // }
+  if (anyFilterOnProfile) {
+    sb.joins.profiles = `LEFT ANY JOIN (SELECT * FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${escape(projectId)}) as profile on profile.id = profile_id`;
+  }
 
   sb.select.count = 'count(*) as count';
   switch (interval) {
