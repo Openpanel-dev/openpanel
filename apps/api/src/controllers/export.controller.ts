@@ -2,6 +2,7 @@ import { parseQueryString } from '@/utils/parse-zod-query-string';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
+import { HttpError } from '@/utils/errors';
 import type { GetEventListOptions } from '@openpanel/db';
 import {
   ClientType,
@@ -10,11 +11,7 @@ import {
   getEventsCountCached,
 } from '@openpanel/db';
 import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
-import {
-  zChartEvent,
-  zChartEventFilter,
-  zChartInput,
-} from '@openpanel/validation';
+import { zChartEvent, zChartInput } from '@openpanel/validation';
 import { omit } from 'ramda';
 
 async function getProjectId(
@@ -33,11 +30,9 @@ async function getProjectId(
       request.client?.type === ClientType.read &&
       request.client?.projectId !== projectId
     ) {
-      reply.status(403).send({
-        error: 'Forbidden',
-        message: 'You do not have access to this project',
+      throw new HttpError('You do not have access to this project', {
+        status: 403,
       });
-      return '';
     }
 
     const project = await db.project.findUnique({
@@ -48,11 +43,9 @@ async function getProjectId(
     });
 
     if (!project) {
-      reply.status(404).send({
-        error: 'Not Found',
-        message: 'Project not found',
+      throw new HttpError('Project not found', {
+        status: 404,
       });
-      return '';
     }
   }
 
@@ -61,11 +54,9 @@ async function getProjectId(
   }
 
   if (!projectId) {
-    reply.status(400).send({
-      error: 'Bad Request',
-      message: 'project_id is required',
+    throw new HttpError('project_id or projectId is required', {
+      status: 400,
     });
-    return '';
   }
 
   return projectId;
@@ -106,7 +97,7 @@ export async function events(
   const projectId = await getProjectId(request, reply);
   const limit = query.data.limit;
   const page = Math.max(query.data.page, 1);
-  const take = Math.max(Math.min(limit, 50), 1);
+  const take = Math.max(Math.min(limit, 1000), 1);
   const cursor = page - 1;
   const options: GetEventListOptions = {
     projectId,
@@ -147,7 +138,6 @@ export async function events(
 const chartSchemeFull = zChartInput
   .pick({
     breakdowns: true,
-    projectId: true,
     interval: true,
     range: true,
     previous: true,
@@ -155,6 +145,8 @@ const chartSchemeFull = zChartInput
     endDate: true,
   })
   .extend({
+    project_id: z.string().optional(),
+    projectId: z.string().optional(),
     events: z.array(
       z.object({
         name: z.string(),
@@ -181,10 +173,12 @@ export async function charts(
     });
   }
 
+  const projectId = await getProjectId(request, reply);
   const { events, ...rest } = query.data;
 
   return getChart({
     ...rest,
+    projectId,
     events: events.map((event) => ({
       ...event,
       segment: event.segment ?? 'event',

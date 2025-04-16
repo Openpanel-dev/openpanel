@@ -249,7 +249,9 @@ export async function getEvents(
   const events = await chQuery<IClickhouseEvent>(sql);
   const projectId = events[0]?.project_id;
   if (options.profile && projectId) {
-    const ids = events.map((e) => e.profile_id);
+    const ids = events
+      .filter((e) => e.device_id !== e.profile_id)
+      .map((e) => e.profile_id);
     const profiles = await getProfiles(ids, projectId);
 
     const map = new Map<string, IServiceProfile>();
