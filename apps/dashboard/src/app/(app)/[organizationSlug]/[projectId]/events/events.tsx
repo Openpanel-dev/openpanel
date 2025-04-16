@@ -6,7 +6,10 @@ import { EventsTable } from '@/components/events/table';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { Button } from '@/components/ui/button';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import {
+  useEventQueryFilters,
+  useEventQueryNamesFilter,
+} from '@/hooks/useEventQueryFilters';
 import { pushModal } from '@/modals';
 import { api } from '@/trpc/client';
 import { format } from 'date-fns';
@@ -24,12 +27,14 @@ const Events = ({ projectId, profileId }: Props) => {
     'startDate',
     parseAsIsoDateTime,
   );
+  const [eventNames] = useEventQueryNamesFilter();
 
   const [endDate, setEndDate] = useQueryState('endDate', parseAsIsoDateTime);
   const query = api.event.events.useInfiniteQuery(
     {
       projectId,
       filters,
+      events: eventNames,
       profileId,
       startDate: startDate || undefined,
       endDate: endDate || undefined,

@@ -82,6 +82,7 @@ export const eventRouter = createTRPCRouter({
         filters: z.array(zChartEventFilter).default([]),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
+        events: z.array(z.string()).optional(),
       }),
     )
     .query(async ({ input }) => {
