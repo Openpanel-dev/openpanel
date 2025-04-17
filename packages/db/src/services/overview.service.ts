@@ -389,6 +389,7 @@ export class OverviewService {
       .select([
         'origin',
         'path',
+        `last_value(properties['__title']) as title`,
         'uniq(session_id) as count',
         'round(avg(duration)/1000, 2) as avg_duration',
       ])
@@ -427,12 +428,14 @@ export class OverviewService {
       .with('page_stats', pageStatsQuery)
       .with('bounce_stats', bounceStatsQuery)
       .select<{
+        title: string;
         origin: string;
         path: string;
         avg_duration: number;
         bounce_rate: number;
         sessions: number;
       }>([
+        'p.title',
         'p.origin',
         'p.path',
         'p.avg_duration',

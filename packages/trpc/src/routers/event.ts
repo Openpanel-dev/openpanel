@@ -13,14 +13,20 @@ import {
   getEventList,
   getEvents,
   getTopPages,
+  overviewService,
 } from '@openpanel/db';
-import { zChartEventFilter } from '@openpanel/validation';
+import {
+  zChartEventFilter,
+  zRange,
+  zTimeInterval,
+} from '@openpanel/validation';
 
-import { addMinutes, subMinutes } from 'date-fns';
+import { addMinutes, subDays, subMinutes } from 'date-fns';
 import { clone } from 'ramda';
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
+import { getChartStartEndDate } from './chart.helpers';
 
 export const eventRouter = createTRPCRouter({
   updateEventMeta: protectedProcedure
@@ -228,10 +234,30 @@ export const eventRouter = createTRPCRouter({
         cursor: z.number().optional(),
         take: z.number().default(20),
         search: z.string().optional(),
+        range: zRange,
+        interval: zTimeInterval,
+        filters: z.array(zChartEventFilter).default([]),
       }),
     )
     .query(async ({ input }) => {
-      return getTopPages(input);
+      const { startDate, endDate } = getChartStartEndDate(input);
+      if (input.search) {
+        input.filters.push({
+          id: 'path',
+          name: 'path',
+          value: [input.search],
+          operator: 'contains',
+        });
+      }
+      return overviewService.getTopPages({
+        projectId: input.projectId,
+        filters: input.filters,
+        startDate,
+        endDate,
+        interval: input.interval,
+        cursor: input.cursor || 1,
+        limit: input.take,
+      });
     }),
 
   origin: protectedProcedure
