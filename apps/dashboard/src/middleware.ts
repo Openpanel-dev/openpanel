@@ -29,6 +29,7 @@ const isPublicRoute = createRouteMatcher([
   '/sso-callback(.*)?',
   '/onboarding',
   '/maintenance',
+  '/api/headers',
 ]);
 
 export default (request: NextRequest) => {
