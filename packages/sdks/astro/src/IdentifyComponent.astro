@@ -1,0 +1,9 @@
+---
+import type { IdentifyPayload } from '@openpanel/web';
+import { filterProps } from './asto-utils';
+interface Props extends IdentifyPayload {}
+
+const props = Astro.props as Props;
+---
+
+<script is:inline set:html={`window.op('identify', ${JSON.stringify(filterProps(props))});`} />

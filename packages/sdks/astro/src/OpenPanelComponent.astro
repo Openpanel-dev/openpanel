@@ -1,0 +1,66 @@
+---
+import type {
+OpenPanelMethodNames,
+OpenPanelOptions
+} from '@openpanel/web';
+
+type Props = Omit<OpenPanelOptions, 'filter'> & {
+  profileId?: string;
+  cdnUrl?: string;
+  filter?: string;
+  globalProperties?: Record<string, unknown>;
+};
+
+const { profileId, cdnUrl, globalProperties, ...options } = Astro.props;
+
+const CDN_URL = 'https://openpanel.dev/op1.js';
+
+const stringify = (obj: unknown) => {
+  if (typeof obj === 'object' && obj !== null && obj !== undefined) {
+    const entries = Object.entries(obj).map(([key, value]) => {
+      if (key === 'filter') {
+        return `"${key}":${value}`;
+      }
+      return `"${key}":${JSON.stringify(value)}`;
+    });
+    return `{${entries.join(',')}}`;
+  }
+
+  return JSON.stringify(obj);
+};
+
+const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
+  {
+    name: 'init',
+    value: {
+      ...options,
+      sdk: 'astro',
+      sdkVersion: '1.0.1',
+    },
+  },
+];
+if (profileId) {
+  methods.push({
+    name: 'identify',
+    value: {
+      profileId,
+    },
+  });
+}
+if (globalProperties) {
+  methods.push({
+    name: 'setGlobalProperties',
+    value: globalProperties,
+  });
+}
+
+const scriptContent = `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
+${methods
+  .map((method) => {
+    return `window.op('${method.name}', ${stringify(method.value)});`;
+  })
+  .join('\n')}`;
+---
+
+<script src={cdnUrl ?? CDN_URL} async defer />
+<script is:inline set:html={scriptContent} />
