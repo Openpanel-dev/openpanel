@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 const PROFILES = [
@@ -74,7 +75,13 @@ export function ProfilesFeature() {
             className="w-full flex-shrink-0 p-8"
           >
             <div className="col md:row justify-center md:justify-start items-center gap-4">
-              <img src={profile.avatar} className="size-32 rounded-full" />
+              <Image
+                src={profile.avatar}
+                className="size-32 rounded-full"
+                width={128}
+                height={128}
+                alt={profile.name}
+              />
               <div>
                 <div className="text-3xl font-semibold">{profile.name}</div>
                 <div className="text-muted-foreground text-center md:text-left">

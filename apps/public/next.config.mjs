@@ -6,7 +6,7 @@ const withMDX = createMDX();
 const config = {
   reactStrictMode: false,
   images: {
-    domains: ['localhost', 'openpanel.dev'],
+    domains: ['localhost', 'openpanel.dev', 'api.openpanel.dev'],
   },
   serverExternalPackages: ['@hyperdx/node-opentelemetry'],
 };

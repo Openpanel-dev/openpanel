@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import NextImage from 'next/image';
 import { useState } from 'react';
 import { Button } from './ui/button';
 
@@ -28,15 +29,19 @@ function LivePreview() {
 function Image({ src }: { src: string }) {
   return (
     <div>
-      <img
-        className="w-full  h-full block dark:hidden"
+      <NextImage
+        className="w-full h-full block dark:hidden"
         src={`/${src}-light.png`}
         alt={`${src} light`}
+        width={1200}
+        height={800}
       />
-      <img
-        className="w-full  h-full hidden dark:block"
+      <NextImage
+        className="w-full h-full hidden dark:block"
         src={`/${src}-dark.png`}
         alt={`${src} dark`}
+        width={1200}
+        height={800}
       />
     </div>
   );

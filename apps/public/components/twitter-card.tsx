@@ -46,7 +46,7 @@ export function TwitterCard({
       <div className="row gap-4">
         <div className="size-12 rounded-full bg-muted overflow-hidden shrink-0">
           {avatarUrl && (
-            <img src={avatarUrl} alt={name} width={48} height={48} />
+            <Image src={avatarUrl} alt={name} width={48} height={48} />
           )}
         </div>
         <div className="col gap-1">
