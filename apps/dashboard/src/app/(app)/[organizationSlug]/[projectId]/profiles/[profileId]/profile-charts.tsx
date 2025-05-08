@@ -27,7 +27,7 @@ const ProfileCharts = ({ profileId, projectId }: Props) => {
           },
         ],
         id: 'A',
-        name: '*',
+        name: 'screen_view',
         displayName: 'Events',
       },
     ],

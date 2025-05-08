@@ -115,7 +115,7 @@ export const chartRouter = createTRPCRouter({
         .map((item) => item.replace(/\.([0-9]+)/g, '[*]'))
         .map((item) => `properties.${item}`);
 
-      if (event === '*') {
+      if (event === '*' || !event) {
         properties.push('name');
       }
 
