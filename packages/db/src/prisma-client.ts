@@ -27,12 +27,6 @@ const isCanceled = (
   organization.subscriptionCanceledAt < new Date();
 
 const getPrismaClient = () => {
-  if (process.env.NODE_ENV === 'test') {
-    return new PrismaClient({
-      log: ['error'],
-    });
-  }
-
   const prisma = new PrismaClient({
     log: ['error'],
   })
