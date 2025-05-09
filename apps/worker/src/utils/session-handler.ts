@@ -79,6 +79,7 @@ export async function getSessionEnd({
 
     // If the profile_id is set and it's different from the device_id, we need to update the profile_id
     if (
+      profileId &&
       sessionEnd.job.data.payload.profileId !== profileId &&
       sessionEnd.job.data.payload.profileId ===
         sessionEnd.job.data.payload.deviceId
