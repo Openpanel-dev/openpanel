@@ -11,6 +11,10 @@ export const getSharedVitestConfig = ({
       },
     },
     test: {
+      env: {
+        // Not used, just so prisma is happy
+        DATABASE_URL: 'postgresql://u:p@127.0.0.1:5432/db',
+      },
       include: ['**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
       browser: {
         name: 'chromium',

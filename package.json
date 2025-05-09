@@ -26,7 +26,7 @@
     "update-simple-git-hooks": "npx simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-push": "pnpm typecheck"
+    "pre-push": "pnpm typecheck && pnpm test"
   },
   "dependencies": {
     "@hyperdx/node-opentelemetry": "^0.8.1",
