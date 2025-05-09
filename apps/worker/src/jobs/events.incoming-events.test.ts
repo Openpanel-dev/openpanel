@@ -38,6 +38,7 @@ describe('incomingEvent', () => {
   });
 
   it('should create a session start and an event', async () => {
+    const spySessionsQueueAdd = vi.spyOn(sessionsQueue, 'add');
     const timestamp = new Date();
     // Mock job data
     const jobData = {
@@ -104,8 +105,6 @@ describe('incomingEvent', () => {
       sdkVersion: jobData.payload.headers['openpanel-sdk-version'],
     };
 
-    const spySessionsQueueAdd = vi.spyOn(sessionsQueue, 'add');
-
     expect(spySessionsQueueAdd).toHaveBeenCalledWith(
       'session',
       {
@@ -132,6 +131,9 @@ describe('incomingEvent', () => {
   });
 
   it('should reuse existing session', async () => {
+    const spySessionsQueueAdd = vi.spyOn(sessionsQueue, 'add');
+    const spySessionsQueueGetJob = vi.spyOn(sessionsQueue, 'getJob');
+
     const timestamp = new Date();
     // Mock job data
     const jobData = {
@@ -158,12 +160,11 @@ describe('incomingEvent', () => {
 
     const job = { data: jobData } as Job;
 
-    const spySessionsQueueAdd = vi.spyOn(sessionsQueue, 'add');
-    const spySessionsQueueGetJob = vi.spyOn(sessionsQueue, 'getJob');
-
     const changeDelay = vi.fn();
+    const updateData = vi.fn();
     spySessionsQueueGetJob.mockResolvedValueOnce({
       getState: vi.fn().mockResolvedValue('delayed'),
+      updateData,
       changeDelay,
       data: {
         type: 'createSessionEnd',
