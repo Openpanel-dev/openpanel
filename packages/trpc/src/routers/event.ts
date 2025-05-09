@@ -96,6 +96,12 @@ export const eventRouter = createTRPCRouter({
         ...input,
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
+        select: {
+          properties: true,
+          sessionId: true,
+          deviceId: true,
+          profileId: true,
+        },
       });
 
       // Hacky join to get profile for entire session

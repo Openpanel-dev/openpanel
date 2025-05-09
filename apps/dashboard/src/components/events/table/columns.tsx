@@ -9,7 +9,9 @@ import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
 
+import { ScrollArea } from '@/components/ui/scroll-area';
 import type { IServiceEvent } from '@openpanel/db';
+import { omit } from 'ramda';
 
 export function useColumns() {
   const number = useNumber();
@@ -101,19 +103,52 @@ export function useColumns() {
       accessorKey: 'profileId',
       header: 'Profile',
       cell({ row }) {
-        const { profile } = row.original;
-        if (!profile) {
-          return null;
+        const { profile, profileId, deviceId } = row.original;
+        if (profile) {
+          return (
+            <ProjectLink
+              href={`/profiles/${profile.id}`}
+              className="whitespace-nowrap font-medium hover:underline"
+            >
+              {getProfileName(profile)}
+            </ProjectLink>
+          );
         }
-        return (
-          <ProjectLink
-            href={`/profiles/${profile.id}`}
-            className="whitespace-nowrap font-medium hover:underline"
-          >
-            {getProfileName(profile)}
-          </ProjectLink>
-        );
+
+        if (profileId && profileId !== deviceId) {
+          return (
+            <ProjectLink
+              href={`/profiles/${profileId}`}
+              className="whitespace-nowrap font-medium hover:underline"
+            >
+              Unknown
+            </ProjectLink>
+          );
+        }
+
+        if (deviceId) {
+          return (
+            <ProjectLink
+              href={`/profiles/${deviceId}`}
+              className="whitespace-nowrap font-medium hover:underline"
+            >
+              Anonymous
+            </ProjectLink>
+          );
+        }
+
+        return null;
       },
+    },
+    {
+      accessorKey: 'sessionId',
+      header: 'Session ID',
+      size: 320,
+    },
+    {
+      accessorKey: 'deviceId',
+      header: 'Device ID',
+      size: 320,
     },
     {
       accessorKey: 'country',
@@ -154,6 +189,24 @@ export function useColumns() {
             <SerieIcon name={browser} />
             <span className="truncate">{browser}</span>
           </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'properties',
+      header: 'Properties',
+      size: 400,
+      cell({ row }) {
+        const { properties } = row.original;
+        const filteredProperties = Object.fromEntries(
+          Object.entries(properties || {}).filter(
+            ([key]) => !key.startsWith('__'),
+          ),
+        );
+        return (
+          <ScrollArea orientation="horizontal">
+            <pre>{JSON.stringify(filteredProperties)}</pre>
+          </ScrollArea>
         );
       },
     },

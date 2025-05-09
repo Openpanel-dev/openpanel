@@ -8,6 +8,15 @@ import {
 import { api } from '@/trpc/client';
 import { round } from 'mathjs';
 
+import { SerieName } from '@/components/report-chart/common/serie-name';
+import { Button } from '@/components/ui/button';
+import { WidgetTable } from '@/components/widget-table';
+import { useNumber } from '@/hooks/useNumerFormatter';
+import { formatDate, formatDateTime } from '@/utils/date';
+import { FilterIcon } from 'lucide-react';
+import { isNil, omit } from 'ramda';
+import { useMemo, useState } from 'react';
+import { useLocalStorage } from 'usehooks-ts';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
@@ -17,9 +26,32 @@ interface Props {
   projectId: string;
 }
 
+const filterable = {
+  name: 'name',
+  referrer: 'referrer',
+  referrerName: 'referrer_name',
+  referrerType: 'referrer_type',
+  brand: 'brand',
+  model: 'model',
+  browser: 'browser',
+  browserVersion: 'browser_version',
+  os: 'os',
+  osVersion: 'os_version',
+  city: 'city',
+  region: 'region',
+  country: 'country',
+  device: 'device',
+  properties: 'properties',
+};
+
 export default function EventDetails({ id, createdAt, projectId }: Props) {
   const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
+  const [showNullable, setShowNullable] = useLocalStorage(
+    '@op:event-details-show-nullable',
+    false,
+  );
+  const number = useNumber();
   const query = api.event.byId.useQuery({ id, projectId, createdAt });
 
   if (query.isLoading || query.isFetching) {
@@ -32,188 +64,174 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
 
   const event = query.data;
 
-  const common = [
-    {
-      name: 'Path',
-      value: event.path,
-    },
-    {
-      name: 'Origin',
-      value: event.origin,
-    },
-    {
-      name: 'Duration',
-      value: event.duration ? round(event.duration / 1000, 1) : undefined,
-    },
-    {
-      name: 'Referrer',
-      value: event.referrer,
-      onClick() {
-        setFilter('referrer', event.referrer ?? '');
-      },
-    },
-    {
-      name: 'Referrer name',
-      value: event.referrerName,
-      onClick() {
-        setFilter('referrer_name', event.referrerName ?? '');
-      },
-    },
-    {
-      name: 'Referrer type',
-      value: event.referrerType,
-      onClick() {
-        setFilter('referrer_type', event.referrerType ?? '');
-      },
-    },
-    {
-      name: 'Brand',
-      value: event.brand,
-      onClick() {
-        setFilter('brand', event.brand ?? '');
-      },
-    },
-    {
-      name: 'Model',
-      value: event.model,
-      onClick() {
-        setFilter('model', event.model ?? '');
-      },
-    },
-    {
-      name: 'Browser',
-      value: event.browser,
-      onClick() {
-        setFilter('browser', event.browser ?? '');
-      },
-    },
-    {
-      name: 'Browser version',
-      value: event.browserVersion,
-      onClick() {
-        setFilter('browser_version', event.browserVersion ?? '');
-      },
-    },
-    {
-      name: 'OS',
-      value: event.os,
-      onClick() {
-        setFilter('os', event.os ?? '');
-      },
-    },
-    {
-      name: 'OS version',
-      value: event.osVersion,
-      onClick() {
-        setFilter('os_version', event.osVersion ?? '');
-      },
-    },
-    {
-      name: 'City',
-      value: event.city,
-      onClick() {
-        setFilter('city', event.city ?? '');
-      },
-    },
-    {
-      name: 'Region',
-      value: event.region,
-      onClick() {
-        setFilter('region', event.region ?? '');
-      },
-    },
-    {
-      name: 'Country',
-      value: event.country,
-      onClick() {
-        setFilter('country', event.country ?? '');
-      },
-    },
-    {
-      name: 'Device',
-      value: event.device,
-      onClick() {
-        setFilter('device', event.device ?? '');
-      },
-    },
-  ].filter((item) => typeof item.value === 'string' && item.value);
+  const data = (() => {
+    const data = Object.entries(omit(['properties'], event)).map(
+      ([name, value]) => ({
+        name: [name],
+        value: value as string | number | undefined,
+      }),
+    );
 
-  const properties = Object.entries(event.properties)
-    .map(([name, value]) => ({
-      name,
-      value: value as string | number | undefined,
-    }))
-    .filter((item) => typeof item.value === 'string' && item.value);
+    Object.entries(event.properties).forEach(([name, value]) => {
+      data.push({
+        name: ['properties', ...name.split('.')],
+        value: value as string | number | undefined,
+      });
+    });
+
+    return data.filter((item) => {
+      if (showNullable) {
+        return true;
+      }
+
+      return !!item.value;
+    });
+  })();
 
   return (
     <ModalContent>
       <ModalHeader title={event.name} />
-      <div>
-        <div className="flex flex-col gap-8">
-          {properties.length > 0 && (
-            <div>
-              <div className="mb-2  font-medium">Params</div>
-              <div className="flex flex-wrap gap-2">
-                {properties.map((item) => (
-                  <KeyValue
-                    key={item.name}
-                    name={item.name.replace(/^__/, '')}
-                    value={item.value}
-                    onClick={() => {
-                      setFilter(
-                        `properties.${item.name}`,
-                        item.value ? String(item.value) : '',
-                        'is',
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-          <div>
-            <div className="mb-2  font-medium">Common</div>
-            <div className="flex flex-wrap gap-2">
-              {common.map((item) => (
-                <KeyValue
-                  key={item.name}
-                  name={item.name}
-                  value={item.value}
-                  onClick={() => item.onClick?.()}
-                />
-              ))}
-            </div>
-          </div>
+      <div className="-mx-2 mb-8">
+        <WidgetTable
+          className="w-full max-w-full"
+          columnClassName="!h-auto group-hover:bg-black"
+          data={data}
+          keyExtractor={(item) => item.name.join('.')}
+          columns={[
+            {
+              name: 'Name',
+              className: 'text-left',
+              width: 'auto',
+              render(item) {
+                return (
+                  <div className="row items-center gap-2">
+                    {item.name.map((name, index) => (
+                      <div
+                        key={name}
+                        className={
+                          index === item.name.length - 1
+                            ? 'text-foreground font-medium'
+                            : 'text-muted-foreground'
+                        }
+                      >
+                        {name}
+                      </div>
+                    ))}
+                  </div>
+                );
+              },
+            },
+            {
+              name: 'Value',
+              className: 'text-right font-mono font-medium',
+              width: 'auto',
+              render(item) {
+                const render = () => {
+                  if (
+                    item.name[0] === 'duration' &&
+                    typeof item.value === 'number'
+                  ) {
+                    return (
+                      <div className="text-right">
+                        <span className="text-muted-foreground">
+                          ({item.value}ms)
+                        </span>{' '}
+                        {number.formatWithUnit(item.value / 1000, 'min')}
+                      </div>
+                    );
+                  }
 
-          <div>
-            <div className="mb-2 flex justify-between  font-medium">
-              <div>Similar events</div>
-              <button
-                type="button"
-                className="text-muted-foreground hover:underline"
-                onClick={() => {
-                  setEvents([event.name]);
-                  popModal();
-                }}
-              >
-                Show all
-              </button>
-            </div>
-            <ReportChartShortcut
-              projectId={event.projectId}
-              chartType="histogram"
-              events={[
-                {
-                  id: 'A',
-                  name: event.name,
-                  displayName: 'Similar events',
-                  segment: 'event',
-                  filters: [],
-                },
-              ]}
-            />
-          </div>
+                  if (
+                    isNil(item.value) ||
+                    item.value === '' ||
+                    item.value === '\x00\x00'
+                  ) {
+                    return <div className="text-right">-</div>;
+                  }
+
+                  if (typeof item.value === 'string') {
+                    return <div className="text-right">{item.value}</div>;
+                  }
+
+                  if ((item.value as unknown) instanceof Date) {
+                    return (
+                      <div className="text-right">
+                        {formatDateTime(item.value as unknown as Date)}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="text-right">
+                      {JSON.stringify(item.value)}
+                    </div>
+                  );
+                };
+
+                if (
+                  item.name[0] &&
+                  item.value &&
+                  filterable[item.name[0] as keyof typeof filterable]
+                ) {
+                  return (
+                    <button
+                      className="row items-center gap-2"
+                      type="button"
+                      onClick={() => {
+                        setFilter(
+                          item.name[0] === 'properties'
+                            ? item.name.join('.')
+                            : filterable[
+                                item.name[0] as keyof typeof filterable
+                              ],
+                          item.value,
+                        );
+                      }}
+                    >
+                      <FilterIcon className="size-3 shrink-0" />
+                      {render()}
+                    </button>
+                  );
+                }
+
+                return render();
+              },
+            },
+          ]}
+        />
+        <div className="row justify-center">
+          <Button variant="outline" onClick={() => setShowNullable((p) => !p)}>
+            {showNullable ? 'Hide empty values' : 'Show empty values'}
+          </Button>
         </div>
+      </div>
+      <div>
+        <div className="mb-2 flex justify-between font-medium">
+          <div>Similar events</div>
+          <button
+            type="button"
+            className="text-muted-foreground hover:underline"
+            onClick={() => {
+              setEvents([event.name]);
+              popModal();
+            }}
+          >
+            Show all
+          </button>
+        </div>
+        <ReportChartShortcut
+          projectId={event.projectId}
+          chartType="linear"
+          events={[
+            {
+              id: 'A',
+              name: event.name,
+              displayName: 'Similar events',
+              segment: 'event',
+              filters: [],
+            },
+          ]}
+        />
       </div>
     </ModalContent>
   );

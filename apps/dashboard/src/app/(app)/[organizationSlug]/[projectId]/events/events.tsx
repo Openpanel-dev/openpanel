@@ -3,6 +3,7 @@
 import { TableButtons } from '@/components/data-table';
 import EventListener from '@/components/events/event-listener';
 import { EventsTable } from '@/components/events/table';
+import { EventsTableColumns } from '@/components/events/table/events-table-columns';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { Button } from '@/components/ui/button';
@@ -74,6 +75,7 @@ const Events = ({ projectId, profileId }: Props) => {
           enableEventsFilter
         />
         <OverviewFiltersButtons className="justify-end p-0" />
+        <EventsTableColumns />
         {query.isRefetching && (
           <div className="center-center size-8 rounded border bg-background">
             <Loader2Icon
