@@ -87,6 +87,7 @@ const modals = {
 export const {
   pushModal,
   popModal,
+  replaceWithModal,
   popAllModals,
   ModalProvider,
   useOnPushModal,

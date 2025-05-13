@@ -133,6 +133,7 @@ export function EventsDataTable<TData>({
                         return (
                           <GridCell
                             key={cell.id}
+                            className={cell.column.columnDef.meta?.className}
                             style={{
                               minWidth: cell.column.getSize(),
                               flexShrink: 1,

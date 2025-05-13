@@ -21,6 +21,7 @@ import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
 import type { IClickhouseProfile, IServiceProfile } from './profile.service';
 import {
+  getProfileById,
   getProfiles,
   transformProfile,
   upsertProfile,
@@ -830,7 +831,7 @@ class EventService {
     id: string;
     createdAt?: Date;
   }) {
-    return clix(this.client)
+    const event = await clix(this.client)
       .select<IClickhouseEvent>(['*'])
       .from('events')
       .where('project_id', '=', projectId)
@@ -852,6 +853,15 @@ class EventService {
 
         return transformEvent(res[0]);
       });
+
+    if (event?.profileId) {
+      const profile = await getProfileById(event?.profileId, projectId);
+      if (profile) {
+        event.profile = profile;
+      }
+    }
+
+    return event;
   }
 
   async getList({

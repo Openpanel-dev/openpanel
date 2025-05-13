@@ -1,7 +1,6 @@
 import { EventIcon } from '@/components/events/event-icon';
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { TooltipComplete } from '@/components/tooltip-complete';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { pushModal } from '@/modals';
 import { formatDateTime, formatTime } from '@/utils/date';
@@ -11,7 +10,6 @@ import { isToday } from 'date-fns';
 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import type { IServiceEvent } from '@openpanel/db';
-import { omit } from 'ramda';
 
 export function useColumns() {
   const number = useNumber();
@@ -196,6 +194,9 @@ export function useColumns() {
       accessorKey: 'properties',
       header: 'Properties',
       size: 400,
+      meta: {
+        className: 'p-0 [&_pre]:p-4',
+      },
       cell({ row }) {
         const { properties } = row.original;
         const filteredProperties = Object.fromEntries(

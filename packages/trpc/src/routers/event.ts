@@ -12,8 +12,8 @@ import {
   formatClickhouseDate,
   getEventList,
   getEvents,
-  getTopPages,
   overviewService,
+  sessionService,
 } from '@openpanel/db';
 import {
   zChartEventFilter,
@@ -21,7 +21,6 @@ import {
   zTimeInterval,
 } from '@openpanel/validation';
 
-import { addMinutes, subDays, subMinutes } from 'date-fns';
 import { clone } from 'ramda';
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
@@ -77,6 +76,36 @@ export const eventRouter = createTRPCRouter({
       }
 
       return res;
+    }),
+
+  details: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        projectId: z.string(),
+        createdAt: z.date().optional(),
+      }),
+    )
+    .query(async ({ input: { id, projectId, createdAt } }) => {
+      const res = await eventService.getById({
+        projectId,
+        id,
+        createdAt,
+      });
+
+      if (!res) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Event not found',
+        });
+      }
+
+      const session = await sessionService.byId(res?.sessionId, projectId);
+
+      return {
+        event: res,
+        session,
+      };
     }),
 
   events: protectedProcedure
