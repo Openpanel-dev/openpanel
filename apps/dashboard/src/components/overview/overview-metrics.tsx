@@ -157,24 +157,24 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
                     key={`prev_${activeMetric.key}`}
                     type="linear"
                     dataKey={`prev_${activeMetric.key}`}
-                    stroke={'hsl(var(--foreground) / 0.2)'}
+                    stroke={'hsl(var(--foreground) / 0.1)'}
                     strokeWidth={2}
                     isAnimationActive={false}
                     dot={
                       data.length > 90
                         ? false
                         : {
-                            stroke: 'hsl(var(--foreground) / 0.2)',
+                            stroke: 'hsl(var(--foreground) / 0.1)',
                             fill: 'hsl(var(--def-100))',
                             strokeWidth: 1.5,
-                            r: 3,
+                            r: 2,
                           }
                     }
                     activeDot={{
                       stroke: 'hsl(var(--foreground) / 0.2)',
                       fill: 'hsl(var(--def-100))',
-                      strokeWidth: 2,
-                      r: 4,
+                      strokeWidth: 1.5,
+                      r: 3,
                     }}
                   />
 

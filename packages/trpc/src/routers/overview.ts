@@ -92,7 +92,6 @@ export const overviewRouter = createTRPCRouter({
         input,
         true,
       )(overviewService.getMetrics.bind(overviewService));
-
       return {
         metrics: {
           ...current.metrics,
@@ -104,8 +103,8 @@ export const overviewRouter = createTRPCRouter({
           prev_views_per_session: previous?.metrics.views_per_session || null,
           prev_total_sessions: previous?.metrics.total_sessions || null,
         },
-        series: current.series.map((item) => {
-          const prev = previous?.series.find((p) => p.date === item.date);
+        series: current.series.map((item, index) => {
+          const prev = previous?.series[index];
           return {
             ...item,
             prev_bounce_rate: prev?.bounce_rate,
