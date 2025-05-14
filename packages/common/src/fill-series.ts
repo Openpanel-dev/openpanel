@@ -3,12 +3,14 @@ import {
   addHours,
   addMinutes,
   addMonths,
+  addWeeks,
   format,
   parseISO,
   startOfDay,
   startOfHour,
   startOfMinute,
   startOfMonth,
+  startOfWeek,
 } from 'date-fns';
 
 import { NOT_SET_VALUE } from '@openpanel/constants';
@@ -39,6 +41,8 @@ function roundDate(date: Date, interval: IInterval): Date {
       return startOfHour(date);
     case 'day':
       return startOfDay(date);
+    case 'week':
+      return startOfWeek(date);
     case 'month':
       return startOfMonth(date);
     default:
@@ -124,6 +128,9 @@ export function completeSerie(
           break;
         case 'day':
           currentDate = addDays(currentDate, 1);
+          break;
+        case 'week':
+          currentDate = addWeeks(currentDate, 1);
           break;
         case 'month':
           currentDate = addMonths(currentDate, 1);

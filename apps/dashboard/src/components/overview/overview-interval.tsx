@@ -38,6 +38,10 @@ export function OverviewInterval() {
           label: 'Day',
         },
         {
+          value: 'week',
+          label: 'Week',
+        },
+        {
           value: 'month',
           label: 'Month',
           disabled:
