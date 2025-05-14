@@ -5,11 +5,11 @@ import { isToday } from 'date-fns';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 
 export function EventFieldValue({
-  key,
+  name,
   value,
   event,
 }: {
-  key: keyof IServiceEvent;
+  name: keyof IServiceEvent;
   value: any;
   event: IServiceEvent;
 }) {
@@ -21,7 +21,7 @@ export function EventFieldValue({
     return isToday(value) ? formatTime(value) : formatDateTime(value);
   }
 
-  switch (key) {
+  switch (name) {
     case 'osVersion':
       return (
         <div className="row gap-2 items-center">

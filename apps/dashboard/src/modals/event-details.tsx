@@ -300,7 +300,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
                           }}
                         >
                           <EventFieldValue
-                            key={item.name}
+                            name={item.name}
                             value={item.value}
                             event={event}
                           />
@@ -363,7 +363,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
                           }}
                         >
                           <EventFieldValue
-                            key={item.name}
+                            name={item.name}
                             value={item.value}
                             event={event}
                           />
@@ -374,7 +374,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
 
                     return (
                       <EventFieldValue
-                        key={item.name}
+                        name={item.name}
                         value={item.value}
                         event={event}
                       />
