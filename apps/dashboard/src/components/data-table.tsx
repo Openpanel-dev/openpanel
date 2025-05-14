@@ -6,13 +6,20 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, RowData } from '@tanstack/react-table';
 
 import { Grid, GridBody, GridCell, GridHeader, GridRow } from './grid-table';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
+}
+
+declare module '@tanstack/react-table' {
+  // eslint-disable-next-line
+  interface ColumnMeta<TData extends RowData, TValue> {
+    className?: string;
+  }
 }
 
 export const ACTIONS = '__actions__';
