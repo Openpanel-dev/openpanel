@@ -52,7 +52,21 @@ function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
 
 async function ProjectChart({ id }: { id: string }) {
   const chart = await chQuery<{ value: number; date: string }>(
-    `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM ${TABLE_NAMES.sessions} WHERE sign = 1 AND project_id = ${escape(id)} AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`,
+    `SELECT 
+      countDistinct(profile_id) as value, 
+      toStartOfDay(created_at) as date 
+    FROM ${TABLE_NAMES.sessions} 
+    WHERE 
+      sign = 1 
+      AND project_id = ${escape(id)} 
+      AND created_at >= now() - interval '1 month' 
+    GROUP BY date 
+    ORDER BY date ASC
+    WITH FILL
+    FROM toStartOfDay(now() - interval '1 month')
+    TO toStartOfDay(now())
+    STEP INTERVAL 1 day
+    `,
   );
 
   return (
