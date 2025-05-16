@@ -2,11 +2,13 @@
   "name": "@openpanel/worker",
   "version": "0.0.3",
   "scripts": {
+    "test": "vitest",
     "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
     "testing": "WORKER_PORT=9999 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:referrers": "jiti scripts/get-referrers.ts && biome format --write ./src/referrers/index.ts"
   },
   "dependencies": {
     "@bull-board/api": "5.21.0",

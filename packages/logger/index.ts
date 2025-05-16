@@ -85,7 +85,7 @@ export function createLogger({ name }: { name: string }): ILogger {
     level: logLevel,
     format,
     transports,
-    // silent: true,
+    silent: process.env.NODE_ENV === 'test',
     // Add ISO levels of logging from PINO
     levels: Object.assign(
       { fatal: 0, warn: 4, trace: 7 },
