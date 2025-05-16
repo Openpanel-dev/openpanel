@@ -1,0 +1,192 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "include-component-in-tag": false,
+  "packages": {
+    ".": {
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "frontend/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/api/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/docs/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/public/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/worker/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/db/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/cli/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "self-hosting/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/trpc/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "apps/dashboard/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/email/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/queue/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/redis/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/common/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/logger/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "tooling/publish/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/payments/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/sdk/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/web/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/constants/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "tooling/typescript/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/_info/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/astro/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/validation/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/nextjs/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/integrations/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/express/package.json",
+          "jsonpath": "version"
+        },
+        {
+          "type": "json",
+          "path": "packages/sdks/react-native/package.json",
+          "jsonpath": "version"
+        }
+      ]
+    }
+  },
+  "changelog-sections": [
+    {
+      "type": "feat",
+      "section": "Features"
+    },
+    {
+      "type": "fix",
+      "section": "Fixes"
+    },
+    {
+      "type": "docs",
+      "section": "Documentation"
+    },
+    {
+      "type": "style",
+      "section": "Styling"
+    },
+    {
+      "type": "refactor",
+      "section": "Code Refactoring"
+    },
+    {
+      "type": "perf",
+      "section": "Performance Improvements"
+    },
+    {
+      "type": "test",
+      "section": "Tests",
+      "hidden": true
+    },
+    {
+      "type": "build",
+      "section": "Build System",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "section": "Continuous Integration",
+      "hidden": true
+    }
+  ]
+}
