@@ -1,13 +1,13 @@
 import {
-  getOrganizationByProjectIdCached,
   getOrganizationSubscriptionChartEndDate,
+  getSettingsForProject,
   overviewService,
   zGetMetricsInput,
   zGetTopGenericInput,
   zGetTopPagesInput,
 } from '@openpanel/db';
 import { type IChartRange, zRange } from '@openpanel/validation';
-import { TRPCError } from '@trpc/server';
+import { format } from 'date-fns';
 import { z } from 'zod';
 import { cacheMiddleware, createTRPCRouter, publicProcedure } from '../trpc';
 import {
@@ -34,8 +34,8 @@ function getCurrentAndPrevious<
     range: IChartRange;
     projectId: string;
   },
->(input: T, fetchPrevious = false) {
-  const current = getChartStartEndDate(input);
+>(input: T, fetchPrevious: boolean, timezone: string) {
+  const current = getChartStartEndDate(input, timezone);
   const previous = getChartPrevStartEndDate(current);
 
   return async <R>(
@@ -88,9 +88,11 @@ export const overviewRouter = createTRPCRouter({
     )
     .use(cacher)
     .query(async ({ ctx, input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
       const { current, previous } = await getCurrentAndPrevious(
-        input,
+        { ...input, timezone },
         true,
+        timezone,
       )(overviewService.getMetrics.bind(overviewService));
       return {
         metrics: {
@@ -107,6 +109,7 @@ export const overviewRouter = createTRPCRouter({
           const prev = previous?.series[index];
           return {
             ...item,
+            date: format(item.date, 'yyyy-MM-dd HH:mm:ss'),
             prev_bounce_rate: prev?.bounce_rate,
             prev_unique_visitors: prev?.unique_visitors,
             prev_total_screen_views: prev?.total_screen_views,
@@ -129,12 +132,14 @@ export const overviewRouter = createTRPCRouter({
     )
     .use(cacher)
     .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
-        input,
+        { ...input },
         false,
+        timezone,
       )(async (input) => {
         if (input.mode === 'page') {
-          return overviewService.getTopPages(input);
+          return overviewService.getTopPages({ ...input, timezone });
         }
 
         if (input.mode === 'bot') {
@@ -144,6 +149,7 @@ export const overviewRouter = createTRPCRouter({
         return overviewService.getTopEntryExit({
           ...input,
           mode: input.mode,
+          timezone,
         });
       });
 
@@ -160,9 +166,11 @@ export const overviewRouter = createTRPCRouter({
     )
     .use(cacher)
     .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
       const { current } = await getCurrentAndPrevious(
-        input,
+        { ...input, timezone },
         false,
+        timezone,
       )(overviewService.getTopGeneric.bind(overviewService));
 
       return current;

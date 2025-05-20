@@ -13,6 +13,7 @@ import {
   db,
   funnelService,
   getSelectPropertyKey,
+  getSettingsForProject,
   toDate,
 } from '@openpanel/db';
 import {
@@ -80,7 +81,7 @@ export const chartRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { projectId, event } }) => {
-      const profiles = await clix(ch)
+      const profiles = await clix(ch, 'UTC')
         .select<Pick<IServiceProfile, 'properties'>>(['properties'])
         .from(TABLE_NAMES.profiles)
         .where('project_id', '=', projectId)
@@ -214,7 +215,8 @@ export const chartRouter = createTRPCRouter({
     }),
 
   funnel: protectedProcedure.input(zChartInput).query(async ({ input }) => {
-    const currentPeriod = getChartStartEndDate(input);
+    const { timezone } = await getSettingsForProject(input.projectId);
+    const currentPeriod = getChartStartEndDate(input, timezone);
     const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
@@ -231,7 +233,8 @@ export const chartRouter = createTRPCRouter({
   }),
 
   conversion: protectedProcedure.input(zChartInput).query(async ({ input }) => {
-    const currentPeriod = getChartStartEndDate(input);
+    const { timezone } = await getSettingsForProject(input.projectId);
+    const currentPeriod = getChartStartEndDate(input, timezone);
     const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
@@ -254,7 +257,7 @@ export const chartRouter = createTRPCRouter({
   }),
 
   chart: publicProcedure
-    .use(cacher)
+    // .use(cacher)
     .input(zChartInput)
     .query(async ({ input, ctx }) => {
       if (ctx.session.userId) {
@@ -301,8 +304,9 @@ export const chartRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
       const { projectId, firstEvent, secondEvent } = input;
-      const dates = getChartStartEndDate(input);
+      const dates = getChartStartEndDate(input, timezone);
       const diffInterval = {
         minute: () => differenceInDays(dates.endDate, dates.startDate),
         hour: () => differenceInDays(dates.endDate, dates.startDate),

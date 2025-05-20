@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { connectUserToOrganization, db } from '@openpanel/db';
-import { zInviteUser } from '@openpanel/validation';
+import { zEditOrganization, zInviteUser } from '@openpanel/validation';
 
 import { generateSecureId } from '@openpanel/common/server/id';
 import { sendEmail } from '@openpanel/email';
@@ -12,12 +12,7 @@ import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const organizationRouter = createTRPCRouter({
   update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-      }),
-    )
+    .input(zEditOrganization)
     .mutation(async ({ input, ctx }) => {
       const access = await getOrganizationAccess({
         userId: ctx.session.userId,
@@ -34,6 +29,7 @@ export const organizationRouter = createTRPCRouter({
         },
         data: {
           name: input.name,
+          timezone: input.timezone,
         },
       });
     }),

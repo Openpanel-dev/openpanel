@@ -34,10 +34,7 @@ export function SignInEmailForm() {
   };
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit, (err) => console.log(err))}
-      className="col gap-6"
-    >
+    <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-6">
       <h3 className="text-2xl font-medium text-left">Sign in with email</h3>
       <InputWithLabel
         {...form.register('email')}

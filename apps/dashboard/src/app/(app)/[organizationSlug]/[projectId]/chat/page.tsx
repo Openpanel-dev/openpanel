@@ -1,5 +1,5 @@
 import Chat from '@/components/chat/chat';
-import { db, getOrganizationBySlug } from '@openpanel/db';
+import { db, getOrganizationById } from '@openpanel/db';
 import type { UIMessage } from 'ai';
 
 export default async function ChatPage({
@@ -9,7 +9,7 @@ export default async function ChatPage({
 }) {
   const { projectId } = await params;
   const [organization, chat] = await Promise.all([
-    getOrganizationBySlug(params.organizationSlug),
+    getOrganizationById(params.organizationSlug),
     db.chat.findFirst({
       where: {
         projectId,

@@ -1,19 +1,12 @@
 import { escape } from 'sqlstring';
 
-import {
-  getTimezoneFromDateString,
-  stripLeadingAndTrailingSlashes,
-} from '@openpanel/common';
+import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
   IChartEventFilter,
   IGetChartDataInput,
 } from '@openpanel/validation';
 
-import {
-  TABLE_NAMES,
-  formatClickhouseDate,
-  toDate,
-} from '../clickhouse/client';
+import { TABLE_NAMES, formatClickhouseDate } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
 
 export function transformPropertyKey(property: string) {
@@ -61,9 +54,9 @@ export function getChartSql({
   startDate,
   endDate,
   projectId,
-  chartType,
   limit,
-}: IGetChartDataInput) {
+  timezone,
+}: IGetChartDataInput & { timezone: string }) {
   const {
     sb,
     join,
@@ -99,34 +92,34 @@ export function getChartSql({
   sb.select.count = 'count(*) as count';
   switch (interval) {
     case 'minute': {
-      sb.select.date = `toStartOfMinute(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.select.date = 'toStartOfMinute(created_at) as date';
       break;
     }
     case 'hour': {
-      sb.select.date = `toStartOfHour(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.select.date = 'toStartOfHour(created_at) as date';
       break;
     }
     case 'day': {
-      sb.select.date = `toStartOfDay(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.select.date = 'toStartOfDay(created_at) as date';
       break;
     }
     case 'week': {
-      sb.select.date = `toStartOfWeek(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.select.date = `toStartOfWeek(created_at, '${timezone}') as date`;
       break;
     }
     case 'month': {
-      sb.select.date = `toStartOfMonth(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.select.date = `toStartOfMonth(created_at, '${timezone}') as date`;
       break;
     }
   }
   sb.groupBy.date = 'date';
 
   if (startDate) {
-    sb.where.startDate = `${toDate('created_at', interval)} >= ${toDate(formatClickhouseDate(startDate), interval)}`;
+    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
   }
 
   if (endDate) {
-    sb.where.endDate = `${toDate('created_at', interval)} <= ${toDate(formatClickhouseDate(endDate), interval)}`;
+    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
   if (breakdowns.length > 0 && limit) {

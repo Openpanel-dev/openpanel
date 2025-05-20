@@ -203,6 +203,7 @@ export const zOnboardingProject = z
     website: z.boolean(),
     app: z.boolean(),
     backend: z.boolean(),
+    timezone: z.string().optional(),
   })
   .superRefine((data, ctx) => {
     if (!data.organization && !data.organizationId) {
@@ -434,3 +435,9 @@ export const zCheckout = z.object({
   productId: z.string(),
 });
 export type ICheckout = z.infer<typeof zCheckout>;
+
+export const zEditOrganization = z.object({
+  id: z.string().min(2),
+  name: z.string().min(2),
+  timezone: z.string().min(1),
+});

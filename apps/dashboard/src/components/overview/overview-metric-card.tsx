@@ -173,7 +173,9 @@ export function OverviewMetricCardNumber({
     <div className={cn('flex min-w-0 flex-col gap-2', className)}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2 text-left">
-          <span className="truncate text-muted-foreground">{label}</span>
+          <span className="truncate text-sm font-medium text-muted-foreground">
+            {label}
+          </span>
         </div>
       </div>
       {isLoading ? (

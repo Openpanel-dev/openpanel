@@ -12,6 +12,7 @@ import {
   formatClickhouseDate,
   getEventList,
   getEvents,
+  getSettingsForProject,
   overviewService,
   sessionService,
 } from '@openpanel/db';
@@ -275,7 +276,8 @@ export const eventRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      const { startDate, endDate } = getChartStartEndDate(input);
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
       if (input.search) {
         input.filters.push({
           id: 'path',
@@ -292,6 +294,7 @@ export const eventRouter = createTRPCRouter({
         interval: input.interval,
         cursor: input.cursor || 1,
         limit: input.take,
+        timezone,
       });
     }),
 

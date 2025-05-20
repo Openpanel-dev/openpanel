@@ -6,15 +6,11 @@ import {
   addWeeks,
   format,
   parseISO,
-  startOfDay,
-  startOfHour,
-  startOfMinute,
-  startOfMonth,
-  startOfWeek,
 } from 'date-fns';
 
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import type { IInterval } from '@openpanel/validation';
+import { DateTime } from 'luxon';
 
 // Define the data structure
 export interface ISerieDataItem {
@@ -30,24 +26,6 @@ export interface ISerieDataItemComplete {
   labels: string[];
   count: number;
   date: string;
-}
-
-// Function to round down the date to the nearest interval
-function roundDate(date: Date, interval: IInterval): Date {
-  switch (interval) {
-    case 'minute':
-      return startOfMinute(date);
-    case 'hour':
-      return startOfHour(date);
-    case 'day':
-      return startOfDay(date);
-    case 'week':
-      return startOfWeek(date);
-    case 'month':
-      return startOfMonth(date);
-    default:
-      return startOfMinute(date);
-  }
 }
 
 function filterFalsyAfterTruthy(array: (string | undefined | null)[]) {
@@ -92,11 +70,12 @@ export function completeSerie(
 ) {
   const startDate = parseISO(_startDate);
   const endDate = parseISO(_endDate);
+
   // Group data by label
   const labelsMap = new Map<string, Map<string, number>>();
+
   data.forEach((entry) => {
-    const roundedDate = roundDate(parseISO(entry.date), interval);
-    const dateKey = format(roundedDate, 'yyyy-MM-dd HH:mm:ss');
+    const dateKey = entry.date;
     const label = concatLabels(entry) || NOT_SET_VALUE;
     if (!labelsMap.has(label)) {
       labelsMap.set(label, new Map());
@@ -108,10 +87,17 @@ export function completeSerie(
   // Complete the timeline for each label
   const result: Record<string, ISerieDataItemComplete[]> = {};
   labelsMap.forEach((counts, label) => {
-    let currentDate = roundDate(startDate, interval);
+    let currentDate = startDate;
+
     result[label] = [];
-    while (currentDate <= endDate) {
-      const dateKey = format(currentDate, 'yyyy-MM-dd HH:mm:ss');
+    while (currentDate < endDate) {
+      const dateKey = format(
+        currentDate,
+        ['minute', 'hour', 'day'].includes(interval)
+          ? 'yyyy-MM-dd HH:mm:ss'
+          : 'yyyy-MM-dd',
+      );
+
       result[label]!.push({
         labels: label.split(':::'),
         date: dateKey,
@@ -127,13 +113,19 @@ export function completeSerie(
           currentDate = addHours(currentDate, 1);
           break;
         case 'day':
-          currentDate = addDays(currentDate, 1);
+          currentDate = DateTime.fromJSDate(currentDate)
+            .plus({ days: 1 })
+            .toJSDate();
           break;
         case 'week':
-          currentDate = addWeeks(currentDate, 1);
+          currentDate = DateTime.fromJSDate(currentDate)
+            .plus({ weeks: 1 })
+            .toJSDate();
           break;
         case 'month':
-          currentDate = addMonths(currentDate, 1);
+          currentDate = DateTime.fromJSDate(currentDate)
+            .plus({ months: 1 })
+            .toJSDate();
           break;
       }
     }

@@ -16,8 +16,13 @@ export const timeWindows = {
   },
   today: {
     key: 'today',
-    label: '24 hours',
+    label: 'Today',
     shortcut: 'D',
+  },
+  yesterday: {
+    key: 'yesterday',
+    label: 'Yesterday',
+    shortcut: 'E',
   },
   '7d': {
     key: '7d',
@@ -28,6 +33,16 @@ export const timeWindows = {
     key: '30d',
     label: 'Last 30 days',
     shortcut: 'T',
+  },
+  '6m': {
+    key: '6m',
+    label: 'Last 6 months',
+    shortcut: '6',
+  },
+  '12m': {
+    key: '12m',
+    label: 'Last 12 months',
+    shortcut: '0',
   },
   monthToDate: {
     key: 'monthToDate',
@@ -167,7 +182,10 @@ export function isMinuteIntervalEnabledByRange(
 
 export function isHourIntervalEnabledByRange(range: keyof typeof timeWindows) {
   return (
-    isMinuteIntervalEnabledByRange(range) || range === 'today' || range === '7d'
+    isMinuteIntervalEnabledByRange(range) ||
+    range === 'today' ||
+    range === 'yesterday' ||
+    range === '7d'
   );
 }
 
@@ -177,7 +195,7 @@ export function getDefaultIntervalByRange(
   if (range === '30min' || range === 'lastHour') {
     return 'minute';
   }
-  if (range === 'today') {
+  if (range === 'today' || range === 'yesterday') {
     return 'hour';
   }
   if (
