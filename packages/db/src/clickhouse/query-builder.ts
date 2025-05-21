@@ -258,7 +258,7 @@ export class Query<T = any> {
 
   private escapeDate(value: string | Date): string {
     if (value instanceof Date) {
-      return clix.datetime(value);
+      return escape(clix.datetime(value));
     }
 
     return value.replaceAll(this._dateRegex, (match) => {
