@@ -1,7 +1,6 @@
 // List of available timezones from Clickhouse `select time_zone from  system.time_zones`
 export const TIMEZONES = [
   'Africa/Abidjan',
-  'Africa/Abidjan',
   'Africa/Accra',
   'Africa/Addis_Ababa',
   'Africa/Algiers',

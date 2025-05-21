@@ -21,8 +21,9 @@ export default function SideEffectsTimezone({
   const [isMissingTimezone, setIsMissingTimezone] = useState<boolean>(
     !organization.timezone,
   );
+  const defaultTimezone = 'hej'; // Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [timezone, setTimezone] = useState<string>(
-    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    TIMEZONES.includes(defaultTimezone) ? defaultTimezone : '',
   );
 
   const mutation = api.organization.update.useMutation({
@@ -71,11 +72,13 @@ export default function SideEffectsTimezone({
         <DialogFooter className="mt-4">
           <Button
             size="lg"
+            disabled={!TIMEZONES.includes(timezone)}
+            loading={mutation.isLoading}
             onClick={() =>
               mutation.mutate({
                 id: organization.id,
                 name: organization.name,
-                timezone,
+                timezone: timezone ?? '',
               })
             }
           >
