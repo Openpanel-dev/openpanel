@@ -506,7 +506,7 @@ export async function getEventList({
   }
 
   if (profileId) {
-    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
   }
 
   if (startDate && endDate) {
@@ -526,10 +526,6 @@ export async function getEventList({
       ...getEventFiltersWhereClause(filters),
     };
   }
-
-  // if (cursor) {
-  //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
-  // }
 
   sb.orderBy.created_at =
     'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';

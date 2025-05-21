@@ -65,6 +65,7 @@ async function getProjectId(
 const eventsScheme = z.object({
   project_id: z.string().optional(),
   projectId: z.string().optional(),
+  profileId: z.string().optional(),
   event: z.union([z.string(), z.array(z.string())]).optional(),
   start: z.coerce.string().optional(),
   end: z.coerce.string().optional(),
@@ -109,6 +110,7 @@ export async function events(
     endDate: query.data.end ? new Date(query.data.end) : undefined,
     cursor,
     take,
+    profileId: query.data.profileId,
     select: {
       profile: false,
       meta: false,
