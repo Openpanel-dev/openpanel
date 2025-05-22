@@ -21,7 +21,7 @@ export default function SideEffectsTimezone({
   const [isMissingTimezone, setIsMissingTimezone] = useState<boolean>(
     !organization.timezone,
   );
-  const defaultTimezone = 'hej'; // Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const defaultTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [timezone, setTimezone] = useState<string>(
     TIMEZONES.includes(defaultTimezone) ? defaultTimezone : '',
   );

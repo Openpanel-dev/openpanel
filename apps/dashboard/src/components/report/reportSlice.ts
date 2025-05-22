@@ -185,33 +185,6 @@ export const reportSlice = createSlice({
       state.lineType = action.payload;
     },
 
-    // Custom start and end date
-    changeDates: (
-      state,
-      action: PayloadAction<{
-        startDate: string;
-        endDate: string;
-      }>,
-    ) => {
-      state.dirty = true;
-      state.startDate = format(
-        startOfDay(action.payload.startDate),
-        'yyyy-MM-dd HH:mm:ss',
-      );
-      state.endDate = format(
-        endOfDay(action.payload.endDate),
-        'yyyy-MM-dd HH:mm:ss',
-      );
-
-      if (isSameDay(state.startDate, state.endDate)) {
-        state.interval = 'hour';
-      } else if (isSameMonth(state.startDate, state.endDate)) {
-        state.interval = 'day';
-      } else {
-        state.interval = 'month';
-      }
-    },
-
     // Date range
     changeStartDate: (state, action: PayloadAction<string>) => {
       state.dirty = true;
@@ -302,7 +275,6 @@ export const {
   removeBreakdown,
   changeBreakdown,
   changeInterval,
-  changeDates,
   changeStartDate,
   changeEndDate,
   changeDateRanges,
