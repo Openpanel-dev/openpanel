@@ -495,6 +495,8 @@ export class Query<T = any> {
   // Execution methods
   async execute(): Promise<T[]> {
     const query = this.buildQuery();
+    console.log('query', query);
+
     const result = await this.client.query({
       query,
       clickhouse_settings: {
@@ -663,7 +665,7 @@ clix.toStartOf = (node: string, interval: IInterval, timezone?: string) => {
     }
     case 'week': {
       // Does not respect timezone settings (session_timezone) so we need to pass it manually
-      return `toStartOfWeek(${node}${timezone ? `, '${timezone}'` : ''})`;
+      return `toStartOfWeek(${node}${timezone ? `, 1, '${timezone}'` : ''})`;
     }
     case 'month': {
       // Does not respect timezone settings (session_timezone) so we need to pass it manually

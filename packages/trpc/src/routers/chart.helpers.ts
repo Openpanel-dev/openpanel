@@ -6,8 +6,8 @@ import type { ISerieDataItem } from '@openpanel/common';
 import {
   DateTime,
   average,
-  completeSerie,
   getPreviousMetric,
+  groupByLabels,
   max,
   min,
   round,
@@ -489,24 +489,12 @@ export async function getChartSerie(
   }
 
   return getSeries()
-    .then((data) =>
-      completeSerie(data, payload.startDate, payload.endDate, payload.interval),
-    )
+    .then(groupByLabels)
     .then((series) => {
-      return Object.keys(series).map((key) => {
-        const firstDataItem = series[key]![0]!;
-        const isBreakdown =
-          payload.breakdowns.length && firstDataItem.labels.length;
-        const serieLabel = isBreakdown
-          ? firstDataItem.labels
-          : [getEventLegend(payload.event)];
+      return series.map((serie) => {
         return {
-          name: serieLabel,
+          ...serie,
           event: payload.event,
-          data: series[key]!.map((item) => ({
-            ...item,
-            date: item.date,
-          })),
         };
       });
     });
