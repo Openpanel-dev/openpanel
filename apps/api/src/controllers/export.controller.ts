@@ -3,12 +3,14 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { HttpError } from '@/utils/errors';
+import { DateTime } from '@openpanel/common';
 import type { GetEventListOptions } from '@openpanel/db';
 import {
   ClientType,
   db,
   getEventList,
   getEventsCountCached,
+  getSettingsForProject,
 } from '@openpanel/db';
 import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
 import { zChartEvent, zChartInput } from '@openpanel/validation';
@@ -176,10 +178,21 @@ export async function charts(
   }
 
   const projectId = await getProjectId(request, reply);
+  const { timezone } = await getSettingsForProject(projectId);
   const { events, ...rest } = query.data;
 
   return getChart({
     ...rest,
+    startDate: rest.startDate
+      ? DateTime.fromISO(rest.startDate)
+          .setZone(timezone)
+          .toFormat('yyyy-MM-dd HH:mm:ss')
+      : undefined,
+    endDate: rest.endDate
+      ? DateTime.fromISO(rest.endDate)
+          .setZone(timezone)
+          .toFormat('yyyy-MM-dd HH:mm:ss')
+      : undefined,
     projectId,
     events: events.map((event) => ({
       ...event,
