@@ -83,12 +83,7 @@ export default function EditProjectDetails({ project }: Props) {
         <span className="title">Details</span>
       </WidgetHead>
       <WidgetBody>
-        <form
-          onSubmit={form.handleSubmit(onSubmit, (errors) => {
-            console.log(errors);
-          })}
-          className="col gap-4"
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
           <InputWithLabel
             label="Name"
             {...form.register('name')}

@@ -83,12 +83,7 @@ export default function AddProject() {
   return (
     <ModalContent>
       <ModalHeader title="Create project" />
-      <form
-        onSubmit={form.handleSubmit(onSubmit, (errors) => {
-          console.log(errors);
-        })}
-        className="col gap-4"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
         <InputWithLabel label="Name" {...form.register('name')} />
 
         <div className="-mb-2 flex gap-2 items-center justify-between">

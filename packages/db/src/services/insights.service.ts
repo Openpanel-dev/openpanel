@@ -1,5 +1,5 @@
 import type { ClickHouseClient } from '@clickhouse/client';
-import { Query, createQuery } from '../clickhouse/query-builder';
+import { clix } from '../clickhouse/query-builder';
 
 export interface Insight {
   type: string;
@@ -73,7 +73,7 @@ export class InsightsService {
   constructor(private client: ClickHouseClient) {}
 
   private async getTrafficSpikes(projectId: string): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'referrer_name',
         'toDate(created_at) as date',
@@ -100,7 +100,7 @@ export class InsightsService {
   }
 
   private async getEventSurges(projectId: string): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'toDate(created_at) as date',
         'COUNT(*) as event_count',
@@ -126,7 +126,7 @@ export class InsightsService {
   }
 
   private async getNewVisitorTrends(projectId: string): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'toMonth(created_at) as month',
         'COUNT(DISTINCT device_id) as new_visitors',
@@ -155,7 +155,7 @@ export class InsightsService {
   private async getReferralSourceHighlights(
     projectId: string,
   ): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'referrer_name',
         'COUNT(*) as count',
@@ -179,7 +179,7 @@ export class InsightsService {
   private async getSessionDurationChanges(
     projectId: string,
   ): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'toWeek(created_at) as week',
         'avg(duration) as avg_duration',
@@ -205,7 +205,7 @@ export class InsightsService {
   }
 
   private async getTopPerformingContent(projectId: string): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'path',
         'COUNT(*) as view_count',
@@ -233,7 +233,7 @@ export class InsightsService {
   private async getBounceRateImprovements(
     projectId: string,
   ): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'toMonth(created_at) as month',
         'sum(is_bounce) / COUNT(*) as bounce_rate',
@@ -261,7 +261,7 @@ export class InsightsService {
   private async getReturningVisitorTrends(
     projectId: string,
   ): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'toQuarter(created_at) as quarter',
         'COUNT(DISTINCT device_id) as returning_visitors',
@@ -290,7 +290,7 @@ export class InsightsService {
   private async getGeographicInterestShifts(
     projectId: string,
   ): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'country',
         'COUNT(*) as visitor_count',
@@ -318,7 +318,7 @@ export class InsightsService {
   private async getEventCompletionChanges(
     projectId: string,
   ): Promise<Insight[]> {
-    const query = createQuery(this.client)
+    const query = clix(this.client)
       .select([
         'event_name',
         'toMonth(created_at) as month',

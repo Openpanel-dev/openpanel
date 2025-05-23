@@ -1,19 +1,12 @@
 import { escape } from 'sqlstring';
 
-import {
-  getTimezoneFromDateString,
-  stripLeadingAndTrailingSlashes,
-} from '@openpanel/common';
+import { stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
   IChartEventFilter,
   IGetChartDataInput,
 } from '@openpanel/validation';
 
-import {
-  TABLE_NAMES,
-  formatClickhouseDate,
-  toDate,
-} from '../clickhouse/client';
+import { TABLE_NAMES, formatClickhouseDate } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
 
 export function transformPropertyKey(property: string) {
@@ -61,9 +54,9 @@ export function getChartSql({
   startDate,
   endDate,
   projectId,
-  chartType,
   limit,
-}: IGetChartDataInput) {
+  timezone,
+}: IGetChartDataInput & { timezone: string }) {
   const {
     sb,
     join,
@@ -73,6 +66,7 @@ export function getChartSql({
     getSelect,
     getOrderBy,
     getGroupBy,
+    getFill,
   } = createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
@@ -99,34 +93,40 @@ export function getChartSql({
   sb.select.count = 'count(*) as count';
   switch (interval) {
     case 'minute': {
-      sb.select.date = `toStartOfMinute(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
+      sb.select.date = 'toStartOfMinute(created_at) as date';
       break;
     }
     case 'hour': {
-      sb.select.date = `toStartOfHour(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
+      sb.select.date = 'toStartOfHour(created_at) as date';
       break;
     }
     case 'day': {
-      sb.select.date = `toStartOfDay(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
+      sb.select.date = 'toStartOfDay(created_at) as date';
       break;
     }
     case 'week': {
-      sb.select.date = `toStartOfWeek(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
+      sb.select.date = `toStartOfWeek(created_at, 1, '${timezone}') as date`;
       break;
     }
     case 'month': {
-      sb.select.date = `toStartOfMonth(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
+      sb.select.date = `toStartOfMonth(created_at, '${timezone}') as date`;
       break;
     }
   }
   sb.groupBy.date = 'date';
+  sb.orderBy.date = 'date ASC';
 
   if (startDate) {
-    sb.where.startDate = `${toDate('created_at', interval)} >= ${toDate(formatClickhouseDate(startDate), interval)}`;
+    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
   }
 
   if (endDate) {
-    sb.where.endDate = `${toDate('created_at', interval)} <= ${toDate(formatClickhouseDate(endDate), interval)}`;
+    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
   if (breakdowns.length > 0 && limit) {
@@ -179,18 +179,14 @@ export function getChartSql({
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
 
-    console.log(
-      `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
-    );
-
-    return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
+    const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+    console.log('CHART SQL', sql);
+    return sql;
   }
 
-  console.log(
-    `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
-  );
-
-  return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
+  const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+  console.log('CHART SQL', sql);
+  return sql;
 }
 
 export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {

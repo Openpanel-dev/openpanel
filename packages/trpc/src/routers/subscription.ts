@@ -1,7 +1,7 @@
 import {
   db,
   getOrganizationBillingEventsCountSerieCached,
-  getOrganizationBySlug,
+  getOrganizationById,
 } from '@openpanel/db';
 import {
   cancelSubscription,
@@ -24,7 +24,7 @@ export const subscriptionRouter = createTRPCRouter({
   getCurrent: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input }) => {
-      const organization = await getOrganizationBySlug(input.organizationId);
+      const organization = await getOrganizationById(input.organizationId);
 
       if (!organization.subscriptionProductId) {
         return null;
@@ -150,7 +150,7 @@ export const subscriptionRouter = createTRPCRouter({
   cancelSubscription: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ input }) => {
-      const organization = await getOrganizationBySlug(input.organizationId);
+      const organization = await getOrganizationById(input.organizationId);
       if (!organization.subscriptionId) {
         throw TRPCBadRequestError('Organization has no subscription');
       }
@@ -163,7 +163,7 @@ export const subscriptionRouter = createTRPCRouter({
   portal: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .mutation(async ({ input }) => {
-      const organization = await getOrganizationBySlug(input.organizationId);
+      const organization = await getOrganizationById(input.organizationId);
       if (!organization.subscriptionCustomerId) {
         throw TRPCBadRequestError('Organization has no subscription');
       }

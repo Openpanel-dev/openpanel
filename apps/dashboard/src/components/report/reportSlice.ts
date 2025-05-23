@@ -1,16 +1,9 @@
-import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-import {
-  endOfDay,
-  formatISO,
-  isSameDay,
-  isSameMonth,
-  startOfDay,
-} from 'date-fns';
+import { createSlice } from '@reduxjs/toolkit';
+import { endOfDay, format, isSameDay, isSameMonth, startOfDay } from 'date-fns';
 
 import { shortId } from '@openpanel/common';
 import {
-  alphabetIds,
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
   isHourIntervalEnabledByRange,
@@ -192,31 +185,10 @@ export const reportSlice = createSlice({
       state.lineType = action.payload;
     },
 
-    // Custom start and end date
-    changeDates: (
-      state,
-      action: PayloadAction<{
-        startDate: string;
-        endDate: string;
-      }>,
-    ) => {
-      state.dirty = true;
-      state.startDate = formatISO(startOfDay(action.payload.startDate));
-      state.endDate = formatISO(endOfDay(action.payload.endDate));
-
-      if (isSameDay(state.startDate, state.endDate)) {
-        state.interval = 'hour';
-      } else if (isSameMonth(state.startDate, state.endDate)) {
-        state.interval = 'day';
-      } else {
-        state.interval = 'month';
-      }
-    },
-
     // Date range
     changeStartDate: (state, action: PayloadAction<string>) => {
       state.dirty = true;
-      state.startDate = formatISO(startOfDay(action.payload));
+      state.startDate = action.payload;
 
       const interval = getDefaultIntervalByDates(
         state.startDate,
@@ -230,7 +202,7 @@ export const reportSlice = createSlice({
     // Date range
     changeEndDate: (state, action: PayloadAction<string>) => {
       state.dirty = true;
-      state.endDate = formatISO(endOfDay(action.payload));
+      state.endDate = action.payload;
 
       const interval = getDefaultIntervalByDates(
         state.startDate,
@@ -263,8 +235,6 @@ export const reportSlice = createSlice({
     },
 
     changeUnit(state, action: PayloadAction<string | undefined>) {
-      console.log('here?!?!', action.payload);
-
       state.dirty = true;
       state.unit = action.payload || undefined;
     },
@@ -305,7 +275,6 @@ export const {
   removeBreakdown,
   changeBreakdown,
   changeInterval,
-  changeDates,
   changeStartDate,
   changeEndDate,
   changeDateRanges,

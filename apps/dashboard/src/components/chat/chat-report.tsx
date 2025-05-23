@@ -7,7 +7,6 @@ import type {
   IChartType,
   IInterval,
 } from '@openpanel/validation';
-import { endOfDay, startOfDay } from 'date-fns';
 import { SaveIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ReportChart } from '../report-chart';
@@ -50,10 +49,8 @@ export function ChatReport({
             className="min-w-0"
             onChange={setRange}
             value={report.range}
-            onStartDateChange={(date) =>
-              setStartDate(startOfDay(date).toISOString())
-            }
-            onEndDateChange={(date) => setEndDate(endOfDay(date).toISOString())}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
             endDate={report.endDate}
             startDate={report.startDate}
           />

@@ -4,12 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-catalogs:
-  default:
-    zod:
-      specifier: ^3.24.2
-      version: 3.24.2
-
 importers:
 
   .:
@@ -891,6 +885,9 @@ importers:
       date-fns:
         specifier: ^3.3.1
         version: 3.3.1
+      luxon:
+        specifier: ^3.6.1
+        version: 3.6.1
       mathjs:
         specifier: ^12.3.2
         version: 12.3.2
@@ -919,6 +916,9 @@ importers:
       '@openpanel/validation':
         specifier: workspace:*
         version: link:../validation
+      '@types/luxon':
+        specifier: ^3.6.2
+        version: 3.6.2
       '@types/node':
         specifier: 20.14.8
         version: 20.14.8
@@ -6435,6 +6435,9 @@ packages:
   '@types/lodash@4.14.202':
     resolution: {integrity: sha512-OvlIYQK9tNneDlS0VN54LLd5uiPCBOp7gS5Z0f1mjoJYBrtStzgmJBxONW3U6OZqdtNzZPmn9BS/7WI7BFFcFQ==}
 
+  '@types/luxon@3.6.2':
+    resolution: {integrity: sha512-R/BdP7OxEMc44l2Ex5lSXHoIXTB2JLNa3y2QISIbr58U/YcsffyQrYW//hZSdrfxrjRZj3GcUoxMPGdO8gSYuw==}
+
   '@types/mdast@4.0.3':
     resolution: {integrity: sha512-LsjtqsyF+d2/yFOYaN22dHZI1Cpwkrj+g06G8+qtUKlhovPW89YhqSnfKtMbkgmEtYpH2gydRNULd6y8mciAFg==}
 
@@ -9595,6 +9598,10 @@ packages:
 
   luxon@3.4.4:
     resolution: {integrity: sha512-zobTr7akeGHnv7eBOXcRgMeCP6+uyYsczwmeRCauvpvaAltgNyTbLH/+VaEAPUeWBT+1GuNmz4wC/6jtQzbbVA==}
+    engines: {node: '>=12'}
+
+  luxon@3.6.1:
+    resolution: {integrity: sha512-tJLxrKJhO2ukZ5z0gyjY1zPh3Rh88Ej9P7jNrZiHMUXHae1yvI2imgOZtL1TO8TW6biMMKfTtAOoEJANgtWBMQ==}
     engines: {node: '>=12'}
 
   magic-string@0.30.17:
@@ -18633,6 +18640,8 @@ snapshots:
 
   '@types/lodash@4.14.202': {}
 
+  '@types/luxon@3.6.2': {}
+
   '@types/mdast@4.0.3':
     dependencies:
       '@types/unist': 3.0.2
@@ -22513,6 +22522,8 @@ snapshots:
       react: 18.3.1
 
   luxon@3.4.4: {}
+
+  luxon@3.6.1: {}
 
   magic-string@0.30.17:
     dependencies:

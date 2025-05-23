@@ -1,4 +1,4 @@
-import type { ResponseJSON } from '@clickhouse/client';
+import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import { escape } from 'sqlstring';
 
@@ -11,7 +11,6 @@ export { createClient };
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
-import { getTimezoneFromDateString } from '@openpanel/common';
 
 // All three LogParams types are exported by the client
 interface LogParams {
@@ -142,10 +141,12 @@ export const ch = new Proxy(originalCh, {
 
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string,
+  clickhouseSettings?: ClickHouseSettings,
 ): Promise<ResponseJSON<T>> {
   const start = Date.now();
   const res = await ch.query({
     query,
+    clickhouse_settings: clickhouseSettings,
   });
   const json = await res.json<T>();
   const keys = Object.keys(json.data[0] || {});
@@ -170,6 +171,7 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
     rows: json.rows,
     stats: response.statistics,
     elapsed: Date.now() - start,
+    clickhouseSettings,
   });
 
   return response;
@@ -177,8 +179,9 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
 
 export async function chQuery<T extends Record<string, any>>(
   query: string,
+  clickhouseSettings?: ClickHouseSettings,
 ): Promise<T[]> {
-  return (await chQueryWithMeta<T>(query)).data;
+  return (await chQueryWithMeta<T>(query, clickhouseSettings)).data;
 }
 
 export function formatClickhouseDate(
@@ -188,7 +191,10 @@ export function formatClickhouseDate(
   if (skipTime) {
     return new Date(date).toISOString().split('T')[0]!;
   }
-  return new Date(date).toISOString().replace('T', ' ').replace(/Z+$/, '');
+  return new Date(date)
+    .toISOString()
+    .replace('T', ' ')
+    .replace(/(\.\d{3})?Z+$/, '');
 }
 
 export function toDate(str: string, interval?: IInterval) {

@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 import { parseAsStringEnum } from 'nuqs/server';
 
 import { auth } from '@openpanel/auth/nextjs';
-import { db, transformOrganization } from '@openpanel/db';
+import { db } from '@openpanel/db';
 
 import InvitesServer from './invites';
 import MembersServer from './members';
