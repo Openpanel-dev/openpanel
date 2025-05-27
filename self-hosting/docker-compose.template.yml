@@ -42,10 +42,6 @@ services:
     # ports:
     #   - 6379:6379
 
-  op-geo:
-    image: observabilitystack/geoip-api:latest
-    restart: always
-
   op-ch:
     image: clickhouse/clickhouse-server:24.3.2-alpine
     restart: always
@@ -91,7 +87,6 @@ services:
       - op-db
       - op-ch
       - op-kv
-      - op-geo
     env_file:
       - .env
 
