@@ -21,12 +21,6 @@ services:
     ports:
       - 6379:6379
 
-  op-geo:
-    image: observabilitystack/geoip-api:latest
-    restart: always
-    ports:
-      - 8080:8080
-
   op-ch:
     image: clickhouse/clickhouse-server:24.12.2.29-alpine
     restart: always

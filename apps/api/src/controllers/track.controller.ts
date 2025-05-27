@@ -1,11 +1,11 @@
-import type { GeoLocation } from '@/utils/parse-ip';
-import { getClientIp, parseIp } from '@/utils/parse-ip';
+import { getClientIp } from '@/utils/get-client-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
-import { checkDuplicatedEvent, isDuplicatedEvent } from '@/utils/deduplicate';
+import { checkDuplicatedEvent } from '@/utils/deduplicate';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
+import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { eventsQueue } from '@openpanel/queue';
 import { getLock } from '@openpanel/redis';
 import type {
@@ -114,7 +114,7 @@ export async function handler(
 
   switch (request.body.type) {
     case 'track': {
-      const [salts, geo] = await Promise.all([getSalts(), parseIp(ip)]);
+      const [salts, geo] = await Promise.all([getSalts(), getGeoLocation(ip)]);
       const currentDeviceId = ua
         ? generateDeviceId({
             salt: salts.current,
@@ -190,7 +190,7 @@ export async function handler(
         return;
       }
 
-      const geo = await parseIp(ip);
+      const geo = await getGeoLocation(ip);
       await identify({
         payload: request.body.payload,
         projectId,
