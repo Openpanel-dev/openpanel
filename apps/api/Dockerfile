@@ -28,6 +28,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
 # Packages
 COPY packages/db/package.json packages/db/
+COPY packages/geo/package.json packages/geo/
 COPY packages/trpc/package.json packages/trpc/
 COPY packages/auth/package.json packages/auth/
 COPY packages/json/package.json packages/json/
@@ -91,6 +92,7 @@ COPY --from=build /app/apps/api ./apps/api
 
 # Packages
 COPY --from=build /app/packages/db ./packages/db
+COPY --from=build /app/packages/geo ./packages/geo
 COPY --from=build /app/packages/auth ./packages/auth
 COPY --from=build /app/packages/trpc ./packages/trpc
 COPY --from=build /app/packages/json ./packages/json
