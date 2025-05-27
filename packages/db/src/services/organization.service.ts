@@ -1,3 +1,4 @@
+import { DateTime } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
 import { escape } from 'sqlstring';
 import { chQuery, formatClickhouseDate } from '../clickhouse/client';
@@ -249,7 +250,9 @@ export async function getOrganizationSubscriptionChartEndDate(
     organization.subscriptionChartEndDate &&
     new Date(endDate) > organization.subscriptionChartEndDate
   ) {
-    return organization.subscriptionChartEndDate.toISOString();
+    return DateTime.fromJSDate(organization.subscriptionChartEndDate)
+      .setZone(organization.timezone || DEFAULT_TIMEZONE)
+      .toFormat('yyyy-MM-dd HH:mm:ss');
   }
 
   return endDate;
