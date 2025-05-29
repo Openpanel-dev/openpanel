@@ -1,0 +1,277 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  op-db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: openpanel
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - openpanel-network
+
+  op-kv:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: ['redis-server', '--maxmemory-policy', 'noeviction']
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - openpanel-network
+
+  op-ch:
+    image: clickhouse/clickhouse-server:24.12.2.29-alpine
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+      - ./self-hosting/clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml:ro
+      - ./self-hosting/clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
+      - ./self-hosting/clickhouse/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8123/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - openpanel-network
+
+  op-geo:
+    image: observabilitystack/geoip-api:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - openpanel-network
+
+  # Application Services
+  op-api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args:
+        DATABASE_URL: postgresql://postgres:postgres@op-db:5432/openpanel
+        CACHE_BUST: ${CACHE_BUST:-1}
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    depends_on:
+      op-db:
+        condition: service_healthy
+      op-kv:
+        condition: service_healthy
+      op-ch:
+        condition: service_healthy
+      op-geo:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@op-db:5432/openpanel
+      - DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/openpanel
+      - REDIS_URL=redis://op-kv:6379
+      - CLICKHOUSE_URL=http://op-ch:8123
+      - GEOIP_URL=http://op-geo:8080
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NEXT_PUBLIC_DASHBOARD_URL=http://localhost:3000
+      - DISABLE_HEALTHCHECK=1
+      - SELF_HOSTED=1
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - openpanel-network
+
+  op-dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+      args:
+        DATABASE_URL: postgresql://postgres:postgres@op-db:5432/openpanel
+        CACHE_BUST: ${CACHE_BUST:-1}
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      op-api:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@op-db:5432/openpanel
+      - DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/openpanel
+      - REDIS_URL=redis://op-kv:6379
+      - CLICKHOUSE_URL=http://op-ch:8123
+      - NEXT_PUBLIC_DASHBOARD_URL=http://localhost:3000
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+      - NODE_ENV=production
+      - SKIP_ENV_VALIDATION=1
+      - NEXT_TELEMETRY_DISABLED=1
+    env_file:
+      - .env
+    networks:
+      - openpanel-network
+
+  op-worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+      args:
+        DATABASE_URL: postgresql://postgres:postgres@op-db:5432/openpanel
+        CACHE_BUST: ${CACHE_BUST:-1}
+    restart: unless-stopped
+    depends_on:
+      op-api:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@op-db:5432/openpanel
+      - DATABASE_URL_DIRECT=postgresql://postgres:postgres@op-db:5432/openpanel
+      - REDIS_URL=redis://op-kv:6379
+      - CLICKHOUSE_URL=http://op-ch:8123
+      - GEOIP_URL=http://op-geo:8080
+      - NODE_ENV=production
+    env_file:
+      - .env
+    deploy:
+      replicas: 2
+    networks:
+      - openpanel-network
+
+  op-public:
+    build:
+      context: .
+      dockerfile: apps/public/Dockerfile
+      args:
+        DATABASE_URL: postgresql://postgres:postgres@op-db:5432/openpanel
+        REDIS_URL: redis://op-kv:6379
+        CLICKHOUSE_URL: http://op-ch:8123
+        CACHE_BUST: ${CACHE_BUST:-1}
+    restart: unless-stopped
+    ports:
+      - "3002:3000"
+    depends_on:
+      op-api:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@op-db:5432/openpanel
+      - REDIS_URL=redis://op-kv:6379
+      - CLICKHOUSE_URL=http://op-ch:8123
+      - NODE_ENV=production
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - openpanel-network
+
+  op-docs:
+    build:
+      context: .
+      dockerfile: apps/docs/Dockerfile
+      args:
+        CACHE_BUST: ${CACHE_BUST:-1}
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - openpanel-network
+
+  # Optional: Reverse Proxy (for production)
+  op-proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - proxy_data:/data
+      - proxy_config:/config
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+    depends_on:
+      - op-dashboard
+      - op-api
+      - op-public
+      - op-docs
+    networks:
+      - openpanel-network
+    profiles:
+      - production
+
+  # Optional: Queue Dashboard (BullBoard)
+  op-bullboard:
+    image: deadly0/bull-board
+    restart: unless-stopped
+    ports:
+      - "9999:3000"
+    environment:
+      - REDIS_HOST=op-kv
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    depends_on:
+      - op-kv
+    networks:
+      - openpanel-network
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  clickhouse_data:
+    driver: local
+  clickhouse_logs:
+    driver: local
+  proxy_data:
+    driver: local
+  proxy_config:
+    driver: local
+
+networks:
+  openpanel-network:
+    driver: bridge 

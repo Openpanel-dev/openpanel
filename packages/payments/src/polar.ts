@@ -1,17 +1,37 @@
 // src/polar.ts
-import { Polar } from '@polar-sh/sdk';
+let Polar: any;
+let validateEvent: any;
+let WebhookVerificationError: any;
+
+try {
+  const polarSdk = require('@polar-sh/sdk');
+  Polar = polarSdk.Polar;
+  const webhooks = require('@polar-sh/sdk/webhooks');
+  validateEvent = webhooks.validateEvent;
+  WebhookVerificationError = webhooks.WebhookVerificationError;
+} catch (error) {
+  console.warn('Polar SDK not available, payments functionality will be disabled');
+  Polar = class MockPolar {
+    constructor() {
+      throw new Error('Polar SDK not available');
+    }
+  };
+  validateEvent = () => { throw new Error('Polar SDK not available'); };
+  WebhookVerificationError = Error;
+}
+
 export {
   validateEvent as validatePolarEvent,
   WebhookVerificationError as PolarWebhookVerificationError,
-} from '@polar-sh/sdk/webhooks';
+};
 
-export type IPolarProduct = Awaited<ReturnType<typeof getProduct>>;
-export type IPolarPrice = IPolarProduct['prices'][number];
+export type IPolarProduct = any;
+export type IPolarPrice = any;
 
-export const polar = new Polar({
+export const polar = process.env.POLAR_ACCESS_TOKEN ? new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
   server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
-});
+}) : null;
 
 export const getSuccessUrl = (
   baseUrl: string,
@@ -23,12 +43,13 @@ export const getSuccessUrl = (
     : `${baseUrl}/${organizationId}`;
 
 export async function getProducts() {
+  if (!polar) throw new Error('Polar not configured');
   const products = await polar.products.list({
     limit: 100,
     isArchived: false,
     sorting: ['price_amount'],
   });
-  return products.result.items.filter((product) => {
+  return products.result.items.filter((product: any) => {
     return (
       product.metadata.custom !== 'true' && product.metadata.custom !== true
     );
@@ -36,6 +57,7 @@ export async function getProducts() {
 }
 
 export async function getProduct(id: string) {
+  if (!polar) throw new Error('Polar not configured');
   return polar.products.get({ id });
 }
 
@@ -44,6 +66,7 @@ export async function createPortal({
 }: {
   customerId: string;
 }) {
+  if (!polar) throw new Error('Polar not configured');
   return polar.customerSessions.create({
     customerId,
   });
@@ -67,6 +90,7 @@ export async function createCheckout({
   };
   ipAddress: string;
 }) {
+  if (!polar) throw new Error('Polar not configured');
   return polar.checkouts.create({
     productPriceId: priceId,
     successUrl: getSuccessUrl(
@@ -85,6 +109,7 @@ export async function createCheckout({
 }
 
 export async function cancelSubscription(subscriptionId: string) {
+  if (!polar) throw new Error('Polar not configured');
   try {
     return await polar.subscriptions.update({
       id: subscriptionId,
@@ -106,6 +131,7 @@ export async function cancelSubscription(subscriptionId: string) {
 }
 
 export function reactivateSubscription(subscriptionId: string) {
+  if (!polar) throw new Error('Polar not configured');
   return polar.subscriptions.update({
     id: subscriptionId,
     subscriptionUpdate: {
@@ -116,6 +142,7 @@ export function reactivateSubscription(subscriptionId: string) {
 }
 
 export function changeSubscription(subscriptionId: string, productId: string) {
+  if (!polar) throw new Error('Polar not configured');
   return polar.subscriptions.update({
     id: subscriptionId,
     subscriptionUpdate: {

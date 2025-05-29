@@ -44,6 +44,30 @@ Openpanel is a powerful analytics platform that captures and visualizes user beh
 - **Tailwind** - styling
 - **Shadcn** - ui
 
+## Quick Start with Docker 🐳
+
+The fastest way to get OpenPanel running is with our comprehensive Docker setup:
+
+```bash
+# Interactive setup wizard (recommended)
+make wizard
+
+# Or manual setup
+make setup
+make build
+make up
+make migrate
+```
+
+**Access your applications:**
+
+- **Dashboard**: http://localhost:3000
+- **API**: http://localhost:3001
+- **Public Site**: http://localhost:3002
+- **Documentation**: http://localhost:3003
+
+For detailed Docker instructions, see [DOCKER.md](DOCKER.md).
+
 ## Self-hosting
 
 OpenPanel can be self-hosted and we have tried to make it as simple as possible.
@@ -58,12 +82,22 @@ You can find the how to [here](https://openpanel.dev/docs/self-hosting/self-host
 
 ### Prerequisites
 
-- Docker
-- Docker Compose
-- Node
+- Docker & Docker Compose (recommended)
+- Node.js 18+
 - pnpm
 
-### Setup
+### Docker Development (Recommended)
+
+```bash
+# Quick development setup
+make wizard
+
+# Or start infrastructure only and run apps locally
+make up-infra
+pnpm dev
+```
+
+### Local Development
 
 Add the following to your hosts file (`/etc/hosts` on mac/linux or `C:\Windows\System32\drivers\etc\hosts` on windows). This will be your local domain.
 
@@ -88,3 +122,24 @@ You can now access the following:
 - Bullboard (queue): http://localhost:9999
 - `pnpm dock:ch` to access clickhouse terminal
 - `pnpm dock:redis` to access redis terminal
+
+## Docker Commands
+
+```bash
+make help              # Show all available commands
+make wizard            # Interactive setup wizard
+make build             # Build all Docker images
+make up                # Start all services
+make down              # Stop all services
+make logs              # View service logs
+make health            # Check service health
+make validate          # Validate Docker setup
+make migrate           # Run database migrations
+make clean             # Clean up Docker resources
+```
+
+## Documentation
+
+- [DOCKER.md](DOCKER.md) - Comprehensive Docker setup guide
+- [Development Guide](https://openpanel.dev/docs) - Detailed development documentation
+- [Self-hosting Guide](https://openpanel.dev/docs/self-hosting/self-hosting) - Production deployment

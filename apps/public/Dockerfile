@@ -1,6 +1,9 @@
 ARG NODE_VERSION=20.15.1
 
-FROM --platform=linux/amd64 node:${NODE_VERSION}-slim AS base
+FROM node:${NODE_VERSION}-slim AS base
+
+# FIX: Bad workaround (https://github.com/nodejs/corepack/issues/612)
+ENV COREPACK_INTEGRITY_KEYS=0
 
 ARG DATABASE_URL
 ENV DATABASE_URL=$DATABASE_URL
@@ -12,17 +15,16 @@ ARG CLICKHOUSE_URL
 ENV CLICKHOUSE_URL=$CLICKHOUSE_URL
 
 ENV PNPM_HOME="/pnpm"
-
 ENV PATH="$PNPM_HOME:$PATH"
 
-RUN corepack enable
+# Install necessary dependencies for prisma
+RUN apt-get update && apt-get install -y \
+    openssl \
+    libssl3 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN apt update \
-  && apt install -y curl \
-  && curl -L https://raw.githubusercontent.com/tj/n/master/bin/n -o n \
-  && bash n $NODE_VERSION \
-  && rm n \
-  && npm install -g n
+RUN corepack enable
 
 WORKDIR /app
 
@@ -42,10 +44,9 @@ COPY packages/sdks/_info/package.json packages/sdks/_info/package.json
 # BUILD
 FROM base AS build
 
-WORKDIR /app/apps/public
+WORKDIR /app
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
-WORKDIR  /app
 COPY apps/public apps/public
 COPY packages packages
 COPY tooling tooling
@@ -57,33 +58,31 @@ RUN pnpm run build
 # PROD
 FROM base AS prod
 
-WORKDIR /app/apps/public
+WORKDIR /app
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # FINAL
 FROM base AS runner
 
-COPY --from=build /app/package.json /app/package.json
-COPY --from=prod /app/node_modules /app/node_modules
+ENV NODE_ENV=production
+
+WORKDIR /app
+
+COPY --from=build /app/package.json ./package.json
+COPY --from=prod /app/node_modules ./node_modules
+
 # Apps
-COPY --from=build /app/apps/public /app/apps/public
-# Apps node_modules
-COPY --from=prod /app/apps/public/node_modules /app/apps/public/node_modules
+COPY --from=build /app/apps/public ./apps/public
+
 # Packages
-COPY --from=build /app/packages/db /app/packages/db
-COPY --from=build /app/packages/redis /app/packages/redis
-COPY --from=build /app/packages/common /app/packages/common
-COPY --from=build /app/packages/queue /app/packages/queue
-COPY --from=build /app/packages/constants /app/packages/constants
-COPY --from=build /app/packages/validation /app/packages/validation
-COPY --from=build /app/packages/sdks/sdk /app/packages/sdks/sdk
-COPY --from=build /app/packages/sdks/_info /app/packages/sdks/_info
-# Packages node_modules
-COPY --from=prod /app/packages/db/node_modules /app/packages/db/node_modules
-COPY --from=prod /app/packages/redis/node_modules /app/packages/redis/node_modules
-COPY --from=prod /app/packages/common/node_modules /app/packages/common/node_modules
-COPY --from=prod /app/packages/queue/node_modules /app/packages/queue/node_modules
-COPY --from=prod /app/packages/validation/node_modules /app/packages/validation/node_modules
+COPY --from=build /app/packages/db ./packages/db
+COPY --from=build /app/packages/redis ./packages/redis
+COPY --from=build /app/packages/common ./packages/common
+COPY --from=build /app/packages/queue ./packages/queue
+COPY --from=build /app/packages/constants ./packages/constants
+COPY --from=build /app/packages/validation ./packages/validation
+COPY --from=build /app/packages/sdks/sdk ./packages/sdks/sdk
+COPY --from=build /app/packages/sdks/_info ./packages/sdks/_info
 
 RUN pnpm db:codegen
 
