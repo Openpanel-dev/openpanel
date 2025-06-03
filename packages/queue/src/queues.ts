@@ -22,14 +22,18 @@ export interface EventsQueuePayloadIncomingEvent {
     headers: Record<string, string | undefined>;
     currentDeviceId: string;
     previousDeviceId: string;
-    priority: boolean;
   };
 }
 export interface EventsQueuePayloadCreateEvent {
   type: 'createEvent';
   payload: Omit<IServiceEvent, 'id'>;
 }
-type SessionEndRequired = 'sessionId' | 'deviceId' | 'profileId' | 'projectId';
+type SessionEndRequired =
+  | 'sessionId'
+  | 'deviceId'
+  | 'profileId'
+  | 'projectId'
+  | 'createdAt';
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
   payload: Partial<Omit<IServiceEvent, SessionEndRequired>> &

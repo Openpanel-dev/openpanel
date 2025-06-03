@@ -1,9 +1,10 @@
-import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
-import type { Job } from 'bullmq';
-import { omit } from 'ramda';
-
 import { logger as baseLogger } from '@/utils/logger';
-import { createSessionEnd, getSessionEnd } from '@/utils/session-handler';
+import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
+import {
+  createSessionEndJob,
+  createSessionStart,
+  getSessionEnd,
+} from '@/utils/session-handler';
 import { isSameDomain, parsePath } from '@openpanel/common';
 import { parseUserAgent } from '@openpanel/common/server';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
@@ -14,7 +15,11 @@ import {
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
+import { getLock } from '@openpanel/redis';
+import { DelayedError, type Job } from 'bullmq';
+import { omit } from 'ramda';
 import * as R from 'ramda';
+import { v4 as uuid } from 'uuid';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
 
@@ -29,16 +34,18 @@ async function createEventAndNotify(
   jobData: Job<EventsQueuePayloadIncomingEvent>['data']['payload'],
   logger: ILogger,
 ) {
-  await checkNotificationRulesForEvent(payload).catch((e) => {
-    logger.error('Error checking notification rules', { error: e });
-  });
-
   logger.info('Creating event', { event: payload, jobData });
-
-  return createEvent(payload);
+  const [event] = await Promise.all([
+    createEvent(payload),
+    checkNotificationRulesForEvent(payload),
+  ]);
+  return event;
 }
 
-export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
+export async function incomingEvent(
+  job: Job<EventsQueuePayloadIncomingEvent>,
+  token?: string,
+) {
   const {
     geo,
     event: body,
@@ -46,7 +53,6 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
     projectId,
     currentDeviceId,
     previousDeviceId,
-    priority,
   } = job.data.payload;
   const properties = body.properties ?? {};
   const reqId = headers['request-id'] ?? 'unknown';
@@ -131,32 +137,50 @@ export async function incomingEvent(job: Job<EventsQueuePayloadIncomingEvent>) {
   }
 
   const sessionEnd = await getSessionEnd({
-    priority,
     projectId,
     currentDeviceId,
     previousDeviceId,
     profileId,
   });
 
-  const lastScreenView = await eventBuffer.getLastScreenView({
-    projectId,
-    sessionId: sessionEnd.payload.sessionId,
-  });
+  const lastScreenView = sessionEnd
+    ? await eventBuffer.getLastScreenView({
+        projectId,
+        sessionId: sessionEnd.sessionId,
+      })
+    : null;
 
   const payload: IServiceCreateEventPayload = merge(baseEvent, {
-    deviceId: sessionEnd.payload.deviceId,
-    sessionId: sessionEnd.payload.sessionId,
-    referrer: sessionEnd.payload?.referrer,
-    referrerName: sessionEnd.payload?.referrerName,
-    referrerType: sessionEnd.payload?.referrerType,
+    deviceId: sessionEnd?.deviceId ?? currentDeviceId,
+    sessionId: sessionEnd?.sessionId ?? uuid(),
+    referrer: sessionEnd?.referrer ?? baseEvent.referrer,
+    referrerName: sessionEnd?.referrerName ?? baseEvent.referrerName,
+    referrerType: sessionEnd?.referrerType ?? baseEvent.referrerType,
     // if the path is not set, use the last screen view path
     path: baseEvent.path || lastScreenView?.path || '',
     origin: baseEvent.origin || lastScreenView?.origin || '',
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
 
-  if (sessionEnd.notFound) {
-    await createSessionEnd({ payload });
+  if (!sessionEnd) {
+    // Too avoid several created sessions we just throw if a lock exists
+    // This will than retry the job
+    const lock = await getLock(
+      `create-session-end:${currentDeviceId}`,
+      'locked',
+      1000,
+    );
+
+    if (!lock) {
+      logger.warn('Move incoming event to delayed');
+      await job.moveToDelayed(Date.now() + 50, token);
+      throw new DelayedError();
+    }
+    await createSessionStart({ payload });
   }
 
-  return createEventAndNotify(payload, job.data.payload, logger);
+  const event = await createEventAndNotify(payload, job.data.payload, logger);
+
+  await createSessionEndJob({ payload });
+
+  return event;
 }

@@ -284,15 +284,6 @@ async function track({
   timestamp: string;
   isTimestampFromThePast: boolean;
 }) {
-  const isScreenView = payload.name === 'screen_view';
-  // this will ensure that we don't have multiple events creating sessions
-  const LOCK_DURATION = 1000;
-  const locked = await getLock(
-    `request:priority:${currentDeviceId}-${previousDeviceId}:${isScreenView ? 'screen_view' : 'other'}`,
-    'locked',
-    LOCK_DURATION,
-  );
-
   await eventsQueue.add(
     'event',
     {
@@ -308,7 +299,6 @@ async function track({
         geo,
         currentDeviceId,
         previousDeviceId,
-        priority: locked,
       },
     },
     {
@@ -317,10 +307,6 @@ async function track({
         type: 'exponential',
         delay: 200,
       },
-      // Prioritize 'screen_view' events by setting no delay
-      // This ensures that session starts are created from 'screen_view' events
-      // rather than other events, maintaining accurate session tracking
-      delay: isScreenView ? undefined : LOCK_DURATION - 100,
     },
   );
 }

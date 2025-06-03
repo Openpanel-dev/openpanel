@@ -58,14 +58,17 @@ export class SessionBuffer extends BaseBuffer {
       if (event.origin) {
         newSession.exit_origin = event.origin;
       }
-      newSession.duration =
+      const duration =
         new Date(newSession.ended_at).getTime() -
         new Date(newSession.created_at).getTime();
-      if (newSession.duration < 0) {
+      if (duration > 0) {
+        newSession.duration = duration;
+      } else {
         this.logger.warn('Session duration is negative', {
+          duration,
+          event,
           session: newSession,
         });
-        newSession.duration = 0;
       }
       newSession.properties = toDots({
         ...(event.properties || {}),
@@ -73,7 +76,7 @@ export class SessionBuffer extends BaseBuffer {
       });
       // newSession.revenue += event.properties?.__revenue ?? 0;
 
-      if (event.name === 'screen_view') {
+      if (event.name === 'screen_view' && event.path) {
         newSession.screen_views.push(event.path);
         newSession.screen_view_count += 1;
       } else {
@@ -160,8 +163,6 @@ export class SessionBuffer extends BaseBuffer {
       // Plural since we will delete the old session with sign column
       const sessions = await this.getSession(event);
       const [newSession] = sessions;
-
-      console.log(`Adding sessions ${sessions.length}`);
 
       const multi = this.redis.multi();
       multi.set(

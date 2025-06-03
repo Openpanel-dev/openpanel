@@ -67,8 +67,6 @@ export class BaseBuffer {
           lockId,
         });
       }
-    } else {
-      this.logger.warn('Failed to acquire lock. Skipping flush.', { lockId });
     }
   }
 }

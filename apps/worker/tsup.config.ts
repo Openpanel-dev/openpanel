@@ -6,7 +6,7 @@ const options: Options = {
   entry: ['src/index.ts'],
   noExternal: [/^@openpanel\/.*$/u, /^@\/.*$/u],
   external: ['@hyperdx/node-opentelemetry', 'winston'],
-  ignoreWatch: ['../../**/{.git,node_modules}/**'],
+  ignoreWatch: ['../../**/{.git,node_modules,dist}/**'],
   sourcemap: true,
   splitting: false,
 };

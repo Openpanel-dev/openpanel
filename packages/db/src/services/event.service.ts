@@ -1,8 +1,8 @@
-import { path, assocPath, last, mergeDeepRight, pick, uniq } from 'ramda';
+import { path, assocPath, last, mergeDeepRight } from 'ramda';
 import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
-import { toDots } from '@openpanel/common';
+import { DateTime, toDots } from '@openpanel/common';
 import { cacheable, getCache } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
@@ -19,13 +19,8 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import type { IClickhouseProfile, IServiceProfile } from './profile.service';
-import {
-  getProfileById,
-  getProfiles,
-  transformProfile,
-  upsertProfile,
-} from './profile.service';
+import type { IServiceProfile } from './profile.service';
+import { getProfileById, getProfiles, upsertProfile } from './profile.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -293,6 +288,42 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     payload.profileId = payload.deviceId;
   }
 
+  const event: IClickhouseEvent = {
+    id: uuid(),
+    name: payload.name,
+    device_id: payload.deviceId,
+    profile_id: payload.profileId ? String(payload.profileId) : '',
+    project_id: payload.projectId,
+    session_id: payload.sessionId,
+    properties: toDots(payload.properties),
+    path: payload.path ?? '',
+    origin: payload.origin ?? '',
+    created_at: DateTime.fromJSDate(payload.createdAt)
+      .setZone('UTC')
+      .toFormat('yyyy-MM-dd HH:mm:ss.SSS'),
+    country: payload.country ?? '',
+    city: payload.city ?? '',
+    region: payload.region ?? '',
+    longitude: payload.longitude ?? null,
+    latitude: payload.latitude ?? null,
+    os: payload.os ?? '',
+    os_version: payload.osVersion ?? '',
+    browser: payload.browser ?? '',
+    browser_version: payload.browserVersion ?? '',
+    device: payload.device ?? '',
+    brand: payload.brand ?? '',
+    model: payload.model ?? '',
+    duration: payload.duration,
+    referrer: payload.referrer ?? '',
+    referrer_name: payload.referrerName ?? '',
+    referrer_type: payload.referrerType ?? '',
+    imported_at: null,
+    sdk_name: payload.sdkName ?? '',
+    sdk_version: payload.sdkVersion ?? '',
+  };
+
+  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
+
   if (payload.profileId) {
     const profile = {
       id: String(payload.profileId),
@@ -325,40 +356,6 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
       await upsertProfile(profile, true);
     }
   }
-
-  const event: IClickhouseEvent = {
-    id: uuid(),
-    name: payload.name,
-    device_id: payload.deviceId,
-    profile_id: payload.profileId ? String(payload.profileId) : '',
-    project_id: payload.projectId,
-    session_id: payload.sessionId,
-    properties: toDots(payload.properties),
-    path: payload.path ?? '',
-    origin: payload.origin ?? '',
-    created_at: formatClickhouseDate(payload.createdAt),
-    country: payload.country ?? '',
-    city: payload.city ?? '',
-    region: payload.region ?? '',
-    longitude: payload.longitude ?? null,
-    latitude: payload.latitude ?? null,
-    os: payload.os ?? '',
-    os_version: payload.osVersion ?? '',
-    browser: payload.browser ?? '',
-    browser_version: payload.browserVersion ?? '',
-    device: payload.device ?? '',
-    brand: payload.brand ?? '',
-    model: payload.model ?? '',
-    duration: payload.duration,
-    referrer: payload.referrer ?? '',
-    referrer_name: payload.referrerName ?? '',
-    referrer_type: payload.referrerType ?? '',
-    imported_at: null,
-    sdk_name: payload.sdkName ?? '',
-    sdk_version: payload.sdkVersion ?? '',
-  };
-
-  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
 
   return {
     document: event,

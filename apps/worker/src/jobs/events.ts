@@ -7,6 +7,9 @@ import type {
 
 import { incomingEvent } from './events.incoming-event';
 
-export async function eventsJob(job: Job<EventsQueuePayload>) {
-  return await incomingEvent(job as Job<EventsQueuePayloadIncomingEvent>);
+export async function eventsJob(job: Job<EventsQueuePayload>, token?: string) {
+  return await incomingEvent(
+    job as Job<EventsQueuePayloadIncomingEvent>,
+    token,
+  );
 }
