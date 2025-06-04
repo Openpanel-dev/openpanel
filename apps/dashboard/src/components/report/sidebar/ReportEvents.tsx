@@ -126,11 +126,9 @@ function SortableEvent({
             </PropertiesCombobox>
           )}
 
-          {showSegment &&
-            (event.segment === 'property_average' ||
-              event.segment === 'property_sum') && (
-              <EventPropertiesCombobox event={event} />
-            )}
+          {showSegment && event.segment.startsWith('property_') && (
+            <EventPropertiesCombobox event={event} />
+          )}
         </div>
       )}
 
