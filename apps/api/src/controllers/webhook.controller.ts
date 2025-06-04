@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { db } from '@openpanel/db';
+import { db, getOrganizationByProjectIdCached } from '@openpanel/db';
 import {
   sendSlackNotification,
   slackInstaller,
@@ -200,6 +200,16 @@ export async function polarWebhook(
             subscriptionPeriodEventsLimit,
           },
         });
+
+        const projects = await db.project.findMany({
+          where: {
+            organizationId: metadata.organizationId,
+          },
+        });
+
+        for (const project of projects) {
+          await getOrganizationByProjectIdCached.clear(project.id);
+        }
 
         await publishEvent('organization', 'subscription_updated', {
           organizationId: metadata.organizationId,
