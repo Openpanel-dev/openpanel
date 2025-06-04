@@ -81,7 +81,7 @@
     "lodash.isequal": "^4.5.0",
     "lodash.throttle": "^4.1.1",
     "lottie-react": "^2.4.0",
-    "lucide-react": "^0.451.0",
+    "lucide-react": "^0.513.0",
     "mathjs": "^12.3.2",
     "mitt": "^3.0.1",
     "next": "14.2.1",

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  chartSegments,
   chartTypes,
   intervals,
   lineTypes,
@@ -29,6 +30,11 @@ export const zChartEventFilter = z.object({
     .describe('The values to filter on'),
 });
 
+export const zChartEventSegment = z
+  .enum(objectToZodEnums(chartSegments))
+  .default('event')
+  .describe('Defines how the event data should be segmented or aggregated');
+
 export const zChartEvent = z.object({
   id: z
     .string()
@@ -45,18 +51,7 @@ export const zChartEvent = z.object({
     .describe(
       'Optional property of the event used for specific segment calculations (e.g., value for property_sum/average)',
     ),
-  segment: z
-    .enum([
-      'event',
-      'user',
-      'session',
-      'user_average',
-      'one_event_per_user',
-      'property_sum',
-      'property_average',
-    ])
-    .default('event')
-    .describe('Defines how the event data should be segmented or aggregated'),
+  segment: zChartEventSegment,
   filters: z
     .array(zChartEventFilter)
     .default([])
