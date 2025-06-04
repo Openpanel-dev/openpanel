@@ -232,7 +232,7 @@ export class OverviewService {
           overall_total_sessions: number;
           overall_bounce_rate: number;
         }>([
-          `${clix.toInterval('e.created_at', interval)} AS date`,
+          `${clix.toStartOf('e.created_at', interval)} AS date`,
           'ds.bounce_rate as bounce_rate',
           'uniq(e.profile_id) AS unique_visitors',
           'uniq(e.session_id) AS total_sessions',
@@ -247,7 +247,7 @@ export class OverviewService {
         .from(`${TABLE_NAMES.events} AS e`)
         .leftJoin(
           'daily_stats AS ds',
-          `${clix.toInterval('e.created_at', interval)} = ds.date`,
+          `${clix.toStartOf('e.created_at', interval)} = ds.date`,
         )
         .where('e.project_id', '=', projectId)
         .where('e.name', '=', 'screen_view')
