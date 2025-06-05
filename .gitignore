@@ -8,6 +8,7 @@ dump-*
 .sql
 tmp
 docker/data*
+*.mmdb
 
 # Logs
 
