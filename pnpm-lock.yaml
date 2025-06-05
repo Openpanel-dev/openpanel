@@ -1090,6 +1090,9 @@ importers:
       fast-extract:
         specifier: ^1.4.3
         version: 1.4.3(glob@10.4.5)
+      jiti:
+        specifier: ^2.4.1
+        version: 2.4.1
       tar:
         specifier: ^7.4.3
         version: 7.4.3

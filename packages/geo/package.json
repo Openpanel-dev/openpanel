@@ -4,7 +4,7 @@
   "main": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "download": "npx jiti scripts/download.ts",
+    "download": "jiti scripts/download.ts",
     "postinstall": "pnpm download"
   },
   "dependencies": {
@@ -15,6 +15,7 @@
     "@types/node": "20.14.8",
     "fast-extract": "^1.4.3",
     "tar": "^7.4.3",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "jiti": "^2.4.1"
   }
 }
