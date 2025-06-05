@@ -60,7 +60,7 @@ COPY apps/api ./apps/api
 COPY packages ./packages
 COPY tooling ./tooling
 
-RUN pnpm db:codegen && \
+RUN pnpm codegen && \
     pnpm --filter api run build
 
 # PROD

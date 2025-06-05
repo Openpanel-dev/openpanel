@@ -48,7 +48,7 @@ COPY apps/worker ./apps/worker
 COPY packages ./packages
 COPY tooling ./tooling
 
-RUN pnpm db:codegen && \
+RUN pnpm codegen && \
     pnpm --filter worker run build
 
 # PROD
