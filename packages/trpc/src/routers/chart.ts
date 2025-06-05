@@ -12,6 +12,7 @@ import {
   createSqlBuilder,
   db,
   funnelService,
+  getEventMetasCached,
   getSelectPropertyKey,
   getSettingsForProject,
   toDate,
@@ -61,15 +62,24 @@ export const chartRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { projectId } }) => {
-      const events = await chQuery<{ name: string }>(
-        `SELECT DISTINCT name FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${escape(projectId)}`,
-      );
+      const [events, meta] = await Promise.all([
+        chQuery<{ name: string; count: number }>(
+          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`,
+        ),
+        getEventMetasCached(projectId),
+      ]);
 
       return [
         {
           name: '*',
+          count: events.reduce((acc, event) => acc + event.count, 0),
+          meta: undefined,
         },
-        ...events,
+        ...events.map((event) => ({
+          name: event.name,
+          count: event.count,
+          meta: meta.find((m) => m.name === event.name),
+        })),
       ];
     }),
 

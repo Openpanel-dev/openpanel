@@ -53,7 +53,7 @@ export default async function Page({
           <SettingsToggle />
         </div>
       </FullWidthNavbar>
-      <div className="mx-auto flex flex-col gap-4 p-4 pt-20 md:max-w-[95vw] lg:max-w-[80vw] ">
+      <div className="mx-auto flex flex-col gap-4 p-4 pt-20 md:w-[95vw] lg:w-[80vw] max-w-screen-2xl">
         <div className="grid gap-4 md:grid-cols-2">
           {projects.map((item) => (
             <ProjectCard key={item.id} {...item} />

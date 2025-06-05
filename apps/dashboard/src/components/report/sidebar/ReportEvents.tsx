@@ -1,8 +1,7 @@
 'use client';
 
 import { ColorSquare } from '@/components/color-square';
-import { Combobox } from '@/components/ui/combobox';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
@@ -27,11 +26,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { shortId } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type { IChartEvent } from '@openpanel/validation';
-import { FilterIcon, GanttChartIcon, HandIcon } from 'lucide-react';
+import { FilterIcon, HandIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import {
   addEvent,
   changeEvent,
+  duplicateEvent,
   removeEvent,
   reorderEvents,
 } from '../reportSlice';
@@ -146,6 +146,7 @@ export function ReportEvents() {
   const eventNames = useEventNames({
     projectId,
   });
+
   const showSegment = !['retention', 'funnel'].includes(chartType);
   const showAddFilter = !['retention'].includes(chartType);
   const showDisplayNameInput = !['retention'].includes(chartType);
@@ -181,6 +182,9 @@ export function ReportEvents() {
         case 'remove': {
           return dispatch(removeEvent(event));
         }
+        case 'duplicate': {
+          return dispatch(duplicateEvent(event));
+        }
       }
     };
 
@@ -211,54 +215,42 @@ export function ReportEvents() {
                   isSelectManyEvents={isSelectManyEvents}
                   className="rounded-lg border bg-def-100"
                 >
-                  {isSelectManyEvents ? (
-                    <ComboboxAdvanced
-                      className="flex-1"
-                      value={event.filters[0]?.value ?? []}
-                      onChange={(value) => {
-                        dispatch(
-                          changeEvent({
-                            id: event.id,
-                            segment: 'user',
-                            filters: [
-                              {
-                                name: 'name',
-                                operator: 'is',
-                                value: value,
+                  <ComboboxEvents
+                    className="flex-1"
+                    searchable
+                    multiple={isSelectManyEvents as false}
+                    value={
+                      (isSelectManyEvents
+                        ? (event.filters[0]?.value ?? [])
+                        : event.name) as any
+                    }
+                    onChange={(value) => {
+                      dispatch(
+                        changeEvent(
+                          Array.isArray(value)
+                            ? {
+                                id: event.id,
+                                segment: 'user',
+                                filters: [
+                                  {
+                                    name: 'name',
+                                    operator: 'is',
+                                    value: value,
+                                  },
+                                ],
+                                name: '*',
+                              }
+                            : {
+                                ...event,
+                                name: value,
+                                filters: [],
                               },
-                            ],
-                            name: '*',
-                          }),
-                        );
-                      }}
-                      items={eventNames.map((item) => ({
-                        label: item.name,
-                        value: item.name,
-                      }))}
-                      placeholder="Select event"
-                    />
-                  ) : (
-                    <Combobox
-                      icon={GanttChartIcon}
-                      className="flex-1"
-                      searchable
-                      value={event.name}
-                      onChange={(value) => {
-                        dispatch(
-                          changeEvent({
-                            ...event,
-                            name: value,
-                            filters: [],
-                          }),
-                        );
-                      }}
-                      items={eventNames.map((item) => ({
-                        label: item.name,
-                        value: item.name,
-                      }))}
-                      placeholder="Select event"
-                    />
-                  )}
+                        ),
+                      );
+                    }}
+                    items={eventNames}
+                    placeholder="Select event"
+                  />
                   {showDisplayNameInput && (
                     <Input
                       placeholder={
@@ -280,9 +272,8 @@ export function ReportEvents() {
               );
             })}
 
-            <Combobox
+            <ComboboxEvents
               disabled={isAddEventDisabled}
-              icon={GanttChartIcon}
               value={''}
               searchable
               onChange={(value) => {
@@ -310,11 +301,8 @@ export function ReportEvents() {
                   );
                 }
               }}
-              items={eventNames.map((item) => ({
-                label: item.name,
-                value: item.name,
-              }))}
               placeholder="Select event"
+              items={eventNames}
             />
           </div>
         </SortableContext>

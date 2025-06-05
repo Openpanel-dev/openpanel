@@ -94,6 +94,17 @@ export const reportSlice = createSlice({
         ...action.payload,
       });
     },
+    duplicateEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
+      state.dirty = true;
+      state.events.push({
+        ...action.payload,
+        filters: action.payload.filters.map((filter) => ({
+          ...filter,
+          id: shortId(),
+        })),
+        id: shortId(),
+      });
+    },
     removeEvent: (
       state,
       action: PayloadAction<{
@@ -270,6 +281,7 @@ export const {
   setName,
   addEvent,
   removeEvent,
+  duplicateEvent,
   changeEvent,
   addBreakdown,
   removeBreakdown,

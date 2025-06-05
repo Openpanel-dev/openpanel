@@ -60,7 +60,7 @@ export function ReportSegment({
         <Button
           variant="outline"
           icon={Icons[value]}
-          className={cn('justify-start', className)}
+          className={cn('justify-start text-sm', className)}
         >
           {items.find((item) => item.value === value)?.label}
         </Button>

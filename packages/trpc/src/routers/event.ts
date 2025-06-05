@@ -10,7 +10,9 @@ import {
   db,
   eventService,
   formatClickhouseDate,
+  getConversionEventNames,
   getEventList,
+  getEventMetasCached,
   getEvents,
   getSettingsForProject,
   overviewService,
@@ -41,6 +43,7 @@ export const eventRouter = createTRPCRouter({
     )
     .mutation(
       async ({ input: { projectId, name, icon, color, conversion } }) => {
+        await getEventMetasCached.clear(projectId);
         return db.eventMeta.upsert({
           where: {
             name_projectId: {
@@ -173,12 +176,7 @@ export const eventRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { projectId, cursor } }) => {
-      const conversions = await db.eventMeta.findMany({
-        where: {
-          projectId,
-          conversion: true,
-        },
-      });
+      const conversions = await getConversionEventNames(projectId);
 
       if (conversions.length === 0) {
         return {

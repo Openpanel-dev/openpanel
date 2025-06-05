@@ -238,6 +238,16 @@ export function transformMinimalEvent(
   };
 }
 
+export function getEventMetas(projectId: string) {
+  return db.eventMeta.findMany({
+    where: {
+      projectId,
+    },
+  });
+}
+
+export const getEventMetasCached = cacheable(getEventMetas, 60 * 5);
+
 export async function getEvents(
   sql: string,
   options: GetEventsOptions = {},
@@ -261,17 +271,7 @@ export async function getEvents(
   }
 
   if (options.meta && projectId) {
-    const metas = await getCache(
-      `event-metas-${projectId}`,
-      60 * 5,
-      async () => {
-        return db.eventMeta.findMany({
-          where: {
-            projectId,
-          },
-        });
-      },
-    );
+    const metas = await getEventMetasCached(projectId);
     const map = new Map<string, EventMeta>();
     for (const meta of metas) {
       map.set(meta.name, meta);

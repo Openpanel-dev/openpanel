@@ -17,6 +17,7 @@ import { UndoIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { Input } from '@/components/ui/input';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
@@ -60,6 +61,7 @@ export default function EditEvent({ id }: Props) {
   const getBg = (color: string) => `bg-${color}-200`;
   const getText = (color: string) => `text-${color}-700`;
   const iconGrid = 'grid grid-cols-10 gap-4';
+  const [search, setSearch] = useState('');
   return (
     <ModalContent>
       <ModalHeader
@@ -92,26 +94,36 @@ export default function EditEvent({ id }: Props) {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.15 }}
             >
-              <Label className="mb-4 block">Pick an icon</Label>
+              <Label className="mb-2 block">Pick an icon</Label>
+              <Input
+                className="mb-4"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search for an icon"
+              />
               <div className={iconGrid}>
-                {Object.entries(EventIconMapper).map(([name, Icon]) => (
-                  <button
-                    type="button"
-                    key={name}
-                    onClick={() => {
-                      setIcon(name);
-                      setStep('color');
-                    }}
-                    className={cn(
-                      'inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-def-200 transition-all',
-                      name === selectedIcon
-                        ? 'scale-110 ring-1 ring-black'
-                        : '[&_svg]:opacity-50',
-                    )}
-                  >
-                    <Icon size={16} />
-                  </button>
-                ))}
+                {Object.entries(EventIconMapper)
+                  .filter(([name]) =>
+                    name.toLowerCase().includes(search.toLowerCase()),
+                  )
+                  .map(([name, Icon]) => (
+                    <button
+                      type="button"
+                      key={name}
+                      onClick={() => {
+                        setIcon(name);
+                        setStep('color');
+                      }}
+                      className={cn(
+                        'inline-flex h-8 w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded-md bg-def-200 transition-all',
+                        name === selectedIcon
+                          ? 'scale-110 ring-1 ring-black'
+                          : '[&_svg]:opacity-50',
+                      )}
+                    >
+                      <Icon size={16} />
+                    </button>
+                  ))}
               </div>
             </motion.div>
           ) : (
@@ -131,6 +143,7 @@ export default function EditEvent({ id }: Props) {
                   </Badge>
                 </button>
               </div>
+
               <div className={iconGrid}>
                 {EventIconColors.map((color) => (
                   <button

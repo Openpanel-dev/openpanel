@@ -6,6 +6,7 @@ interface TooltipCompleteProps {
   content: React.ReactNode | string;
   disabled?: boolean;
   side?: 'top' | 'right' | 'bottom' | 'left';
+  delay?: number;
 }
 
 export function TooltipComplete({
@@ -13,9 +14,10 @@ export function TooltipComplete({
   disabled,
   content,
   side,
+  delay,
 }: TooltipCompleteProps) {
   return (
-    <Tooltip>
+    <Tooltip delayDuration={delay}>
       <TooltipTrigger
         className="appearance-none"
         style={{ textAlign: 'inherit' }}

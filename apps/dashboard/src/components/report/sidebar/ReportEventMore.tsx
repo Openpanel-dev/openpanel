@@ -1,40 +1,17 @@
 import { Button } from '@/components/ui/button';
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Filter, MoreHorizontal, Tags, Trash } from 'lucide-react';
+import { CopyIcon, MoreHorizontal, TrashIcon } from 'lucide-react';
 import * as React from 'react';
 
-const labels = [
-  'feature',
-  'bug',
-  'enhancement',
-  'documentation',
-  'design',
-  'question',
-  'maintenance',
-];
-
 export interface ReportEventMoreProps {
-  onClick: (action: 'remove') => void;
+  onClick: (action: 'remove' | 'duplicate') => void;
 }
 
 export function ReportEventMore({ onClick }: ReportEventMoreProps) {
@@ -49,12 +26,16 @@ export function ReportEventMore({ onClick }: ReportEventMoreProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuGroup>
-          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onClick('duplicate')}>
+            <CopyIcon className="mr-2 h-4 w-4" />
+            Duplicate
+            <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
+          </DropdownMenuItem>
           <DropdownMenuItem
             className="text-red-600"
             onClick={() => onClick('remove')}
           >
-            <Trash className="mr-2 h-4 w-4" />
+            <TrashIcon className="mr-2 h-4 w-4" />
             Delete
             <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
