@@ -45,7 +45,6 @@ const DEFAULT_GEO: GeoLocation = {
 
 const ignore = ['127.0.0.1', '::1'];
 
-loadDatabase(dbPath);
 export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
   if (!ip || ignore.includes(ip)) {
     return DEFAULT_GEO;
