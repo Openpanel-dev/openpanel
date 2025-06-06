@@ -202,7 +202,9 @@ export async function incomingEvent(
 
   const event = await createEventAndNotify(payload, job.data.payload, logger);
 
-  await createSessionEndJob({ payload });
+  if (!sessionEnd) {
+    await createSessionEndJob({ payload });
+  }
 
   return event;
 }

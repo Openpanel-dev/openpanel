@@ -59,7 +59,6 @@ describe('incomingEvent', () => {
         projectId,
         currentDeviceId,
         previousDeviceId,
-        priority: true,
       },
     };
 
@@ -154,7 +153,6 @@ describe('incomingEvent', () => {
         projectId,
         currentDeviceId,
         previousDeviceId,
-        priority: true,
       },
     };
 
@@ -240,7 +238,6 @@ describe('incomingEvent', () => {
         projectId,
         currentDeviceId: '',
         previousDeviceId: '',
-        priority: true,
       },
     };
 
@@ -332,7 +329,6 @@ describe('incomingEvent', () => {
         projectId,
         currentDeviceId: '',
         previousDeviceId: '',
-        priority: true,
       },
     };
 
