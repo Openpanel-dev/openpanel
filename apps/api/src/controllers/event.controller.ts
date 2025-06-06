@@ -1,4 +1,4 @@
-import { getClientIp, parseIp } from '@/utils/parse-ip';
+import { getClientIp } from '@/utils/get-client-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { generateDeviceId } from '@openpanel/common/server';
@@ -8,6 +8,7 @@ import { getLock } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
 import { checkDuplicatedEvent } from '@/utils/deduplicate';
+import { getGeoLocation } from '@openpanel/geo';
 import { getStringHeaders, getTimestamp } from './track.controller';
 
 export async function postEvent(
@@ -26,7 +27,7 @@ export async function postEvent(
     return;
   }
 
-  const [salts, geo] = await Promise.all([getSalts(), parseIp(ip)]);
+  const [salts, geo] = await Promise.all([getSalts(), getGeoLocation(ip)]);
   const currentDeviceId = generateDeviceId({
     salt: salts.current,
     origin: projectId,

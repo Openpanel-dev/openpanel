@@ -23,6 +23,7 @@
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
     "@openpanel/db": "workspace:*",
+    "@openpanel/geo": "workspace:*",
     "@openpanel/integrations": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",

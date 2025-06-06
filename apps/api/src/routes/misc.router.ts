@@ -25,6 +25,12 @@ const miscRouter: FastifyPluginCallback = async (fastify) => {
     url: '/favicon/clear',
     handler: controller.clearFavicons,
   });
+
+  fastify.route({
+    method: 'GET',
+    url: '/geo',
+    handler: controller.getGeo,
+  });
 };
 
 export default miscRouter;
