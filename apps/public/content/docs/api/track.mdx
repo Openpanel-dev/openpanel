@@ -47,6 +47,10 @@ curl -X POST https://api.openpanel.dev/track \
 }'
 ```
 
+To track events for an identified user, add `profileId` to the payload.
+
+To specify a date/time for the tracked event (defaults to now), add `__timestamp` (formatted `YYYY-MM-DD HH:mm:ss` without tz) to properties.
+
 ### Identifying Users
 
 To identify a user:
@@ -122,6 +126,7 @@ curl -X POST https://api.openpanel.dev/track \
   }
 }'
 ```
+
 
 ### Error Handling
 The API uses standard HTTP response codes to indicate the success or failure of requests. In case of an error, the response body will contain more information about the error.
