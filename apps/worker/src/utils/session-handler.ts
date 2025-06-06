@@ -76,7 +76,7 @@ export async function getSessionEnd({
       sessionEnd.job.data.payload.deviceId;
 
     const eventIsIdentified =
-      sessionEnd.job.data.payload.profileId !== profileId;
+      profileId && sessionEnd.job.data.payload.profileId !== profileId;
 
     if (existingSessionIsAnonymous && eventIsIdentified) {
       await sessionEnd.job.updateData({

@@ -6,6 +6,7 @@
   "author": "Carl-Gerhard Lindesvärd",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "test": "vitest",
     "dock:up": "docker compose up -d",
     "dock:down": "docker compose down",
     "dock:ch": "docker compose exec -it op-ch clickhouse-client -d openpanel",
@@ -25,7 +26,7 @@
     "update-simple-git-hooks": "npx simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-push": "pnpm typecheck"
+    "pre-push": "pnpm typecheck && pnpm test"
   },
   "dependencies": {
     "@hyperdx/node-opentelemetry": "^0.8.1",
@@ -48,6 +49,7 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "1.9.1",
-    "simple-git-hooks": "^2.12.1"
+    "simple-git-hooks": "^2.12.1",
+    "vitest": "^3.0.4"
   }
 }

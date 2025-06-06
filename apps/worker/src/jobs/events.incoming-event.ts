@@ -121,14 +121,36 @@ export async function incomingEvent(
 
   // if timestamp is from the past we dont want to create a new session
   if (uaInfo.isServer || isTimestampFromThePast) {
-    const event = profileId
+    const screenView = profileId
       ? await eventBuffer.getLastScreenView({
           profileId,
           projectId,
         })
       : null;
 
-    const payload = merge(omit(['properties'], event ?? {}), baseEvent);
+    const payload = {
+      ...baseEvent,
+      deviceId: screenView?.deviceId ?? '',
+      sessionId: screenView?.sessionId ?? '',
+      referrer: screenView?.referrer ?? undefined,
+      referrerName: screenView?.referrerName ?? undefined,
+      referrerType: screenView?.referrerType ?? undefined,
+      path: screenView?.path ?? baseEvent.path,
+      os: screenView?.os ?? baseEvent.os,
+      osVersion: screenView?.osVersion ?? baseEvent.osVersion,
+      browserVersion: screenView?.browserVersion ?? baseEvent.browserVersion,
+      browser: screenView?.browser ?? baseEvent.browser,
+      device: screenView?.device ?? baseEvent.device,
+      brand: screenView?.brand ?? baseEvent.brand,
+      model: screenView?.model ?? baseEvent.model,
+      city: screenView?.city ?? baseEvent.city,
+      country: screenView?.country ?? baseEvent.country,
+      region: screenView?.region ?? baseEvent.region,
+      longitude: screenView?.longitude ?? baseEvent.longitude,
+      latitude: screenView?.latitude ?? baseEvent.latitude,
+      origin: screenView?.origin ?? baseEvent.origin,
+    };
+
     return createEventAndNotify(
       payload as IServiceEvent,
       job.data.payload,
@@ -180,7 +202,9 @@ export async function incomingEvent(
 
   const event = await createEventAndNotify(payload, job.data.payload, logger);
 
-  await createSessionEndJob({ payload });
+  if (!sessionEnd) {
+    await createSessionEndJob({ payload });
+  }
 
   return event;
 }
