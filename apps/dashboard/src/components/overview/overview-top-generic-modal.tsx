@@ -60,7 +60,7 @@ export default function OverviewTopGenericModal({
   return (
     <ModalContent>
       <ModalHeader title={`Top ${columnNamePlural}`} />
-      <ScrollArea className="-mx-6 px-2 max-h-[calc(80vh)]">
+      <ScrollArea className="-mx-6 px-2">
         <OverviewWidgetTableGeneric
           data={data}
           column={{

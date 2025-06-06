@@ -158,7 +158,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
     }));
 
   return (
-    <ModalContent className="p-0">
+    <ModalContent className="!p-0">
       <Widget className="bg-transparent border-0">
         <WidgetHead>
           <div className="row items-center justify-between">
