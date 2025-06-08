@@ -44,6 +44,7 @@ COPY packages/constants/package.json packages/constants/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/integrations/package.json packages/integrations/package.json
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/package.json
+COPY packages/payments/package.json packages/payments/package.json
 
 # BUILD
 FROM base AS build
