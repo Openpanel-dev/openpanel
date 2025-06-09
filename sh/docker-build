@@ -38,34 +38,36 @@ docker buildx create --name multi-arch-builder --use || true
 build_image() {
     local app=$1
     local image_name="lindesvard/openpanel-$app"
-    
-    
-    # Prepare tags based on whether PRERELEASE is provided
-    if [ -z "$PRERELEASE" ]; then
-        echo "Building multi-architecture image for $image_name:$VERSION"
+    local full_version="$image_name:$VERSION"
+
+    if [ -n "$PRERELEASE" ]; then
+        full_version="$full_version-$PRERELEASE"
+        echo "(pre-release) Building multi-architecture image for $full_version"
         docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t "$image_name:$VERSION" \
+            -t "$full_version" \
+            --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+            -f "apps/$app/Dockerfile" \
+            --push \
+            .
+    else
+        echo "(latest) Building multi-architecture image for $full_version"
+        docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t "$full_version" \
             -t "$image_name:latest" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
             -f "apps/$app/Dockerfile" \
-            .
-    else
-        echo "Building multi-architecture image for $image_name:$VERSION-$PRERELEASE"
-        docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            -t "$image_name:$VERSION-$PRERELEASE" \
-            --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
-            -f "apps/$app/Dockerfile" \
+            --push \
             .
     fi
     
     if [ $? -ne 0 ]; then
-        echo "Failed to build $image_name:$VERSION"
+        echo "Failed to build $full_version"
         exit 1
     fi
     
-    echo "Successfully built and pushed multi-architecture image for $image_name:$VERSION"
+    echo "Successfully built and pushed multi-architecture image for $full_version"
 }
 
 if [ "$APP" == "all" ]; then
