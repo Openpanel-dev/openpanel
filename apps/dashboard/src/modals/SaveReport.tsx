@@ -49,7 +49,7 @@ export default function SaveReport({
       };
 
       toast('Report created', {
-        description: <div>Hello world</div>,
+        description: `${res.name}`,
         action: {
           label: 'View report',
           onClick: () => goToReport(),
