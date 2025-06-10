@@ -7,12 +7,12 @@
       "extra-files": [
         {
           "type": "json",
-          "path": "frontend/package.json",
+          "path": "apps/api/package.json",
           "jsonpath": "version"
         },
         {
           "type": "json",
-          "path": "apps/api/package.json",
+          "path": "apps/dashboard/package.json",
           "jsonpath": "version"
         },
         {
@@ -32,117 +32,7 @@
         },
         {
           "type": "json",
-          "path": "packages/db/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/cli/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
           "path": "self-hosting/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/trpc/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "apps/dashboard/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/email/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/queue/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/redis/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/common/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/logger/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "tooling/publish/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/payments/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/sdk/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/web/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/constants/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "tooling/typescript/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/_info/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/astro/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/validation/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/nextjs/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/integrations/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/express/package.json",
-          "jsonpath": "version"
-        },
-        {
-          "type": "json",
-          "path": "packages/sdks/react-native/package.json",
           "jsonpath": "version"
         }
       ]
