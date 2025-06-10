@@ -199,7 +199,7 @@ export function ComboboxEvents<
                     key={item.name}
                     value={item.name}
                     onSelect={(currentValue) => {
-                      handleSelection(currentValue);
+                      handleSelection(item.name);
                     }}
                   >
                     {selectedValues.includes(item.name as T) ? (
