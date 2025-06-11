@@ -203,10 +203,9 @@ export const OnboardingCreateProject = ({
                       name="cors"
                       control={form.control}
                       render={({ field }) => (
-                        <WithLabel label="Cors">
+                        <WithLabel label="Allowed domains">
                           <TagInput
                             {...field}
-                            id="Cors"
                             error={form.formState.errors.cors?.message}
                             placeholder="Accept events from these domains"
                             value={field.value ?? []}

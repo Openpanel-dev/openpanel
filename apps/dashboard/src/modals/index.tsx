@@ -38,7 +38,7 @@ const modals = {
   EditClient: dynamic(() => import('./EditClient'), {
     loading: Loading,
   }),
-  AddProject: dynamic(() => import('./AddProject'), {
+  AddProject: dynamic(() => import('./add-project'), {
     loading: Loading,
   }),
   AddClient: dynamic(() => import('./AddClient'), {

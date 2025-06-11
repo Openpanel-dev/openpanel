@@ -108,12 +108,11 @@ export default function EditProjectDetails({ project }: Props) {
               control={form.control}
               render={({ field }) => (
                 <WithLabel
-                  label="Cors"
+                  label="Allowed domains"
                   error={form.formState.errors.cors?.message}
                 >
                   <TagInput
                     {...field}
-                    id="Cors"
                     error={form.formState.errors.cors?.message}
                     placeholder="Add a domain"
                     value={field.value ?? []}
