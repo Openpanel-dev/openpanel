@@ -3,6 +3,7 @@ import { escape } from 'sqlstring';
 import { z } from 'zod';
 
 import {
+  type IClickhouseProfile,
   type IServiceProfile,
   TABLE_NAMES,
   ch,
@@ -97,7 +98,7 @@ export const chartRouter = createTRPCRouter({
         .where('project_id', '=', projectId)
         .where('is_external', '=', true)
         .orderBy('created_at', 'DESC')
-        .limit(100)
+        .limit(10000)
         .execute();
 
       const profileProperties: string[] = [];
@@ -109,16 +110,21 @@ export const chartRouter = createTRPCRouter({
         }
       }
 
-      const res = await chQuery<{ property_key: string; created_at: string }>(
-        `SELECT 
-          distinct property_key, 
-          max(created_at) as created_at 
-        FROM ${TABLE_NAMES.event_property_values_mv} 
-        WHERE project_id = ${escape(projectId)}
-        ${event && event !== '*' ? `AND name = ${escape(event)}` : ''}
-        GROUP BY property_key 
-        ORDER BY created_at DESC`,
-      );
+      const query = clix(ch)
+        .select<{ property_key: string; created_at: string }>([
+          'distinct property_key',
+          'max(created_at) as created_at',
+        ])
+        .from(TABLE_NAMES.event_property_values_mv)
+        .where('project_id', '=', projectId)
+        .groupBy(['property_key'])
+        .orderBy('created_at', 'DESC');
+
+      if (event && event !== '*') {
+        query.where('name', '=', event);
+      }
+
+      const res = await query.execute();
 
       const properties = res
         .map((item) => item.property_key)
@@ -179,35 +185,51 @@ export const chartRouter = createTRPCRouter({
       const values: string[] = [];
 
       if (property.startsWith('properties.')) {
-        const propertyKey = property.replace(/^properties\./, '');
+        const query = clix(ch)
+          .select<{
+            property_value: string;
+            created_at: string;
+          }>(['distinct property_value', 'max(created_at) as created_at'])
+          .from(TABLE_NAMES.event_property_values_mv)
+          .where('project_id', '=', projectId)
+          .where('property_key', '=', property.replace(/^properties\./, ''))
+          .groupBy(['property_value'])
+          .orderBy('created_at', 'DESC');
 
-        const res = await chQuery<{
-          property_value: string;
-          created_at: string;
-        }>(
-          `SELECT 
-            distinct property_value, 
-            max(created_at) as created_at 
-          FROM ${TABLE_NAMES.event_property_values_mv}
-          WHERE project_id = ${escape(projectId)}
-          AND property_key = ${escape(propertyKey)}
-          ${event && event !== '*' ? `AND name = ${escape(event)}` : ''}
-          GROUP BY property_value 
-          ORDER BY created_at DESC`,
-        );
+        if (event && event !== '*') {
+          query.where('name', '=', event);
+        }
+
+        const res = await query.execute();
 
         values.push(...res.map((e) => e.property_value));
       } else {
-        const { sb, getSql } = createSqlBuilder();
-        sb.where.project_id = `project_id = ${escape(projectId)}`;
+        const query = clix(ch)
+          .select<{ values: string[] }>([
+            `distinct ${getSelectPropertyKey(property)} as values`,
+          ])
+          .from(TABLE_NAMES.events)
+          .where('project_id', '=', projectId)
+          .where('created_at', '>', clix.exp('now() - INTERVAL 6 MONTH'))
+          .orderBy('created_at', 'DESC')
+          .limit(100_000);
+
         if (event !== '*') {
-          sb.where.event = `name = ${escape(event)}`;
+          query.where('name', '=', event);
         }
-        sb.select.values = `distinct ${getSelectPropertyKey(property)} as values`;
-        sb.where.date = `${toDate('created_at', 'month')} > now() - INTERVAL 6 MONTH`;
-        sb.orderBy.created_at = 'created_at DESC';
-        sb.limit = 100_000;
-        const events = await chQuery<{ values: string[] }>(getSql());
+
+        if (property.startsWith('profile.')) {
+          query.leftAnyJoin(
+            clix(ch)
+              .select<IClickhouseProfile>([])
+              .from(TABLE_NAMES.profiles)
+              .where('project_id', '=', projectId),
+            'profile.id = profile_id',
+            'profile',
+          );
+        }
+
+        const events = await query.execute();
 
         values.push(
           ...pipe(

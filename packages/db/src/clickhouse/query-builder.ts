@@ -24,7 +24,7 @@ type CTE = {
   query: Query | string;
 };
 
-type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS';
+type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS' | 'LEFT ANY';
 
 type WhereCondition = {
   condition: string;
@@ -61,7 +61,7 @@ export class Query<T = any> {
   private _ctes: CTE[] = [];
   private _joins: {
     type: JoinType;
-    table: string | Expression;
+    table: string | Expression | Query;
     condition: string;
     alias?: string;
   }[] = [];
@@ -280,11 +280,19 @@ export class Query<T = any> {
   }
 
   leftJoin(
-    table: string | Expression,
+    table: string | Expression | Query,
     condition: string,
     alias?: string,
   ): this {
     return this.joinWithType('LEFT', table, condition, alias);
+  }
+
+  leftAnyJoin(
+    table: string | Expression | Query,
+    condition: string,
+    alias?: string,
+  ): this {
+    return this.joinWithType('LEFT ANY', table, condition, alias);
   }
 
   rightJoin(
@@ -309,7 +317,7 @@ export class Query<T = any> {
 
   private joinWithType(
     type: JoinType,
-    table: string | Expression,
+    table: string | Expression | Query,
     condition: string,
     alias?: string,
   ): this {
@@ -382,7 +390,7 @@ export class Query<T = any> {
         const aliasClause = join.alias ? ` ${join.alias} ` : ' ';
         const conditionStr = join.condition ? `ON ${join.condition}` : '';
         parts.push(
-          `${join.type} JOIN ${join.table instanceof Expression ? `(${join.table.toString()})` : join.table}${aliasClause}${conditionStr}`,
+          `${join.type} JOIN ${join.table instanceof Query ? `(${join.table.toSQL()})` : join.table instanceof Expression ? `(${join.table.toString()})` : join.table}${aliasClause}${conditionStr}`,
         );
       });
     }

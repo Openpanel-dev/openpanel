@@ -31,6 +31,10 @@ export function transformPropertyKey(property: string) {
 }
 
 export function getSelectPropertyKey(property: string) {
+  if (property === 'has_profile') {
+    return `if(profile_id != device_id, 'true', 'false')`;
+  }
+
   const propertyPatterns = ['properties', 'profile.properties'];
 
   const match = propertyPatterns.find((pattern) =>
@@ -87,7 +91,13 @@ export function getChartSql({
   );
 
   if (anyFilterOnProfile || anyBreakdownOnProfile) {
-    sb.joins.profiles = `LEFT ANY JOIN (SELECT * FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${escape(projectId)}) as profile on profile.id = profile_id`;
+    sb.joins.profiles = `LEFT ANY JOIN (SELECT 
+      id as "profile.id",
+      email as "profile.email",
+      first_name as "profile.first_name",
+      last_name as "profile.last_name",
+      properties as "profile.properties"
+    FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${escape(projectId)}) as profile on profile.id = profile_id`;
   }
 
   sb.select.count = 'count(*) as count';
@@ -182,20 +192,25 @@ export function getChartSql({
 
   if (event.segment === 'one_event_per_user') {
     sb.from = `(
-      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} WHERE ${join(
+      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} ${getJoins()} WHERE ${join(
         sb.where,
         ' AND ',
       )}
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
+    sb.joins = {};
 
     const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
-    console.log('CHART SQL', sql);
+    console.log('-- Report --');
+    console.log(sql.replaceAll(/[\n\r]/g, ' '));
+    console.log('-- End --');
     return sql;
   }
 
   const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
-  console.log('CHART SQL', sql);
+  console.log('-- Report --');
+  console.log(sql.replaceAll(/[\n\r]/g, ' '));
+  console.log('-- End --');
   return sql;
 }
 
