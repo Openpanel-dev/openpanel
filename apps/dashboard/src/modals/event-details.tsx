@@ -159,7 +159,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
 
   return (
     <ModalContent className="!p-0">
-      <Widget className="bg-transparent border-0">
+      <Widget className="bg-transparent border-0 min-w-0">
         <WidgetHead>
           <div className="row items-center justify-between">
             <div className="title">{event.name}</div>
@@ -215,7 +215,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
               className="card p-4 py-2 col gap-2 hover:bg-def-100"
             >
               <div className="row items-center gap-2 justify-between">
-                <div className="row items-center gap-2">
+                <div className="row items-center gap-2 min-w-0">
                   {profile.avatar && (
                     <img
                       className="size-4 bg-border rounded-full"
@@ -226,7 +226,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
                     {getProfileName(profile, false)}
                   </div>
                 </div>
-                <div className="row items-center gap-2">
+                <div className="row items-center gap-2 shrink-0">
                   <div className="row gap-1 items-center">
                     <SerieIcon name={event.country} />
                     <SerieIcon name={event.os} />
