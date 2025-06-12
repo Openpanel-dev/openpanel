@@ -74,17 +74,6 @@ window.op('setGlobalProperties', {
 });
 ```
 
-### Creating Aliases
-
-To create an alias for a user:
-
-```js title="main.js"
-window.op('alias', {
-  alias: 'a1',
-  profileId: '1'
-});
-```
-
 ### Incrementing Properties
 
 To increment a numeric property on a user profile.
@@ -184,7 +173,7 @@ declare global {
     op: {
       q?: string[][];
       (...args: [
-        'init' | 'track' | 'identify' | 'setGlobalProperties' | 'alias' | 'increment' | 'decrement' | 'clear',
+        'init' | 'track' | 'identify' | 'setGlobalProperties' | 'increment' | 'decrement' | 'clear',
         ...any[]
       ]): void;
     };
