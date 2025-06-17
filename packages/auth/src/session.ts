@@ -37,9 +37,35 @@ export const EMPTY_SESSION: SessionValidationResult = {
   userId: null,
 };
 
+export async function createDemoSession(
+  userId: string,
+): Promise<SessionValidationResult> {
+  const user = await db.user.findUniqueOrThrow({
+    where: {
+      id: userId,
+    },
+  });
+
+  return {
+    user,
+    userId: user.id,
+    session: {
+      id: '1',
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30 * 365),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  };
+}
+
 export async function validateSessionToken(
   token: string | null,
 ): Promise<SessionValidationResult> {
+  if (process.env.DEMO_USER_ID) {
+    return createDemoSession(process.env.DEMO_USER_ID);
+  }
+
   if (!token) {
     return EMPTY_SESSION;
   }

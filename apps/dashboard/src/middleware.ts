@@ -45,6 +45,10 @@ export default (request: NextRequest) => {
     const response = NextResponse.next();
     const token = request.cookies.get('session')?.value ?? null;
 
+    if (process.env.DEMO_USER_ID) {
+      return response;
+    }
+
     if (!isPublicRoute(request) && token === null) {
       return NextResponse.redirect(new URL('/login', request.url));
     }

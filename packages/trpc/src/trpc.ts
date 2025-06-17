@@ -88,7 +88,14 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 });
 
 // Only used on protected routes
-const enforceAccess = t.middleware(async ({ ctx, next, rawInput }) => {
+const enforceAccess = t.middleware(async ({ ctx, next, rawInput, type }) => {
+  if (type === 'mutation' && process.env.DEMO_USER_ID) {
+    throw new TRPCError({
+      code: 'UNAUTHORIZED',
+      message: 'You are not allowed to do this in demo mode',
+    });
+  }
+
   if (has('projectId', rawInput)) {
     const access = await getProjectAccessCached({
       userId: ctx.session.userId!,
