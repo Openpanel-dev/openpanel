@@ -4,10 +4,11 @@ import {
   BatteryFullIcon,
   BatteryLowIcon,
   BatteryMediumIcon,
+  type LucideProps,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-export function BatteryIcon({ className }: { className?: string }) {
+export function BatteryIcon(props: LucideProps) {
   const [index, setIndex] = useState(0);
   const icons = [BatteryLowIcon, BatteryMediumIcon, BatteryFullIcon];
 
@@ -21,8 +22,8 @@ export function BatteryIcon({ className }: { className?: string }) {
   }, [index]);
 
   if (!Icon) {
-    return <div className={className} />;
+    return <div className={props.className} />;
   }
 
-  return <Icon className={className} />;
+  return <Icon {...props} />;
 }

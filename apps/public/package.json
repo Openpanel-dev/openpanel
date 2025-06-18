@@ -7,7 +7,8 @@
     "build": "pnpm with-env next build",
     "start": "next start",
     "postinstall": "fumadocs-mdx",
-    "with-env": "dotenv -e ../../.env -c --"
+    "with-env": "dotenv -e ../../.env -c --",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hyperdx/node-opentelemetry": "^0.8.1",
