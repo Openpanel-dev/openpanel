@@ -1,6 +1,27 @@
 import { cn } from '@/lib/utils';
-import { ChevronRightIcon } from 'lucide-react';
+import { ChevronRightIcon, ConeIcon } from 'lucide-react';
 import Link from 'next/link';
+
+export function SmallFeature({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        'bg-background-light rounded-lg p-1 border border-border group',
+        className,
+      )}
+    >
+      <div className="bg-background-dark rounded-lg p-8 h-full group-hover:bg-background-light transition-colors">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export function Feature({
   children,
@@ -16,7 +37,7 @@ export function Feature({
   return (
     <div
       className={cn(
-        'border rounded-lg bg-background-light overflow-hidden',
+        'border rounded-lg bg-background-light overflow-hidden p-1',
         className,
       )}
     >
@@ -30,7 +51,7 @@ export function Feature({
         {media && (
           <div
             className={cn(
-              'bg-background-dark h-full',
+              'bg-background-dark h-full rounded-md overflow-hidden',
               reverse && 'md:order-first',
             )}
           >
@@ -50,13 +71,16 @@ export function FeatureContent({
 }: {
   icon?: React.ReactNode;
   title: string;
-  content: string[];
+  content: React.ReactNode[];
   className?: string;
 }) {
   return (
     <div className={className}>
       {icon && (
-        <div className="bg-foreground text-background rounded-md p-4 inline-block mb-1">
+        <div
+          data-icon
+          className="bg-foreground text-background rounded-md p-4 inline-block mb-6 transition-colors"
+        >
           {icon}
         </div>
       )}
@@ -68,6 +92,17 @@ export function FeatureContent({
           </p>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function FeatureListItem({
+  icon: Icon,
+  title,
+}: { icon: React.ComponentType<any>; title: string }) {
+  return (
+    <div className="row items-center gap-2" key="funnel">
+      <Icon className="size-4 text-foreground/70" strokeWidth={1.5} /> {title}
     </div>
   );
 }

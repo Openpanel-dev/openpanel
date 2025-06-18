@@ -42,7 +42,7 @@ export function TwitterCard({
   };
 
   return (
-    <div className="border rounded-lg p-4 col gap-4 bg-background-light">
+    <div className="border rounded-lg p-8 col gap-4 bg-background-light">
       <div className="row gap-4">
         <div className="size-12 rounded-full bg-muted overflow-hidden shrink-0">
           {avatarUrl && (

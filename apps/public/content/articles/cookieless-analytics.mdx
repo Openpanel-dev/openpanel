@@ -1,0 +1,118 @@
+---
+title: Cookieless Analytics
+description: Discover how to gather meaningful insights without cookies and why OpenPanel makes it effortless.
+tag: Guide
+team: OpenPanel Team
+date: 2025-06-17
+cover: /content/cookieless-analytics.jpg
+---
+
+The age of tracking everyone, everywhere, with endless cookies is fading fast. Today’s users expect both useful experiences and respect for their privacy. Enter **cookieless analytics**—a smarter way to understand your audience without leaving a trail of crumbs behind. In this guide, we’ll unpack why this approach matters, and how you can get up and running in minutes with OpenPanel.
+
+## What Is Cookieless Analytics, Really?
+
+Put simply, it’s tracking without relying on third-party cookies. Instead of stuffing bits of data into a user’s browser, you pivot to methods like:
+
+* **Server-side events.** Capture interactions directly on your backend.
+* **Session-based identifiers.** Tie actions together during a visit—then discard the identifier when they leave.
+* **First-party data.** Use your own signup forms, preferences, and logs.
+* **Device fingerprints** (used sparingly). Hash together non-identifying signals like screen size and language.
+
+Each of these respects privacy laws and keeps you off users’ “block” lists—without sacrificing insights.
+
+## Why Ditch Cookies? Four Big Wins
+
+### 1. Stay Ahead of Privacy Laws
+
+Regulations like GDPR and CCPA aren’t going away. By design, cookieless systems:
+
+* Avoid endless consent banners
+* Keep you clear of hefty fines
+* Show customers you take privacy seriously
+
+### 2. Delight Your Visitors
+
+Nothing disrupts a first impression like a pop-up you can’t close. With cookieless analytics:
+
+* Pages load faster
+* There are no nagging “Accept cookies?” prompts
+* Your site works even when someone’s browser is locked down
+
+### 3. Future-Proof Your Data
+
+Browsers are phasing out third-party cookies (Safari, Firefox already have). A cookieless stack means:
+
+* No last-minute scrambling when Chrome follows suit
+* Compatibility with privacy-focused browsers
+* A sustainable analytics foundation
+
+### 4. Cleaner, More Trustworthy Insights
+
+When you rely on your own data sources:
+
+* You reduce duplicate or incomplete sessions
+* You focus on active, consenting users
+* Your reports match your real user base
+
+## Why OpenPanel Shines for Cookieless Tracking
+
+We built OpenPanel from the ground up with privacy at its heart—and with features you actually need:
+
+### Privacy by Default
+
+* **Zero cookies.** Ever.
+* **GDPR & CCPA compliant.** Out of the box.
+* **Transparent data policies.** Your users know what’s collected and why.
+
+### Powerful, Yet Simple Analytics
+
+* **Real-time dashboards.** Watch events as they happen.
+* **Custom events & properties.** Track anything from “add to wishlist” to “video watched.”
+* **Rich reports.** Dive deep on funnels, retention, and user journeys.
+
+### Plug-and-Play Setup
+
+1. **Drop in our script:** Copy–paste, and you’re live.
+2. **Pick your SDK:** JavaScript, Python, Go… whatever fits.
+3. **Start tracking in minutes.** No extra configuration.
+
+### Open Source & Self-Hosted Option
+
+* **Inspect the code.** Full transparency.
+* **Self-host if you choose.** Keep data on your servers.
+* **No vendor lock-in.** Export anytime.
+
+## Quick Start: Two Steps to Cookieless Insights
+
+1. **Add the tracking snippet**
+
+```html
+<script>
+  window.op = window.op || function(...args) {
+    (window.op.q = window.op.q || []).push(args);
+  };
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+2. **Fire off your first event**
+
+```javascript
+// Simple click
+window.op('track', 'signup_button_clicked');
+
+// Purchase with details
+window.op('track', 'order_placed', {
+  orderId: 'ORD-20250617-001',
+  revenue: 49.95,
+  currency: 'EUR',
+});
+```
+
+That’s it—you’re capturing all the user interactions you need, cookie-free.

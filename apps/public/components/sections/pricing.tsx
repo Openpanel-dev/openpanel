@@ -1,4 +1,5 @@
-import { CheckIcon, DollarSignIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { CheckIcon, ChevronRightIcon, DollarSignIcon } from 'lucide-react';
 import Link from 'next/link';
 import { DoubleSwirl } from '../Swirls';
 import { PricingSlider } from '../pricing-slider';
@@ -7,9 +8,14 @@ import { Tag } from '../tag';
 import { Button } from '../ui/button';
 
 export default Pricing;
-export function Pricing() {
+export function Pricing({ className }: { className?: string }) {
   return (
-    <Section className="overflow-hidden relative bg-foreground dark:bg-background-dark text-background dark:text-foreground rounded-xl p-0 pb-32 pt-16 max-w-7xl mx-auto">
+    <Section
+      className={cn(
+        'overflow-hidden relative bg-foreground dark:bg-background-dark text-background dark:text-foreground xl:rounded-xl p-0 pb-32 pt-16 max-w-7xl mx-auto',
+        className,
+      )}
+    >
       <DoubleSwirl className="absolute top-0 left-0" />
       <div className="container relative z-10">
         <SectionHeader
@@ -20,7 +26,7 @@ export function Pricing() {
             </Tag>
           }
           title="Simple pricing"
-          description="Our simple, usage-based pricing means you only pay for what you use. Scale effortlessly for the best value."
+          description="Just pick how many events you want to track each month. No hidden costs."
         />
 
         <div className="grid md:grid-cols-[400px_1fr] gap-8">
@@ -52,9 +58,15 @@ export function Pricing() {
               </li>
             </ul>
 
-            <Button variant="secondary" className="self-start mt-4" asChild>
+            <Button
+              variant="secondary"
+              size="lg"
+              asChild
+              className="self-start mt-4 px-8 group"
+            >
               <Link href="https://dashboard.openpanel.dev/onboarding">
-                Start for free
+                Get started now
+                <ChevronRightIcon className="size-4 group-hover:translate-x-1 transition-transform group-hover:scale-125" />
               </Link>
             </Button>
           </div>

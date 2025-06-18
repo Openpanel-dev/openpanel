@@ -4,13 +4,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ pages: string[] }>;
-}): Promise<Metadata> {
-  const { pages } = await params;
-  const page = await pageSource.getPage(pages);
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await pageSource.getPage(['pricing']);
 
   if (!page) {
     return {
@@ -38,13 +33,8 @@ export async function generateMetadata({
   };
 }
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ pages: string[] }>;
-}) {
-  const { pages } = await params;
-  const page = await pageSource.getPage(pages);
+export default async function Page() {
+  const page = await pageSource.getPage(['pricing']);
   const Body = page?.data.body;
 
   if (!page || !Body) {
@@ -79,7 +69,7 @@ export default async function Page({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <article className="container max-w-4xl col">
-        <div className="pt-16 pb-4 col gap-3">
+        <div className="pt-16 pb-8 col gap-3">
           <h1 className="text-5xl font-bold">{page.data.title}</h1>
           {page.data.description && (
             <p className="text-muted-foreground text-xl">

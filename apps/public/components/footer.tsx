@@ -59,23 +59,16 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* <div className="col gap-3">
-            <h3 className="font-medium">Company</h3>
-            <ul className="gap-2 col text-muted-foreground">
-              <li>
-                <Link href="/about">About</Link>
-              </li>
-              <li>
-                <Link href="/contact">Contact</Link>
-              </li>
-            </ul> 
-          </div> */}
-
           <div className="col gap-3 ">
-            <h3 className="font-medium">Comparisons</h3>
+            <h3 className="font-medium">Articles</h3>
             <ul className="gap-2 col text-muted-foreground">
               <li>
-                <Link href="/articles/vs-mixpanel">vs Mixpanel</Link>
+                <Link href="/articles/vs-mixpanel">OpenPanel vs Mixpanel</Link>
+              </li>
+              <li>
+                <Link href="/articles/mixpanel-alternatives">
+                  Mixpanel alternatives
+                </Link>
               </li>
             </ul>
           </div>

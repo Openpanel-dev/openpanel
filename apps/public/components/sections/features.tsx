@@ -2,25 +2,37 @@ import {
   Feature,
   FeatureContent,
   FeatureList,
+  FeatureListItem,
   FeatureMore,
+  SmallFeature,
 } from '@/components/feature';
 import { Section, SectionHeader } from '@/components/section';
 import { Tag } from '@/components/tag';
 import {
+  ActivityIcon,
   AreaChartIcon,
   BarChart2Icon,
   BarChartIcon,
-  BatteryIcon,
+  CheckIcon,
   ClockIcon,
   CloudIcon,
   ConeIcon,
   CookieIcon,
   DatabaseIcon,
+  GithubIcon,
+  LayersIcon,
   LineChartIcon,
+  LockIcon,
   MapIcon,
   PieChartIcon,
+  ServerIcon,
+  Share2Icon,
+  ShieldIcon,
   UserIcon,
+  WalletIcon,
+  ZapIcon,
 } from 'lucide-react';
+import { BatteryIcon } from '../battery-icon';
 import { EventsFeature } from './features/events-feature';
 import { ProductAnalyticsFeature } from './features/product-analytics-feature';
 import { ProfilesFeature } from './features/profiles-feature';
@@ -52,21 +64,30 @@ export function Features() {
             className="mt-4"
             title="Get a quick overview"
             items={[
-              '• Visitors',
-              '• Referrals',
-              '• Top pages',
-              '• Top entries',
-              '• Top exists',
-              '• Devices',
-              '• Sessions',
-              '• Bounce rate',
-              '• Duration',
-              '• Geography',
+              <FeatureListItem key="line" icon={CheckIcon} title="Visitors" />,
+              <FeatureListItem key="line" icon={CheckIcon} title="Referrals" />,
+              <FeatureListItem key="line" icon={CheckIcon} title="Top pages" />,
+              <FeatureListItem
+                key="line"
+                icon={CheckIcon}
+                title="Top entries"
+              />,
+              <FeatureListItem
+                key="line"
+                icon={CheckIcon}
+                title="Top exists"
+              />,
+              <FeatureListItem key="line" icon={CheckIcon} title="Devices" />,
+              <FeatureListItem key="line" icon={CheckIcon} title="Sessions" />,
+              <FeatureListItem
+                key="line"
+                icon={CheckIcon}
+                title="Bounce rate"
+              />,
+              <FeatureListItem key="line" icon={CheckIcon} title="Duration" />,
+              <FeatureListItem key="line" icon={CheckIcon} title="Geography" />,
             ]}
           />
-          {/* <FeatureMore href="#" className="mt-4">
-            And mouch more
-          </FeatureMore> */}
         </Feature>
 
         <Feature reverse media={<ProductAnalyticsFeature />}>
@@ -78,70 +99,47 @@ export function Features() {
           />
           <FeatureList
             className="mt-4"
+            title="Understand your product"
+            items={[
+              <FeatureListItem key="funnel" icon={ConeIcon} title="Funnel" />,
+              <FeatureListItem
+                key="retention"
+                icon={UserIcon}
+                title="Retention"
+              />,
+              <FeatureListItem
+                key="bar"
+                icon={BarChartIcon}
+                title="A/B tests"
+              />,
+              <FeatureListItem
+                key="pie"
+                icon={PieChartIcon}
+                title="Conversion"
+              />,
+            ]}
+          />
+
+          <FeatureList
+            className="mt-4"
             title="Supported charts"
             items={[
-              <div className="row items-center gap-2" key="line">
-                <LineChartIcon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Line
-              </div>,
-              <div className="row items-center gap-2" key="bar">
-                <BarChartIcon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Bar
-              </div>,
-              <div className="row items-center gap-2" key="pie">
-                <PieChartIcon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Pie
-              </div>,
-              <div className="row items-center gap-2" key="area">
-                <AreaChartIcon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Area
-              </div>,
-              <div className="row items-center gap-2" key="histogram">
-                <BarChart2Icon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Histogram
-              </div>,
-              <div className="row items-center gap-2" key="map">
-                <MapIcon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Map
-              </div>,
-              <div className="row items-center gap-2" key="funnel">
-                <ConeIcon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Funnel
-              </div>,
-              <div className="row items-center gap-2" key="retention">
-                <UserIcon
-                  className="size-4 text-foreground/70"
-                  strokeWidth={1.5}
-                />{' '}
-                Retention
-              </div>,
+              <FeatureListItem key="line" icon={LineChartIcon} title="Line" />,
+              <FeatureListItem key="bar" icon={BarChartIcon} title="Bar" />,
+              <FeatureListItem key="pie" icon={PieChartIcon} title="Pie" />,
+              <FeatureListItem key="area" icon={AreaChartIcon} title="Area" />,
+              <FeatureListItem
+                key="histogram"
+                icon={BarChart2Icon}
+                title="Histogram"
+              />,
+              <FeatureListItem key="map" icon={MapIcon} title="Map" />,
             ]}
           />
         </Feature>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Feature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-blue-500">
             <FeatureContent
               icon={<ClockIcon className="size-8" strokeWidth={1} />}
               title="Real time analytics"
@@ -149,8 +147,8 @@ export function Features() {
                 'Get instant insights into your data. No need to wait for data to be processed, like other tools out there, looking at you GA4...',
               ]}
             />
-          </Feature>
-          <Feature>
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-purple-500">
             <FeatureContent
               icon={<DatabaseIcon className="size-8" strokeWidth={1} />}
               title="Own your own data"
@@ -159,10 +157,8 @@ export function Features() {
                 'Self-host it on your own infrastructure to have complete control.',
               ]}
             />
-          </Feature>
-          <div />
-          <div />
-          <Feature>
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-indigo-500">
             <FeatureContent
               icon={<CloudIcon className="size-8" strokeWidth={1} />}
               title="Cloud or self-hosted"
@@ -176,8 +172,8 @@ export function Features() {
             >
               More about self-hosting
             </FeatureMore>
-          </Feature>
-          <Feature>
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-green-500">
             <FeatureContent
               icon={<CookieIcon className="size-8" strokeWidth={1} />}
               title="No cookies"
@@ -186,7 +182,93 @@ export function Features() {
                 'We follow GDPR guidelines closely, ensuring your personal information is protected without using invasive technologies.',
               ]}
             />
-          </Feature>
+            <FeatureMore
+              href="/articles/cookieless-analytics"
+              className="mt-4 -mb-4"
+            >
+              Cookieless analytics
+            </FeatureMore>
+          </SmallFeature>
+
+          <SmallFeature className="[&_[data-icon]]:hover:bg-gray-500">
+            <FeatureContent
+              icon={<GithubIcon className="size-8" strokeWidth={1} />}
+              title="Open-source"
+              content={[
+                'Our code is open and transparent. Contribute, fork, or learn from our implementation.',
+              ]}
+            />
+            <FeatureMore
+              href="https://git.new/openpanel"
+              className="mt-4 -mb-4"
+            >
+              View the code
+            </FeatureMore>
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-purple-500">
+            <FeatureContent
+              icon={<LockIcon className="size-8" strokeWidth={1} />}
+              title="Your data, your rules"
+              content={[
+                'Complete control over your data. Export, delete, or manage it however you need.',
+              ]}
+            />
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-yellow-500">
+            <FeatureContent
+              icon={<WalletIcon className="size-8" strokeWidth={1} />}
+              title="Affordably priced"
+              content={[
+                'Transparent pricing that scales with your needs. No hidden fees or surprise charges.',
+              ]}
+            />
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-orange-500">
+            <FeatureContent
+              icon={<ZapIcon className="size-8" strokeWidth={1} />}
+              title="Moving fast"
+              content={[
+                'Regular updates and improvements. We move quickly to add features you need.',
+              ]}
+            />
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-blue-500">
+            <FeatureContent
+              icon={<ActivityIcon className="size-8" strokeWidth={1} />}
+              title="Real-time data"
+              content={[
+                'See your analytics as they happen. No waiting for data processing or updates.',
+              ]}
+            />
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-indigo-500">
+            <FeatureContent
+              icon={<Share2Icon className="size-8" strokeWidth={1} />}
+              title="Sharable reports"
+              content={[
+                'Easily share insights with your team. Export and distribute reports with a single click.',
+                <i key="soon">Coming soon</i>,
+              ]}
+            />
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-pink-500">
+            <FeatureContent
+              icon={<BarChart2Icon className="size-8" strokeWidth={1} />}
+              title="Visualize your data"
+              content={[
+                'Beautiful, interactive visualizations that make your data easy to understand.',
+              ]}
+            />
+          </SmallFeature>
+          <SmallFeature className="[&_[data-icon]]:hover:bg-indigo-500">
+            <FeatureContent
+              icon={<LayersIcon className="size-8" strokeWidth={1} />}
+              title="Best of both worlds"
+              content={[
+                'Combine the power of self-hosting with the convenience of cloud deployment.',
+              ]}
+            />
+          </SmallFeature>
         </div>
 
         <Feature media={<EventsFeature />}>
