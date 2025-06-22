@@ -38,6 +38,11 @@ services:
     volumes:
       - op-kv-data:/data
     command: [ 'redis-server', '--maxmemory-policy', 'noeviction' ]
+    healthcheck:
+      test: [ 'CMD-SHELL', 'redis-cli ping' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     # Uncomment to expose ports
     # ports:
     #   - 6379:6379
@@ -83,6 +88,11 @@ services:
 
         pnpm start
       "
+    healthcheck:
+      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/api/healthcheck || exit 1' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
       - op-db
       - op-ch
@@ -97,6 +107,11 @@ services:
       - op-api
     env_file:
       - .env
+    healthcheck:
+      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/api/healthcheck || exit 1' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   op-worker:
     image: lindesvard/openpanel-worker:latest
@@ -105,6 +120,11 @@ services:
       - op-api
     env_file:
       - .env
+    healthcheck:
+      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/healthcheck || exit 1' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       mode: replicated
       replicas: $OP_WORKER_REPLICAS
