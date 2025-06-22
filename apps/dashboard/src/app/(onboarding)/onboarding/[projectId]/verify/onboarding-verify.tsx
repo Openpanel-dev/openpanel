@@ -104,22 +104,34 @@ function CurlPreview({ project }: { project: IServiceProjectWithClients }) {
     return null;
   }
 
+  const payload: Record<string, any> = {
+    type: 'track',
+    payload: {
+      name: 'screen_view',
+      properties: {
+        __title: `Testing OpenPanel - ${project.name}`,
+        __path: `${project.domain}`,
+        __referrer: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}`,
+      },
+    },
+  };
+
+  if (project.types.includes('app')) {
+    payload.payload.properties.__path = '/';
+    delete payload.payload.properties.__referrer;
+  }
+
+  if (project.types.includes('backend')) {
+    payload.payload.name = 'test_event';
+    payload.payload.properties = {};
+  }
+
   const code = `curl -X POST ${process.env.NEXT_PUBLIC_API_URL}/track \\
 -H "Content-Type: application/json" \\
 -H "openpanel-client-id: ${client.id}" \\
 -H "openpanel-client-secret: ${secret}" \\
 -H "User-Agent: ${window.navigator.userAgent}" \\
--d '{
-  "type": "track",
-  "payload": {
-    "name": "screen_view",
-    "properties": {
-      "__title": "Testing OpenPanel - ${project.name}",
-      "__path": "${project.domain}",
-      "__referrer": "${process.env.NEXT_PUBLIC_DASHBOARD_URL}"
-    }
-  }
-}'`;
+-d '${JSON.stringify(payload)}'`;
 
   return (
     <div className="card">
