@@ -95,12 +95,11 @@ async function createOldSessions() {
         query: `SELECT min(created_at) as created_at, count() as count FROM ${TABLE_NAMES.events}`,
         format: 'JSONEachRow',
       });
-      const json = await res.json<{ created_at: string; count: number }>();
+      const json = await res.json<{ created_at: string; count: string }>();
       const row = json[0];
-      if (!row || row.count === 0) {
+      if (!row || row.count === '0') {
         return null;
       }
-
       return new Date(row.created_at);
     } catch (e) {
       return defaultDate;
