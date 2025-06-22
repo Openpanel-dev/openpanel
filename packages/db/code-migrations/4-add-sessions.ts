@@ -92,16 +92,16 @@ async function createOldSessions() {
     const defaultDate = new Date('2024-03-01');
     try {
       const res = await chMigrationClient.query({
-        query: `SELECT min(created_at) as created_at FROM ${TABLE_NAMES.events}`,
+        query: `SELECT min(created_at) as created_at, count() as count FROM ${TABLE_NAMES.events}`,
         format: 'JSONEachRow',
       });
-      const json = await res.json<{ created_at: string }>();
-      const createdAt = json[0]?.created_at;
-      if (!createdAt) {
+      const json = await res.json<{ created_at: string; count: number }>();
+      const row = json[0];
+      if (!row || row.count === 0) {
         return null;
       }
 
-      return new Date(createdAt);
+      return new Date(row.created_at);
     } catch (e) {
       return defaultDate;
     }
