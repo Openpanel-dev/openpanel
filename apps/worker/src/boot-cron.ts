@@ -37,7 +37,8 @@ export async function bootCron() {
   ];
 
   if (
-    (process.env.NEXT_PUBLIC_SELF_HOSTED || process.env.SELF_HOSTED) &&
+    (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true' ||
+      process.env.SELF_HOSTED) &&
     process.env.NODE_ENV === 'production'
   ) {
     jobs.push({

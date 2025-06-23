@@ -27,7 +27,7 @@ export default async function Page({
   params: { organizationSlug: organizationId },
   searchParams,
 }: PageProps) {
-  const isBillingEnabled = !process.env.NEXT_PUBLIC_SELF_HOSTED;
+  const isBillingEnabled = process.env.NEXT_PUBLIC_SELF_HOSTED !== 'true';
   const tab = parseAsStringEnum(['org', 'billing', 'members', 'invites'])
     .withDefault('org')
     .parseServerSide(searchParams.tab);
