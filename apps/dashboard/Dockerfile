@@ -20,6 +20,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN apt-get update && apt-get install -y \
     openssl \
     libssl3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
