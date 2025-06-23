@@ -130,7 +130,7 @@ function CurlPreview({ project }: { project: IServiceProjectWithClients }) {
 -H "Content-Type: application/json" \\
 -H "openpanel-client-id: ${client.id}" \\
 -H "openpanel-client-secret: ${secret}" \\
--H "User-Agent: ${typeof window !== 'undefined' ? window.navigator.userAgent : ''} \\
+-H "User-Agent: ${typeof window !== 'undefined' ? window.navigator.userAgent : ''}" \\
 -d '${JSON.stringify(payload)}'`;
 
   return (
