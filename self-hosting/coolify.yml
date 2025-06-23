@@ -104,7 +104,7 @@ services:
         hard: 262144
 
   opapi:
-    image: lindesvard/openpanel-api:1.0.0
+    image: lindesvard/openpanel-api:1.2.0
     restart: always
     command: >
       sh -c "
@@ -158,7 +158,7 @@ services:
       retries: 5
 
   opdashboard:
-    image: lindesvard/openpanel-dashboard:1.0.0
+    image: lindesvard/openpanel-dashboard:1.2.0
     restart: always
     depends_on:
       opapi:
@@ -183,7 +183,7 @@ services:
       retries: 5
 
   opworker:
-    image: lindesvard/openpanel-worker:1.0.0
+    image: lindesvard/openpanel-worker:1.2.0
     restart: always
     depends_on:
       opapi:
