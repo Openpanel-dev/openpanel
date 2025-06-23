@@ -20,6 +20,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN apt-get update && apt-get install -y \
     openssl \
     libssl3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
@@ -62,6 +63,7 @@ WORKDIR /app/apps/dashboard
 # Will be replaced on runtime
 ENV NEXT_PUBLIC_DASHBOARD_URL="__NEXT_PUBLIC_DASHBOARD_URL__"
 ENV NEXT_PUBLIC_API_URL="__NEXT_PUBLIC_API_URL__"
+ENV NEXT_PUBLIC_SELF_HOSTED="__NEXT_PUBLIC_SELF_HOSTED__"
 
 RUN pnpm run build
 

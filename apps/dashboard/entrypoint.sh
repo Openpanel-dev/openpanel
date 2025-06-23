@@ -4,7 +4,7 @@ set -e
 echo "> Replace env variable placeholders with runtime values..."
 
 # Define environment variables to check (space-separated string)
-variables_to_replace="NEXT_PUBLIC_DASHBOARD_URL NEXT_PUBLIC_API_URL"
+variables_to_replace="NEXT_PUBLIC_DASHBOARD_URL NEXT_PUBLIC_API_URL NEXT_PUBLIC_SELF_HOSTED"
 
 # Replace env variable placeholders with real values
 for key in $variables_to_replace; do

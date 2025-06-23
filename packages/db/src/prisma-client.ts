@@ -59,12 +59,20 @@ const getPrismaClient = () => {
           subscriptionStatus: {
             needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
             compute(org) {
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return 'active';
+              }
+
               return org.subscriptionStatus || 'trialing';
             },
           },
           hasSubscription: {
             needs: { subscriptionStatus: true, subscriptionEndsAt: true },
             compute(org) {
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return false;
+              }
+
               if (
                 [null, 'canceled', 'trialing'].includes(org.subscriptionStatus)
               ) {
@@ -86,6 +94,10 @@ const getPrismaClient = () => {
               subscriptionPeriodEventsCountExceededAt: true,
             },
             compute(org) {
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return null;
+              }
+
               if (
                 org.subscriptionEndsAt &&
                 org.subscriptionPeriodEventsCountExceededAt
@@ -119,6 +131,10 @@ const getPrismaClient = () => {
           isCanceled: {
             needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
             compute(org) {
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return false;
+              }
+
               return isCanceled(org);
             },
           },
@@ -129,6 +145,10 @@ const getPrismaClient = () => {
               subscriptionEndsAt: true,
             },
             compute(org) {
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return false;
+              }
+
               return isWillBeCanceled(org);
             },
           },
@@ -139,6 +159,10 @@ const getPrismaClient = () => {
               subscriptionCanceledAt: true,
             },
             compute(org) {
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return false;
+              }
+
               if (isCanceled(org)) {
                 return false;
               }
@@ -158,6 +182,10 @@ const getPrismaClient = () => {
               subscriptionPeriodEventsLimit: true,
             },
             compute(org) {
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return false;
+              }
+
               return (
                 org.subscriptionPeriodEventsCount >
                 org.subscriptionPeriodEventsLimit
@@ -167,7 +195,13 @@ const getPrismaClient = () => {
           subscriptionCurrentPeriodStart: {
             needs: { subscriptionStartsAt: true, subscriptionInterval: true },
             compute(org) {
-              if (!org.subscriptionStartsAt) return org.subscriptionStartsAt;
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return null;
+              }
+
+              if (!org.subscriptionStartsAt) {
+                return null;
+              }
 
               if (org.subscriptionInterval === 'year') {
                 const startDay = org.subscriptionStartsAt.getUTCDate();
@@ -195,7 +229,13 @@ const getPrismaClient = () => {
               subscriptionInterval: true,
             },
             compute(org) {
-              if (!org.subscriptionStartsAt) return org.subscriptionEndsAt;
+              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+                return null;
+              }
+
+              if (!org.subscriptionStartsAt) {
+                return null;
+              }
 
               if (org.subscriptionInterval === 'year') {
                 const startDay = org.subscriptionStartsAt.getUTCDate();

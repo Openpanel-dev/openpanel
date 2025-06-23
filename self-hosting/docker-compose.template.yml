@@ -12,8 +12,10 @@ services:
       - op-proxy-config:/config
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
     depends_on:
-      - op-dashboard
-      - op-api
+      op-dashboard:
+        condition: service_healthy
+      op-api:
+        condition: service_healthy
 
   op-db:
     image: postgres:14-alpine
@@ -38,6 +40,11 @@ services:
     volumes:
       - op-kv-data:/data
     command: [ 'redis-server', '--maxmemory-policy', 'noeviction' ]
+    healthcheck:
+      test: [ 'CMD-SHELL', 'redis-cli ping' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     # Uncomment to expose ports
     # ports:
     #   - 6379:6379
@@ -66,27 +73,23 @@ services:
     restart: always
     command: >
       sh -c "
-        echo 'Waiting for PostgreSQL to be ready...'
-        while ! nc -z op-db 5432; do
-          sleep 1
-        done
-        echo 'PostgreSQL is ready'
-
-        echo 'Waiting for ClickHouse to be ready...'
-        while ! nc -z op-ch 8123; do
-          sleep 1
-        done
-        echo 'ClickHouse is ready'
-
         echo 'Running migrations...'
         CI=true pnpm -r run migrate:deploy
 
         pnpm start
       "
+    healthcheck:
+      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/healthcheck || exit 1' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - op-db
-      - op-ch
-      - op-kv
+      op-db:
+        condition: service_healthy
+      op-ch:
+        condition: service_healthy
+      op-kv:
+        condition: service_healthy
     env_file:
       - .env
 
@@ -94,17 +97,29 @@ services:
     image: lindesvard/openpanel-dashboard:latest
     restart: always
     depends_on:
-      - op-api
+      op-api:
+        condition: service_healthy
     env_file:
       - .env
+    healthcheck:
+      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/api/healthcheck || exit 1' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   op-worker:
     image: lindesvard/openpanel-worker:latest
     restart: always
     depends_on:
-      - op-api
+      op-api:
+        condition: service_healthy
     env_file:
       - .env
+    healthcheck:
+      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/healthcheck || exit 1' ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     deploy:
       mode: replicated
       replicas: $OP_WORKER_REPLICAS

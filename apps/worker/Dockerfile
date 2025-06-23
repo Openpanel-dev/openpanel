@@ -15,6 +15,7 @@ RUN corepack enable && \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     openssl \
+    curl \
     libssl3 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*

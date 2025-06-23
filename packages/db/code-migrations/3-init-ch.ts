@@ -11,7 +11,7 @@ import {
   renameTable,
   runClickhouseMigrationCommands,
 } from '../src/clickhouse/migration';
-import { printBoxMessage } from './helpers';
+import { getIsSelfHosting, printBoxMessage } from './helpers';
 
 export async function up() {
   const replicatedVersion = '1';
@@ -25,7 +25,7 @@ export async function up() {
     'profile_aliases_distributed',
   );
 
-  const isSelfHosting = !!process.env.SELF_HOSTED;
+  const isSelfHosting = getIsSelfHosting();
   const isClustered = !isSelfHosting;
 
   const isSelfHostingPostCluster =
