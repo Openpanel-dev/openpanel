@@ -26,6 +26,9 @@ export default function createMiddleware(options: OpenpanelOptions) {
     if (ip) {
       sdk.api.addHeader('x-client-ip', ip);
     }
+    if (req.headers['user-agent']) {
+      sdk.api.addHeader('x-user-agent', req.headers['user-agent'] as string);
+    }
 
     if (options.getProfileId) {
       const profileId = options.getProfileId(req);
