@@ -2,22 +2,17 @@ import { cn } from '@/lib/utils';
 import {
   ArrowRightIcon,
   CalendarIcon,
-  CheckIcon,
   ChevronRightIcon,
   CookieIcon,
   CreditCardIcon,
   DatabaseIcon,
-  DollarSignIcon,
   FlaskRoundIcon,
   GithubIcon,
   ServerIcon,
   StarIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 import { Competition } from './competition';
-import { HeroCarousel } from './hero-carousel';
-import { HeroMap } from './hero-map';
 import { Tag } from './tag';
 import { Button } from './ui/button';
 
@@ -47,9 +42,9 @@ export function Hero() {
               An open-source alternative to <Competition />
             </h1>
             <p className="text-xl text-muted-foreground">
-              A web and product analytics platform that combines the power of
-              Mixpanel with the ease of Plausible and one of the best Google
-              Analytics replacements.
+              An open-source web and product analytics platform that combines
+              the power of Mixpanel with the ease of Plausible and one of the
+              best Google Analytics replacements.
             </p>
           </div>
           <Button size="lg" asChild className="group w-72">
