@@ -160,13 +160,15 @@ export default async function Page({
           </div>
         </div>
         <div className="relative">
-          <div className="bg-gradient-to-b from-background to-transparent">
-            <div className="float-right pl-12 pb-12 hidden md:block article:hidden">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-0">
+            <div>
+              <div className="prose [&_table]:w-auto">
+                <Body />
+              </div>
+            </div>
+            <aside className="hidden md:block pl-12 pb-12">
               <Toc toc={article?.data.toc} />
-            </div>
-            <div className="prose">
-              <Body />
-            </div>
+            </aside>
           </div>
 
           {relatedArticles.length > 0 && (

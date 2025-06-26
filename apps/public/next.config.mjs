@@ -9,6 +9,13 @@ const config = {
     domains: ['localhost', 'openpanel.dev', 'api.openpanel.dev'],
   },
   serverExternalPackages: ['@hyperdx/node-opentelemetry'],
+  redirects: [
+    {
+      source: '/articles/top-7-open-source-web-analytics-tools',
+      destination: '/articles/open-source-web-analytics',
+      permanent: true,
+    },
+  ],
 };
 
 export default withMDX(config);

@@ -1,0 +1,580 @@
+---
+title: 9 best open source web analytics tools
+description: In an era where data drives decisions, what are your best options for web analytics?
+date: 2024-11-10
+cover: /content/cover-best-web-analytics.jpg
+tag: Comparison
+team: OpenPanel Team
+---
+import { Faqs, FaqItem } from '@/components/faq';
+import { Figure } from '@/components/figure'
+
+In today's data-driven world, understanding your website's performance is crucial for making informed decisions. While Google Analytics dominates the market, many developers and businesses are turning to open source web analytics tools for better privacy, data ownership, and customization.
+
+Open source web analytics solutions offer several advantages over proprietary alternatives:
+- **Complete data ownership** - Your analytics data stays on your servers
+- **Privacy compliance** - Many are GDPR/CCPA compliant by design
+- **No vendor lock-in** - You can modify and extend the code as needed
+- **Cost control** - Self-host for free or choose affordable hosted options
+- **Transparency** - Open source code means you know exactly what's being tracked
+
+In this comprehensive guide, we've evaluated 9 of the best open source web analytics tools available today. Each tool has been assessed based on features, pricing, ease of use, and community support. Whether you need simple pageview tracking or advanced product analytics, there's an open source solution that fits your needs.
+
+## OpenPanel
+
+<Figure
+  src="/content/tools/openpanel.png"
+  caption="OpenPanel's overview page giving you a first glance of your web analytics"
+/>
+
+### Summary
+OpenPanel is an open-source, privacy-friendly web and product analytics platform. It combines the power of Mixpanel with the simplicity of Plausible. You get real-time event tracking, customizable charts, an overview dashboard with instant insights, individual user and session views, and plenty of SDKs. It uses cookie-free tracking and is GDPR compliant. You can self-host it for free or use the hosted Cloud service with a 30-day free trial.
+
+- Homepage: [**https://openpanel.dev**](https://openpanel.dev)  
+- GitHub: [**https://github.com/Openpanel-dev/openpanel**](https://github.com/Openpanel-dev/openpanel)  
+- License: **AGPL-3.0**  
+- Rating: **5/5**
+- Discount: 30% off (first 3 months): [Use discount code **GOOGLE**](https://dashboard.openpanel.dev/onboarding)
+
+### Pricing
+
+OpenPanel Cloud has a 30-day free trial with no credit card required. After the trial, you choose the tier matching your monthly event volume. If you outgrow your tier you simply upgrade. Self-hosting is free (you provide your own infrastructure).
+
+| Events per Month | Price (USD/month) | Annual Price (10× monthly) |
+| ---------------- | ----------------- | -------------------------- |
+| Up to 5 000      | \$2.50            | \$25                       |
+| Up to 10 000     | \$5               | \$50                       |
+| Up to 100 000    | \$20              | \$200                      |
+| Up to 250 000    | \$30              | \$300                      |
+| Up to 500 000    | \$50              | \$500                      |
+| Up to 1 000 000  | \$90              | \$900                      |
+| Up to 2 500 000  | \$180             | \$1 800                    |
+| Up to 5 000 000  | \$250             | \$2 500                    |
+| Up to 10 000 000 | \$400             | \$4 000                    |
+| > 10 000 000     | Contact sales     | Contact sales              |
+
+> All Cloud plans include unlimited websites, unlimited dashboards, unlimited team members, email & Discord support, and 5 years of data retention.
+
+### Pros
+- Open-source and self-hostable so you control your data  
+- Combines web and product analytics in one platform  
+- Real-time tracking and instant insights, no delays  
+- Cookie-free, GDPR/CCPA compliant by design  
+- Generous free trial and usage-based pricing
+
+### Cons
+- Cloud costs grow as event volume increases  
+- Self-hosting requires server setup and maintenance  
+- Project is still early-stage with a smaller community  
+- Lacks some advanced features like session replay or heatmaps
+
+### FAQ
+
+<Faqs>
+<FaqItem question="How does OpenPanel pricing work after the free trial?">
+After your 30-day free trial, you pick the plan that covers your monthly events. If you exceed your tier's limit, you simply move up to the next tier or contact sales for a custom enterprise plan.
+</FaqItem>
+<FaqItem question="What tools can OpenPanel replace?">
+OpenPanel can stand in for Mixpanel, Amplitude and even Google Analytics by offering both product and web analytics in a single, privacy-friendly platform.
+</FaqItem>
+<FaqItem question="What's included in the open-source version of OpenPanel?">
+Everything—custom dashboards, charts, real-time views, user/session drill-downs and all SDKs—ships under an AGPL-3.0 licence with no feature gating.
+</FaqItem>
+<FaqItem question="What are the hosting requirements?">
+A mid-range VPS (≈ 4 vCPU / 8 GB RAM / SSD) running Docker Compose is sufficient for most projects; scale vertically as event volume grows.
+</FaqItem>
+<FaqItem question="Is there a hosted option?">
+Yes. OpenPanel Cloud starts with a 30-day free trial, then switches to usage-based tiers—e.g. \$20 for 100 k events or \$90 for 1 M events per month.
+</FaqItem>
+</Faqs>
+
+### Alternative to OpenPanel
+**Plausible Analytics**  
+- Open-source, privacy-focused web analytics with flat pricing  
+- Lightweight, cookie-free tracking and simple dashboards  
+- Predictable monthly cost starting at \$9 for 10 000 pageviews  
+- Ideal if you need core web metrics without product analytics  
+
+## PostHog
+
+<Figure
+  src="/content/tools/posthog.png"
+  caption="PostHog"
+/>
+
+### Summary
+PostHog is an open-source platform for product analytics. You can track events, watch session replays, roll out feature flags, run A/B tests, track errors, send surveys, and more—all in one place. You can self-host it or use their cloud service. All users get a generous free tier every month.
+
+- Homepage: [**https://posthog.com**](https://posthog.com)
+- Github: [**https://github.com/PostHog/posthog**](https://github.com/PostHog/posthog)
+- License: **MIT**
+- Rating: **4/5**
+
+### Pricing
+
+PostHog offers a generous free tier that includes 1 million events per month, along with 5,000 session recordings, 1 million feature flag requests, 100,000 error events, and 250 survey responses. This free tier covers 1 project with community support and 1 year of data retention.
+
+Beyond the free limits, PostHog operates on a pay-as-you-go model. Product analytics costs $0.00005 per event, session replay is $0.005 per recording, feature flags are $0.0001 per request, error tracking is $0.00037 per event, surveys are $0.20 per response, and data pipelines cost $0.000062 per event. The pay-as-you-go plan includes 6 projects, email support, and 7 years of data retention.
+
+| Plan           | Price            | Monthly Free Limits                       | Support        | Projects | Retention |
+| -------------- | ---------------- | ----------------------------------------- | -------------- | -------- | --------- |
+| Free forever   | $0               | See free tier details above               | Community forum| 1        | 1 year    |
+| Pay-as-you-go  | $0 + usage rates | First free limits then usage-based billing| Email          | 6        | 7 years   |
+
+### Pros
+- Open-source and self-host friendly so you keep full data control  
+- All-in-one suite: analytics, replays, flags, experiments, errors, surveys  
+- Generous monthly free tier for smaller sites or dev testing  
+
+### Cons
+- Usage-based pricing can be hard to predict as you grow  
+- Managing a self-hosted instance takes extra ops work and maintenance
+- Self-hosting vs cloud is not 1-to-1
+- Enterprise support and advanced add-ons can get costly  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="How does PostHog pricing work after the free tier?">
+PostHog's pricing can be tricky since it's usage based. Depending on how many events you send you will pay X amount per event.
+</FaqItem>
+<FaqItem question="What's the difference between PostHog and OpenPanel?">
+OpenPanel is more affordable than PostHog once you exceed 1 million events, making it a cost-effective choice for growing projects. While PostHog offers a broader range of features, OpenPanel stands out for its simplicity in self-hosting and provides the same capabilities whether you use the cloud or self-hosted version. Both platforms serve as robust product and web analytics tools, but OpenPanel's pricing and deployment flexibility make it especially appealing for teams seeking value and ease of use.
+</FaqItem>
+<FaqItem question="What tools can PostHog replace?">
+By bundling product analytics, web analytics, session replay, feature flags, experiments, error tracking and surveys, PostHog can replace Mixpanel, Amplitude, Google Analytics, Hotjar / FullStory and LaunchDarkly in one stack.
+</FaqItem>
+<FaqItem question="What's included in the open-source version?">
+PostHog Open Source (MIT) includes almost every feature but is limited to a single project per instance and comes without an uptime guarantee—ideal for hobby or proof-of-concept use.
+</FaqItem>
+<FaqItem question="What are the self-hosting requirements?">
+The team recommends ≥ 4 vCPU, 16 GB RAM and 30 GB+ storage. Self-hosting works best up to ~300 k events / month; beyond that, PostHog Cloud scales for you.
+</FaqItem>
+<FaqItem question="Is there a hosted option?">
+Yes. PostHog Cloud offers a free tier (1 M events, 5 k recordings, 1 M flag API requests) with US or EU data residency, then pay-as-you-go pricing after the limits.
+</FaqItem>
+</Faqs>
+
+## Plausible
+
+<Figure
+  src="/content/tools/plausible.png"
+  caption="Plausible"
+/>
+
+### Summary
+Plausible is an open-source, privacy-friendly web analytics tool. It tracks pageviews and custom events without cookies or personal data. You get real-time reports, goals, custom events, email or Slack reports, and GDPR/CCPA compliance. You can self-host for free or use their cloud service.
+
+- Homepage: [**https://plausible.io**](https://plausible.io)  
+- Github: [**https://github.com/plausible/analytics**](https://github.com/plausible/analytics)  
+- License: **AGPL v3**
+- Rating: **4/5**
+
+### Pricing
+
+Plausible offers traffic-based plans you can bill monthly or yearly (2 months free on annual). All plans include unlimited data retention, unlimited team members, Google Analytics import, and core features.
+
+| Plan      | Pageviews per Month | Price (Monthly) | Price (Yearly) | Sites | Team Members | Data Retention |
+|-----------|---------------------|-----------------|----------------|-------|--------------|----------------|
+| Starter   | Up to 10 000        | \$9             | \$90           | 1     | Unlimited    | Unlimited      |
+| Growth    | Up to 100 000       | \$14            | \$140          | 3     | 3            | Unlimited      |
+| Business  | Up to 200 000       | \$19            | \$190          | 10    | 10           | Unlimited      |
+| Enterprise| 200 001+            | Custom          | Custom         | 10+   | 10+          | Unlimited      |
+
+### Pros
+- Designed for privacy, with no cookies or personal data tracking  
+- Simple, intuitive dashboard and easy setup  
+- Open source, with free self-host option and transparent pricing  
+
+### Cons
+- No free tier beyond self-hosting  
+- Costs can rise quickly as traffic grows  
+- Fewer advanced features (like funnels or session replay) than some competitors  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="What's the differnece between OpenPanel?">
+OpenPanel is similar to Plausible in that both offer privacy-friendly, open-source web analytics with easy self-hosting. However, OpenPanel goes further by including advanced product analytics features—such as event tracking, user journeys, and session replays—making it suitable for teams that need deeper insights into user behavior, not just website traffic. If you want a simple, privacy-focused analytics tool, Plausible is great; if you need more advanced product analytics in addition to web stats, OpenPanel is a better fit.
+</FaqItem>
+<FaqItem question="How does Plausible protect user privacy?">
+Plausible does not use cookies or collect personal data. All tracking is aggregated and anonymized, making it GDPR and CCPA compliant by design.
+</FaqItem>
+<FaqItem question="What tools can Plausible replace?">
+Plausible is a privacy-first alternative to Google Analytics and other page-view focused trackers, giving you simple dashboards without cookies.
+</FaqItem>
+<FaqItem question="What's included in the open-source version?">
+Everything you see in Plausible Cloud—real-time dashboards, goals, custom events, unlimited retention and team members—is also in the self-hosted AGPL build.
+</FaqItem>
+<FaqItem question="Is there a hosted option?">
+Yes. Plausible Cloud starts at \$9/month for 10 k page-views with simple, traffic-based pricing.
+</FaqItem>
+</Faqs>
+
+### Alternative to Plausible
+**Umami**  
+- Umami is almost a 1-to-1 alternative to Plausible. A great web analytics tool
+
+**OpenPanel**
+- Similar to both Umami and Plausible but also adds product analytics to the mix
+
+## Matomo
+
+<Figure
+  src="/content/tools/matomo.png"
+  caption="Matomo"
+/>
+
+### Summary
+Matomo (formerly Piwik) is an open-source web analytics platform. You can track web and mobile visits, build charts, create dashboards, set goals, run A/B tests, record sessions, view heatmaps, and more. You own all your data and can choose to self-host for free or use Matomo Cloud for hosting and support.
+
+- Homepage: [**https://matomo.org**](https://matomo.org)  
+- Github: [**https://github.com/matomo-org/matomo**](https://github.com/matomo-org/matomo)  
+- License: **GNU GPL v3**
+- Rating: **4/5**
+
+### Pricing
+
+Matomo offers two main options:
+
+| Plan         | Price                            | Hits per Month        | Billing                     | Support                                    | Websites | Team Members | Data Retention |
+| ------------ | -------------------------------- | --------------------- | --------------------------- | ------------------------------------------ | -------- | ------------ | -------------- |
+| On-Premise   | €0                               | Unlimited             | Self-host (download)        | Free community support or paid subscriptions | Unlimited| Unlimited    | Forever        |
+| Cloud (50 k) | €29/month or €290/year (2 months free) | Up to 50 000         | Monthly or annual           | Email support & Customer Success Manager    | 30       | 30           | 24 months      |
+
+- For more hits or custom allowances (100 k, 300 k, 1 M, etc.), contact sales for enterprise pricing.
+
+### Pros
+- You fully own your data and stay GDPR/CCPA compliant  
+- Rich feature set: dashboards, A/B tests, heatmaps, session recordings, funnels  
+- Free self-hosted option with no limits on hits or users  
+
+### Cons
+- Managing self-hosting requires server setup and maintenance  
+- Cloud costs can rise sharply as traffic grows beyond base tiers  
+- Many advanced plugins incur extra annual fees  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="What is included in Matomo Cloud's €29/month plan?">
+For €29 per month (or €290 per year), you get up to 50 000 hits, 30 websites, 30 team members, 24 months of raw data retention, email support, and a Customer Success Manager.
+</FaqItem>
+<FaqItem question="What tools can Matomo replace?">
+Matomo positions itself as a GDPR-compliant alternative to Google Analytics 4.
+</FaqItem>
+<FaqItem question="What's included in the open-source version?">
+Self-hosted Matomo covers user & event tracking, ecommerce analytics, segmentation and customizable dashboards; premium add-ons (A/B testing, heatmaps, etc.) cost extra.
+</FaqItem>
+<FaqItem question="What are the self-hosting requirements?">
+For ~100 k page-views / month: 2 CPU, 2 GB RAM and 50 GB SSD. Over 1 M page-views Matomo recommends separate app and DB servers.
+</FaqItem>
+<FaqItem question="Is there a hosted option?">
+Yes. Matomo Cloud charges by "hits per month" and unlocks all paid add-ons out-of-the-box.
+</FaqItem>
+</Faqs>
+
+### Alternative to Matomo
+**Fathom Analytics**  
+- Privacy-focused, simple analytics with no cookies or personal data  
+- Flat monthly pricing (starts at $14/month) for unlimited pageviews  
+- Easy setup with minimal interface for core metrics  
+
+## Fathom
+
+<Figure
+  src="/content/tools/fathom.png"
+  caption="Fathom"
+/>
+
+### Summary
+Fathom is a simple, privacy-focused web analytics tool. It tracks pageviews and events without cookies or personal data. You get real-time reports, unlimited data retention, unlimited sites, and simple dashboards. You can use Fathom's hosted service with a free trial or self-host with their Docker image (self-hosting requires a license).
+
+- Homepage: [**https://usefathom.com**](https://usefathom.com)  
+- Github: **Unsure** (no public repo for core analytics)  
+- License: **Proprietary** (self-host license available)  
+- Rating: **4/5**
+
+### Pricing
+
+Fathom bills by monthly data points (pageviews + events). You pay for the tier you need and can move up at any time. All plans include unlimited sites, data retention, email reports, exports, and support.
+
+| Plan                   | Data Points / Month | Price (Monthly) | Price (Yearly, 17% off) |
+| ---------------------- | ------------------- | --------------- | ----------------------- |
+| Starter                | Up to 100 000       | \$15            | \$150/yr                |
+| Growth                 | Up to 200 000       | \$25            | \$250/yr                |
+| Business               | Up to 500 000       | \$45            | \$450/yr                |
+| Scale                  | Up to 1 000 000     | \$60            | \$600/yr                |
+| Scale+                 | Up to 2 000 000     | \$100           | \$1 000/yr              |
+| Enterprise Small       | Up to 5 000 000     | \$140           | \$1 400/yr              |
+| Enterprise Medium      | Up to 10 000 000    | \$200           | \$2 000/yr              |
+| Enterprise Large       | Up to 15 000 000    | \$290           | \$2 900/yr              |
+| Enterprise X-Large     | Up to 20 000 000    | \$380           | \$3 800/yr              |
+| Enterprise Custom¹     | Over 25 000 000     | Contact sales   | Contact sales          |
+
+¹ For volumes above 25 million data points, contact sales.
+
+### Pros
+- No cookies or personal data collection by design  
+- Real-time, simple dashboard with core metrics only  
+- Unlimited sites and data retention on every plan  
+- Self-host option lets you run it on your own infrastructure  
+
+### Cons
+- Proprietary platform (core code is not open source)  
+- Costs rise linearly as traffic grows  
+- Lacks advanced features like funnels or session replay  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="How does Fathom pricing work after the free trial?">
+Fathom charges by data-point tiers. You start on the plan matching your monthly pageviews and events, and you move up if you exceed your quota at month's end.
+</FaqItem>
+<FaqItem question="What's the difference between Fathom and OpenPanel?">
+Fathom is a hosted, proprietary analytics service with simple, tiered pricing. OpenPanel is open source and privacy friendly, offering both web and product analytics, real-time views, individual session tracking, charts, cookie-free GDPR compliance, and multiple SDKs you can self-host for free.
+</FaqItem>
+</Faqs>
+
+### Alternative to Fathom
+**Simple Analytics**  
+- Privacy-first, cookie-free analytics under a flat fee model  
+- Tracks pageviews only with a focus on simplicity  
+- No free tier but predictable pricing by site count  
+- Clean dashboard and easy setup with no code changes  
+
+## Umami
+
+<Figure
+  src="/content/tools/umami.png"
+  caption="Umami"
+/>
+
+### Summary
+Umami is an open-source, privacy-friendly web analytics tool. It tracks pageviews and basic events without cookies or personal data. The lightweight script (~2 KB) loads fast and is GDPR/CCPA compliant by default. You can self-host it for free or use Umami Cloud with usage-based pricing.
+
+- Homepage: [**https://umami.is**](https://umami.is)  
+- GitHub: [**https://github.com/umami-software/umami**](https://github.com/umami-software/umami)  
+- License: **MIT**  
+- Rating: **4/5**
+
+### Pricing
+
+Self-hosted Umami is free with unlimited sites and events, managed by you with community support.
+
+Umami Cloud is free for the first 1 million events per month. Beyond that, you pay $0.00002 per additional event. You get unlimited websites, unlimited team members, 5 years of data retention, and email support.
+
+| Plan        | Price                            | Monthly Free Limits | Support       | Retention  |
+| ----------- | -------------------------------- | ------------------- | ------------- | ---------- |
+| Self-host   | $0                               | Unlimited events & sites | Community forum | Unlimited  |
+| Cloud       | $0 + $0.00002 per event over 1 M | 1 000 000 events     | Email support | 5 years    |
+
+### Pros
+- Fully open-source and self-hosted option gives you data control  
+- Privacy-first design with no cookies or personal data collection  
+- Very lightweight tracking script that won't slow your site  
+
+### Cons
+- Limited to basic metrics; no session replay, funnels, or heatmaps  
+- Running your own server means more maintenance and updates  
+- Cloud costs can add up if you exceed free event limits significantly  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="How does Umami pricing work after the free tier?">
+After the first 1 million events each month, Umami Cloud charges $0.00002 for each additional event. There are no per-site or per-user fees.
+</FaqItem>
+<FaqItem question="What's the difference between Umami and OpenPanel?">
+Umami provides open-source, cookie-free web analytics focused on pageviews and basic events. OpenPanel is also open-source and privacy-friendly but adds product analytics, real-time dashboards, individual session and user tracking, event visualization charts, and multiple SDKs—all cookie-free and GDPR compliant.
+</FaqItem>
+<FaqItem question="What tools can Umami replace?">
+Primarily Google Analytics or any lightweight page-view tracker that relies on cookies.
+</FaqItem>
+<FaqItem question="What's included in the open-source version?">
+There's no feature gap—funnels, user paths, retention and custom events are all in the MIT-licensed build.
+</FaqItem>
+<FaqItem question="What are the self-hosting requirements?">
+A server with Node 18+ and either MySQL 8+ or PostgreSQL 12+; official Docker Compose templates make deployment straightforward.
+</FaqItem>
+<FaqItem question="Is there a hosted option?">
+Yes. Umami Cloud lets you track up to 100 k events each month for free, then bills \$0.00002 per event thereafter (e.g. \$20 for 1 M events).
+</FaqItem>
+</Faqs>
+
+### Alternative to Umami
+**GoatCounter**  
+- Open-source, privacy-focused analytics with simple pageview and event tracking  
+- Self-host for free or use hosted plans starting at €5/month  
+- Lightweight script, no cookies required, GDPR compliant  
+- Very simple setup and predictable flat pricing  
+
+## Ackee
+
+<Figure
+  src="/content/tools/ackee.png"
+  caption="Ackee"
+/>
+
+### Summary
+Ackee is an open-source, self-hosted web analytics tool that focuses on privacy and simplicity. It runs on your own server with Node.js and MongoDB, tracks pageviews and custom events without cookies or personal data, and presents stats in a minimal interface. It uses a GraphQL API and keeps all tracked data anonymized by default.
+
+- Homepage: [**https://ackee.electerious.com**](https://ackee.electerious.com)  
+- Github: [**https://github.com/electerious/Ackee**](https://github.com/electerious/Ackee)  
+- License: **MIT**
+- Rating: **4/5**
+
+### Pricing
+
+Ackee itself is completely free to self-host. You download the code, run it on your server, and there are no limits on sites, pageviews, team members, or data retention.
+
+> _Note: There is no official Ackee-hosted service. Some third-party providers (for example Elestio) offer managed Ackee hosting on a credits-or-hourly basis, but pricing and terms vary by provider._
+
+### Pros
+- Fully open-source and free to self-host so you control all your data  
+- Privacy-first design: no cookies, anonymized tracking, GDPR/CCPA compliant  
+- Lightweight and minimal UI with fast load times  
+- GraphQL API allows custom integrations and flexible querying  
+
+### Cons
+- Limited to basic metrics (no funnels, session replay, or heatmaps)  
+- Requires server setup, maintenance, and security updates  
+- No official hosted offering—managed hosting depends on third parties  
+- Minimal feature set may not suit advanced analytics needs  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="How does Ackee pricing work after the free tier?">
+Ackee is free forever if you self-host. There is no paid tier or usage fees for the core software.
+</FaqItem>
+<FaqItem question="What's the difference between Ackee and OpenPanel?">
+Ackee is a self-hosted, minimal web analytics tool that tracks pageviews and basic events without cookies. OpenPanel is also open-source and privacy-friendly but adds product analytics, real-time dashboards, individual session and user tracking, event visualization charts, and multiple SDKs you can use via cloud or self-host.
+</FaqItem>
+</Faqs>
+
+### Alternative to Ackee
+**GoatCounter**  
+- Open-source and privacy-focused, with GDPR-compliant, cookie-free tracking  
+- Self-host free or use hosted plans starting at €5/month  
+- Simple pageview and basic event metrics, predictable flat pricing  
+
+## Pirsch
+
+<Figure
+  src="/content/tools/pirsch.png"
+  caption="Pirsch"
+/>
+
+### Summary
+Pirsch is a drop-in, server-side, no-cookie, privacy-focused web analytics solution built in Go. It generates anonymized visitor fingerprints, works even with ad blockers, and is GDPR, CCPA, and PECR compliant. You can use the hosted SaaS offering or self-host under an enterprise license.
+
+- Homepage: [**https://pirsch.io**](https://pirsch.io)  
+- GitHub: [**https://github.com/pirsch-analytics/pirsch**](https://github.com/pirsch-analytics/pirsch)  
+- License: **AGPL-3.0**
+- Rating: **4/5**
+
+### Pricing
+
+Pirsch offers a 30-day free trial with no credit card required. After that, plans are usage-based on monthly pageviews:
+
+| Plan        | Monthly Price      | Annual Price (2 mo. free) | Pageviews Included | Websites           | Members           | Data Retention    |
+|-------------|--------------------|---------------------------|--------------------|--------------------|-------------------|-------------------|
+| Standard    | \$6                | \$60                      | Up to 10 000       | Up to 50           | Unlimited         | Unlimited         |
+| Plus (Best Value) | \$12           | \$120                     | Custom¹            | Unlimited          | Unlimited         | Unlimited         |
+| Enterprise  | Custom             | Custom                    | Custom             | Custom             | Custom            | Custom            |
+
+¹ Plus plan adds funnels, A/B testing, custom domains/themes, white-labeling, priority support, and event goals.
+
+> _You pay per pageview tier; if you exceed your included pageviews, you move up to the next tier or contact sales for enterprise licensing._
+
+### Pros
+- Fully privacy-focused with no cookies and anonymized data by default  
+- Server-side tracking works around ad blockers and gives full data ownership  
+- Lightweight Go library and multiple SDKs (JS, PHP, Laravel, etc.)  
+- Hosted in the EU on German servers (Hetzner)  
+
+### Cons
+- Core self-host requires an enterprise license and setup support  
+- Usage tiers can get costly as traffic grows beyond small sites  
+- Hosted plans have feature gaps vs. self-host (e.g., custom integrations)  
+- No built-in session replay or heatmaps  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="How does Pirsch pricing work after the free trial?">
+After 30 days, you choose the tier matching your monthly pageviews. If you go over your included pageviews, you upgrade to the next tier or contact sales for enterprise options.
+</FaqItem>
+<FaqItem question="What's the difference between Pirsch and OpenPanel?">
+Pirsch is a hosted or enterprise-licensed Go-based analytics service focused on server-side tracking and EU hosting. OpenPanel is fully open-source, privacy-friendly, and cookie-free, offering both web and product analytics, real-time dashboards, individual session/user tracking, charts, GDPR compliance, and multiple SDKs you can self-host for free.
+</FaqItem>
+</Faqs>
+
+### Alternative to Pirsch
+**Plausible Analytics**  
+- Open-source, cookie-free web analytics with a flat pricing model  
+- Simple dashboard, real-time data, and GDPR/CCPA compliance  
+- Self-host for free or use hosted plans starting at \$9/month for 10 000 pageviews  
+
+
+## Swetrix
+
+<Figure
+  src="/content/tools/swetrix.png"
+  caption="Swetrix"
+/>
+
+### Summary
+Swetrix is an open-source, cookieless web analytics platform that focuses on privacy and ease of use. You can track pageviews, custom events, user flows, performance metrics, and more—all without showing cookie banners. You can self-host for free or use the hosted service with a 14-day trial.
+
+- Homepage: [**https://swetrix.com**](https://swetrix.com)  
+- GitHub: [**https://github.com/Swetrix/swetrix**](https://github.com/Swetrix/swetrix)  
+- License: **AGPL-3.0**
+- Rating: **4/5**
+
+### Pricing
+
+Swetrix offers a 14-day free trial with no credit card required. After that, you pick a plan based on monthly events. If you need more than 10 million events, you contact sales.
+
+| Plan               | Events per Month | Price (USD/month) |
+| ------------------ | ---------------- | ----------------- |
+| Basic              | Up to 10 000     | \$5               |
+| Growth             | Up to 100 000    | \$15              |
+| Pro                | Up to 200 000    | \$25              |
+| Business           | Up to 500 000    | \$45              |
+| Premium            | Up to 1 000 000  | \$59              |
+| Enterprise Small   | Up to 2 000 000  | \$84              |
+| Enterprise Medium  | Up to 5 000 000  | \$110             |
+| Enterprise Large   | Up to 10 000 000 | \$150             |
+| Enterprise X-Large | Over 10 000 000  | Contact sales     |   
+
+### Pros
+- Fully open source and self-hostable so you keep full control of your data  
+- Cookie-free tracking that is GDPR/CCPA compliant by design  
+- Clean, simple dashboard with user flows, alerts, exports, and performance monitoring  
+- No limits on sites or data exports in any plan  
+
+### Cons
+- Hosted plans use usage-based tiers, so costs rise with traffic  
+- Self-hosting requires setup, maintenance, and hosting infrastructure  
+- Lacks advanced features like session replay or heatmaps  
+- Smaller community compared to older analytics platforms  
+
+### FAQ
+
+<Faqs>
+<FaqItem question="How does Swetrix pricing work after the free trial?">
+After your 14-day trial, you choose the plan that covers your monthly events. If you exceed your plan's limit, you move up to the next tier or contact sales for a custom enterprise plan.
+</FaqItem>
+<FaqItem question="What's the difference between Swetrix and OpenPanel?">
+Swetrix is a cookieless, open-source web analytics tool focused on pageviews, events, performance, and user flows. OpenPanel also tracks product events and sessions, offers real-time dashboards, individual user views, and multiple SDKs, all cookie-free and GDPR compliant.
+</FaqItem>
+</Faqs>
+
+### Alternative to Swetrix
+**Plausible Analytics**  
+- Open-source, privacy-first web analytics with flat pricing  
+- Tracks pageviews and goals with no cookies required  
+- Self-host for free or start hosted plans at \$9/month for 10 000 pageviews  
+- Simple setup and predictable costs  

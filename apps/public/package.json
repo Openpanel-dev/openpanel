@@ -14,6 +14,7 @@
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "@number-flow/react": "0.3.5",
     "@openpanel/nextjs": "^1.0.5",
+    "@openpanel/payments": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",
     "@openstatus/react": "0.0.3",
     "@radix-ui/react-accordion": "1.2.3",
