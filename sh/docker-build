@@ -21,7 +21,7 @@ fi
 if [ -z "$PRERELEASE" ]; then
     read -p "You're building WITHOUT any pre-release ($VERSION). Do you wish to continue (y/N)? " -n 1 -r
 else
-    read -p "You're building WITH pre-release ($VERSION-$PRERELEASE). Do you wish to continue (y/N)? " -n 1 -r
+    read -p "You're building WITH pre-release ($VERSION). Do you wish to continue (y/N)? " -n 1 -r
 fi
 echo    # Move to a new line
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -41,12 +41,12 @@ build_image() {
     local full_version="$image_name:$VERSION"
 
     if [ -n "$PRERELEASE" ]; then
-        full_version="$full_version-$PRERELEASE"
         echo "(pre-release) Building multi-architecture image for $full_version"
         docker buildx build \
             --platform linux/amd64,linux/arm64 \
             -t "$full_version" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+            --build-arg NEXT_PUBLIC_SELF_HOSTED="true" \
             -f "apps/$app/Dockerfile" \
             --push \
             .
@@ -57,6 +57,7 @@ build_image() {
             -t "$full_version" \
             -t "$image_name:latest" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+            --build-arg NEXT_PUBLIC_SELF_HOSTED="true" \
             -f "apps/$app/Dockerfile" \
             --push \
             .
