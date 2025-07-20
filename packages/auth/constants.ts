@@ -1,8 +1,7 @@
-// Sorry co.uk, but you're not a top domain
 const parseCookieDomain = (url: string) => {
   const domain = new URL(url);
   return {
-    domain: domain.hostname.split('.').slice(-2).join('.'),
+    domain: domain.hostname,
     secure: domain.protocol === 'https:',
   };
 };
