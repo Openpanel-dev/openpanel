@@ -1,3 +1,5 @@
+'use client';
+
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -12,8 +14,9 @@ import {
 import { useProfileProperties } from '@/hooks/useProfileProperties';
 import { useProfileValues } from '@/hooks/useProfileValues';
 import { usePropertyValues } from '@/hooks/usePropertyValues';
-import { XIcon } from 'lucide-react';
+import { XIcon, MinusIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
+import { useState } from 'react';
 
 import type {
   IChartEventFilter,
@@ -44,18 +47,29 @@ export function OverviewFiltersDrawerContent({
 }: OverviewFiltersDrawerContentProps) {
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
+  const [showNegativeFilter, setShowNegativeFilter] = useState(false);
   const eventNames = useEventNames(projectId);
   const eventProperties = useEventProperties({ projectId, event: event[0] });
   const profileProperties = useProfileProperties(projectId);
   const properties = mode === 'events' ? eventProperties : profileProperties;
 
-  // Filter events and format them for display
-  const filteredEvents = eventNames
+  // Filter events for positive filtering
+  const positiveEvents = eventNames.filter((item) => !excludePropertyFilter(item.name));
+
+  // Create negative events for the negative filter popup
+  const negativeEvents = eventNames
     .filter((item) => !excludePropertyFilter(item.name))
     .map((item) => ({
       ...item,
-      displayName: item.name.startsWith('!') ? `Not ${item.name.slice(1)}` : item.name,
+      name: `!${item.name}`,
+      displayName: `Not ${item.name}`,
     }));
+
+  const handleNegativeEventSelect = (negativeEvent: string) => {
+    const eventName = negativeEvent.slice(1); // Remove the '!' prefix
+    setEvent((prev) => [...prev, negativeEvent]);
+    setShowNegativeFilter(false);
+  };
 
   return (
     <div>
@@ -67,15 +81,33 @@ export function OverviewFiltersDrawerContent({
         <div className="flex flex-col gap-4 p-4">
           <OriginFilter />
           {enableEventsFilter && (
-            <ComboboxEvents
-              className="w-full"
-              value={event}
-              onChange={setEvent}
-              multiple
-              items={filteredEvents}
-              placeholder="Select event"
-              maxDisplayItems={2}
-            />
+            <div className="flex gap-2">
+              <ComboboxEvents
+                className="flex-1"
+                value={event.filter(e => !e.startsWith('!'))}
+                onChange={(value: string | string[]) => {
+                  // Only allow positive events in the main dropdown
+                  const positiveEvents = Array.isArray(value) 
+                    ? value.filter(e => !e.startsWith('!'))
+                    : value.startsWith('!') ? [] : [value];
+                  setEvent(positiveEvents);
+                }}
+                multiple
+                items={positiveEvents}
+                placeholder="Select events"
+                maxDisplayItems={2}
+              />
+              {mode === 'profiles' && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowNegativeFilter(true)}
+                  title="Add negative filter"
+                >
+                  <MinusIcon className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           )}
           <Combobox
             className="w-full"
@@ -124,6 +156,37 @@ export function OverviewFiltersDrawerContent({
             );
           })}
       </div>
+
+      {/* Negative Filter Popup */}
+      {showNegativeFilter && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border rounded-lg p-6 w-96 max-h-96 overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Add Negative Filter</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowNegativeFilter(false)}
+              >
+                <XIcon className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {negativeEvents.map((item) => (
+                <Button
+                  key={item.name}
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => handleNegativeEventSelect(item.name)}
+                >
+                  <MinusIcon className="h-4 w-4 mr-2" />
+                  {item.displayName}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

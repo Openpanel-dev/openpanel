@@ -5,18 +5,5 @@ export function useEventNames(projectId: string) {
     projectId,
   });
 
-  const events = query.data ?? [];
-  
-  // Add negative versions of events for filtering
-  const eventsWithNegatives = [
-    ...events,
-    ...events.map(event => ({
-      ...event,
-      name: `!${event.name}`,
-      count: event.count,
-      meta: event.meta,
-    }))
-  ];
-
-  return eventsWithNegatives;
+  return query.data ?? [];
 }
