@@ -7,6 +7,8 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "test": "vitest",
+    "gen:bots": "pnpm -r --filter api gen:bots",
+    "gen:referrers": "pnpm -r --filter worker gen:referrers",
     "dock:up": "docker compose up -d",
     "dock:down": "docker compose down",
     "dock:ch": "docker compose exec -it op-ch clickhouse-client -d openpanel",
