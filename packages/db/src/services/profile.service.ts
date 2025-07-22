@@ -13,6 +13,7 @@ import {
   formatClickhouseDate,
 } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
+import { getEventFiltersWhereClause } from './chart.service';
 
 export type IProfileMetrics = {
   lastSeen: string;
@@ -22,6 +23,7 @@ export type IProfileMetrics = {
   durationAvg: number;
   durationP90: number;
 };
+
 export function getProfileMetrics(profileId: string, projectId: string) {
   return chQuery<IProfileMetrics>(`
     WITH lastSeen AS (
@@ -69,7 +71,7 @@ export async function getProfileById(id: string, projectId: string) {
   return transformProfile(profile);
 }
 
-export const getProfileByIdCached = getProfileById; //cacheable(getProfileById, 60 * 30);
+//cacheable(getProfileById, 60 * 30);
 
 interface GetProfileListOptions {
   projectId: string;
@@ -77,6 +79,7 @@ interface GetProfileListOptions {
   cursor?: number;
   filters?: IChartEventFilter[];
   search?: string;
+  events?: string[];
 }
 
 export async function getProfiles(ids: string[], projectId: string) {
@@ -114,17 +117,61 @@ export async function getProfileList({
   projectId,
   filters,
   search,
+  events,
 }: GetProfileListOptions) {
-  const { sb, getSql } = createSqlBuilder();
+  const { sb, getSql, join } = createSqlBuilder();
   sb.from = `${TABLE_NAMES.profiles} FINAL`;
   sb.select.all = '*';
   sb.where.project_id = `project_id = ${escape(projectId)}`;
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
+  
   if (search) {
     sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
   }
+  
+  if (events && events.length > 0) {
+    // Separate positive and negative events
+    const positiveEvents = events.filter(event => !event.startsWith('!'));
+    const negativeEvents = events.filter(event => event.startsWith('!')).map(event => event.slice(1));
+    
+    // Build event filtering conditions
+    const eventConditions = [];
+    
+    // Positive events: profiles must have at least one of these events
+    if (positiveEvents.length > 0) {
+      eventConditions.push(`id IN (SELECT DISTINCT profile_id FROM ${TABLE_NAMES.events} WHERE name IN (${join(
+        positiveEvents.map((event) => escape(event)),
+        ',',
+      )}) AND project_id = ${escape(projectId)})`);
+    }
+    
+    // Negative events: profiles must NOT have any of these events
+    if (negativeEvents.length > 0) {
+      eventConditions.push(`id NOT IN (SELECT DISTINCT profile_id FROM ${TABLE_NAMES.events} WHERE name IN (${join(
+        negativeEvents.map((event) => escape(event)),
+        ',',
+      )}) AND project_id = ${escape(projectId)})`);
+    }
+    
+    // Combine all event conditions
+    if (eventConditions.length > 0) {
+      sb.where.events = eventConditions.join(' AND ');
+    }
+  }
+  
+  if (filters && filters.length > 0) {
+    // For profile filters, we need to join with events table to apply filters
+    const filterWhereClause = getEventFiltersWhereClause(filters);
+    if (Object.keys(filterWhereClause).length > 0) {
+      sb.where.filters = `id IN (SELECT DISTINCT profile_id FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND ${join(
+        Object.values(filterWhereClause),
+        ' AND ',
+      )})`;
+    }
+  }
+  
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
 }

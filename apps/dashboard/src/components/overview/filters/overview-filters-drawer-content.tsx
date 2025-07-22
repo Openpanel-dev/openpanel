@@ -44,10 +44,18 @@ export function OverviewFiltersDrawerContent({
 }: OverviewFiltersDrawerContentProps) {
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
-  const eventNames = useEventNames({ projectId });
+  const eventNames = useEventNames(projectId);
   const eventProperties = useEventProperties({ projectId, event: event[0] });
   const profileProperties = useProfileProperties(projectId);
   const properties = mode === 'events' ? eventProperties : profileProperties;
+
+  // Filter events and format them for display
+  const filteredEvents = eventNames
+    .filter((item) => !excludePropertyFilter(item.name))
+    .map((item) => ({
+      ...item,
+      displayName: item.name.startsWith('!') ? `Not ${item.name.slice(1)}` : item.name,
+    }));
 
   return (
     <div>
@@ -64,9 +72,7 @@ export function OverviewFiltersDrawerContent({
               value={event}
               onChange={setEvent}
               multiple
-              items={eventNames.filter(
-                (item) => !excludePropertyFilter(item.name),
-              )}
+              items={filteredEvents}
               placeholder="Select event"
               maxDisplayItems={2}
             />
@@ -108,8 +114,14 @@ export function OverviewFiltersDrawerContent({
                   setFilter(filter.name, filter.value, operator);
                 }}
               />
-            ) : /* TODO: Implement profile filters */
-            null;
+            ) : (
+              <FilterOptionProfile
+                key={filter.name}
+                projectId={projectId}
+                setFilter={setFilter}
+                {...filter}
+              />
+            );
           })}
       </div>
     </div>

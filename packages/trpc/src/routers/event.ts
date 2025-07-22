@@ -31,6 +31,15 @@ import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 import { getChartStartEndDate } from './chart.helpers';
 
 export const eventRouter = createTRPCRouter({
+  names: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input: { projectId } }) => {
+      const events = await chQuery<{ name: string }>(
+        `SELECT DISTINCT name FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} ORDER BY name`,
+      );
+      return events.map((event) => event.name);
+    }),
+
   updateEventMeta: protectedProcedure
     .input(
       z.object({

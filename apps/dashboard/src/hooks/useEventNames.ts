@@ -1,10 +1,22 @@
 import { api } from '@/trpc/client';
 
-export function useEventNames(
-  params: Parameters<typeof api.chart.events.useQuery>[0],
-) {
-  const query = api.chart.events.useQuery(params, {
-    staleTime: 1000 * 60 * 10,
+export function useEventNames(projectId: string) {
+  const query = api.chart.events.useQuery({
+    projectId,
   });
-  return query.data ?? [];
+
+  const events = query.data ?? [];
+  
+  // Add negative versions of events for filtering
+  const eventsWithNegatives = [
+    ...events,
+    ...events.map(event => ({
+      ...event,
+      name: `!${event.name}`,
+      count: event.count,
+      meta: event.meta,
+    }))
+  ];
+
+  return eventsWithNegatives;
 }

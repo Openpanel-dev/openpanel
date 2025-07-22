@@ -46,7 +46,7 @@ import { TooltipComplete } from '../tooltip-complete';
  */
 export interface ComboboxProps<T, TMultiple extends boolean = false> {
   placeholder: string;
-  items: RouterOutputs['chart']['events'];
+  items: (RouterOutputs['chart']['events'][0] & { displayName?: string })[];
   value: TMultiple extends true ? T[] : T | null | undefined;
   onChange: TMultiple extends true ? (value: T[]) => void : (value: T) => void;
   className?: string;
@@ -121,7 +121,7 @@ export function ComboboxEvents<
 
     const firstValue = selectedValues[0];
     const item = firstValue ? find(firstValue) : null;
-    let label = item?.name || firstValue;
+    let label = item?.displayName || item?.name || firstValue;
 
     if (multiple && selectedValues.length > 1) {
       label += ` +${selectedValues.length - 1}`;
@@ -208,7 +208,7 @@ export function ComboboxEvents<
                       <EventIcon name={item.name} meta={item.meta} size="sm" />
                     )}
                     <span className="font-medium flex-1 truncate">
-                      {item.name === '*' ? 'Any events' : item.name}
+                      {item.name === '*' ? 'Any events' : (item.displayName || item.name)}
                     </span>
                     <span className="text-muted-foreground font-mono font-medium">
                       {number.short(item.count)}

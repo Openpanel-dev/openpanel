@@ -26,17 +26,22 @@ export function OverviewFiltersButtons({
   if (filters.length === 0 && events.length === 0) return null;
   return (
     <div className={cn('flex flex-wrap gap-2', className)}>
-      {events.map((event) => (
-        <Button
-          key={event}
-          size="sm"
-          variant="outline"
-          icon={X}
-          onClick={() => setEvents((p) => p.filter((e) => e !== event))}
-        >
-          <strong className="font-semibold">{event}</strong>
-        </Button>
-      ))}
+      {events.map((event) => {
+        const isNegative = event.startsWith('!');
+        const displayName = isNegative ? `Not ${event.slice(1)}` : event;
+        
+        return (
+          <Button
+            key={event}
+            size="sm"
+            variant={isNegative ? "destructive" : "outline"}
+            icon={X}
+            onClick={() => setEvents((p) => p.filter((e) => e !== event))}
+          >
+            <strong className="font-semibold">{displayName}</strong>
+          </Button>
+        );
+      })}
       {filters.map((filter) => {
         return (
           <Button
