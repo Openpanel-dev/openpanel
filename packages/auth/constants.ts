@@ -1,11 +1,4 @@
-// Sorry co.uk, but you're not a top domain
-const parseCookieDomain = (url: string) => {
-  const domain = new URL(url);
-  return {
-    domain: domain.hostname.split('.').slice(-2).join('.'),
-    secure: domain.protocol === 'https:',
-  };
-};
+import { parseCookieDomain } from './parse-cookie-domain';
 
 const parsed = parseCookieDomain(process.env.NEXT_PUBLIC_DASHBOARD_URL ?? '');
 
