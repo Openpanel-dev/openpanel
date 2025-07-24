@@ -23,7 +23,6 @@ export type IProfileMetrics = {
   durationAvg: number;
   durationP90: number;
 };
-
 export function getProfileMetrics(profileId: string, projectId: string) {
   return chQuery<IProfileMetrics>(`
     WITH lastSeen AS (
@@ -71,6 +70,7 @@ export async function getProfileById(id: string, projectId: string) {
   return transformProfile(profile);
 }
 
+export const getProfileByIdCached = getProfileById;
 //cacheable(getProfileById, 60 * 30);
 
 interface GetProfileListOptions {
