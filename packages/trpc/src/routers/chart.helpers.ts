@@ -586,9 +586,12 @@ export async function getChart(input: IChartInput) {
 
       return {
         id: getSerieId(serie),
-        names: includeEventName
-          ? [`(${alphaId}) ${serie.name[0]}`, ...serie.name.slice(1)]
-          : serie.name,
+        names:
+          input.breakdowns.length === 0 && serie.event.displayName
+            ? [serie.event.displayName]
+            : includeEventName
+              ? [`(${alphaId}) ${serie.name[0]}`, ...serie.name.slice(1)]
+              : serie.name,
         event,
         metrics: {
           ...metrics,
