@@ -3,7 +3,7 @@ import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { DateTime, toDots } from '@openpanel/common';
-import { cacheable, getCache } from '@openpanel/redis';
+import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
@@ -19,7 +19,7 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import type { IServiceProfile } from './profile.service';
+import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
 import { getProfileById, getProfiles, upsertProfile } from './profile.service';
 
 export type IImportedEvent = Omit<
@@ -325,7 +325,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
   await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
 
   if (payload.profileId) {
-    const profile = {
+    const profile: IServiceUpsertProfile = {
       id: String(payload.profileId),
       isExternal: payload.profileId !== payload.deviceId,
       projectId: payload.projectId,

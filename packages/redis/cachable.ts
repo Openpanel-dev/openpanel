@@ -87,6 +87,12 @@ export function cacheable<T extends (...args: any) => any>(
     const key = getKey(...args);
     return getRedisCache().del(key);
   };
+  cachedFn.set =
+    (...args: Parameters<T>) =>
+    async (payload: Awaited<ReturnType<T>>) => {
+      const key = getKey(...args);
+      return getRedisCache().setex(key, expireInSec, JSON.stringify(payload));
+    };
 
   return cachedFn;
 }

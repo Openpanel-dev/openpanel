@@ -86,6 +86,10 @@ export default function AddNotificationRule({ rule }: Props) {
   });
 
   const onSubmit: SubmitHandler<IForm> = (data) => {
+    if (!data.config.events[0]?.name) {
+      toast.error('At least one event is required');
+      return;
+    }
     mutation.mutate(data);
   };
 
@@ -182,6 +186,10 @@ export default function AddNotificationRule({ rule }: Props) {
                 <li>
                   <code>{'{{properties.your.property}}'}</code> - Get the value
                   of a custom property
+                </li>
+                <li>
+                  <code>{'{{profile.firstName}}'}</code> - Get the value of a
+                  profile property
                 </li>
                 <li>
                   <div className="flex gap-x-2 flex-wrap">
