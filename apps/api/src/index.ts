@@ -191,7 +191,10 @@ const startServer = async () => {
       instance.get('/healthz/live', liveness);
       instance.get('/healthz/ready', readiness);
       instance.get('/', (_request, reply) =>
-        reply.send({ name: 'openpanel sdk api' }),
+        reply.send({
+          status: 'ok',
+          message: 'Successfully running OpenPanel.dev API',
+        }),
       );
     });
 

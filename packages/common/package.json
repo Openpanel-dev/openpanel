@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/common",
   "version": "0.0.1",
+  "type": "module",
   "main": "index.ts",
   "scripts": {
     "test": "vitest",

@@ -1,8 +1,8 @@
 import { createLogger } from '@openpanel/logger';
-import { type Organization, PrismaClient } from '@prisma/client';
 import { readReplicas } from '@prisma/extension-read-replicas';
+import { type Organization, PrismaClient } from './generated/prisma/client';
 
-export * from '@prisma/client';
+export * from './generated/prisma/client';
 
 const logger = createLogger({ name: 'db' });
 

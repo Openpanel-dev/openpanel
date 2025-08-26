@@ -1,4 +1,4 @@
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 import { TABLE_NAMES, chQuery } from '../clickhouse/client';
 
@@ -16,7 +16,7 @@ WITH
           profile_id,
           max(toWeek(created_at)) AS last_seen
       FROM ${TABLE_NAMES.events}
-      WHERE (project_id = ${escape(projectId)}) AND (profile_id != device_id)
+      WHERE (project_id = ${sqlstring.escape(projectId)}) AND (profile_id != device_id)
       GROUP BY profile_id
   ),
   n AS
@@ -25,7 +25,7 @@ WITH
           profile_id,
           min(toWeek(created_at)) AS first_seen
       FROM ${TABLE_NAMES.events}
-      WHERE (project_id = ${escape(projectId)}) AND (profile_id != device_id)
+      WHERE (project_id = ${sqlstring.escape(projectId)}) AND (profile_id != device_id)
       GROUP BY profile_id
   ),
   a AS
@@ -85,7 +85,7 @@ export function getRetentionSeries({ projectId }: IGetWeekRetentionInput) {
       AND toStartOfWeek(events.created_at) = toStartOfWeek(future_events.created_at - toIntervalWeek(1))
       AND future_events.profile_id != future_events.device_id
     WHERE 
-      project_id = ${escape(projectId)} 
+      project_id = ${sqlstring.escape(projectId)} 
       AND events.profile_id != events.device_id
     GROUP BY 1
     ORDER BY date ASC`;
@@ -122,11 +122,11 @@ export function getRollingActiveUsers({
       (
           SELECT *
           FROM ${TABLE_NAMES.dau_mv}
-          WHERE project_id = ${escape(projectId)}
+          WHERE project_id = ${sqlstring.escape(projectId)}
       )
       ARRAY JOIN range(${days}) AS n
     )
-    WHERE project_id = ${escape(projectId)}
+    WHERE project_id = ${sqlstring.escape(projectId)}
     GROUP BY date`;
 
   return chQuery<IServiceRetentionRollingActiveUsers>(sql);
@@ -141,7 +141,7 @@ export function getRetentionLastSeenSeries({
             max(created_at) AS last_active,
             profile_id
         FROM ${TABLE_NAMES.events}
-        WHERE (project_id = ${escape(projectId)}) AND (device_id != profile_id)
+        WHERE (project_id = ${sqlstring.escape(projectId)}) AND (device_id != profile_id)
         GROUP BY profile_id
     )
     SELECT

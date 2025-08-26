@@ -1,12 +1,13 @@
 {
   "name": "@openpanel/worker",
   "version": "0.0.3",
+  "type": "module",
   "scripts": {
     "test": "vitest",
-    "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
+    "dev": "dotenv -e ../../.env -c -v WATCH=1 tsdown",
     "testing": "WORKER_PORT=9999 pnpm dev",
     "start": "node dist/index.js",
-    "build": "rm -rf dist && tsup",
+    "build": "rm -rf dist && tsdown",
     "typecheck": "tsc --noEmit",
     "gen:referrers": "jiti scripts/get-referrers.ts && biome format --write ./src/referrers/index.ts"
   },
@@ -37,7 +38,7 @@
     "@types/source-map-support": "^0.5.10",
     "@types/sqlstring": "^2.3.2",
     "@types/uuid": "^9.0.8",
-    "tsup": "^7.2.0",
+    "tsdown": "^0.14.2",
     "typescript": "^5.2.2"
   }
 }

@@ -1,5 +1,5 @@
 import { path, assocPath, last, mergeDeepRight } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { DateTime, toDots } from '@openpanel/common';
@@ -394,7 +394,7 @@ export async function getEventList({
   }
 
   sb.limit = take;
-  sb.where.projectId = `project_id = ${escape(projectId)}`;
+  sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
   const select = mergeDeepRight(
     {
       id: true,
@@ -503,7 +503,7 @@ export async function getEventList({
   }
 
   if (profileId) {
-    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND device_id != '' AND profile_id = ${sqlstring.escape(profileId)} group by did) OR profile_id = ${sqlstring.escape(profileId)})`;
   }
 
   if (startDate && endDate) {
@@ -543,9 +543,9 @@ export async function getEventsCount({
   endDate,
 }: Omit<GetEventListOptions, 'cursor' | 'take'>) {
   const { sb, getSql, join } = createSqlBuilder();
-  sb.where.projectId = `project_id = ${escape(projectId)}`;
+  sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
   if (profileId) {
-    sb.where.profileId = `profile_id = ${escape(profileId)}`;
+    sb.where.profileId = `profile_id = ${sqlstring.escape(profileId)}`;
   }
 
   if (startDate && endDate) {
@@ -614,7 +614,7 @@ export async function getTopPages({
     SELECT path, count(*) as count, project_id, first_value(created_at) as first_seen, last_value(properties['__title']) as title, origin
     FROM ${TABLE_NAMES.events} 
     WHERE name = 'screen_view' 
-    AND  project_id = ${escape(projectId)} 
+    AND  project_id = ${sqlstring.escape(projectId)} 
     AND created_at > now() - INTERVAL 30 DAY 
     ${search ? `AND path ILIKE '%${search}%'` : ''}
     GROUP BY path, project_id, origin

@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/cli",
   "version": "0.0.1-beta",
+  "type": "module",
   "module": "index.ts",
   "bin": {
     "openpanel": "dist/bin/cli.js"

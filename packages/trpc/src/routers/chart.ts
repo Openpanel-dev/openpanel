@@ -1,5 +1,5 @@
 import { flatten, map, pipe, prop, range, sort, uniq } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { z } from 'zod';
 
 import {
@@ -61,7 +61,7 @@ export const chartRouter = createTRPCRouter({
     .query(async ({ input: { projectId } }) => {
       const [events, meta] = await Promise.all([
         chQuery<{ name: string; count: number }>(
-          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`,
+          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`,
         ),
         getEventMetasCached(projectId),
       ]);
@@ -376,9 +376,9 @@ export const chartRouter = createTRPCRouter({
 
       const whereEventNameIs = (event: string[]) => {
         if (event.length === 1) {
-          return `name = ${escape(event[0])}`;
+          return `name = ${sqlstring.escape(event[0])}`;
         }
-        return `name IN (${event.map((e) => escape(e)).join(',')})`;
+        return `name IN (${event.map((e) => sqlstring.escape(e)).join(',')})`;
       };
 
       const cohortQuery = `
@@ -390,7 +390,7 @@ export const chartRouter = createTRPCRouter({
             ${sqlToStartOf}(created_at) AS cohort_interval
           FROM ${TABLE_NAMES.cohort_events_mv}
           WHERE ${whereEventNameIs(firstEvent)}
-            AND project_id = ${escape(projectId)}
+            AND project_id = ${sqlstring.escape(projectId)}
             AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}')
         ),
         last_event AS
@@ -401,7 +401,7 @@ export const chartRouter = createTRPCRouter({
                 toDate(created_at) AS event_date
             FROM cohort_events_mv
             WHERE ${whereEventNameIs(secondEvent)}
-            AND project_id = ${escape(projectId)}
+            AND project_id = ${sqlstring.escape(projectId)}
             AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}') + INTERVAL ${diffInterval} ${sqlInterval}
         ),
         retention_matrix AS

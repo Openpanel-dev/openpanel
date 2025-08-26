@@ -1,5 +1,5 @@
 import { createBullBoard } from '@bull-board/api';
-import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { BullMQAdapter } from '@bull-board/api/dist/src/queueAdapters/bullMQ.js';
 import { ExpressAdapter } from '@bull-board/express';
 import express from 'express';
 

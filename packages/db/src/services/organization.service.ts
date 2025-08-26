@@ -1,6 +1,6 @@
 import { DateTime } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { chQuery, formatClickhouseDate } from '../clickhouse/client';
 import type { Invite, Prisma, ProjectAccess, User } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -201,8 +201,8 @@ export async function getOrganizationBillingEventsCount(
   const { sb, getSql } = createSqlBuilder();
 
   sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => escape(project.id)).join(',')})`;
-  sb.where.createdAt = `created_at BETWEEN ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
+  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
+  sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
 
   const res = await chQuery<{ count: number }>(getSql());
   return res[0]?.count;
@@ -224,9 +224,9 @@ export async function getOrganizationBillingEventsCountSerie(
   sb.select.count = 'COUNT(*) AS count';
   sb.select.day = `toDate(toStartOf${interval.slice(0, 1).toUpperCase() + interval.slice(1)}(created_at)) AS ${interval}`;
   sb.groupBy.day = interval;
-  sb.orderBy.day = `${interval} WITH FILL FROM toDate(${escape(formatClickhouseDate(startDate, true))}) TO toDate(${escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => escape(project.id)).join(',')})`;
-  sb.where.createdAt = `${interval} BETWEEN ${escape(formatClickhouseDate(startDate, true))} AND ${escape(formatClickhouseDate(endDate, true))}`;
+  sb.orderBy.day = `${interval} WITH FILL FROM toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) TO toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
+  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
+  sb.where.createdAt = `${interval} BETWEEN ${sqlstring.escape(formatClickhouseDate(startDate, true))} AND ${sqlstring.escape(formatClickhouseDate(endDate, true))}`;
 
   const res = await chQuery<{ count: number; day: string }>(getSql());
   return res;

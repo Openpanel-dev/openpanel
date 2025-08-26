@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import https from 'node:https';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import zlib from 'node:zlib';
 import * as tar from 'tar';
 import type { Parser } from 'tar';

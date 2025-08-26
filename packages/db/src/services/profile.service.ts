@@ -1,5 +1,5 @@
 import { omit, uniq } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 import { strip, toObject } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
@@ -25,19 +25,19 @@ export type IProfileMetrics = {
 export function getProfileMetrics(profileId: string, projectId: string) {
   return chQuery<IProfileMetrics>(`
     WITH lastSeen AS (
-      SELECT max(created_at) as lastSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT max(created_at) as lastSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     firstSeen AS (
-      SELECT min(created_at) as firstSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT min(created_at) as firstSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     screenViews AS (
-      SELECT count(*) as screenViews FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT count(*) as screenViews FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     sessions AS (
-      SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     duration AS (
-      SELECT avg(duration) as durationAvg, quantilesExactInclusive(0.9)(duration)[1] as durationP90 FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND duration != 0 AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT avg(duration) as durationAvg, quantilesExactInclusive(0.9)(duration)[1] as durationP90 FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND duration != 0 AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     )
     SELECT lastSeen, firstSeen, screenViews, sessions, durationAvg, durationP90 FROM lastSeen, firstSeen, screenViews,sessions, duration
   `).then((data) => data[0]!);
@@ -59,7 +59,7 @@ export async function getProfileById(id: string, projectId: string) {
       last_value(is_external) as is_external, 
       last_value(properties) as properties, 
       last_value(created_at) as created_at
-    FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`,
+    FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${sqlstring.escape(String(id))} AND project_id = ${sqlstring.escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`,
   );
 
   if (!profile) {
@@ -99,8 +99,8 @@ export async function getProfiles(ids: string[], projectId: string) {
       any(created_at) as created_at
     FROM ${TABLE_NAMES.profiles}
     WHERE 
-      project_id = ${escape(projectId)} AND
-      id IN (${filteredIds.map((id) => escape(id)).join(',')})
+      project_id = ${sqlstring.escape(projectId)} AND
+      id IN (${filteredIds.map((id) => sqlstring.escape(id)).join(',')})
     GROUP BY id, project_id
     `,
   );
@@ -118,7 +118,7 @@ export async function getProfileList({
   const { sb, getSql } = createSqlBuilder();
   sb.from = `${TABLE_NAMES.profiles} FINAL`;
   sb.select.all = '*';
-  sb.where.project_id = `project_id = ${escape(projectId)}`;
+  sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
@@ -136,7 +136,7 @@ export async function getProfileListCount({
   const { sb, getSql } = createSqlBuilder();
   sb.from = 'profiles';
   sb.select.count = 'count(id) as count';
-  sb.where.project_id = `project_id = ${escape(projectId)}`;
+  sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.groupBy.project_id = 'project_id';
   const data = await chQuery<{ count: number }>(getSql());
   return data[0]?.count ?? 0;

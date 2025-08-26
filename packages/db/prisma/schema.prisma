@@ -2,12 +2,16 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
 }
 
-generator json {
-  provider = "prisma-json-types-generator"
-}
+// generator json {
+//   provider = "prisma-json-types-generator"
+// }
 
 datasource db {
   provider  = "postgresql"

@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { z } from 'zod';
 
 import {
@@ -188,7 +188,7 @@ export const eventRouter = createTRPCRouter({
       }
 
       const items = await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE ${cursor ? `created_at <= '${formatClickhouseDate(cursor)}' AND` : ''} project_id = ${escape(projectId)} AND name IN (${conversions.map((c) => escape(c.name)).join(', ')}) ORDER BY toDate(created_at) DESC, created_at DESC LIMIT 50;`,
+        `SELECT * FROM ${TABLE_NAMES.events} WHERE ${cursor ? `created_at <= '${formatClickhouseDate(cursor)}' AND` : ''} project_id = ${sqlstring.escape(projectId)} AND name IN (${conversions.map((c) => sqlstring.escape(c.name)).join(', ')}) ORDER BY toDate(created_at) DESC, created_at DESC LIMIT 50;`,
         {
           profile: true,
           meta: true,
@@ -243,12 +243,12 @@ export const eventRouter = createTRPCRouter({
           path: string;
           created_at: string;
         }>(
-          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`,
+          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${sqlstring.escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`,
         ),
         chQuery<{
           count: number;
         }>(
-          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)}`,
+          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${sqlstring.escape(projectId)}`,
         ),
       ]);
 
@@ -303,7 +303,7 @@ export const eventRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       const res = await chQuery<{ origin: string }>(
-        `SELECT DISTINCT origin FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(
+        `SELECT DISTINCT origin FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(
           input.projectId,
         )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY ORDER BY origin ASC`,
       );

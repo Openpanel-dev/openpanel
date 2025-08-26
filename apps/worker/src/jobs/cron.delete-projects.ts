@@ -2,7 +2,7 @@ import { logger } from '@/utils/logger';
 import { TABLE_NAMES, ch, db } from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
 import type { Job } from 'bullmq';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 export async function deleteProjects(job: Job<CronQueuePayload>) {
   const projects = await db.project.findMany({
@@ -33,7 +33,7 @@ export async function deleteProjects(job: Job<CronQueuePayload>) {
     job.log(`Delete project: "${project.id}"`);
   });
 
-  const where = `project_id IN (${projects.map((project) => escape(project.id)).join(',')})`;
+  const where = `project_id IN (${projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
   const tables = [
     TABLE_NAMES.events,
     TABLE_NAMES.profiles,

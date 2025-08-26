@@ -1,11 +1,12 @@
 {
   "name": "@openpanel/api",
   "version": "0.0.4",
+  "type": "module",
   "scripts": {
-    "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
+    "dev": "dotenv -e ../../.env -c -v WATCH=1 tsdown",
     "testing": "API_PORT=3333 pnpm dev",
-    "start": "node dist/index.js",
-    "build": "rm -rf dist && tsup",
+    "start": "dotenv -e ../../.env node dist/index.js",
+    "build": "rm -rf dist && tsdown",
     "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -65,7 +66,7 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.14",
     "js-yaml": "^4.1.0",
-    "tsup": "^7.2.0",
+    "tsdown": "^0.14.2",
     "typescript": "^5.2.2"
   }
 }

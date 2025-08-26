@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/constants",
   "version": "0.0.1",
+  "type": "module",
   "main": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -8,7 +9,6 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "date-fns": "^3.3.1",
-    "prisma": "^5.1.1",
     "typescript": "^5.2.2"
   }
 }

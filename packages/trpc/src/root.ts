@@ -14,7 +14,6 @@ import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
 import { shareRouter } from './routers/share';
 import { subscriptionRouter } from './routers/subscription';
-import { ticketRouter } from './routers/ticket';
 import { userRouter } from './routers/user';
 import { createTRPCRouter } from './trpc';
 /**
@@ -35,7 +34,6 @@ export const appRouter = createTRPCRouter({
   share: shareRouter,
   onboarding: onboardingRouter,
   reference: referenceRouter,
-  ticket: ticketRouter,
   notification: notificationRouter,
   integration: integrationRouter,
   auth: authRouter,
