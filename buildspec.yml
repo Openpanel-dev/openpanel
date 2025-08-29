@@ -1,0 +1,15 @@
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - export DOCKER_BUILDKIT=1
+  build:
+    commands:
+      - echo Build started on `date`
+      - python codebuild_orchestrator.py
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - if [ $CODEBUILD_BUILD_SUCCEEDING -eq 1 ]; then echo "All builds succeeded"; else echo "Build failed"; exit 1; fi
