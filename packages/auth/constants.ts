@@ -1,6 +1,6 @@
 import { parseCookieDomain } from './parse-cookie-domain';
 
-const parsed = parseCookieDomain(process.env.NEXT_PUBLIC_DASHBOARD_URL ?? '');
+const parsed = parseCookieDomain(process.env.VITE_DASHBOARD_URL ?? '');
 
 export const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
 export const COOKIE_OPTIONS = {

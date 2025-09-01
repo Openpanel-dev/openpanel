@@ -76,7 +76,7 @@ async function handleExistingUser({
     sessionToken,
     session.expiresAt,
   );
-  return reply.redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+  return reply.redirect(process.env.VITE_DASHBOARD_URL!);
 }
 
 async function handleNewUser({
@@ -138,7 +138,7 @@ async function handleNewUser({
     sessionToken,
     session.expiresAt,
   );
-  return reply.redirect(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+  return reply.redirect(process.env.VITE_DASHBOARD_URL!);
 }
 
 // Provider-specific user fetching
@@ -348,7 +348,7 @@ export async function googleCallback(req: FastifyRequest, reply: FastifyReply) {
 }
 
 function redirectWithError(reply: FastifyReply, error: LogError | unknown) {
-  const url = new URL(process.env.NEXT_PUBLIC_DASHBOARD_URL!);
+  const url = new URL(process.env.VITE_DASHBOARD_URL!);
   url.pathname = '/login';
   if (error instanceof LogError) {
     url.searchParams.set('error', error.message);

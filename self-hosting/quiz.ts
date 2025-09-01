@@ -149,11 +149,8 @@ function writeEnvFile(envs: EnvVars) {
     .replace('$REDIS_URL', envs.REDIS_URL)
     .replace('$DATABASE_URL', envs.DATABASE_URL)
     .replace('$DATABASE_URL_DIRECT', envs.DATABASE_URL)
-    .replace('$NEXT_PUBLIC_DASHBOARD_URL', stripTrailingSlash(envs.DOMAIN_NAME))
-    .replace(
-      '$NEXT_PUBLIC_API_URL',
-      `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`,
-    )
+    .replace('$VITE_DASHBOARD_URL', stripTrailingSlash(envs.DOMAIN_NAME))
+    .replace('$VITE_API_URL', `${stripTrailingSlash(envs.DOMAIN_NAME)}/api`)
     .replace('$RESEND_API_KEY', envs.RESEND_API_KEY)
     .replace('$EMAIL_SENDER', envs.EMAIL_SENDER);
 

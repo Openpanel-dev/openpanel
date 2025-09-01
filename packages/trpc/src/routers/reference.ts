@@ -13,6 +13,33 @@ import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const referenceRouter = createTRPCRouter({
+  getReferences: protectedProcedure
+    .input(
+      z.object({
+        where: z.object({
+          projectId: z.string(),
+        }),
+        take: z.number().optional(),
+        skip: z.number().optional(),
+      }),
+    )
+    .query(async ({ input: { where, take, skip }, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: where.projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      return getReferences({
+        where,
+        take,
+        skip,
+      });
+    }),
+
   create: protectedProcedure
     .input(zCreateReference)
     .mutation(

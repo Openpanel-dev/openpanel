@@ -33,10 +33,7 @@ async function createOrGetOrganization(
       },
     });
 
-    if (
-      process.env.NEXT_PUBLIC_SELF_HOSTED !== 'true' &&
-      !process.env.SELF_HOSTED
-    ) {
+    if (process.env.VITE_SELF_HOSTED !== 'true' && !process.env.SELF_HOSTED) {
       await addTrialEndingSoonJob(
         organization.id,
         1000 * 60 * 60 * 24 * TRIAL_DURATION_IN_DAYS * 0.9,

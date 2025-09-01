@@ -4,7 +4,7 @@ export const dynamic = 'static';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    id: process.env.NEXT_PUBLIC_DASHBOARD_URL,
+    id: process.env.VITE_DASHBOARD_URL,
     name: 'Openpanel.dev',
     short_name: 'Openpanel.dev',
     description: '',

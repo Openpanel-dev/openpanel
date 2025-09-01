@@ -52,6 +52,53 @@ function utc(date: string | Date) {
 const cacher = cacheMiddleware(60);
 
 export const chartRouter = createTRPCRouter({
+  projectCard: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input: { projectId } }) => {
+      const chart = await chQuery<{ value: number; date: Date }>(
+        `SELECT
+            uniqHLL12(profile_id) as value,
+            toStartOfDay(created_at) as date
+        FROM ${TABLE_NAMES.sessions}
+        WHERE 
+            sign = 1 AND 
+            project_id = ${sqlstring.escape(projectId)} AND 
+            created_at >= now() - interval '1 month'
+        GROUP BY date
+        ORDER BY date ASC
+        WITH FILL FROM toStartOfDay(now() - interval '1 month') 
+        TO toStartOfDay(now()) 
+        STEP INTERVAL 1 day
+      `,
+      );
+
+      const [metrics] = await chQuery<{
+        months_3: number;
+        month: number;
+        day: number;
+      }>(
+        `
+          SELECT
+        uniqHLL12(if(created_at >= (now() - toIntervalMonth(6)), profile_id, null)) AS months_3,
+        uniqHLL12(if(created_at >= (now() - toIntervalMonth(1)), profile_id, null)) AS month,
+        uniqHLL12(if(created_at >= (now() - toIntervalDay(1)), profile_id, null)) AS day
+    FROM sessions
+    WHERE 
+        project_id = ${sqlstring.escape(projectId)} AND 
+        created_at >= (now() - toIntervalMonth(6))
+        `,
+      );
+
+      return {
+        chart,
+        metrics,
+      };
+    }),
+
   events: protectedProcedure
     .input(
       z.object({

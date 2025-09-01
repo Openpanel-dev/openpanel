@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { db } from '@openpanel/db';
+import { db, getReportById, getReportsByDashboardId } from '@openpanel/db';
 import { zReportInput } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
@@ -8,6 +8,16 @@ import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const reportRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(
+      z.object({
+        dashboardId: z.string(),
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input: { dashboardId, projectId }, ctx }) => {
+      return getReportsByDashboardId(dashboardId);
+    }),
   create: protectedProcedure
     .input(
       z.object({
@@ -124,5 +134,14 @@ export const reportRouter = createTRPCRouter({
           id: reportId,
         },
       });
+    }),
+  get: protectedProcedure
+    .input(
+      z.object({
+        reportId: z.string(),
+      }),
+    )
+    .query(async ({ input: { reportId }, ctx }) => {
+      return getReportById(reportId);
     }),
 });

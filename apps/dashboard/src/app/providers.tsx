@@ -34,7 +34,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       transformer: superjson,
       links: [
         httpLink({
-          url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
+          url: `${process.env.VITE_API_URL}/trpc`,
           fetch(url, options) {
             return fetch(url, {
               ...options,
@@ -60,9 +60,9 @@ function AllProviders({ children }: { children: React.ReactNode }) {
         disableTransitionOnChange
         defaultTheme="system"
       >
-        {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
+        {process.env.VITE_OP_CLIENT_ID && (
           <OpenPanelComponent
-            clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
+            clientId={process.env.VITE_OP_CLIENT_ID}
             trackScreenViews
             trackOutgoingLinks
             trackAttributes

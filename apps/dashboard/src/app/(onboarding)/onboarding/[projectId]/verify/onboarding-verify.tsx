@@ -111,7 +111,7 @@ function CurlPreview({ project }: { project: IServiceProjectWithClients }) {
       properties: {
         __title: `Testing OpenPanel - ${project.name}`,
         __path: `${project.domain}`,
-        __referrer: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}`,
+        __referrer: `${process.env.VITE_DASHBOARD_URL}`,
       },
     },
   };
@@ -126,7 +126,7 @@ function CurlPreview({ project }: { project: IServiceProjectWithClients }) {
     payload.payload.properties = {};
   }
 
-  const code = `curl -X POST ${process.env.NEXT_PUBLIC_API_URL}/track \\
+  const code = `curl -X POST ${process.env.VITE_API_URL}/track \\
 -H "Content-Type: application/json" \\
 -H "openpanel-client-id: ${client.id}" \\
 -H "openpanel-client-secret: ${secret}" \\

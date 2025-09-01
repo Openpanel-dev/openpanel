@@ -70,7 +70,7 @@ export async function createCheckout({
   return polar.checkouts.create({
     productPriceId: priceId,
     successUrl: getSuccessUrl(
-      process.env.NEXT_PUBLIC_DASHBOARD_URL!,
+      process.env.VITE_DASHBOARD_URL!,
       organizationId,
       projectId,
     ),

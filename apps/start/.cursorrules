@@ -1,0 +1,337 @@
+We use Sentry for watching for errors in our deployed application, as well as for instrumentation of our application.
+
+## Error collection
+
+Error collection is automatic and configured in `src/router.tsx`.
+
+## Instrumentation
+
+We want our server functions instrumented. So if you see a function name like `createServerFn`, you can instrument it with Sentry. You'll need to import `Sentry`:
+
+```tsx
+import * as Sentry from '@sentry/tanstackstart-react'
+```
+
+And then wrap the implementation of the server function with `Sentry.startSpan`, like so:
+
+```tsx
+Sentry.startSpan({ name: 'Requesting all the pokemon' }, async () => {
+  // Some lengthy operation here
+  await fetch('https://api.pokemon.com/data/')
+})
+```
+# shadcn instructions
+
+Use the latest version of Shadcn to install new components, like this command to add a button component:
+
+```bash
+pnpx shadcn@latest add button
+```
+
+# TanStack Router v1 — Routing Concepts (React) Cheat Sheet
+
+> Quick, copy‑pastable reference for file‑based routing in TanStack Router v1 (React).
+
+## TL;DR
+
+* **Root route** is always matched; it wraps everything.
+* **createFileRoute(path)** defines a route; the path is auto‑managed by the bundler/CLI.
+* **Index routes** use a **trailing slash** (`/posts/`) to target the exact parent path.
+* **Dynamic segments** use `$param` (e.g. `/posts/$postId`).
+* **Splat (catch‑all)** route is a lone `$` segment, exposing `params._splat`.
+* **Optional segments** use `{-$param}`.
+* **Layout routes** are normal routes that render an `<Outlet/>` for children.
+* **Pathless layout routes** start with `_` (e.g. `/_settingsShell`), wrap children but don’t match URL segments.
+* **Non‑nested** routes suffix a segment with `_` to un-nest (e.g. `posts_.$postId.edit.tsx`).
+* Prefix files/folders with `-` to **exclude** them from routing (colocation).
+* Use `(group)` folders to **group** files only (no path impact).
+
+---
+
+## 1) Anatomy of a Route
+
+```tsx
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/')({
+  component: PostsComponent,
+})
+```
+
+* `createFileRoute(path)` → declare a route for this file.
+* Path string is auto‑written/maintained by the bundler/CLI for type safety.
+
+### Root Route
+
+```tsx
+import { createRootRoute } from '@tanstack/react-router'
+export const Route = createRootRoute()
+```
+
+* No path; always matched; can host loaders, components, search param validation, etc.
+
+**With context**:
+
+```tsx
+import { createRootRouteWithContext } from '@tanstack/react-router'
+import type { QueryClient } from '@tanstack/react-query'
+
+export interface MyRouterContext { queryClient: QueryClient }
+export const Route = createRootRouteWithContext<MyRouterContext>()
+```
+
+---
+
+## 2) Basic Routes
+
+```tsx
+// routes/about.tsx
+import { createFileRoute } from '@tanstack/react-router'
+export const Route = createFileRoute('/about')({
+  component: () => <div>About</div>,
+})
+```
+
+* Exact path match. Renders `component`.
+
+### Index Routes (trailing slash)
+
+```tsx
+// routes/posts.index.tsx OR routes/posts/ index file
+export const Route = createFileRoute('/posts/')({
+  component: () => <div>Please select a post!</div>,
+})
+```
+
+* Matches **exactly** `/posts`. The **trailing `/`** denotes an index.
+
+---
+
+## 3) Dynamic Segments
+
+```tsx
+// routes/posts.$postId.tsx
+export const Route = createFileRoute('/posts/$postId')({
+  loader: ({ params }) => fetchPost(params.postId),
+  component: PostComponent,
+})
+
+function PostComponent() {
+  const { postId } = Route.useParams()
+  return <div>Post ID: {postId}</div>
+}
+```
+
+* `$postId` captures `123` for `/posts/123` → `{ postId: '123' }`.
+* You can chain: `/posts/$postId/$revisionId` → `{ postId, revisionId }`.
+
+### Splat / Catch‑All
+
+```tsx
+// routes/files/$.tsx
+export const Route = createFileRoute('/files/$')({ component: Files })
+```
+
+* Captures the rest of the path into `params._splat` (e.g. `documents/hello-world`).
+
+### Optional Parameters
+
+```tsx
+// routes/posts.{-$category}.tsx
+export const Route = createFileRoute('/posts/{-$category}')({ component: Posts })
+
+function Posts() {
+  const { category } = Route.useParams()
+  return <div>{category ? `Posts in ${category}` : 'All Posts'}</div>
+}
+```
+
+* Matches `/posts` and `/posts/tech`.
+* **Priority note:** routes with optional params are ranked lower than exact matches (e.g. `/posts/featured` beats `/posts/{-$category}`).
+
+---
+
+## 4) Layout & Pathless Layout Routes
+
+### Layout Routes
+
+```tsx
+// routes/app.tsx
+import { Outlet, createFileRoute } from '@tanstack/react-router'
+export const Route = createFileRoute('/app')({ component: AppLayout })
+
+function AppLayout() {
+  return (
+    <div>
+      <h1>App</h1>
+      <Outlet />
+    </div>
+  )
+}
+```
+
+**Rendering matrix**
+
+* `/app` → `<AppLayout>`
+* `/app/dashboard` → `<AppLayout><Dashboard/>`
+* `/app/settings` → `<AppLayout><Settings/>`
+
+### Pathless Layout Routes (no URL segment)
+
+```tsx
+// routes/_shell.tsx
+import { Outlet, createFileRoute } from '@tanstack/react-router'
+export const Route = createFileRoute('/_shell')({ component: Shell })
+
+function Shell() {
+  return (
+    <div>
+      <Header/>
+      <Outlet />
+    </div>
+  )
+}
+```
+
+* File/folder name starts with `_` → doesn’t match a URL segment; wraps children.
+* **Cannot** include dynamic `$param` in the pathless segment name. Use a real `$param` directory **beside** your `_shell` if needed:
+
+```
+routes/
+├─ $postId/
+├─ _postShell/
+```
+
+---
+
+## 5) Non‑Nested Routes ("un-nesting")
+
+Append `_` after a segment name to un-nest a file so it renders its own tree:
+
+```
+routes/
+├─ posts.tsx
+├─ posts.$postId.tsx
+├─ posts_.$postId.edit.tsx  // un-nested
+```
+
+**Resulting renders**
+
+* `/posts` → `<Posts>`
+* `/posts/123` → `<Posts><Post id=123>`
+* `/posts/123/edit` → `<PostEditor id=123>` (not wrapped by `<Posts>`)
+
+---
+
+## 6) Excluding Files & Colocation
+
+Prefix with `-` to exclude from route generation and safely colocate utilities:
+
+```
+routes/
+├─ posts.tsx
+├─ -posts-table.tsx      // ignored
+├─ -components/          // ignored
+│  ├─ header.tsx         // ignored
+│  └─ footer.tsx         // ignored
+```
+
+```tsx
+import { PostsTable } from './-posts-table'
+```
+
+* Excluded entries are not added to the generated `routeTree.gen.ts`.
+
+---
+
+## 7) Pathless Route Group Directories
+
+Group routes for organization only using `(group)` folders — no effect on paths or nesting:
+
+```
+routes/
+├─ index.tsx
+├─ (app)/
+│  ├─ dashboard.tsx
+│  ├─ settings.tsx
+│  └─ users.tsx
+├─ (auth)/
+│  ├─ login.tsx
+│  └─ register.tsx
+```
+
+**URLs render as** `/dashboard`, `/settings`, `/users`, `/login`, `/register`.
+
+---
+
+## 8) Useful APIs & Hooks
+
+* `Route.useParams()` — typed path params for the current file route.
+* `Route.useLoaderData()` — typed data returned from the current route’s `loader`.
+* `<Outlet/>` — placeholder for child routes.
+* (See docs for: search param validation, data loading, mutations, type safety, preloading, SSR, etc.)
+
+---
+
+## 9) Common File Naming Patterns (file‑based routing)
+
+* `__root.tsx` — root route file.
+* `index.tsx` or trailing `/` in `createFileRoute` — index under a segment.
+* `$param.tsx` — dynamic segment.
+* `$.tsx` — splat (catch‑all) segment.
+* `{-$param}.tsx` — optional segment.
+* `_segment.tsx` or `/_segment/route.tsx` — pathless layout route.
+* `segment_.tsx` — un-nest that segment from parents.
+* `-utils.tsx`, `-components/` — excluded from routing.
+* `(group)/` — pathless grouping-only folder.
+
+---
+
+## 10) Quick Reference Examples
+
+```tsx
+// Simple loader + params + component
+export const Route = createFileRoute('/users/$userId')({
+  loader: ({ params }) => getUser(params.userId),
+  component: () => {
+    const { userId } = Route.useParams()
+    const user = Route.useLoaderData()
+    return <UserCard id={userId} data={user} />
+  },
+})
+```
+
+```tsx
+// Layout
+export const Route = createFileRoute('/dashboard')({ component: Layout })
+function Layout() {
+  return <>
+    <Sidebar />
+    <Outlet />
+  </>
+}
+```
+
+```tsx
+// Optional + Splat combo (illustrative)
+export const Route = createFileRoute('/docs/{-$section}/$')({ component: Docs })
+```
+
+---
+
+## 11) Gotchas & Tips
+
+* Prefer **file‑based** routing for less boilerplate and excellent type safety.
+* Remember the **trailing slash** for index routes.
+* Optional routes are **lower priority** than exact matches.
+* Pathless layout routes **cannot** be dynamic.
+* Use `-` prefix liberally to colocate non‑route code near routes.
+* Use `(group)` folders to tame big route directories.
+
+---
+
+### Further Reading
+
+* Route Trees, Route Matching, File‑Based Routing, Outlets, Path/Search Params, Data Loading, SSR, etc.
+
+Happy routing! 🚦

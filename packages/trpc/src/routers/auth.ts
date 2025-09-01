@@ -229,8 +229,9 @@ export const authRouter = createTRPCRouter({
 
       const token = generateSessionToken();
       const session = await createSession(token, user.id);
-
+      console.log('session', session);
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
+      console.log('ctx.setCookie', ctx.setCookie);
       return {
         type: 'email',
       };
@@ -318,7 +319,7 @@ export const authRouter = createTRPCRouter({
       await sendEmail('reset-password', {
         to: input.email,
         data: {
-          url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/reset-password?token=${token}`,
+          url: `${process.env.VITE_DASHBOARD_URL}/reset-password?token=${token}`,
         },
       });
 

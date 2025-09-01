@@ -168,6 +168,11 @@ export const eventRouter = createTRPCRouter({
         },
       };
     }),
+  conversionNames: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input: { projectId } }) => {
+      return getConversionEventNames(projectId);
+    }),
   conversions: protectedProcedure
     .input(
       z.object({

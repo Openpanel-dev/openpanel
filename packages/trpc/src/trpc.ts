@@ -88,7 +88,8 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 });
 
 // Only used on protected routes
-const enforceAccess = t.middleware(async ({ ctx, next, rawInput, type }) => {
+const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
+  const rawInput = await getRawInput();
   if (type === 'mutation' && process.env.DEMO_USER_ID) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
@@ -124,7 +125,8 @@ const enforceAccess = t.middleware(async ({ ctx, next, rawInput, type }) => {
 export const createTRPCRouter = t.router;
 
 const loggerMiddleware = t.middleware(
-  async ({ ctx, next, rawInput, path, input, type }) => {
+  async ({ ctx, next, getRawInput, path, input, type }) => {
+    const rawInput = await getRawInput();
     // Only log mutations
     if (type === 'mutation') {
       ctx.req.log.info('TRPC mutation', {
@@ -153,7 +155,8 @@ const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
 };
 
 export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
-  t.middleware(async ({ ctx, next, path, type, rawInput, input }) => {
+  t.middleware(async ({ ctx, next, path, type, getRawInput, input }) => {
+    const rawInput = await getRawInput();
     if (type !== 'query') {
       return next();
     }

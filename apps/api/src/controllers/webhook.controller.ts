@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -105,7 +105,7 @@ export async function slackWebhook(
     });
 
     return reply.redirect(
-      `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
+      `${process.env.VITE_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
     );
   } catch (err) {
     request.log.error(err);

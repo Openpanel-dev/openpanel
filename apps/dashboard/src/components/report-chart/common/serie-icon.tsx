@@ -26,7 +26,7 @@ type SerieIconProps = Omit<LucideProps, 'name'> & {
 };
 
 function getProxyImage(url: string) {
-  return `${String(process.env.NEXT_PUBLIC_API_URL)}/misc/favicon?url=${encodeURIComponent(url)}`;
+  return `${String(process.env.VITE_API_URL)}/misc/favicon?url=${encodeURIComponent(url)}`;
 }
 
 const createImageIcon = (url: string) => {

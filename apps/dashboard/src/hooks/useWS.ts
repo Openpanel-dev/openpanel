@@ -17,7 +17,7 @@ export default function useWS<T>(
   onMessage: (event: T) => void,
   options?: UseWSOptions,
 ) {
-  const ws = String(process.env.NEXT_PUBLIC_API_URL)
+  const ws = String(process.env.VITE_API_URL)
     .replace(/^https/, 'wss')
     .replace(/^http/, 'ws');
   const [baseUrl, setBaseUrl] = useState(`${ws}${path}`);

@@ -54,5 +54,10 @@
     "@biomejs/biome": "1.9.1",
     "simple-git-hooks": "^2.12.1",
     "vitest": "^3.0.4"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "nuqs": "patches/nuqs.patch"
+    }
   }
 }

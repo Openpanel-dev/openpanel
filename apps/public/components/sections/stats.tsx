@@ -16,7 +16,7 @@ function shortNumber(num: number) {
 
 export async function Stats() {
   const { projectsCount, eventsCount, eventsLast24hCount } = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/misc/stats`,
+    `${process.env.VITE_API_URL}/misc/stats`,
   )
     .then((res) => res.json())
     .catch(() => ({

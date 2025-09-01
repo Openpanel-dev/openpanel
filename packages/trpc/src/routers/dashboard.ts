@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   db,
+  getDashboardById,
   getDashboardsByProjectId,
   getId,
   getProjectById,
@@ -22,6 +23,31 @@ export const dashboardRouter = createTRPCRouter({
     )
     .query(({ input }) => {
       return getDashboardsByProjectId(input.projectId);
+    }),
+  byId: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input, ctx }) => {
+      const access = await getProjectAccess({
+        projectId: input.projectId,
+        userId: ctx.session.userId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      const dashboard = await getDashboardById(input.id, input.projectId);
+
+      if (!dashboard) {
+        throw TRPCNotFoundError('Dashboard not found');
+      }
+
+      return dashboard;
     }),
   create: protectedProcedure
     .input(

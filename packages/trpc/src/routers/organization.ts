@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { connectUserToOrganization, db } from '@openpanel/db';
+import { connectUserToOrganization, db, getOrganizations } from '@openpanel/db';
 import { zEditOrganization, zInviteUser } from '@openpanel/validation';
 
 import { generateSecureId } from '@openpanel/common/server/id';
@@ -11,6 +11,10 @@ import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const organizationRouter = createTRPCRouter({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return getOrganizations(ctx.session.userId);
+  }),
+
   update: protectedProcedure
     .input(zEditOrganization)
     .mutation(async ({ input, ctx }) => {
@@ -116,7 +120,7 @@ export const organizationRouter = createTRPCRouter({
       await sendEmail('invite', {
         to: email,
         data: {
-          url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
+          url: `${process.env.VITE_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
           organizationName: invite.organization.name,
         },
       });
