@@ -3,7 +3,6 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/useEventQueryFilters';
-import { api } from '@/trpc/client';
 
 import { EventFieldValue } from '@/components/events/event-field-value';
 import { ProjectLink } from '@/components/links';
@@ -16,10 +15,12 @@ import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { fancyMinutes } from '@/hooks/useNumerFormatter';
+import { useTRPC } from '@/integrations/trpc/react';
 import { camelCaseToWords } from '@/utils/casing';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { ArrowLeftIcon, ArrowRightIcon, FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
 import { useState } from 'react';
@@ -67,11 +68,15 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
     },
   };
   const [widget, setWidget] = useState(TABS.essentials);
-  const [{ event, session }] = api.event.details.useSuspenseQuery({
-    id,
-    projectId,
-    createdAt,
-  });
+  const trpc = useTRPC();
+  const query = useSuspenseQuery(
+    trpc.event.details.queryOptions({
+      id,
+      projectId,
+      createdAt,
+    }),
+  );
+  const { event, session } = query.data;
 
   const profile = event.profile;
 

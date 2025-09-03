@@ -101,7 +101,7 @@ function Component() {
           <OverviewInterval />
           <LinkButton
             from={Route.fullPath}
-            to={'/$organizationId/$projectId/dashboards/$dashboardId/reports'}
+            to={'/$organizationId/$projectId/reports'}
             icon={PlusIcon}
           >
             <span className="max-sm:hidden">Create report</span>
@@ -120,14 +120,14 @@ function Component() {
                 onClick={(event) => {
                   if (event.metaKey) {
                     window.open(
-                      `/${organizationId}/${projectId}/dashboards/${dashboardId}/reports/${report.id}`,
+                      `/${organizationId}/${projectId}/reports/${report.id}`,
                       '_blank',
                     );
                     return;
                   }
                   router.navigate({
                     from: Route.fullPath,
-                    to: '/$organizationId/$projectId/dashboards/$dashboardId/reports/$reportId',
+                    to: '/$organizationId/$projectId/reports/$reportId',
                     params: {
                       reportId: report.id,
                     },
@@ -138,7 +138,7 @@ function Component() {
                   if (e.key === 'Enter' || e.key === ' ') {
                     router.navigate({
                       from: Route.fullPath,
-                      to: '/$organizationId/$projectId/dashboards/$dashboardId/reports/$reportId',
+                      to: '/$organizationId/$projectId/reports/$reportId',
                       params: {
                         reportId: report.id,
                       },
@@ -232,7 +232,7 @@ function Component() {
             <p>You can visualize your data with a report</p>
             <LinkButton
               from={Route.fullPath}
-              to={'/$organizationId/$projectId/dashboards/$dashboardId/reports'}
+              to={'/$organizationId/$projectId/reports'}
               className="mt-14"
               icon={PlusIcon}
             >

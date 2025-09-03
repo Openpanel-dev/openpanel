@@ -5,7 +5,7 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -24,6 +24,7 @@ export default function AddDashboard() {
   const { projectId, organizationId } = useAppParams();
   const router = useRouter();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
 
   const { register, handleSubmit, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -35,12 +36,19 @@ export default function AddDashboard() {
   const mutation = useMutation(
     trpc.dashboard.create.mutationOptions({
       onSuccess(res) {
-        router.push(`/${organizationId}/${projectId}/dashboards/${res.id}`);
+        router.navigate({
+          to: '/$organizationId/$projectId/dashboards/$dashboardId',
+          params: {
+            organizationId,
+            projectId,
+            dashboardId: res.id,
+          },
+        });
         toast('Success', {
           description: 'Dashboard created.',
         });
+        queryClient.invalidateQueries(trpc.dashboard.pathFilter());
         popModal();
-        router.refresh();
       },
       onError: handleError,
     }),

@@ -2,9 +2,10 @@ import ReportEditor from '@/components/report-chart/report-editor';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { z } from 'zod';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId_/$projectId_/dashboards_/$dashboardId_/reports_/$reportId',
+  '/_app/$organizationId_/$projectId_/reports_/$reportId',
 )({
   component: Component,
   loader: async ({ context, params }) => {
@@ -14,6 +15,9 @@ export const Route = createFileRoute(
       }),
     );
   },
+  validateSearch: z.object({
+    dashboardId: z.string().optional(),
+  }),
 });
 
 function Component() {

@@ -1,11 +1,10 @@
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 
+import { useTRPC } from '@/integrations/trpc/react';
 import { ModalContent, ModalHeader } from '@/modals/Modal/Container';
-import { api } from '@/trpc/client';
 import type { IGetTopGenericInput } from '@openpanel/db';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
-import { useEffect } from 'react';
-import { toast } from 'sonner';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
@@ -27,26 +26,29 @@ export default function OverviewTopGenericModal({
 }: OverviewTopGenericModalProps) {
   const [filters, setFilter] = useEventQueryFilters();
   const { startDate, endDate, range, interval } = useOverviewOptions();
-  const query = api.overview.topGeneric.useInfiniteQuery(
-    {
-      projectId,
-      filters,
-      startDate,
-      endDate,
-      range,
-      interval,
-      limit: 50,
-      column,
-    },
-    {
-      getNextPageParam: (lastPage, pages) => {
-        if (lastPage.length === 0) {
-          return null;
-        }
-
-        return pages.length + 1;
+  const trpc = useTRPC();
+  const query = useInfiniteQuery(
+    trpc.overview.topGeneric.infiniteQueryOptions(
+      {
+        projectId,
+        filters,
+        startDate,
+        endDate,
+        range,
+        interval,
+        limit: 50,
+        column,
       },
-    },
+      {
+        getNextPageParam: (lastPage, pages) => {
+          if (lastPage.length === 0) {
+            return null;
+          }
+
+          return pages.length + 1;
+        },
+      },
+    ),
   );
 
   const data = query.data?.pages.flat() || [];

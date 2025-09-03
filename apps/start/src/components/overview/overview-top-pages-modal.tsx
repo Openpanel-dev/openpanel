@@ -1,7 +1,8 @@
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 
+import { useTRPC } from '@/integrations/trpc/react';
 import { ModalContent, ModalHeader } from '@/modals/Modal/Container';
-import { api } from '@/trpc/client';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import { OverviewWidgetTablePages } from './overview-widget-table';
@@ -11,33 +12,28 @@ interface OverviewTopPagesProps {
   projectId: string;
 }
 
-function getPath(path: string) {
-  try {
-    return new URL(path).pathname;
-  } catch {
-    return path;
-  }
-}
-
 export default function OverviewTopPagesModal({
   projectId,
 }: OverviewTopPagesProps) {
   const [filters, setFilter] = useEventQueryFilters();
-  const { startDate, endDate, range, interval } = useOverviewOptions();
-  const query = api.overview.topPages.useInfiniteQuery(
-    {
-      projectId,
-      filters,
-      startDate,
-      endDate,
-      mode: 'page',
-      range,
-      interval: 'day',
-      limit: 50,
-    },
-    {
-      getNextPageParam: (_, pages) => pages.length + 1,
-    },
+  const { startDate, endDate, range } = useOverviewOptions();
+  const trpc = useTRPC();
+  const query = useInfiniteQuery(
+    trpc.overview.topPages.infiniteQueryOptions(
+      {
+        projectId,
+        filters,
+        startDate,
+        endDate,
+        mode: 'page',
+        range,
+        interval: 'day',
+        limit: 50,
+      },
+      {
+        getNextPageParam: (_, pages) => pages.length + 1,
+      },
+    ),
   );
 
   const data = query.data?.pages.flat();
