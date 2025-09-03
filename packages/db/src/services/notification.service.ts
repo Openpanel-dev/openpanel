@@ -117,21 +117,28 @@ function getIntegration(integrationId: string | null) {
 }
 
 export async function createNotification(notification: ICreateNotification) {
-  const res = await db.notification.create({
-    data: {
-      title: notification.title,
-      message: notification.message,
-      projectId: notification.projectId,
-      payload: notification.payload || Prisma.DbNull,
-      ...getIntegration(notification.integrationId),
-      notificationRuleId: notification.notificationRuleId,
-    },
-  });
+  const data: Prisma.NotificationUncheckedCreateInput = {
+    title: notification.title,
+    message: notification.message,
+    projectId: notification.projectId,
+    payload: notification.payload || Prisma.DbNull,
+    ...getIntegration(notification.integrationId),
+    notificationRuleId: notification.notificationRuleId,
+  };
 
-  return triggerNotification(res);
+  // Only create notifications for app
+  if (data.sendToApp) {
+    await db.notification.create({
+      data,
+    });
+  }
+
+  return triggerNotification(data);
 }
 
-export function triggerNotification(notification: Notification) {
+export function triggerNotification(
+  notification: Prisma.NotificationUncheckedCreateInput,
+) {
   return notificationQueue.add('sendNotification', {
     type: 'sendNotification',
     payload: {

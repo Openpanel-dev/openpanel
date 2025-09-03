@@ -1,6 +1,6 @@
 import { Queue, QueueEvents } from 'bullmq';
 
-import type { IServiceEvent, Notification } from '@openpanel/db';
+import type { IServiceEvent, Notification, Prisma } from '@openpanel/db';
 import { getRedisQueue } from '@openpanel/redis';
 import type { TrackPayload } from '@openpanel/sdk';
 
@@ -130,7 +130,7 @@ export const miscQueue = new Queue<MiscQueuePayload>('misc', {
 export type NotificationQueuePayload = {
   type: 'sendNotification';
   payload: {
-    notification: Notification;
+    notification: Prisma.NotificationUncheckedCreateInput;
   };
 };
 
