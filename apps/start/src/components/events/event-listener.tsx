@@ -7,14 +7,9 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useDebounceState } from '@/hooks/useDebounceState';
 import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
-import dynamic from 'next/dynamic';
+import AnimatedNumbers from 'react-animated-numbers';
 
 import type { IServiceEventMinimal } from '@openpanel/db';
-
-const AnimatedNumbers = dynamic(() => import('react-animated-numbers'), {
-  ssr: false,
-  loading: () => <div>0</div>,
-});
 
 export default function EventListener({
   onRefresh,

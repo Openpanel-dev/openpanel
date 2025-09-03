@@ -116,14 +116,12 @@ export function Chart({ data }: Props) {
             }}
           >
             <SerieIcon name={serie.names} />
-            <SerieName name={serie.names} />
+            <SerieName name={serie.names} className="font-semibold" />
           </div>
         ))}
       </div>
     );
   }, [series]);
-
-  const isAreaStyle = series.length === 1;
 
   const xAxisProps = useXAxisProps({ interval, hide: hideXAxis });
   const yAxisProps = useYAxisProps({
@@ -169,7 +167,7 @@ export function Chart({ data }: Props) {
             <XAxis {...xAxisProps} />
             {series.length > 1 && <Legend content={<CustomLegend />} />}
             <Tooltip content={<ReportChartTooltip />} />
-            {series.map((serie) => {
+            {/* {series.map((serie) => {
               const color = getChartColor(serie.index);
               return (
                 <React.Fragment key={serie.id}>
@@ -207,18 +205,6 @@ export function Chart({ data }: Props) {
                     // Use for legend
                     fill={color}
                   />
-                  {isAreaStyle && (
-                    <Area
-                      dot={false}
-                      name={`${serie.id}:area:noTooltip`}
-                      dataKey={`${serie.id}:count`}
-                      fill={`url(#color${color})`}
-                      type={lineType}
-                      isAnimationActive={false}
-                      strokeWidth={0}
-                      fillOpacity={0.1}
-                    />
-                  )}
                   {previous && (
                     <Line
                       type={lineType}
@@ -234,7 +220,72 @@ export function Chart({ data }: Props) {
                   )}
                 </React.Fragment>
               );
+            })} */}
+
+            <defs>
+              <filter
+                id="rainbow-line-glow"
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feComponentTransfer in="blur" result="dimmedBlur">
+                  <feFuncA type="linear" slope="0.5" />
+                </feComponentTransfer>
+                <feComposite
+                  in="SourceGraphic"
+                  in2="dimmedBlur"
+                  operator="over"
+                />
+              </filter>
+            </defs>
+
+            {series.map((serie) => {
+              const color = getChartColor(serie.index);
+              return (
+                <Line
+                  key={serie.id}
+                  dot={dataLength <= 8}
+                  type={lineType}
+                  name={serie.id}
+                  isAnimationActive={false}
+                  strokeWidth={2}
+                  dataKey={`${serie.id}:count`}
+                  stroke={color}
+                  strokeDasharray={
+                    useDashedLastLine
+                      ? getStrokeDasharray(`${serie.id}:count`)
+                      : undefined
+                  }
+                  // Use for legend
+                  fill={color}
+                  filter="url(#rainbow-line-glow)"
+                />
+              );
             })}
+
+            {/* Previous */}
+            {previous
+              ? series.map((serie) => {
+                  const color = getChartColor(serie.index);
+                  return (
+                    <Line
+                      key={`${serie.id}:prev`}
+                      type={lineType}
+                      name={`${serie.id}:prev`}
+                      isAnimationActive
+                      dot={false}
+                      strokeOpacity={0.3}
+                      dataKey={`${serie.id}:prev:count`}
+                      stroke={color}
+                      // Use for legend
+                      fill={color}
+                    />
+                  );
+                })
+              : null}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

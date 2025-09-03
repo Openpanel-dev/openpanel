@@ -51,11 +51,11 @@ export function EventsDataTable<TData>({
     updateScrollMargin();
 
     // Listen for scroll and resize events
-    window.addEventListener('scroll', updateScrollMargin);
+    // window.addEventListener('scroll', updateScrollMargin);
     window.addEventListener('resize', updateScrollMargin);
 
     return () => {
-      window.removeEventListener('scroll', updateScrollMargin);
+      // window.removeEventListener('scroll', updateScrollMargin);
       window.removeEventListener('resize', updateScrollMargin);
     };
   }, []); // Empty dependency array since we're setting up listeners
@@ -63,7 +63,7 @@ export function EventsDataTable<TData>({
   const visibleRows = virtualizer.getVirtualItems();
 
   return (
-    <div className="card">
+    <div className="card" ref={parentRef}>
       <div className="relative w-full overflow-auto rounded-md">
         <div
           className="w-full"
@@ -99,7 +99,7 @@ export function EventsDataTable<TData>({
                 })}
             </div>
           ))}
-          <div ref={parentRef} className="w-full">
+          <div className="w-full">
             <div
               className="tbody [&>*:last-child]:border-0"
               style={{

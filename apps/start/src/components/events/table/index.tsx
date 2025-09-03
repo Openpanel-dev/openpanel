@@ -7,10 +7,11 @@ import type {
 import { GanttChartIcon, Loader2Icon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { pushModal, replaceWithModal, useOnPushModal } from '@/modals';
-import type { RouterOutputs } from '@/trpc/client';
+import { replaceWithModal, useOnPushModal } from '@/modals';
+import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
+import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
 import { bind } from 'bind-event-listener';
 import { useInViewport } from 'react-in-viewport';
 import { useColumns } from './columns';
@@ -18,7 +19,12 @@ import { EventsDataTable } from './events-data-table';
 
 type Props =
   | {
-      query: UseInfiniteQueryResult<RouterOutputs['event']['events']>;
+      query: UseInfiniteQueryResult<
+        TRPCInfiniteData<
+          RouterInputs['event']['events'],
+          RouterOutputs['event']['events']
+        >
+      >;
     }
   | {
       query: UseQueryResult<RouterOutputs['event']['events']>;

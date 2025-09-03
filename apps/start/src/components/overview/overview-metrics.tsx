@@ -207,7 +207,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 
                   <Line
                     key={`prev_${activeMetric.key}`}
-                    type="linear"
+                    type="monotone"
                     dataKey={`prev_${activeMetric.key}`}
                     stroke={'var(--border)'}
                     strokeWidth={2}
@@ -228,11 +228,32 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
                       strokeWidth: 1.5,
                       r: 3,
                     }}
+                    filter="url(#rainbow-line-glow)"
                   />
+
+                  <defs>
+                    <filter
+                      id="rainbow-line-glow"
+                      x="-20%"
+                      y="-20%"
+                      width="140%"
+                      height="140%"
+                    >
+                      <feGaussianBlur stdDeviation="5" result="blur" />
+                      <feComponentTransfer in="blur" result="dimmedBlur">
+                        <feFuncA type="linear" slope="0.5" />
+                      </feComponentTransfer>
+                      <feComposite
+                        in="SourceGraphic"
+                        in2="dimmedBlur"
+                        operator="over"
+                      />
+                    </filter>
+                  </defs>
 
                   <Line
                     key={activeMetric.key}
-                    type="linear"
+                    type="monotone"
                     dataKey={activeMetric.key}
                     stroke={getChartColor(0)}
                     strokeWidth={2}
@@ -258,6 +279,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
                       strokeWidth: 2,
                       r: 4,
                     }}
+                    filter="url(#rainbow-line-glow)"
                   />
                 </LineChart>
               </ResponsiveContainer>

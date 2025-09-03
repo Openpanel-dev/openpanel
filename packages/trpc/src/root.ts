@@ -10,6 +10,7 @@ import { organizationRouter } from './routers/organization';
 import { overviewRouter } from './routers/overview';
 import { profileRouter } from './routers/profile';
 import { projectRouter } from './routers/project';
+import { realtimeRouter } from './routers/realtime';
 import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
 import { shareRouter } from './routers/share';
@@ -39,6 +40,7 @@ export const appRouter = createTRPCRouter({
   auth: authRouter,
   subscription: subscriptionRouter,
   overview: overviewRouter,
+  realtime: realtimeRouter,
 });
 
 // export type definition of API

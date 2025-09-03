@@ -1,12 +1,12 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId_/$projectId_/settings/_tabs/',
+  '/_app/$organizationId_/$projectId_/events/_tabs/',
 )({
   component: Component,
-  beforeLoad: ({ params }) => {
+  beforeLoad({ params }) {
     return redirect({
-      to: '/$organizationId/$projectId/settings/details',
+      to: '/$organizationId/$projectId/events/events',
       params,
     });
   },

@@ -6,7 +6,7 @@ import {
   useQueryState,
 } from 'nuqs';
 
-import { setStorageItem } from '@/utils/storage';
+import { getStorageItem, setStorageItem } from '@/utils/storage';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
@@ -30,7 +30,7 @@ export function useOverviewOptions() {
   const [range, setRange] = useQueryState(
     'range',
     parseAsStringEnum(mapKeys(timeWindows))
-      .withDefault('7d')
+      .withDefault(getStorageItem('range', '7d'))
       .withOptions({
         ...nuqsOptions,
         clearOnDefault: false,

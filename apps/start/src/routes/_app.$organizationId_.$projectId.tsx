@@ -1,7 +1,6 @@
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { LiveCounter } from '@/components/overview/live-counter';
-import { OverviewHydrateOptions } from '@/components/overview/overview-hydrate-options';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import OverviewMetrics from '@/components/overview/overview-metrics';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -12,7 +11,6 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { createFileRoute } from '@tanstack/react-router';
-import { useQueryState } from 'nuqs';
 
 export const Route = createFileRoute('/_app/$organizationId_/$projectId')({
   component: ProjectDashboard,
@@ -22,7 +20,7 @@ function ProjectDashboard() {
   const { projectId } = Route.useParams();
   return (
     <div>
-      <OverviewHydrateOptions />
+      {/* <OverviewHydrateOptions /> */}
       <div className="col gap-2 p-4">
         <div className="flex justify-between gap-2">
           <div className="flex gap-2">

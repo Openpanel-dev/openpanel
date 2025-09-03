@@ -54,6 +54,7 @@ export default function SidebarProjectMenu({
       <SidebarLink icon={LayersIcon} label="Pages" href={'/pages'} />
       <SidebarLink icon={Globe2Icon} label="Realtime" href={'/realtime'} />
       <SidebarLink icon={GanttChartIcon} label="Events" href={'/events'} />
+      <SidebarLink icon={UsersIcon} label="Sessions" href={'/sessions'} />
       <SidebarLink icon={UsersIcon} label="Profiles" href={'/profiles'} />
       <div className="mt-4 mb-2 font-medium text-muted-foreground">Manage</div>
       <SidebarLink icon={CogIcon} label="Settings" href={'/settings'} />
