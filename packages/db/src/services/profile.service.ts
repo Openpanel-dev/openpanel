@@ -77,6 +77,7 @@ interface GetProfileListOptions {
   cursor?: number;
   filters?: IChartEventFilter[];
   search?: string;
+  isExternal?: boolean;
 }
 
 export async function getProfiles(ids: string[], projectId: string) {
@@ -114,6 +115,7 @@ export async function getProfileList({
   projectId,
   filters,
   search,
+  isExternal,
 }: GetProfileListOptions) {
   const { sb, getSql } = createSqlBuilder();
   sb.from = `${TABLE_NAMES.profiles} FINAL`;
@@ -124,6 +126,9 @@ export async function getProfileList({
   sb.orderBy.created_at = 'created_at DESC';
   if (search) {
     sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
+  }
+  if (isExternal !== undefined) {
+    sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
   }
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);

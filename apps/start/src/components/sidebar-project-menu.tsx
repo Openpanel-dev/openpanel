@@ -42,9 +42,7 @@ export default function SidebarProjectMenu({
 }: SidebarProjectMenuProps) {
   return (
     <>
-      <div className="mt-4 mb-2 font-medium text-muted-foreground">
-        Insights
-      </div>
+      <div className="mb-2 font-medium text-muted-foreground">Insights</div>
       <SidebarLink icon={WallpaperIcon} label="Overview" href={'/'} />
       <SidebarLink
         icon={LayoutPanelTopIcon}

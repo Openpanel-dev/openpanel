@@ -28,7 +28,7 @@ export default function SidebarOrganizationMenu() {
     <>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
         to="/$organizationId"
         from="/$organizationId"
@@ -38,7 +38,7 @@ export default function SidebarOrganizationMenu() {
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
         to="/$organizationId/settings"
         from="/$organizationId"
@@ -48,7 +48,7 @@ export default function SidebarOrganizationMenu() {
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
         to="/$organizationId/billing"
         from="/$organizationId"
@@ -58,7 +58,7 @@ export default function SidebarOrganizationMenu() {
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
         to="/$organizationId/members"
         from="/$organizationId"
@@ -68,7 +68,7 @@ export default function SidebarOrganizationMenu() {
       </Link>
       <Link
         className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200',
+          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
         to="/$organizationId/integrations"
         from="/$organizationId"

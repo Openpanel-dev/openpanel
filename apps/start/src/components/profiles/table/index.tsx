@@ -1,6 +1,5 @@
 import { DataTable } from '@/components/data-table';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import { TableSkeleton } from '@/components/ui/table';
 import type { UseQueryResult } from '@tanstack/react-query';
@@ -11,6 +10,7 @@ import type { Dispatch, SetStateAction } from 'react';
 
 import type { IServiceProfile } from '@openpanel/db';
 
+import { FloatingPagination } from '@/components/pagination-floating';
 import { useColumns } from './columns';
 
 type CommonProps = {
@@ -54,8 +54,7 @@ export const ProfilesTable = memo(
       <>
         <DataTable data={data ?? []} columns={columns} />
         {'cursor' in props && (
-          <Pagination
-            className="mt-2"
+          <FloatingPagination
             setCursor={props.setCursor}
             cursor={props.cursor}
             count={Number.POSITIVE_INFINITY}

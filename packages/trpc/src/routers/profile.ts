@@ -41,11 +41,12 @@ export const profileRouter = createTRPCRouter({
         cursor: z.number().optional(),
         take: z.number().default(50),
         search: z.string().optional(),
+        isExternal: z.boolean().optional(),
         // filters: z.array(zChartEventFilter).default([]),
       }),
     )
-    .query(async ({ input: { projectId, cursor, take, search } }) => {
-      return getProfileList({ projectId, cursor, take, search });
+    .query(async ({ input }) => {
+      return getProfileList(input);
     }),
 
   powerUsers: protectedProcedure

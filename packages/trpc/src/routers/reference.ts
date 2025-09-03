@@ -1,11 +1,6 @@
 import { z } from 'zod';
 
-import {
-  db,
-  getChartStartEndDate,
-  getReferences,
-  getSettingsForProject,
-} from '@openpanel/db';
+import { db, getChartStartEndDate, getSettingsForProject } from '@openpanel/db';
 import { zCreateReference, zRange } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
@@ -16,27 +11,26 @@ export const referenceRouter = createTRPCRouter({
   getReferences: protectedProcedure
     .input(
       z.object({
-        where: z.object({
-          projectId: z.string(),
-        }),
-        take: z.number().optional(),
-        skip: z.number().optional(),
+        projectId: z.string(),
+        cursor: z.number().optional(),
       }),
     )
-    .query(async ({ input: { where, take, skip }, ctx }) => {
+    .query(async ({ input: { projectId, cursor }, ctx }) => {
       const access = await getProjectAccess({
         userId: ctx.session.userId,
-        projectId: where.projectId,
+        projectId,
       });
 
       if (!access) {
         throw TRPCAccessError('You do not have access to this project');
       }
 
-      return getReferences({
-        where,
-        take,
-        skip,
+      return db.reference.findMany({
+        where: {
+          projectId,
+        },
+        take: 50,
+        skip: cursor ? cursor * 50 : 0,
       });
     }),
 
@@ -90,7 +84,7 @@ export const referenceRouter = createTRPCRouter({
     .query(async ({ input: { projectId, ...input } }) => {
       const { timezone } = await getSettingsForProject(projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      return getReferences({
+      return db.reference.findMany({
         where: {
           projectId,
           date: {

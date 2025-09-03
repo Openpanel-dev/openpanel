@@ -3,7 +3,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronsLeftIcon,
+  ChevronsRightIcon,
 } from 'lucide-react';
+import type { Dispatch, SetStateAction } from 'react';
 import { useState } from 'react';
 
 import { Button } from './ui/button';
@@ -21,33 +23,26 @@ export function usePagination(take: number) {
 }
 
 export type Props = {
-  take?: number;
-  count?: number;
-  cursor: unknown;
+  take: number;
+  count: number;
+  cursor: number;
+  setCursor: Dispatch<SetStateAction<number>>;
   className?: string;
   size?: 'sm' | 'base';
   loading?: boolean;
-
-  onPrevCursor: () => void;
-  isPrevDisabled: boolean;
-  onNextCursor: () => void;
-  isNextDisabled: boolean;
-  onReset: () => void;
 };
 
 export function Pagination({
   take,
   count,
   cursor,
-  onPrevCursor,
-  isPrevDisabled,
-  onNextCursor,
-  isNextDisabled,
-  onReset,
+  setCursor,
   className,
   size = 'base',
   loading,
 }: Props) {
+  const lastCursor = Math.floor(count / take) - 1;
+  const isNextDisabled = count === 0 || lastCursor === cursor;
   return (
     <div
       className={cn(
@@ -59,7 +54,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => onReset}
+          onClick={() => setCursor(0)}
           disabled={cursor === 0}
           className="max-sm:hidden"
           icon={ChevronsLeftIcon}
@@ -68,15 +63,19 @@ export function Pagination({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onPrevCursor()}
-        disabled={isPrevDisabled}
+        onClick={() => setCursor((p) => Math.max(0, p - 1))}
+        disabled={cursor === 0}
         icon={ChevronLeftIcon}
       />
+
+      <Button loading={loading} disabled variant="outline" size="icon">
+        {loading ? '' : cursor}
+      </Button>
 
       <Button
         variant="outline"
         size="icon"
-        onClick={() => onNextCursor()}
+        onClick={() => setCursor((p) => Math.min(lastCursor, p + 1))}
         disabled={isNextDisabled}
         icon={ChevronRightIcon}
       />
