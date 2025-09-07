@@ -12,7 +12,6 @@ import EditClient from './EditClient';
 import EditDashboard from './EditDashboard';
 import EditReport from './EditReport';
 import Instructions from './Instructions';
-import { ModalContent } from './Modal/Container';
 import OnboardingTroubleshoot from './OnboardingTroubleshoot';
 import OverviewChartDetails from './OverviewChartDetails';
 import SaveReport from './SaveReport';
@@ -20,6 +19,7 @@ import ShareOverviewModal from './ShareOverviewModal';
 import AddIntegration from './add-integration';
 import AddNotificationRule from './add-notification-rule';
 import AddProject from './add-project';
+import DateTimePicker from './date-time-picker';
 import EditEvent from './edit-event';
 import EventDetails from './event-details';
 import RequestPasswordReset from './request-reset-password';
@@ -48,7 +48,8 @@ const modals = {
   AddReference: AddReference,
   Instructions: Instructions,
   OnboardingTroubleshoot: OnboardingTroubleshoot,
-  // DateRangerPicker: DateRangerPicker,
+  DateRangerPicker: DateRangerPicker,
+  DateTimePicker: DateTimePicker,
   OverviewChartDetails: OverviewChartDetails,
   AddIntegration: AddIntegration,
   AddNotificationRule: AddNotificationRule,

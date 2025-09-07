@@ -8,7 +8,7 @@ import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 
 import type { IChartProps } from '@openpanel/validation';
-import AnimatedNumbers from 'react-animated-numbers';
+import { AnimatedNumber } from '../animated-number';
 
 interface RealtimeLiveHistogramProps {
   projectId: string;
@@ -136,17 +136,7 @@ function Wrapper({ children, count }: WrapperProps) {
           Unique vistors last 30 minutes
         </div>
         <div className="font-mono text-6xl font-bold">
-          <AnimatedNumbers
-            includeComma
-            transitions={(index) => ({
-              type: 'spring',
-              duration: index + 0.3,
-              damping: 10,
-              stiffness: 200,
-            })}
-            animateToNumber={count}
-            locale="en"
-          />
+          <AnimatedNumber value={count} />
         </div>
       </div>
       <div className="relative flex aspect-[6/1] w-full flex-1 items-end gap-0.5">

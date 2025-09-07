@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { connectUserToOrganization, db, getOrganizations } from '@openpanel/db';
+import {
+  connectUserToOrganization,
+  db,
+  getOrganizationById,
+  getOrganizations,
+} from '@openpanel/db';
 import { zEditOrganization, zInviteUser } from '@openpanel/validation';
 
 import { generateSecureId } from '@openpanel/common/server/id';
@@ -11,6 +16,12 @@ import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const organizationRouter = createTRPCRouter({
+  get: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      return getOrganizationById(input.organizationId);
+    }),
+
   list: protectedProcedure.query(async ({ ctx }) => {
     return getOrganizations(ctx.session.userId);
   }),

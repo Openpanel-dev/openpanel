@@ -1,12 +1,7 @@
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
-import {
-  Outlet,
-  createFileRoute,
-  useLocation,
-  useRouter,
-} from '@tanstack/react-router';
+import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app/$organizationId_/members/_tabs')({
   component: Component,
@@ -22,7 +17,7 @@ function Component() {
   const handleTabChange = (tabId: string) => {
     router.navigate({
       from: Route.fullPath,
-      to: tabId === 'members' ? '' : 'invitations',
+      to: tabId,
     });
   };
 

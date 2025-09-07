@@ -254,41 +254,27 @@ code {
   .card {
     @apply rounded-md border border-border bg-card;
   }
-
-  .center-center {
-    @apply flex items-center justify-center text-center;
-  }
 }
 
-@layer utilities {
-  .col {
-    @apply flex flex-col;
-  }
+@utility center-center {
+  @apply flex items-center justify-center text-center;
+}
 
-  .row {
-    @apply flex flex-row;
-  }
+@utility col {
+  @apply flex flex-col;
+}
 
-  .text-text {
-    @apply text-foreground;
-  }
+@utility row {
+  @apply flex flex-row;
+}
 
-  .bg-def-200 {
-    @apply bg-muted;
-  }
+@utility text-text {
+  @apply text-foreground;
+}
 
-  .hover\:bg-def-200:hover {
-    @apply bg-muted;
-  }
-  
-  /* Hide scrollbar utilities from globals.css */
-  .hide-scrollbar::-webkit-scrollbar {
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
     display: none;
-  }
-
-  .hide-scrollbar {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
   }
 }
 

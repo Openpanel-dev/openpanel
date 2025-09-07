@@ -5,14 +5,15 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from '@tanstack/react-router';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 
 import { zCreateReference } from '@openpanel/validation';
 
+import { InputDateTime } from '@/components/ui/input-date-time';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
@@ -20,9 +21,8 @@ type IForm = z.infer<typeof zCreateReference>;
 
 export default function AddReference() {
   const { projectId } = useAppParams();
-  const router = useRouter();
-
-  const { register, handleSubmit, formState } = useForm<IForm>({
+  const queryClient = useQueryClient();
+  const { register, handleSubmit, formState, control } = useForm<IForm>({
     resolver: zodResolver(zCreateReference),
     defaultValues: {
       title: '',
@@ -36,7 +36,7 @@ export default function AddReference() {
   const mutation = useMutation(
     trpc.reference.create.mutationOptions({
       onSuccess() {
-        router.refresh();
+        queryClient.invalidateQueries(trpc.reference.pathFilter());
         toast('Success', {
           description: 'Reference created.',
         });
@@ -55,7 +55,13 @@ export default function AddReference() {
       >
         <InputWithLabel label="Title" {...register('title')} />
         <InputWithLabel label="Description" {...register('description')} />
-        <InputWithLabel label="Datetime" {...register('datetime')} />
+        <Controller
+          control={control}
+          name="datetime"
+          render={({ field }) => (
+            <InputDateTime {...field} label="Date and time" />
+          )}
+        />
         <ButtonContainer>
           <Button type="button" variant="outline" onClick={() => popModal()}>
             Cancel

@@ -20,7 +20,7 @@ function Component() {
   const handleTabChange = (tabId: string) => {
     router.navigate({
       from: Route.fullPath,
-      to: tabId === 'installed' ? '' : tabId,
+      to: tabId,
     });
   };
 

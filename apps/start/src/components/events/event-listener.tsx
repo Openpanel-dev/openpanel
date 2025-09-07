@@ -7,9 +7,9 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useDebounceState } from '@/hooks/useDebounceState';
 import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
-import AnimatedNumbers from 'react-animated-numbers';
 
 import type { IServiceEventMinimal } from '@openpanel/db';
+import { AnimatedNumber } from '../animated-number';
 
 export default function EventListener({
   onRefresh,
@@ -53,20 +53,7 @@ export default function EventListener({
           {counter.debounced === 0 ? (
             'Listening'
           ) : (
-            <>
-              <AnimatedNumbers
-                includeComma
-                transitions={(index) => ({
-                  type: 'spring',
-                  duration: index + 0.3,
-                  damping: 10,
-                  stiffness: 200,
-                })}
-                animateToNumber={counter.debounced}
-                locale="en"
-              />
-              new events
-            </>
+            <AnimatedNumber value={counter.debounced} suffix=" new events" />
           )}
         </button>
       </TooltipTrigger>

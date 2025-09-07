@@ -21,7 +21,7 @@ export default function DateRangerPicker({
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
   return (
-    <ModalContent className="max-w-[600px]">
+    <ModalContent className="max-w-[540px]!">
       <ModalHeader title="Pick a date range" className="mb-0" />
       <Calendar
         initialFocus
@@ -44,7 +44,7 @@ export default function DateRangerPicker({
           }
         }}
         numberOfMonths={isBelowSm ? 1 : 2}
-        className="min-h-[350px] [&_table]:mx-auto [&_table]:w-auto"
+        className="mx-auto min-h-[350px] [&_table]:mx-auto [&_table]:w-auto"
       />
       <Button
         className="mt-8"

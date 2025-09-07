@@ -1,9 +1,8 @@
 import {
-  BoxSelectIcon,
-  BuildingIcon,
   CogIcon,
   CreditCardIcon,
   LayoutListIcon,
+  TriangleAlertIcon,
   UsersIcon,
   WorkflowIcon,
 } from 'lucide-react';
@@ -11,11 +10,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
 import { cn } from '@/utils/cn';
+import type { IServiceOrganization } from '@openpanel/db';
 // import { pushModal } from '@/modals';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { Badge } from './ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,7 +24,11 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 
-export default function SidebarOrganizationMenu() {
+export default function SidebarOrganizationMenu({
+  organization,
+}: {
+  organization: IServiceOrganization;
+}) {
   return (
     <>
       <Link
@@ -55,6 +60,12 @@ export default function SidebarOrganizationMenu() {
       >
         <CreditCardIcon size={20} />
         <div className="flex-1">Billing</div>
+        {organization?.subscriptionStatus &&
+          organization.subscriptionStatus !== 'active' && (
+            <Badge className="capitalize">
+              {organization.subscriptionStatus}
+            </Badge>
+          )}
       </Link>
       <Link
         className={cn(

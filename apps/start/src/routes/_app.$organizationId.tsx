@@ -1,7 +1,9 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { LazyComponent } from '@/components/lazy-component';
 import { PageHeader } from '@/components/page-header';
-import ProjectCard from '@/components/projects/project-card';
+import ProjectCard, {
+  ProjectCardSkeleton,
+} from '@/components/projects/project-card';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
@@ -51,8 +53,12 @@ function OrganizationPage() {
       />
 
       <div className="grid gap-6 md:grid-cols-2">
-        {projects.map((project) => (
-          <LazyComponent key={project.id} fallback={<div>Loading...</div>}>
+        {projects.map((project, index) => (
+          <LazyComponent
+            lazy={index >= 6}
+            key={project.id}
+            fallback={<ProjectCardSkeleton />}
+          >
             <ProjectCard {...project} organizationId={organizationId} />
           </LazyComponent>
         ))}

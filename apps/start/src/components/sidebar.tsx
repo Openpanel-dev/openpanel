@@ -56,7 +56,9 @@ export function Sidebar() {
     <SidebarContainer organizations={organizations} projects={projects}>
       <ActionOrganizationCTAButton />
       <div className="mb-2 font-medium text-muted-foreground">Organization</div>
-      <SidebarOrganizationMenu />
+      <SidebarOrganizationMenu
+        organization={organizations.find((o) => o.id === organizationId)}
+      />
     </SidebarContainer>
   );
 }
@@ -257,7 +259,7 @@ export function SidebarContainer({
             </div>
           )}
         </div>
-        <div className="fixed bottom-0 left-0 right-0">
+        <div className="fixed bottom-0 left-0 right-0 pointer-events-none">
           <div className="h-8 w-full bg-gradient-to-t from-card to-card/0" />
         </div>
       </div>

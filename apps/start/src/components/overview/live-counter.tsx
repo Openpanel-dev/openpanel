@@ -4,8 +4,8 @@ import useWS from '@/hooks/useWS';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
-import AnimatedNumbers from 'react-animated-numbers';
 import { toast } from 'sonner';
+import { AnimatedNumber } from '../animated-number';
 
 export interface LiveCounterProps {
   projectId: string;
@@ -54,18 +54,7 @@ export function LiveCounter({ projectId }: LiveCounterProps) {
             )}
           />
         </div>
-        <AnimatedNumbers
-          includeComma
-          transitions={(index) => ({
-            type: 'spring',
-            duration: index + 0.3,
-
-            damping: 10,
-            stiffness: 200,
-          })}
-          animateToNumber={counter.debounced}
-          locale="en"
-        />
+        <AnimatedNumber value={counter.debounced} />
       </div>
     </TooltipComplete>
   );

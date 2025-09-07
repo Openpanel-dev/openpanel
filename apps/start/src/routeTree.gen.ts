@@ -31,7 +31,9 @@ import { Route as AppOrganizationIdProjectIdPagesRouteImport } from './routes/_a
 import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId_.$projectId_.dashboards'
 import { Route as AppOrganizationIdMembersTabsIndexRouteImport } from './routes/_app.$organizationId_.members._tabs.index'
 import { Route as AppOrganizationIdIntegrationsTabsIndexRouteImport } from './routes/_app.$organizationId_.integrations._tabs.index'
+import { Route as AppOrganizationIdMembersTabsMembersRouteImport } from './routes/_app.$organizationId_.members._tabs.members'
 import { Route as AppOrganizationIdMembersTabsInvitationsRouteImport } from './routes/_app.$organizationId_.members._tabs.invitations'
+import { Route as AppOrganizationIdIntegrationsTabsInstalledRouteImport } from './routes/_app.$organizationId_.integrations._tabs.installed'
 import { Route as AppOrganizationIdIntegrationsTabsAvailableRouteImport } from './routes/_app.$organizationId_.integrations._tabs.available'
 import { Route as AppOrganizationIdProjectIdSettingsTabsRouteImport } from './routes/_app.$organizationId_.$projectId_.settings._tabs'
 import { Route as AppOrganizationIdProjectIdReportsReportIdRouteImport } from './routes/_app.$organizationId_.$projectId_.reports_.$reportId'
@@ -218,11 +220,23 @@ const AppOrganizationIdIntegrationsTabsIndexRoute =
     path: '/',
     getParentRoute: () => AppOrganizationIdIntegrationsTabsRoute,
   } as any)
+const AppOrganizationIdMembersTabsMembersRoute =
+  AppOrganizationIdMembersTabsMembersRouteImport.update({
+    id: '/members',
+    path: '/members',
+    getParentRoute: () => AppOrganizationIdMembersTabsRoute,
+  } as any)
 const AppOrganizationIdMembersTabsInvitationsRoute =
   AppOrganizationIdMembersTabsInvitationsRouteImport.update({
     id: '/invitations',
     path: '/invitations',
     getParentRoute: () => AppOrganizationIdMembersTabsRoute,
+  } as any)
+const AppOrganizationIdIntegrationsTabsInstalledRoute =
+  AppOrganizationIdIntegrationsTabsInstalledRouteImport.update({
+    id: '/installed',
+    path: '/installed',
+    getParentRoute: () => AppOrganizationIdIntegrationsTabsRoute,
   } as any)
 const AppOrganizationIdIntegrationsTabsAvailableRoute =
   AppOrganizationIdIntegrationsTabsAvailableRouteImport.update({
@@ -377,7 +391,9 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId/reports/$reportId': typeof AppOrganizationIdProjectIdReportsReportIdRoute
   '/$organizationId/$projectId/settings': typeof AppOrganizationIdProjectIdSettingsTabsRouteWithChildren
   '/$organizationId/integrations/available': typeof AppOrganizationIdIntegrationsTabsAvailableRoute
+  '/$organizationId/integrations/installed': typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   '/$organizationId/members/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
+  '/$organizationId/members/members': typeof AppOrganizationIdMembersTabsMembersRoute
   '/$organizationId/integrations/': typeof AppOrganizationIdIntegrationsTabsIndexRoute
   '/$organizationId/members/': typeof AppOrganizationIdMembersTabsIndexRoute
   '/$organizationId/$projectId/events/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
@@ -419,7 +435,9 @@ export interface FileRoutesByTo {
   '/$organizationId/$projectId/reports/$reportId': typeof AppOrganizationIdProjectIdReportsReportIdRoute
   '/$organizationId/$projectId/settings': typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
   '/$organizationId/integrations/available': typeof AppOrganizationIdIntegrationsTabsAvailableRoute
+  '/$organizationId/integrations/installed': typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   '/$organizationId/members/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
+  '/$organizationId/members/members': typeof AppOrganizationIdMembersTabsMembersRoute
   '/$organizationId/$projectId/events/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
   '/$organizationId/$projectId/events/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
   '/$organizationId/$projectId/events/stats': typeof AppOrganizationIdProjectIdEventsTabsStatsRoute
@@ -465,7 +483,9 @@ export interface FileRoutesById {
   '/_app/$organizationId_/$projectId_/settings': typeof AppOrganizationIdProjectIdSettingsRouteWithChildren
   '/_app/$organizationId_/$projectId_/settings/_tabs': typeof AppOrganizationIdProjectIdSettingsTabsRouteWithChildren
   '/_app/$organizationId_/integrations/_tabs/available': typeof AppOrganizationIdIntegrationsTabsAvailableRoute
+  '/_app/$organizationId_/integrations/_tabs/installed': typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   '/_app/$organizationId_/members/_tabs/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
+  '/_app/$organizationId_/members/_tabs/members': typeof AppOrganizationIdMembersTabsMembersRoute
   '/_app/$organizationId_/integrations/_tabs/': typeof AppOrganizationIdIntegrationsTabsIndexRoute
   '/_app/$organizationId_/members/_tabs/': typeof AppOrganizationIdMembersTabsIndexRoute
   '/_app/$organizationId_/$projectId_/events/_tabs/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
@@ -510,7 +530,9 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/reports/$reportId'
     | '/$organizationId/$projectId/settings'
     | '/$organizationId/integrations/available'
+    | '/$organizationId/integrations/installed'
     | '/$organizationId/members/invitations'
+    | '/$organizationId/members/members'
     | '/$organizationId/integrations/'
     | '/$organizationId/members/'
     | '/$organizationId/$projectId/events/conversions'
@@ -552,7 +574,9 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/reports/$reportId'
     | '/$organizationId/$projectId/settings'
     | '/$organizationId/integrations/available'
+    | '/$organizationId/integrations/installed'
     | '/$organizationId/members/invitations'
+    | '/$organizationId/members/members'
     | '/$organizationId/$projectId/events/conversions'
     | '/$organizationId/$projectId/events/events'
     | '/$organizationId/$projectId/events/stats'
@@ -597,7 +621,9 @@ export interface FileRouteTypes {
     | '/_app/$organizationId_/$projectId_/settings'
     | '/_app/$organizationId_/$projectId_/settings/_tabs'
     | '/_app/$organizationId_/integrations/_tabs/available'
+    | '/_app/$organizationId_/integrations/_tabs/installed'
     | '/_app/$organizationId_/members/_tabs/invitations'
+    | '/_app/$organizationId_/members/_tabs/members'
     | '/_app/$organizationId_/integrations/_tabs/'
     | '/_app/$organizationId_/members/_tabs/'
     | '/_app/$organizationId_/$projectId_/events/_tabs/conversions'
@@ -807,12 +833,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdIntegrationsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdIntegrationsTabsRoute
     }
+    '/_app/$organizationId_/members/_tabs/members': {
+      id: '/_app/$organizationId_/members/_tabs/members'
+      path: '/members'
+      fullPath: '/$organizationId/members/members'
+      preLoaderRoute: typeof AppOrganizationIdMembersTabsMembersRouteImport
+      parentRoute: typeof AppOrganizationIdMembersTabsRoute
+    }
     '/_app/$organizationId_/members/_tabs/invitations': {
       id: '/_app/$organizationId_/members/_tabs/invitations'
       path: '/invitations'
       fullPath: '/$organizationId/members/invitations'
       preLoaderRoute: typeof AppOrganizationIdMembersTabsInvitationsRouteImport
       parentRoute: typeof AppOrganizationIdMembersTabsRoute
+    }
+    '/_app/$organizationId_/integrations/_tabs/installed': {
+      id: '/_app/$organizationId_/integrations/_tabs/installed'
+      path: '/installed'
+      fullPath: '/$organizationId/integrations/installed'
+      preLoaderRoute: typeof AppOrganizationIdIntegrationsTabsInstalledRouteImport
+      parentRoute: typeof AppOrganizationIdIntegrationsTabsRoute
     }
     '/_app/$organizationId_/integrations/_tabs/available': {
       id: '/_app/$organizationId_/integrations/_tabs/available'
@@ -973,6 +1013,7 @@ declare module '@tanstack/react-router' {
 
 interface AppOrganizationIdIntegrationsTabsRouteChildren {
   AppOrganizationIdIntegrationsTabsAvailableRoute: typeof AppOrganizationIdIntegrationsTabsAvailableRoute
+  AppOrganizationIdIntegrationsTabsInstalledRoute: typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   AppOrganizationIdIntegrationsTabsIndexRoute: typeof AppOrganizationIdIntegrationsTabsIndexRoute
 }
 
@@ -980,6 +1021,8 @@ const AppOrganizationIdIntegrationsTabsRouteChildren: AppOrganizationIdIntegrati
   {
     AppOrganizationIdIntegrationsTabsAvailableRoute:
       AppOrganizationIdIntegrationsTabsAvailableRoute,
+    AppOrganizationIdIntegrationsTabsInstalledRoute:
+      AppOrganizationIdIntegrationsTabsInstalledRoute,
     AppOrganizationIdIntegrationsTabsIndexRoute:
       AppOrganizationIdIntegrationsTabsIndexRoute,
   }
@@ -1006,6 +1049,7 @@ const AppOrganizationIdIntegrationsRouteWithChildren =
 
 interface AppOrganizationIdMembersTabsRouteChildren {
   AppOrganizationIdMembersTabsInvitationsRoute: typeof AppOrganizationIdMembersTabsInvitationsRoute
+  AppOrganizationIdMembersTabsMembersRoute: typeof AppOrganizationIdMembersTabsMembersRoute
   AppOrganizationIdMembersTabsIndexRoute: typeof AppOrganizationIdMembersTabsIndexRoute
 }
 
@@ -1013,6 +1057,8 @@ const AppOrganizationIdMembersTabsRouteChildren: AppOrganizationIdMembersTabsRou
   {
     AppOrganizationIdMembersTabsInvitationsRoute:
       AppOrganizationIdMembersTabsInvitationsRoute,
+    AppOrganizationIdMembersTabsMembersRoute:
+      AppOrganizationIdMembersTabsMembersRoute,
     AppOrganizationIdMembersTabsIndexRoute:
       AppOrganizationIdMembersTabsIndexRoute,
   }

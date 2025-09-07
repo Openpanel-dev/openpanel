@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { DialogContent } from '@/components/ui/dialog';
+import { DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/utils/cn';
 import type { DialogContentProps } from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
@@ -35,9 +35,9 @@ export function ModalHeader({
       )}
       style={{}}
     >
-      <div className="row relative w-full items-start justify-between gap-4">
-        <div className="col mt-1 flex-1 gap-2">
-          <div className="text-xl font-semibold">{title}</div>
+      <div className="row relative w-full justify-between gap-4">
+        <div className="col flex-1 gap-2">
+          <DialogTitle>{title}</DialogTitle>
           {!!text && (
             <div className="text-lg text-muted-foreground leading-normal">
               {text}
@@ -49,6 +49,7 @@ export function ModalHeader({
             variant="ghost"
             size="sm"
             onClick={() => (onClose ? onClose() : popModal())}
+            className="-mt-2"
           >
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>

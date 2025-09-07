@@ -5,15 +5,46 @@ import { Link } from '@tanstack/react-router';
 
 import type { IServiceProject } from '@openpanel/db';
 
+import { cn } from '@/utils/cn';
 import { SettingsIcon } from 'lucide-react';
 import { ChartSSR } from '../chart-ssr';
 import { FadeIn } from '../fade-in';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import { Skeleton } from '../skeleton';
 import { LinkButton } from '../ui/button';
+
+export function ProjectCardRoot({
+  children,
+  className,
+}: { children: React.ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        'relative card hover:-translate-y-px hover:shadow-sm',
+        className,
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function ProjectCardSkeleton() {
+  return (
+    <ProjectCardRoot className="aspect-[340/116.25] p-4 col">
+      <Skeleton className="h-5 w-full" />
+      <div className="row mt-auto gap-4 w-1/2 ml-auto">
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-full" />
+      </div>
+    </ProjectCardRoot>
+  );
+}
 
 function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
   return (
-    <div className="relative card hover:-translate-y-px hover:shadow-sm">
+    <ProjectCardRoot>
       <Link
         to="/$organizationId/$projectId"
         params={{
@@ -42,7 +73,7 @@ function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
       >
         <SettingsIcon size={16} />
       </LinkButton>
-    </div>
+    </ProjectCardRoot>
   );
 }
 
@@ -56,7 +87,7 @@ function ProjectChart({ id }: { id: string }) {
 
   return (
     <FadeIn className="h-full w-full">
-      <ChartSSR data={data?.chart ?? []} />
+      <ChartSSR data={data?.chart || []} />
     </FadeIn>
   );
 }
