@@ -24,7 +24,6 @@ export const zGetTopPagesInput = z.object({
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
-  interval: zTimeInterval,
   cursor: z.number().optional(),
   limit: z.number().optional(),
 });
@@ -38,7 +37,6 @@ export const zGetTopEntryExitInput = z.object({
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
-  interval: zTimeInterval,
   mode: z.enum(['entry', 'exit']),
   cursor: z.number().optional(),
   limit: z.number().optional(),
@@ -53,7 +51,6 @@ export const zGetTopGenericInput = z.object({
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
-  interval: zTimeInterval,
   column: z.enum([
     // Referrers
     'referrer',
@@ -168,6 +165,16 @@ export class OverviewService {
       views_per_session: number;
     }[];
   }> {
+    console.log('-----------------');
+    console.log('getMetrics', {
+      projectId,
+      filters,
+      startDate,
+      endDate,
+      interval,
+      timezone,
+    });
+
     const where = this.getRawWhereClause('sessions', filters);
     if (this.isPageFilter(filters)) {
       // Session aggregation with bounce rates

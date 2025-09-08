@@ -63,7 +63,6 @@ export default function OverviewTopSources({
 
   const query = api.overview.topGeneric.useQuery({
     projectId,
-    interval,
     range,
     filters,
     column: widget.key,

@@ -1,222 +1,418 @@
 ---
 title: Export
-description: The Export API allows you to retrieve event data and chart data from your OpenPanel projects.
+description: The Export API allows you to retrieve event data and chart data from your OpenPanel projects for analysis, reporting, and data integration.
 ---
 
 ## Authentication
 
 To authenticate with the Export API, you need to use your `clientId` and `clientSecret`. Make sure your client has `read` or `root` mode. The default client does not have access to the Export API.
 
+For detailed authentication information, see the [Authentication](/docs/api/authentication) guide.
+
 Include the following headers with your requests:
-- `openpanel-client-id`: Your OpenPanel client ID
+- `openpanel-client-id`: Your OpenPanel client ID  
 - `openpanel-client-secret`: Your OpenPanel client secret
 
-Example:
+## Base URL
 
-```bash
-curl 'https://api.openpanel.dev/export/events' \
-  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
-  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+All Export API requests should be made to:
+
+```
+https://api.openpanel.dev/export
 ```
 
-## Events
+## Common Query Parameters
 
-Get events from a specific project within a date range.
+Most endpoints support the following query parameters:
 
-Endpoint: `GET /export/events`
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `projectId` | string | The ID of the project (alternative: `project_id`) | Required |
+| `startDate` | string | Start date (ISO format: YYYY-MM-DD) | Based on range |
+| `endDate` | string | End date (ISO format: YYYY-MM-DD) | Based on range |
+| `range` | string | Predefined date range (`7d`, `30d`, `today`, etc.) | None |
 
-Parameters:
-- project_id (required): The ID of the project
-- event (optional): Filter by event name(s). Can be a single event or an array of events.
-- start (optional): Start date (format: YYYY-MM-DD)
-- end (optional): End date (format: YYYY-MM-DD)
-- page (optional, default: 1): Page number for pagination
-- limit (optional, default: 50, max: 50): Number of events per page
-- includes (optional): Additional fields to include in the response
+## Endpoints
 
-Example:
+### Get Events
 
-```bash
-curl 'https://api.openpanel.dev/export/events?project_id=abc&event=screen_view&start=2024-04-15&end=2024-04-18' \
-  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
-  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+Retrieve individual events from a specific project within a date range. This endpoint provides raw event data with optional filtering and pagination.
+
+```
+GET /export/events
 ```
 
-### Query Parameters
+#### Query Parameters
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| projectId | string | The ID of the project to fetch events from | `abc123` |
-| event | string or string[] | Event name(s) to filter | `screen_view` or `["screen_view","button_click"]` |
-| start | string | Start date for the event range (ISO format) | `2024-04-15` |
-| end | string | End date for the event range (ISO format) | `2024-04-18` |
-| page | number | Page number for pagination (default: 1) | `2` |
-| limit | number | Number of events per page (default: 50, max: 50) | `25` |
-| includes | string or string[] | Additional fields to include in the response | `profile` or `["profile","meta"]` |
+| `projectId` | string | The ID of the project to fetch events from | `abc123` |
+| `profileId` | string | Filter events by specific profile/user ID | `user_123` |
+| `event` | string or string[] | Event name(s) to filter | `screen_view` or `["screen_view","button_click"]` |
+| `start` | string | Start date for the event range (ISO format) | `2024-04-15` |
+| `end` | string | End date for the event range (ISO format) | `2024-04-18` |
+| `page` | number | Page number for pagination (default: 1) | `2` |
+| `limit` | number | Number of events per page (default: 50, max: 1000) | `100` |
+| `includes` | string or string[] | Additional fields to include in the response | `profile` or `["profile","meta"]` |
 
-### Example Request
+#### Include Options
+
+The `includes` parameter allows you to fetch additional related data:
+
+- `profile`: Include user profile information
+- `meta`: Include event metadata and configuration
+
+#### Example Request
 
 ```bash
-curl 'https://api.openpanel.dev/export/events?project_id=abc123&event=screen_view&start=2024-04-15&end=2024-04-18&page=1&limit=50&includes=profile,meta' \
+curl 'https://api.openpanel.dev/export/events?projectId=abc123&event=screen_view&start=2024-04-15&end=2024-04-18&page=1&limit=100&includes=profile,meta' \
   -H 'openpanel-client-id: YOUR_CLIENT_ID' \
   -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
 ```
 
-### Response
+#### Response
 
 ```json
 {
   "meta": {
-    "count": number,
-    "totalCount": number,
-    "pages": number,
-    "current": number
+    "count": 50,
+    "totalCount": 1250,
+    "pages": 25,
+    "current": 1
   },
-  "data": Array<Event>
+  "data": [
+    {
+      "id": "evt_123456789",
+      "name": "screen_view",
+      "deviceId": "device_abc123",
+      "profileId": "user_789",
+      "projectId": "abc123",
+      "sessionId": "session_xyz",
+      "properties": {
+        "path": "/dashboard",
+        "title": "Dashboard",
+        "url": "https://example.com/dashboard"
+      },
+      "createdAt": "2024-04-15T10:30:00.000Z",
+      "country": "United States",
+      "city": "New York",
+      "region": "New York",
+      "os": "macOS",
+      "browser": "Chrome",
+      "device": "Desktop",
+      "duration": 0,
+      "path": "/dashboard",
+      "origin": "https://example.com",
+      "profile": {
+        "id": "user_789",
+        "email": "user@example.com",
+        "firstName": "John",
+        "lastName": "Doe",
+        "isExternal": true,
+        "createdAt": "2024-04-01T08:00:00.000Z"
+      },
+      "meta": {
+        "name": "screen_view",
+        "description": "Page view tracking",
+        "conversion": false
+      }
+    }
+  ]
 }
 ```
 
-## Charts
+### Get Charts
 
-Retrieve chart data for a specific project.
-
-### Endpoint
+Retrieve aggregated chart data for analytics and visualization. This endpoint provides time-series data with advanced filtering, breakdowns, and comparison capabilities.
 
 ```
 GET /export/charts
 ```
 
-### Query Parameters
+#### Query Parameters
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| projectId | string | The ID of the project to fetch chart data from | `abc123` |
-| events | string[] | Array of event configurations to include in the chart | `[{"name":"sign_up","filters":[]}]` |
-| breakdowns | object[] | Array of breakdown configurations | `[{"name":"country"}]` |
-| interval | string | Time interval for data points | `day` |
-| range | string | Predefined date range | `last_7_days` |
-| previous | boolean | Include data from the previous period | `true` |
-| startDate | string | Custom start date (ISO format) | `2024-04-01` |
-| endDate | string | Custom end date (ISO format) | `2024-04-30` |
-| chartType | string | Type of chart to generate | `linear` |
-| metric | string | Metric to use for calculations | `sum` |
-| limit | number | Limit the number of results | `10` |
-| offset | number | Offset for pagination | `0` |
+| `projectId` | string | The ID of the project to fetch chart data from | `abc123` |
+| `events` | object[] | Array of event configurations to analyze | `[{"name":"screen_view","filters":[]}]` |
+| `breakdowns` | object[] | Array of breakdown dimensions | `[{"name":"country"}]` |
+| `interval` | string | Time interval for data points | `day` |
+| `range` | string | Predefined date range | `7d` |
+| `previous` | boolean | Include data from the previous period for comparison | `true` |
+| `startDate` | string | Custom start date (ISO format) | `2024-04-01` |
+| `endDate` | string | Custom end date (ISO format) | `2024-04-30` |
 
-#### Events configuration
+#### Event Configuration
 
-Each event configuration object has the following properties:
+Each event in the `events` array supports the following properties:
+
+| Property | Type | Description | Required | Default |
+|----------|------|-------------|----------|---------|
+| `name` | string | Name of the event to track | Yes | - |
+| `filters` | Filter[] | Array of filters to apply to the event | No | `[]` |
+| `segment` | string | Type of segmentation | No | `event` |
+| `property` | string | Property name for property-based segments | No | - |
+
+#### Segmentation Options
+
+- `event`: Count individual events (default)
+- `user`: Count unique users/profiles
+- `session`: Count unique sessions
+- `user_average`: Average events per user
+- `one_event_per_user`: One event per user (deduplicated)
+- `property_sum`: Sum of a numeric property
+- `property_average`: Average of a numeric property
+- `property_min`: Minimum value of a numeric property
+- `property_max`: Maximum value of a numeric property
+
+#### Filter Configuration
+
+Each filter in the `filters` array supports:
 
 | Property | Type | Description | Required |
 |----------|------|-------------|----------|
-| name | string | Name of the event to track | Yes |
-| filters | Filter[] | Array of filters to apply to the event | No |
-| segment | string | Type of segmentation. Options: `event`, `user`, `session`, `user_average`, `one_event_per_user`, `property_sum`, `property_average` | No (defaults to `event`) |
-| property | string | Property name to analyze when using property-based segments | No |
+| `name` | string | Property name to filter on | Yes |
+| `operator` | string | Comparison operator | Yes |
+| `value` | array | Array of values to compare against | Yes |
 
-##### Filter Configuration
+#### Filter Operators
 
-Each filter in the `filters` array has the following structure:
+- `is`: Exact match
+- `isNot`: Not equal to
+- `contains`: Contains substring
+- `doesNotContain`: Does not contain substring
+- `startsWith`: Starts with
+- `endsWith`: Ends with
+- `regex`: Regular expression match
+- `isNull`: Property is null or empty
+- `isNotNull`: Property has a value
 
-| Property | Type | Description | Required |
-|----------|------|-------------|----------|
-| name | string | Name of the property to filter on | Yes |
-| operator | string | Comparison operator. Valid values: `is`, `isNot`, `contains`, `doesNotContain`, `startsWith`, `endsWith`, `regex` | Yes |
-| value | (string \| number \| boolean \| null)[] | Array of values to compare against | Yes |
+#### Breakdown Dimensions
 
-Example event configuration:
-```json
-{
-  "name": "purchase",
-  "segment": "user",
-  "filters": [
-    {
-      "name": "total",
-      "operator": "is",
-      "value": ["100"]
-    }
-  ]
-}
-```
+Common breakdown dimensions include:
 
-The operators are used in the SQL builder (`chart.service.ts` lines 262-346) with the following mappings:
-- `is`: Equals comparison
-- `isNot`: Not equals comparison
-- `contains`: LIKE %value%
-- `doesNotContain`: NOT LIKE %value%
-- `startsWith`: LIKE value%
-- `endsWith`: LIKE %value
-- `regex`: Match function
+| Dimension | Description | Example Values |
+|-----------|-------------|----------------|
+| `country` | User's country | `United States`, `Canada` |
+| `region` | User's region/state | `California`, `New York` |
+| `city` | User's city | `San Francisco`, `New York` |
+| `device` | Device type | `Desktop`, `Mobile`, `Tablet` |
+| `browser` | Browser name | `Chrome`, `Firefox`, `Safari` |
+| `os` | Operating system | `macOS`, `Windows`, `iOS` |
+| `referrer` | Referrer URL | `google.com`, `facebook.com` |
+| `path` | Page path | `/`, `/dashboard`, `/pricing` |
 
-### Example Request
+#### Time Intervals
+
+- `minute`: Minute-by-minute data
+- `hour`: Hourly aggregation
+- `day`: Daily aggregation (default)
+- `week`: Weekly aggregation
+- `month`: Monthly aggregation
+
+#### Date Ranges
+
+- `30min`: Last 30 minutes
+- `lastHour`: Last hour
+- `today`: Current day
+- `yesterday`: Previous day
+- `7d`: Last 7 days
+- `30d`: Last 30 days
+- `6m`: Last 6 months
+- `12m`: Last 12 months
+- `monthToDate`: Current month to date
+- `lastMonth`: Previous month
+- `yearToDate`: Current year to date
+- `lastYear`: Previous year
+
+#### Example Request
 
 ```bash
-curl 'https://api.openpanel.dev/export/charts?projectId=abc123&events=[{"name":"screen_view"}]&interval=day&range=last_30_days&chartType=linear&metric=sum' \
+curl 'https://api.openpanel.dev/export/charts?projectId=abc123&events=[{"name":"screen_view","segment":"user"}]&breakdowns=[{"name":"country"}]&interval=day&range=30d&previous=true' \
   -H 'openpanel-client-id: YOUR_CLIENT_ID' \
   -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
 ```
 
-### Response
-
-The response will include chart data with series, metrics, and optional previous period comparisons based on the input parameters.
-
-## Funnel
-
-Retrieve funnel data for a specific project.
-
-### Endpoint
-
-```
-GET /export/funnel
-```
-
-### Query Parameters
-
-| Parameter | Type | Description | Example |
-|-----------|------|-------------|---------|
-| projectId | string | The ID of the project to fetch funnel data from | `abc123` |
-| events | object[] | Array of event configurations for the funnel steps | `[{"name":"sign_up","filters":[]}]` |
-| range | string | Predefined date range | `last_30_days` |
-| startDate | string | Custom start date (ISO format) | `2024-04-01` |
-| endDate | string | Custom end date (ISO format) | `2024-04-30` |
-
-### Example Request
+#### Example Advanced Request
 
 ```bash
-curl 'https://api.openpanel.dev/export/funnel?projectId=abc123&events=[{"name":"sign_up"},{"name":"purchase"}]&range=last_30_days' \
+curl 'https://api.openpanel.dev/export/charts' \
   -H 'openpanel-client-id: YOUR_CLIENT_ID' \
-  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET' \
+  -G \
+  --data-urlencode 'projectId=abc123' \
+  --data-urlencode 'events=[{"name":"purchase","segment":"property_sum","property":"properties.total","filters":[{"name":"properties.total","operator":"isNotNull","value":[]}]}]' \
+  --data-urlencode 'breakdowns=[{"name":"country"}]' \
+  --data-urlencode 'interval=day' \
+  --data-urlencode 'range=30d'
 ```
 
-### Response
-
-The response will include funnel data with total sessions and step-by-step breakdown of the funnel progression.
+#### Response
 
 ```json
 {
-  "totalSessions": number,
-  "steps": [
+  "series": [
     {
+      "id": "screen_view-united-states",
+      "names": ["screen_view", "United States"],
       "event": {
-        "name": string,
-        "displayName": string
+        "id": "evt1",
+        "name": "screen_view"
       },
-      "count": number,
-      "percent": number,
-      "dropoffCount": number,
-      "dropoffPercent": number,
-      "previousCount": number
+      "metrics": {
+        "sum": 1250,
+        "average": 41.67,
+        "min": 12,
+        "max": 89,
+        "previous": {
+          "sum": {
+            "value": 1100,
+            "change": 13.64
+          },
+          "average": {
+            "value": 36.67,
+            "change": 13.64
+          }
+        }
+      },
+      "data": [
+        {
+          "date": "2024-04-01T00:00:00.000Z",
+          "count": 45,
+          "previous": {
+            "value": 38,
+            "change": 18.42
+          }
+        },
+        {
+          "date": "2024-04-02T00:00:00.000Z",
+          "count": 52,
+          "previous": {
+            "value": 41,
+            "change": 26.83
+          }
+        }
+      ]
+    }
+  ],
+  "metrics": {
+    "sum": 1250,
+    "average": 41.67,
+    "min": 12,
+    "max": 89,
+    "previous": {
+      "sum": {
+        "value": 1100,
+        "change": 13.64
+      }
+    }
+  }
+}
+```
+
+## Error Handling
+
+The API uses standard HTTP response codes. Common error responses:
+
+### 400 Bad Request
+
+```json
+{
+  "error": "Bad Request",
+  "message": "Invalid query parameters",
+  "details": [
+    {
+      "path": ["events", 0, "name"],
+      "message": "Required"
     }
   ]
 }
 ```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid client credentials"
+}
+```
+
+### 403 Forbidden
+
+```json
+{
+  "error": "Forbidden",
+  "message": "You do not have access to this project"
+}
+```
+
+### 404 Not Found
+
+```json
+{
+  "error": "Not Found",
+  "message": "Project not found"
+}
+```
+
+### 429 Too Many Requests
+
+Rate limiting response includes headers indicating your rate limit status.
+
+## Rate Limiting
+
+The Export API implements rate limiting:
+- **100 requests per 10 seconds** per client
+- Rate limit headers included in responses
+- Implement exponential backoff for retries
+
+## Data Types and Formats
+
+### Event Properties
+
+Event properties are stored as key-value pairs and can include:
+
+- **Built-in properties**: `path`, `origin`, `title`, `url`, `hash`
+- **UTM parameters**: `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`
+- **Custom properties**: Any custom data you track with your events
+
+### Property Access
+
+Properties can be accessed in filters and breakdowns using dot notation:
+
+- `properties.custom_field`: Access custom properties
+- `profile.properties.user_type`: Access profile properties
+- `properties.__query.utm_source`: Access query parameters
+
+### Date Handling
+
+- All dates are in ISO 8601 format
+- Timezone handling is done server-side based on project settings
+- Date ranges are inclusive of start and end dates
+
+### Geographic Data
+
+Geographic information is automatically collected when available:
+
+- `country`: Full country name
+- `region`: State/province/region
+- `city`: City name
+- `longitude`/`latitude`: Coordinates (when available)
+
+### Device Information
+
+Device data is collected from user agents:
+
+- `device`: Device type (Desktop, Mobile, Tablet)
+- `browser`: Browser name and version
+- `os`: Operating system and version
+- `brand`/`model`: Device brand and model (mobile devices)
 
 ## Notes
 
-- All date parameters should be in ISO format (YYYY-MM-DD).
-- The `range` parameter accepts values like `today`, `yesterday`, `last_7_days`, `last_30_days`, `this_month`, `last_month`, `this_year`, `last_year`, `all_time`.
-- The `interval` parameter accepts values like `minute`, `hour`, `day`, `month`.
-- The `chartType` parameter can be `linear` or other supported chart types.
-- The `metric` parameter can be `sum`, `average`, `min`, or `max`.
+- Event data is typically available within seconds of tracking
+- All timezone handling is done server-side based on project settings
+- Property names are case-sensitive in filters and breakdowns
 
 Remember to replace `YOUR_CLIENT_ID` and `YOUR_CLIENT_SECRET` with your actual OpenPanel API credentials.

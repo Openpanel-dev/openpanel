@@ -6,8 +6,6 @@ import { ModalContent, ModalHeader } from '@/modals/Modal/Container';
 import { api } from '@/trpc/client';
 import type { IGetTopGenericInput } from '@openpanel/db';
 import { ChevronRightIcon } from 'lucide-react';
-import { useEffect } from 'react';
-import { toast } from 'sonner';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
@@ -36,7 +34,6 @@ export default function OverviewTopGenericModal({
       startDate,
       endDate,
       range,
-      interval,
       limit: 50,
       column,
     },

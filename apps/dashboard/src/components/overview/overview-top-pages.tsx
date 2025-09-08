@@ -4,9 +4,6 @@ import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 import { Globe2Icon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
-import { useState } from 'react';
-
-import type { IChartType } from '@openpanel/validation';
 
 import { pushModal } from '@/modals';
 import { api } from '@/trpc/client';
@@ -15,7 +12,6 @@ import { Widget, WidgetBody } from '../widget';
 import OverviewDetailsButton from './overview-details-button';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
 import {
-  OverviewWidgetTableBots,
   OverviewWidgetTableLoading,
   OverviewWidgetTablePages,
 } from './overview-widget-table';
@@ -72,7 +68,6 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
     endDate,
     mode: widget.key,
     range,
-    interval,
   });
 
   const data = query.data;

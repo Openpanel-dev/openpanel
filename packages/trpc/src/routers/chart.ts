@@ -10,13 +10,13 @@ import {
   chQuery,
   clix,
   conversionService,
-  createSqlBuilder,
   db,
   funnelService,
+  getChartPrevStartEndDate,
+  getChartStartEndDate,
   getEventMetasCached,
   getSelectPropertyKey,
   getSettingsForProject,
-  toDate,
 } from '@openpanel/db';
 import {
   zChartInput,
@@ -40,11 +40,7 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../trpc';
-import {
-  getChart,
-  getChartPrevStartEndDate,
-  getChartStartEndDate,
-} from './chart.helpers';
+import { getChart } from './chart.helpers';
 
 function utc(date: string | Date) {
   if (typeof date === 'string') {

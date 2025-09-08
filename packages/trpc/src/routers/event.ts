@@ -10,6 +10,7 @@ import {
   db,
   eventService,
   formatClickhouseDate,
+  getChartStartEndDate,
   getConversionEventNames,
   getEventList,
   getEventMetasCached,
@@ -28,7 +29,6 @@ import { clone } from 'ramda';
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { getChartStartEndDate } from './chart.helpers';
 
 export const eventRouter = createTRPCRouter({
   updateEventMeta: protectedProcedure
@@ -289,7 +289,6 @@ export const eventRouter = createTRPCRouter({
         filters: input.filters,
         startDate,
         endDate,
-        interval: input.interval,
         cursor: input.cursor || 1,
         limit: input.take,
         timezone,
