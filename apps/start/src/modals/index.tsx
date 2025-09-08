@@ -19,6 +19,7 @@ import ShareOverviewModal from './ShareOverviewModal';
 import AddIntegration from './add-integration';
 import AddNotificationRule from './add-notification-rule';
 import AddProject from './add-project';
+import CreateInvite from './create-invite';
 import DateTimePicker from './date-time-picker';
 import EditEvent from './edit-event';
 import EventDetails from './event-details';
@@ -53,6 +54,7 @@ const modals = {
   OverviewChartDetails: OverviewChartDetails,
   AddIntegration: AddIntegration,
   AddNotificationRule: AddNotificationRule,
+  CreateInvite: CreateInvite,
 };
 
 export const {

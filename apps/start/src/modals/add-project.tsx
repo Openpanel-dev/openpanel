@@ -11,6 +11,7 @@ import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zOnboardingProject } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import {
   MonitorIcon,
   SaveIcon,
@@ -29,6 +30,7 @@ type IForm = z.infer<typeof validator>;
 
 export default function AddProject() {
   const { organizationId } = useAppParams();
+  const navigate = useNavigate();
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
@@ -46,8 +48,21 @@ export default function AddProject() {
   const mutation = useMutation(
     trpc.project.create.mutationOptions({
       onError: handleError,
-      onSuccess: () => {
-        toast.success('Project created');
+      onSuccess: (res) => {
+        toast.success('Project created', {
+          description: `${res.name}`,
+          action: {
+            label: 'View project',
+            onClick: () =>
+              navigate({
+                to: '/$organizationId/$projectId',
+                params: {
+                  organizationId,
+                  projectId: res.id,
+                },
+              }),
+          },
+        });
       },
     }),
   );

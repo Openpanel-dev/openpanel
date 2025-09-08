@@ -2,19 +2,17 @@ import { DataTable } from '@/components/data-table';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { GanttChartIcon } from 'lucide-react';
 
-import type { IServiceInvite, IServiceProject } from '@openpanel/db';
+import type { RouterOutputs } from '@/trpc/client';
 
 import { useColumns } from './columns';
-
 type CommonProps = {
-  projects: IServiceProject[];
-  data: IServiceInvite[];
+  data?: RouterOutputs['organization']['invitations'];
 };
 
 type Props = CommonProps;
 
-export const InvitesTable = ({ projects, data }: Props) => {
-  const columns = useColumns(projects);
+export const InvitesTable = ({ data }: Props) => {
+  const columns = useColumns();
 
   if (!data) {
     return (

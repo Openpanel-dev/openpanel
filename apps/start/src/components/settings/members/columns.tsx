@@ -8,18 +8,17 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useRouteContext, useRouter } from '@tanstack/react-router';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { ACTIONS } from '@/components/data-table';
-import { useAuth } from '@/hooks/useAuth';
-import type { IServiceMember, IServiceProject } from '@openpanel/db';
+import type { IServiceMember } from '@openpanel/db';
 
-export function useColumns(projects: IServiceProject[]) {
+export function useColumns() {
   const columns: ColumnDef<IServiceMember>[] = [
     {
       accessorKey: 'user',
@@ -58,7 +57,7 @@ export function useColumns(projects: IServiceProject[]) {
       accessorKey: 'access',
       header: 'Access',
       cell: ({ row }) => {
-        return <AccessCell row={row} projects={projects} />;
+        return <AccessCell row={row} />;
       },
     },
     {
@@ -74,18 +73,24 @@ export function useColumns(projects: IServiceProject[]) {
 
 function AccessCell({
   row,
-  projects,
 }: {
   row: Row<IServiceMember>;
-  projects: IServiceProject[];
 }) {
-  const auth = useAuth();
-  const currentUserId = auth.data?.userId;
+  const currentUserId = useRouteContext({
+    from: '/_app',
+    select: (context) => context.session.userId,
+  });
   const initial = useRef(row.original.access.map((item) => item.projectId));
   const [access, setAccess] = useState<string[]>(
     row.original.access.map((item) => item.projectId),
   );
   const trpc = useTRPC();
+  const projectsQuery = useQuery(
+    trpc.project.list.queryOptions({
+      organizationId: row.original.organizationId,
+    }),
+  );
+  const projects = projectsQuery.data ?? [];
   const mutation = useMutation(
     trpc.organization.updateMemberAccess.mutationOptions({
       onError(error) {
@@ -94,10 +99,6 @@ function AccessCell({
       },
     }),
   );
-
-  if (auth.isLoading) {
-    return null;
-  }
 
   if (currentUserId === row.original.userId) {
     return (

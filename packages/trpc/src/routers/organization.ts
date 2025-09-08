@@ -3,6 +3,8 @@ import { z } from 'zod';
 import {
   connectUserToOrganization,
   db,
+  getInvites,
+  getMembers,
   getOrganizationById,
   getOrganizations,
 } from '@openpanel/db';
@@ -254,5 +256,17 @@ export const organizationRouter = createTRPCRouter({
           })),
         }),
       ]);
+    }),
+
+  members: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      return getMembers(input.organizationId);
+    }),
+
+  invitations: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      return getInvites(input.organizationId);
     }),
 });

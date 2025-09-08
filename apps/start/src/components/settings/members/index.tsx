@@ -2,19 +2,18 @@ import { DataTable } from '@/components/data-table';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { GanttChartIcon } from 'lucide-react';
 
-import type { IServiceMember, IServiceProject } from '@openpanel/db';
+import type { IServiceMember } from '@openpanel/db';
 
 import { useColumns } from './columns';
 
 type CommonProps = {
-  projects: IServiceProject[];
-  data: IServiceMember[];
+  data?: IServiceMember[];
 };
 
 type Props = CommonProps;
 
-export const MembersTable = ({ projects, data }: Props) => {
-  const columns = useColumns(projects);
+export const MembersTable = ({ data }: Props) => {
+  const columns = useColumns();
 
   if (!data) {
     return (
@@ -36,9 +35,5 @@ export const MembersTable = ({ projects, data }: Props) => {
     );
   }
 
-  return (
-    <>
-      <DataTable data={data ?? []} columns={columns} />
-    </>
-  );
+  return <DataTable data={data ?? []} columns={columns} />;
 };

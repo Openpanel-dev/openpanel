@@ -1,3 +1,4 @@
+import { ActiveIntegrations } from '@/components/integrations/active-integrations';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
@@ -7,19 +8,5 @@ export const Route = createFileRoute(
 });
 
 function Component() {
-  // const { projectId } = useAppParams();
-  // const trpc = useTRPC();
-  // const query = useQuery(
-  //   trpc.project.getProjectWithClients.queryOptions({ projectId }),
-  // );
-
-  // if (query.isLoading) {
-  //   return <FullPageLoadingState />;
-  // }
-
-  // if (!query.data) {
-  //   return <div>Project not found</div>;
-  // }
-
-  return <div className="space-y-6">Installed</div>;
+  return <ActiveIntegrations />;
 }

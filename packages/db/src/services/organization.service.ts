@@ -69,6 +69,9 @@ export async function getInvites(organizationId: string) {
     where: {
       organizationId,
     },
+    orderBy: {
+      createdAt: 'desc',
+    },
   });
 }
 

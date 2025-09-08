@@ -1,6 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-// import { pushModal } from '@/modals';
+import { pushModal } from '@/modals';
 import type { IServiceDashboards } from '@openpanel/db';
 import { useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -18,18 +17,16 @@ import {
   LayoutDashboardIcon,
   LayoutPanelTopIcon,
   PlusIcon,
-  ScanEyeIcon,
   SparklesIcon,
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SidebarLink } from './sidebar-link';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 
@@ -63,75 +60,51 @@ export default function SidebarProjectMenu({
         href={'/notifications'}
       />
       <SidebarLink icon={BuildingIcon} label="Workspace" href={'..'} />
-
-      {/* <div className="mt-4">
-        <div className="mb-2 flex items-center justify-between">
-          <div className="text-muted-foreground">Your dashboards</div>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="text-muted-foreground"
-            onClick={() => {
-              // TODO: Add modal for creating dashboard
-              // pushModal('AddDashboard')
-              console.log('Add dashboard - modal not implemented yet');
-            }}
-          >
-            <PlusIcon size={16} />
-          </Button>
-        </div>
-        <div className="flex flex-col gap-2">
-          {dashboards.map((item) => (
-            <SidebarLink
-              key={item.id}
-              icon={LayoutPanelTopIcon}
-              label={item.name}
-              href={`/dashboards/${item.id}`}
-            />
-          ))}
-        </div>
-      </div> */}
     </>
   );
 }
 
 export function ActionCTAButton() {
-  const { organizationId, projectId } = useAppParams();
   const navigate = useNavigate();
 
-  const handleCreateReport = useCallback(() => {
-    if (organizationId && projectId) {
-      navigate({ to: `/${organizationId}/${projectId}/reports` });
-    }
-  }, [organizationId, projectId, navigate]);
-
-  const handleCreateReference = useCallback(() => {
-    // This would open the AddReference modal when modals are enabled
-    console.log('Create reference clicked');
-  }, []);
-
-  const handleAskAI = useCallback(() => {
-    if (organizationId && projectId) {
-      navigate({ to: `/${organizationId}/${projectId}/chat` });
-    }
-  }, [organizationId, projectId, navigate]);
-
-  const handleCreateDashboard = useCallback(() => {
-    // This would open the AddDashboard modal when modals are enabled
-    console.log('Create dashboard clicked');
-  }, []);
-
-  const handleCreateNotificationRule = useCallback(() => {
-    // This would open the AddNotificationRule modal when modals are enabled
-    console.log('Create notification rule clicked');
-  }, []);
-
   const ACTIONS = [
-    'Create report',
-    'Create reference',
-    'Ask AI',
-    'Create dashboard',
-    'Create notification',
+    {
+      label: 'Create report',
+      icon: ChartLineIcon,
+      onClick: () =>
+        navigate({
+          to: '/$organizationId/$projectId/reports',
+          from: '/$organizationId/$projectId',
+        }),
+    },
+    {
+      label: 'Create reference',
+      icon: BookOpenIcon,
+      onClick: () => pushModal('AddReference'),
+    },
+    {
+      label: 'Ask AI',
+      icon: SparklesIcon,
+      onClick: () =>
+        navigate({
+          to: '/$organizationId/$projectId/chat',
+          from: '/$organizationId/$projectId',
+        }),
+    },
+    {
+      label: 'Create dashboard',
+      icon: LayoutDashboardIcon,
+      onClick: () => pushModal('AddDashboard'),
+    },
+    {
+      label: 'Create notification rule',
+      icon: BellIcon,
+      onClick: () =>
+        navigate({
+          to: '/$organizationId/$projectId/notifications/rules',
+          from: '/$organizationId/$projectId',
+        }),
+    },
   ];
 
   const [currentActionIndex, setCurrentActionIndex] = useState(0);
@@ -166,7 +139,7 @@ export function ActionCTAButton() {
                     }}
                     className="absolute whitespace-nowrap"
                   >
-                    {ACTIONS[currentActionIndex]}
+                    {ACTIONS[currentActionIndex].label}
                   </motion.span>
                 </AnimatePresence>
               </div>
@@ -175,39 +148,16 @@ export function ActionCTAButton() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="start">
-          <DropdownMenuItem
-            onClick={handleCreateReport}
-            className="cursor-pointer"
-          >
-            <ChartLineIcon className="mr-2 h-4 w-4" />
-            Create report
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleCreateReference}
-            className="cursor-pointer"
-          >
-            <BookOpenIcon className="mr-2 h-4 w-4" />
-            Create reference
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleCreateDashboard}
-            className="cursor-pointer"
-          >
-            <LayoutDashboardIcon className="mr-2 h-4 w-4" />
-            Create dashboard
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={handleCreateNotificationRule}
-            className="cursor-pointer"
-          >
-            <BellIcon className="mr-2 h-4 w-4" />
-            Create notification rule
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleAskAI} className="cursor-pointer">
-            <SparklesIcon className="mr-2 h-4 w-4" />
-            Ask AI
-          </DropdownMenuItem>
+          {ACTIONS.map((action) => (
+            <DropdownMenuItem
+              onClick={action.onClick}
+              className="cursor-pointer"
+              key={action.label}
+            >
+              <action.icon className="mr-2 h-4 w-4" />
+              {action.label}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

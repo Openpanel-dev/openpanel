@@ -2,16 +2,15 @@ import {
   CogIcon,
   CreditCardIcon,
   LayoutListIcon,
-  TriangleAlertIcon,
   UsersIcon,
   WorkflowIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
+import { pushModal } from '@/modals';
+import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import type { IServiceOrganization } from '@openpanel/db';
-// import { pushModal } from '@/modals';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDownIcon, PlusIcon } from 'lucide-react';
@@ -27,7 +26,7 @@ import {
 export default function SidebarOrganizationMenu({
   organization,
 }: {
-  organization: IServiceOrganization;
+  organization: RouterOutputs['organization']['list'][number];
 }) {
   return (
     <>
@@ -92,16 +91,29 @@ export default function SidebarOrganizationMenu({
 }
 
 export function ActionCTAButton() {
-  const { organizationId, projectId } = useAppParams();
   const navigate = useNavigate();
 
-  const handleCreateProject = useCallback(() => {
-    if (organizationId) {
-      navigate({ to: `/${organizationId}/projects` });
-    }
-  }, [organizationId, navigate]);
-
-  const ACTIONS = ['Create a project'];
+  const ACTIONS = [
+    {
+      label: 'Create a project',
+      icon: PlusIcon,
+      onClick: () => pushModal('AddProject'),
+    },
+    {
+      label: 'Invite a user',
+      icon: UsersIcon,
+      onClick: () => pushModal('CreateInvite'),
+    },
+    {
+      label: 'Add integration',
+      icon: WorkflowIcon,
+      onClick: () =>
+        navigate({
+          to: '/$organizationId/integrations',
+          from: '/$organizationId',
+        }),
+    },
+  ];
 
   const [currentActionIndex, setCurrentActionIndex] = useState(0);
 
@@ -135,7 +147,7 @@ export function ActionCTAButton() {
                     }}
                     className="absolute whitespace-nowrap"
                   >
-                    {ACTIONS[currentActionIndex]}
+                    {ACTIONS[currentActionIndex].label}
                   </motion.span>
                 </AnimatePresence>
               </div>
@@ -144,13 +156,16 @@ export function ActionCTAButton() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-56" align="start">
-          <DropdownMenuItem
-            onClick={handleCreateProject}
-            className="cursor-pointer"
-          >
-            <PlusIcon className="mr-2 h-4 w-4" />
-            Create a project
-          </DropdownMenuItem>
+          {ACTIONS.map((action) => (
+            <DropdownMenuItem
+              onClick={action.onClick}
+              className="cursor-pointer"
+              key={action.label}
+            >
+              <action.icon className="mr-2 h-4 w-4" />
+              {action.label}
+            </DropdownMenuItem>
+          ))}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

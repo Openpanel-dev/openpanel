@@ -8,20 +8,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { MoreHorizontalIcon } from 'lucide-react';
-import { pathOr } from 'ramda';
 import { toast } from 'sonner';
 
 import { ACTIONS } from '@/components/data-table';
+import type { RouterOutputs } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
-import type { IServiceInvite, IServiceProject } from '@openpanel/db';
 
-export function useColumns(
-  projects: IServiceProject[],
-): ColumnDef<IServiceInvite>[] {
+export function useColumns(): ColumnDef<
+  RouterOutputs['organization']['invitations'][number]
+>[] {
   return [
     {
       accessorKey: 'id',
@@ -52,29 +50,7 @@ export function useColumns(
       accessorKey: 'projectAccess',
       header: 'Access',
       cell: ({ row }) => {
-        const access = row.original.projectAccess;
-        return (
-          <>
-            {access.map((id) => {
-              const project = projects.find((p) => p.id === id);
-              if (!project) {
-                return (
-                  <Badge key={id} className="mr-1">
-                    Unknown
-                  </Badge>
-                );
-              }
-              return (
-                <Badge key={id} color="blue" className="mr-1">
-                  {project.name}
-                </Badge>
-              );
-            })}
-            {access.length === 0 && (
-              <Badge variant={'secondary'}>All projects</Badge>
-            )}
-          </>
-        );
+        return <AccessCell row={row} />;
       },
     },
     {
@@ -86,14 +62,20 @@ export function useColumns(
   ];
 }
 
-function ActionCell({ row }: { row: Row<IServiceInvite> }) {
-  const router = useRouter();
+function ActionCell({
+  row,
+}: { row: Row<RouterOutputs['organization']['invitations'][number]> }) {
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const revoke = useMutation(
     trpc.organization.revokeInvite.mutationOptions({
       onSuccess() {
         toast.success(`Invite for ${row.original.email} revoked`);
-        router.refresh();
+        queryClient.invalidateQueries(
+          trpc.organization.invitations.queryFilter({
+            organizationId: row.original.organizationId,
+          }),
+        );
       },
       onError() {
         toast.error(`Failed to revoke invite for ${row.original.email}`);
@@ -126,5 +108,41 @@ function ActionCell({ row }: { row: Row<IServiceInvite> }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function AccessCell({
+  row,
+}: {
+  row: Row<RouterOutputs['organization']['invitations'][number]>;
+}) {
+  const trpc = useTRPC();
+  const projectsQuery = useQuery(
+    trpc.project.list.queryOptions({
+      organizationId: row.original.organizationId,
+    }),
+  );
+  const projects = projectsQuery.data ?? [];
+  const access = row.original.projectAccess ?? [];
+
+  return (
+    <>
+      {access.map((id) => {
+        const project = projects.find((p) => p.id === id);
+        if (!project) {
+          return (
+            <Badge key={id} className="mr-1">
+              Unknown
+            </Badge>
+          );
+        }
+        return (
+          <Badge key={id} color="blue" className="mr-1">
+            {project.name}
+          </Badge>
+        );
+      })}
+      {access.length === 0 && <Badge variant={'secondary'}>All projects</Badge>}
+    </>
   );
 }

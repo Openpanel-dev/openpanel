@@ -29,6 +29,7 @@ import { Route as AppOrganizationIdProjectIdReferencesRouteImport } from './rout
 import { Route as AppOrganizationIdProjectIdRealtimeRouteImport } from './routes/_app.$organizationId_.$projectId_.realtime'
 import { Route as AppOrganizationIdProjectIdPagesRouteImport } from './routes/_app.$organizationId_.$projectId_.pages'
 import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId_.$projectId_.dashboards'
+import { Route as AppOrganizationIdProjectIdChatRouteImport } from './routes/_app.$organizationId_.$projectId_.chat'
 import { Route as AppOrganizationIdMembersTabsIndexRouteImport } from './routes/_app.$organizationId_.members._tabs.index'
 import { Route as AppOrganizationIdIntegrationsTabsIndexRouteImport } from './routes/_app.$organizationId_.integrations._tabs.index'
 import { Route as AppOrganizationIdMembersTabsMembersRouteImport } from './routes/_app.$organizationId_.members._tabs.members'
@@ -208,6 +209,12 @@ const AppOrganizationIdProjectIdDashboardsRoute =
     path: '/$organizationId/$projectId/dashboards',
     getParentRoute: () => AppRoute,
   } as any)
+const AppOrganizationIdProjectIdChatRoute =
+  AppOrganizationIdProjectIdChatRouteImport.update({
+    id: '/$organizationId_/$projectId_/chat',
+    path: '/$organizationId/$projectId/chat',
+    getParentRoute: () => AppRoute,
+  } as any)
 const AppOrganizationIdMembersTabsIndexRoute =
   AppOrganizationIdMembersTabsIndexRouteImport.update({
     id: '/',
@@ -377,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/onboarding/step1': typeof AuthOnboardingStep1Route
   '/onboarding/': typeof AuthOnboardingIndexRoute
+  '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -421,6 +429,7 @@ export interface FileRoutesByTo {
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/onboarding/step1': typeof AuthOnboardingStep1Route
   '/onboarding': typeof AuthOnboardingIndexRoute
+  '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -463,6 +472,7 @@ export interface FileRoutesById {
   '/_app/$organizationId_/settings': typeof AppOrganizationIdSettingsRoute
   '/_auth/onboarding/step1': typeof AuthOnboardingStep1Route
   '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
+  '/_app/$organizationId_/$projectId_/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/_app/$organizationId_/$projectId_/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/_app/$organizationId_/$projectId_/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/_app/$organizationId_/$projectId_/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/$organizationId/settings'
     | '/onboarding/step1'
     | '/onboarding/'
+    | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
     | '/$organizationId/$projectId/pages'
     | '/$organizationId/$projectId/realtime'
@@ -560,6 +571,7 @@ export interface FileRouteTypes {
     | '/$organizationId/settings'
     | '/onboarding/step1'
     | '/onboarding'
+    | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
     | '/$organizationId/$projectId/pages'
     | '/$organizationId/$projectId/realtime'
@@ -601,6 +613,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId_/settings'
     | '/_auth/onboarding/step1'
     | '/_auth/onboarding/'
+    | '/_app/$organizationId_/$projectId_/chat'
     | '/_app/$organizationId_/$projectId_/dashboards'
     | '/_app/$organizationId_/$projectId_/pages'
     | '/_app/$organizationId_/$projectId_/realtime'
@@ -817,6 +830,13 @@ declare module '@tanstack/react-router' {
       path: '/$organizationId/$projectId/dashboards'
       fullPath: '/$organizationId/$projectId/dashboards'
       preLoaderRoute: typeof AppOrganizationIdProjectIdDashboardsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/$organizationId_/$projectId_/chat': {
+      id: '/_app/$organizationId_/$projectId_/chat'
+      path: '/$organizationId/$projectId/chat'
+      fullPath: '/$organizationId/$projectId/chat'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdChatRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/$organizationId_/members/_tabs/': {
@@ -1241,6 +1261,7 @@ interface AppRouteChildren {
   AppOrganizationIdProjectIdRoute: typeof AppOrganizationIdProjectIdRoute
   AppOrganizationIdBillingRoute: typeof AppOrganizationIdBillingRoute
   AppOrganizationIdSettingsRoute: typeof AppOrganizationIdSettingsRoute
+  AppOrganizationIdProjectIdChatRoute: typeof AppOrganizationIdProjectIdChatRoute
   AppOrganizationIdProjectIdDashboardsRoute: typeof AppOrganizationIdProjectIdDashboardsRoute
   AppOrganizationIdProjectIdPagesRoute: typeof AppOrganizationIdProjectIdPagesRoute
   AppOrganizationIdProjectIdRealtimeRoute: typeof AppOrganizationIdProjectIdRealtimeRoute
@@ -1261,6 +1282,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOrganizationIdProjectIdRoute: AppOrganizationIdProjectIdRoute,
   AppOrganizationIdBillingRoute: AppOrganizationIdBillingRoute,
   AppOrganizationIdSettingsRoute: AppOrganizationIdSettingsRoute,
+  AppOrganizationIdProjectIdChatRoute: AppOrganizationIdProjectIdChatRoute,
   AppOrganizationIdProjectIdDashboardsRoute:
     AppOrganizationIdProjectIdDashboardsRoute,
   AppOrganizationIdProjectIdPagesRoute: AppOrganizationIdProjectIdPagesRoute,

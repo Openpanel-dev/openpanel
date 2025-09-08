@@ -1,3 +1,7 @@
+import { MembersTable } from '@/components/settings/members';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
+import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
@@ -7,19 +11,11 @@ export const Route = createFileRoute(
 });
 
 function Component() {
-  // const { projectId } = useAppParams();
-  // const trpc = useTRPC();
-  // const query = useQuery(
-  //   trpc.project.getProjectWithClients.queryOptions({ projectId }),
-  // );
+  const { organizationId } = useAppParams();
+  const trpc = useTRPC();
+  const query = useQuery(
+    trpc.organization.members.queryOptions({ organizationId }),
+  );
 
-  // if (query.isLoading) {
-  //   return <FullPageLoadingState />;
-  // }
-
-  // if (!query.data) {
-  //   return <div>Project not found</div>;
-  // }
-
-  return <div className="space-y-6">Members</div>;
+  return <MembersTable data={query.data} />;
 }
