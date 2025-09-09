@@ -1,4 +1,5 @@
 import { Sidebar } from '@/components/sidebar';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getAuthSession, getAuthSessionQueryOptions } from '@/lib/auth';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 

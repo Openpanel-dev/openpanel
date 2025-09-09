@@ -1,68 +1,78 @@
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { LazyComponent } from '@/components/lazy-component';
-import { PageHeader } from '@/components/page-header';
-import ProjectCard, {
-  ProjectCardSkeleton,
-} from '@/components/projects/project-card';
-import { LinkButton } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { BoxSelectIcon, PlusIcon } from 'lucide-react';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { Outlet, createFileRoute } from '@tanstack/react-router';
+import { format } from 'date-fns';
 
 export const Route = createFileRoute('/_app/$organizationId')({
-  component: OrganizationPage,
+  component: Component,
   loader: async ({ context, params }) => {
     await context.queryClient.prefetchQuery(
-      context.trpc.project.list.queryOptions({
+      context.trpc.organization.get.queryOptions({
         organizationId: params.organizationId,
       }),
     );
   },
 });
 
-function OrganizationPage() {
+function Alert({
+  title,
+  description,
+  children,
+}: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <div className="p-4 lg:p-8 bg-card border-b col gap-1">
+      <div className="text-lg font-medium">{title}</div>
+      <div className="mb-1">{description}</div>
+      <div className="row gap-2">{children}</div>
+    </div>
+  );
+}
+
+function Component() {
   const { organizationId } = Route.useParams();
   const trpc = useTRPC();
-  const { data: projects } = useQuery(
-    trpc.project.list.queryOptions({
+  const { data: organization } = useSuspenseQuery(
+    trpc.organization.get.queryOptions({
       organizationId,
     }),
   );
 
-  if (!projects?.length) {
-    return (
-      <FullPageEmptyState
-        title="No projects found"
-        description="Create your first project to get started with analytics."
-        icon={BoxSelectIcon}
-      >
-        <LinkButton icon={PlusIcon} to=".">
-          Create project
-        </LinkButton>
-      </FullPageEmptyState>
-    );
-  }
-
   return (
-    <div className="container p-8">
-      <PageHeader
-        title="Projects"
-        description="All your projects in this workspace"
-        className="mb-8"
-      />
-
-      <div className="grid gap-6 md:grid-cols-2">
-        {projects.map((project, index) => (
-          <LazyComponent
-            lazy={index >= 6}
-            key={project.id}
-            fallback={<ProjectCardSkeleton />}
-          >
-            <ProjectCard {...project} organizationId={organizationId} />
-          </LazyComponent>
-        ))}
-      </div>
-    </div>
+    <>
+      {organization.subscriptionEndsAt && organization.isTrial && (
+        <Alert
+          title="Free trial"
+          description={`Your organization is on a free trial. It ends on ${format(organization.subscriptionEndsAt, 'PPP')}`}
+        >
+          <Button>Upgrade from $2.5/month</Button>
+        </Alert>
+      )}
+      {organization.subscriptionEndsAt && organization.isExpired && (
+        <Alert
+          title="Subscription expired"
+          description={`Your subscription has expired. You can reactivate it by choosing a new plan below. It expired on ${format(organization.subscriptionEndsAt, 'PPP')}`}
+        >
+          <Button>Reactivate</Button>
+        </Alert>
+      )}
+      {organization.subscriptionEndsAt && organization.isWillBeCanceled && (
+        <Alert
+          title="Subscription will becanceled"
+          description={`You have canceled your subscription. You can reactivate it by choosing a new plan below. It'll expire on ${format(organization.subscriptionEndsAt, 'PPP')}`}
+        >
+          <Button>Reactivate</Button>
+        </Alert>
+      )}
+      {organization.subscriptionCanceledAt && organization.isCanceled && (
+        <Alert
+          title="Subscription canceled"
+          description={`Your subscription was canceled on ${format(organization.subscriptionCanceledAt, 'PPP')}`}
+        >
+          <Button>Reactivate</Button>
+        </Alert>
+      )}
+      <Outlet />
+    </>
   );
 }

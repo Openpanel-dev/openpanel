@@ -59,12 +59,10 @@ export default function SidebarOrganizationMenu({
       >
         <CreditCardIcon size={20} />
         <div className="flex-1">Billing</div>
-        {organization?.subscriptionStatus &&
-          organization.subscriptionStatus !== 'active' && (
-            <Badge className="capitalize">
-              {organization.subscriptionStatus}
-            </Badge>
-          )}
+        {organization?.isTrial && <Badge>Trial</Badge>}
+        {organization?.isExpired && <Badge>Expired</Badge>}
+        {organization?.isWillBeCanceled && <Badge>Canceled</Badge>}
+        {organization?.isCanceled && <Badge>Canceled</Badge>}
       </Link>
       <Link
         className={cn(
