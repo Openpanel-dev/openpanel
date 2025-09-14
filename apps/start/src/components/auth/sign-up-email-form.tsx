@@ -13,7 +13,9 @@ import { Button } from '../ui/button';
 const validator = zSignUpEmail;
 type IForm = z.infer<typeof validator>;
 
-export function SignUpEmailForm() {
+export function SignUpEmailForm({
+  inviteId,
+}: { inviteId: string | undefined }) {
   const router = useRouter();
   const trpc = useTRPC();
   const mutation = useMutation(
@@ -21,7 +23,7 @@ export function SignUpEmailForm() {
       onSuccess(res) {
         toast.success('Successfully signed up');
         router.navigate({
-          to: '/',
+          to: '/onboarding/project',
         });
       },
       onError(error) {
@@ -35,7 +37,7 @@ export function SignUpEmailForm() {
   const onSubmit: SubmitHandler<IForm> = (values) => {
     mutation.mutate({
       ...values,
-      inviteId: searchParams.get('inviteId'),
+      inviteId,
     });
   };
   return (

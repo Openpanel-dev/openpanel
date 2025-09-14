@@ -1,10 +1,10 @@
-import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 import { useMemo } from 'react';
 import WorldMap from 'react-svg-worldmap';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useReportChartContext } from '../context';
 
 interface Props {

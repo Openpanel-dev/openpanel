@@ -1,4 +1,3 @@
-import { TableButtons } from '@/components/data-table';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -8,9 +7,10 @@ import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { ReportChart } from '@/components/report-chart';
 import { Input } from '@/components/ui/input';
-import { useDebounceValue } from '@/hooks/useDebounceValue';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { TableButtons } from '@/components/ui/table';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import type { IChartRange, IInterval } from '@openpanel/validation';
@@ -19,18 +19,11 @@ import { createFileRoute } from '@tanstack/react-router';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { memo } from 'react';
 
-export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId_/pages',
-)({
-  component: Component,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.dashboard.list.queryOptions({
-        projectId: params.projectId,
-      }),
-    );
+export const Route = createFileRoute('/_app/$organizationId/$projectId_/pages')(
+  {
+    component: Component,
   },
-});
+);
 
 function Component() {
   const { projectId } = Route.useParams();
@@ -42,11 +35,8 @@ function Component() {
     'cursor',
     parseAsInteger.withDefault(0),
   );
-  const [search, setSearch] = useQueryState('search', {
-    defaultValue: '',
-    shallow: true,
-  });
-  const debouncedSearch = useDebounceValue(search, 500);
+
+  const { debouncedSearch, setSearch, search } = useSearchQueryState();
   const query = useQuery(
     trpc.event.pages.queryOptions(
       {

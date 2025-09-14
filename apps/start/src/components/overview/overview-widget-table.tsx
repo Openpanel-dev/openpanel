@@ -1,5 +1,5 @@
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { ExternalLinkIcon } from 'lucide-react';

@@ -6,7 +6,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   BellIcon,
   BookOpenIcon,
-  BuildingIcon,
   ChartLineIcon,
   ChevronDownIcon,
   CogIcon,
@@ -18,6 +17,7 @@ import {
   LayoutPanelTopIcon,
   PlusIcon,
   SparklesIcon,
+  UndoDotIcon,
   UsersIcon,
   WallpaperIcon,
 } from 'lucide-react';
@@ -52,14 +52,20 @@ export default function SidebarProjectMenu({
       <SidebarLink icon={UsersIcon} label="Sessions" href={'/sessions'} />
       <SidebarLink icon={UsersIcon} label="Profiles" href={'/profiles'} />
       <div className="mt-4 mb-2 font-medium text-muted-foreground">Manage</div>
-      <SidebarLink icon={CogIcon} label="Settings" href={'/settings'} />
+      <SidebarLink
+        exact={false}
+        icon={CogIcon}
+        label="Settings"
+        href={'/settings'}
+      />
       <SidebarLink icon={GridIcon} label="References" href={'/references'} />
       <SidebarLink
+        exact={false}
         icon={BellIcon}
         label="Notifications"
         href={'/notifications'}
       />
-      <SidebarLink icon={BuildingIcon} label="Workspace" href={'..'} />
+      <SidebarLink icon={UndoDotIcon} label="Back to workspace" href={'..'} />
     </>
   );
 }

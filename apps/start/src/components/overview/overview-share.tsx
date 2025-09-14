@@ -19,13 +19,13 @@ interface OverviewShareProps {
 export function OverviewShare({ projectId }: OverviewShareProps) {
   const trpc = useTRPC();
   const query = useQuery(
-    trpc.share.overview.get.queryOptions({
+    trpc.share.overview.queryOptions({
       projectId,
     }),
   );
   const data = query.data;
   const mutation = useMutation(
-    trpc.share.shareOverview.mutationOptions({
+    trpc.share.createOverview.mutationOptions({
       onSuccess() {
         query.refetch();
       },

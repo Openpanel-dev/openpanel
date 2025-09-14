@@ -1,4 +1,4 @@
-import { fancyMinutes, useNumber } from '@/hooks/useNumerFormatter';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import type { IChartData, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';

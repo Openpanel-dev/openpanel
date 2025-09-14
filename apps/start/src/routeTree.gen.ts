@@ -11,15 +11,19 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteImport } from './routes/_auth'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LoginRouteImport } from './routes/_login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthOnboardingRouteImport } from './routes/_auth.onboarding'
-import { Route as AuthLoginRouteImport } from './routes/_auth.login'
+import { Route as OnboardingIndexRouteImport } from './routes/onboarding.index'
+import { Route as OnboardingProjectRouteImport } from './routes/onboarding.project'
+import { Route as LoginResetPasswordRouteImport } from './routes/_login.reset-password'
+import { Route as LoginLoginRouteImport } from './routes/_login.login'
 import { Route as AppOrganizationIdRouteImport } from './routes/_app.$organizationId'
-import { Route as AuthOnboardingIndexRouteImport } from './routes/_auth.onboarding.index'
 import { Route as AppOrganizationIdIndexRouteImport } from './routes/_app.$organizationId.index'
-import { Route as AuthOnboardingStep1RouteImport } from './routes/_auth.onboarding.step1'
+import { Route as ShareOverviewShareIdRouteImport } from './routes/share.overview.$shareId'
+import { Route as OnboardingProjectIdVerifyRouteImport } from './routes/onboarding.$projectId.verify'
+import { Route as OnboardingProjectIdConnectRouteImport } from './routes/onboarding.$projectId.connect'
 import { Route as AppOrganizationIdSettingsRouteImport } from './routes/_app.$organizationId.settings'
 import { Route as AppOrganizationIdBillingRouteImport } from './routes/_app.$organizationId.billing'
 import { Route as AppOrganizationIdProjectIdRouteImport } from './routes/_app.$organizationId.$projectId'
@@ -78,8 +82,13 @@ const AppOrganizationIdProjectIdEventsRouteImport = createFileRoute(
   '/_app/$organizationId/$projectId_/events',
 )()
 
-const AuthRoute = AuthRouteImport.update({
-  id: '/_auth',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/_login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppRoute = AppRouteImport.update({
@@ -91,15 +100,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthOnboardingRoute = AuthOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AuthRoute,
+const OnboardingIndexRoute = OnboardingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => OnboardingRoute,
 } as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
+const OnboardingProjectRoute = OnboardingProjectRouteImport.update({
+  id: '/project',
+  path: '/project',
+  getParentRoute: () => OnboardingRoute,
+} as any)
+const LoginResetPasswordRoute = LoginResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => LoginRoute,
+} as any)
+const LoginLoginRoute = LoginLoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => AuthRoute,
+  getParentRoute: () => LoginRoute,
 } as any)
 const AppOrganizationIdRoute = AppOrganizationIdRouteImport.update({
   id: '/$organizationId',
@@ -118,21 +137,28 @@ const AppOrganizationIdIntegrationsRoute =
     path: '/integrations',
     getParentRoute: () => AppOrganizationIdRoute,
   } as any)
-const AuthOnboardingIndexRoute = AuthOnboardingIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthOnboardingRoute,
-} as any)
 const AppOrganizationIdIndexRoute = AppOrganizationIdIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppOrganizationIdRoute,
 } as any)
-const AuthOnboardingStep1Route = AuthOnboardingStep1RouteImport.update({
-  id: '/step1',
-  path: '/step1',
-  getParentRoute: () => AuthOnboardingRoute,
+const ShareOverviewShareIdRoute = ShareOverviewShareIdRouteImport.update({
+  id: '/share/overview/$shareId',
+  path: '/share/overview/$shareId',
+  getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingProjectIdVerifyRoute =
+  OnboardingProjectIdVerifyRouteImport.update({
+    id: '/$projectId/verify',
+    path: '/$projectId/verify',
+    getParentRoute: () => OnboardingRoute,
+  } as any)
+const OnboardingProjectIdConnectRoute =
+  OnboardingProjectIdConnectRouteImport.update({
+    id: '/$projectId/connect',
+    path: '/$projectId/connect',
+    getParentRoute: () => OnboardingRoute,
+  } as any)
 const AppOrganizationIdSettingsRoute =
   AppOrganizationIdSettingsRouteImport.update({
     id: '/settings',
@@ -382,15 +408,19 @@ const AppOrganizationIdProjectIdEventsTabsConversionsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/$organizationId': typeof AppOrganizationIdRouteWithChildren
-  '/login': typeof AuthLoginRoute
-  '/onboarding': typeof AuthOnboardingRouteWithChildren
+  '/login': typeof LoginLoginRoute
+  '/reset-password': typeof LoginResetPasswordRoute
+  '/onboarding/project': typeof OnboardingProjectRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
-  '/onboarding/step1': typeof AuthOnboardingStep1Route
+  '/onboarding/$projectId/connect': typeof OnboardingProjectIdConnectRoute
+  '/onboarding/$projectId/verify': typeof OnboardingProjectIdVerifyRoute
+  '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/$organizationId/': typeof AppOrganizationIdIndexRoute
-  '/onboarding/': typeof AuthOnboardingIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
@@ -429,13 +459,17 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/login': typeof AuthLoginRoute
+  '/login': typeof LoginLoginRoute
+  '/reset-password': typeof LoginResetPasswordRoute
+  '/onboarding/project': typeof OnboardingProjectRoute
+  '/onboarding': typeof OnboardingIndexRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
-  '/onboarding/step1': typeof AuthOnboardingStep1Route
+  '/onboarding/$projectId/connect': typeof OnboardingProjectIdConnectRoute
+  '/onboarding/$projectId/verify': typeof OnboardingProjectIdVerifyRoute
+  '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/$organizationId': typeof AppOrganizationIdIndexRoute
-  '/onboarding': typeof AuthOnboardingIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
@@ -470,16 +504,20 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
-  '/_auth': typeof AuthRouteWithChildren
+  '/_login': typeof LoginRouteWithChildren
+  '/onboarding': typeof OnboardingRouteWithChildren
   '/_app/$organizationId': typeof AppOrganizationIdRouteWithChildren
-  '/_auth/login': typeof AuthLoginRoute
-  '/_auth/onboarding': typeof AuthOnboardingRouteWithChildren
+  '/_login/login': typeof LoginLoginRoute
+  '/_login/reset-password': typeof LoginResetPasswordRoute
+  '/onboarding/project': typeof OnboardingProjectRoute
+  '/onboarding/': typeof OnboardingIndexRoute
   '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/_app/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
-  '/_auth/onboarding/step1': typeof AuthOnboardingStep1Route
+  '/onboarding/$projectId/connect': typeof OnboardingProjectIdConnectRoute
+  '/onboarding/$projectId/verify': typeof OnboardingProjectIdVerifyRoute
+  '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/_app/$organizationId/': typeof AppOrganizationIdIndexRoute
-  '/_auth/onboarding/': typeof AuthOnboardingIndexRoute
   '/_app/$organizationId/$projectId_/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/_app/$organizationId/$projectId_/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
   '/_app/$organizationId/$projectId_/pages': typeof AppOrganizationIdProjectIdPagesRoute
@@ -526,15 +564,19 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/onboarding'
     | '/$organizationId'
     | '/login'
-    | '/onboarding'
+    | '/reset-password'
+    | '/onboarding/project'
+    | '/onboarding/'
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
-    | '/onboarding/step1'
+    | '/onboarding/$projectId/connect'
+    | '/onboarding/$projectId/verify'
+    | '/share/overview/$shareId'
     | '/$organizationId/'
-    | '/onboarding/'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
     | '/$organizationId/$projectId/pages'
@@ -574,12 +616,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/reset-password'
+    | '/onboarding/project'
+    | '/onboarding'
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
-    | '/onboarding/step1'
+    | '/onboarding/$projectId/connect'
+    | '/onboarding/$projectId/verify'
+    | '/share/overview/$shareId'
     | '/$organizationId'
-    | '/onboarding'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
     | '/$organizationId/$projectId/pages'
@@ -613,16 +659,20 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_app'
-    | '/_auth'
+    | '/_login'
+    | '/onboarding'
     | '/_app/$organizationId'
-    | '/_auth/login'
-    | '/_auth/onboarding'
+    | '/_login/login'
+    | '/_login/reset-password'
+    | '/onboarding/project'
+    | '/onboarding/'
     | '/_app/$organizationId/$projectId'
     | '/_app/$organizationId/billing'
     | '/_app/$organizationId/settings'
-    | '/_auth/onboarding/step1'
+    | '/onboarding/$projectId/connect'
+    | '/onboarding/$projectId/verify'
+    | '/share/overview/$shareId'
     | '/_app/$organizationId/'
-    | '/_auth/onboarding/'
     | '/_app/$organizationId/$projectId_/chat'
     | '/_app/$organizationId/$projectId_/dashboards'
     | '/_app/$organizationId/$projectId_/pages'
@@ -669,16 +719,25 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
-  AuthRoute: typeof AuthRouteWithChildren
+  LoginRoute: typeof LoginRouteWithChildren
+  OnboardingRoute: typeof OnboardingRouteWithChildren
+  ShareOverviewShareIdRoute: typeof ShareOverviewShareIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_auth': {
-      id: '/_auth'
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_login': {
+      id: '/_login'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof AuthRouteImport
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app': {
@@ -695,19 +754,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/onboarding': {
-      id: '/_auth/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AuthOnboardingRouteImport
-      parentRoute: typeof AuthRoute
+    '/onboarding/': {
+      id: '/onboarding/'
+      path: '/'
+      fullPath: '/onboarding/'
+      preLoaderRoute: typeof OnboardingIndexRouteImport
+      parentRoute: typeof OnboardingRoute
     }
-    '/_auth/login': {
-      id: '/_auth/login'
+    '/onboarding/project': {
+      id: '/onboarding/project'
+      path: '/project'
+      fullPath: '/onboarding/project'
+      preLoaderRoute: typeof OnboardingProjectRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/_login/reset-password': {
+      id: '/_login/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof LoginResetPasswordRouteImport
+      parentRoute: typeof LoginRoute
+    }
+    '/_login/login': {
+      id: '/_login/login'
       path: '/login'
       fullPath: '/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
-      parentRoute: typeof AuthRoute
+      preLoaderRoute: typeof LoginLoginRouteImport
+      parentRoute: typeof LoginRoute
     }
     '/_app/$organizationId': {
       id: '/_app/$organizationId'
@@ -730,13 +803,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdIntegrationsRouteImport
       parentRoute: typeof AppOrganizationIdRoute
     }
-    '/_auth/onboarding/': {
-      id: '/_auth/onboarding/'
-      path: '/'
-      fullPath: '/onboarding/'
-      preLoaderRoute: typeof AuthOnboardingIndexRouteImport
-      parentRoute: typeof AuthOnboardingRoute
-    }
     '/_app/$organizationId/': {
       id: '/_app/$organizationId/'
       path: '/'
@@ -744,12 +810,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdIndexRouteImport
       parentRoute: typeof AppOrganizationIdRoute
     }
-    '/_auth/onboarding/step1': {
-      id: '/_auth/onboarding/step1'
-      path: '/step1'
-      fullPath: '/onboarding/step1'
-      preLoaderRoute: typeof AuthOnboardingStep1RouteImport
-      parentRoute: typeof AuthOnboardingRoute
+    '/share/overview/$shareId': {
+      id: '/share/overview/$shareId'
+      path: '/share/overview/$shareId'
+      fullPath: '/share/overview/$shareId'
+      preLoaderRoute: typeof ShareOverviewShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding/$projectId/verify': {
+      id: '/onboarding/$projectId/verify'
+      path: '/$projectId/verify'
+      fullPath: '/onboarding/$projectId/verify'
+      preLoaderRoute: typeof OnboardingProjectIdVerifyRouteImport
+      parentRoute: typeof OnboardingRoute
+    }
+    '/onboarding/$projectId/connect': {
+      id: '/onboarding/$projectId/connect'
+      path: '/$projectId/connect'
+      fullPath: '/onboarding/$projectId/connect'
+      preLoaderRoute: typeof OnboardingProjectIdConnectRouteImport
+      parentRoute: typeof OnboardingRoute
     }
     '/_app/$organizationId/settings': {
       id: '/_app/$organizationId/settings'
@@ -1339,36 +1419,42 @@ const AppRouteChildren: AppRouteChildren = {
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
-interface AuthOnboardingRouteChildren {
-  AuthOnboardingStep1Route: typeof AuthOnboardingStep1Route
-  AuthOnboardingIndexRoute: typeof AuthOnboardingIndexRoute
+interface LoginRouteChildren {
+  LoginLoginRoute: typeof LoginLoginRoute
+  LoginResetPasswordRoute: typeof LoginResetPasswordRoute
 }
 
-const AuthOnboardingRouteChildren: AuthOnboardingRouteChildren = {
-  AuthOnboardingStep1Route: AuthOnboardingStep1Route,
-  AuthOnboardingIndexRoute: AuthOnboardingIndexRoute,
+const LoginRouteChildren: LoginRouteChildren = {
+  LoginLoginRoute: LoginLoginRoute,
+  LoginResetPasswordRoute: LoginResetPasswordRoute,
 }
 
-const AuthOnboardingRouteWithChildren = AuthOnboardingRoute._addFileChildren(
-  AuthOnboardingRouteChildren,
+const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
+
+interface OnboardingRouteChildren {
+  OnboardingProjectRoute: typeof OnboardingProjectRoute
+  OnboardingIndexRoute: typeof OnboardingIndexRoute
+  OnboardingProjectIdConnectRoute: typeof OnboardingProjectIdConnectRoute
+  OnboardingProjectIdVerifyRoute: typeof OnboardingProjectIdVerifyRoute
+}
+
+const OnboardingRouteChildren: OnboardingRouteChildren = {
+  OnboardingProjectRoute: OnboardingProjectRoute,
+  OnboardingIndexRoute: OnboardingIndexRoute,
+  OnboardingProjectIdConnectRoute: OnboardingProjectIdConnectRoute,
+  OnboardingProjectIdVerifyRoute: OnboardingProjectIdVerifyRoute,
+}
+
+const OnboardingRouteWithChildren = OnboardingRoute._addFileChildren(
+  OnboardingRouteChildren,
 )
-
-interface AuthRouteChildren {
-  AuthLoginRoute: typeof AuthLoginRoute
-  AuthOnboardingRoute: typeof AuthOnboardingRouteWithChildren
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthLoginRoute: AuthLoginRoute,
-  AuthOnboardingRoute: AuthOnboardingRouteWithChildren,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
-  AuthRoute: AuthRouteWithChildren,
+  LoginRoute: LoginRouteWithChildren,
+  OnboardingRoute: OnboardingRouteWithChildren,
+  ShareOverviewShareIdRoute: ShareOverviewShareIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

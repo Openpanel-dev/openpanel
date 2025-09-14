@@ -1,6 +1,6 @@
 'use client';
 
-import useWS from '@/hooks/useWS';
+import useWS from '@/hooks/use-ws';
 import { useQueryClient } from '@tanstack/react-query';
 
 type Props = {

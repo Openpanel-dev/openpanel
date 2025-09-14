@@ -1,11 +1,11 @@
-import { useNumber } from '@/hooks/useNumerFormatter';
 import { formatDateTime, formatTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
+import { useMemo } from 'react';
 
 import { ProjectLink } from '@/components/links';
-import { PingBadge } from '@/components/ping';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
 import type { RouterOutputs } from '@/trpc/client';
 import type { INotificationPayload } from '@openpanel/db';
 
@@ -25,13 +25,18 @@ export function useColumns() {
       accessorKey: 'title',
       header: 'Title',
       cell({ row }) {
-        const { title, isReadAt } = row.original;
+        const { title } = row.original;
         return (
           <div className="row gap-2 items-center">
             {/* {isReadAt === null && <PingBadge>Unread</PingBadge>} */}
             <span className="max-w-md truncate font-medium">{title}</span>
           </div>
         );
+      },
+      meta: {
+        variant: 'text',
+        placeholder: 'Search',
+        label: 'Title',
       },
     },
     {
@@ -45,6 +50,10 @@ export function useColumns() {
           </div>
         );
       },
+      meta: {
+        label: 'Message',
+        hidden: true,
+      },
     },
     {
       accessorKey: 'integration',
@@ -53,6 +62,9 @@ export function useColumns() {
         const integration = row.original.integration;
         return <div>{integration?.name}</div>;
       },
+      meta: {
+        label: 'Integration',
+      },
     },
     {
       accessorKey: 'notificationRule',
@@ -60,6 +72,10 @@ export function useColumns() {
       cell({ row }) {
         const rule = row.original.notificationRule;
         return <div>{rule?.name}</div>;
+      },
+      meta: {
+        label: 'Rule',
+        hidden: true,
       },
     },
     {
@@ -78,6 +94,9 @@ export function useColumns() {
           </div>
         );
       },
+      meta: {
+        label: 'Country',
+      },
     },
     {
       accessorKey: 'os',
@@ -94,6 +113,9 @@ export function useColumns() {
             <span>{event.os}</span>
           </div>
         );
+      },
+      meta: {
+        label: 'OS',
       },
     },
     {
@@ -112,10 +134,13 @@ export function useColumns() {
           </div>
         );
       },
+      meta: {
+        label: 'Browser',
+      },
     },
     {
       accessorKey: 'profile',
-      header: 'Profile',
+      header: createHeaderColumn('Profile'),
       cell({ row }) {
         const { payload } = row.original;
         const event = getEventFromPayload(payload);
@@ -131,15 +156,27 @@ export function useColumns() {
           </ProjectLink>
         );
       },
+      meta: {
+        label: 'Profile',
+      },
     },
     {
       accessorKey: 'createdAt',
       header: 'Created at',
       cell({ row }) {
         const date = row.original.createdAt;
+        if (!date) {
+          return null;
+        }
         return (
           <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
         );
+      },
+      filterFn: 'isWithinRange',
+      meta: {
+        variant: 'dateRange',
+        placeholder: 'Created at',
+        label: 'Created at',
       },
     },
   ];

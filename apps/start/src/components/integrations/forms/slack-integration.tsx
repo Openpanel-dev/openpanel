@@ -1,7 +1,7 @@
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
-import useWS from '@/hooks/useWS';
+import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';

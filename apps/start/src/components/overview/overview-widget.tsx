@@ -1,4 +1,4 @@
-import { useThrottle } from '@/hooks/useThrottle';
+import { useThrottle } from '@/hooks/use-throttle';
 import { cn } from '@/utils/cn';
 import { ChevronsUpDownIcon } from 'lucide-react';
 import { last } from 'ramda';

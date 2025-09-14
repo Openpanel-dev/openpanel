@@ -3,12 +3,17 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import type { IServiceOrganization } from '@openpanel/db';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useParams,
+} from '@tanstack/react-router';
 import { MenuIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LogoSquare } from './logo';
+import { ProfileToggle } from './profile-toggle';
 import ProjectSelector from './project-selector';
-import SettingsToggle from './settings-toggle';
 import SidebarOrganizationMenu, {
   ActionCTAButton as ActionOrganizationCTAButton,
 } from './sidebar-organization-menu';
@@ -57,7 +62,7 @@ export function Sidebar() {
       <ActionOrganizationCTAButton />
       <div className="mb-2 font-medium text-muted-foreground">Organization</div>
       <SidebarOrganizationMenu
-        organization={organizations.find((o) => o.id === organizationId)}
+        organization={organizations.find((o) => o.id === organizationId)!}
       />
     </SidebarContainer>
   );
@@ -75,13 +80,11 @@ export function SidebarContainer({
   children,
 }: SidebarContainerProps) {
   const [active, setActive] = useState(false);
-  const navigate = useNavigate();
-  const { organizationId } = useAppParams();
-  const organization = organizations.find((o) => o.id === organizationId);
+  const location = useLocation();
 
   useEffect(() => {
     setActive(false);
-  }, [navigate]);
+  }, [location]);
 
   return (
     <>
@@ -120,9 +123,14 @@ export function SidebarContainer({
             projects={projects}
             organizations={organizations}
           />
-          <SettingsToggle />
+          <ProfileToggle />
         </div>
-        <div className="flex flex-grow col gap-1 overflow-auto p-4">
+        <div
+          className={cn([
+            'flex flex-grow col gap-1 overflow-auto p-4',
+            "[&_a[data-status='active']]:bg-def-200",
+          ])}
+        >
           {/* <div className="col border rounded mb-2 divide-y">
             {(subscriptionProductId ===
               '036efa2a-b3b4-4c75-b24a-9cac6bb8893b' ||

@@ -1,93 +1,69 @@
+import FullPageLoadingState from '@/components/full-page-loading-state';
+import { LogoSquare } from '@/components/logo';
+import { PageHeader } from '@/components/page-header';
+import { Button } from '@/components/ui/button';
+import { useLogout } from '@/hooks/use-logout';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
   loader: async ({ context }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.organization.list.queryOptions()
-    );
+    try {
+      const organizations = await context.queryClient.fetchQuery(
+        context.trpc.organization.list.queryOptions(),
+      );
+
+      if (organizations.length === 1) {
+        return redirect({
+          to: '/$organizationId',
+          params: { organizationId: organizations[0].id },
+        });
+      }
+    } catch (error) {
+      return redirect({ to: '/login' });
+    }
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function LandingPage() {
   const trpc = useTRPC();
-  const latestOrganization = null
-  const { data: organizations } = useQuery(trpc.organization.list.queryOptions());
+  const logout = useLogout();
+  const { data: organizations } = useQuery(
+    trpc.organization.list.queryOptions(),
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-      <div className="max-w-2xl mx-auto text-center px-4">
-        <h1 className="text-4xl font-bold text-gray-900 mb-6">
-          Welcome to Your SaaS App
-        </h1>
-
-        {latestOrganization ? (
-          <div className="mb-8">
-            <p className="text-xl text-gray-600 mb-4">
-              Continue where you left off:
-            </p>
-            <a
-              href={`/${latestOrganization}`}
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-            >
-              Go to Latest Organization
-            </a>
-          </div>
-        ) : (
-          <div className="mb-8">
-            <p className="text-xl text-gray-600 mb-4">
-              Get started by logging in or creating a new account.
-            </p>
-            <div className="space-x-4">
-              <Link
-                to="/login"
-                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                to="/onboarding"
-                className="inline-block bg-gray-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-700 transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
-            Your Organizations
-          </h2>
-          <div className="space-y-2">
-            {organizations?.map((org) => (
-              <a
-                key={org.id}
-                href={`/${org.id}`}
-                className="block p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all"
-              >
-                <span className="font-medium text-gray-900">{org.name}</span>
-                <span className="text-gray-500 text-sm ml-2">({org.id})</span>
-              </a>
-            ))}
-          </div>
+      <div className="max-w-2xl mx-auto px-4 col gap-12">
+        <div className="col gap-4">
+          <LogoSquare className="w-full max-w-24" />
+          <PageHeader
+            title="Welcome to OpenPanel.dev"
+            description="The best web and product analytics tool out there (our honest opinion)."
+          />
         </div>
 
-        <div className="mt-12 text-sm text-gray-500">
-          <p>Example routes:</p>
-          <div className="mt-2 space-y-1">
-            <a href="/org123" className="block text-blue-600 hover:underline">
-              /org123 - Projects list
-            </a>
-            <a
-              href="/org123/proj456"
-              className="block text-blue-600 hover:underline"
+        <div className="space-y-2">
+          {organizations?.map((org) => (
+            <Link
+              key={org.id}
+              to={'/$organizationId'}
+              params={{ organizationId: org.id }}
+              className="block p-3 bg-white rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition-all hover:translate-x-1"
             >
-              /org123/proj456 - Project dashboard
-            </a>
-          </div>
+              <span className="font-medium text-gray-900">{org.name}</span>
+              <span className="text-gray-500 text-sm ml-2">({org.id})</span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="row gap-4">
+          <Button onClick={() => logout.mutate()} loading={logout.isPending}>
+            Log out
+          </Button>
         </div>
       </div>
     </div>

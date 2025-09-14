@@ -1,5 +1,5 @@
-import { useRechartDataModel } from '@/hooks/useRechartDataModel';
-import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
+import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';

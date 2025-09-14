@@ -2,7 +2,7 @@ import type { RouterOutputs } from '@/trpc/client';
 import React, { useMemo } from 'react';
 
 import { Stats, StatsCard } from '@/components/stats';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { formatDate } from '@/utils/date';
 import { average, getPreviousMetric, sum } from '@openpanel/common';
 import { ChevronRightIcon } from 'lucide-react';

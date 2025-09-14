@@ -1,7 +1,7 @@
 import { EventIcon } from '@/components/events/event-icon';
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
 import { formatDateTime, formatTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';

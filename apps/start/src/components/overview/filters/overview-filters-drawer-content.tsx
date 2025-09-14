@@ -1,17 +1,16 @@
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { useEventNames } from '@/hooks/useEventNames';
-import { useEventProperties } from '@/hooks/useEventProperties';
+import { useEventNames } from '@/hooks/use-event-names';
+import { useEventProperties } from '@/hooks/use-event-properties';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
-} from '@/hooks/useEventQueryFilters';
-import { useProfileProperties } from '@/hooks/useProfileProperties';
-import { useProfileValues } from '@/hooks/useProfileValues';
-import { usePropertyValues } from '@/hooks/usePropertyValues';
+} from '@/hooks/use-event-query-filters';
+import { useProfileProperties } from '@/hooks/use-profile-properties';
+import { useProfileValues } from '@/hooks/use-profile-values';
+import { usePropertyValues } from '@/hooks/use-property-values';
 import { XIcon } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
@@ -22,7 +21,6 @@ import type {
 } from '@openpanel/validation';
 
 import { ComboboxEvents } from '@/components/ui/combobox-events';
-import { useOverviewOptions } from '../useOverviewOptions';
 import { OriginFilter } from './origin-filter';
 
 export interface OverviewFiltersDrawerContentProps {

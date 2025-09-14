@@ -11,8 +11,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tooltiper } from '@/components/ui/tooltip';
-import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useSelector } from '@/redux';
 import { getPropertyLabel } from '@/translations/properties';
 import type { IChartData } from '@/trpc/client';

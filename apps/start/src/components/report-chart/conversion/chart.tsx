@@ -12,8 +12,8 @@ import {
 } from 'recharts';
 
 import { createChartTooltip } from '@/components/charts/chart-tooltip';
-import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { average, getPreviousMetric, round } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';

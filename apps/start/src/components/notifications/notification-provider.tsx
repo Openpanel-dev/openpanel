@@ -1,5 +1,5 @@
 import { useAppParams } from '@/hooks/use-app-params';
-import useWS from '@/hooks/useWS';
+import useWS from '@/hooks/use-ws';
 import type { Notification } from '@openpanel/db';
 import { BellIcon } from 'lucide-react';
 import { toast } from 'sonner';

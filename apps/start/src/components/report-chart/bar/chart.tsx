@@ -4,7 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { DropdownMenuPortal } from '@radix-ui/react-dropdown-menu';

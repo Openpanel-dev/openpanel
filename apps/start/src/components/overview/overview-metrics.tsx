@@ -1,10 +1,10 @@
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { cn } from '@/utils/cn';
 
 import { useDashedStroke } from '@/hooks/use-dashed-stroke';
-import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';

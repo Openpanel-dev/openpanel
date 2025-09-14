@@ -50,7 +50,7 @@ export async function getProjectsByOrganizationId(organizationId: string) {
       organizationId,
     },
     orderBy: {
-      createdAt: 'desc',
+      eventsCount: 'desc',
     },
   });
 }

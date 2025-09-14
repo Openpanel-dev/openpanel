@@ -14,7 +14,7 @@ import { Tooltiper } from '@/components/ui/tooltip';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
 import { useAppParams } from '@/hooks/use-app-params';
-import useWS from '@/hooks/useWS';
+import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
 import type { IServiceOrganization } from '@openpanel/db';

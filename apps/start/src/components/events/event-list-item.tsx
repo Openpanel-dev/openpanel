@@ -1,6 +1,6 @@
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';

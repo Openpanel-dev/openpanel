@@ -1,4 +1,4 @@
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { cn } from '@/utils/cn';
 
 import { useTRPC } from '@/integrations/trpc/react';

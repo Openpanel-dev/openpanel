@@ -8,7 +8,12 @@ import { useOnClickOutside } from 'usehooks-ts';
 
 import { Button, type ButtonProps } from './button';
 import { Checkbox, DumpCheckbox } from './checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from './popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverPortal,
+  PopoverTrigger,
+} from './popover';
 
 type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
@@ -32,8 +37,8 @@ export function ComboboxAdvanced({
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState('');
-  const ref = React.useRef<HTMLDivElement | null>(null);
-  useOnClickOutside(ref, () => setOpen(false));
+  const ref = React.useRef<HTMLDivElement>(null);
+  useOnClickOutside(ref as React.RefObject<HTMLElement>, () => setOpen(false));
 
   const selectables = items
     .filter((item) => !value.find((s) => s === item.value))
@@ -118,23 +123,25 @@ export function ComboboxAdvanced({
           <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full max-w-md p-0" align="start">
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder="Search"
-            value={inputValue}
-            onValueChange={setInputValue}
-          />
-          <VirtualList
-            height={Math.min(items.length * 32, 300)}
-            data={data}
-            itemHeight={32}
-            itemKey="value"
-          >
-            {renderItem}
-          </VirtualList>
-        </Command>
-      </PopoverContent>
+      <PopoverPortal>
+        <PopoverContent className="w-full max-w-md p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="Search"
+              value={inputValue}
+              onValueChange={setInputValue}
+            />
+            <VirtualList
+              height={Math.min(items.length * 32, 300)}
+              data={data}
+              itemHeight={32}
+              itemKey="value"
+            >
+              {renderItem}
+            </VirtualList>
+          </Command>
+        </PopoverContent>
+      </PopoverPortal>
     </Popover>
   );
 }

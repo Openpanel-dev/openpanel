@@ -17,5 +17,5 @@ function Component() {
     trpc.organization.members.queryOptions({ organizationId }),
   );
 
-  return <MembersTable data={query.data} />;
+  return <MembersTable query={query} />;
 }

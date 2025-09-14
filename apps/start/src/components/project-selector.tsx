@@ -14,7 +14,6 @@ import {
 import { useAppParams } from '@/hooks/use-app-params';
 import { useRouter } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
-// import { pushModal } from '@/modals';
 import {
   Building2Icon,
   CheckIcon,
@@ -23,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { pushModal } from '@/modals';
 import type { IServiceOrganization } from '@openpanel/db';
 
 interface ProjectSelectorProps {
@@ -109,15 +109,20 @@ export default function ProjectSelector({
           ))}
           {projects.length > 10 && (
             <DropdownMenuItem asChild>
-              <Link to={`/${organizationId}`}>All projects</Link>
+              <Link
+                to={'/$organizationId'}
+                params={{
+                  organizationId,
+                }}
+              >
+                All projects
+              </Link>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem
             className="text-emerald-600"
             onClick={() => {
-              // TODO: Add modal for creating new project
-              // pushModal('AddProject')
-              console.log('Create new project - modal not implemented yet');
+              pushModal('AddProject');
             }}
           >
             Create new project

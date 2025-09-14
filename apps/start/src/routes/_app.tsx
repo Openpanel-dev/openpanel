@@ -1,6 +1,5 @@
 import { Sidebar } from '@/components/sidebar';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getAuthSession, getAuthSessionQueryOptions } from '@/lib/auth';
+import { getAuthSessionQueryOptions } from '@/lib/auth';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app')({
@@ -9,6 +8,7 @@ export const Route = createFileRoute('/_app')({
       getAuthSessionQueryOptions,
     );
     if (!session) {
+      console.log('No session, redirecting to login');
       throw redirect({ to: '/login' });
     }
     return { session };

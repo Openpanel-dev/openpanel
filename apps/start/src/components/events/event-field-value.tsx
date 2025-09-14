@@ -1,4 +1,4 @@
-import { fancyMinutes } from '@/hooks/useNumerFormatter';
+import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { formatDateTime, formatTime } from '@/utils/date';
 import type { IServiceEvent } from '@openpanel/db';
 import { isToday } from 'date-fns';

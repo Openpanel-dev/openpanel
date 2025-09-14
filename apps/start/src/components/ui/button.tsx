@@ -1,8 +1,8 @@
 import { cn } from '@/utils/cn';
 import { Slot } from '@radix-ui/react-slot';
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
-import { cva } from 'class-variance-authority';
 import type { VariantProps } from 'class-variance-authority';
+import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import * as React from 'react';
@@ -114,60 +114,44 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   },
 );
 Button.displayName = 'Button';
-export type LinkButtonProps = LinkComponentProps &
+
+const LinkButton = ({
+  className,
+  variant,
+  size,
+  children,
+  loading,
+  icon,
+  responsive,
+  ...props
+}: LinkComponentProps &
   VariantProps<typeof buttonVariants> & {
     loading?: boolean;
     icon?: LucideIcon;
     responsive?: boolean;
-    autoHeight?: boolean;
-    asChild?: boolean;
-  };
-
-const LinkButton = React.forwardRef<
-  typeof Link,
-  React.PropsWithoutRef<LinkButtonProps>
->(
-  (
-    {
-      className,
-      variant,
-      size,
-      children,
-      loading,
-      icon,
-      responsive,
-      href,
-      ...props
-    },
-    ref,
-  ) => {
-    const Icon = loading ? Loader2 : (icon ?? null);
-    return (
-      <Link
-        href={href}
-        className={cn(buttonVariants({ variant, size, className }))}
-        // @ts-expect-error
-        ref={ref}
-        {...props}
-      >
-        {Icon && (
-          <Icon
-            className={cn(
-              'mr-2 h-4 w-4 flex-shrink-0',
-              responsive && 'mr-0 sm:mr-2',
-              loading && 'animate-spin',
-            )}
-          />
-        )}
-        {responsive ? (
-          <span className="hidden sm:block">{children}</span>
-        ) : (
-          children
-        )}
-      </Link>
-    );
-  },
-);
-LinkButton.displayName = 'LinkButton';
+  }) => {
+  const Icon = loading ? Loader2 : (icon ?? null);
+  return (
+    <Link
+      className={cn(buttonVariants({ variant, size, className }))}
+      {...props}
+    >
+      {Icon && (
+        <Icon
+          className={cn(
+            'mr-2 h-4 w-4 flex-shrink-0',
+            responsive && 'mr-0 sm:mr-2',
+            loading && 'animate-spin',
+          )}
+        />
+      )}
+      {responsive ? (
+        <span className="hidden sm:block">{children}</span>
+      ) : (
+        children
+      )}
+    </Link>
+  );
+};
 
 export { Button, LinkButton, buttonVariants };

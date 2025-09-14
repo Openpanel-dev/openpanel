@@ -1,24 +1,14 @@
-import { TableButtons } from '@/components/data-table';
 import { ProfilesTable } from '@/components/profiles/table';
-import { Input } from '@/components/ui/input';
+import { TableButtons } from '@/components/ui/table';
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Loader2Icon } from 'lucide-react';
-import { parseAsInteger, useQueryState } from 'nuqs';
-import { useDebounceValue } from 'usehooks-ts';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/profiles/_tabs/power-users',
 )({
   component: Component,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.dashboard.list.queryOptions({
-        projectId: params.projectId,
-      }),
-    );
-  },
 });
 
 function Component() {

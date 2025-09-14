@@ -1,6 +1,6 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useEventProperties } from '@/hooks/useEventProperties';
+import { useEventProperties } from '@/hooks/use-event-properties';
 import { useDispatch, useSelector } from '@/redux';
 import { api } from '@/trpc/client';
 import { cn } from '@/utils/cn';

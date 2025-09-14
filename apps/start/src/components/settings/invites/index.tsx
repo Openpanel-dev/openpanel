@@ -1,42 +1,41 @@
-import { DataTable } from '@/components/data-table';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { GanttChartIcon } from 'lucide-react';
-
 import type { RouterOutputs } from '@/trpc/client';
 
+import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/ui/data-table/data-table';
+import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar';
+import { useTable } from '@/components/ui/data-table/use-table';
+import { pushModal } from '@/modals';
+import type { UseQueryResult } from '@tanstack/react-query';
+import { PlusIcon } from 'lucide-react';
 import { useColumns } from './columns';
 type CommonProps = {
-  data?: RouterOutputs['organization']['invitations'];
+  query: UseQueryResult<RouterOutputs['organization']['invitations'], unknown>;
 };
 
 type Props = CommonProps;
 
-export const InvitesTable = ({ data }: Props) => {
+export const InvitesTable = ({ query }: Props) => {
   const columns = useColumns();
-
-  if (!data) {
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
-        <div className="card h-[74px] w-full animate-pulse items-center justify-between rounded-lg p-4" />
-      </div>
-    );
-  }
-
-  if (data?.length === 0) {
-    return (
-      <FullPageEmptyState title="No members here" icon={GanttChartIcon}>
-        <p>Could not find any members</p>
-      </FullPageEmptyState>
-    );
-  }
-
+  const { data, isLoading } = query;
+  const { table } = useTable({
+    columns,
+    data: data ?? [],
+    loading: isLoading,
+    pageSize: 50,
+  });
   return (
     <>
-      <DataTable data={data ?? []} columns={columns} />
+      <DataTableToolbar table={table}>
+        <Button
+          icon={PlusIcon}
+          onClick={() => {
+            pushModal('CreateInvite');
+          }}
+        >
+          Invite user
+        </Button>
+      </DataTableToolbar>
+      <DataTable table={table} loading={isLoading} />
     </>
   );
 };

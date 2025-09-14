@@ -5,7 +5,7 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
-} from '@/hooks/useEventQueryFilters';
+} from '@/hooks/use-event-query-filters';
 
 import type { IChartEvent } from '@openpanel/validation';
 
@@ -15,13 +15,6 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/events/_tabs/stats',
 )({
   component: Component,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.dashboard.list.queryOptions({
-        projectId: params.projectId,
-      }),
-    );
-  },
 });
 
 function Component() {

@@ -1,21 +1,20 @@
-import { EventIcon } from '@/components/events/event-icon';
-import { ProjectLink } from '@/components/links';
-import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { TooltipComplete } from '@/components/tooltip-complete';
-import { useNumber } from '@/hooks/useNumerFormatter';
-import { pushModal } from '@/modals';
 import { formatDateTime, formatTime } from '@/utils/date';
-import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
 
-import { ACTIONS } from '@/components/data-table';
-import type { IServiceClientWithProject, IServiceEvent } from '@openpanel/db';
-import { ClientActions } from '../client-actions';
+import CopyInput from '@/components/forms/copy-input';
+import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { pushModal, showConfirm } from '@/modals';
+import type { RouterOutputs } from '@/trpc/client';
+import { clipboard } from '@/utils/clipboard';
+import { DropdownMenuSeparator } from '@radix-ui/react-dropdown-menu';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export function useColumns() {
-  const number = useNumber();
-  const columns: ColumnDef<IServiceClientWithProject>[] = [
+  const columns: ColumnDef<RouterOutputs['client']['list'][number]>[] = [
     {
       accessorKey: 'name',
       header: 'Name',
@@ -26,15 +25,8 @@ export function useColumns() {
     {
       accessorKey: 'id',
       header: 'Client ID',
-      cell: ({ row }) => <div className="font-mono">{row.original.id}</div>,
+      cell: ({ row }) => <CopyInput label={null} value={row.original.id} />,
     },
-    // {
-    //   accessorKey: 'secret',
-    //   header: 'Secret',
-    //   cell: (info) =>
-    //       <div className="italic text-muted-foreground"></div>
-
-    // },
     {
       accessorKey: 'createdAt',
       header: 'Created at',
@@ -45,11 +37,54 @@ export function useColumns() {
         );
       },
     },
-    {
-      id: ACTIONS,
-      header: 'Actions',
-      cell: ({ row }) => <ClientActions {...row.original} />,
-    },
+    createActionColumn(({ row }) => {
+      const client = row.original;
+      const trpc = useTRPC();
+      const queryClient = useQueryClient();
+      const deletion = useMutation(
+        trpc.client.remove.mutationOptions({
+          onSuccess() {
+            toast('Success', {
+              description:
+                'Client revoked, incoming requests will be rejected.',
+            });
+            queryClient.invalidateQueries(trpc.client.list.pathFilter());
+          },
+          onError: handleError,
+        }),
+      );
+      return (
+        <>
+          <DropdownMenuItem onClick={() => clipboard(client.id)}>
+            Copy client ID
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              pushModal('EditClient', client);
+            }}
+          >
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => {
+              showConfirm({
+                title: 'Revoke client',
+                text: 'Are you sure you want to revoke this client? This action cannot be undone.',
+                onConfirm() {
+                  deletion.mutate({
+                    id: client.id,
+                  });
+                },
+              });
+            }}
+          >
+            Revoke
+          </DropdownMenuItem>
+        </>
+      );
+    }),
   ];
 
   return columns;

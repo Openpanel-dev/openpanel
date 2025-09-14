@@ -1,6 +1,6 @@
 import { TooltipComplete } from '@/components/tooltip-complete';
-import { useDebounceState } from '@/hooks/useDebounceState';
-import useWS from '@/hooks/useWS';
+import { useDebounceState } from '@/hooks/use-debounce-state';
+import useWS from '@/hooks/use-ws';
 import { cn } from '@/utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';

@@ -8,7 +8,7 @@ import { alphabetIds } from '@openpanel/constants';
 import { createChartTooltip } from '@/components/charts/chart-tooltip';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { WidgetTable } from '@/components/widget-table';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
 import {

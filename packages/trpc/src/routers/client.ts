@@ -10,6 +10,19 @@ import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const clientRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input }) => {
+      return db.client.findMany({
+        where: {
+          projectId: input.projectId,
+        },
+      });
+    }),
   update: protectedProcedure
     .input(
       z.object({

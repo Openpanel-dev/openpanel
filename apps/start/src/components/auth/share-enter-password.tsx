@@ -1,9 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
-import { ModalHeader } from '@/modals/Modal/Container';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { type ISignInShare, zSignInShare } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { LogoSquare } from '../logo';
@@ -11,13 +9,10 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
 export function ShareEnterPassword({ shareId }: { shareId: string }) {
-  const router = useRouter();
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInShare.mutationOptions({
-      onSuccess() {
-        router.refresh();
-      },
+      onSuccess() {},
       onError() {
         toast.error('Incorrect password');
       },
@@ -58,7 +53,7 @@ export function ShareEnterPassword({ shareId }: { shareId: string }) {
           <Button type="submit">Get access</Button>
         </form>
       </div>
-      <div className="p-6 text-xs max-w-sm col gap-0.5">
+      <div className="p-6 text-sm max-w-sm col gap-0.5">
         <p>
           Powered by{' '}
           <a href="https://openpanel.dev" className="font-medium">

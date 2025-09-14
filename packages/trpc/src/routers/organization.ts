@@ -3,6 +3,7 @@ import { z } from 'zod';
 import {
   connectUserToOrganization,
   db,
+  getInviteById,
   getInvites,
   getMembers,
   getOrganizationById,
@@ -15,7 +16,12 @@ import { sendEmail } from '@openpanel/email';
 import { addDays } from 'date-fns';
 import { getOrganizationAccess } from '../access';
 import { TRPCAccessError, TRPCBadRequestError } from '../errors';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  rateLimitMiddleware,
+} from '../trpc';
 
 export const organizationRouter = createTRPCRouter({
   get: protectedProcedure
@@ -268,5 +274,20 @@ export const organizationRouter = createTRPCRouter({
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ input }) => {
       return getInvites(input.organizationId);
+    }),
+
+  getInvite: publicProcedure
+    .use(
+      rateLimitMiddleware({
+        max: 5,
+        windowMs: 30_000,
+      }),
+    )
+    .input(z.object({ inviteId: z.string().optional() }))
+    .query(async ({ input }) => {
+      if (!input.inviteId) {
+        throw TRPCBadRequestError('Invite ID is required');
+      }
+      return getInviteById(input.inviteId);
     }),
 });

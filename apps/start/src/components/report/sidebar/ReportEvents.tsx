@@ -2,8 +2,8 @@ import { ColorSquare } from '@/components/color-square';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useDebounceFn } from '@/hooks/useDebounceFn';
-import { useEventNames } from '@/hooks/useEventNames';
+import { useDebounceFn } from '@/hooks/use-debounce-fn';
+import { useEventNames } from '@/hooks/use-event-names';
 import { useDispatch, useSelector } from '@/redux';
 import {
   DndContext,

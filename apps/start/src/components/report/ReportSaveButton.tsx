@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useIsFetching, useMutation } from '@tanstack/react-query';
 
+import { useParams } from '@tanstack/react-router';
 import { resetDirty } from './reportSlice';
 
 interface ReportSaveButtonProps {
@@ -19,9 +20,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
     useIsFetching(trpc.chart.chart.pathFilter()),
     useIsFetching(trpc.chart.cohort.pathFilter()),
   ];
-  // TODO: fix this
-  const reportId = '';
-  // const { reportId } = useAppParams<{ reportId: string | undefined }>();
+  const { reportId } = useParams({ strict: false });
   const dispatch = useDispatch();
   const update = useMutation(
     trpc.report.update.mutationOptions({

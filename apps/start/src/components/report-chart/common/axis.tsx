@@ -1,6 +1,6 @@
-import { useDebounceFn } from '@/hooks/useDebounceFn';
-import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useDebounceFn } from '@/hooks/use-debounce-fn';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { isNil } from 'ramda';
 import { useRef, useState } from 'react';
 import type { AxisDomain } from 'recharts/types/util/types';

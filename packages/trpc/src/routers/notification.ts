@@ -37,7 +37,7 @@ export const notificationRouter = createTRPCRouter({
             },
           },
         },
-        take: 100,
+        take: 5000,
       });
     }),
   rules: protectedProcedure

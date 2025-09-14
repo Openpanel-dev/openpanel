@@ -3,7 +3,7 @@ import { pushModal } from '@/modals';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zSignInEmail } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -14,15 +14,15 @@ const validator = zSignInEmail;
 type IForm = z.infer<typeof validator>;
 
 export function SignInEmailForm() {
-  const router = useRouter();
+  const navigate = useNavigate();
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
       onSuccess(res) {
         toast.success('Successfully signed in');
-        // router.navigate({
-        //   to: '/',
-        // });
+        navigate({
+          to: '/',
+        });
       },
       onError(error) {
         toast.error(error.message);

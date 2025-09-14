@@ -1,4 +1,4 @@
-import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';

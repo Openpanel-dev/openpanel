@@ -1,6 +1,6 @@
+import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
 import { useTheme } from '@/hooks/use-theme';
-import { useRechartDataModel } from '@/hooks/useRechartDataModel';
-import { useVisibleSeries } from '@/hooks/useVisibleSeries';
+import { useVisibleSeries } from '@/hooks/use-visible-series';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -26,7 +26,6 @@ interface Props {
 
 function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
   const themeMode = useTheme();
-  // TODO: use theme colors
   const styles = getComputedStyle(document.documentElement);
   const def100 = styles.getPropertyValue('--def-100');
   const def300 = styles.getPropertyValue('--def-300');

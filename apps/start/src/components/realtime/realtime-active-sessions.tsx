@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
-import useWS from '@/hooks/useWS';
+import useWS from '@/hooks/use-ws';
 import { timeAgo } from '@/utils/date';
 import { EventIcon } from '../events/event-icon';
 import { SerieIcon } from '../report-chart/common/serie-icon';

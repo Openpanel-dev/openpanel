@@ -1,4 +1,4 @@
-import { shortNumber } from '@/hooks/useNumerFormatter';
+import { shortNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -113,10 +113,13 @@ function ProjectMetrics({ id }: { id: string }) {
     <FadeIn className="flex gap-4">
       <Metric
         label="3 months"
-        value={shortNumber('en')(data?.metrics?.months_3)}
+        value={shortNumber('en')(data?.metrics?.months_3 ?? 0)}
       />
-      <Metric label="Month" value={shortNumber('en')(data?.metrics?.month)} />
-      <Metric label="24h" value={shortNumber('en')(data?.metrics?.day)} />
+      <Metric
+        label="Month"
+        value={shortNumber('en')(data?.metrics?.month ?? 0)}
+      />
+      <Metric label="24h" value={shortNumber('en')(data?.metrics?.day ?? 0)} />
     </FadeIn>
   );
 }

@@ -15,6 +15,7 @@ import 'katex/dist/katex.min.css';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { Providers } from '@/components/providers';
+import { ThemeScriptOnce } from '@/components/theme-provider';
 import type { AppRouter } from '@openpanel/trpc';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
@@ -34,7 +35,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'OpenPanel.dev',
       },
     ],
     links: [
@@ -44,13 +45,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       },
     ],
   }),
-
   shellComponent: RootDocument,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -66,9 +66,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
               render: <TanStackRouterDevtoolsPanel />,
             },
             TanStackQueryDevtools,
-            // StoreDevtools,
           ]}
         />
+        <ThemeScriptOnce />
         <Scripts />
         <div className="hidden">
           <div className="text-chart-0 bg-chart-0" />

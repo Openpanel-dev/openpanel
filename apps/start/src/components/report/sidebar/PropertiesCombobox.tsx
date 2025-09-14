@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useEventProperties } from '@/hooks/useEventProperties';
+import { useEventProperties } from '@/hooks/use-event-properties';
 import type { IChartEvent } from '@openpanel/validation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeftIcon, DatabaseIcon, UserIcon } from 'lucide-react';

@@ -5,27 +5,58 @@ import { zShareOverview } from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/auth';
 import { z } from 'zod';
+import { TRPCNotFoundError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 const uid = new ShortUniqueId({ length: 6 });
 
 export const shareRouter = createTRPCRouter({
-  overview: {
-    get: protectedProcedure
-      .input(
-        z.object({
+  overview: protectedProcedure
+    .input(
+      z
+        .object({
           projectId: z.string(),
-        }),
-      )
-      .query(async ({ ctx, input }) => {
-        return db.shareOverview.findUnique({
-          where: {
-            projectId: input.projectId,
+        })
+        .or(
+          z.object({
+            shareId: z.string(),
+          }),
+        ),
+    )
+    .query(async ({ input, ctx }) => {
+      const share = await db.shareOverview.findUnique({
+        include: {
+          organization: {
+            select: {
+              name: true,
+            },
           },
-        });
-      }),
-  },
-  shareOverview: protectedProcedure
+          project: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        where:
+          'projectId' in input
+            ? {
+                projectId: input.projectId,
+              }
+            : {
+                id: input.shareId,
+              },
+      });
+
+      if (!share) {
+        throw TRPCNotFoundError('Share not found');
+      }
+
+      return {
+        ...share,
+        hasAccess: !!ctx.req.cookies[`shared-overview-${share?.id}`],
+      };
+    }),
+  createOverview: protectedProcedure
     .input(zShareOverview)
     .mutation(async ({ input }) => {
       const passwordHash = input.password

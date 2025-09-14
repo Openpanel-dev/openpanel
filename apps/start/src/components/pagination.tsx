@@ -5,7 +5,6 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
 } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
 import { useState } from 'react';
 
 import { Button } from './ui/button';
@@ -23,26 +22,28 @@ export function usePagination(take: number) {
 }
 
 export type Props = {
-  take: number;
-  count: number;
-  cursor: number;
-  setCursor: Dispatch<SetStateAction<number>>;
+  canNextPage: boolean;
+  canPreviousPage: boolean;
+  pageIndex: number;
+  nextPage: () => void;
+  previousPage: () => void;
   className?: string;
-  size?: 'sm' | 'base';
   loading?: boolean;
+  firstPage?: () => void;
+  lastPage?: () => void;
 };
 
 export function Pagination({
-  take,
-  count,
-  cursor,
-  setCursor,
+  canNextPage,
+  canPreviousPage,
+  pageIndex,
+  firstPage,
+  lastPage,
+  nextPage,
+  previousPage,
   className,
-  size = 'base',
   loading,
 }: Props) {
-  const lastCursor = Math.floor(count / take) - 1;
-  const isNextDisabled = count === 0 || lastCursor === cursor;
   return (
     <div
       className={cn(
@@ -50,12 +51,12 @@ export function Pagination({
         className,
       )}
     >
-      {size === 'base' && (
+      {typeof firstPage === 'function' && (
         <Button
           variant="outline"
           size="icon"
-          onClick={() => setCursor(0)}
-          disabled={cursor === 0}
+          onClick={() => firstPage?.()}
+          disabled={!canPreviousPage}
           className="max-sm:hidden"
           icon={ChevronsLeftIcon}
         />
@@ -63,22 +64,33 @@ export function Pagination({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => setCursor((p) => Math.max(0, p - 1))}
-        disabled={cursor === 0}
+        onClick={() => previousPage()}
+        disabled={!canPreviousPage}
         icon={ChevronLeftIcon}
       />
 
       <Button loading={loading} disabled variant="outline" size="icon">
-        {loading ? '' : cursor}
+        {loading ? '' : pageIndex + 1}
       </Button>
 
       <Button
         variant="outline"
         size="icon"
-        onClick={() => setCursor((p) => Math.min(lastCursor, p + 1))}
-        disabled={isNextDisabled}
+        onClick={() => nextPage()}
+        disabled={!canNextPage}
         icon={ChevronRightIcon}
       />
+
+      {typeof lastPage === 'function' && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={() => lastPage?.()}
+          disabled={!canNextPage}
+          className="max-sm:hidden"
+          icon={ChevronsRightIcon}
+        />
+      )}
     </div>
   );
 }

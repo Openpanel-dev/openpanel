@@ -1,14 +1,14 @@
-import { TableButtons } from '@/components/data-table';
 import EventListener from '@/components/events/event-listener';
 import { EventsTable } from '@/components/events/table';
 import { EventsTableColumns } from '@/components/events/table/events-table-columns';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { Button } from '@/components/ui/button';
+import { TableButtons } from '@/components/ui/table';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
-} from '@/hooks/useEventQueryFilters';
+} from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -21,13 +21,6 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/events/_tabs/events',
 )({
   component: Component,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.dashboard.list.queryOptions({
-        projectId: params.projectId,
-      }),
-    );
-  },
 });
 
 function Component() {

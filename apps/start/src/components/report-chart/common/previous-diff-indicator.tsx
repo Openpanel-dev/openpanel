@@ -1,4 +1,4 @@
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 

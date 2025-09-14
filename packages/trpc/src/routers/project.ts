@@ -6,7 +6,6 @@ import { hashPassword } from '@openpanel/common/server';
 import {
   type Prisma,
   db,
-  getClientById,
   getClientByIdCached,
   getId,
   getProjectByIdCached,
@@ -14,7 +13,7 @@ import {
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 import { zOnboardingProject, zProject } from '@openpanel/validation';
-import { addDays, addHours } from 'date-fns';
+import { addHours } from 'date-fns';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';

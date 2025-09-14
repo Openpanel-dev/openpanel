@@ -1,6 +1,6 @@
-import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
-import { useNumber } from '@/hooks/useNumerFormatter';
-import type { IRechartPayloadItem } from '@/hooks/useRechartDataModel';
+import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import type { IRechartPayloadItem } from '@/hooks/use-rechart-data-model';
 import type { IToolTipProps } from '@/types';
 import * as Portal from '@radix-ui/react-portal';
 import { bind } from 'bind-event-listener';

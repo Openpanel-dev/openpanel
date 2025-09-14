@@ -59,7 +59,7 @@ export const chartRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { projectId } }) => {
-      const chart = await chQuery<{ value: number; date: Date }>(
+      const chartPromise = chQuery<{ value: number; date: Date }>(
         `SELECT
             uniqHLL12(profile_id) as value,
             toStartOfDay(created_at) as date
@@ -76,7 +76,7 @@ export const chartRouter = createTRPCRouter({
       `,
       );
 
-      const [metrics] = await chQuery<{
+      const metricsPromise = chQuery<{
         months_3: number;
         month: number;
         day: number;
@@ -93,8 +93,13 @@ export const chartRouter = createTRPCRouter({
         `,
       );
 
+      const [chart, [metrics]] = await Promise.all([
+        chartPromise,
+        metricsPromise,
+      ]);
+
       return {
-        chart,
+        chart: chart.map((d) => ({ ...d, date: new Date(d.date) })),
         metrics,
       };
     }),

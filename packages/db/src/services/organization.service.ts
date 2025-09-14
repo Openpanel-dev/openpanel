@@ -75,8 +75,8 @@ export async function getInvites(organizationId: string) {
   });
 }
 
-export function getInviteById(inviteId: string) {
-  return db.invite.findUnique({
+export async function getInviteById(inviteId: string) {
+  const res = await db.invite.findUnique({
     where: {
       id: inviteId,
     },
@@ -89,6 +89,11 @@ export function getInviteById(inviteId: string) {
       },
     },
   });
+
+  return {
+    ...res,
+    isExpired: res?.expiresAt && res.expiresAt < new Date(),
+  };
 }
 
 export async function getMembers(organizationId: string) {

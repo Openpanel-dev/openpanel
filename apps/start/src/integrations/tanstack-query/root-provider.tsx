@@ -51,6 +51,13 @@ export const trpcClient = createTRPCClientWithHeaders();
 export function getContext(headers: Headers) {
   const queryClient = new QueryClient({
     defaultOptions: {
+      queries: {
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+      },
       dehydrate: { serializeData: superjson.serialize },
       hydrate: { deserializeData: superjson.deserialize },
     },

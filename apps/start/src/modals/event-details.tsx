@@ -2,7 +2,7 @@ import { ReportChartShortcut } from '@/components/report-chart/shortcut';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
-} from '@/hooks/useEventQueryFilters';
+} from '@/hooks/use-event-query-filters';
 
 import { EventFieldValue } from '@/components/events/event-field-value';
 import { ProjectLink } from '@/components/links';
@@ -14,7 +14,7 @@ import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody } from '@/components/widget';
 import { WidgetTable } from '@/components/widget-table';
-import { fancyMinutes } from '@/hooks/useNumerFormatter';
+import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { camelCaseToWords } from '@/utils/casing';
 import { cn } from '@/utils/cn';

@@ -1,19 +1,12 @@
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef, Row } from '@tanstack/react-table';
-import { MoreHorizontalIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { ACTIONS } from '@/components/data-table';
+import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
 import type { RouterOutputs } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
 
@@ -30,10 +23,18 @@ export function useColumns(): ColumnDef<
       cell: ({ row }) => (
         <div className="font-medium">{row.original.email}</div>
       ),
+      meta: {
+        label: 'Email',
+        placeholder: 'Search email',
+        variant: 'text',
+      },
     },
     {
       accessorKey: 'role',
       header: 'Role',
+      meta: {
+        label: 'Role',
+      },
     },
     {
       accessorKey: 'createdAt',
@@ -45,6 +46,9 @@ export function useColumns(): ColumnDef<
           {new Date(row.original.createdAt).toLocaleDateString()}
         </TooltipComplete>
       ),
+      meta: {
+        label: 'Created',
+      },
     },
     {
       accessorKey: 'projectAccess',
@@ -52,63 +56,52 @@ export function useColumns(): ColumnDef<
       cell: ({ row }) => {
         return <AccessCell row={row} />;
       },
-    },
-    {
-      id: ACTIONS,
-      cell: ({ row }) => {
-        return <ActionCell row={row} />;
+      meta: {
+        label: 'Access',
       },
     },
-  ];
-}
-
-function ActionCell({
-  row,
-}: { row: Row<RouterOutputs['organization']['invitations'][number]> }) {
-  const trpc = useTRPC();
-  const queryClient = useQueryClient();
-  const revoke = useMutation(
-    trpc.organization.revokeInvite.mutationOptions({
-      onSuccess() {
-        toast.success(`Invite for ${row.original.email} revoked`);
-        queryClient.invalidateQueries(
-          trpc.organization.invitations.queryFilter({
-            organizationId: row.original.organizationId,
-          }),
-        );
-      },
-      onError() {
-        toast.error(`Failed to revoke invite for ${row.original.email}`);
-      },
-    }),
-  );
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button icon={MoreHorizontalIcon} size="icon" variant={'outline'} />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem
-          onClick={() => {
-            clipboard(
-              `${window.location.origin}/onboarding?inviteId=${row.original.id}`,
+    createActionColumn(({ row }) => {
+      const trpc = useTRPC();
+      const queryClient = useQueryClient();
+      const revoke = useMutation(
+        trpc.organization.revokeInvite.mutationOptions({
+          onSuccess() {
+            toast.success(`Invite for ${row.original.email} revoked`);
+            queryClient.invalidateQueries(
+              trpc.organization.invitations.queryFilter({
+                organizationId: row.original.organizationId,
+              }),
             );
-          }}
-        >
-          Copy invite link
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          className="text-destructive"
-          onClick={() => {
-            revoke.mutate({ inviteId: row.original.id });
-          }}
-        >
-          Revoke invite
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+          },
+          onError() {
+            toast.error(`Failed to revoke invite for ${row.original.email}`);
+          },
+        }),
+      );
+
+      return (
+        <>
+          <DropdownMenuItem
+            onClick={() => {
+              clipboard(
+                `${window.location.origin}/onboarding?inviteId=${row.original.id}`,
+              );
+            }}
+          >
+            Copy invite link
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="text-destructive"
+            onClick={() => {
+              revoke.mutate({ inviteId: row.original.id });
+            }}
+          >
+            Revoke invite
+          </DropdownMenuItem>
+        </>
+      );
+    }),
+  ];
 }
 
 function AccessCell({

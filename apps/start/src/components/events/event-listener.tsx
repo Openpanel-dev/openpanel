@@ -4,8 +4,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useDebounceState } from '@/hooks/useDebounceState';
-import useWS from '@/hooks/useWS';
+import { useDebounceState } from '@/hooks/use-debounce-state';
+import useWS from '@/hooks/use-ws';
 import { cn } from '@/utils/cn';
 
 import type { IServiceEventMinimal } from '@openpanel/db';

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
-} from '@/hooks/useEventQueryFilters';
+} from '@/hooks/use-event-query-filters';
 import { getPropertyLabel } from '@/translations/properties';
 import { cn } from '@/utils/cn';
 import { operators } from '@openpanel/constants';

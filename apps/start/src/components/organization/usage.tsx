@@ -5,7 +5,7 @@ import {
   useYAxisProps,
 } from '@/components/report-chart/common/axis';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { api } from '@/trpc/client';
 import { formatDate } from '@/utils/date';

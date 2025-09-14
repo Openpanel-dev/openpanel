@@ -1,12 +1,11 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { useMutation } from '@tanstack/react-query';
-import { useSearch } from '@tanstack/react-router';
 import { Button } from '../ui/button';
 
-export function SignInGithub({ type }: { type: 'sign-in' | 'sign-up' }) {
-  const { inviteId } = useSearch({
-    from: '/_auth/login',
-  });
+export function SignInGithub({
+  type,
+  inviteId,
+}: { type: 'sign-in' | 'sign-up'; inviteId?: string }) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInOAuth.mutationOptions({

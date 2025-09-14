@@ -1,7 +1,7 @@
 'use client';
 
 import { EventListItem } from '@/components/events/event-list-item';
-import useWS from '@/hooks/useWS';
+import useWS from '@/hooks/use-ws';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useState } from 'react';
 

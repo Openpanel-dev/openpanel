@@ -34,6 +34,7 @@ export default function SidebarOrganizationMenu({
         className={cn(
           'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
+        activeOptions={{ exact: true }}
         to="/$organizationId"
         from="/$organizationId"
       >
@@ -44,6 +45,7 @@ export default function SidebarOrganizationMenu({
         className={cn(
           'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
+        activeOptions={{ exact: true }}
         to="/$organizationId/settings"
         from="/$organizationId"
       >
@@ -54,6 +56,7 @@ export default function SidebarOrganizationMenu({
         className={cn(
           'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
         )}
+        activeOptions={{ exact: true }}
         to="/$organizationId/billing"
         from="/$organizationId"
       >

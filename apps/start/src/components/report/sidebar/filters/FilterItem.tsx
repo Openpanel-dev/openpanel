@@ -5,7 +5,7 @@ import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
-import { usePropertyValues } from '@/hooks/usePropertyValues';
+import { usePropertyValues } from '@/hooks/use-property-values';
 import { useDispatch } from '@/redux';
 import { operators } from '@openpanel/constants';
 import type {

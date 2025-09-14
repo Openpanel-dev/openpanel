@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';

@@ -1,10 +1,10 @@
-import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { cn } from '@/utils/cn';
 import { useState } from 'react';
 
 import type { IChartType } from '@openpanel/validation';
 
-import { useNumber } from '@/hooks/useNumerFormatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { NOT_SET_VALUE } from '@openpanel/constants';

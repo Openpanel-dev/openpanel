@@ -1,4 +1,3 @@
-import { TableButtons } from '@/components/data-table';
 import { InvitesTable } from '@/components/settings/invites';
 import { Button } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -20,19 +19,5 @@ function Component() {
     trpc.organization.invitations.queryOptions({ organizationId }),
   );
 
-  return (
-    <div>
-      <TableButtons>
-        <Button
-          icon={PlusIcon}
-          onClick={() => {
-            pushModal('CreateInvite');
-          }}
-        >
-          Invite user
-        </Button>
-      </TableButtons>
-      <InvitesTable data={query.data} />
-    </div>
-  );
+  return <InvitesTable query={query} />;
 }

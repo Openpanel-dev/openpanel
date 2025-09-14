@@ -1,7 +1,7 @@
 import { ColorSquare } from '@/components/color-square';
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useEventProperties } from '@/hooks/useEventProperties';
+import { useEventProperties } from '@/hooks/use-event-properties';
 import { useDispatch, useSelector } from '@/redux';
 import { ChevronsUpDownIcon, SplitIcon } from 'lucide-react';
 
