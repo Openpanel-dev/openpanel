@@ -26,7 +26,8 @@
     "lint:fix": "biome check --write .",
     "lint:workspace": "pnpm dlx sherif@latest",
     "typecheck": "pnpm -r typecheck",
-    "update-simple-git-hooks": "npx simple-git-hooks"
+    "update-simple-git-hooks": "npx simple-git-hooks",
+    "deps:unused": "node tooling/unused-deps.mjs"
   },
   "simple-git-hooks": {
     "pre-push": "pnpm typecheck && pnpm test"
@@ -52,6 +53,7 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "1.9.1",
+    "depcheck": "^1.4.7",
     "simple-git-hooks": "^2.12.1",
     "vitest": "^3.0.4"
   },

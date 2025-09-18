@@ -1,3 +1,4 @@
+import { differenceInDays, differenceInHours, isSameDay } from 'date-fns';
 import type { FormatStyleName } from 'javascript-time-ago';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
@@ -49,6 +50,14 @@ const ta = new TimeAgo(getLocale());
 
 export function timeAgo(date: Date, style?: FormatStyleName) {
   return ta.format(new Date(date), style);
+}
+
+export function formatTimeAgoOrDateTime(date: Date) {
+  if (Math.abs(differenceInHours(date, new Date())) < 3) {
+    return timeAgo(date);
+  }
+
+  return isSameDay(date, new Date()) ? formatTime(date) : formatDateTime(date);
 }
 
 export function utc(date: string) {

@@ -6,6 +6,7 @@ import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import * as React from 'react';
+import { Spinner, type SpinnerProps } from './spinner';
 
 const buttonVariants = cva(
   'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:translate-y-[-1px]',
@@ -41,6 +42,8 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   loading?: boolean;
+  loadingType?: SpinnerProps['type'];
+  loadingSpeed?: SpinnerProps['speed'];
   icon?: LucideIcon;
   responsive?: boolean;
   autoHeight?: boolean;
@@ -74,6 +77,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       asChild = false,
       children,
       loading,
+      loadingType = 'circle',
+      loadingSpeed = 'normal',
       disabled,
       icon,
       responsive,
@@ -83,7 +88,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const Comp = asChild ? Slot : 'button';
-    const Icon = loading ? Loader2 : (icon ?? null);
+    const Icon = loading ? null : (icon ?? null);
+
+    // Determine spinner size based on button size
+    const spinnerSize = size === 'lg' ? 'md' : size === 'icon' ? 'sm' : 'sm';
+
     return (
       <Comp
         className={cn(
@@ -94,11 +103,25 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={loading || disabled}
         {...props}
       >
+        {loading && (
+          <Spinner
+            type={loadingType}
+            size={spinnerSize}
+            speed={loadingSpeed}
+            variant={
+              variant === 'default' || variant === 'cta' ? 'white' : 'default'
+            }
+            className={cn(
+              'flex-shrink-0',
+              size !== 'icon' && responsive && 'mr-0 sm:mr-2',
+              size !== 'icon' && !responsive && 'mr-2',
+            )}
+          />
+        )}
         {Icon && (
           <Icon
             className={cn(
               'h-4 w-4 flex-shrink-0',
-              loading && 'animate-spin',
               size !== 'icon' && responsive && 'mr-0 sm:mr-2',
               size !== 'icon' && !responsive && 'mr-2',
             )}
@@ -121,27 +144,49 @@ const LinkButton = ({
   size,
   children,
   loading,
+  loadingType = 'circle',
+  loadingSpeed = 'normal',
   icon,
   responsive,
   ...props
 }: LinkComponentProps &
   VariantProps<typeof buttonVariants> & {
     loading?: boolean;
+    loadingType?: SpinnerProps['type'];
+    loadingSpeed?: SpinnerProps['speed'];
     icon?: LucideIcon;
     responsive?: boolean;
   }) => {
-  const Icon = loading ? Loader2 : (icon ?? null);
+  const Icon = loading ? null : (icon ?? null);
+
+  // Determine spinner size based on button size
+  const spinnerSize = size === 'lg' ? 'md' : size === 'icon' ? 'sm' : 'sm';
+
   return (
     <Link
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
+      {loading && (
+        <Spinner
+          type={loadingType}
+          size={spinnerSize}
+          speed={loadingSpeed}
+          variant={
+            variant === 'default' || variant === 'cta' ? 'white' : 'default'
+          }
+          className={cn(
+            'flex-shrink-0',
+            responsive && 'mr-0 sm:mr-2',
+            !responsive && 'mr-2',
+          )}
+        />
+      )}
       {Icon && (
         <Icon
           className={cn(
             'mr-2 h-4 w-4 flex-shrink-0',
             responsive && 'mr-0 sm:mr-2',
-            loading && 'animate-spin',
           )}
         />
       )}

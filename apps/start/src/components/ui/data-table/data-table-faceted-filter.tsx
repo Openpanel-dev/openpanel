@@ -5,6 +5,7 @@ import {
   Check,
   CheckIcon,
   PlusCircle,
+  PlusCircleIcon,
   XCircle,
   XCircleIcon,
 } from 'lucide-react';
@@ -95,7 +96,7 @@ export function DataTableFacetedFilter<TData, TValue>({
               <XCircleIcon className="size-4 mr-2" />
             </div>
           ) : (
-            <PlusCircle />
+            <PlusCircleIcon className="size-4 mr-2" />
           )}
           {title}
           {selectedValues?.size > 0 && (

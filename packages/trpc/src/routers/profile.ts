@@ -6,13 +6,52 @@ import {
   TABLE_NAMES,
   chQuery,
   createSqlBuilder,
+  getProfileByIdCached,
   getProfileList,
+  getProfileListCount,
+  getProfileMetrics,
   getProfiles,
 } from '@openpanel/db';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const profileRouter = createTRPCRouter({
+  byId: protectedProcedure
+    .input(z.object({ profileId: z.string(), projectId: z.string() }))
+    .query(async ({ input: { profileId, projectId } }) => {
+      return getProfileByIdCached(profileId, projectId);
+    }),
+
+  metrics: protectedProcedure
+    .input(z.object({ profileId: z.string(), projectId: z.string() }))
+    .query(async ({ input: { profileId, projectId } }) => {
+      return getProfileMetrics(profileId, projectId);
+    }),
+
+  activity: protectedProcedure
+    .input(z.object({ profileId: z.string(), projectId: z.string() }))
+    .query(async ({ input: { profileId, projectId } }) => {
+      return chQuery<{ count: number; date: string }>(
+        `SELECT count(*) as count, toStartOfDay(created_at) as date FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} and profile_id = ${sqlstring.escape(profileId)} GROUP BY date ORDER BY date DESC`,
+      );
+    }),
+
+  mostEvents: protectedProcedure
+    .input(z.object({ profileId: z.string(), projectId: z.string() }))
+    .query(async ({ input: { profileId, projectId } }) => {
+      return chQuery<{ count: number; name: string }>(
+        `SELECT count(*) as count, name FROM ${TABLE_NAMES.events} WHERE name NOT IN ('screen_view', 'session_start', 'session_end') AND project_id = ${sqlstring.escape(projectId)} and profile_id = ${sqlstring.escape(profileId)} GROUP BY name ORDER BY count DESC`,
+      );
+    }),
+
+  popularRoutes: protectedProcedure
+    .input(z.object({ profileId: z.string(), projectId: z.string() }))
+    .query(async ({ input: { profileId, projectId } }) => {
+      return chQuery<{ count: number; path: string }>(
+        `SELECT count(*) as count, path FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND project_id = ${sqlstring.escape(projectId)} and profile_id = ${sqlstring.escape(profileId)} GROUP BY path ORDER BY count DESC LIMIT 10`,
+      );
+    }),
+
   properties: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input: { projectId } }) => {
@@ -42,11 +81,16 @@ export const profileRouter = createTRPCRouter({
         take: z.number().default(50),
         search: z.string().optional(),
         isExternal: z.boolean().optional(),
-        // filters: z.array(zChartEventFilter).default([]),
       }),
     )
     .query(async ({ input }) => {
-      return getProfileList(input);
+      return {
+        data: await getProfileList(input),
+        meta: {
+          count: await getProfileListCount(input),
+          pageCount: input.take,
+        },
+      };
     }),
 
   powerUsers: protectedProcedure
@@ -55,12 +99,19 @@ export const profileRouter = createTRPCRouter({
         projectId: z.string(),
         cursor: z.number().optional(),
         take: z.number().default(50),
-        // filters: z.array(zChartEventFilter).default([]),
       }),
     )
     .query(async ({ input: { projectId, cursor, take } }) => {
       const res = await chQuery<{ profile_id: string; count: number }>(
-        `SELECT profile_id, count(*) as count from ${TABLE_NAMES.events} where profile_id != '' and project_id = ${sqlstring.escape(projectId)} group by profile_id order by count() DESC LIMIT ${take} ${cursor ? `OFFSET ${cursor * take}` : ''}`,
+        `
+        SELECT profile_id, count(*) as count 
+        FROM ${TABLE_NAMES.events} 
+        WHERE 
+          profile_id != '' 
+          AND project_id = ${sqlstring.escape(projectId)} 
+          GROUP BY profile_id 
+          ORDER BY count() DESC 
+          LIMIT ${take} ${cursor ? `OFFSET ${cursor * take}` : ''}`,
       );
       const profiles = await getProfiles(
         res.map((r) => r.profile_id),

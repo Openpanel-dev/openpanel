@@ -5,8 +5,9 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 
+import { useIsFetching } from '@tanstack/react-query';
 import { Button } from './ui/button';
 
 export function usePagination(take: number) {
@@ -44,6 +45,9 @@ export function Pagination({
   className,
   loading,
 }: Props) {
+  const isFetching = useIsFetching() > 0;
+  const [isPending, startTransition] = useTransition();
+  const isLoading = isFetching || isPending;
   return (
     <div
       className={cn(
@@ -55,7 +59,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => firstPage?.()}
+          onClick={() => startTransition(() => firstPage?.())}
           disabled={!canPreviousPage}
           className="max-sm:hidden"
           icon={ChevronsLeftIcon}
@@ -64,19 +68,25 @@ export function Pagination({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => previousPage()}
+        onClick={() => startTransition(() => previousPage())}
         disabled={!canPreviousPage}
         icon={ChevronLeftIcon}
       />
 
-      <Button loading={loading} disabled variant="outline" size="icon">
-        {loading ? '' : pageIndex + 1}
+      <Button
+        loading={isLoading}
+        loadingType="ring"
+        disabled
+        variant="outline"
+        size="icon"
+      >
+        {isLoading ? '' : pageIndex + 1}
       </Button>
 
       <Button
         variant="outline"
         size="icon"
-        onClick={() => nextPage()}
+        onClick={() => startTransition(() => nextPage())}
         disabled={!canNextPage}
         icon={ChevronRightIcon}
       />
@@ -85,7 +95,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => lastPage?.()}
+          onClick={() => startTransition(() => lastPage?.())}
           disabled={!canNextPage}
           className="max-sm:hidden"
           icon={ChevronsRightIcon}

@@ -10,7 +10,7 @@ import type { IServiceProfile } from '@openpanel/db';
 
 import { ProfileAvatar } from '../profile-avatar';
 
-export function useColumns(type?: 'profiles' | 'power-users') {
+export function useColumns(type: 'profiles' | 'power-users') {
   const columns: ColumnDef<IServiceProfile>[] = [
     {
       accessorKey: 'name',
@@ -78,6 +78,21 @@ export function useColumns(type?: 'profiles' | 'power-users') {
           <div className="flex min-w-0 items-center gap-2">
             <SerieIcon name={browser} />
             <span className="truncate">{browser}</span>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'model',
+      header: 'Model',
+      cell({ row }) {
+        const { model, brand } = row.original.properties;
+        return (
+          <div className="flex min-w-0 items-center gap-2">
+            <SerieIcon name={brand} />
+            <span className="truncate">
+              {brand} / {model}
+            </span>
           </div>
         );
       },

@@ -4,8 +4,12 @@ import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
-import { COOKIE_OPTIONS, validateSessionToken } from '@openpanel/auth';
-import { getRedisCache } from '@openpanel/redis';
+import {
+  COOKIE_OPTIONS,
+  EMPTY_SESSION,
+  validateSessionToken,
+} from '@openpanel/auth';
+import { getCache, getRedisCache } from '@openpanel/redis';
 import type { ISetCookie } from '@openpanel/validation';
 import {
   createTrpcRedisLimiter,
@@ -31,6 +35,7 @@ export const rateLimitMiddleware = ({
   });
 
 export async function createContext({ req, res }: CreateFastifyContextOptions) {
+  const cookies = (req as any).cookies as Record<string, string | undefined>;
   const setCookie: ISetCookie = (key, value, options) => {
     // @ts-ignore
     res.setCookie(key, value, {
@@ -39,8 +44,11 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
     });
   };
 
-  // @ts-ignore
-  const session = await validateSessionToken(req.cookies?.session);
+  const session = cookies?.session
+    ? await getCache(`session:${cookies?.session}`, 1000 * 60 * 5, async () => {
+        return validateSessionToken(cookies.session!);
+      })
+    : EMPTY_SESSION;
 
   return {
     req,
@@ -49,6 +57,7 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
     // we do not get types for `setCookie` from fastify
     // so define it here and be safe in routers
     setCookie,
+    cookies,
   };
 }
 export type Context = Awaited<ReturnType<typeof createContext>>;

@@ -3,8 +3,10 @@ import * as d3 from 'd3';
 export function ChartSSR({
   data,
   dots = false,
+  color = 'blue',
 }: {
   dots?: boolean;
+  color?: 'blue' | 'green' | 'red';
   data: { value: number; date: Date }[];
 }) {
   if (data.length === 0) {
@@ -40,6 +42,8 @@ export function ChartSSR({
     return null;
   }
 
+  const gradientId = `gradient-${color}`;
+
   return (
     <div className="relative h-full w-full">
       {/* Chart area */}
@@ -51,23 +55,23 @@ export function ChartSSR({
         >
           <defs>
             <linearGradient
-              id={'gradient'}
+              id={gradientId}
               x1="0"
               y1="0"
               x2="0"
               y2="100%"
               gradientUnits="userSpaceOnUse"
             >
-              <stop offset="0%" stopColor={'blue'} stopOpacity={0.2} />
-              <stop offset="50%" stopColor={'blue'} stopOpacity={0.05} />
-              <stop offset="100%" stopColor={'blue'} stopOpacity={0} />
+              <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+              <stop offset="50%" stopColor={color} stopOpacity={0.05} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
           {/* Gradient area */}
           {pathArea && (
             <path
               d={pathArea}
-              fill={'url(#gradient)'}
+              fill={`url(#${gradientId})`}
               vectorEffect="non-scaling-stroke"
             />
           )}
@@ -75,7 +79,13 @@ export function ChartSSR({
           <path
             d={pathLine}
             fill="none"
-            className="text-highlight"
+            className={
+              color === 'green'
+                ? 'text-green-600'
+                : color === 'red'
+                  ? 'text-red-600'
+                  : 'text-highlight'
+            }
             stroke="currentColor"
             strokeWidth="2"
             vectorEffect="non-scaling-stroke"

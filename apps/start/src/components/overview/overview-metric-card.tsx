@@ -4,6 +4,7 @@ import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
 
+import { formatDate, timeAgo } from '@/utils/date';
 import { average, getPreviousMetric, sum } from '@openpanel/common';
 import type { IChartMetric, Metrics } from '@openpanel/validation';
 import {
@@ -24,7 +25,7 @@ interface MetricCardProps {
     current: number;
     previous?: number | null;
   };
-  unit?: string;
+  unit?: '' | 'date' | 'timeAgo' | 'min' | '%';
   label: string;
   onClick?: () => void;
   active?: boolean;
@@ -47,6 +48,14 @@ export function OverviewMetricCard({
   const { current, previous } = metric;
 
   const renderValue = (value: number, unitClassName?: string, short = true) => {
+    if (unit === 'date') {
+      return <>{formatDate(new Date(value))}</>;
+    }
+
+    if (unit === 'timeAgo') {
+      return <>{timeAgo(new Date(value))}</>;
+    }
+
     if (unit === 'min') {
       return <>{fancyMinutes(value)}</>;
     }
@@ -171,7 +180,7 @@ export function OverviewMetricCardNumber({
     <div className={cn('flex min-w-0 flex-col gap-2', className)}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2 text-left">
-          <span className="truncate text-sm font-medium text-muted-foreground">
+          <span className="truncate text-sm font-medium text-muted-foreground leading-[1.1]">
             {label}
           </span>
         </div>
@@ -183,7 +192,9 @@ export function OverviewMetricCardNumber({
         </div>
       ) : (
         <div className="flex items-end justify-between gap-4">
-          <div className="truncate font-mono text-3xl font-bold">{value}</div>
+          <div className="truncate font-mono text-3xl leading-[1.1] font-bold">
+            {value}
+          </div>
           {enhancer}
         </div>
       )}

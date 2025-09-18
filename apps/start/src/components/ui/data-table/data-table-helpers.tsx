@@ -26,7 +26,7 @@ export function createActionColumn<TData>(
     meta: {
       pinned: 'right',
     },
-    size: 20,
+    size: 40,
     cell: ({ row }) => {
       return (
         <DropdownMenu>
@@ -44,11 +44,10 @@ export function createActionColumn<TData>(
 
 export function getCommonPinningStyles<TData>({
   column,
-  withBorder = false,
 }: {
   column: Column<TData>;
-  withBorder?: boolean;
 }): React.CSSProperties {
+  const pinnedColumnWidth = 40;
   const isPinned = column.getIsPinned();
   const isLastLeftPinnedColumn =
     isPinned === 'left' && column.getIsLastColumn('left');
@@ -67,47 +66,13 @@ export function getCommonPinningStyles<TData>({
     opacity: isPinned ? 0.97 : 1,
     position: isPinned ? 'sticky' : 'relative',
     background: isPinned ? 'var(--background)' : 'var(--background)',
-    width: column.getSize(),
     zIndex: isPinned ? 1 : 0,
-    maxWidth: isPinned && isFirstRightPinnedColumn ? '50px' : undefined,
+    // Force fixed width for pinned columns, let others auto-size
+    width: isPinned ? `${pinnedColumnWidth}px` : 'auto',
+    minWidth: isPinned ? `${pinnedColumnWidth}px` : undefined,
+    maxWidth: isPinned ? `${pinnedColumnWidth}px` : undefined,
+    flexShrink: isPinned ? 0 : undefined,
+    flexGrow: isPinned ? 0 : undefined,
+    padding: isPinned ? 4 : undefined,
   };
 }
-
-// export function getFilterOperators(filterVariant: FilterVariant) {
-//   const operatorMap: Record<
-//     FilterVariant,
-//     { label: string; value: FilterOperator }[]
-//   > = {
-//     text: dataTableConfig.textOperators,
-//     number: dataTableConfig.numericOperators,
-//     range: dataTableConfig.numericOperators,
-//     date: dataTableConfig.dateOperators,
-//     dateRange: dataTableConfig.dateOperators,
-//     boolean: dataTableConfig.booleanOperators,
-//     select: dataTableConfig.selectOperators,
-//     multiSelect: dataTableConfig.multiSelectOperators,
-//   };
-
-//   return operatorMap[filterVariant] ?? dataTableConfig.textOperators;
-// }
-
-// export function getDefaultFilterOperator(filterVariant: FilterVariant) {
-//   const operators = getFilterOperators(filterVariant);
-
-//   return operators[0]?.value ?? (filterVariant === 'text' ? 'iLike' : 'eq');
-// }
-
-// export function getValidFilters<TData>(
-//   filters: ExtendedColumnFilter<TData>[],
-// ): ExtendedColumnFilter<TData>[] {
-//   return filters.filter(
-//     (filter) =>
-//       filter.operator === 'isEmpty' ||
-//       filter.operator === 'isNotEmpty' ||
-//       (Array.isArray(filter.value)
-//         ? filter.value.length > 0
-//         : filter.value !== '' &&
-//           filter.value !== null &&
-//           filter.value !== undefined),
-//   );
-// }

@@ -221,9 +221,6 @@ export function useTable<TData>({
         return next;
       });
     },
-    // manualPagination: true,
-    // manualSorting: true,
-    // manualFiltering: true,
   });
 
   return { table, loading };

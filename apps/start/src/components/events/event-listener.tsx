@@ -17,9 +17,7 @@ export default function EventListener({
   onRefresh: () => void;
 }) {
   const { projectId } = useAppParams();
-  const counter = useDebounceState(0, 1000, {
-    maxWait: 5000,
-  });
+  const counter = useDebounceState(0, 1000);
 
   useWS<IServiceEventMinimal>(`/live/events/${projectId}`, (event) => {
     if (event?.name) {
@@ -36,7 +34,7 @@ export default function EventListener({
             counter.set(0);
             onRefresh();
           }}
-          className="flex h-8 items-center gap-2 rounded border border-border bg-card px-3 font-medium leading-none"
+          className="flex h-8 items-center gap-2 rounded-md border border-border bg-card px-3 font-medium leading-none"
         >
           <div className="relative">
             <div

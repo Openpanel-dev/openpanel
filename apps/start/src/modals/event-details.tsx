@@ -4,7 +4,6 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 
-import { EventFieldValue } from '@/components/events/event-field-value';
 import { ProjectLink } from '@/components/links';
 import {
   WidgetButtons,
@@ -12,11 +11,10 @@ import {
 } from '@/components/overview/overview-widget';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Button } from '@/components/ui/button';
+import { FieldValue, KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget, WidgetBody } from '@/components/widget';
-import { WidgetTable } from '@/components/widget-table';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
-import { camelCaseToWords } from '@/utils/casing';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
@@ -81,7 +79,11 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
   const profile = event.profile;
 
   const data = (() => {
-    const data: { name: keyof IServiceEvent; value: any }[] = [
+    const data: {
+      name: keyof IServiceEvent | string;
+      value: any;
+      event: IServiceEvent;
+    }[] = [
       {
         name: 'createdAt',
         value: event.createdAt,
@@ -130,7 +132,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
         name: 'model',
         value: event.model,
       },
-    ];
+    ].map((item) => ({ ...item, event }));
 
     if (widget.id === TABS.detailed.id) {
       data.length = 0;
@@ -140,6 +142,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
             data.push({
               name: name as keyof IServiceEvent,
               value: value as any,
+              event,
             });
           }
         },
@@ -158,8 +161,9 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
   const properties = Object.entries(event.properties)
     .filter(([name]) => !name.startsWith('__'))
     .map(([name, value]) => ({
-      name: name as keyof IServiceEvent,
-      value: value,
+      name,
+      value,
+      event,
     }));
 
   return (
@@ -200,7 +204,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
           </div>
 
           <WidgetButtons>
-            {Object.entries(TABS).map(([key, tab]) => (
+            {Object.entries(TABS).map(([, tab]) => (
               <button
                 key={tab.id}
                 type="button"
@@ -215,7 +219,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
         <WidgetBody className="col gap-4 bg-def-100">
           {profile && (
             <ProjectLink
-              onClick={(e) => popModal()}
+              onClick={() => popModal()}
               href={`/profiles/${profile.id}`}
               className="card p-4 py-2 col gap-2 hover:bg-def-100"
             >
@@ -257,64 +261,19 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
               <div className="mb-2 flex justify-between font-medium">
                 <div>Properties</div>
               </div>
-              <WidgetTable
-                className={'card [&>div:first-child]:hidden'}
-                columnClassName="[&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4 h-auto"
+              <KeyValueGrid
+                columns={1}
                 data={properties}
-                keyExtractor={(item) => item.name}
-                columns={[
-                  {
-                    name: 'Name',
-                    className: 'text-left',
-                    width: 'auto',
-                    render(item) {
-                      const splitKey = item.name.split('.');
-                      return (
-                        <div className="row items-center gap-2">
-                          {splitKey.map((name, index) => (
-                            <div
-                              key={name}
-                              className={
-                                index === splitKey.length - 1
-                                  ? 'text-foreground'
-                                  : 'text-muted-foreground'
-                              }
-                            >
-                              {camelCaseToWords(name)}
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    },
-                  },
-                  {
-                    name: 'Value',
-                    className: 'text-right font-mono font-medium',
-                    width: 'w-full',
-                    render(item) {
-                      return (
-                        <button
-                          className="row items-center gap-2 text-right"
-                          type="button"
-                          onClick={() => {
-                            popModal();
-                            setFilter(
-                              `properties.${item.name}`,
-                              item.value as any,
-                            );
-                          }}
-                        >
-                          <EventFieldValue
-                            name={item.name}
-                            value={item.value}
-                            event={event}
-                          />
-                          <FilterIcon className="size-3 shrink-0" />
-                        </button>
-                      );
-                    },
-                  },
-                ]}
+                renderValue={(item) => (
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono">{String(item.value)}</span>
+                    <FilterIcon className="size-3 shrink-0" />
+                  </div>
+                )}
+                onItemClick={(item) => {
+                  popModal();
+                  setFilter(`properties.${item.name}`, item.value as any);
+                }}
               />
             </section>
           )}
@@ -322,71 +281,41 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
             <div className="mb-2 flex justify-between font-medium">
               <div>Information</div>
             </div>
-            <WidgetTable
-              className={'card [&>div:first-child]:hidden'}
-              columnClassName="[&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4 h-auto"
+            <KeyValueGrid
+              columns={1}
               data={data}
-              keyExtractor={(item) => item.name}
-              columns={[
-                {
-                  name: 'Name',
-                  className: 'text-left',
-                  width: 'auto',
-                  render(item) {
-                    const splitKey = item.name.split('.');
-                    return (
-                      <div className="row items-center gap-2">
-                        {splitKey.map((name, index) => (
-                          <div
-                            key={name}
-                            className={
-                              index === splitKey.length - 1
-                                ? 'text-foreground'
-                                : 'text-muted-foreground'
-                            }
-                          >
-                            {camelCaseToWords(name)}
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  },
-                },
-                {
-                  name: 'Value',
-                  className: 'text-right font-mono font-medium',
-                  width: 'w-full',
-                  render(item) {
-                    if (item.value && filterable[item.name]) {
-                      return (
-                        <button
-                          className="row items-center gap-2 text-right"
-                          type="button"
-                          onClick={() => {
-                            popModal();
-                            setFilter(item.name, item.value);
-                          }}
-                        >
-                          <EventFieldValue
-                            name={item.name}
-                            value={item.value}
-                            event={event}
-                          />
-                          <FilterIcon className="size-3 shrink-0" />
-                        </button>
-                      );
-                    }
-
-                    return (
-                      <EventFieldValue
+              renderValue={(item) => {
+                const isFilterable =
+                  item.value && (filterable as any)[item.name];
+                if (isFilterable) {
+                  return (
+                    <div className="flex items-center gap-2">
+                      <FieldValue
                         name={item.name}
                         value={item.value}
                         event={event}
                       />
-                    );
-                  },
-                },
-              ]}
+                      <FilterIcon className="size-3 shrink-0" />
+                    </div>
+                  );
+                }
+
+                return (
+                  <FieldValue
+                    name={item.name}
+                    value={item.value}
+                    event={event}
+                  />
+                );
+              }}
+              onItemClick={(item) => {
+                const isFilterable =
+                  item.value && (filterable as any)[item.name];
+                if (isFilterable) {
+                  popModal();
+                  setFilter(item.name as keyof IServiceEvent, item.value);
+                }
+              }}
             />
           </section>
           <section>

@@ -135,7 +135,7 @@ const Map = ({ markers, sidebarConfig }: Props) => {
         return true;
       }
     });
-    return found ? found[0] : 0.1;
+    return found ? Number.parseFloat(found[0]) : 0.1;
   };
 
   const theme = useTheme();
@@ -173,12 +173,8 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                       <Geography
                         key={geo.rsmKey}
                         geography={geo}
-                        fill={
-                          theme.resolvedTheme === 'dark' ? '#000' : '#e5eef6'
-                        }
-                        stroke={
-                          theme.resolvedTheme === 'dark' ? '#333' : '#bcccda'
-                        }
+                        fill={theme.theme === 'dark' ? '#000' : '#e5eef6'}
+                        stroke={theme.theme === 'dark' ? '#333' : '#bcccda'}
                         strokeWidth={getBorderWidth()}
                         pointerEvents={'none'}
                       />
@@ -208,9 +204,7 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                     <Marker coordinates={coordinates}>
                       <circle
                         r={size}
-                        fill={
-                          theme.resolvedTheme === 'dark' ? '#3d79ff' : '#2266ec'
-                        }
+                        fill={theme.theme === 'dark' ? '#3d79ff' : '#2266ec'}
                         className="animate-ping opacity-20"
                       />
                     </Marker>
@@ -244,11 +238,7 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                       <Marker coordinates={coordinates}>
                         <circle
                           r={size}
-                          fill={
-                            theme.resolvedTheme === 'dark'
-                              ? '#3d79ff'
-                              : '#2266ec'
-                          }
+                          fill={theme.theme === 'dark' ? '#3d79ff' : '#2266ec'}
                           fillOpacity={0.8}
                           stroke="#fff"
                           strokeWidth={getBorderWidth() * 0.5}

@@ -21,6 +21,12 @@ export type IProfileMetrics = {
   sessions: number;
   durationAvg: number;
   durationP90: number;
+  totalEvents: number;
+  uniqueDaysActive: number;
+  bounceRate: number;
+  avgEventsPerSession: number;
+  conversionEvents: number;
+  avgTimeBetweenSessions: number;
 };
 export function getProfileMetrics(profileId: string, projectId: string) {
   return chQuery<IProfileMetrics>(`
@@ -37,9 +43,47 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     duration AS (
-      SELECT avg(duration) as durationAvg, quantilesExactInclusive(0.9)(duration)[1] as durationP90 FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND duration != 0 AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+      SELECT 
+        round(avg(duration) / 1000 / 60, 2) as durationAvg, 
+        round(quantilesExactInclusive(0.9)(duration)[1] / 1000 / 60, 2) as durationP90 
+      FROM ${TABLE_NAMES.events} 
+      WHERE name = 'session_end' AND duration != 0 AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    totalEvents AS (
+      SELECT count(*) as totalEvents FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    uniqueDaysActive AS (
+      SELECT count(DISTINCT toDate(created_at)) as uniqueDaysActive FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    bounceRate AS (
+      SELECT round(avg(properties['__bounce'] = '1') * 100, 4) as bounceRate FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    avgEventsPerSession AS (
+      SELECT round((SELECT totalEvents FROM totalEvents) / nullIf((SELECT sessions FROM sessions), 0), 2) as avgEventsPerSession
+    ),
+    conversionEvents AS (
+      SELECT count(*) as conversionEvents FROM ${TABLE_NAMES.events} WHERE name NOT IN ('screen_view', 'session_start', 'session_end') AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    avgTimeBetweenSessions AS (
+      SELECT 
+        CASE 
+          WHEN (SELECT sessions FROM sessions) <= 1 THEN 0
+          ELSE round(dateDiff('second', (SELECT firstSeen FROM firstSeen), (SELECT lastSeen FROM lastSeen)) / nullIf((SELECT sessions FROM sessions) - 1, 0), 1)
+        END as avgTimeBetweenSessions
     )
-    SELECT lastSeen, firstSeen, screenViews, sessions, durationAvg, durationP90 FROM lastSeen, firstSeen, screenViews,sessions, duration
+    SELECT 
+      (SELECT lastSeen FROM lastSeen) as lastSeen, 
+      (SELECT firstSeen FROM firstSeen) as firstSeen, 
+      (SELECT screenViews FROM screenViews) as screenViews, 
+      (SELECT sessions FROM sessions) as sessions, 
+      (SELECT durationAvg FROM duration) as durationAvg, 
+      (SELECT durationP90 FROM duration) as durationP90,
+      (SELECT totalEvents FROM totalEvents) as totalEvents,
+      (SELECT uniqueDaysActive FROM uniqueDaysActive) as uniqueDaysActive,
+      (SELECT bounceRate FROM bounceRate) as bounceRate,
+      (SELECT avgEventsPerSession FROM avgEventsPerSession) as avgEventsPerSession,
+      (SELECT conversionEvents FROM conversionEvents) as conversionEvents,
+      (SELECT avgTimeBetweenSessions FROM avgTimeBetweenSessions) as avgTimeBetweenSessions
   `).then((data) => data[0]!);
 }
 
@@ -109,11 +153,12 @@ export async function getProfiles(ids: string[], projectId: string) {
   return data.map(transformProfile);
 }
 
+export const getProfilesCached = cacheable(getProfiles, 60 * 5);
+
 export async function getProfileList({
   take,
   cursor,
   projectId,
-  filters,
   search,
   isExternal,
 }: GetProfileListOptions) {
@@ -136,13 +181,20 @@ export async function getProfileList({
 
 export async function getProfileListCount({
   projectId,
-  filters,
+  isExternal,
+  search,
 }: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
   const { sb, getSql } = createSqlBuilder();
   sb.from = 'profiles';
   sb.select.count = 'count(id) as count';
   sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.groupBy.project_id = 'project_id';
+  if (search) {
+    sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
+  }
+  if (isExternal !== undefined) {
+    sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
+  }
   const data = await chQuery<{ count: number }>(getSql());
   return data[0]?.count ?? 0;
 }

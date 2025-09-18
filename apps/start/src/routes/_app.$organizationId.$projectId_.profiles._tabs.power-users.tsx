@@ -1,5 +1,7 @@
 import { ProfilesTable } from '@/components/profiles/table';
+import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { TableButtons } from '@/components/ui/table';
+import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -14,9 +16,11 @@ export const Route = createFileRoute(
 function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
+  const { page } = useDataTablePagination();
   const query = useQuery(
     trpc.profile.powerUsers.queryOptions(
       {
+        cursor: (page - 1) * 50,
         projectId,
         take: 50,
       },
@@ -26,19 +30,5 @@ function Component() {
     ),
   );
 
-  return (
-    <>
-      <TableButtons>
-        {query.isRefetching && (
-          <div className="center-center size-8 rounded border bg-background">
-            <Loader2Icon
-              size={12}
-              className="size-4 shrink-0 animate-spin text-black"
-            />
-          </div>
-        )}
-      </TableButtons>
-      <ProfilesTable query={query} />
-    </>
-  );
+  return <ProfilesTable query={query} type="power-users" />;
 }

@@ -82,9 +82,9 @@ code {
   
   /* def- color scale for dark mode */
   --def-100: oklch(0.08 0 0); /* #0f0f0f */
-  --def-200: oklch(0.131 0 0); /* #212121 */
-  --def-300: oklch(0.151 0 0); /* #262626 */
-  --def-400: oklch(0.252 0 0); /* #404040 */
+  --def-200: oklch(0.25 0 0); /* #212121 */
+  --def-300: oklch(0.27 0 0); /* #262626 */
+  --def-400: oklch(0.37 0 0); /* #404040 */
   
   --foregroundish: oklch(0.792 0 0);
 
@@ -190,6 +190,8 @@ code {
   /* Additional colors */
   --color-highlight: var(--highlight);
   --color-foregroundish: var(--foregroundish);
+  
+  /* def color scale - properly defined for all variants */
   --color-def-100: var(--def-100);
   --color-def-200: var(--def-200);
   --color-def-300: var(--def-300);
@@ -288,4 +290,15 @@ code {
 
 button {
   @apply cursor-pointer;
+}
+
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

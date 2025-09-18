@@ -53,12 +53,13 @@ function Component() {
               }}
             />
           </div>
-          <div className="absolute top-8 left-8 bottom-8 col gap-4">
+          <div className="absolute top-8 left-8 bottom-0 col gap-4">
             <div className="card p-4 w-72 bg-background/90">
               <RealtimeLiveHistogram projectId={projectId} />
             </div>
-            <div className="w-72 flex-1 min-h-0">
+            <div className="w-72 flex-1 min-h-0 relative">
               <RealtimeActiveSessions projectId={projectId} />
+              <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-def-100 to-transparent" />
             </div>
           </div>
         </div>

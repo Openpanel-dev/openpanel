@@ -14,6 +14,7 @@ import { projectRouter } from './routers/project';
 import { realtimeRouter } from './routers/realtime';
 import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
+import { sessionRouter } from './routers/session';
 import { shareRouter } from './routers/share';
 import { subscriptionRouter } from './routers/subscription';
 import { userRouter } from './routers/user';
@@ -33,6 +34,7 @@ export const appRouter = createTRPCRouter({
   client: clientRouter,
   event: eventRouter,
   profile: profileRouter,
+  session: sessionRouter,
   share: shareRouter,
   onboarding: onboardingRouter,
   reference: referenceRouter,

@@ -5,6 +5,9 @@ import ProjectCard, {
   ProjectCardSkeleton,
 } from '@/components/projects/project-card';
 import { LinkButton } from '@/components/ui/button';
+import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolbar';
+import { TableButtons } from '@/components/ui/table';
+import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -29,6 +32,7 @@ function OrganizationPage() {
       organizationId,
     }),
   );
+  const { debouncedSearch, setSearch, search } = useSearchQueryState();
 
   if (!projects?.length) {
     return (
@@ -52,16 +56,29 @@ function OrganizationPage() {
         className="mb-8"
       />
 
+      <TableButtons>
+        <AnimatedSearchInput
+          placeholder="Search projects"
+          value={search}
+          onChange={setSearch}
+        />
+      </TableButtons>
+
       <div className="grid gap-6 md:grid-cols-2">
-        {projects.map((project, index) => (
-          <LazyComponent
-            lazy={index >= 6}
-            key={project.id}
-            fallback={<ProjectCardSkeleton />}
-          >
-            <ProjectCard {...project} organizationId={organizationId} />
-          </LazyComponent>
-        ))}
+        {projects
+          .filter((project) => {
+            if (!search) return true;
+            return project.name.toLowerCase().includes(search.toLowerCase());
+          })
+          .map((project, index) => (
+            <LazyComponent
+              lazy={index >= 6}
+              key={project.id}
+              fallback={<ProjectCardSkeleton />}
+            >
+              <ProjectCard {...project} organizationId={organizationId} />
+            </LazyComponent>
+          ))}
       </div>
     </div>
   );

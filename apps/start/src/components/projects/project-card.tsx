@@ -59,16 +59,16 @@ function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
             {name}
           </div>
         </div>
-        <div className="-mx-4 aspect-[8/1]">
+        <div className="-mx-4 aspect-[8/1] mb-4">
           <ProjectChart id={id} />
         </div>
-        <div className="flex justify-end gap-4 h-9 md:h-4">
+        <div className="flex flex-1 gap-4 h-9 md:h-4">
           <ProjectMetrics id={id} />
         </div>
       </Link>
       <LinkButton
         variant="ghost"
-        href={`/${organizationId}/${id}/settings/projects`}
+        href={`/${organizationId}/${id}/settings`}
         className="text-muted-foreground absolute top-2 right-2"
       >
         <SettingsIcon size={16} />
@@ -87,16 +87,25 @@ function ProjectChart({ id }: { id: string }) {
 
   return (
     <FadeIn className="h-full w-full">
-      <ChartSSR data={data?.chart || []} />
+      <ChartSSR
+        data={data?.chart || []}
+        color={
+          data?.trend?.direction === 'up'
+            ? 'green'
+            : data?.trend?.direction === 'down'
+              ? 'red'
+              : 'blue'
+        }
+      />
     </FadeIn>
   );
 }
 
 function Metric({ value, label }: { value: React.ReactNode; label: string }) {
   return (
-    <div className="flex flex-col gap-2 md:flex-row">
-      <div className="text-muted-foreground">{label}</div>
-      <span className="font-medium">{value}</span>
+    <div className="flex flex-col gap-2 md:flex-row items-center">
+      <div className="text-muted-foreground text-xs">{label}</div>
+      <span className="font-semibold">{value}</span>
     </div>
   );
 }
@@ -110,16 +119,38 @@ function ProjectMetrics({ id }: { id: string }) {
   );
 
   return (
-    <FadeIn className="flex gap-4">
+    <FadeIn className="flex gap-8 flex-1">
+      <div className="flex-1 items-center gap-2 row">
+        {typeof data?.trend?.percentage === 'number' && (
+          <Metric
+            label="3M DIFF"
+            value={
+              <span
+                className={cn(
+                  'font-semibold',
+                  data?.trend?.direction === 'up'
+                    ? 'text-green-600'
+                    : data?.trend?.direction === 'down'
+                      ? 'text-red-600'
+                      : 'text-muted-foreground',
+                )}
+              >
+                {data.trend.direction === 'down' ? '-' : '+'}
+                {Math.abs(data.trend.percentage)}%
+              </span>
+            }
+          />
+        )}
+      </div>
       <Metric
-        label="3 months"
+        label="3M"
         value={shortNumber('en')(data?.metrics?.months_3 ?? 0)}
       />
       <Metric
-        label="Month"
+        label="30D"
         value={shortNumber('en')(data?.metrics?.month ?? 0)}
       />
-      <Metric label="24h" value={shortNumber('en')(data?.metrics?.day ?? 0)} />
+      <Metric label="24H" value={shortNumber('en')(data?.metrics?.day ?? 0)} />
     </FadeIn>
   );
 }

@@ -1,6 +1,6 @@
 import { useThrottle } from '@/hooks/use-throttle';
 import { cn } from '@/utils/cn';
-import { ChevronsUpDownIcon } from 'lucide-react';
+import { ChevronsUpDownIcon, Icon, type LucideIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { Children, useEffect, useRef, useState } from 'react';
 
@@ -11,18 +11,59 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import type { WidgetHeadProps } from '../widget';
+import type { WidgetHeadProps, WidgetTitleProps } from '../widget';
 import { WidgetHead as WidgetHeadBase } from '../widget';
 
 export function WidgetHead({ className, ...props }: WidgetHeadProps) {
   return (
     <WidgetHeadBase
       className={cn(
-        'flex flex-col rounded-t-xl p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:justify-between [&_.title]:p-4 [&_.title]:font-semibold',
+        'relative flex flex-col rounded-t-xl p-0 [&_.title]:flex [&_.title]:items-center [&_.title]:p-4 [&_.title]:font-semibold',
         className,
       )}
       {...props}
     />
+  );
+}
+
+export function WidgetTitle({
+  children,
+  className,
+  icon: Icon,
+  ...props
+}: WidgetTitleProps & {
+  icon?: LucideIcon;
+}) {
+  return (
+    <div
+      className={cn('title text-left row justify-start', className)}
+      {...props}
+    >
+      {Icon && (
+        <div className="rounded-lg bg-def-200 p-1 mr-2">
+          <Icon size={16} />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+export function WidgetAbsoluteButtons({
+  className,
+  children,
+  ...props
+}: WidgetHeadProps) {
+  return (
+    <div
+      className={cn(
+        'row gap-1 absolute right-4 top-1/2 -translate-y-1/2',
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </div>
   );
 }
 

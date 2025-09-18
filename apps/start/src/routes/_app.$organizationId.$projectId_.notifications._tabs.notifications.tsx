@@ -1,5 +1,4 @@
 import { NotificationsTable } from '@/components/notifications/table';
-import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';

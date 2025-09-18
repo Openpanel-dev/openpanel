@@ -1,7 +1,12 @@
 import type { IServiceProfile } from '@openpanel/db';
 
+export type GetProfileNameProps = Pick<
+  IServiceProfile,
+  'firstName' | 'lastName' | 'email' | 'isExternal' | 'id'
+>;
+
 export function getProfileName(
-  profile: IServiceProfile | undefined | null,
+  profile: GetProfileNameProps | undefined | null,
   short = true,
 ) {
   if (!profile) {

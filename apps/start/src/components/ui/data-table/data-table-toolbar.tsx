@@ -10,18 +10,43 @@ import { DataTableFacetedFilter } from '@/components/ui/data-table/data-table-fa
 import { DataTableSliderFilter } from '@/components/ui/data-table/data-table-slider-filter';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
 import { Input } from '@/components/ui/input';
+import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { cn } from '@/lib/utils';
 
 interface DataTableToolbarProps<TData> extends React.ComponentProps<'div'> {
   table: Table<TData>;
+  globalSearchKey?: string;
+  globalSearchPlaceholder?: string;
+}
+
+export function DataTableToolbarContainer({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) {
+  return (
+    <div
+      role="toolbar"
+      aria-orientation="horizontal"
+      className={cn(
+        'flex flex-1 items-start justify-between gap-2 mb-2',
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function DataTableToolbar<TData>({
   table,
   children,
   className,
+  globalSearchKey,
+  globalSearchPlaceholder,
   ...props
 }: DataTableToolbarProps<TData>) {
+  const { search, setSearch } = useSearchQueryState({
+    searchKey: globalSearchKey,
+  });
   const isFiltered = table.getState().columnFilters.length > 0;
 
   const columns = React.useMemo(
@@ -34,16 +59,15 @@ export function DataTableToolbar<TData>({
   }, [table]);
 
   return (
-    <div
-      role="toolbar"
-      aria-orientation="horizontal"
-      className={cn(
-        'flex flex-1 items-start justify-between gap-2 mb-2',
-        className,
-      )}
-      {...props}
-    >
+    <DataTableToolbarContainer className={className} {...props}>
       <div className="flex flex-1 flex-wrap items-center gap-2">
+        {globalSearchKey && (
+          <AnimatedSearchInput
+            placeholder={globalSearchPlaceholder ?? 'Search'}
+            value={search}
+            onChange={setSearch}
+          />
+        )}
         {columns.map((column) => (
           <DataTableToolbarFilter key={column.id} column={column} />
         ))}
@@ -64,7 +88,7 @@ export function DataTableToolbar<TData>({
         {children}
         <DataTableViewOptions table={table} />
       </div>
-    </div>
+    </DataTableToolbarContainer>
   );
 }
 interface DataTableToolbarFilterProps<TData> {
@@ -152,7 +176,7 @@ interface AnimatedSearchInputProps {
   onChange: (value: string) => void;
 }
 
-function AnimatedSearchInput({
+export function AnimatedSearchInput({
   placeholder,
   value,
   onChange,

@@ -1,6 +1,5 @@
 import EventListener from '@/components/events/event-listener';
 import { EventsTable } from '@/components/events/table';
-import { EventsTableColumns } from '@/components/events/table/events-table-columns';
 import { TableButtons } from '@/components/ui/table';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -26,6 +25,8 @@ function Component() {
     trpc.event.conversions.infiniteQueryOptions(
       {
         projectId,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
       },
       {
         getNextPageParam: (lastPage) => lastPage.meta.next,
@@ -33,21 +34,5 @@ function Component() {
     ),
   );
 
-  return (
-    <>
-      <TableButtons>
-        <EventListener onRefresh={() => query.refetch()} />
-        <EventsTableColumns />
-        {query.isRefetching && (
-          <div className="center-center size-8 rounded border bg-background">
-            <Loader2Icon
-              size={12}
-              className="size-4 shrink-0 animate-spin text-black"
-            />
-          </div>
-        )}
-      </TableButtons>
-      <EventsTable query={query} />
-    </>
-  );
+  return <EventsTable query={query} />;
 }

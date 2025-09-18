@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '../table';
-import { DataTableColumnHeader } from './data-table-column-header';
 import { getCommonPinningStyles } from './data-table-helpers';
 
 export interface DataTableProps<TData> {
@@ -48,21 +47,17 @@ export function DataTable<TData>({
                     key={header.id}
                     colSpan={header.colSpan}
                     style={{
-                      ...getCommonPinningStyles({ column: header.column }),
+                      ...getCommonPinningStyles({
+                        column: header.column,
+                      }),
                     }}
                   >
-                    {header.isPlaceholder ? null : typeof header.column
-                        .columnDef.header === 'function' ? (
-                      flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )
-                    ) : (
-                      <DataTableColumnHeader
-                        column={header.column}
-                        title={header.column.columnDef.header ?? ''}
-                      />
-                    )}
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -79,7 +74,9 @@ export function DataTable<TData>({
                     <TableCell
                       key={cell.id}
                       style={{
-                        ...getCommonPinningStyles({ column: cell.column }),
+                        ...getCommonPinningStyles({
+                          column: cell.column,
+                        }),
                       }}
                       className={cn(
                         cell.column.columnDef.meta?.bold && 'font-medium',

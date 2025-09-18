@@ -22,13 +22,7 @@ export function RealtimeLiveHistogram({
     events: [
       {
         segment: 'user',
-        filters: [
-          {
-            name: 'name',
-            operator: 'is',
-            value: ['screen_view', 'session_start'],
-          },
-        ],
+        filters: [],
         name: '*',
         displayName: 'Active users',
       },

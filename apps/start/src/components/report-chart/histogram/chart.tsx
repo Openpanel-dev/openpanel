@@ -68,30 +68,30 @@ export function Chart({ data }: Props) {
             <Tooltip content={<ReportChartTooltip />} cursor={<BarHover />} />
             <YAxis {...yAxisProps} />
             <XAxis {...xAxisProps} scale={'auto'} type="category" />
-            {series.map((serie) => {
-              return (
-                <React.Fragment key={serie.id}>
-                  {previous && (
+            {previous
+              ? series.map((serie) => {
+                  return (
                     <Bar
                       key={`${serie.id}:prev`}
                       name={`${serie.id}:prev`}
                       dataKey={`${serie.id}:prev:count`}
                       fill={getChartColor(serie.index)}
-                      fillOpacity={0.1}
-                      radius={3}
-                      barSize={5} // Adjust the bar width here
+                      fillOpacity={0.3}
+                      radius={5}
                     />
-                  )}
-                  <Bar
-                    key={serie.id}
-                    name={serie.id}
-                    dataKey={`${serie.id}:count`}
-                    fill={getChartColor(serie.index)}
-                    radius={3}
-                    fillOpacity={1}
-                    barSize={5} // Adjust the bar width here
-                  />
-                </React.Fragment>
+                  );
+                })
+              : null}
+            {series.map((serie) => {
+              return (
+                <Bar
+                  key={serie.id}
+                  name={serie.id}
+                  dataKey={`${serie.id}:count`}
+                  fill={getChartColor(serie.index)}
+                  radius={5}
+                  fillOpacity={1}
+                />
               );
             })}
           </BarChart>

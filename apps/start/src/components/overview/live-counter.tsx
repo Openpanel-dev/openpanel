@@ -15,9 +15,7 @@ const FIFTEEN_SECONDS = 1000 * 30;
 
 export function LiveCounter({ projectId }: LiveCounterProps) {
   const client = useQueryClient();
-  const counter = useDebounceState(0, 1000, {
-    maxWait: 5000,
-  });
+  const counter = useDebounceState(0, 1000);
   const lastRefresh = useRef(Date.now());
 
   useWS<number>(`/live/visitors/${projectId}`, (value) => {

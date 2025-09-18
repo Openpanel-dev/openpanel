@@ -53,6 +53,7 @@ const cacher = cacheMiddleware(60);
 
 export const chartRouter = createTRPCRouter({
   projectCard: protectedProcedure
+    .use(cacheMiddleware(60 * 5))
     .input(
       z.object({
         projectId: z.string(),
@@ -67,7 +68,7 @@ export const chartRouter = createTRPCRouter({
         WHERE 
             sign = 1 AND 
             project_id = ${sqlstring.escape(projectId)} AND 
-            created_at >= now() - interval '1 month'
+            created_at >= now() - interval '3 month'
         GROUP BY date
         ORDER BY date ASC
         WITH FILL FROM toStartOfDay(now() - interval '1 month') 
@@ -76,31 +77,52 @@ export const chartRouter = createTRPCRouter({
       `,
       );
 
-      const metricsPromise = chQuery<{
-        months_3: number;
-        month: number;
-        day: number;
-      }>(
-        `
-          SELECT
-        uniqHLL12(if(created_at >= (now() - toIntervalMonth(6)), profile_id, null)) AS months_3,
-        uniqHLL12(if(created_at >= (now() - toIntervalMonth(1)), profile_id, null)) AS month,
-        uniqHLL12(if(created_at >= (now() - toIntervalDay(1)), profile_id, null)) AS day
-    FROM sessions
-    WHERE 
-        project_id = ${sqlstring.escape(projectId)} AND 
-        created_at >= (now() - toIntervalMonth(6))
-        `,
-      );
+      const metricsPromise = clix(ch)
+        .select<{
+          months_3: number;
+          months_3_prev: number;
+          month: number;
+          day: number;
+          day_prev: number;
+        }>([
+          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(3)), profile_id, null)) AS months_3',
+          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(6)) AND created_at < (now() - toIntervalMonth(3)), profile_id, null)) AS months_3_prev',
+          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(1)), profile_id, null)) AS month',
+          'uniqHLL12(if(created_at >= (now() - toIntervalDay(1)), profile_id, null)) AS day',
+          'uniqHLL12(if(created_at >= (now() - toIntervalDay(2)) AND created_at < (now() - toIntervalDay(1)), profile_id, null)) AS day_prev',
+        ])
+        .from(TABLE_NAMES.sessions)
+        .where('project_id', '=', projectId)
+        .where('created_at', '>=', clix.exp('now() - toIntervalMonth(6)'))
+        .execute();
 
       const [chart, [metrics]] = await Promise.all([
         chartPromise,
         metricsPromise,
       ]);
 
+      const change =
+        metrics && metrics.months_3_prev > 0 && metrics.months_3 > 0
+          ? Math.round(
+              ((metrics.months_3 - metrics.months_3_prev) /
+                metrics.months_3_prev) *
+                100,
+            )
+          : null;
+
+      const trend =
+        change === null
+          ? { direction: 'neutral' as const, percentage: null as number | null }
+          : change > 0
+            ? { direction: 'up' as const, percentage: change }
+            : change < 0
+              ? { direction: 'down' as const, percentage: Math.abs(change) }
+              : { direction: 'neutral' as const, percentage: 0 };
+
       return {
         chart: chart.map((d) => ({ ...d, date: new Date(d.date) })),
         metrics,
+        trend,
       };
     }),
 

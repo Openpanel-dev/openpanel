@@ -194,9 +194,6 @@ export function useColumns() {
       accessorKey: 'properties',
       header: 'Properties',
       size: 400,
-      meta: {
-        className: 'p-0 [&_pre]:p-4',
-      },
       cell({ row }) {
         const { properties } = row.original;
         const filteredProperties = Object.fromEntries(
@@ -204,10 +201,19 @@ export function useColumns() {
             ([key]) => !key.startsWith('__'),
           ),
         );
+        const items = Object.entries(filteredProperties);
         return (
-          <ScrollArea orientation="horizontal">
-            <pre>{JSON.stringify(filteredProperties)}</pre>
-          </ScrollArea>
+          <div className="row flex-wrap gap-x-4 gap-y-1 overflow-hidden text-sm">
+            {items.slice(0, 4).map(([key, value]) => (
+              <div key={key} className="row items-center gap-1 min-w-0">
+                <span className="text-muted-foreground">{key}</span>
+                <span className="truncate font-medium">{String(value)}</span>
+              </div>
+            ))}
+            {items.length > 5 && (
+              <span className="truncate">{items.length - 5} more</span>
+            )}
+          </div>
         );
       },
     },

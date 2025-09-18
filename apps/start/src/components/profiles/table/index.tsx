@@ -1,73 +1,87 @@
-import { DataTable } from '@/components/data-table';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { Button } from '@/components/ui/button';
-import { TableSkeleton } from '@/components/ui/table';
 import type { UseQueryResult } from '@tanstack/react-query';
-import isEqual from 'lodash.isequal';
-import { GanttChartIcon } from 'lucide-react';
-import { memo } from 'react';
-import type { Dispatch, SetStateAction } from 'react';
 
-import type { IServiceProfile } from '@openpanel/db';
-
-import { FloatingPagination } from '@/components/pagination-floating';
+import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
+import type { RouterOutputs } from '@/trpc/client';
 import { useColumns } from './columns';
 
-type CommonProps = {
-  type?: 'profiles' | 'power-users';
-  query: UseQueryResult<IServiceProfile[]>;
+import { DataTable } from '@/components/ui/data-table/data-table';
+import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
+import {
+  AnimatedSearchInput,
+  DataTableToolbarContainer,
+} from '@/components/ui/data-table/data-table-toolbar';
+import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
+import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import { arePropsEqual } from '@/utils/are-props-equal';
+import type { IServiceProfile } from '@openpanel/db';
+import type { PaginationState, Table, Updater } from '@tanstack/react-table';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { memo } from 'react';
+
+type Props = {
+  query: UseQueryResult<RouterOutputs['profile']['list'], unknown>;
+  type: 'profiles' | 'power-users';
 };
-type Props =
-  | CommonProps
-  | (CommonProps & {
-      cursor: number;
-      setCursor: Dispatch<SetStateAction<number>>;
-    });
+
+const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceProfile[];
 
 export const ProfilesTable = memo(
-  ({ type, query, ...props }: Props) => {
+  ({ type, query }: Props) => {
+    const { data, isLoading } = query;
     const columns = useColumns(type);
-    const { data, isFetching, isLoading } = query;
 
-    if (isLoading) {
-      return <TableSkeleton cols={columns.length} />;
-    }
+    const { setPage, state: pagination } = useDataTablePagination();
+    const { columnVisibility, setColumnVisibility } =
+      useDataTableColumnVisibility(columns);
 
-    if (data?.length === 0) {
-      return (
-        <FullPageEmptyState title="No profiles here" icon={GanttChartIcon}>
-          <p>Could not find any profiles</p>
-          {'cursor' in props && props.cursor !== 0 && (
-            <Button
-              className="mt-8"
-              variant="outline"
-              onClick={() => props.setCursor((p) => p - 1)}
-            >
-              Go to previous page
-            </Button>
-          )}
-        </FullPageEmptyState>
-      );
-    }
+    const table = useReactTable({
+      data: isLoading ? LOADING_DATA : (data?.data ?? []),
+      getCoreRowModel: getCoreRowModel(),
+      manualPagination: true,
+      manualFiltering: true,
+      manualSorting: true,
+      columns,
+      rowCount: data?.meta.count,
+      pageCount: Math.ceil(
+        (data?.meta.count || 0) / (pagination.pageSize || 1),
+      ),
+      filterFns: {
+        isWithinRange: () => true,
+      },
+      state: {
+        pagination,
+        columnVisibility,
+      },
+      onColumnVisibilityChange: setColumnVisibility,
+      onPaginationChange: (updaterOrValue: Updater<PaginationState>) => {
+        const nextPagination =
+          typeof updaterOrValue === 'function'
+            ? updaterOrValue(pagination)
+            : updaterOrValue;
+        setPage(nextPagination.pageIndex + 1);
+      },
+    });
 
     return (
       <>
-        <DataTable data={data ?? []} columns={columns} />
-        {'cursor' in props && (
-          <FloatingPagination
-            setCursor={props.setCursor}
-            cursor={props.cursor}
-            count={Number.POSITIVE_INFINITY}
-            take={50}
-            loading={isFetching}
-          />
-        )}
+        <ProfileTableToolbar table={table} />
+        <DataTable table={table} loading={isLoading} />
       </>
     );
   },
-  (prevProps, nextProps) => {
-    return isEqual(prevProps.query.data, nextProps.query.data);
-  },
+  arePropsEqual(['query.isLoading', 'query.data', 'type']),
 );
 
-ProfilesTable.displayName = 'ProfilesTable';
+function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
+  const { search, setSearch } = useSearchQueryState();
+  return (
+    <DataTableToolbarContainer>
+      <AnimatedSearchInput
+        placeholder="Search profiles"
+        value={search}
+        onChange={setSearch}
+      />
+      <DataTableViewOptions table={table} />
+    </DataTableToolbarContainer>
+  );
+}

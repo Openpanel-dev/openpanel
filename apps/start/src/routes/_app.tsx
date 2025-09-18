@@ -1,12 +1,18 @@
 import { Sidebar } from '@/components/sidebar';
-import { getAuthSessionQueryOptions } from '@/lib/auth';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context }) => {
     const session = await context.queryClient.ensureQueryData(
-      getAuthSessionQueryOptions,
+      context.trpc.auth.session.queryOptions(undefined, {
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+      }),
     );
+
     if (!session) {
       console.log('No session, redirecting to login');
       throw redirect({ to: '/login' });

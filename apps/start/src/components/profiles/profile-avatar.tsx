@@ -3,14 +3,14 @@ import { AvatarImage } from '@radix-ui/react-avatar';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 
-import type { IServiceProfile } from '@openpanel/db';
-
+import { type GetProfileNameProps, getProfileName } from '@/utils/getters';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 
 interface ProfileAvatarProps
   extends VariantProps<typeof variants>,
-    Partial<Pick<IServiceProfile, 'avatar' | 'firstName'>> {
+    GetProfileNameProps {
   className?: string;
+  avatar?: string;
 }
 
 const variants = cva('shrink-0', {
@@ -29,15 +29,19 @@ const variants = cva('shrink-0', {
 
 export function ProfileAvatar({
   avatar,
-  firstName,
   className,
   size,
+  ...profile
 }: ProfileAvatarProps) {
+  const name = getProfileName(profile);
+  console.log('name', name);
+
   return (
     <Avatar className={cn(variants({ className, size }), className)}>
-      {avatar && <AvatarImage src={avatar} />}
+      {avatar && <AvatarImage src={avatar} className="rounded-full" />}
       <AvatarFallback
         className={cn(
+          'rounded-full',
           size === 'lg'
             ? 'text-lg'
             : size === 'sm'
@@ -48,7 +52,7 @@ export function ProfileAvatar({
           'bg-def-200 text-muted-foreground',
         )}
       >
-        {firstName?.at(0) ?? '🫣'}
+        {name?.at(0)?.toUpperCase() ?? '🫣'}
       </AvatarFallback>
     </Avatar>
   );

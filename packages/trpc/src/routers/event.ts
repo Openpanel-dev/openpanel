@@ -117,6 +117,7 @@ export const eventRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         profileId: z.string().optional(),
+        sessionId: z.string().optional(),
         cursor: z.string().optional(),
         filters: z.array(zChartEventFilter).default([]),
         startDate: z.date().optional(),
@@ -130,10 +131,15 @@ export const eventRouter = createTRPCRouter({
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
         select: {
+          profile: true,
           properties: true,
           sessionId: true,
           deviceId: true,
           profileId: true,
+          referrerName: true,
+          referrerType: true,
+          referrer: true,
+          origin: true,
         },
       });
 
@@ -159,7 +165,7 @@ export const eventRouter = createTRPCRouter({
       const lastItem = items[items.length - 1];
 
       return {
-        items,
+        data: items,
         meta: {
           next:
             items.length === 50 && lastItem
@@ -178,34 +184,70 @@ export const eventRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         cursor: z.string().optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
       }),
     )
-    .query(async ({ input: { projectId, cursor } }) => {
-      const conversions = await getConversionEventNames(projectId);
+    .query(async ({ input }) => {
+      const conversions = await getConversionEventNames(input.projectId);
 
       if (conversions.length === 0) {
         return {
-          items: [],
+          data: [],
           meta: {
             next: null,
           },
         };
       }
 
-      const items = await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE ${cursor ? `created_at <= '${formatClickhouseDate(cursor)}' AND` : ''} project_id = ${sqlstring.escape(projectId)} AND name IN (${conversions.map((c) => sqlstring.escape(c.name)).join(', ')}) ORDER BY toDate(created_at) DESC, created_at DESC LIMIT 50;`,
-        {
+      const items = await getEventList({
+        ...input,
+        take: 50,
+        cursor: input.cursor ? new Date(input.cursor) : undefined,
+        select: {
           profile: true,
-          meta: true,
+          properties: true,
+          sessionId: true,
+          deviceId: true,
+          profileId: true,
+          referrerName: true,
+          referrerType: true,
+          referrer: true,
+          origin: true,
         },
-      );
+        custom: (sb) => {
+          sb.where.name = `name IN (${conversions.map((event) => sqlstring.escape(event.name)).join(',')})`;
+        },
+      });
+
+      // Hacky join to get profile for entire session
+      // TODO: Replace this with a join on the session table
+      const map = new Map<string, IServiceProfile>(); // sessionId -> profileId
+      for (const item of items) {
+        if (item.sessionId && item.profile?.isExternal === true) {
+          map.set(item.sessionId, item.profile);
+        }
+      }
+
+      for (const item of items) {
+        const profile = map.get(item.sessionId);
+        if (profile && (item.profile?.isExternal === false || !item.profile)) {
+          item.profile = clone(profile);
+          if (item?.profile?.firstName) {
+            item.profile.firstName = `* ${item.profile.firstName}`;
+          }
+        }
+      }
 
       const lastItem = items[items.length - 1];
 
       return {
-        items,
+        data: items,
         meta: {
-          next: lastItem ? lastItem.createdAt.toISOString() : null,
+          next:
+            items.length === 50 && lastItem
+              ? lastItem.createdAt.toISOString()
+              : null,
         },
       };
     }),

@@ -9,6 +9,7 @@ import {
   hashPassword,
   invalidateSession,
   setSessionTokenCookie,
+  validateSessionToken,
   verifyPasswordHash,
 } from '@openpanel/auth';
 import { generateSecureId } from '@openpanel/common/server/id';

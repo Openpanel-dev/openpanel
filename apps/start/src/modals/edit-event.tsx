@@ -13,7 +13,7 @@ import { cn } from '@/utils/cn';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { UndoIcon } from 'lucide-react';
+import { PaintBucketIcon, UndoIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -34,7 +34,7 @@ export default function EditEvent({ id }: Props) {
     trpc.event.byId.queryOptions({ id, projectId }),
   );
 
-  const [selectedIcon, setIcon] = useState(EventIconRecords.default!.icon);
+  const [selectedIcon, setIcon] = useState<string | null>(null);
   const [selectedColor, setColor] = useState(EventIconRecords.default!.color);
   const [conversion, setConversion] = useState(false);
   const [step, setStep] = useState<'icon' | 'color'>('icon');
@@ -50,13 +50,13 @@ export default function EditEvent({ id }: Props) {
     }
   }, [event]);
 
-  const SelectedIcon = EventIconMapper[selectedIcon]!;
+  const SelectedIcon = selectedIcon ? EventIconMapper[selectedIcon] : null;
 
   const mutation = useMutation(
     trpc.event.updateEventMeta.mutationOptions({
       onSuccess() {
         toast('Event updated');
-        client.refetchQueries(trpc.event.events.pathFilter());
+        client.invalidateQueries(trpc.event.pathFilter());
         popModal();
       },
     }),
@@ -70,7 +70,6 @@ export default function EditEvent({ id }: Props) {
       <ModalHeader
         title={`Edit: ${event?.name}`}
         text={`Changes here will affect all "${event?.name}" events`}
-        onClose={() => popModal()}
       />
       <div className="col gap-4">
         <div>
@@ -97,7 +96,17 @@ export default function EditEvent({ id }: Props) {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.15 }}
             >
-              <Label className="mb-2 block">Pick an icon</Label>
+              <div className="row mb-4 items-center justify-between">
+                <div className="font-medium leading-none">Pick an icon</div>
+                {
+                  <button type="button" onClick={() => setStep('color')}>
+                    <Badge variant="outline">
+                      Select color
+                      <PaintBucketIcon className="ml-1 h-3 w-3" />
+                    </Badge>
+                  </button>
+                }
+              </div>
               <Input
                 className="mb-4"
                 value={search}
@@ -140,7 +149,7 @@ export default function EditEvent({ id }: Props) {
               <div className="row mb-4 items-center justify-between">
                 <div className="font-medium leading-none">Pick a color</div>
                 <button type="button" onClick={() => setStep('icon')}>
-                  <Badge variant="muted">
+                  <Badge variant="outline">
                     Select icon
                     <UndoIcon className="ml-1 h-3 w-3" />
                   </Badge>
@@ -191,8 +200,8 @@ export default function EditEvent({ id }: Props) {
             mutation.mutate({
               projectId,
               name: event!.name,
-              icon: selectedIcon,
-              color: selectedColor,
+              icon: selectedIcon ?? EventIconRecords.default!.icon,
+              color: selectedColor ?? EventIconRecords.default!.color,
               conversion,
             })
           }

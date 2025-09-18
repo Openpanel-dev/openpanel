@@ -33,7 +33,6 @@ export function ModalHeader({
         'relative -m-6 mb-4 flex justify-between rounded-t-lg p-6 pb-0',
         className,
       )}
-      style={{}}
     >
       <div className="row relative w-full justify-between gap-4">
         <div className="col flex-1 gap-2">

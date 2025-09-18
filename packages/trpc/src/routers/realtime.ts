@@ -8,6 +8,7 @@ import {
   clix,
   db,
   formatClickhouseDate,
+  getEventList,
 } from '@openpanel/db';
 
 import { subMinutes } from 'date-fns';
@@ -33,59 +34,25 @@ export const realtimeRouter = createTRPCRouter({
   activeSessions: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input }) => {
-      const meta = await db.eventMeta.findMany({
-        where: {
-          projectId: input.projectId,
+      return getEventList({
+        projectId: input.projectId,
+        take: 30,
+        select: {
+          name: true,
+          path: true,
+          origin: true,
+          referrer: true,
+          referrerName: true,
+          referrerType: true,
+          country: true,
+          device: true,
+          os: true,
+          browser: true,
+          createdAt: true,
+          profile: true,
+          meta: true,
         },
       });
-      const map = new Map<string, EventMeta>(meta.map((m) => [m.name, m]));
-      const res = await clix(ch)
-        .select<{
-          id: string;
-          country: string;
-          city: string;
-          longitude: number;
-          latitude: number;
-          path: string;
-          origin: string;
-          referrer_name: string;
-          browser: string;
-          os: string;
-          name: string;
-          device: string;
-          created_at: Date;
-        }>([
-          'id',
-          'name',
-          'country',
-          'city',
-          'longitude',
-          'latitude',
-          'path',
-          'origin',
-          'referrer_name',
-          'referrer_type',
-          'os',
-          'browser',
-          'device',
-          'created_at',
-        ])
-        .from(TABLE_NAMES.events)
-        .where('project_id', '=', input.projectId)
-        .where(
-          'created_at',
-          '>=',
-          formatClickhouseDate(subMinutes(new Date(), 30)),
-        )
-        .execute();
-
-      return uniqBy(
-        (session) => session.id,
-        res.map((session) => ({
-          ...session,
-          meta: map.get(session.name),
-        })),
-      );
     }),
   paths: protectedProcedure
     .input(z.object({ projectId: z.string() }))
