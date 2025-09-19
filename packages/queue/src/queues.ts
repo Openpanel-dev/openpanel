@@ -1,7 +1,8 @@
 import { Queue, QueueEvents } from 'bullmq';
 
-import type { IServiceEvent, Notification, Prisma } from '@openpanel/db';
-import { getRedisQueue } from '@openpanel/redis';
+import type { IServiceEvent, Prisma } from '@openpanel/db';
+import { Queue as GroupQueue } from '@openpanel/group-queue';
+import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
 import type { TrackPayload } from '@openpanel/sdk';
 
 export interface EventsQueuePayloadIncomingEvent {
@@ -101,6 +102,17 @@ export const eventsQueue = new Queue<EventsQueuePayload>('events', {
       delay: 1000,
     },
   },
+});
+
+export const eventsWorkerQueue = new GroupQueue<
+  EventsQueuePayloadIncomingEvent['payload']
+>({
+  namespace: 'group:events',
+  redis: getRedisGroupQueue(),
+  visibilityTimeoutMs: 30_000,
+  orderingDelayMs: 5_000,
+  maxAttempts: 3,
+  reserveScanLimit: 20,
 });
 
 export const sessionsQueue = new Queue<SessionsQueuePayload>('sessions', {

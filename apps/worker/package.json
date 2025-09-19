@@ -19,6 +19,7 @@
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/queue": "workspace:*",
+    "@openpanel/group-queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/email": "workspace:*",
     "bullmq": "^5.8.7",

@@ -6,7 +6,7 @@ import { checkDuplicatedEvent } from '@/utils/deduplicate';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import { eventsQueue } from '@openpanel/queue';
+import { eventsQueue, eventsWorkerQueue } from '@openpanel/queue';
 import { getLock } from '@openpanel/redis';
 import type {
   DecrementPayload,
@@ -264,7 +264,7 @@ type TrackPayload = {
   name: string;
   properties?: Record<string, any>;
 };
-
+process.env.GROUP_QUEUE = '1';
 async function track({
   payload,
   currentDeviceId,
@@ -284,10 +284,8 @@ async function track({
   timestamp: string;
   isTimestampFromThePast: boolean;
 }) {
-  await eventsQueue.add(
-    'event',
-    {
-      type: 'incomingEvent',
+  if (process.env.GROUP_QUEUE) {
+    await eventsWorkerQueue.add({
       payload: {
         projectId,
         headers,
@@ -300,15 +298,35 @@ async function track({
         currentDeviceId,
         previousDeviceId,
       },
-    },
-    {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 200,
+      groupId: currentDeviceId,
+    });
+  } else {
+    await eventsQueue.add(
+      'event',
+      {
+        type: 'incomingEvent',
+        payload: {
+          projectId,
+          headers,
+          event: {
+            ...payload,
+            timestamp,
+            isTimestampFromThePast,
+          },
+          geo,
+          currentDeviceId,
+          previousDeviceId,
+        },
       },
-    },
-  );
+      {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 200,
+        },
+      },
+    );
+  }
 }
 
 async function identify({

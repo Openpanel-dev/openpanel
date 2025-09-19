@@ -28,6 +28,7 @@
     "@openpanel/logger": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",
+    "@openpanel/group-queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/trpc": "workspace:*",
     "@openpanel/validation": "workspace:*",

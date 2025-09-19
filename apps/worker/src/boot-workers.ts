@@ -2,18 +2,33 @@ import type { Queue, WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 
 import {
+  type EventsQueuePayloadIncomingEvent,
   cronQueue,
   eventsQueue,
   miscQueue,
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
-import { getRedisQueue } from '@openpanel/redis';
+import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
 
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { Worker as GroupWorker } from '@openpanel/group-queue';
+
+// Common interface for both worker types
+interface WorkerLike {
+  name: string;
+  on(event: 'error', listener: (error: any) => void): this;
+  on(event: 'ready', listener: () => void): this;
+  on(event: 'closed', listener: () => void): this;
+  on(event: 'failed', listener: (job?: any) => void): this;
+  on(event: 'completed', listener: (job?: any) => void): this;
+  on(event: 'ioredis:close', listener: () => void): this;
+  close(): Promise<void>;
+}
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
+import { incomingEventPure } from './jobs/events.incoming-event';
 import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
@@ -25,6 +40,21 @@ const workerOptions: WorkerOptions = {
 };
 
 export async function bootWorkers() {
+  const eventsGroupWorker = new GroupWorker<
+    EventsQueuePayloadIncomingEvent['payload']
+  >({
+    redis: getRedisGroupQueue(),
+    handler: async (job) => {
+      await incomingEventPure(job.payload);
+    },
+    namespace: 'group:events',
+    visibilityTimeoutMs: 30_000,
+    pollIntervalMs: 100,
+    enableCleanup: true,
+    useBlocking: true,
+    orderingDelayMs: 5_000,
+  });
+  await eventsGroupWorker.run();
   const eventsWorker = new Worker(eventsQueue.name, eventsJob, workerOptions);
   const sessionsWorker = new Worker(
     sessionsQueue.name,
@@ -39,12 +69,13 @@ export async function bootWorkers() {
   );
   const miscWorker = new Worker(miscQueue.name, miscJob, workerOptions);
 
-  const workers = [
+  const workers: WorkerLike[] = [
     sessionsWorker,
     eventsWorker,
     cronWorker,
     notificationWorker,
     miscWorker,
+    eventsGroupWorker,
   ];
 
   workers.forEach((worker) => {

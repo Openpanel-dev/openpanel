@@ -1,0 +1,41 @@
+{
+  "name": "@openpanel/group-queue",
+  "version": "0.1.0",
+  "description": "Per-group FIFO queue on Redis with visibility timeouts and retries.",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run --reporter=dot",
+    "test:retry": "vitest run test/queue.retry.test.ts --reporter=verbose",
+    "test:redis-disconnect": "vitest run test/queue.redis-disconnect.test.ts --reporter=verbose",
+    "test:concurrency": "vitest run test/queue.concurrency.test.ts --reporter=verbose",
+    "test:stress": "vitest run test/queue.stress.test.ts --reporter=verbose",
+    "test:edge-cases": "vitest run test/queue.edge-cases.test.ts --reporter=verbose",
+    "test:all-extended": "vitest run test/queue.*.test.ts --reporter=dot",
+    "dev:test": "vitest --watch",
+    "benchmark": "jiti benchmark/compare.ts",
+    "benchmark:simple": "jiti benchmark/simple-queue-benchmark.ts",
+    "benchmark:bullmq": "jiti benchmark/bullmq-benchmark.ts",
+    "benchmark:optimized": "jiti benchmark/simple-queue-optimized.ts",
+    "benchmark:blocking": "jiti benchmark/simple-queue-blocking.ts",
+    "benchmark:compare-optimized": "jiti benchmark/compare-optimized.ts",
+    "format": "biome format .",
+    "format:fix": "biome format --write .",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write ."
+  },
+  "keywords": ["redis", "queue", "fifo", "worker", "node", "typescript"],
+  "dependencies": {
+    "bullmq": "^5.8.7",
+    "ioredis": "^5.4.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "jiti": "^2.5.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.0.5"
+  }
+}
