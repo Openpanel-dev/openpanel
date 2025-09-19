@@ -1,11 +1,11 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Queue, Worker, getWorkersStatus } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 
 describe('Graceful Shutdown Tests', () => {
-  const namespace = 'test:graceful:' + Date.now();
+  const namespace = `test:graceful:${Date.now()}`;
 
   afterAll(async () => {
     // Cleanup after all tests
@@ -17,7 +17,7 @@ describe('Graceful Shutdown Tests', () => {
 
   it('should track active job count correctly', async () => {
     const redis = new Redis(REDIS_URL);
-    const queue = new Queue({ redis, namespace: namespace + ':count' });
+    const queue = new Queue({ redis, namespace: `${namespace}:count` });
 
     // Initially should be 0
     expect(await queue.getActiveCount()).toBe(0);
@@ -35,7 +35,7 @@ describe('Graceful Shutdown Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':count',
+      namespace: `${namespace}:count`,
       handler: async (job) => {
         if (job.payload.id === 1) {
           job1Started = true;
@@ -69,13 +69,13 @@ describe('Graceful Shutdown Tests', () => {
     // Should be back to 0
     expect(await queue.getActiveCount()).toBe(0);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should wait for queue to empty', async () => {
     const redis = new Redis(REDIS_URL);
-    const queue = new Queue({ redis, namespace: namespace + ':empty' });
+    const queue = new Queue({ redis, namespace: `${namespace}:empty` });
 
     // Should return true immediately if already empty
     expect(await queue.waitForEmpty(1000)).toBe(true);
@@ -85,19 +85,28 @@ describe('Graceful Shutdown Tests', () => {
     await queue.add({ groupId: 'empty-group', payload: { id: 2 } });
 
     let processedCount = 0;
+    const processedIds: number[] = [];
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':empty',
+      namespace: `${namespace}:empty`,
       handler: async (job) => {
         await new Promise((resolve) => setTimeout(resolve, 200)); // Simulate work
         processedCount++;
+        processedIds.push(job.payload.id);
       },
     });
 
     worker.run();
 
-    // Give worker time to start processing
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    // Wait for jobs to start processing - check that active count > 0
+    let waitAttempts = 0;
+    while ((await queue.getActiveCount()) === 0 && waitAttempts < 20) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      waitAttempts++;
+    }
+
+    // Verify that processing has started
+    expect(await queue.getActiveCount()).toBeGreaterThan(0);
 
     // Should wait and return true when empty
     const startTime = Date.now();
@@ -106,22 +115,23 @@ describe('Graceful Shutdown Tests', () => {
 
     expect(isEmpty).toBe(true);
     expect(processedCount).toBe(2);
-    expect(elapsed).toBeGreaterThan(200); // Should take at least 200ms for processing
+    expect(processedIds.sort()).toEqual([1, 2]);
+    expect(elapsed).toBeGreaterThan(350); // Should take at least 200ms + 200ms for two jobs
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should track current job in worker', async () => {
     const redis = new Redis(REDIS_URL);
-    const queue = new Queue({ redis, namespace: namespace + ':current' });
+    const queue = new Queue({ redis, namespace: `${namespace}:current` });
 
     let jobStarted = false;
     let jobCanComplete = false;
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':current',
+      namespace: `${namespace}:current`,
       handler: async (job) => {
         jobStarted = true;
         while (!jobCanComplete) {
@@ -165,20 +175,20 @@ describe('Graceful Shutdown Tests', () => {
 
     expect(worker.getCurrentJob()).toBe(null);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should stop worker gracefully', async () => {
     const redis = new Redis(REDIS_URL);
-    const queue = new Queue({ redis, namespace: namespace + ':graceful' });
+    const queue = new Queue({ redis, namespace: `${namespace}:graceful` });
 
     let jobStarted = false;
     let jobCompleted = false;
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':graceful',
+      namespace: `${namespace}:graceful`,
       handler: async (job) => {
         jobStarted = true;
         await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate work
@@ -199,7 +209,7 @@ describe('Graceful Shutdown Tests', () => {
     expect(worker.isProcessing()).toBe(true);
 
     // Stop gracefully - should wait for job to complete
-    const stopPromise = worker.stop(2000); // 2 second timeout
+    const stopPromise = worker.close(2000); // 2 second timeout
 
     // Job should complete
     await stopPromise;
@@ -212,7 +222,7 @@ describe('Graceful Shutdown Tests', () => {
 
   it('should timeout graceful stop if job takes too long', async () => {
     const redis = new Redis(REDIS_URL);
-    const queue = new Queue({ redis, namespace: namespace + ':timeout' });
+    const queue = new Queue({ redis, namespace: `${namespace}:timeout` });
 
     let jobStarted = false;
     let shouldStop = false;
@@ -220,7 +230,7 @@ describe('Graceful Shutdown Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':timeout',
+      namespace: `${namespace}:timeout`,
       handler: async (job) => {
         jobStarted = true;
         // Simulate a long-running job
@@ -244,7 +254,7 @@ describe('Graceful Shutdown Tests', () => {
 
     // Stop with short timeout - should timeout
     const startTime = Date.now();
-    await worker.stop(200); // 200ms timeout
+    await worker.close(200); // 200ms timeout
     const elapsed = Date.now() - startTime;
 
     expect(elapsed).toBeGreaterThan(190);
@@ -260,7 +270,7 @@ describe('Graceful Shutdown Tests', () => {
 
   it('should get workers status correctly', async () => {
     const redis = new Redis(REDIS_URL);
-    const queue = new Queue({ redis, namespace: namespace + ':status' });
+    const queue = new Queue({ redis, namespace: `${namespace}:status` });
 
     let job1Started = false;
     let job1CanComplete = false;
@@ -268,21 +278,30 @@ describe('Graceful Shutdown Tests', () => {
     const workers = [
       new Worker({
         redis: redis.duplicate(),
-        namespace: namespace + ':status',
+        namespace: `${namespace}:status`,
         handler: async (job) => {
           if (job.payload.id === 1) {
             job1Started = true;
             while (!job1CanComplete) {
               await new Promise((resolve) => setTimeout(resolve, 50));
             }
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
         },
       }),
       new Worker({
         redis: redis.duplicate(),
-        namespace: namespace + ':status',
+        namespace: `${namespace}:status`,
         handler: async (job) => {
-          await new Promise((resolve) => setTimeout(resolve, 100));
+          if (job.payload.id === 1) {
+            job1Started = true;
+            while (!job1CanComplete) {
+              await new Promise((resolve) => setTimeout(resolve, 50));
+            }
+          } else {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+          }
         },
       }),
     ];
@@ -298,10 +317,16 @@ describe('Graceful Shutdown Tests', () => {
     // Add a job
     await queue.add({ groupId: 'status-group', payload: { id: 1 } });
 
-    // Wait for job to start
-    while (!job1Started) {
+    // Wait for job to start with timeout
+    let startAttempts = 0;
+    while (!job1Started && startAttempts < 200) {
+      // 10 second timeout
       await new Promise((resolve) => setTimeout(resolve, 50));
+      startAttempts++;
     }
+
+    // Ensure job started
+    expect(job1Started).toBe(true);
 
     // Should have 1 processing, 1 idle
     status = getWorkersStatus(workers);
@@ -316,19 +341,22 @@ describe('Graceful Shutdown Tests', () => {
     // Signal completion
     job1CanComplete = true;
 
-    // Wait for job to complete with timeout
+    // Wait for ANY worker to finish processing (since we don't know which one got the job)
     let attempts = 0;
-    while (workers[0].isProcessing() && attempts < 100) {
+    while (workers.some((w) => w.isProcessing()) && attempts < 100) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       attempts++;
     }
+
+    // Ensure we didn't timeout
+    expect(attempts).toBeLessThan(100);
 
     // Back to all idle
     status = getWorkersStatus(workers);
     expect(status.processing).toBe(0);
     expect(status.idle).toBe(2);
 
-    await Promise.all(workers.map((w) => w.stop()));
+    await Promise.all(workers.map((w) => w.close()));
     await redis.quit();
   });
 });

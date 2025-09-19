@@ -1,26 +1,119 @@
-import { EventEmitter } from 'node:events';
+import { performance } from 'node:perf_hooks';
 import type Redis from 'ioredis';
 import { Queue, type ReservedJob } from './queue';
 
 export type BackoffStrategy = (attempt: number) => number; // ms
 
+// Typed event system for Worker
+export interface WorkerEvents<T = any>
+  extends Record<string, (...args: any[]) => void> {
+  error: (error: Error) => void;
+  closed: () => void;
+  ready: () => void;
+  failed: (job: FailedJobEvent<T>) => void;
+  completed: (job: CompletedJobEvent<T>) => void;
+  'ioredis:close': () => void;
+}
+
+export interface FailedJobEvent<T = any> {
+  id: string;
+  groupId: string;
+  payload: T;
+  failedReason: string;
+  attempts: number;
+  maxAttempts: number;
+  processedOn?: number;
+  finishedOn?: number;
+  data: T;
+  opts: {
+    attempts: number;
+  };
+}
+
+export interface CompletedJobEvent<T = any> {
+  id: string;
+  groupId: string;
+  payload: T;
+  attempts: number;
+  maxAttempts: number;
+  processedOn?: number;
+  finishedOn?: number;
+  data: T;
+  opts: {
+    attempts: number;
+  };
+}
+
+class TypedEventEmitter<
+  TEvents extends Record<string, (...args: any[]) => void>,
+> {
+  private listeners = new Map<keyof TEvents, Array<TEvents[keyof TEvents]>>();
+
+  on<K extends keyof TEvents>(event: K, listener: TEvents[K]): this {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, []);
+    }
+    this.listeners.get(event)!.push(listener);
+    return this;
+  }
+
+  off<K extends keyof TEvents>(event: K, listener: TEvents[K]): this {
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners) {
+      const index = eventListeners.indexOf(listener);
+      if (index !== -1) {
+        eventListeners.splice(index, 1);
+      }
+    }
+    return this;
+  }
+
+  emit<K extends keyof TEvents>(
+    event: K,
+    ...args: Parameters<TEvents[K]>
+  ): boolean {
+    const eventListeners = this.listeners.get(event);
+    if (eventListeners && eventListeners.length > 0) {
+      for (const listener of eventListeners) {
+        try {
+          listener(...args);
+        } catch (error) {
+          // Don't let listener errors break the emit
+          console.error(
+            `Error in event listener for '${String(event)}':`,
+            error,
+          );
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  removeAllListeners<K extends keyof TEvents>(event?: K): this {
+    if (event) {
+      this.listeners.delete(event);
+    } else {
+      this.listeners.clear();
+    }
+    return this;
+  }
+}
+
 export type WorkerOptions<T> = {
   redis: Redis;
-  namespace?: string;
-  name?: string; // worker name for logging and identification
+  namespace: string; // Required namespace for the queue (will be prefixed with 'groupmq:')
+  name?: string; // Worker name for logging and identification
   handler: (job: ReservedJob<T>) => Promise<void>;
-  visibilityTimeoutMs?: number;
-  heartbeatMs?: number;
-  pollIntervalMs?: number;
-  stopSignal?: AbortSignal;
+  jobTimeoutMs?: number; // How long a job can be processed before timing out (default: 30s)
+  heartbeatMs?: number; // How often to send heartbeats (default: jobTimeoutMs/3)
   onError?: (err: unknown, job?: ReservedJob<T>) => void;
-  maxAttempts?: number; // optional per-worker cap
-  backoff?: BackoffStrategy; // retry backoff strategy
-  enableCleanup?: boolean; // whether to run periodic cleanup
-  cleanupIntervalMs?: number; // how often to run cleanup
-  useBlocking?: boolean; // whether to use blocking reserve (default: true)
-  blockingTimeoutSec?: number; // timeout for blocking operations
-  orderingDelayMs?: number; // delay before processing jobs to allow late events
+  maxAttempts?: number; // Maximum retry attempts per job (default: 3)
+  backoff?: BackoffStrategy; // Retry backoff strategy
+  enableCleanup?: boolean; // Whether to run periodic cleanup (default: true)
+  cleanupIntervalMs?: number; // How often to run cleanup (default: 60s)
+  blockingTimeoutSec?: number; // Timeout for blocking operations (default: 5s)
+  orderingDelayMs?: number; // Delay before processing jobs to allow late events (default: 0)
 };
 
 const defaultBackoff: BackoffStrategy = (attempt) => {
@@ -29,23 +122,20 @@ const defaultBackoff: BackoffStrategy = (attempt) => {
   return base + jitter;
 };
 
-export class Worker<T = any> extends EventEmitter {
+export class Worker<T = any> extends TypedEventEmitter<WorkerEvents<T>> {
   public readonly name: string;
   private q: Queue;
   private handler: WorkerOptions<T>['handler'];
   private hbMs: number;
-  private pollMs: number;
   private onError?: WorkerOptions<T>['onError'];
   private stopping = false;
   private ready = false;
   private closed = false;
-  private stopSignal?: AbortSignal;
   private maxAttempts: number;
   private backoff: BackoffStrategy;
   private enableCleanup: boolean;
   private cleanupMs: number;
   private cleanupTimer?: NodeJS.Timeout;
-  private useBlocking: boolean;
   private blockingTimeoutSec: number;
   private currentJob: ReservedJob<T> | null = null;
   private processingStartTime = 0;
@@ -59,30 +149,25 @@ export class Worker<T = any> extends EventEmitter {
 
     this.name =
       opts.name ?? `worker-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create queue with the same namespace and job timeout
+    const jobTimeoutMs = opts.jobTimeoutMs ?? 30_000;
     this.q = new Queue({
       redis: opts.redis,
       namespace: opts.namespace,
-      visibilityTimeoutMs: opts.visibilityTimeoutMs,
+      jobTimeoutMs,
       orderingDelayMs: opts.orderingDelayMs,
     });
+
     this.handler = opts.handler;
-    const vt = opts.visibilityTimeoutMs ?? 30_000;
-    this.hbMs = opts.heartbeatMs ?? Math.max(1000, Math.floor(vt / 3));
-    this.pollMs = opts.pollIntervalMs ?? 100;
+    this.hbMs =
+      opts.heartbeatMs ?? Math.max(1000, Math.floor(jobTimeoutMs / 3));
     this.onError = opts.onError;
-    this.stopSignal = opts.stopSignal;
     this.maxAttempts = opts.maxAttempts ?? 3;
     this.backoff = opts.backoff ?? defaultBackoff;
     this.enableCleanup = opts.enableCleanup ?? true;
     this.cleanupMs = opts.cleanupIntervalMs ?? 60_000; // cleanup every minute by default
-    this.useBlocking = opts.useBlocking ?? true; // use blocking by default
     this.blockingTimeoutSec = opts.blockingTimeoutSec ?? 5; // 5 second timeout
-
-    if (this.stopSignal) {
-      this.stopSignal.addEventListener('abort', () => {
-        this.stopping = true;
-      });
-    }
 
     // Set up Redis connection event handlers
     this.setupRedisEventHandlers();
@@ -124,36 +209,17 @@ export class Worker<T = any> extends EventEmitter {
     }
 
     while (!this.stopping) {
-      let job: ReservedJob<T> | null = null;
+      // Always use blocking reserve for better efficiency
+      const job = await this.q.reserveBlocking(this.blockingTimeoutSec);
 
-      if (this.useBlocking) {
-        // Use blocking reserve for better efficiency
-        job = await this.q.reserveBlocking(this.blockingTimeoutSec);
-
-        // If blocking timed out (no job), try to recover delayed groups
-        if (!job) {
-          try {
-            await this.q.recoverDelayedGroups();
-          } catch (err) {
-            // Ignore recovery errors to avoid breaking the worker
-          }
+      // If blocking timed out (no job), try to recover delayed groups
+      if (!job) {
+        try {
+          await this.q.recoverDelayedGroups();
+        } catch (err) {
+          // Ignore recovery errors to avoid breaking the worker
         }
       } else {
-        // Fall back to polling mode
-        job = await this.q.reserve();
-        if (!job) {
-          // No job found, try to recover delayed groups before sleeping
-          try {
-            await this.q.recoverDelayedGroups();
-          } catch (err) {
-            // Ignore recovery errors to avoid breaking the worker
-          }
-          await sleep(this.pollMs);
-          continue;
-        }
-      }
-
-      if (job) {
         await this.processOne(job).catch((err) => {
           console.error('processOne fatal', err);
         });
@@ -165,7 +231,7 @@ export class Worker<T = any> extends EventEmitter {
    * Stop the worker gracefully
    * @param gracefulTimeoutMs Maximum time to wait for current job to finish (default: 30 seconds)
    */
-  async stop(gracefulTimeoutMs = 30_000): Promise<void> {
+  async close(gracefulTimeoutMs = 30_000): Promise<void> {
     this.stopping = true;
 
     if (this.cleanupTimer) {
@@ -204,7 +270,7 @@ export class Worker<T = any> extends EventEmitter {
 
     return {
       job: this.currentJob,
-      processingTimeMs: Date.now() - this.processingStartTime,
+      processingTimeMs: performance.now() - this.processingStartTime,
     };
   }
 
@@ -218,7 +284,7 @@ export class Worker<T = any> extends EventEmitter {
   private async processOne(job: ReservedJob<T>) {
     // Track current job
     this.currentJob = job;
-    this.processingStartTime = Date.now();
+    this.processingStartTime = performance.now();
 
     let hbTimer: NodeJS.Timeout | undefined;
     const startHeartbeat = () => {
@@ -227,7 +293,7 @@ export class Worker<T = any> extends EventEmitter {
           await this.q.heartbeat(job);
         } catch (e) {
           this.onError?.(e, job);
-          this.emit('error', e);
+          this.emit('error', e instanceof Error ? e : new Error(String(e)));
         }
       }, this.hbMs);
     };
@@ -238,11 +304,12 @@ export class Worker<T = any> extends EventEmitter {
       clearInterval(hbTimer!);
       await this.q.complete(job);
 
-      // Create a job-like object compatible with BullMQ format
+      // Create a job-like object with accurate timing in milliseconds
+      const finishedAt = performance.now();
       const completedJob = {
         ...job,
         processedOn: this.processingStartTime,
-        finishedOn: Date.now(),
+        finishedOn: finishedAt,
         data: job.payload,
         opts: {
           attempts: job.maxAttempts,
@@ -253,12 +320,21 @@ export class Worker<T = any> extends EventEmitter {
     } catch (err) {
       clearInterval(hbTimer!);
       this.onError?.(err, job);
-      this.emit('error', err);
 
-      // Create a job-like object compatible with BullMQ format for failed event
+      // Safely emit error event - don't let emit errors break retry logic
+      try {
+        this.emit('error', err instanceof Error ? err : new Error(String(err)));
+      } catch (emitError) {
+        // Silently ignore emit errors to prevent breaking retry logic
+      }
+
+      // Create a job-like object with accurate timing in milliseconds for failed event
+      const failedAt = performance.now();
       const failedJob = {
         ...job,
         failedReason: err instanceof Error ? err.message : String(err),
+        processedOn: this.processingStartTime,
+        finishedOn: failedAt,
         data: job.payload,
         opts: {
           attempts: job.maxAttempts,
@@ -271,7 +347,7 @@ export class Worker<T = any> extends EventEmitter {
       const nextAttempt = job.attempts + 1; // after qRetry increment this becomes current
       const backoffMs = this.backoff(nextAttempt);
 
-      if (job.attempts >= this.maxAttempts) {
+      if (nextAttempt >= this.maxAttempts) {
         await this.q.retry(job.id, 0); // will DLQ according to job.maxAttempts
         return;
       }

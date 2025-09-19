@@ -107,9 +107,9 @@ export const eventsQueue = new Queue<EventsQueuePayload>('events', {
 export const eventsWorkerQueue = new GroupQueue<
   EventsQueuePayloadIncomingEvent['payload']
 >({
-  namespace: 'group:events',
+  namespace: 'events',
   redis: getRedisGroupQueue(),
-  visibilityTimeoutMs: 30_000,
+  jobTimeoutMs: 30_000,
   orderingDelayMs: 2_000,
   maxAttempts: 3,
   reserveScanLimit: 20,

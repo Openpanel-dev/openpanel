@@ -11,8 +11,7 @@ describe('grouping', () => {
   beforeEach(async () => {
     // Create fresh Redis connection and namespace for each test
     redis = new Redis(REDIS_URL);
-    namespace =
-      'test:q1:' + Date.now() + ':' + Math.random().toString(36).substring(7);
+    namespace = `test:q1:${Date.now()}:${Math.random().toString(36).substring(7)}`;
 
     // flush only this namespace keys (best-effort)
     const keys = await redis.keys(`${namespace}*`);
@@ -27,7 +26,7 @@ describe('grouping', () => {
   });
 
   it('process jobs in correct order based on orderMs', async () => {
-    const q = new Queue({ redis, namespace, visibilityTimeoutMs: 5000 });
+    const q = new Queue({ redis, namespace, jobTimeoutMs: 5000 });
 
     const order: Array<string> = [];
     const worker = new Worker<{ n: number }>({
@@ -40,8 +39,7 @@ describe('grouping', () => {
         order.push(`${job.groupId}:${job.payload.n}`);
         await wait(50);
       },
-      visibilityTimeoutMs: 3000,
-      pollIntervalMs: 5,
+      jobTimeoutMs: 3000,
     });
     const jobs = [
       {
@@ -103,23 +101,22 @@ describe('grouping', () => {
         .map((j) => `${j.groupId}:${j.payload.n}`),
     );
 
-    await worker.stop();
+    await worker.close();
   });
 
   it('should handle ordering delay for late events', async () => {
     const orderingDelayMs = 1000; // 1 second delay (shorter for faster test)
     const q = new Queue({
       redis,
-      namespace: namespace + ':delay',
+      namespace: `${namespace}:delay`,
       orderingDelayMs,
     });
 
     const order: Array<string> = [];
     const worker = new Worker<{ n: number }>({
       redis,
-      namespace: namespace + ':delay',
+      namespace: `${namespace}:delay`,
       orderingDelayMs, // Pass the ordering delay to the worker
-      useBlocking: false, // Use polling mode for more frequent recovery checks
       handler: async (job) => {
         console.log(
           `Processing job n:${job.payload.n}, orderMs:${job.orderMs}, processedAt:${Date.now()}`,
@@ -127,8 +124,8 @@ describe('grouping', () => {
         order.push(`${job.groupId}:${job.payload.n}`);
         await wait(10);
       },
-      visibilityTimeoutMs: 5000,
-      pollIntervalMs: 50,
+      jobTimeoutMs: 5000,
+      blockingTimeoutSec: 1, // Shorter timeout for faster recovery checks
     });
 
     const now = Date.now();
@@ -170,7 +167,7 @@ describe('grouping', () => {
     expect(order.length).toBe(3);
     expect(order).toEqual(['delay-group:1', 'delay-group:2', 'delay-group:3']);
 
-    await worker.stop();
+    await worker.close();
   }, 5000); // Timeout for the 3.5s wait + buffer
 });
 

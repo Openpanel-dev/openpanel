@@ -1,6 +1,6 @@
+import { Queue as BullMQQueue, Worker as BullMQWorker } from 'bullmq';
 import Redis from 'ioredis';
 import { Queue, Worker } from '../src';
-import { Queue as BullMQQueue, Worker as BullMQWorker } from 'bullmq';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 const BENCHMARK_DURATION_MS = 10_000; // 10 seconds
@@ -85,7 +85,7 @@ export async function benchmarkSimpleQueue1Worker(): Promise<BenchmarkResult> {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Stop worker
-  await worker.stop();
+  await worker.close();
 
   const endTime = Date.now();
   const actualDuration = endTime - startTime;

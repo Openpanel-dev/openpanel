@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Queue, Worker } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
@@ -33,8 +33,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: namespace + ':drop',
-      useBlocking: false,
-      pollIntervalMs: 100,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
       },
@@ -66,7 +65,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     expect(processed.length).toBeGreaterThan(0);
     expect(processed).toContain(1);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
@@ -86,8 +85,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: namespace + ':restart',
-      useBlocking: false,
-      pollIntervalMs: 50,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.phase);
       },
@@ -114,7 +112,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     expect(processed).toContain('before');
     expect(processed).toContain('after');
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
@@ -132,8 +130,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: namespace + ':partition',
-      useBlocking: true, // Test blocking operations during network issues
-      blockingTimeoutSec: 1,
+      blockingTimeoutSec: 1, // Test blocking operations during network issues
       handler: async (job) => {
         processed.push(job.payload.id);
       },
@@ -171,7 +168,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     expect(processed).toContain(1);
     expect(processed).toContain(2);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
     await redis2.quit();
   });
@@ -181,7 +178,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     const q = new Queue({
       redis,
       namespace: namespace + ':consistency',
-      visibilityTimeoutMs: 500,
+      jobTimeoutMs: 500,
     });
 
     // Enqueue jobs
@@ -194,9 +191,8 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: namespace + ':consistency',
-      useBlocking: false,
-      pollIntervalMs: 50,
-      visibilityTimeoutMs: 500,
+      blockingTimeoutSec: 1,
+      jobTimeoutMs: 500,
       handler: async (job) => {
         if (job.payload.id === 1 && !processingJob1) {
           processingJob1 = true;
@@ -220,7 +216,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     // Job 2 should be processed normally
     expect(processed.length).toBeGreaterThan(0);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
@@ -240,7 +236,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
       const q = new Queue({
         redis: connections[0],
         namespace: namespace + ':memory',
-        visibilityTimeoutMs: 1000,
+        jobTimeoutMs: 1000,
       });
 
       // Enqueue many small jobs
@@ -263,8 +259,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
         const worker = new Worker({
           redis: connections[i + 1],
           namespace: namespace + ':memory',
-          useBlocking: false,
-          pollIntervalMs: 10,
+          blockingTimeoutSec: 1,
           handler: async (job) => {
             processed.push(job.payload.id);
             // Simulate some work
@@ -281,7 +276,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
       expect(processed.length).toBeGreaterThan(50); // Should process most jobs
 
       // Stop all workers
-      await Promise.all(workers.map((w) => w.stop()));
+      await Promise.all(workers.map((w) => w.close()));
     } finally {
       // Cleanup connections
       await Promise.all(connections.map((redis) => redis.quit()));
@@ -307,8 +302,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: namespace + ':auth',
-      useBlocking: false,
-      pollIntervalMs: 100,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.test);
       },
@@ -323,7 +317,7 @@ describe('Redis Disconnect/Reconnect Tests', () => {
 
     expect(processed).toContain('auth');
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 });

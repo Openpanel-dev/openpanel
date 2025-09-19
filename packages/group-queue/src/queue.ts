@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 export type QueueOptions = {
   redis: Redis; // Recommend setting maxRetriesPerRequest: null for production reliability
-  namespace?: string;
-  visibilityTimeoutMs?: number;
-  maxAttempts?: number;
-  reserveScanLimit?: number; // how many ready groups to scan to skip locked ones
-  orderingDelayMs?: number; // delay before processing jobs to allow late events (default: 0)
+  namespace: string; // Required namespace for the queue (will be prefixed with 'groupmq:')
+  jobTimeoutMs?: number; // How long a job can be processed before timing out (default: 30s)
+  maxAttempts?: number; // Default max attempts for jobs (default: 3)
+  reserveScanLimit?: number; // How many ready groups to scan to skip locked ones (default: 20)
+  orderingDelayMs?: number; // Delay before processing jobs to allow late events (default: 0)
 };
 
 export type EnqueueOptions<T> = {
@@ -30,18 +30,6 @@ export type ReservedJob<T = any> = {
   deadlineAt: number;
 };
 
-const jobSchema = z.object({
-  id: z.string(),
-  groupId: z.string(),
-  payload: z.string(),
-  attempts: z.string(),
-  maxAttempts: z.string(),
-  seq: z.string(),
-  enqueuedAt: z.string(),
-  orderMs: z.string(),
-  score: z.string(),
-});
-
 function nsKey(ns: string, ...parts: string[]) {
   return [ns, ...parts].join(':');
 }
@@ -61,12 +49,21 @@ export class Queue<T = any> {
   private heartbeatScript!: (...args: any[]) => Promise<number>;
   private cleanupScript!: (...args: any[]) => Promise<number>;
   private getActiveCountScript!: (...args: any[]) => Promise<number>;
+  private getWaitingCountScript!: (...args: any[]) => Promise<number>;
+  private getDelayedCountScript!: (...args: any[]) => Promise<number>;
+  private getJobsScript!: (...args: any[]) => Promise<string[]>;
+  private getActiveJobsScript!: (...args: any[]) => Promise<string[]>;
+  private getWaitingJobsScript!: (...args: any[]) => Promise<string[]>;
+  private getDelayedJobsScript!: (...args: any[]) => Promise<string[]>;
+  private getUniqueGroupsScript!: (...args: any[]) => Promise<string[]>;
+  private getUniqueGroupsCountScript!: (...args: any[]) => Promise<number>;
 
   constructor(opts: QueueOptions) {
     this.r = opts.redis;
-    this.ns = opts.namespace ?? 'q';
-    // Ensure visibility timeout is positive (Redis SET PX requires positive integer)
-    const rawVt = opts.visibilityTimeoutMs ?? 30_000;
+    // Always prefix namespace with 'groupmq:' to avoid conflicts
+    this.ns = `groupmq:${opts.namespace}`;
+    // Ensure job timeout is positive (Redis SET PX requires positive integer)
+    const rawVt = opts.jobTimeoutMs ?? 30_000;
     this.vt = Math.max(1, rawVt); // Minimum 1ms
     this.defaultMaxAttempts = opts.maxAttempts ?? 3;
     this.scanLimit = opts.reserveScanLimit ?? 20;
@@ -421,6 +418,162 @@ return activeCount
       `,
     });
 
+    // GET WAITING COUNT - count jobs waiting in all groups
+    this.r.defineCommand('qGetWaitingCount', {
+      numberOfKeys: 0,
+      lua: `
+local ns = "${this.ns}"
+local groupPattern = ns .. ":g:*"
+
+-- Get all group keys
+local groupKeys = redis.call("KEYS", groupPattern)
+local waitingCount = 0
+
+-- Count jobs in each group
+for _, gZ in ipairs(groupKeys) do
+  waitingCount = waitingCount + redis.call("ZCARD", gZ)
+end
+
+return waitingCount
+      `,
+    });
+
+    // GET DELAYED COUNT - count jobs with locks (backoff delays)
+    this.r.defineCommand('qGetDelayedCount', {
+      numberOfKeys: 0,
+      lua: `
+local ns = "${this.ns}"
+local lockPattern = ns .. ":lock:*"
+
+-- Count lock keys (each represents a delayed group)
+local lockKeys = redis.call("KEYS", lockPattern)
+local delayedCount = 0
+
+-- For each locked group, count jobs in that group
+for _, lockKey in ipairs(lockKeys) do
+  local groupId = string.match(lockKey, ":lock:(.+)$")
+  if groupId then
+    local gZ = ns .. ":g:" .. groupId
+    delayedCount = delayedCount + redis.call("ZCARD", gZ)
+  end
+end
+
+return delayedCount
+      `,
+    });
+
+    // GET ACTIVE JOBS - get list of active job IDs
+    this.r.defineCommand('qGetActiveJobs', {
+      numberOfKeys: 0,
+      lua: `
+local ns = "${this.ns}"
+local processingKey = ns .. ":processing"
+
+-- Get all processing job IDs
+return redis.call("ZRANGE", processingKey, 0, -1)
+      `,
+    });
+
+    // GET WAITING JOBS - get list of waiting job IDs
+    this.r.defineCommand('qGetWaitingJobs', {
+      numberOfKeys: 0,
+      lua: `
+local ns = "${this.ns}"
+local groupPattern = ns .. ":g:*"
+
+-- Get all group keys
+local groupKeys = redis.call("KEYS", groupPattern)
+local jobs = {}
+
+-- Get jobs from each group
+for _, gZ in ipairs(groupKeys) do
+  local groupJobs = redis.call("ZRANGE", gZ, 0, -1)
+  for _, jobId in ipairs(groupJobs) do
+    table.insert(jobs, jobId)
+  end
+end
+
+return jobs
+      `,
+    });
+
+    // GET DELAYED JOBS - get list of delayed job IDs
+    this.r.defineCommand('qGetDelayedJobs', {
+      numberOfKeys: 0,
+      lua: `
+local ns = "${this.ns}"
+local lockPattern = ns .. ":lock:*"
+
+-- Get lock keys
+local lockKeys = redis.call("KEYS", lockPattern)
+local jobs = {}
+
+-- For each locked group, get jobs in that group
+for _, lockKey in ipairs(lockKeys) do
+  local groupId = string.match(lockKey, ":lock:(.+)$")
+  if groupId then
+    local gZ = ns .. ":g:" .. groupId
+    local groupJobs = redis.call("ZRANGE", gZ, 0, -1)
+    for _, jobId in ipairs(groupJobs) do
+      table.insert(jobs, jobId)
+    end
+  end
+end
+
+return jobs
+      `,
+    });
+
+    // GET UNIQUE GROUPS - get list of all group IDs that have jobs
+    this.r.defineCommand('qGetUniqueGroups', {
+      numberOfKeys: 0,
+      lua: `
+local ns = "${this.ns}"
+local groupPattern = ns .. ":g:*"
+
+-- Get all group keys
+local groupKeys = redis.call("KEYS", groupPattern)
+local groups = {}
+
+-- Extract group IDs from keys
+for _, gZ in ipairs(groupKeys) do
+  local groupId = string.match(gZ, ":g:(.+)$")
+  if groupId then
+    -- Only include groups that have jobs
+    local jobCount = redis.call("ZCARD", gZ)
+    if jobCount > 0 then
+      table.insert(groups, groupId)
+    end
+  end
+end
+
+return groups
+      `,
+    });
+
+    // GET UNIQUE GROUPS COUNT - get count of unique groups that have jobs
+    this.r.defineCommand('qGetUniqueGroupsCount', {
+      numberOfKeys: 0,
+      lua: `
+local ns = "${this.ns}"
+local groupPattern = ns .. ":g:*"
+
+-- Get all group keys
+local groupKeys = redis.call("KEYS", groupPattern)
+local count = 0
+
+-- Count groups that have jobs
+for _, gZ in ipairs(groupKeys) do
+  local jobCount = redis.call("ZCARD", gZ)
+  if jobCount > 0 then
+    count = count + 1
+  end
+end
+
+return count
+      `,
+    });
+
     // Bind
     // @ts-ignore
     this.enqueueScript = (...args: any[]) => (this.r as any).qEnqueue(...args);
@@ -439,6 +592,27 @@ return activeCount
     // @ts-ignore
     this.getActiveCountScript = (...args: any[]) =>
       (this.r as any).qGetActiveCount(...args);
+    // @ts-ignore
+    this.getWaitingCountScript = (...args: any[]) =>
+      (this.r as any).qGetWaitingCount(...args);
+    // @ts-ignore
+    this.getDelayedCountScript = (...args: any[]) =>
+      (this.r as any).qGetDelayedCount(...args);
+    // @ts-ignore
+    this.getActiveJobsScript = (...args: any[]) =>
+      (this.r as any).qGetActiveJobs(...args);
+    // @ts-ignore
+    this.getWaitingJobsScript = (...args: any[]) =>
+      (this.r as any).qGetWaitingJobs(...args);
+    // @ts-ignore
+    this.getDelayedJobsScript = (...args: any[]) =>
+      (this.r as any).qGetDelayedJobs(...args);
+    // @ts-ignore
+    this.getUniqueGroupsScript = (...args: any[]) =>
+      (this.r as any).qGetUniqueGroups(...args);
+    // @ts-ignore
+    this.getUniqueGroupsCountScript = (...args: any[]) =>
+      (this.r as any).qGetUniqueGroupsCount(...args);
   }
 
   async add(opts: EnqueueOptions<T>): Promise<string> {
@@ -549,6 +723,112 @@ return activeCount
    */
   async getActiveCount(): Promise<number> {
     return this.getActiveCountScript();
+  }
+
+  /**
+   * Get the number of jobs waiting to be processed
+   */
+  async getWaitingCount(): Promise<number> {
+    return this.getWaitingCountScript();
+  }
+
+  /**
+   * Get the number of jobs delayed due to backoff
+   */
+  async getDelayedCount(): Promise<number> {
+    return this.getDelayedCountScript();
+  }
+
+  /**
+   * Get the total number of jobs across all states
+   */
+  async getTotalCount(): Promise<number> {
+    const [active, waiting, delayed] = await Promise.all([
+      this.getActiveCount(),
+      this.getWaitingCount(),
+      this.getDelayedCount(),
+    ]);
+    return active + waiting + delayed;
+  }
+
+  /**
+   * Get all job counts by state
+   */
+  async getCounts(): Promise<{
+    active: number;
+    waiting: number;
+    delayed: number;
+    total: number;
+    uniqueGroups: number;
+  }> {
+    const [active, waiting, delayed, uniqueGroups] = await Promise.all([
+      this.getActiveCount(),
+      this.getWaitingCount(),
+      this.getDelayedCount(),
+      this.getUniqueGroupsCount(),
+    ]);
+    return {
+      active,
+      waiting,
+      delayed,
+      total: active + waiting + delayed,
+      uniqueGroups,
+    };
+  }
+
+  /**
+   * Get list of active job IDs
+   */
+  async getActiveJobs(): Promise<string[]> {
+    return this.getActiveJobsScript();
+  }
+
+  /**
+   * Get list of waiting job IDs
+   */
+  async getWaitingJobs(): Promise<string[]> {
+    return this.getWaitingJobsScript();
+  }
+
+  /**
+   * Get list of delayed job IDs
+   */
+  async getDelayedJobs(): Promise<string[]> {
+    return this.getDelayedJobsScript();
+  }
+
+  /**
+   * Get list of unique group IDs that have jobs
+   */
+  async getUniqueGroups(): Promise<string[]> {
+    return this.getUniqueGroupsScript();
+  }
+
+  /**
+   * Get count of unique groups that have jobs
+   */
+  async getUniqueGroupsCount(): Promise<number> {
+    return this.getUniqueGroupsCountScript();
+  }
+
+  /**
+   * Get all job IDs by state
+   */
+  async getJobs(): Promise<{
+    active: string[];
+    waiting: string[];
+    delayed: string[];
+  }> {
+    const [active, waiting, delayed] = await Promise.all([
+      this.getActiveJobs(),
+      this.getWaitingJobs(),
+      this.getDelayedJobs(),
+    ]);
+    return {
+      active,
+      waiting,
+      delayed,
+    };
   }
 
   /**

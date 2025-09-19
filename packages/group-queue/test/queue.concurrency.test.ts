@@ -1,11 +1,11 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Queue, Worker } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 
 describe('Concurrency and Race Condition Tests', () => {
-  const namespace = 'test:concurrency:' + Date.now();
+  const namespace = `test:concurrency:${Date.now()}`;
 
   afterAll(async () => {
     const redis = new Redis(REDIS_URL);
@@ -16,7 +16,7 @@ describe('Concurrency and Race Condition Tests', () => {
 
   it('should handle multiple workers on same group without conflicts', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':multiworker' });
+    const q = new Queue({ redis, namespace: `${namespace}:multiworker` });
 
     // Enqueue many jobs in same group
     const jobIds = [];
@@ -37,9 +37,8 @@ describe('Concurrency and Race Condition Tests', () => {
     for (let workerId = 0; workerId < 3; workerId++) {
       const worker = new Worker({
         redis: redis.duplicate(),
-        namespace: namespace + ':multiworker',
-        useBlocking: false,
-        pollIntervalMs: 1,
+        namespace: `${namespace}:multiworker`,
+        blockingTimeoutSec: 1,
         handler: async (job) => {
           processed.push(job.payload.id);
           processedBy[job.payload.id] = workerId;
@@ -72,21 +71,20 @@ describe('Concurrency and Race Condition Tests', () => {
 
     expect(Object.keys(workerCounts).length).toBeGreaterThan(1);
 
-    await Promise.all(workers.map((w) => w.stop()));
+    await Promise.all(workers.map((w) => w.close()));
     await redis.quit();
   });
 
   it('should handle concurrent add and dequeue operations', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':concurrent' });
+    const q = new Queue({ redis, namespace: `${namespace}:concurrent` });
 
     const processed: number[] = [];
     const enqueued: number[] = [];
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':concurrent',
-      useBlocking: true,
+      namespace: `${namespace}:concurrent`,
       blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
@@ -132,18 +130,18 @@ describe('Concurrency and Race Condition Tests', () => {
 
     Object.entries(groupOrders).forEach(([groupId, order]) => {
       const expectedOrder = [...Array(10).keys()].map(
-        (i) => parseInt(groupId) * 10 + i,
+        (i) => Number.parseInt(groupId) * 10 + i,
       );
       expect(order).toEqual(expectedOrder);
     });
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle race conditions during job completion', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':completion' });
+    const q = new Queue({ redis, namespace: `${namespace}:completion` });
 
     // Enqueue jobs
     for (let i = 0; i < 10; i++) {
@@ -159,9 +157,8 @@ describe('Concurrency and Race Condition Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':completion',
-      useBlocking: false,
-      pollIntervalMs: 1,
+      namespace: `${namespace}:completion`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         const id = job.payload.id;
 
@@ -188,7 +185,7 @@ describe('Concurrency and Race Condition Tests', () => {
       expect(attempts).toBe(1);
     });
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
@@ -196,8 +193,8 @@ describe('Concurrency and Race Condition Tests', () => {
     const redis = new Redis(REDIS_URL);
     const q = new Queue({
       redis,
-      namespace: namespace + ':stopping',
-      visibilityTimeoutMs: 500,
+      namespace: `${namespace}:stopping`,
+      jobTimeoutMs: 500,
     });
 
     // Enqueue jobs
@@ -214,16 +211,15 @@ describe('Concurrency and Race Condition Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':stopping',
-      useBlocking: false,
-      pollIntervalMs: 10,
-      visibilityTimeoutMs: 500,
+      namespace: `${namespace}:stopping`,
+      jobTimeoutMs: 500,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processingCount++;
 
         // Stop worker during processing of second job
         if (job.payload.id === 1) {
-          setTimeout(() => worker.stop(), 100);
+          setTimeout(() => worker.close(), 100);
         }
 
         // Simulate work
@@ -240,9 +236,8 @@ describe('Concurrency and Race Condition Tests', () => {
     // Create new worker to process remaining jobs
     const worker2 = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':stopping',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:stopping`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
       },
@@ -255,21 +250,20 @@ describe('Concurrency and Race Condition Tests', () => {
     // All jobs should eventually be processed
     expect(processed.length).toBeGreaterThanOrEqual(4);
 
-    await worker2.stop();
+    await worker2.close();
     await redis.quit();
   });
 
   it('should handle high-frequency add/dequeue cycles', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':highfreq' });
+    const q = new Queue({ redis, namespace: `${namespace}:highfreq` });
 
     const processed: number[] = [];
     const timestamps: number[] = [];
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':highfreq',
-      useBlocking: true,
+      namespace: `${namespace}:highfreq`,
       blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
@@ -311,7 +305,7 @@ describe('Concurrency and Race Condition Tests', () => {
 
     Object.entries(groupedResults).forEach(([groupId, jobs]) => {
       const expectedJobs = [...Array(20).keys()].map(
-        (i) => i * 5 + parseInt(groupId),
+        (i) => i * 5 + Number.parseInt(groupId),
       );
       expect(jobs.sort((a, b) => a - b)).toEqual(expectedJobs);
     });
@@ -320,13 +314,13 @@ describe('Concurrency and Race Condition Tests', () => {
       `Enqueue time: ${enqueueTime}ms, Processing time: ${timestamps[timestamps.length - 1] - timestamps[0]}ms`,
     );
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle memory pressure with large payloads', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':memory' });
+    const q = new Queue({ redis, namespace: `${namespace}:memory` });
 
     // Create large payloads
     const largeData = 'x'.repeat(10000); // 10KB payload
@@ -344,9 +338,8 @@ describe('Concurrency and Race Condition Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':memory',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:memory`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
         memoryUsage.push(process.memoryUsage().heapUsed);
@@ -367,13 +360,13 @@ describe('Concurrency and Race Condition Tests', () => {
     const memoryGrowth = memoryUsage[memoryUsage.length - 1] - memoryUsage[0];
     expect(memoryGrowth).toBeLessThan(200 * 1024 * 1024); // Less than 200MB growth
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle deadlock scenarios with multiple groups', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':deadlock' });
+    const q = new Queue({ redis, namespace: `${namespace}:deadlock` });
 
     // Create a scenario where groups can process independently and avoid true deadlock
     // Put independent jobs first in each group so they can be processed
@@ -403,9 +396,8 @@ describe('Concurrency and Race Condition Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':deadlock',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:deadlock`,
+      blockingTimeoutSec: 1,
       maxAttempts: 3,
       backoff: () => 100, // Quick retry
       handler: async (job) => {
@@ -446,7 +438,7 @@ describe('Concurrency and Race Condition Tests', () => {
     // expect(failed.length).toBeGreaterThan(0);
     console.log('Deadlock test completed successfully - all jobs processed');
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 });

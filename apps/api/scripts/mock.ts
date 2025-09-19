@@ -273,8 +273,8 @@ async function simultaneousRequests() {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       track: [
         { name: 'screen_view', path: '/home' },
-        { name: 'button_click', element: 'signup' },
-        { name: 'screen_view', path: '/pricing' },
+        { name: 'button_click', element: 'signup', parallel: '1' },
+        { name: 'screen_view', path: '/pricing', parallel: '1' },
       ],
     },
     {
@@ -361,8 +361,9 @@ async function simultaneousRequests() {
         { name: 'screen_view', path: '/landing' },
         { name: 'screen_view', path: '/pricing' },
         { name: 'screen_view', path: '/blog' },
-        { name: 'screen_view', path: '/blog/post-1' },
-        { name: 'screen_view', path: '/blog/post-2' },
+        { name: 'screen_view', path: '/blog/post-1', parallel: '1' },
+        { name: 'screen_view', path: '/blog/post-2', parallel: '1' },
+        { name: 'button_click', element: 'learn_more', parallel: '1' },
         { name: 'screen_view', path: '/blog/post-3' },
         { name: 'screen_view', path: '/blog/post-4' },
       ],
@@ -396,21 +397,85 @@ async function simultaneousRequests() {
   };
 
   for (const session of sessions) {
+    // Group tracks by parallel flag
+    const trackGroups: { parallel?: string; tracks: any[] }[] = [];
+    let currentGroup: { parallel?: string; tracks: any[] } = { tracks: [] };
+
     for (const track of session.track) {
-      const { name, ...properties } = track;
-      screenView.track.payload.name = name ?? '';
-      screenView.track.payload.properties.__referrer = session.referrer ?? '';
-      if (name === 'screen_view') {
-        screenView.track.payload.properties.__path =
-          (screenView.headers.origin ?? '') + (properties.path ?? '');
+      if (track.parallel) {
+        // If this track has a parallel flag
+        if (currentGroup.parallel === track.parallel) {
+          // Same parallel group, add to current group
+          currentGroup.tracks.push(track);
+        } else {
+          // Different parallel group, finish current group and start new one
+          if (currentGroup.tracks.length > 0) {
+            trackGroups.push(currentGroup);
+          }
+          currentGroup = { parallel: track.parallel, tracks: [track] };
+        }
       } else {
-        screenView.track.payload.name = track.name ?? '';
-        screenView.track.payload.properties = properties;
+        // No parallel flag, finish any parallel group and start individual track
+        if (currentGroup.tracks.length > 0) {
+          trackGroups.push(currentGroup);
+        }
+        currentGroup = { tracks: [track] };
       }
-      screenView.headers['x-client-ip'] = session.ip;
-      screenView.headers['user-agent'] = session.userAgent;
-      await trackit(screenView);
-      await new Promise((resolve) => setTimeout(resolve, Math.random() * 5000));
+    }
+
+    // Add the last group
+    if (currentGroup.tracks.length > 0) {
+      trackGroups.push(currentGroup);
+    }
+
+    // Process each group
+    for (const group of trackGroups) {
+      if (group.parallel && group.tracks.length > 1) {
+        // Parallel execution for same-flagged tracks
+        console.log(
+          `Firing ${group.tracks.length} parallel requests with flag '${group.parallel}'`,
+        );
+        const promises = group.tracks.map(async (track) => {
+          const { name, parallel, ...properties } = track;
+          const event = JSON.parse(JSON.stringify(screenView));
+          event.track.payload.name = name ?? '';
+          event.track.payload.properties.__referrer = session.referrer ?? '';
+          if (name === 'screen_view') {
+            event.track.payload.properties.__path =
+              (event.headers.origin ?? '') + (properties.path ?? '');
+          } else {
+            event.track.payload.name = track.name ?? '';
+            event.track.payload.properties = properties;
+          }
+          event.headers['x-client-ip'] = session.ip;
+          event.headers['user-agent'] = session.userAgent;
+          return trackit(event);
+        });
+
+        await Promise.all(promises);
+        console.log(`Completed ${group.tracks.length} parallel requests`);
+      } else {
+        // Sequential execution for individual tracks
+        for (const track of group.tracks) {
+          const { name, parallel, ...properties } = track;
+          screenView.track.payload.name = name ?? '';
+          screenView.track.payload.properties.__referrer =
+            session.referrer ?? '';
+          if (name === 'screen_view') {
+            screenView.track.payload.properties.__path =
+              (screenView.headers.origin ?? '') + (properties.path ?? '');
+          } else {
+            screenView.track.payload.name = track.name ?? '';
+            screenView.track.payload.properties = properties;
+          }
+          screenView.headers['x-client-ip'] = session.ip;
+          screenView.headers['user-agent'] = session.userAgent;
+          await trackit(screenView);
+        }
+      }
+
+      // Add delay between groups (not within parallel groups)
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
     }
   }
 }

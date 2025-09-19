@@ -64,6 +64,11 @@ export class SessionBuffer extends BaseBuffer {
       if (duration > 0) {
         newSession.duration = duration;
       } else {
+        console.log('Session duration is negative', {
+          duration,
+          event,
+          session: newSession,
+        });
         this.logger.warn('Session duration is negative', {
           duration,
           event,

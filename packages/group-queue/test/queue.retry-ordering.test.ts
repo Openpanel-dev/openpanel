@@ -6,7 +6,7 @@ const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 
 describe('retry keeps failed job as head and respects backoff', () => {
   const redis = new Redis(REDIS_URL);
-  const namespace = 'test:q2:' + Date.now();
+  const namespace = `test:q2:${Date.now()}`;
 
   beforeAll(async () => {
     const keys = await redis.keys(`${namespace}*`);
@@ -18,7 +18,7 @@ describe('retry keeps failed job as head and respects backoff', () => {
   });
 
   it('retries a failing job up to maxAttempts and never lets later jobs overtake', async () => {
-    const q = new Queue({ redis, namespace, visibilityTimeoutMs: 800 });
+    const q = new Queue({ redis, namespace, jobTimeoutMs: 800 });
 
     // add 2 jobs in same group; first will fail 2 times then succeed
     const j1 = await q.add({
@@ -40,8 +40,8 @@ describe('retry keeps failed job as head and respects backoff', () => {
     const worker = new Worker<{ id: string }>({
       redis,
       namespace,
-      visibilityTimeoutMs: 600,
-      pollIntervalMs: 5,
+      jobTimeoutMs: 600,
+      blockingTimeoutSec: 1,
       backoff: (attempt) => 100, // fixed short backoff for test
       handler: async (job) => {
         if (job.payload.id === 'A' && aFailures < 2) {
@@ -62,13 +62,13 @@ describe('retry keeps failed job as head and respects backoff', () => {
     // Ensure A failed twice before success
     expect(aFailures).toBe(2);
 
-    await worker.stop();
+    await worker.close();
   });
 
   it('visibility timeout reclaim works (no heartbeat)', async () => {
-    const ns = namespace + ':vt:' + Date.now();
+    const ns = `${namespace}:vt:${Date.now()}`;
     const r2 = new Redis(REDIS_URL);
-    const q = new Queue({ redis: r2, namespace: ns, visibilityTimeoutMs: 200 });
+    const q = new Queue({ redis: r2, namespace: ns, jobTimeoutMs: 200 });
 
     await q.add({ groupId: 'g1', payload: { n: 1 }, orderMs: 1 });
     await q.add({ groupId: 'g1', payload: { n: 2 }, orderMs: 2 });
@@ -84,8 +84,8 @@ describe('retry keeps failed job as head and respects backoff', () => {
     const worker = new Worker<{ n: number }>({
       redis: r2,
       namespace: ns,
-      visibilityTimeoutMs: 300,
-      pollIntervalMs: 5,
+      jobTimeoutMs: 300,
+      blockingTimeoutSec: 1,
       handler: async (j) => {
         processed.push(j.payload.n);
       },
@@ -99,7 +99,7 @@ describe('retry keeps failed job as head and respects backoff', () => {
     expect(processed[0]).toBe(1);
     expect(processed[1]).toBe(2);
 
-    await worker.stop();
+    await worker.close();
     await r2.quit();
   });
 });

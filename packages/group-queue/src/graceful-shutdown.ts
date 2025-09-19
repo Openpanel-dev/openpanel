@@ -59,7 +59,7 @@ export async function setupGracefulShutdown(
       await Promise.all(
         workers.map(async (worker, index) => {
           try {
-            await worker.stop(workerStopTimeoutMs);
+            await worker.close(workerStopTimeoutMs);
             log(`Worker ${index} stopped successfully`);
           } catch (err) {
             log(`Worker ${index} failed to stop gracefully:`, err);

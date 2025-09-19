@@ -5,24 +5,21 @@ import { Queue, Worker } from '../src';
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 
 describe('Retry Behavior Tests', () => {
-  const redis = new Redis(REDIS_URL);
-  const namespace = 'test:retry:' + Date.now();
-
-  beforeAll(async () => {
-    const keys = await redis.keys(`${namespace}*`);
-    if (keys.length) await redis.del(keys);
-  });
+  const namespace = `test:retry:${Date.now()}`;
 
   afterAll(async () => {
+    // Cleanup after all tests
+    const redis = new Redis(REDIS_URL);
     const keys = await redis.keys(`${namespace}*`);
     if (keys.length) await redis.del(keys);
     await redis.quit();
   });
 
   it('should respect maxAttempts and move to dead letter queue', async () => {
+    const redis = new Redis(REDIS_URL);
     const q = new Queue({
       redis,
-      namespace: namespace + ':dlq',
+      namespace: `${namespace}:dlq`,
       maxAttempts: 3,
     });
 
@@ -35,10 +32,10 @@ describe('Retry Behavior Tests', () => {
 
     let attemptCount = 0;
     const worker = new Worker({
-      redis,
-      namespace: namespace + ':dlq',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      redis: redis.duplicate(),
+      namespace: `${namespace}:dlq`,
+      blockingTimeoutSec: 5,
+      maxAttempts: 2, // Match the job's maxAttempts
       handler: async (job) => {
         attemptCount++;
         throw new Error(`Attempt ${attemptCount} failed`);
@@ -57,11 +54,13 @@ describe('Retry Behavior Tests', () => {
     const job = await q.reserve();
     expect(job).toBeNull();
 
-    await worker.stop();
+    await worker.close();
+    await redis.quit();
   });
 
   it('should use exponential backoff correctly', async () => {
-    const q = new Queue({ redis, namespace: namespace + ':backoff' });
+    const redis = new Redis(REDIS_URL);
+    const q = new Queue({ redis, namespace: `${namespace}:backoff` });
 
     await q.add({
       groupId: 'backoff-group',
@@ -73,10 +72,10 @@ describe('Retry Behavior Tests', () => {
     let failCount = 0;
 
     const worker = new Worker({
-      redis,
-      namespace: namespace + ':backoff',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      redis: redis.duplicate(),
+      namespace: `${namespace}:backoff`,
+      blockingTimeoutSec: 5,
+      maxAttempts: 3, // Allow 3 attempts
       backoff: (attempt) => attempt * 100, // 100ms, 200ms, 300ms
       handler: async (job) => {
         attempts.push(Date.now());
@@ -106,11 +105,13 @@ describe('Retry Behavior Tests', () => {
       expect(delay2).toBeGreaterThan(180); // Should be ~200ms
     }
 
-    await worker.stop();
+    await worker.close();
+    await redis.quit();
   });
 
   it('should handle mixed success/failure in same group', async () => {
-    const q = new Queue({ redis, namespace: namespace + ':mixed' });
+    const redis = new Redis(REDIS_URL);
+    const q = new Queue({ redis, namespace: `${namespace}:mixed` });
 
     // Enqueue multiple jobs in same group
     await q.add({
@@ -133,11 +134,10 @@ describe('Retry Behavior Tests', () => {
     let failureCount = 0;
 
     const worker = new Worker({
-      redis,
-      namespace: namespace + ':mixed',
-      useBlocking: false,
-      pollIntervalMs: 10,
-      maxAttempts: 2,
+      redis: redis.duplicate(),
+      namespace: `${namespace}:mixed`,
+      blockingTimeoutSec: 5,
+      maxAttempts: 3, // Allow enough attempts
       backoff: () => 50, // Quick retry
       handler: async (job) => {
         if (job.payload.shouldFail && failureCount === 0) {
@@ -155,11 +155,13 @@ describe('Retry Behavior Tests', () => {
     // Should process in order: 1, 2 (retry), 3
     expect(processed).toEqual([1, 2, 3]);
 
-    await worker.stop();
+    await worker.close();
+    await redis.quit();
   });
 
   it('should handle retry with different error types', async () => {
-    const q = new Queue({ redis, namespace: namespace + ':errors' });
+    const redis = new Redis(REDIS_URL);
+    const q = new Queue({ redis, namespace: `${namespace}:errors` });
 
     await q.add({ groupId: 'error-group', payload: { errorType: 'timeout' } });
     await q.add({ groupId: 'error-group', payload: { errorType: 'network' } });
@@ -169,10 +171,9 @@ describe('Retry Behavior Tests', () => {
     const processed: string[] = [];
 
     const worker = new Worker({
-      redis,
-      namespace: namespace + ':errors',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      redis: redis.duplicate(),
+      namespace: `${namespace}:errors`,
+      blockingTimeoutSec: 5,
       maxAttempts: 2,
       backoff: () => 10,
       handler: async (job) => {
@@ -213,11 +214,13 @@ describe('Retry Behavior Tests', () => {
     expect(errors[1]).toContain('network: Network error');
     expect(errors[2]).toContain('parse: Parse error');
 
-    await worker.stop();
+    await worker.close();
+    await redis.quit();
   });
 
   it('should maintain FIFO order during retries with multiple groups', async () => {
-    const q = new Queue({ redis, namespace: namespace + ':multigroup' });
+    const redis = new Redis(REDIS_URL);
+    const q = new Queue({ redis, namespace: `${namespace}:multigroup` });
 
     // Create jobs in two groups with interleaved order
     await q.add({
@@ -245,10 +248,10 @@ describe('Retry Behavior Tests', () => {
     const failedIds = new Set<string>();
 
     const worker = new Worker({
-      redis,
-      namespace: namespace + ':multigroup',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      redis: redis.duplicate(),
+      namespace: `${namespace}:multigroup`,
+      blockingTimeoutSec: 5,
+      maxAttempts: 3, // Allow retries
       backoff: () => 20,
       handler: async (job) => {
         const { id, fail } = job.payload;
@@ -280,7 +283,8 @@ describe('Retry Behavior Tests', () => {
     expect(groupAOrder).toEqual(['A1', 'A2']);
     expect(groupBOrder).toEqual(['B1', 'B2']);
 
-    await worker.stop();
+    await worker.close();
+    await redis.quit();
   });
 });
 

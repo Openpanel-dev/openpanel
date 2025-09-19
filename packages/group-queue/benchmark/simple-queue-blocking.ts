@@ -84,7 +84,7 @@ export async function benchmarkSimpleQueueBlocking() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Stop workers
-  await Promise.all(workers.map((worker) => worker.stop()));
+  await Promise.all(workers.map((worker) => worker.close()));
 
   const endTime = Date.now();
   const actualDuration = endTime - startTime;

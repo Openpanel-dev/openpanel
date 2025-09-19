@@ -36,11 +36,9 @@ export async function bootWorkers() {
     handler: async (job) => {
       await incomingEventPure(job.payload);
     },
-    namespace: 'group:events',
-    visibilityTimeoutMs: 30_000,
-    pollIntervalMs: 100,
+    namespace: 'events',
+    jobTimeoutMs: 30_000,
     enableCleanup: true,
-    useBlocking: true,
     orderingDelayMs: 2_000,
   });
   eventsGroupWorker.run();
@@ -64,30 +62,30 @@ export async function bootWorkers() {
     cronWorker,
     notificationWorker,
     miscWorker,
-    // eventsGroupWorker as unknown as Worker,
+    eventsGroupWorker,
   ];
 
   workers.forEach((worker) => {
-    worker.on('error', (error) => {
+    (worker as Worker).on('error', (error) => {
       logger.error('worker error', {
         worker: worker.name,
         error,
       });
     });
 
-    worker.on('closed', () => {
+    (worker as Worker).on('closed', () => {
       logger.info('worker closed', {
         worker: worker.name,
       });
     });
 
-    worker.on('ready', () => {
+    (worker as Worker).on('ready', () => {
       logger.info('worker ready', {
         worker: worker.name,
       });
     });
 
-    worker.on('failed', (job) => {
+    (worker as Worker).on('failed', (job) => {
       if (job) {
         logger.error('job failed', {
           worker: worker.name,
@@ -98,20 +96,32 @@ export async function bootWorkers() {
       }
     });
 
-    worker.on('completed', (job) => {
+    (worker as Worker).on('completed', (job) => {
       if (job) {
-        logger.info('job completed', {
-          worker: worker.name,
-          data: job.data,
-          elapsed:
-            job.processedOn && job.finishedOn
-              ? job.finishedOn - job.processedOn
-              : undefined,
-        });
+        // logger.info('job completed', {
+        //   worker: worker.name,
+        //   data: job.data,
+        //   elapsed:
+        //     job.processedOn && job.finishedOn
+        //       ? job.finishedOn - job.processedOn
+        //       : undefined,
+        // });
+        // Calculate elapsed time in milliseconds
+        // processedOn and finishedOn are now in milliseconds (performance.now() format)
+        const elapsedMs =
+          job.processedOn && job.finishedOn
+            ? Math.round(job.finishedOn - job.processedOn)
+            : undefined;
+
+        console.log(
+          'job completed',
+          job.id,
+          elapsedMs ? `${elapsedMs}ms` : 'unknown',
+        );
       }
     });
 
-    worker.on('ioredis:close', () => {
+    (worker as Worker).on('ioredis:close', () => {
       logger.error('worker closed due to ioredis:close', {
         worker: worker.name,
       });

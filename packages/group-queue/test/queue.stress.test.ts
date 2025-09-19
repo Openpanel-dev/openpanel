@@ -26,8 +26,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: `${namespace}:sustained`,
-      useBlocking: true,
-      blockingTimeoutSec: 1,
+      blockingTimeoutSec: 5,
       handler: async (job) => {
         processed.push(job.payload.id);
 
@@ -83,7 +82,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
       expect(degradation).toBeLessThan(0.5); // Less than 50% degradation
     }
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   }, 30000); // 30 second timeout
 
@@ -124,8 +123,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
       const worker = new Worker({
         redis: redis.duplicate(),
         namespace: `${namespace}:pending`,
-        useBlocking: true,
-        blockingTimeoutSec: 2,
+        blockingTimeoutSec: 5,
         handler: async (job) => {
           processed.push(job.payload.id);
         },
@@ -149,7 +147,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
     const memoryUsage = process.memoryUsage();
     expect(memoryUsage.heapUsed).toBeLessThan(500 * 1024 * 1024); // Less than 500MB
 
-    await Promise.all(workers.map((w) => w.stop()));
+    await Promise.all(workers.map((w) => w.close()));
     await redis.quit();
   }, 60000); // 60 second timeout
 
@@ -183,7 +181,6 @@ describe.skip('Stress and Performance Degradation Tests', () => {
         const worker = new Worker({
           redis: redis.duplicate(),
           namespace: `${namespace}:churn`,
-          useBlocking: true,
           blockingTimeoutSec: 1,
           handler: async (job) => {
             processed.push(job.payload.id);
@@ -197,7 +194,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
         const lifetime = 500 + Math.random() * 1000;
         await new Promise((resolve) => setTimeout(resolve, lifetime));
 
-        await worker.stop();
+        await worker.close();
 
         // Pause before starting new worker
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -236,7 +233,6 @@ describe.skip('Stress and Performance Degradation Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: `${namespace}:burst`,
-      useBlocking: true,
       blockingTimeoutSec: 2,
       handler: async (job) => {
         const startTime = Date.now();
@@ -295,7 +291,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
       expect(avgProcessingTime).toBeLessThan(50); // Less than 50ms average
     }
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   }, 60000); // Increased timeout for burst processing
 
@@ -311,8 +307,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
     const worker = new Worker({
       redis: redis.duplicate(),
       namespace: `${namespace}:exhaustion`,
-      useBlocking: false,
-      pollIntervalMs: 10,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
 
@@ -372,7 +367,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
     // Should not have excessive errors
     expect(errors.length).toBeLessThan(jobId * 0.1); // Less than 10% error rate
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   }, 30000);
 
@@ -417,8 +412,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
       const worker = new Worker({
         redis: redis.duplicate(),
         namespace: `${namespace}:groups`,
-        useBlocking: true,
-        blockingTimeoutSec: 2,
+        blockingTimeoutSec: 5,
         handler: async (job) => {
           processed.push(job.payload);
         },
@@ -458,7 +452,7 @@ describe.skip('Stress and Performance Degradation Tests', () => {
 
     expect(throughput).toBeGreaterThan(100); // At least 100 jobs/sec
 
-    await Promise.all(workers.map((w) => w.stop()));
+    await Promise.all(workers.map((w) => w.close()));
     await redis.quit();
   }, 120000); // 2 minute timeout
 });

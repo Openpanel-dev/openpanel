@@ -74,7 +74,7 @@ export async function benchmarkSimpleQueue() {
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Stop worker
-  await worker.stop();
+  await worker.close();
 
   const endTime = Date.now();
   const actualDuration = endTime - startTime;

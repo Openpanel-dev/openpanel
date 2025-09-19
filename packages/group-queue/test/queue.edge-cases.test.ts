@@ -1,11 +1,11 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Queue, Worker } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
 
 describe('Edge Cases and Error Handling Tests', () => {
-  const namespace = 'test:edge:' + Date.now();
+  const namespace = `test:edge:${Date.now()}`;
 
   afterAll(async () => {
     const redis = new Redis(REDIS_URL);
@@ -16,7 +16,7 @@ describe('Edge Cases and Error Handling Tests', () => {
 
   it('should handle empty payloads and null values', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':empty' });
+    const q = new Queue({ redis, namespace: `${namespace}:empty` });
 
     // Test various empty/null payloads
     const testCases = [
@@ -42,9 +42,8 @@ describe('Edge Cases and Error Handling Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':empty',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:empty`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload);
       },
@@ -60,13 +59,13 @@ describe('Edge Cases and Error Handling Tests', () => {
     expect(processed).toContain(null);
     expect(processed).toEqual([null, null, {}, [], '', 0, false]); // undefined -> null
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle extremely large payloads', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':large' });
+    const q = new Queue({ redis, namespace: `${namespace}:large` });
 
     // Create large payload (1MB)
     const largePayload = {
@@ -92,9 +91,8 @@ describe('Edge Cases and Error Handling Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':large',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:large`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processedPayload = job.payload;
       },
@@ -109,13 +107,13 @@ describe('Edge Cases and Error Handling Tests', () => {
     expect(processedPayload.data.length).toBe(1024 * 1024);
     expect(processedPayload.metadata.nested.array.length).toBe(1000);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle special characters and unicode in payloads', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':unicode' });
+    const q = new Queue({ redis, namespace: `${namespace}:unicode` });
 
     const specialPayloads = [
       { id: 1, text: 'Hello 🌍 World! 你好世界 🚀' },
@@ -141,9 +139,8 @@ describe('Edge Cases and Error Handling Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':unicode',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:unicode`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload);
       },
@@ -169,18 +166,20 @@ describe('Edge Cases and Error Handling Tests', () => {
       expect(payload.text).toBe(specialPayloads[index].text);
     });
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle malformed or corrupted data gracefully', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':corrupted' });
+    const q = new Queue({ redis, namespace: `${namespace}:corrupted` });
 
     // Manually insert corrupted data into Redis
-    const jobKey = `${namespace}:corrupted:job:corrupted-job`;
-    const groupKey = `${namespace}:corrupted:g:corrupted-group`;
-    const readyKey = `${namespace}:corrupted:ready`;
+    // Need to use the same namespace prefix as the queue (which auto-prefixes with 'groupmq:')
+    const queueNamespace = `groupmq:${namespace}:corrupted`;
+    const jobKey = `${queueNamespace}:job:corrupted-job`;
+    const groupKey = `${queueNamespace}:g:corrupted-group`;
+    const readyKey = `${queueNamespace}:ready`;
 
     // Insert malformed job data
     await redis.hmset(jobKey, {
@@ -203,9 +202,8 @@ describe('Edge Cases and Error Handling Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':corrupted',
-      useBlocking: false,
-      pollIntervalMs: 100,
+      namespace: `${namespace}:corrupted`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload);
       },
@@ -222,16 +220,16 @@ describe('Edge Cases and Error Handling Tests', () => {
     expect(processed.length).toBe(1);
     expect(processed[0]).toBeNull(); // Corrupted JSON becomes null payload
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle extremely long group IDs and job IDs', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':long' });
+    const q = new Queue({ redis, namespace: `${namespace}:long` });
 
     // Create very long group ID (just under Redis key length limit)
-    const longGroupId = 'group-' + 'x'.repeat(500);
+    const longGroupId = `group-${'x'.repeat(500)}`;
     const longPayload = {
       veryLongProperty: 'y'.repeat(1000),
       id: 'long-test',
@@ -246,9 +244,8 @@ describe('Edge Cases and Error Handling Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':long',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:long`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processedJob = job;
       },
@@ -262,13 +259,13 @@ describe('Edge Cases and Error Handling Tests', () => {
     expect(processedJob.groupId).toBe(longGroupId);
     expect(processedJob.payload.veryLongProperty.length).toBe(1000);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle rapid worker start/stop cycles', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':rapid' });
+    const q = new Queue({ redis, namespace: `${namespace}:rapid` });
 
     // Enqueue some jobs
     for (let i = 0; i < 10; i++) {
@@ -285,9 +282,8 @@ describe('Edge Cases and Error Handling Tests', () => {
     for (let cycle = 0; cycle < 5; cycle++) {
       const worker = new Worker({
         redis: redis.duplicate(),
-        namespace: namespace + ':rapid',
-        useBlocking: false,
-        pollIntervalMs: 1,
+        namespace: `${namespace}:rapid`,
+        blockingTimeoutSec: 1,
         handler: async (job) => {
           processed.push(job.payload.id);
           await new Promise((resolve) => setTimeout(resolve, 50));
@@ -299,15 +295,14 @@ describe('Edge Cases and Error Handling Tests', () => {
       // Very short runtime
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      await worker.stop();
+      await worker.close();
     }
 
     // Final worker to clean up remaining jobs
     const finalWorker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':rapid',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:rapid`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
       },
@@ -315,7 +310,7 @@ describe('Edge Cases and Error Handling Tests', () => {
 
     finalWorker.run();
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    await finalWorker.stop();
+    await finalWorker.close();
 
     // All jobs should eventually be processed
     expect(processed.length).toBe(10);
@@ -326,7 +321,7 @@ describe('Edge Cases and Error Handling Tests', () => {
 
   it('should handle clock skew and time-based edge cases', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':time' });
+    const q = new Queue({ redis, namespace: `${namespace}:time` });
 
     // Test jobs with timestamps far in the past and future
     const timeTestCases = [
@@ -349,9 +344,8 @@ describe('Edge Cases and Error Handling Tests', () => {
 
     const worker = new Worker({
       redis: redis.duplicate(),
-      namespace: namespace + ':time',
-      useBlocking: false,
-      pollIntervalMs: 10,
+      namespace: `${namespace}:time`,
+      blockingTimeoutSec: 1,
       handler: async (job) => {
         processed.push(job.payload.id);
       },
@@ -365,13 +359,13 @@ describe('Edge Cases and Error Handling Tests', () => {
     expect(processed.length).toBe(5);
     expect(processed).toEqual([1, 2, 3, 4, 5]);
 
-    await worker.stop();
+    await worker.close();
     await redis.quit();
   });
 
   it('should handle circular references in payloads', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':circular' });
+    const q = new Queue({ redis, namespace: `${namespace}:circular` });
 
     // Create object with circular reference
     const circularObj: any = { id: 'circular-test' };
@@ -399,8 +393,8 @@ describe('Edge Cases and Error Handling Tests', () => {
     // Test with zero visibility timeout
     const q1 = new Queue({
       redis,
-      namespace: namespace + ':zero-vt',
-      visibilityTimeoutMs: 0,
+      namespace: `${namespace}:zero-vt`,
+      jobTimeoutMs: 1,
     });
 
     await q1.add({ groupId: 'zero-group', payload: { test: 'zero' } });
@@ -411,8 +405,8 @@ describe('Edge Cases and Error Handling Tests', () => {
     // Test with negative visibility timeout (should use default)
     const q2 = new Queue({
       redis: redis.duplicate(),
-      namespace: namespace + ':neg-vt',
-      visibilityTimeoutMs: -1000,
+      namespace: `${namespace}:neg-vt`,
+      jobTimeoutMs: -1000,
     });
 
     await q2.add({ groupId: 'neg-group', payload: { test: 'negative' } });
@@ -430,7 +424,7 @@ describe('Edge Cases and Error Handling Tests', () => {
     try {
       const worker = new Worker({
         redis,
-        namespace: namespace + ':null-handler',
+        namespace: `${namespace}:null-handler`,
         handler: null as any,
       });
     } catch (err) {
@@ -445,7 +439,7 @@ describe('Edge Cases and Error Handling Tests', () => {
 
   it('should handle queue operations on disconnected Redis', async () => {
     const redis = new Redis(REDIS_URL);
-    const q = new Queue({ redis, namespace: namespace + ':disconnected' });
+    const q = new Queue({ redis, namespace: `${namespace}:disconnected` });
 
     // Disconnect Redis
     await redis.disconnect();

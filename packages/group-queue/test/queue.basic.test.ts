@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Queue, Worker } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
@@ -19,7 +19,7 @@ describe('basic per-group FIFO and parallelism', () => {
   });
 
   it('processes FIFO within group by orderMs and in parallel across groups', async () => {
-    const q = new Queue({ redis, namespace, visibilityTimeoutMs: 5000 });
+    const q = new Queue({ redis, namespace, jobTimeoutMs: 5000 });
 
     const seen: Array<string> = [];
     const worker = new Worker<{ n: number }>({
@@ -29,8 +29,7 @@ describe('basic per-group FIFO and parallelism', () => {
         seen.push(`${job.groupId}:${job.payload.n}`);
         await wait(50);
       },
-      visibilityTimeoutMs: 3000,
-      pollIntervalMs: 5,
+      jobTimeoutMs: 3000,
     });
     worker.run();
 
@@ -51,7 +50,7 @@ describe('basic per-group FIFO and parallelism', () => {
     // Ensure we processed at least 3-4 items overall
     expect(seen.length).toBeGreaterThanOrEqual(3);
 
-    await worker.stop();
+    await worker.close();
   });
 });
 

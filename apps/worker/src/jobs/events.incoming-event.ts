@@ -54,7 +54,6 @@ export async function incomingEventPure(
   job?: Job<EventsQueuePayloadIncomingEvent>,
   token?: string,
 ) {
-  console.log('Incoming event');
   const {
     geo,
     event: body,
