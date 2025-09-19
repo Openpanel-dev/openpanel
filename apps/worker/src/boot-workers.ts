@@ -15,17 +15,6 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { Worker as GroupWorker } from '@openpanel/group-queue';
 
-// Common interface for both worker types
-interface WorkerLike {
-  name: string;
-  on(event: 'error', listener: (error: any) => void): this;
-  on(event: 'ready', listener: () => void): this;
-  on(event: 'closed', listener: () => void): this;
-  on(event: 'failed', listener: (job?: any) => void): this;
-  on(event: 'completed', listener: (job?: any) => void): this;
-  on(event: 'ioredis:close', listener: () => void): this;
-  close(): Promise<void>;
-}
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
 import { incomingEventPure } from './jobs/events.incoming-event';
@@ -52,9 +41,9 @@ export async function bootWorkers() {
     pollIntervalMs: 100,
     enableCleanup: true,
     useBlocking: true,
-    orderingDelayMs: 5_000,
+    orderingDelayMs: 2_000,
   });
-  await eventsGroupWorker.run();
+  eventsGroupWorker.run();
   const eventsWorker = new Worker(eventsQueue.name, eventsJob, workerOptions);
   const sessionsWorker = new Worker(
     sessionsQueue.name,
@@ -69,13 +58,13 @@ export async function bootWorkers() {
   );
   const miscWorker = new Worker(miscQueue.name, miscJob, workerOptions);
 
-  const workers: WorkerLike[] = [
+  const workers = [
     sessionsWorker,
     eventsWorker,
     cronWorker,
     notificationWorker,
     miscWorker,
-    eventsGroupWorker,
+    // eventsGroupWorker as unknown as Worker,
   ];
 
   workers.forEach((worker) => {

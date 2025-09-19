@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Queue, Worker } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
@@ -74,7 +74,7 @@ describe('retry keeps failed job as head and respects backoff', () => {
     await q.add({ groupId: 'g1', payload: { n: 2 }, orderMs: 2 });
 
     // Worker that reserves then crashes (simulate by not completing)
-    const job = await q.reserve<{ n: number }>();
+    const job = await q.reserve();
     expect(job).toBeTruthy();
 
     // Wait for visibility to expire so the group becomes eligible again

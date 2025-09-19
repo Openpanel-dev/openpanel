@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Queue, Worker } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
@@ -195,7 +195,7 @@ describe('Retry Behavior Tests', () => {
         processed.push(errorType);
       },
       onError: (err, job) => {
-        errors.push(`${job?.payload.errorType}: ${err.message}`);
+        errors.push(`${job?.payload.errorType}: ${(err as Error).message}`);
       },
     });
 

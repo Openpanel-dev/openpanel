@@ -88,6 +88,8 @@ export async function getSessionEnd({
       });
     }
 
+    console.log('Session end job updated');
+
     await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
     return sessionEnd.job.data.payload;
   }

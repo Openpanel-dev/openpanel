@@ -7,6 +7,7 @@ export type BackoffStrategy = (attempt: number) => number; // ms
 export type WorkerOptions<T> = {
   redis: Redis;
   namespace?: string;
+  name?: string; // worker name for logging and identification
   handler: (job: ReservedJob<T>) => Promise<void>;
   visibilityTimeoutMs?: number;
   heartbeatMs?: number;
@@ -28,27 +29,16 @@ const defaultBackoff: BackoffStrategy = (attempt) => {
   return base + jitter;
 };
 
-// Types for BullMQ compatibility
-type BullMQJob = {
-  id: string;
-  data: any;
-  opts: {
-    attempts: number;
-    delay: number;
-  };
-  attempts: number;
-  processedOn?: number;
-  finishedOn?: number;
-  failedReason?: string;
-};
-
 export class Worker<T = any> extends EventEmitter {
+  public readonly name: string;
   private q: Queue;
   private handler: WorkerOptions<T>['handler'];
   private hbMs: number;
   private pollMs: number;
   private onError?: WorkerOptions<T>['onError'];
   private stopping = false;
+  private ready = false;
+  private closed = false;
   private stopSignal?: AbortSignal;
   private maxAttempts: number;
   private backoff: BackoffStrategy;
@@ -59,18 +49,6 @@ export class Worker<T = any> extends EventEmitter {
   private blockingTimeoutSec: number;
   private currentJob: ReservedJob<T> | null = null;
   private processingStartTime = 0;
-  public readonly name: string;
-
-  // BullMQ-compatible event listener overloads
-  on(event: 'error', listener: (error: Error) => void): this;
-  on(event: 'ready', listener: () => void): this;
-  on(event: 'closed', listener: () => void): this;
-  on(event: 'failed', listener: (job?: BullMQJob) => void): this;
-  on(event: 'completed', listener: (job?: BullMQJob) => void): this;
-  on(event: 'ioredis:close', listener: () => void): this;
-  on(event: string | symbol, listener: (...args: any[]) => void): this {
-    return super.on(event, listener);
-  }
 
   constructor(opts: WorkerOptions<T>) {
     super();
@@ -79,13 +57,14 @@ export class Worker<T = any> extends EventEmitter {
       throw new Error('Worker handler must be a function');
     }
 
+    this.name =
+      opts.name ?? `worker-${Math.random().toString(36).substr(2, 9)}`;
     this.q = new Queue({
       redis: opts.redis,
       namespace: opts.namespace,
       visibilityTimeoutMs: opts.visibilityTimeoutMs,
       orderingDelayMs: opts.orderingDelayMs,
     });
-    this.name = opts.namespace || 'group-worker';
     this.handler = opts.handler;
     const vt = opts.visibilityTimeoutMs ?? 30_000;
     this.hbMs = opts.heartbeatMs ?? Math.max(1000, Math.floor(vt / 3));
@@ -99,22 +78,40 @@ export class Worker<T = any> extends EventEmitter {
     this.useBlocking = opts.useBlocking ?? true; // use blocking by default
     this.blockingTimeoutSec = opts.blockingTimeoutSec ?? 5; // 5 second timeout
 
-    // Listen for Redis connection events
-    opts.redis.on('close', () => {
-      this.emit('ioredis:close');
-    });
-
     if (this.stopSignal) {
       this.stopSignal.addEventListener('abort', () => {
         this.stopping = true;
       });
     }
+
+    // Set up Redis connection event handlers
+    this.setupRedisEventHandlers();
+  }
+
+  private setupRedisEventHandlers() {
+    // Get Redis instance from the queue to monitor connection events
+    const redis = (this.q as any).r; // Access private redis property
+    if (redis) {
+      redis.on('close', () => {
+        this.closed = true;
+        this.ready = false;
+        this.emit('ioredis:close');
+      });
+
+      redis.on('error', (error: Error) => {
+        this.emit('error', error);
+      });
+
+      redis.on('ready', () => {
+        if (!this.ready && !this.closed) {
+          this.ready = true;
+          this.emit('ready');
+        }
+      });
+    }
   }
 
   async run() {
-    // Emit ready event
-    this.emit('ready');
-
     // Start cleanup timer if enabled
     if (this.enableCleanup) {
       this.cleanupTimer = setInterval(async () => {
@@ -122,7 +119,6 @@ export class Worker<T = any> extends EventEmitter {
           await this.q.cleanup();
         } catch (err) {
           this.onError?.(err);
-          this.emit('error', err);
         }
       }, this.cleanupMs);
     }
@@ -133,10 +129,25 @@ export class Worker<T = any> extends EventEmitter {
       if (this.useBlocking) {
         // Use blocking reserve for better efficiency
         job = await this.q.reserveBlocking(this.blockingTimeoutSec);
+
+        // If blocking timed out (no job), try to recover delayed groups
+        if (!job) {
+          try {
+            await this.q.recoverDelayedGroups();
+          } catch (err) {
+            // Ignore recovery errors to avoid breaking the worker
+          }
+        }
       } else {
         // Fall back to polling mode
         job = await this.q.reserve();
         if (!job) {
+          // No job found, try to recover delayed groups before sleeping
+          try {
+            await this.q.recoverDelayedGroups();
+          } catch (err) {
+            // Ignore recovery errors to avoid breaking the worker
+          }
           await sleep(this.pollMs);
           continue;
         }
@@ -176,16 +187,11 @@ export class Worker<T = any> extends EventEmitter {
     // Clear tracking
     this.currentJob = null;
     this.processingStartTime = 0;
+    this.ready = false;
+    this.closed = true;
 
     // Emit closed event
     this.emit('closed');
-  }
-
-  /**
-   * Close the worker (alias for stop for BullMQ compatibility)
-   */
-  async close(): Promise<void> {
-    await this.stop();
   }
 
   /**
@@ -214,9 +220,6 @@ export class Worker<T = any> extends EventEmitter {
     this.currentJob = job;
     this.processingStartTime = Date.now();
 
-    // Create BullMQ-compatible job object for events
-    const eventJob = this.createBullMQCompatibleJob(job);
-
     let hbTimer: NodeJS.Timeout | undefined;
     const startHeartbeat = () => {
       hbTimer = setInterval(async () => {
@@ -235,18 +238,33 @@ export class Worker<T = any> extends EventEmitter {
       clearInterval(hbTimer!);
       await this.q.complete(job);
 
-      // Emit completed event with BullMQ-compatible job
-      this.emit('completed', eventJob);
+      // Create a job-like object compatible with BullMQ format
+      const completedJob = {
+        ...job,
+        processedOn: this.processingStartTime,
+        finishedOn: Date.now(),
+        data: job.payload,
+        opts: {
+          attempts: job.maxAttempts,
+        },
+      };
+
+      this.emit('completed', completedJob);
     } catch (err) {
       clearInterval(hbTimer!);
       this.onError?.(err, job);
       this.emit('error', err);
 
-      // Update job with failure reason for failed event
+      // Create a job-like object compatible with BullMQ format for failed event
       const failedJob = {
-        ...eventJob,
+        ...job,
         failedReason: err instanceof Error ? err.message : String(err),
+        data: job.payload,
+        opts: {
+          attempts: job.maxAttempts,
+        },
       };
+
       this.emit('failed', failedJob);
 
       // enforce attempts at worker level too (job-level enforced by Redis)
@@ -264,27 +282,6 @@ export class Worker<T = any> extends EventEmitter {
       this.currentJob = null;
       this.processingStartTime = 0;
     }
-  }
-
-  /**
-   * Create a BullMQ-compatible job object for event emissions
-   */
-  private createBullMQCompatibleJob(job: ReservedJob<T>): BullMQJob {
-    const processedOn = this.processingStartTime;
-    const finishedOn = Date.now();
-
-    return {
-      id: job.id,
-      data: job.payload,
-      opts: {
-        attempts: job.maxAttempts,
-        delay: 0,
-      },
-      attempts: job.attempts,
-      processedOn,
-      finishedOn,
-      failedReason: undefined,
-    };
   }
 }
 

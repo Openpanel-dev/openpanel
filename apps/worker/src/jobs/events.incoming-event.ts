@@ -54,6 +54,7 @@ export async function incomingEventPure(
   job?: Job<EventsQueuePayloadIncomingEvent>,
   token?: string,
 ) {
+  console.log('Incoming event');
   const {
     geo,
     event: body,
@@ -62,7 +63,6 @@ export async function incomingEventPure(
     currentDeviceId,
     previousDeviceId,
   } = jobPayload;
-  console.log('Incoming event', currentDeviceId);
   const properties = body.properties ?? {};
   const reqId = headers['request-id'] ?? 'unknown';
   const logger = baseLogger.child({
@@ -198,7 +198,7 @@ export async function incomingEventPure(
     );
 
     if (!lock) {
-      logger.warn('Move incoming event to delayed');
+      logger.warn('WARNING!!!!');
       if (job) {
         await job.moveToDelayed(Date.now() + 50, token);
         throw new DelayedError();

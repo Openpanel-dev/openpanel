@@ -1,5 +1,5 @@
 import Redis from 'ioredis';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Queue, Worker } from '../src';
 
 const REDIS_URL = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
@@ -119,6 +119,7 @@ describe('grouping', () => {
       redis,
       namespace: namespace + ':delay',
       orderingDelayMs, // Pass the ordering delay to the worker
+      useBlocking: false, // Use polling mode for more frequent recovery checks
       handler: async (job) => {
         console.log(
           `Processing job n:${job.payload.n}, orderMs:${job.orderMs}, processedAt:${Date.now()}`,
@@ -159,8 +160,8 @@ describe('grouping', () => {
     // Start worker
     worker.run();
 
-    // Wait for processing to complete
-    await wait(2500);
+    // Wait for processing to complete (longer wait to ensure future job is processed)
+    await wait(3500);
 
     console.log(`Final order: ${order}`);
     console.log(`Jobs processed: ${order.length}`);
@@ -170,7 +171,7 @@ describe('grouping', () => {
     expect(order).toEqual(['delay-group:1', 'delay-group:2', 'delay-group:3']);
 
     await worker.stop();
-  }, 4000); // Timeout for the 2.5s wait + buffer
+  }, 5000); // Timeout for the 3.5s wait + buffer
 });
 
 async function wait(ms: number) {

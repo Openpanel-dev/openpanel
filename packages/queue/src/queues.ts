@@ -110,7 +110,7 @@ export const eventsWorkerQueue = new GroupQueue<
   namespace: 'group:events',
   redis: getRedisGroupQueue(),
   visibilityTimeoutMs: 30_000,
-  orderingDelayMs: 5_000,
+  orderingDelayMs: 2_000,
   maxAttempts: 3,
   reserveScanLimit: 20,
 });

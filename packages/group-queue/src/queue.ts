@@ -218,19 +218,37 @@ local id, groupId, payload, attempts, maxAttempts, seq, enq, orderMs, score = jo
 -- Check ordering delay: only process jobs that are old enough
 if orderingDelayMs > 0 and orderMs then
   local jobOrderMs = tonumber(orderMs)
-  if jobOrderMs and (jobOrderMs + orderingDelayMs > now) then
-    -- Job is too recent, put group back in ready queue and return nil
-    local gZ = ns .. ":g:" .. chosenGid
-    local putBackScore = tonumber(score)
-    redis.call("ZADD", gZ, putBackScore, headJobId)
+  if jobOrderMs then
+    local eligibleAt
     
-    local head = redis.call("ZRANGE", gZ, 0, 0, "WITHSCORES")
-    if head and #head >= 2 then
-      local headScore = tonumber(head[2])
-      redis.call("ZADD", readyKey, headScore, chosenGid)
+    if jobOrderMs > now then
+      -- Future job: process at its orderMs time (no additional delay needed)
+      eligibleAt = jobOrderMs
+    else
+      -- Past job: wait for ordering delay to allow late-arriving events
+      eligibleAt = jobOrderMs + orderingDelayMs
     end
     
-    return nil
+    if eligibleAt > now then
+      -- Job is not yet eligible, put job back and set a temporary lock
+      local putBackScore = tonumber(score)
+      redis.call("ZADD", gZ, putBackScore, headJobId)
+      
+      -- Calculate when this job will be eligible (how long from now)
+      local remainingDelayMs = eligibleAt - now
+      
+      -- Set a lock that expires when the job becomes eligible
+      local lockKey = ns .. ":lock:" .. chosenGid
+      redis.call("SET", lockKey, "ordering-delay", "PX", remainingDelayMs)
+      
+      -- DON'T re-add group to ready queue immediately
+      -- The group will be naturally re-added by other mechanisms:
+      -- 1. When new jobs are added to this group
+      -- 2. When the lock expires and a cleanup/heartbeat process runs
+      -- 3. When a worker retries after the poll interval
+      
+      return nil
+    end
   end
 end
 
@@ -437,8 +455,6 @@ return activeCount
       String(maxAttempts),
       String(orderMs),
     );
-    console.log('job added', jobId);
-
     return jobId;
   }
 
@@ -554,6 +570,92 @@ return activeCount
     }
 
     return false; // Timeout reached
+  }
+
+  /**
+   * Check for groups that might be ready after their ordering delay has expired.
+   * This is a recovery mechanism for groups that were delayed but not re-added to ready queue.
+   */
+  async recoverDelayedGroups(): Promise<number> {
+    if (this.orderingDelayMs <= 0) {
+      return 0;
+    }
+
+    const script = `
+local ns = "${this.ns}"
+local now = tonumber(ARGV[1])
+local orderingDelayMs = tonumber(ARGV[2])
+
+local recoveredCount = 0
+local readyKey = ns .. ":ready"
+
+-- Get all group patterns (simplified approach)
+local groupPattern = ns .. ":g:*"
+local groups = redis.call("KEYS", groupPattern)
+
+for i = 1, #groups do
+  local gZ = groups[i]
+  local groupId = string.match(gZ, ":g:(.+)$")
+  
+  if groupId then
+    local lockKey = ns .. ":lock:" .. groupId
+    local lockExists = redis.call("EXISTS", lockKey)
+    
+    -- Only check groups that are not currently locked
+    if lockExists == 0 then
+      -- Check if this group has jobs and the head job is now eligible
+      local head = redis.call("ZRANGE", gZ, 0, 0, "WITHSCORES")
+      if head and #head >= 2 then
+        local headJobId = head[1]
+        local headScore = tonumber(head[2])
+        
+        -- Check if head job is eligible now
+        local jobKey = ns .. ":job:" .. headJobId
+        local orderMs = redis.call("HGET", jobKey, "orderMs")
+        
+        if orderMs then
+          local jobOrderMs = tonumber(orderMs)
+          local eligibleAt
+          
+          if jobOrderMs > now then
+            -- Future job: process at its orderMs time (no additional delay needed)
+            eligibleAt = jobOrderMs
+          else
+            -- Past job: wait for ordering delay to allow late-arriving events
+            eligibleAt = jobOrderMs + orderingDelayMs
+          end
+          
+          if jobOrderMs and (eligibleAt <= now) then
+            -- Job is now eligible, add group to ready queue if not already there
+            local isInReady = redis.call("ZSCORE", readyKey, groupId)
+            
+            if not isInReady then
+              redis.call("ZADD", readyKey, headScore, groupId)
+              recoveredCount = recoveredCount + 1
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+return recoveredCount
+    `;
+
+    try {
+      const result = (await this.r.eval(
+        script,
+        0,
+        String(Date.now()),
+        String(this.orderingDelayMs),
+      )) as number;
+
+      return result || 0;
+    } catch (error) {
+      console.warn('Error in recoverDelayedGroups:', error);
+      return 0;
+    }
   }
 }
 
