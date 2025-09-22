@@ -3,15 +3,15 @@ name: Docker Build and Push
 on:
   workflow_dispatch:
   push:
-    # branches: [ "main" ]
-    paths:
-      - "apps/api/**"
-      - "apps/worker/**"
-      - "apps/public/**"
-      - "packages/**"
-      - "!packages/sdks/**"
-      - "**Dockerfile"
-      - ".github/workflows/**"
+    branches: ["main"]
+  #   paths:
+  #     - "apps/api/**"
+  #     - "apps/worker/**"
+  #     - "apps/public/**"
+  #     - "packages/**"
+  #     - "!packages/sdks/**"
+  #     - "**Dockerfile"
+  #     - ".github/workflows/**"
 
 env:
   repo_owner: "openpanel-dev"
