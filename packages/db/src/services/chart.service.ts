@@ -373,25 +373,25 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         }
         case '>': {
           where[id] = `(${value
-            .map((val) => `${whereFrom} > ${escape(String(val).trim())}`)
+           .map((val) => `toInt32OrNull(${whereFrom}) > ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
         case '<': {
           where[id] = `(${value
-            .map((val) => `${whereFrom} < ${escape(String(val).trim())}`)
+           .map((val) => `toInt32OrNull(${whereFrom}) < ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
         case '>=': {
           where[id] = `(${value
-            .map((val) => `${whereFrom} >= ${escape(String(val).trim())}`)
+           .map((val) => `toInt32OrNull(${whereFrom}) >= ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
         case '<=': {
           where[id] = `(${value
-            .map((val) => `${whereFrom} <= ${escape(String(val).trim())}`)
+           .map((val) => `toInt32OrNull(${whereFrom}) <= ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
@@ -463,25 +463,25 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         }
         case '>': {
           where[id] = `(${value
-            .map((val) => `${name} > ${escape(String(val).trim())}`)
+            .map((val) => `toInt32OrNull(${name}) > ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
         case '<': {
           where[id] = `(${value
-            .map((val) => `${name} < ${escape(String(val).trim())}`)
+           .map((val) => `toInt32OrNull(${name}) < ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
         case '>=': {
           where[id] = `(${value
-            .map((val) => `${name} >= ${escape(String(val).trim())}`)
+            .map((val) => `toInt32OrNull(${name}) >= ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
         case '<=': {
           where[id] = `(${value
-            .map((val) => `${name} <= ${escape(String(val).trim())}`)
+            .map((val) => `toInt32OrNull(${name}) <= ${Number(val)}`)
             .join(' OR ')})`;
           break;
         }
