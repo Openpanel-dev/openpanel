@@ -371,6 +371,30 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           }
           break;
         }
+        case '>': {
+          where[id] = `(${value
+            .map((val) => `${whereFrom} > ${escape(String(val).trim())}`)
+            .join(' OR ')})`;
+          break;
+        }
+        case '<': {
+          where[id] = `(${value
+            .map((val) => `${whereFrom} < ${escape(String(val).trim())}`)
+            .join(' OR ')})`;
+          break;
+        }
+        case '>=': {
+          where[id] = `(${value
+            .map((val) => `${whereFrom} >= ${escape(String(val).trim())}`)
+            .join(' OR ')})`;
+          break;
+        }
+        case '<=': {
+          where[id] = `(${value
+            .map((val) => `${whereFrom} <= ${escape(String(val).trim())}`)
+            .join(' OR ')})`;
+          break;
+        }
       }
     } else {
       switch (operator) {
@@ -434,6 +458,30 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
               (val) =>
                 `match(${name}, ${escape(stripLeadingAndTrailingSlashes(String(val)).trim())})`,
             )
+            .join(' OR ')})`;
+          break;
+        }
+        case '>': {
+          where[id] = `(${value
+            .map((val) => `${name} > ${escape(String(val).trim())}`)
+            .join(' OR ')})`;
+          break;
+        }
+        case '<': {
+          where[id] = `(${value
+            .map((val) => `${name} < ${escape(String(val).trim())}`)
+            .join(' OR ')})`;
+          break;
+        }
+        case '>=': {
+          where[id] = `(${value
+            .map((val) => `${name} >= ${escape(String(val).trim())}`)
+            .join(' OR ')})`;
+          break;
+        }
+        case '<=': {
+          where[id] = `(${value
+            .map((val) => `${name} <= ${escape(String(val).trim())}`)
             .join(' OR ')})`;
           break;
         }

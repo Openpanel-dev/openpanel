@@ -87,6 +87,10 @@ export const operators = {
   regex: 'Regex',
   isNull: 'Is null',
   isNotNull: 'Is not null',
+  "<": '<', 
+  "<=": '<=',
+  ">": '>',
+  ">=": '>=',
 } as const;
 
 export const chartTypes = {
