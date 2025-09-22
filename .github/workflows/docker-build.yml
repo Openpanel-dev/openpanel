@@ -1,19 +1,20 @@
 name: Docker Build and Push
 
 on:
+  workflow_dispatch:
   push:
     # branches: [ "main" ]
     paths:
-      - 'apps/api/**'
-      - 'apps/worker/**'
-      - 'apps/public/**'
-      - 'packages/**'
-      - '!packages/sdks/**'
-      - '**Dockerfile'
-      - '.github/workflows/**'
+      - "apps/api/**"
+      - "apps/worker/**"
+      - "apps/public/**"
+      - "packages/**"
+      - "!packages/sdks/**"
+      - "**Dockerfile"
+      - ".github/workflows/**"
 
 env:
-  repo_owner: 'openpanel-dev'
+  repo_owner: "openpanel-dev"
 
 jobs:
   changes:
@@ -27,7 +28,7 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: filter
         with:
-          base: 'main'
+          base: "main"
           filters: |
             api:
               - 'apps/api/**'
@@ -48,15 +49,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          
+          node-version: "20"
+
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-          
+
       - name: Get pnpm store directory
         shell: bash
         run: |
@@ -69,19 +70,19 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-          
+
       - name: Install dependencies
         run: pnpm install
-      
+
       - name: Codegen
         run: pnpm codegen
-        
+
       # - name: Run Biome
       #   run: pnpm lint
-        
+
       - name: Run TypeScript checks
         run: pnpm typecheck
-        
+
       # - name: Run tests
       #   run: pnpm test
 
@@ -91,7 +92,7 @@ jobs:
     needs: [changes, lint-and-test]
     if: ${{ needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
-    steps:          
+    steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -101,9 +102,8 @@ jobs:
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -114,41 +114,40 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/${{ env.repo_owner }}/api:latest
-            ghcr.io/${{ env.repo_owner }}/api:${{ github.sha }}
+            carabala/hub:openpanel-api-latest
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
-  
-  build-and-push-worker:
-    permissions:
-      packages: write
-    needs: [changes, lint-and-test]
-    if: ${{ needs.changes.outputs.worker == 'true' }}
-    runs-on: ubuntu-latest
-    steps:          
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+  # build-and-push-worker:
+  #   permissions:
+  #     packages: write
+  #   needs: [changes, lint-and-test]
+  #   if: ${{ needs.changes.outputs.worker == 'true' }}
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/worker/Dockerfile
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
-            ghcr.io/${{ env.repo_owner }}/worker:latest
-            ghcr.io/${{ env.repo_owner }}/worker:${{ github.sha }}
-          build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+  #     - name: Log in to GitHub Container Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+
+  #     - name: Build and push Docker image
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         file: apps/worker/Dockerfile
+  #         push: true
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
+  #         tags: |
+  #           ghcr.io/${{ env.repo_owner }}/worker:latest
+  #           ghcr.io/${{ env.repo_owner }}/worker:${{ github.sha }}
+  #         build-args: |
+  #           DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
