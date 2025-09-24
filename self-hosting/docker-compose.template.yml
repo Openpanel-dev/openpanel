@@ -69,7 +69,7 @@ services:
         hard: 262144
 
   op-api:
-    image: lindesvard/openpanel-api:latest
+    image: carabala/hub:openpanel-api-latest
     restart: always
     command: >
       sh -c "
@@ -94,7 +94,7 @@ services:
       - .env
 
   op-dashboard:
-    image: lindesvard/openpanel-dashboard:latest
+    image: carabala/hub:openpanel-dashboard-latest
     restart: always
     depends_on:
       op-api:
