@@ -1,12 +1,14 @@
+import { cn } from '@/lib/utils';
 import Image from 'next/image';
 
 export function Figure({
   src,
   alt,
   caption,
-}: { src: string; alt: string; caption: string }) {
+  className,
+}: { src: string; alt: string; caption: string; className?: string }) {
   return (
-    <figure className="-mx-4">
+    <figure className={cn('-mx-4', className)}>
       <Image
         src={src}
         alt={alt || caption}

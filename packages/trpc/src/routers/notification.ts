@@ -121,6 +121,7 @@ export const notificationRouter = createTRPCRouter({
               .map((id) => ({ id })),
           },
           config: input.config,
+          template: input.template || null,
         },
       });
     }),

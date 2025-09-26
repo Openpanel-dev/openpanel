@@ -1,19 +1,14 @@
 import { escape } from 'sqlstring';
 
-import {
-  getTimezoneFromDateString,
-  stripLeadingAndTrailingSlashes,
-} from '@openpanel/common';
+import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
   IChartEventFilter,
+  IChartInput,
+  IChartRange,
   IGetChartDataInput,
 } from '@openpanel/validation';
 
-import {
-  TABLE_NAMES,
-  formatClickhouseDate,
-  toDate,
-} from '../clickhouse/client';
+import { TABLE_NAMES, formatClickhouseDate } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
 
 export function transformPropertyKey(property: string) {
@@ -38,6 +33,10 @@ export function transformPropertyKey(property: string) {
 }
 
 export function getSelectPropertyKey(property: string) {
+  if (property === 'has_profile') {
+    return `if(profile_id != device_id, 'true', 'false')`;
+  }
+
   const propertyPatterns = ['properties', 'profile.properties'];
 
   const match = propertyPatterns.find((pattern) =>
@@ -61,9 +60,9 @@ export function getChartSql({
   startDate,
   endDate,
   projectId,
-  chartType,
   limit,
-}: IGetChartDataInput) {
+  timezone,
+}: IGetChartDataInput & { timezone: string }) {
   const {
     sb,
     join,
@@ -73,6 +72,7 @@ export function getChartSql({
     getSelect,
     getOrderBy,
     getGroupBy,
+    getFill,
   } = createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
@@ -93,40 +93,52 @@ export function getChartSql({
   );
 
   if (anyFilterOnProfile || anyBreakdownOnProfile) {
-    sb.joins.profiles = `LEFT ANY JOIN (SELECT * FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${escape(projectId)}) as profile on profile.id = profile_id`;
+    sb.joins.profiles = `LEFT ANY JOIN (SELECT 
+      id as "profile.id",
+      email as "profile.email",
+      first_name as "profile.first_name",
+      last_name as "profile.last_name",
+      properties as "profile.properties"
+    FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${escape(projectId)}) as profile on profile.id = profile_id`;
   }
 
   sb.select.count = 'count(*) as count';
   switch (interval) {
     case 'minute': {
-      sb.select.date = `toStartOfMinute(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
+      sb.select.date = 'toStartOfMinute(created_at) as date';
       break;
     }
     case 'hour': {
-      sb.select.date = `toStartOfHour(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
+      sb.select.date = 'toStartOfHour(created_at) as date';
       break;
     }
     case 'day': {
-      sb.select.date = `toStartOfDay(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
+      sb.select.date = 'toStartOfDay(created_at) as date';
       break;
     }
     case 'week': {
-      sb.select.date = `toStartOfWeek(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
+      sb.select.date = `toStartOfWeek(created_at, 1, '${timezone}') as date`;
       break;
     }
     case 'month': {
-      sb.select.date = `toStartOfMonth(toTimeZone(created_at, '${getTimezoneFromDateString(startDate)}')) as date`;
+      sb.fill = `FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
+      sb.select.date = `toStartOfMonth(created_at, '${timezone}') as date`;
       break;
     }
   }
   sb.groupBy.date = 'date';
+  sb.orderBy.date = 'date ASC';
 
   if (startDate) {
-    sb.where.startDate = `${toDate('created_at', interval)} >= ${toDate(formatClickhouseDate(startDate), interval)}`;
+    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
   }
 
   if (endDate) {
-    sb.where.endDate = `${toDate('created_at', interval)} <= ${toDate(formatClickhouseDate(endDate), interval)}`;
+    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
   if (breakdowns.length > 0 && limit) {
@@ -162,35 +174,46 @@ export function getChartSql({
 
   if (event.segment === 'property_sum' && event.property) {
     sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
   }
 
   if (event.segment === 'property_average' && event.property) {
     sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+  }
+
+  if (event.segment === 'property_max' && event.property) {
+    sb.select.count = `max(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+  }
+
+  if (event.segment === 'property_min' && event.property) {
+    sb.select.count = `min(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
   }
 
   if (event.segment === 'one_event_per_user') {
     sb.from = `(
-      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} WHERE ${join(
+      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} ${getJoins()} WHERE ${join(
         sb.where,
         ' AND ',
       )}
         ORDER BY profile_id, created_at DESC
       ) as subQuery`;
+    sb.joins = {};
 
-    console.log(
-      `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
-    );
-
-    return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
+    const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+    console.log('-- Report --');
+    console.log(sql.replaceAll(/[\n\r]/g, ' '));
+    console.log('-- End --');
+    return sql;
   }
 
-  console.log(
-    `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`,
-  );
-
-  return `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()}`;
+  const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+  console.log('-- Report --');
+  console.log(sql.replaceAll(/[\n\r]/g, ' '));
+  console.log('-- End --');
+  return sql;
 }
 
 export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
@@ -419,4 +442,241 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
   });
 
   return where;
+}
+
+export function getChartStartEndDate(
+  {
+    startDate,
+    endDate,
+    range,
+  }: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>,
+  timezone: string,
+) {
+  const ranges = getDatesFromRange(range, timezone);
+
+  if (startDate && endDate) {
+    return { startDate: startDate, endDate: endDate };
+  }
+
+  if (!startDate && endDate) {
+    return { startDate: ranges.startDate, endDate: endDate };
+  }
+
+  return ranges;
+}
+
+export function getDatesFromRange(range: IChartRange, timezone: string) {
+  if (range === '30min' || range === 'lastHour') {
+    const minutes = range === '30min' ? 30 : 60;
+    const startDate = DateTime.now()
+      .minus({ minute: minutes })
+      .startOf('minute')
+      .setZone(timezone)
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('minute')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === 'today') {
+    const startDate = DateTime.now()
+      .setZone(timezone)
+      .startOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === 'yesterday') {
+    const startDate = DateTime.now()
+      .minus({ day: 1 })
+      .setZone(timezone)
+      .startOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .minus({ day: 1 })
+      .setZone(timezone)
+      .endOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === '7d') {
+    const startDate = DateTime.now()
+      .minus({ day: 7 })
+      .setZone(timezone)
+      .startOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('day')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === '6m') {
+    const startDate = DateTime.now()
+      .minus({ month: 6 })
+      .setZone(timezone)
+      .startOf('day')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('day')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === '12m') {
+    const startDate = DateTime.now()
+      .minus({ month: 12 })
+      .setZone(timezone)
+      .startOf('month')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('month')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === 'monthToDate') {
+    const startDate = DateTime.now()
+      .setZone(timezone)
+      .startOf('month')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('day')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === 'lastMonth') {
+    const month = DateTime.now()
+      .minus({ month: 1 })
+      .setZone(timezone)
+      .startOf('month');
+
+    const startDate = month.toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = month
+      .endOf('month')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === 'yearToDate') {
+    const startDate = DateTime.now()
+      .setZone(timezone)
+      .startOf('year')
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = DateTime.now()
+      .setZone(timezone)
+      .endOf('day')
+      .plus({ millisecond: 1 })
+      .toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  if (range === 'lastYear') {
+    const year = DateTime.now().minus({ year: 1 }).setZone(timezone);
+    const startDate = year.startOf('year').toFormat('yyyy-MM-dd HH:mm:ss');
+    const endDate = year.endOf('year').toFormat('yyyy-MM-dd HH:mm:ss');
+
+    return {
+      startDate: startDate,
+      endDate: endDate,
+    };
+  }
+
+  // range === '30d'
+  const startDate = DateTime.now()
+    .minus({ day: 30 })
+    .setZone(timezone)
+    .startOf('day')
+    .toFormat('yyyy-MM-dd HH:mm:ss');
+  const endDate = DateTime.now()
+    .setZone(timezone)
+    .endOf('day')
+    .plus({ millisecond: 1 })
+    .toFormat('yyyy-MM-dd HH:mm:ss');
+
+  return {
+    startDate: startDate,
+    endDate: endDate,
+  };
+}
+
+export function getChartPrevStartEndDate({
+  startDate,
+  endDate,
+}: {
+  startDate: string;
+  endDate: string;
+}) {
+  let diff = DateTime.fromFormat(endDate, 'yyyy-MM-dd HH:mm:ss').diff(
+    DateTime.fromFormat(startDate, 'yyyy-MM-dd HH:mm:ss'),
+  );
+
+  // this will make sure our start and end date's are correct
+  // otherwise if a day ends with 23:59:59.999 and starts with 00:00:00.000
+  // the diff will be 23:59:59.999 and that will make the start date wrong
+  // so we add 1 millisecond to the diff
+  if ((diff.milliseconds / 1000) % 2 !== 0) {
+    diff = diff.plus({ millisecond: 1 });
+  }
+
+  return {
+    startDate: DateTime.fromFormat(startDate, 'yyyy-MM-dd HH:mm:ss')
+      .minus({ millisecond: diff.milliseconds })
+      .toFormat('yyyy-MM-dd HH:mm:ss'),
+    endDate: DateTime.fromFormat(endDate, 'yyyy-MM-dd HH:mm:ss')
+      .minus({ millisecond: diff.milliseconds })
+      .toFormat('yyyy-MM-dd HH:mm:ss'),
+  };
 }

@@ -66,7 +66,7 @@ export interface DockerComposeFile {
       restart: string;
       ports: string[];
       volumes: string[];
-      depends_on: string[];
+      depends_on?: Record<string, { condition: string }> | string[];
     }
   >;
   volumes?: Record<string, unknown>;
@@ -104,11 +104,19 @@ function removeServiceFromDockerCompose(serviceName: string) {
 
   // filter depends_on
   Object.keys(dockerCompose.services).forEach((service) => {
-    if (dockerCompose.services[service]?.depends_on) {
-      // @ts-expect-error
-      dockerCompose.services[service].depends_on = dockerCompose.services[
-        service
-      ].depends_on.filter((dep) => dep !== serviceName);
+    const serviceConfig = dockerCompose.services[service];
+    if (serviceConfig?.depends_on) {
+      if (Array.isArray(serviceConfig.depends_on)) {
+        // Handle legacy array format
+        serviceConfig.depends_on = serviceConfig.depends_on.filter(
+          (dep) => dep !== serviceName,
+        );
+      } else {
+        // Handle new object format
+        if (serviceConfig.depends_on[serviceName]) {
+          delete serviceConfig.depends_on[serviceName];
+        }
+      }
     }
   });
 

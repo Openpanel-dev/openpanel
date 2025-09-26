@@ -6,12 +6,15 @@
   "author": "Carl-Gerhard Lindesvärd",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "test": "vitest",
+    "gen:bots": "pnpm -r --filter api gen:bots",
+    "gen:referrers": "pnpm -r --filter worker gen:referrers",
     "dock:up": "docker compose up -d",
     "dock:down": "docker compose down",
     "dock:ch": "docker compose exec -it op-ch clickhouse-client -d openpanel",
     "dock:redis": "docker compose exec -it op-kv redis-cli",
     "db:codegen": "pnpm -r --filter db run codegen",
-    "codegen": "pnpm db:codegen",
+    "codegen": "pnpm -r --filter db --filter geo run codegen",
     "migrate": "pnpm -r --filter db run migrate",
     "migrate:deploy": "pnpm -r --filter db run migrate:deploy",
     "dev": "pnpm -r --parallel testing",
@@ -25,7 +28,7 @@
     "update-simple-git-hooks": "npx simple-git-hooks"
   },
   "simple-git-hooks": {
-    "pre-push": "pnpm typecheck"
+    "pre-push": "pnpm typecheck && pnpm test"
   },
   "dependencies": {
     "@hyperdx/node-opentelemetry": "^0.8.1",
@@ -48,6 +51,7 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "1.9.1",
-    "simple-git-hooks": "^2.12.1"
+    "simple-git-hooks": "^2.12.1",
+    "vitest": "^3.0.4"
   }
 }

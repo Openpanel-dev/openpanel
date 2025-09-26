@@ -10,6 +10,7 @@ export interface SqlBuilderObject {
   joins: Record<string, string>;
   limit: number | undefined;
   offset: number | undefined;
+  fill: string | undefined;
 }
 
 export function createSqlBuilder() {
@@ -26,6 +27,7 @@ export function createSqlBuilder() {
     joins: {},
     limit: undefined,
     offset: undefined,
+    fill: undefined,
   };
 
   const getWhere = () =>
@@ -43,6 +45,7 @@ export function createSqlBuilder() {
   const getOffset = () => (sb.offset ? `OFFSET ${sb.offset}` : '');
   const getJoins = () =>
     Object.keys(sb.joins).length ? join(sb.joins, ' ') : '';
+  const getFill = () => (sb.fill ? `WITH FILL ${sb.fill}` : '');
 
   return {
     sb,
@@ -54,6 +57,7 @@ export function createSqlBuilder() {
     getOrderBy,
     getHaving,
     getJoins,
+    getFill,
     getSql: () => {
       const sql = [
         getSelect(),
@@ -65,6 +69,7 @@ export function createSqlBuilder() {
         getOrderBy(),
         getLimit(),
         getOffset(),
+        getFill(),
       ]
         .filter(Boolean)
         .join(' ');

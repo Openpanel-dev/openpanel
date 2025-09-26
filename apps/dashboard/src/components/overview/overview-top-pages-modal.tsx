@@ -34,7 +34,6 @@ export default function OverviewTopPagesModal({
       endDate,
       mode: 'page',
       range,
-      interval: 'day',
       limit: 50,
     },
     {
@@ -47,7 +46,7 @@ export default function OverviewTopPagesModal({
   return (
     <ModalContent>
       <ModalHeader title="Top Pages" />
-      <ScrollArea className="-mx-6 px-2 max-h-[calc(80vh)]">
+      <ScrollArea className="-mx-6 px-2">
         <OverviewWidgetTablePages
           data={data ?? []}
           lastColumnName={'Sessions'}

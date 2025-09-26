@@ -36,7 +36,11 @@ export async function bootCron() {
     },
   ];
 
-  if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
+  if (
+    (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true' ||
+      process.env.SELF_HOSTED) &&
+    process.env.NODE_ENV === 'production'
+  ) {
     jobs.push({
       name: 'ping',
       type: 'ping',

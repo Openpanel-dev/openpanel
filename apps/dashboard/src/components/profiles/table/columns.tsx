@@ -30,6 +30,20 @@ export function useColumns(type?: 'profiles' | 'power-users') {
       },
     },
     {
+      accessorKey: 'referrer',
+      header: 'Referrer',
+      cell({ row }) {
+        const { referrer, referrer_name } = row.original.properties;
+        const ref = referrer_name || referrer;
+        return (
+          <div className="flex min-w-0 items-center gap-2">
+            <SerieIcon name={ref} />
+            <span className="truncate">{ref}</span>
+          </div>
+        );
+      },
+    },
+    {
       accessorKey: 'country',
       header: 'Country',
       cell({ row }) {

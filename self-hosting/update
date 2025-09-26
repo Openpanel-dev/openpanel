@@ -6,6 +6,6 @@ echo "Pulling latest docker images"
 docker compose pull
 
 echo "Restarting services"
-docker compose restart
+docker compose up -d --remove-orphans
 
 echo "Done"

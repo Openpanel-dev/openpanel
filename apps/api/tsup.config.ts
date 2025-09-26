@@ -11,7 +11,7 @@ const options: Options = {
     '@node-rs/argon2',
     'bcrypt',
   ],
-  ignoreWatch: ['../../**/{.git,node_modules}/**'],
+  ignoreWatch: ['../../**/{.git,node_modules,dist}/**'],
   sourcemap: true,
   splitting: false,
 };

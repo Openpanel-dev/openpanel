@@ -47,14 +47,6 @@ export function useColumns() {
       },
     },
     {
-      accessorKey: 'integration',
-      header: 'Integration',
-      cell({ row }) {
-        const integration = row.original.integration;
-        return <div>{integration?.name}</div>;
-      },
-    },
-    {
       accessorKey: 'notificationRule',
       header: 'Rule',
       cell({ row }) {

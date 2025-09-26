@@ -57,6 +57,10 @@ async function start() {
       });
   });
 
+  app.get('/healthcheck', (req, res) => {
+    res.json({ status: 'ok' });
+  });
+
   app.listen(PORT, () => {
     console.log(`For the UI, open http://localhost:${PORT}/`);
   });

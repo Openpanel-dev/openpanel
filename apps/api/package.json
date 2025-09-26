@@ -6,7 +6,6 @@
     "testing": "API_PORT=3333 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsup",
-    "gen:referrers": "jiti scripts/get-referrers.ts && biome format --write src/referrers/index.ts",
     "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -23,6 +22,7 @@
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
     "@openpanel/db": "workspace:*",
+    "@openpanel/geo": "workspace:*",
     "@openpanel/integrations": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",

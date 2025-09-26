@@ -16,16 +16,8 @@ import { ReportBreakdownMore } from './ReportBreakdownMore';
 import type { ReportEventMoreProps } from './ReportEventMore';
 
 export function ReportBreakdowns() {
-  const { projectId } = useAppParams();
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
-
   const dispatch = useDispatch();
-  const properties = useEventProperties({
-    projectId,
-  }).map((item) => ({
-    value: item,
-    label: item, // <RenderDots truncate>{item}</RenderDots>,
-  }));
 
   const handleMore = (breakdown: IChartBreakdown) => {
     const callback: ReportEventMoreProps['onClick'] = (action) => {

@@ -5,10 +5,13 @@ import type {
   UseQueryResult,
 } from '@tanstack/react-query';
 import { GanttChartIcon, Loader2Icon } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
+import { pushModal, replaceWithModal, useOnPushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
+import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
+import { bind } from 'bind-event-listener';
 import { useInViewport } from 'react-in-viewport';
 import { useColumns } from './columns';
 import { EventsDataTable } from './events-data-table';
@@ -37,6 +40,48 @@ export const EventsTable = ({ query, ...props }: Props) => {
   const hasNextPage = isInfiniteQuery
     ? query.data?.pages[query.data.pages.length - 1]?.meta.next
     : query.data?.meta.next;
+
+  const [eventId, setEventId] = useState<null | string>(null);
+  useOnPushModal('EventDetails', (isOpen, props) => {
+    setEventId(isOpen ? props.id : null);
+  });
+
+  useEffect(() => {
+    return bind(window, {
+      type: 'keydown',
+      listener(event) {
+        if (shouldIgnoreKeypress(event)) {
+          return;
+        }
+
+        if (event.key === 'ArrowLeft') {
+          const index = data.findIndex((p) => p.id === eventId);
+          if (index !== -1) {
+            const match = data[index - 1];
+            if (match) {
+              replaceWithModal('EventDetails', match);
+            }
+          }
+        }
+        if (event.key === 'ArrowRight') {
+          const index = data.findIndex((p) => p.id === eventId);
+          if (index !== -1) {
+            const match = data[index + 1];
+            if (match) {
+              replaceWithModal('EventDetails', match);
+            } else if (
+              hasNextPage &&
+              isInfiniteQuery &&
+              data.length > 0 &&
+              query.isFetchingNextPage === false
+            ) {
+              query.fetchNextPage();
+            }
+          }
+        }
+      },
+    });
+  }, [data, eventId]);
 
   useEffect(() => {
     if (

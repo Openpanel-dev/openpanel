@@ -1,3 +1,6 @@
+import { TABLE_NAMES, ch } from '../clickhouse/client';
+import { clix } from '../clickhouse/query-builder';
+
 export type IClickhouseSession = {
   id: string;
   profile_id: string;
@@ -39,3 +42,19 @@ export type IClickhouseSession = {
   version: number;
   properties: Record<string, string>;
 };
+
+class SessionService {
+  constructor(private client: typeof ch) {}
+
+  byId(sessionId: string, projectId: string) {
+    return clix(this.client)
+      .select<IClickhouseSession>(['*'])
+      .from(TABLE_NAMES.sessions)
+      .where('id', '=', sessionId)
+      .where('project_id', '=', projectId)
+      .execute()
+      .then((res) => res[0]);
+  }
+}
+
+export const sessionService = new SessionService(ch);

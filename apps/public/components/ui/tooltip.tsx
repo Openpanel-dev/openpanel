@@ -11,6 +11,8 @@ const Tooltip = TooltipPrimitive.Root;
 
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
+const TooltipPortal = TooltipPrimitive.Portal;
+
 const TooltipContent = ({
   ref,
   className,
@@ -32,3 +34,20 @@ const TooltipContent = ({
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+
+export const Tooltiper = ({
+  children,
+  content,
+  delayDuration = 0,
+
+  ...props
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & {
+  delayDuration?: number;
+}) => (
+  <Tooltip delayDuration={delayDuration}>
+    <TooltipTrigger asChild>{children}</TooltipTrigger>
+    <TooltipPortal>
+      <TooltipContent {...props}>{content}</TooltipContent>
+    </TooltipPortal>
+  </Tooltip>
+);

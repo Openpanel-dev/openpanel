@@ -1,10 +1,11 @@
-import { getClientIp, parseIp } from '@/utils/parse-ip';
+import { getClientIp } from '@/utils/get-client-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr } from 'ramda';
 
 import { checkDuplicatedEvent, isDuplicatedEvent } from '@/utils/deduplicate';
 import { parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, upsertProfile } from '@openpanel/db';
+import { getGeoLocation } from '@openpanel/geo';
 import type {
   IncrementProfilePayload,
   UpdateProfilePayload,
@@ -24,7 +25,7 @@ export async function updateProfile(
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const uaInfo = parseUserAgent(ua, properties);
-  const geo = await parseIp(ip);
+  const geo = await getGeoLocation(ip);
 
   if (
     await checkDuplicatedEvent({

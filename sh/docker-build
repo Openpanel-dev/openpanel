@@ -21,7 +21,7 @@ fi
 if [ -z "$PRERELEASE" ]; then
     read -p "You're building WITHOUT any pre-release ($VERSION). Do you wish to continue (y/N)? " -n 1 -r
 else
-    read -p "You're building WITH pre-release ($VERSION-$PRERELEASE). Do you wish to continue (y/N)? " -n 1 -r
+    read -p "You're building WITH pre-release ($VERSION). Do you wish to continue (y/N)? " -n 1 -r
 fi
 echo    # Move to a new line
 if [[ ! $REPLY =~ ^[Yy]$ ]]
@@ -38,36 +38,37 @@ docker buildx create --name multi-arch-builder --use || true
 build_image() {
     local app=$1
     local image_name="lindesvard/openpanel-$app"
-    
-    
-    # Prepare tags based on whether PRERELEASE is provided
-    if [ -z "$PRERELEASE" ]; then
-        echo "Building multi-architecture image for $image_name:$VERSION"
+    local full_version="$image_name:$VERSION"
+
+    if [ -n "$PRERELEASE" ]; then
+        echo "(pre-release) Building multi-architecture image for $full_version"
         docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t "$image_name:$VERSION" \
-            -t "$image_name:latest" \
+            -t "$full_version" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+            --build-arg NEXT_PUBLIC_SELF_HOSTED="true" \
             -f "apps/$app/Dockerfile" \
             --push \
             .
     else
-        echo "Building multi-architecture image for $image_name:$VERSION-$PRERELEASE"
+        echo "(latest) Building multi-architecture image for $full_version"
         docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t "$image_name:$VERSION-$PRERELEASE" \
+            -t "$full_version" \
+            -t "$image_name:latest" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
+            --build-arg NEXT_PUBLIC_SELF_HOSTED="true" \
             -f "apps/$app/Dockerfile" \
             --push \
             .
     fi
     
     if [ $? -ne 0 ]; then
-        echo "Failed to build $image_name:$VERSION"
+        echo "Failed to build $full_version"
         exit 1
     fi
     
-    echo "Successfully built and pushed multi-architecture image for $image_name:$VERSION"
+    echo "Successfully built and pushed multi-architecture image for $full_version"
 }
 
 if [ "$APP" == "all" ]; then

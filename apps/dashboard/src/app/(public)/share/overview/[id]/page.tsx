@@ -11,7 +11,7 @@ import { notFound } from 'next/navigation';
 
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { OverviewRange } from '@/components/overview/overview-range';
-import { getOrganizationBySlug, getShareOverviewById } from '@openpanel/db';
+import { getOrganizationById, getShareOverviewById } from '@openpanel/db';
 import { cookies } from 'next/headers';
 
 interface PageProps {
@@ -35,7 +35,7 @@ export default async function Page({
     return notFound();
   }
   const projectId = share.projectId;
-  const organization = await getOrganizationBySlug(share.organizationId);
+  const organization = await getOrganizationById(share.organizationId);
 
   if (share.password) {
     const cookie = cookies().get(`shared-overview-${share.id}`)?.value;

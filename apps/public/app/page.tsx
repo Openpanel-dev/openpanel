@@ -7,6 +7,7 @@ import { Pricing } from '@/components/sections/pricing';
 import { Sdks } from '@/components/sections/sdks';
 import { Stats, StatsPure } from '@/components/sections/stats';
 import { Testimonials } from '@/components/sections/testimonials';
+import { WhyOpenPanel } from '@/components/why-openpanel';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 
@@ -22,15 +23,9 @@ export default function HomePage() {
       <Navbar />
       <main>
         <Hero />
+        <WhyOpenPanel />
         <Features />
         <Testimonials />
-        <Suspense
-          fallback={
-            <StatsPure projectCount={0} eventCount={0} last24hCount={0} />
-          }
-        >
-          <Stats />
-        </Suspense>
         <Faq />
         <Pricing />
         <Sdks />

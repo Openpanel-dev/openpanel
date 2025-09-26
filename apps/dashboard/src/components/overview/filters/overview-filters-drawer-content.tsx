@@ -21,6 +21,7 @@ import type {
   IChartEventFilterValue,
 } from '@openpanel/validation';
 
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { useOverviewOptions } from '../useOverviewOptions';
 import { OriginFilter } from './origin-filter';
 
@@ -41,7 +42,6 @@ export function OverviewFiltersDrawerContent({
   enableEventsFilter,
   mode,
 }: OverviewFiltersDrawerContentProps) {
-  const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters(nuqsOptions);
   const [event, setEvent] = useEventQueryNamesFilter(nuqsOptions);
   const eventNames = useEventNames({ projectId });
@@ -59,18 +59,16 @@ export function OverviewFiltersDrawerContent({
         <div className="flex flex-col gap-4 p-4">
           <OriginFilter />
           {enableEventsFilter && (
-            <ComboboxAdvanced
+            <ComboboxEvents
               className="w-full"
               value={event}
               onChange={setEvent}
-              // First items is * which is only used for report editing
-              items={eventNames
-                .filter((item) => !excludePropertyFilter(item.name))
-                .map((item) => ({
-                  label: item.name,
-                  value: item.name,
-                }))}
+              multiple
+              items={eventNames.filter(
+                (item) => !excludePropertyFilter(item.name),
+              )}
               placeholder="Select event"
+              maxDisplayItems={2}
             />
           )}
           <Combobox

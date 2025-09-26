@@ -54,6 +54,7 @@ model Organization {
   ShareOverview   ShareOverview[]
   integrations    Integration[]
   invites         Invite[]
+  timezone        String?
 
   // Subscription
   subscriptionId                          String?

@@ -10,10 +10,14 @@ import {
   db,
   eventService,
   formatClickhouseDate,
+  getChartStartEndDate,
+  getConversionEventNames,
   getEventList,
+  getEventMetasCached,
   getEvents,
-  getTopPages,
+  getSettingsForProject,
   overviewService,
+  sessionService,
 } from '@openpanel/db';
 import {
   zChartEventFilter,
@@ -21,12 +25,10 @@ import {
   zTimeInterval,
 } from '@openpanel/validation';
 
-import { addMinutes, subDays, subMinutes } from 'date-fns';
 import { clone } from 'ramda';
 import { getProjectAccessCached } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { getChartStartEndDate } from './chart.helpers';
 
 export const eventRouter = createTRPCRouter({
   updateEventMeta: protectedProcedure
@@ -41,6 +43,7 @@ export const eventRouter = createTRPCRouter({
     )
     .mutation(
       async ({ input: { projectId, name, icon, color, conversion } }) => {
+        await getEventMetasCached.clear(projectId);
         return db.eventMeta.upsert({
           where: {
             name_projectId: {
@@ -79,6 +82,36 @@ export const eventRouter = createTRPCRouter({
       return res;
     }),
 
+  details: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        projectId: z.string(),
+        createdAt: z.date().optional(),
+      }),
+    )
+    .query(async ({ input: { id, projectId, createdAt } }) => {
+      const res = await eventService.getById({
+        projectId,
+        id,
+        createdAt,
+      });
+
+      if (!res) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'Event not found',
+        });
+      }
+
+      const session = await sessionService.byId(res?.sessionId, projectId);
+
+      return {
+        event: res,
+        session,
+      };
+    }),
+
   events: protectedProcedure
     .input(
       z.object({
@@ -96,6 +129,12 @@ export const eventRouter = createTRPCRouter({
         ...input,
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
+        select: {
+          properties: true,
+          sessionId: true,
+          deviceId: true,
+          profileId: true,
+        },
       });
 
       // Hacky join to get profile for entire session
@@ -137,12 +176,7 @@ export const eventRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { projectId, cursor } }) => {
-      const conversions = await db.eventMeta.findMany({
-        where: {
-          projectId,
-          conversion: true,
-        },
-      });
+      const conversions = await getConversionEventNames(projectId);
 
       if (conversions.length === 0) {
         return {
@@ -240,7 +274,8 @@ export const eventRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      const { startDate, endDate } = getChartStartEndDate(input);
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
       if (input.search) {
         input.filters.push({
           id: 'path',
@@ -254,9 +289,9 @@ export const eventRouter = createTRPCRouter({
         filters: input.filters,
         startDate,
         endDate,
-        interval: input.interval,
         cursor: input.cursor || 1,
         limit: input.take,
+        timezone,
       });
     }),
 

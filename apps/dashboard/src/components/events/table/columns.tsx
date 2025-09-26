@@ -1,7 +1,6 @@
 import { EventIcon } from '@/components/events/event-icon';
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { TooltipComplete } from '@/components/tooltip-complete';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { pushModal } from '@/modals';
 import { formatDateTime, formatTime } from '@/utils/date';
@@ -9,6 +8,7 @@ import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
 
+import { ScrollArea } from '@/components/ui/scroll-area';
 import type { IServiceEvent } from '@openpanel/db';
 
 export function useColumns() {
@@ -101,19 +101,52 @@ export function useColumns() {
       accessorKey: 'profileId',
       header: 'Profile',
       cell({ row }) {
-        const { profile } = row.original;
-        if (!profile) {
-          return null;
+        const { profile, profileId, deviceId } = row.original;
+        if (profile) {
+          return (
+            <ProjectLink
+              href={`/profiles/${profile.id}`}
+              className="whitespace-nowrap font-medium hover:underline"
+            >
+              {getProfileName(profile)}
+            </ProjectLink>
+          );
         }
-        return (
-          <ProjectLink
-            href={`/profiles/${profile.id}`}
-            className="whitespace-nowrap font-medium hover:underline"
-          >
-            {getProfileName(profile)}
-          </ProjectLink>
-        );
+
+        if (profileId && profileId !== deviceId) {
+          return (
+            <ProjectLink
+              href={`/profiles/${profileId}`}
+              className="whitespace-nowrap font-medium hover:underline"
+            >
+              Unknown
+            </ProjectLink>
+          );
+        }
+
+        if (deviceId) {
+          return (
+            <ProjectLink
+              href={`/profiles/${deviceId}`}
+              className="whitespace-nowrap font-medium hover:underline"
+            >
+              Anonymous
+            </ProjectLink>
+          );
+        }
+
+        return null;
       },
+    },
+    {
+      accessorKey: 'sessionId',
+      header: 'Session ID',
+      size: 320,
+    },
+    {
+      accessorKey: 'deviceId',
+      header: 'Device ID',
+      size: 320,
     },
     {
       accessorKey: 'country',
@@ -154,6 +187,27 @@ export function useColumns() {
             <SerieIcon name={browser} />
             <span className="truncate">{browser}</span>
           </div>
+        );
+      },
+    },
+    {
+      accessorKey: 'properties',
+      header: 'Properties',
+      size: 400,
+      meta: {
+        className: 'p-0 [&_pre]:p-4',
+      },
+      cell({ row }) {
+        const { properties } = row.original;
+        const filteredProperties = Object.fromEntries(
+          Object.entries(properties || {}).filter(
+            ([key]) => !key.startsWith('__'),
+          ),
+        );
+        return (
+          <ScrollArea orientation="horizontal">
+            <pre>{JSON.stringify(filteredProperties)}</pre>
+          </ScrollArea>
         );
       },
     },

@@ -1,0 +1,63 @@
+---
+title: Authentication
+description: Learn how to authenticate with the OpenPanel API using client credentials.
+---
+
+## Authentication
+
+To authenticate with the OpenPanel API, you need to use your `clientId` and `clientSecret`. Different API endpoints may require different access levels:
+
+- **Track API**: Default client works with `track` mode
+- **Export API**: Requires `read` or `root` mode
+- **Insights API**: Requires `read` or `root` mode
+
+The default client does not have access to the Export or Insights APIs.
+
+## Headers
+
+Include the following headers with your API requests:
+
+- `openpanel-client-id`: Your OpenPanel client ID
+- `openpanel-client-secret`: Your OpenPanel client secret
+
+## Example
+
+```bash
+curl 'https://api.openpanel.dev/insights/{projectId}/metrics' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+## Security Best Practices
+
+1. **Store credentials securely**: Never expose your `clientId` and `clientSecret` in client-side code
+2. **Use HTTPS**: Always use HTTPS to ensure secure communication
+3. **Rotate credentials**: Regularly rotate your API credentials
+4. **Limit access**: Use the minimum required access level for your use case
+
+## Error Responses
+
+If authentication fails, you'll receive a `401 Unauthorized` response:
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid client credentials"
+}
+```
+
+Common authentication errors:
+- Invalid client ID or secret
+- Client doesn't have required permissions
+- Malformed client ID
+
+## Rate Limiting
+
+The API implements rate limiting to prevent abuse. Rate limits vary by endpoint:
+
+- **Track API**: Higher limits for event tracking
+- **Export/Insights APIs**: Lower limits for data retrieval
+
+If you exceed the rate limit, you'll receive a `429 Too Many Requests` response. Implement exponential backoff for retries.
+
+Remember to replace `YOUR_CLIENT_ID` and `YOUR_CLIENT_SECRET` with your actual OpenPanel API credentials.

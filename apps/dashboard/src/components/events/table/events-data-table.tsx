@@ -8,9 +8,10 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import type { ColumnDef } from '@tanstack/react-table';
-import { useVirtualizer, useWindowVirtualizer } from '@tanstack/react-virtual';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import throttle from 'lodash.throttle';
 import { useEffect, useRef, useState } from 'react';
+import { useEventsTableColumns } from './events-table-columns';
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
@@ -21,6 +22,7 @@ export function EventsDataTable<TData>({
   columns,
   data,
 }: DataTableProps<TData>) {
+  const [visibleColumns] = useEventsTableColumns();
   const table = useReactTable({
     data,
     columns,
@@ -74,27 +76,29 @@ export function EventsDataTable<TData>({
         >
           {table.getHeaderGroups().map((headerGroup) => (
             <div className="thead row h-12 sticky top-0" key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                return (
-                  <GridCell
-                    key={header.id}
-                    isHeader
-                    style={{
-                      minWidth: header.column.getSize(),
-                      flexShrink: 1,
-                      overflow: 'hidden',
-                      flex: 1,
-                    }}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </GridCell>
-                );
-              })}
+              {headerGroup.headers
+                .filter((header) => visibleColumns.includes(header.id))
+                .map((header) => {
+                  return (
+                    <GridCell
+                      key={header.id}
+                      isHeader
+                      style={{
+                        minWidth: header.column.getSize(),
+                        flexShrink: 1,
+                        overflow: 'hidden',
+                        flex: 1,
+                      }}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                    </GridCell>
+                  );
+                })}
             </div>
           ))}
           <div ref={parentRef} className="w-full">
@@ -122,24 +126,28 @@ export function EventsDataTable<TData>({
                       }px)`,
                     }}
                   >
-                    {row.getVisibleCells().map((cell) => {
-                      return (
-                        <GridCell
-                          key={cell.id}
-                          style={{
-                            minWidth: cell.column.getSize(),
-                            flexShrink: 1,
-                            overflow: 'hidden',
-                            flex: 1,
-                          }}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
-                        </GridCell>
-                      );
-                    })}
+                    {row
+                      .getVisibleCells()
+                      .filter((cell) => visibleColumns.includes(cell.column.id))
+                      .map((cell) => {
+                        return (
+                          <GridCell
+                            key={cell.id}
+                            className={cell.column.columnDef.meta?.className}
+                            style={{
+                              minWidth: cell.column.getSize(),
+                              flexShrink: 1,
+                              overflow: 'hidden',
+                              flex: 1,
+                            }}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </GridCell>
+                        );
+                      })}
                   </div>
                 );
               })}

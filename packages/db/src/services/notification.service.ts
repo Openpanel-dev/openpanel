@@ -13,6 +13,7 @@ import type {
   IServiceCreateEventPayload,
   IServiceEvent,
 } from './event.service';
+import { getProfileById, getProfileByIdCached } from './profile.service';
 import { getProjectByIdCached } from './project.service';
 
 type ICreateNotification = Pick<
@@ -116,21 +117,28 @@ function getIntegration(integrationId: string | null) {
 }
 
 export async function createNotification(notification: ICreateNotification) {
-  const res = await db.notification.create({
-    data: {
-      title: notification.title,
-      message: notification.message,
-      projectId: notification.projectId,
-      payload: notification.payload || Prisma.DbNull,
-      ...getIntegration(notification.integrationId),
-      notificationRuleId: notification.notificationRuleId,
-    },
-  });
+  const data: Prisma.NotificationUncheckedCreateInput = {
+    title: notification.title,
+    message: notification.message,
+    projectId: notification.projectId,
+    payload: notification.payload || Prisma.DbNull,
+    ...getIntegration(notification.integrationId),
+    notificationRuleId: notification.notificationRuleId,
+  };
 
-  return triggerNotification(res);
+  // Only create notifications for app
+  if (data.sendToApp) {
+    await db.notification.create({
+      data,
+    });
+  }
+
+  return triggerNotification(data);
 }
 
-export function triggerNotification(notification: Notification) {
+export function triggerNotification(
+  notification: Prisma.NotificationUncheckedCreateInput,
+) {
   return notificationQueue.add('sendNotification', {
     type: 'sendNotification',
     payload: {
@@ -220,7 +228,10 @@ function notificationTemplateEvent({
     const value = pathOr('', path.split('.'), payload);
 
     if (value) {
-      template = template.replaceAll(match, JSON.stringify(value));
+      template = template.replaceAll(
+        match,
+        typeof value === 'object' ? JSON.stringify(value) : value,
+      );
     }
   }
 
@@ -245,6 +256,22 @@ export async function checkNotificationRulesForEvent(
 ) {
   const project = await getProjectByIdCached(payload.projectId);
   const rules = await getNotificationRulesByProjectId(payload.projectId);
+
+  // If profile is present in the template, add it to the payload (event)
+  // so we can use it in the template
+  if (
+    payload.profileId &&
+    rules.some((rule) => rule.template?.match(/{{profile\.[^}]*}}/))
+  ) {
+    const profile = await getProfileByIdCached(
+      payload.profileId,
+      payload.projectId,
+    );
+    if (profile) {
+      (payload as any).profile = profile;
+    }
+  }
+
   await Promise.all(
     rules.flatMap((rule) => {
       if (rule.config.type === 'events') {

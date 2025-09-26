@@ -13,6 +13,9 @@ ENV DATABASE_URL=$DATABASE_URL
 ARG ENABLE_INSTRUMENTATION_HOOK
 ENV ENABLE_INSTRUMENTATION_HOOK=$ENABLE_INSTRUMENTATION_HOOK
 
+ARG NEXT_PUBLIC_SELF_HOSTED
+ENV NEXT_PUBLIC_SELF_HOSTED=$NEXT_PUBLIC_SELF_HOSTED
+
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
@@ -20,6 +23,7 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN apt-get update && apt-get install -y \
     openssl \
     libssl3 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
@@ -41,6 +45,7 @@ COPY packages/common/package.json packages/common/package.json
 COPY packages/auth/package.json packages/auth/package.json
 COPY packages/email/package.json packages/email/package.json
 COPY packages/constants/package.json packages/constants/package.json
+COPY packages/payments/package.json packages/payments/package.json
 COPY packages/validation/package.json packages/validation/package.json
 COPY packages/integrations/package.json packages/integrations/package.json
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/package.json

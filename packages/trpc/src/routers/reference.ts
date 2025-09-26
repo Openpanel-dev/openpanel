@@ -1,12 +1,16 @@
 import { z } from 'zod';
 
-import { db, getReferences } from '@openpanel/db';
+import {
+  db,
+  getChartStartEndDate,
+  getReferences,
+  getSettingsForProject,
+} from '@openpanel/db';
 import { zCreateReference, zRange } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
-import { getChartStartEndDate } from './chart.helpers';
 
 export const referenceRouter = createTRPCRouter({
   create: protectedProcedure
@@ -56,8 +60,9 @@ export const referenceRouter = createTRPCRouter({
         range: zRange,
       }),
     )
-    .query(({ input: { projectId, ...input } }) => {
-      const { startDate, endDate } = getChartStartEndDate(input);
+    .query(async ({ input: { projectId, ...input } }) => {
+      const { timezone } = await getSettingsForProject(projectId);
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
       return getReferences({
         where: {
           projectId,

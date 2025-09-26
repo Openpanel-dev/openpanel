@@ -15,39 +15,42 @@ export const zGetMetricsInput = z.object({
   interval: zTimeInterval,
 });
 
-export type IGetMetricsInput = z.infer<typeof zGetMetricsInput>;
+export type IGetMetricsInput = z.infer<typeof zGetMetricsInput> & {
+  timezone: string;
+};
 
 export const zGetTopPagesInput = z.object({
   projectId: z.string(),
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
-  interval: zTimeInterval,
   cursor: z.number().optional(),
   limit: z.number().optional(),
 });
 
-export type IGetTopPagesInput = z.infer<typeof zGetTopPagesInput>;
+export type IGetTopPagesInput = z.infer<typeof zGetTopPagesInput> & {
+  timezone: string;
+};
 
 export const zGetTopEntryExitInput = z.object({
   projectId: z.string(),
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
-  interval: zTimeInterval,
   mode: z.enum(['entry', 'exit']),
   cursor: z.number().optional(),
   limit: z.number().optional(),
 });
 
-export type IGetTopEntryExitInput = z.infer<typeof zGetTopEntryExitInput>;
+export type IGetTopEntryExitInput = z.infer<typeof zGetTopEntryExitInput> & {
+  timezone: string;
+};
 
 export const zGetTopGenericInput = z.object({
   projectId: z.string(),
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
-  interval: zTimeInterval,
   column: z.enum([
     // Referrers
     'referrer',
@@ -75,7 +78,9 @@ export const zGetTopGenericInput = z.object({
   limit: z.number().optional(),
 });
 
-export type IGetTopGenericInput = z.infer<typeof zGetTopGenericInput>;
+export type IGetTopGenericInput = z.infer<typeof zGetTopGenericInput> & {
+  timezone: string;
+};
 
 export class OverviewService {
   private pendingQueries: Map<string, Promise<number | null>> = new Map();
@@ -91,11 +96,13 @@ export class OverviewService {
     startDate,
     endDate,
     filters,
+    timezone,
   }: {
     projectId: string;
     startDate: string;
     endDate: string;
     filters: IChartEventFilter[];
+    timezone: string;
   }) {
     const where = this.getRawWhereClause('sessions', filters);
     const key = `total_sessions_${projectId}_${startDate}_${endDate}_${JSON.stringify(filters)}`;
@@ -109,15 +116,15 @@ export class OverviewService {
     // Create new query promise and store it
     const queryPromise = getCache(key, 15, async () => {
       try {
-        const result = await clix(this.client)
+        const result = await clix(this.client, timezone)
           .select<{
             total_sessions: number;
           }>(['sum(sign) as total_sessions'])
           .from(TABLE_NAMES.sessions, true)
           .where('project_id', '=', projectId)
           .where('created_at', 'BETWEEN', [
-            clix.datetime(startDate),
-            clix.datetime(endDate),
+            clix.datetime(startDate, 'toDateTime'),
+            clix.datetime(endDate, 'toDateTime'),
           ])
           .rawWhere(where)
           .having('sum(sign)', '>', 0)
@@ -138,6 +145,7 @@ export class OverviewService {
     startDate,
     endDate,
     interval,
+    timezone,
   }: IGetMetricsInput): Promise<{
     metrics: {
       bounce_rate: number;
@@ -157,20 +165,30 @@ export class OverviewService {
       views_per_session: number;
     }[];
   }> {
+    console.log('-----------------');
+    console.log('getMetrics', {
+      projectId,
+      filters,
+      startDate,
+      endDate,
+      interval,
+      timezone,
+    });
+
     const where = this.getRawWhereClause('sessions', filters);
     if (this.isPageFilter(filters)) {
       // Session aggregation with bounce rates
-      const sessionAggQuery = clix(this.client)
+      const sessionAggQuery = clix(this.client, timezone)
         .select([
-          `${clix.toStartOfInterval('created_at', interval, startDate)} AS date`,
+          `${clix.toStartOf('created_at', interval, timezone)} AS date`,
           'round((countIf(is_bounce = 1 AND sign = 1) * 100.) / countIf(sign = 1), 2) AS bounce_rate',
         ])
         .from(TABLE_NAMES.sessions, true)
         .where('sign', '=', 1)
         .where('project_id', '=', projectId)
         .where('created_at', 'BETWEEN', [
-          clix.datetime(startDate),
-          clix.datetime(endDate),
+          clix.datetime(startDate, 'toDateTime'),
+          clix.datetime(endDate, 'toDateTime'),
         ])
         .rawWhere(where)
         .groupBy(['date'])
@@ -178,7 +196,7 @@ export class OverviewService {
         .orderBy('date', 'ASC');
 
       // Overall unique visitors
-      const overallUniqueVisitorsQuery = clix(this.client)
+      const overallUniqueVisitorsQuery = clix(this.client, timezone)
         .select([
           'uniq(profile_id) AS unique_visitors',
           'uniq(session_id) AS total_sessions',
@@ -187,23 +205,23 @@ export class OverviewService {
         .where('project_id', '=', projectId)
         .where('name', '=', 'screen_view')
         .where('created_at', 'BETWEEN', [
-          clix.datetime(startDate),
-          clix.datetime(endDate),
+          clix.datetime(startDate, 'toDateTime'),
+          clix.datetime(endDate, 'toDateTime'),
         ])
         .rawWhere(this.getRawWhereClause('events', filters));
 
-      return clix(this.client)
+      return clix(this.client, timezone)
         .with('session_agg', sessionAggQuery)
         .with(
           'overall_bounce_rate',
-          clix(this.client)
+          clix(this.client, timezone)
             .select(['bounce_rate'])
             .from('session_agg')
             .where('date', '=', clix.exp("'1970-01-01 00:00:00'")),
         )
         .with(
           'daily_stats',
-          clix(this.client)
+          clix(this.client, timezone)
             .select(['date', 'bounce_rate'])
             .from('session_agg')
             .where('date', '!=', clix.exp("'1970-01-01 00:00:00'")),
@@ -221,7 +239,7 @@ export class OverviewService {
           overall_total_sessions: number;
           overall_bounce_rate: number;
         }>([
-          `${clix.toStartOfInterval('e.created_at', interval, startDate)} AS date`,
+          `${clix.toStartOf('e.created_at', interval)} AS date`,
           'ds.bounce_rate as bounce_rate',
           'uniq(e.profile_id) AS unique_visitors',
           'uniq(e.session_id) AS total_sessions',
@@ -236,20 +254,29 @@ export class OverviewService {
         .from(`${TABLE_NAMES.events} AS e`)
         .leftJoin(
           'daily_stats AS ds',
-          `${clix.toStartOfInterval('e.created_at', interval, startDate)} = ds.date`,
+          `${clix.toStartOf('e.created_at', interval)} = ds.date`,
         )
         .where('e.project_id', '=', projectId)
         .where('e.name', '=', 'screen_view')
         .where('e.created_at', 'BETWEEN', [
-          clix.datetime(startDate),
-          clix.datetime(endDate),
+          clix.datetime(startDate, 'toDateTime'),
+          clix.datetime(endDate, 'toDateTime'),
         ])
         .rawWhere(this.getRawWhereClause('events', filters))
         .groupBy(['date', 'ds.bounce_rate'])
         .orderBy('date', 'ASC')
         .fill(
-          clix.toStartOfInterval(clix.datetime(startDate), interval, startDate),
-          clix.toStartOfInterval(clix.datetime(endDate), interval, startDate),
+          clix.toStartOf(
+            clix.datetime(
+              startDate,
+              ['month', 'week'].includes(interval) ? 'toDate' : 'toDateTime',
+            ),
+            interval,
+          ),
+          clix.datetime(
+            endDate,
+            ['month', 'week'].includes(interval) ? 'toDate' : 'toDateTime',
+          ),
           clix.toInterval('1', interval),
         )
         .transform({
@@ -289,7 +316,7 @@ export class OverviewService {
         });
     }
 
-    const query = clix(this.client)
+    const query = clix(this.client, timezone)
       .select<{
         date: string;
         bounce_rate: number;
@@ -299,7 +326,7 @@ export class OverviewService {
         total_screen_views: number;
         views_per_session: number;
       }>([
-        `${clix.toStartOfInterval('created_at', interval, startDate)} AS date`,
+        `${clix.toStartOf('created_at', interval, timezone)} AS date`,
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) as bounce_rate',
         'uniqIf(profile_id, sign > 0) AS unique_visitors',
         'sum(sign) AS total_sessions',
@@ -310,8 +337,8 @@ export class OverviewService {
       ])
       .from('sessions')
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ])
       .where('project_id', '=', projectId)
       .rawWhere(where)
@@ -320,8 +347,17 @@ export class OverviewService {
       .rollup()
       .orderBy('date', 'ASC')
       .fill(
-        clix.toStartOfInterval(clix.datetime(startDate), interval, startDate),
-        clix.toStartOfInterval(clix.datetime(endDate), interval, startDate),
+        clix.toStartOf(
+          clix.datetime(
+            startDate,
+            ['month', 'week'].includes(interval) ? 'toDate' : 'toDateTime',
+          ),
+          interval,
+        ),
+        clix.datetime(
+          endDate,
+          ['month', 'week'].includes(interval) ? 'toDate' : 'toDateTime',
+        ),
         clix.toInterval('1', interval),
       )
       .transform({
@@ -384,8 +420,9 @@ export class OverviewService {
     endDate,
     cursor = 1,
     limit = 10,
+    timezone,
   }: IGetTopPagesInput) {
-    const pageStatsQuery = clix(this.client)
+    const pageStatsQuery = clix(this.client, timezone)
       .select([
         'origin',
         'path',
@@ -398,15 +435,15 @@ export class OverviewService {
       .where('name', '=', 'screen_view')
       .where('path', '!=', '')
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ])
       .groupBy(['origin', 'path'])
       .orderBy('count', 'DESC')
       .limit(limit)
       .offset((cursor - 1) * limit);
 
-    const bounceStatsQuery = clix(this.client)
+    const bounceStatsQuery = clix(this.client, timezone)
       .select([
         'entry_path',
         'entry_origin',
@@ -416,15 +453,15 @@ export class OverviewService {
       .where('sign', '=', 1)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ])
       .groupBy(['entry_path', 'entry_origin']);
 
     pageStatsQuery.rawWhere(this.getRawWhereClause('events', filters));
     bounceStatsQuery.rawWhere(this.getRawWhereClause('sessions', filters));
 
-    const mainQuery = clix(this.client)
+    const mainQuery = clix(this.client, timezone)
       .with('page_stats', pageStatsQuery)
       .with('bounce_stats', bounceStatsQuery)
       .select<{
@@ -455,6 +492,7 @@ export class OverviewService {
       startDate,
       endDate,
       filters,
+      timezone,
     });
 
     return mainQuery.execute();
@@ -468,6 +506,7 @@ export class OverviewService {
     mode,
     cursor = 1,
     limit = 10,
+    timezone,
   }: IGetTopEntryExitInput) {
     const where = this.getRawWhereClause('sessions', filters);
 
@@ -476,11 +515,12 @@ export class OverviewService {
       filters,
       startDate,
       endDate,
+      timezone,
     });
 
     const offset = (cursor - 1) * limit;
 
-    const query = clix(this.client)
+    const query = clix(this.client, timezone)
       .select<{
         origin: string;
         path: string;
@@ -497,8 +537,8 @@ export class OverviewService {
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ])
       .rawWhere(where)
       .groupBy([`${mode}_origin`, `${mode}_path`])
@@ -510,7 +550,7 @@ export class OverviewService {
     let mainQuery = query;
 
     if (this.isPageFilter(filters)) {
-      mainQuery = clix(this.client)
+      mainQuery = clix(this.client, timezone)
         .with('distinct_sessions', distinctSessionQuery)
         .merge(query)
         .where(
@@ -525,6 +565,7 @@ export class OverviewService {
       startDate,
       endDate,
       filters,
+      timezone,
     });
 
     return mainQuery.execute();
@@ -535,19 +576,21 @@ export class OverviewService {
     filters,
     startDate,
     endDate,
+    timezone,
   }: {
     projectId: string;
     filters: IChartEventFilter[];
     startDate: string;
     endDate: string;
+    timezone: string;
   }) {
-    return clix(this.client)
+    return clix(this.client, timezone)
       .select(['DISTINCT session_id'])
       .from(TABLE_NAMES.events)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ])
       .rawWhere(this.getRawWhereClause('events', filters));
   }
@@ -560,12 +603,14 @@ export class OverviewService {
     column,
     cursor = 1,
     limit = 10,
+    timezone,
   }: IGetTopGenericInput) {
     const distinctSessionQuery = this.getDistinctSessions({
       projectId,
       filters,
       startDate,
       endDate,
+      timezone,
     });
 
     const prefixColumn = (() => {
@@ -584,7 +629,7 @@ export class OverviewService {
 
     const offset = (cursor - 1) * limit;
 
-    const query = clix(this.client)
+    const query = clix(this.client, timezone)
       .select<{
         prefix?: string;
         name: string;
@@ -601,8 +646,8 @@ export class OverviewService {
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ])
       .groupBy([prefixColumn, column].filter(Boolean))
       .having('sum(sign)', '>', 0)
@@ -613,7 +658,7 @@ export class OverviewService {
     let mainQuery = query;
 
     if (this.isPageFilter(filters)) {
-      mainQuery = clix(this.client)
+      mainQuery = clix(this.client, timezone)
         .with('distinct_sessions', distinctSessionQuery)
         .merge(query)
         .where(
@@ -632,6 +677,7 @@ export class OverviewService {
         startDate,
         endDate,
         filters,
+        timezone,
       }),
     ]);
 

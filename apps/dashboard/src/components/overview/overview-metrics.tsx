@@ -4,15 +4,19 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
 
+import { useDashedStroke } from '@/hooks/use-dashed-stroke';
 import { useFormatDateInterval } from '@/hooks/useFormatDateInterval';
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { type RouterOutputs, api } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';
+import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
+import { last } from 'ramda';
 import React from 'react';
 import {
   CartesianGrid,
+  Customized,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -93,6 +97,44 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
   const xAxisProps = useXAxisProps({ interval });
   const yAxisProps = useYAxisProps();
 
+  let dotIndex = undefined;
+  if (range === 'today') {
+    // Find closest index based on times
+    dotIndex = data.findIndex((item) => {
+      return isSameHour(item.date, new Date());
+    });
+  }
+
+  const { calcStrokeDasharray, handleAnimationEnd, getStrokeDasharray } =
+    useDashedStroke({
+      dotIndex,
+    });
+
+  const lastSerieDataItem = last(data)?.date || new Date();
+  const useDashedLastLine = (() => {
+    if (range === 'today') {
+      return true;
+    }
+
+    if (interval === 'hour') {
+      return isSameHour(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'day') {
+      return isSameDay(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'month') {
+      return isSameMonth(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'week') {
+      return isSameWeek(lastSerieDataItem, new Date());
+    }
+
+    return false;
+  })();
+
   return (
     <>
       <div className="relative -top-0.5 col-span-6 -m-4 mb-0 mt-0 md:m-0">
@@ -127,7 +169,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
         </div>
 
         <div className="card p-4">
-          <div className="text-center text-muted-foreground mb-2">
+          <div className="text-center mb-3 -mt-1 text-sm font-medium text-muted-foreground">
             {activeMetric.title}
           </div>
           <div className="w-full h-[150px]">
@@ -135,6 +177,13 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
             <TooltipProvider metric={activeMetric} interval={interval}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
+                  <Customized component={calcStrokeDasharray} />
+                  <Line
+                    dataKey="calcStrokeDasharray"
+                    legendType="none"
+                    animationDuration={0}
+                    onAnimationEnd={handleAnimationEnd}
+                  />
                   <Tooltip />
                   <YAxis
                     {...yAxisProps}
@@ -157,24 +206,24 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
                     key={`prev_${activeMetric.key}`}
                     type="linear"
                     dataKey={`prev_${activeMetric.key}`}
-                    stroke={'hsl(var(--foreground) / 0.2)'}
+                    stroke={'hsl(var(--foreground) / 0.1)'}
                     strokeWidth={2}
                     isAnimationActive={false}
                     dot={
                       data.length > 90
                         ? false
                         : {
-                            stroke: 'hsl(var(--foreground) / 0.2)',
+                            stroke: 'hsl(var(--foreground) / 0.1)',
                             fill: 'hsl(var(--def-100))',
                             strokeWidth: 1.5,
-                            r: 3,
+                            r: 2,
                           }
                     }
                     activeDot={{
                       stroke: 'hsl(var(--foreground) / 0.2)',
                       fill: 'hsl(var(--def-100))',
-                      strokeWidth: 2,
-                      r: 4,
+                      strokeWidth: 1.5,
+                      r: 3,
                     }}
                   />
 
@@ -184,6 +233,11 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
                     dataKey={activeMetric.key}
                     stroke={getChartColor(0)}
                     strokeWidth={2}
+                    strokeDasharray={
+                      useDashedLastLine
+                        ? getStrokeDasharray(activeMetric.key)
+                        : undefined
+                    }
                     isAnimationActive={false}
                     dot={
                       data.length > 90

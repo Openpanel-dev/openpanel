@@ -24,7 +24,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDispatch, useSelector } from '@/redux';
 import { bind } from 'bind-event-listener';
-import { endOfDay, startOfDay } from 'date-fns';
 import { GanttChartSquareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -89,12 +88,8 @@ export default function ReportEditor({
               dispatch(changeDateRanges(value));
             }}
             value={report.range}
-            onStartDateChange={(date) =>
-              dispatch(changeStartDate(startOfDay(date).toISOString()))
-            }
-            onEndDateChange={(date) =>
-              dispatch(changeEndDate(endOfDay(date).toISOString()))
-            }
+            onStartDateChange={(date) => dispatch(changeStartDate(date))}
+            onEndDateChange={(date) => dispatch(changeEndDate(date))}
             endDate={report.endDate}
             startDate={report.startDate}
           />

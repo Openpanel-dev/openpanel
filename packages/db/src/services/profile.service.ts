@@ -1,7 +1,7 @@
 import { omit, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 
-import { toObject } from '@openpanel/common';
+import { strip, toObject } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
@@ -69,7 +69,7 @@ export async function getProfileById(id: string, projectId: string) {
   return transformProfile(profile);
 }
 
-export const getProfileByIdCached = getProfileById; //cacheable(getProfileById, 60 * 30);
+export const getProfileByIdCached = cacheable(getProfileById, 60 * 30);
 
 interface GetProfileListOptions {
   projectId: string;
@@ -142,14 +142,15 @@ export async function getProfileListCount({
   return data[0]?.count ?? 0;
 }
 
-export type IServiceProfile = Omit<
-  IClickhouseProfile,
-  'created_at' | 'properties' | 'first_name' | 'last_name' | 'is_external'
-> & {
+export type IServiceProfile = {
+  id: string;
+  email: string;
+  avatar: string;
   firstName: string;
   lastName: string;
   createdAt: Date;
   isExternal: boolean;
+  projectId: string;
   properties: Record<string, unknown> & {
     region?: string;
     country?: string;
@@ -197,14 +198,15 @@ export function transformProfile({
   ...profile
 }: IClickhouseProfile): IServiceProfile {
   return {
-    ...profile,
     firstName: first_name,
     lastName: last_name,
     isExternal: profile.is_external,
-    properties: profile.properties
-      ? omit(['browserVersion', 'osVersion'], toObject(profile.properties))
-      : {},
+    properties: toObject(profile.properties),
     createdAt: new Date(created_at),
+    projectId: profile.project_id,
+    id: profile.id,
+    email: profile.email,
+    avatar: profile.avatar,
   };
 }
 
@@ -221,18 +223,22 @@ export async function upsertProfile(
   }: IServiceUpsertProfile,
   isFromEvent = false,
 ) {
-  return profileBuffer.add(
-    {
-      id,
-      first_name: firstName!,
-      last_name: lastName!,
-      email: email!,
-      avatar: avatar!,
-      properties: properties as Record<string, string | undefined>,
-      project_id: projectId,
-      created_at: formatClickhouseDate(new Date()),
-      is_external: isExternal,
-    },
-    isFromEvent,
-  );
+  const profile: IClickhouseProfile = {
+    id,
+    first_name: firstName || '',
+    last_name: lastName || '',
+    email: email || '',
+    avatar: avatar || '',
+    properties: strip((properties as Record<string, string | undefined>) || {}),
+    project_id: projectId,
+    created_at: formatClickhouseDate(new Date()),
+    is_external: isExternal,
+  };
+
+  if (!isFromEvent) {
+    // Save to cache directly since the profile might be used before its saved in clickhouse
+    getProfileByIdCached.set(id, projectId)(transformProfile(profile));
+  }
+
+  return profileBuffer.add(profile, isFromEvent);
 }

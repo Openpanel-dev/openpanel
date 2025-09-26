@@ -79,7 +79,7 @@ export default async function Page({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <article className="container max-w-4xl col">
-        <div className="py-16 col gap-3">
+        <div className="pt-16 pb-4 col gap-3">
           <h1 className="text-5xl font-bold">{page.data.title}</h1>
           {page.data.description && (
             <p className="text-muted-foreground text-xl">

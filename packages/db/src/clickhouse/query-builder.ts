@@ -24,7 +24,7 @@ type CTE = {
   query: Query | string;
 };
 
-type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS';
+type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL' | 'CROSS' | 'LEFT ANY';
 
 type WhereCondition = {
   condition: string;
@@ -61,7 +61,7 @@ export class Query<T = any> {
   private _ctes: CTE[] = [];
   private _joins: {
     type: JoinType;
-    table: string | Expression;
+    table: string | Expression | Query;
     condition: string;
     alias?: string;
   }[] = [];
@@ -73,7 +73,11 @@ export class Query<T = any> {
   };
   private _transform?: Record<string, (item: T) => any>;
   private _union?: Query;
-  constructor(private client: ClickHouseClient) {}
+  private _dateRegex = /\d{4}-\d{2}-\d{2}([\s\:\d\.]+)?/g;
+  constructor(
+    private client: ClickHouseClient,
+    private timezone: string,
+  ) {}
 
   // Select methods
   select<U>(
@@ -121,9 +125,14 @@ export class Query<T = any> {
     if (Array.isArray(value)) {
       return `(${value.map((v) => this.escapeValue(v)).join(', ')})`;
     }
-    if (value instanceof Date) {
-      return escape(clix.datetime(value));
+
+    if (
+      (typeof value === 'string' && this._dateRegex.test(value)) ||
+      value instanceof Date
+    ) {
+      return this.escapeDate(value);
     }
+
     return escape(value);
   }
 
@@ -249,10 +258,10 @@ export class Query<T = any> {
 
   private escapeDate(value: string | Date): string {
     if (value instanceof Date) {
-      return clix.datetime(value);
+      return escape(clix.datetime(value));
     }
 
-    return value.replaceAll(/\d{4}-\d{2}-\d{2}([\s\:\d\.]+)?/g, (match) => {
+    return value.replaceAll(this._dateRegex, (match) => {
       return escape(match);
     });
   }
@@ -271,11 +280,19 @@ export class Query<T = any> {
   }
 
   leftJoin(
-    table: string | Expression,
+    table: string | Expression | Query,
     condition: string,
     alias?: string,
   ): this {
     return this.joinWithType('LEFT', table, condition, alias);
+  }
+
+  leftAnyJoin(
+    table: string | Expression | Query,
+    condition: string,
+    alias?: string,
+  ): this {
+    return this.joinWithType('LEFT ANY', table, condition, alias);
   }
 
   rightJoin(
@@ -300,7 +317,7 @@ export class Query<T = any> {
 
   private joinWithType(
     type: JoinType,
-    table: string | Expression,
+    table: string | Expression | Query,
     condition: string,
     alias?: string,
   ): this {
@@ -348,7 +365,10 @@ export class Query<T = any> {
 
     // SELECT
     if (this._select.length > 0) {
-      parts.push('SELECT', this._select.map(this.escapeDate).join(', '));
+      parts.push(
+        'SELECT',
+        this._select.map((col) => this.escapeDate(col)).join(', '),
+      );
     } else {
       parts.push('SELECT *');
     }
@@ -370,7 +390,7 @@ export class Query<T = any> {
         const aliasClause = join.alias ? ` ${join.alias} ` : ' ';
         const conditionStr = join.condition ? `ON ${join.condition}` : '';
         parts.push(
-          `${join.type} JOIN ${join.table instanceof Expression ? `(${join.table.toString()})` : join.table}${aliasClause}${conditionStr}`,
+          `${join.type} JOIN ${join.table instanceof Query ? `(${join.table.toSQL()})` : join.table instanceof Expression ? `(${join.table.toString()})` : join.table}${aliasClause}${conditionStr}`,
         );
       });
     }
@@ -483,26 +503,16 @@ export class Query<T = any> {
   // Execution methods
   async execute(): Promise<T[]> {
     const query = this.buildQuery();
-    console.log('TEST QUERY ----->');
-    console.log(query);
-    console.log('<----------');
-    const perf = performance.now();
-    try {
-      const result = await this.client.query({
-        query,
-      });
-      const json = await result.json<T>();
-      const perf2 = performance.now();
-      console.log(`PERF: ${perf2 - perf}ms`);
-      return this.transformJson(json).data;
-    } catch (error) {
-      console.log('ERROR ----->');
-      console.log(error);
-      console.log('<----------');
-      console.log(query);
-      console.log('<----------');
-      throw error;
-    }
+    console.log('query', query);
+
+    const result = await this.client.query({
+      query,
+      clickhouse_settings: {
+        session_timezone: this.timezone,
+      },
+    });
+    const json = await result.json<T>();
+    return this.transformJson(json).data;
   }
 
   // Debug methods
@@ -535,7 +545,7 @@ export class Query<T = any> {
   }
 
   clone(): Query<T> {
-    return new Query(this.client).merge(this);
+    return new Query(this.client, this.timezone).merge(this);
   }
 
   // Add merge method
@@ -629,12 +639,8 @@ export class WhereGroupBuilder {
 }
 
 // Helper function to create a new query
-export function createQuery(client: ClickHouseClient): Query {
-  return new Query(client);
-}
-
-export function clix(client: ClickHouseClient): Query {
-  return new Query(client);
+export function clix(client: ClickHouseClient, timezone?: string): Query {
+  return new Query(client, timezone ?? 'UTC');
 }
 
 clix.exp = (expr: string | Query<any>) =>
@@ -654,7 +660,7 @@ clix.dynamicDatetime = (date: string | Date, interval: IInterval) => {
   return clix.datetime(date);
 };
 
-clix.toStartOf = (node: string, interval: IInterval) => {
+clix.toStartOf = (node: string, interval: IInterval, timezone?: string) => {
   switch (interval) {
     case 'minute': {
       return `toStartOfMinute(${node})`;
@@ -666,10 +672,12 @@ clix.toStartOf = (node: string, interval: IInterval) => {
       return `toStartOfDay(${node})`;
     }
     case 'week': {
-      return `toStartOfWeek(${node})`;
+      // Does not respect timezone settings (session_timezone) so we need to pass it manually
+      return `toStartOfWeek(${node}${timezone ? `, 1, '${timezone}'` : ''})`;
     }
     case 'month': {
-      return `toStartOfMonth(${node})`;
+      // Does not respect timezone settings (session_timezone) so we need to pass it manually
+      return `toStartOfMonth(${node}${timezone ? `, '${timezone}'` : ''})`;
     }
   }
 };

@@ -1,4 +1,4 @@
-import { isSameDay, isSameMonth } from 'date-fns';
+import { differenceInDays, isSameDay, isSameMonth } from 'date-fns';
 
 export const DEFAULT_ASPECT_RATIO = 0.5625;
 export const NOT_SET_VALUE = '(not set)';
@@ -16,8 +16,13 @@ export const timeWindows = {
   },
   today: {
     key: 'today',
-    label: '24 hours',
+    label: 'Today',
     shortcut: 'D',
+  },
+  yesterday: {
+    key: 'yesterday',
+    label: 'Yesterday',
+    shortcut: 'E',
   },
   '7d': {
     key: '7d',
@@ -28,6 +33,16 @@ export const timeWindows = {
     key: '30d',
     label: 'Last 30 days',
     shortcut: 'T',
+  },
+  '6m': {
+    key: '6m',
+    label: 'Last 6 months',
+    shortcut: '6',
+  },
+  '12m': {
+    key: '12m',
+    label: 'Last 12 months',
+    shortcut: '0',
   },
   monthToDate: {
     key: 'monthToDate',
@@ -86,6 +101,18 @@ export const chartTypes = {
   retention: 'Retention',
   conversion: 'Conversion',
 } as const;
+
+export const chartSegments = {
+  event: 'All events',
+  user: 'Unique users',
+  session: 'Unique sessions',
+  user_average: 'Average users',
+  one_event_per_user: 'One event per user',
+  property_sum: 'Sum of property',
+  property_average: 'Average of property',
+  property_max: 'Max of property',
+  property_min: 'Min of property',
+};
 
 export const lineTypes = {
   monotone: 'Monotone',
@@ -167,7 +194,10 @@ export function isMinuteIntervalEnabledByRange(
 
 export function isHourIntervalEnabledByRange(range: keyof typeof timeWindows) {
   return (
-    isMinuteIntervalEnabledByRange(range) || range === 'today' || range === '7d'
+    isMinuteIntervalEnabledByRange(range) ||
+    range === 'today' ||
+    range === 'yesterday' ||
+    range === '7d'
   );
 }
 
@@ -177,7 +207,7 @@ export function getDefaultIntervalByRange(
   if (range === '30min' || range === 'lastHour') {
     return 'minute';
   }
-  if (range === 'today') {
+  if (range === 'today' || range === 'yesterday') {
     return 'hour';
   }
   if (
@@ -200,6 +230,9 @@ export function getDefaultIntervalByDates(
       return 'hour';
     }
     if (isSameMonth(startDate, endDate)) {
+      return 'day';
+    }
+    if (differenceInDays(endDate, startDate) <= 31) {
       return 'day';
     }
     return 'month';

@@ -1,5 +1,4 @@
 import type { Job } from 'bullmq';
-import { last } from 'ramda';
 
 import { logger as baseLogger } from '@/utils/logger';
 import { getTime } from '@openpanel/common';
@@ -9,61 +8,56 @@ import {
   checkNotificationRulesForSessionEnd,
   createEvent,
   eventBuffer,
+  formatClickhouseDate,
   getEvents,
 } from '@openpanel/db';
-import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
-async function getCompleteSession({
+// Grabs session_start and screen_views + the last occured event
+async function getNecessarySessionEvents({
   projectId,
   sessionId,
-  hoursInterval,
+  createdAt,
 }: {
   projectId: string;
   sessionId: string;
-  hoursInterval: number;
-}) {
+  createdAt: Date;
+}): Promise<ReturnType<typeof getEvents>> {
   const sql = `
     SELECT * FROM ${TABLE_NAMES.events} 
     WHERE 
       session_id = '${sessionId}' 
       AND project_id = '${projectId}'
-      AND created_at > now() - interval ${hoursInterval} HOUR
-    ORDER BY created_at DESC
+      AND created_at >= '${formatClickhouseDate(new Date(new Date(createdAt).getTime() - 1000 * 60 * 5))}'
+      AND (
+        name IN ('screen_view', 'session_start') 
+        OR created_at = (
+          SELECT MAX(created_at) 
+          FROM ${TABLE_NAMES.events} 
+          WHERE session_id = '${sessionId}' 
+          AND project_id = '${projectId}'
+          AND created_at >= '${formatClickhouseDate(new Date(new Date(createdAt).getTime() - 1000 * 60 * 5))}'
+          AND name NOT IN ('screen_view', 'session_start')
+        )
+      )
+    ORDER BY created_at DESC;
   `;
 
-  return getEvents(sql);
-}
-
-async function getCompleteSessionWithSessionStart({
-  projectId,
-  sessionId,
-  logger,
-}: {
-  projectId: string;
-  sessionId: string;
-  logger: ILogger;
-}): Promise<ReturnType<typeof getEvents>> {
-  const intervals = [1, 6, 12, 24, 72];
-  let intervalIndex = 0;
-  for (const hoursInterval of intervals) {
-    const events = await getCompleteSession({
+  const [lastScreenView, eventsInDb] = await Promise.all([
+    eventBuffer.getLastScreenView({
       projectId,
       sessionId,
-      hoursInterval,
-    });
+    }),
+    getEvents(sql),
+  ]);
 
-    if (events.find((event) => event.name === 'session_start')) {
-      return events;
-    }
-
-    const nextHoursInterval = intervals[++intervalIndex];
-    if (nextHoursInterval) {
-      logger.warn(`Checking last ${nextHoursInterval} hours for session_start`);
-    }
-  }
-
-  return [];
+  // sort last inserted first
+  return [lastScreenView, ...eventsInDb]
+    .filter((event): event is IServiceEvent => !!event)
+    .sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
 }
 
 export async function createSessionEnd(
@@ -77,55 +71,26 @@ export async function createSessionEnd(
 
   const payload = job.data.payload;
 
-  const [lastScreenView, eventsInDb] = await Promise.all([
-    eventBuffer.getLastScreenView({
-      projectId: payload.projectId,
-      sessionId: payload.sessionId,
-    }),
-    getCompleteSessionWithSessionStart({
-      projectId: payload.projectId,
-      sessionId: payload.sessionId,
-      logger,
-    }),
-  ]);
+  const events = await getNecessarySessionEvents({
+    projectId: payload.projectId,
+    sessionId: payload.sessionId,
+    createdAt: payload.createdAt,
+  });
 
-  // sort last inserted first
-  const events = [lastScreenView, ...eventsInDb]
-    .filter((event): event is IServiceEvent => !!event)
-    .sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-
-  const sessionDuration = events.reduce((acc, event) => {
-    return acc + event.duration;
-  }, 0);
-
-  let sessionStart = events.find((event) => event.name === 'session_start');
-  const lastEvent = events[0];
+  const sessionStart = events.find((event) => event.name === 'session_start');
   const screenViews = events.filter((event) => event.name === 'screen_view');
+  const lastEvent = events[0];
 
   if (!sessionStart) {
-    const firstScreenView = last(screenViews);
-
-    if (!firstScreenView) {
-      throw new Error('Could not found session_start or any screen_view');
-    }
-
-    logger.warn('Creating session_start since it was not found');
-
-    sessionStart = {
-      ...firstScreenView,
-      name: 'session_start',
-      createdAt: new Date(getTime(firstScreenView.createdAt) - 100),
-    };
-
-    await createEvent(sessionStart);
+    throw new Error('No session_start found');
   }
 
   if (!lastEvent) {
     throw new Error('No last event found');
   }
+
+  const sessionDuration =
+    lastEvent.createdAt.getTime() - sessionStart.createdAt.getTime();
 
   await checkNotificationRulesForSessionEnd(events);
 
@@ -135,7 +100,6 @@ export async function createSessionEnd(
     screenViews,
     sessionDuration,
     events,
-    lastScreenView: lastScreenView ? lastScreenView : 'none',
   });
 
   return createEvent({

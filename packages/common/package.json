@@ -3,11 +3,13 @@
   "version": "0.0.1",
   "main": "index.ts",
   "scripts": {
+    "test": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@openpanel/constants": "workspace:*",
     "date-fns": "^3.3.1",
+    "luxon": "^3.6.1",
     "mathjs": "^12.3.2",
     "nanoid": "^5.0.7",
     "ramda": "^0.29.1",
@@ -19,6 +21,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
+    "@types/luxon": "^3.6.2",
     "@types/node": "20.14.8",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",

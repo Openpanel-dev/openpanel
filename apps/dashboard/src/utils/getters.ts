@@ -8,6 +8,10 @@ export function getProfileName(
     return '';
   }
 
+  if (!profile.isExternal) {
+    return 'Anonymous';
+  }
+
   const name =
     [profile.firstName, profile.lastName].filter(Boolean).join(' ') ||
     profile.email;

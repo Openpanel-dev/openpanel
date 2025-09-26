@@ -32,7 +32,7 @@ Add `OpenPanelComponent` to your root layout component.
 ```tsx
 import { OpenPanelComponent } from '@openpanel/nextjs';
 
-export default RootLayout({ children }) {
+export default function RootLayout({ children }) {
   return (
     <>
       <OpenPanelComponent
@@ -190,17 +190,6 @@ To set properties that will be sent with every event:
 useOpenPanel().setGlobalProperties({
   app_version: '1.0.2',
   environment: 'production',
-});
-```
-
-### Creating Aliases
-
-To create an alias for a user:
-
-```js title="index.js"
-useOpenPanel().alias({
-  alias: 'a1',
-  profileId: '1'
 });
 ```
 

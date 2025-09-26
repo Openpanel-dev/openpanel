@@ -3,22 +3,33 @@ import { type IServiceCreateEventPayload, createEvent } from '@openpanel/db';
 import {
   type EventsQueuePayloadCreateSessionEnd,
   sessionsQueue,
-  sessionsQueueEvents,
 } from '@openpanel/queue';
 import type { Job } from 'bullmq';
-import { v4 as uuid } from 'uuid';
+import { logger } from './logger';
 
 export const SESSION_TIMEOUT = 1000 * 60 * 30;
 
 const getSessionEndJobId = (projectId: string, deviceId: string) =>
   `sessionEnd:${projectId}:${deviceId}`;
 
-export async function createSessionEnd({
+export async function createSessionStart({
   payload,
 }: {
   payload: IServiceCreateEventPayload;
 }) {
-  await sessionsQueue.add(
+  return createEvent({
+    ...payload,
+    name: 'session_start',
+    createdAt: new Date(getTime(payload.createdAt) - 100),
+  });
+}
+
+export async function createSessionEndJob({
+  payload,
+}: {
+  payload: IServiceCreateEventPayload;
+}) {
+  return sessionsQueue.add(
     'session',
     {
       type: 'createSessionEnd',
@@ -34,12 +45,6 @@ export async function createSessionEnd({
       },
     },
   );
-
-  await createEvent({
-    ...payload,
-    name: 'session_start',
-    createdAt: new Date(getTime(payload.createdAt) - 100),
-  });
 }
 
 export async function getSessionEnd({
@@ -47,42 +52,33 @@ export async function getSessionEnd({
   currentDeviceId,
   previousDeviceId,
   profileId,
-  priority,
 }: {
   projectId: string;
   currentDeviceId: string;
   previousDeviceId: string;
   profileId: string;
-  priority: boolean;
 }) {
   const sessionEnd = await getSessionEndJob({
-    priority,
     projectId,
     currentDeviceId,
     previousDeviceId,
   });
 
-  const sessionEndPayload =
-    sessionEnd?.job.data.payload ||
-    ({
-      sessionId: uuid(),
-      deviceId: currentDeviceId,
-      profileId,
-      projectId,
-    } satisfies EventsQueuePayloadCreateSessionEnd['payload']);
-
   if (sessionEnd) {
-    // If for some reason we have a session end job that is not a createSessionEnd job
-    if (sessionEnd.job.data.type !== 'createSessionEnd') {
-      throw new Error('Invalid session end job');
+    // Hack: if session end job just got created, we want to give it a chance to complete
+    // So the order is correct
+    if (sessionEnd.job.timestamp > Date.now() - 50) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    // If the profile_id is set and it's different from the device_id, we need to update the profile_id
-    if (
-      sessionEnd.job.data.payload.profileId !== profileId &&
+    const existingSessionIsAnonymous =
       sessionEnd.job.data.payload.profileId ===
-        sessionEnd.job.data.payload.deviceId
-    ) {
+      sessionEnd.job.data.payload.deviceId;
+
+    const eventIsIdentified =
+      profileId && sessionEnd.job.data.payload.profileId !== profileId;
+
+    if (existingSessionIsAnonymous && eventIsIdentified) {
       await sessionEnd.job.updateData({
         ...sessionEnd.job.data,
         payload: {
@@ -93,25 +89,22 @@ export async function getSessionEnd({
     }
 
     await sessionEnd.job.changeDelay(SESSION_TIMEOUT);
+    return sessionEnd.job.data.payload;
   }
 
-  return {
-    payload: sessionEndPayload,
-    notFound: !sessionEnd,
-  };
+  return null;
 }
 
 export async function getSessionEndJob(args: {
   projectId: string;
   currentDeviceId: string;
   previousDeviceId: string;
-  priority: boolean;
   retryCount?: number;
 }): Promise<{
   deviceId: string;
   job: Job<EventsQueuePayloadCreateSessionEnd>;
 } | null> {
-  const { priority, retryCount = 0 } = args;
+  const { retryCount = 0 } = args;
 
   if (retryCount >= 6) {
     throw new Error('Failed to get session end');
@@ -125,46 +118,32 @@ export async function getSessionEndJob(args: {
     job: Job<EventsQueuePayloadCreateSessionEnd>;
   } | null> {
     const state = await job.getState();
-    if (state === 'delayed') {
+    if (state !== 'delayed') {
+      logger.info(`[session-handler] Session end job is in "${state}" state`, {
+        state,
+        retryCount,
+        jobTimestamp: new Date(job.timestamp).toISOString(),
+        jobDelta: Date.now() - job.timestamp,
+        jobId: job.id,
+        reqId: job.data.payload.properties?.__reqId ?? 'unknown',
+        payload: job.data.payload,
+      });
+    }
+
+    if (state === 'delayed' || state === 'waiting') {
       return { deviceId, job };
     }
 
-    if (state === 'failed') {
-      await job.retry();
-      await job.waitUntilFinished(sessionsQueueEvents, 1000 * 10);
+    if (state === 'active') {
+      await new Promise((resolve) => setTimeout(resolve, 100));
       return getSessionEndJob({
         ...args,
-        priority,
-        retryCount,
+        retryCount: retryCount + 1,
       });
     }
 
     if (state === 'completed') {
       await job.remove();
-      return getSessionEndJob({
-        ...args,
-        priority,
-        retryCount,
-      });
-    }
-
-    if (state === 'active' || state === 'waiting') {
-      await job.waitUntilFinished(sessionsQueueEvents, 1000 * 10);
-      return getSessionEndJob({
-        ...args,
-        priority,
-        retryCount,
-      });
-    }
-
-    // Shady state here, just remove it and retry
-    if (state === 'unknown') {
-      await job.remove();
-      return getSessionEndJob({
-        ...args,
-        priority,
-        retryCount,
-      });
     }
 
     return null;
@@ -175,8 +154,7 @@ export async function getSessionEndJob(args: {
     getSessionEndJobId(args.projectId, args.currentDeviceId),
   );
   if (currentJob) {
-    const res = await handleJobStates(currentJob, args.currentDeviceId);
-    if (res) return res;
+    return await handleJobStates(currentJob, args.currentDeviceId);
   }
 
   // Check previous device job
@@ -184,15 +162,7 @@ export async function getSessionEndJob(args: {
     getSessionEndJobId(args.projectId, args.previousDeviceId),
   );
   if (previousJob) {
-    const res = await handleJobStates(previousJob, args.previousDeviceId);
-    if (res) return res;
-  }
-
-  // If no job found and not priority, retry
-  if (!priority) {
-    const backoffDelay = 50 * 2 ** retryCount;
-    await new Promise((resolve) => setTimeout(resolve, backoffDelay));
-    return getSessionEndJob({ ...args, priority, retryCount: retryCount + 1 });
+    return await handleJobStates(previousJob, args.previousDeviceId);
   }
 
   // Create session

@@ -32,7 +32,7 @@ export function ModalHeader({
   return (
     <div
       className={cn(
-        'relative -m-6 mb-4 flex justify-between rounded-t-lg bg-gradient-to-b from-def-300 to-background p-6 pb-0',
+        'relative -m-6 mb-4 flex justify-between rounded-t-lg p-6 pb-0',
         className,
       )}
       style={{}}

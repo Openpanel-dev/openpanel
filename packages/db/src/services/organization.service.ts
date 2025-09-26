@@ -1,3 +1,4 @@
+import { DateTime } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
 import { escape } from 'sqlstring';
 import { chQuery, formatClickhouseDate } from '../clickhouse/client';
@@ -13,10 +14,6 @@ export type IServiceMember = Prisma.MemberGetPayload<{
   include: { user: true };
 }> & { access: ProjectAccess[] };
 export type IServiceProjectAccess = ProjectAccess;
-
-export function transformOrganization<T>(org: T) {
-  return org;
-}
 
 export async function getOrganizations(userId: string | null) {
   if (!userId) return [];
@@ -34,10 +31,10 @@ export async function getOrganizations(userId: string | null) {
     },
   });
 
-  return organizations.map(transformOrganization);
+  return organizations;
 }
 
-export function getOrganizationBySlug(slug: string) {
+export function getOrganizationById(slug: string) {
   return db.organization.findUniqueOrThrow({
     where: {
       id: slug,
@@ -59,7 +56,7 @@ export async function getOrganizationByProjectId(projectId: string) {
     return null;
   }
 
-  return transformOrganization(project.organization);
+  return project.organization;
 }
 
 export const getOrganizationByProjectIdCached = cacheable(
@@ -253,8 +250,39 @@ export async function getOrganizationSubscriptionChartEndDate(
     organization.subscriptionChartEndDate &&
     new Date(endDate) > organization.subscriptionChartEndDate
   ) {
-    return organization.subscriptionChartEndDate.toISOString();
+    return DateTime.fromJSDate(organization.subscriptionChartEndDate)
+      .setZone(organization.timezone || DEFAULT_TIMEZONE)
+      .toFormat('yyyy-MM-dd HH:mm:ss');
   }
 
   return endDate;
+}
+
+const DEFAULT_TIMEZONE = 'UTC';
+
+export async function getSettingsForOrganization(organizationId: string) {
+  const organization = await db.organization.findUniqueOrThrow({
+    where: {
+      id: organizationId,
+    },
+  });
+
+  return {
+    timezone: organization.timezone || DEFAULT_TIMEZONE,
+  };
+}
+
+export async function getSettingsForProject(projectId: string) {
+  const project = await db.project.findUniqueOrThrow({
+    where: {
+      id: projectId,
+    },
+    include: {
+      organization: true,
+    },
+  });
+
+  return {
+    timezone: project.organization.timezone || DEFAULT_TIMEZONE,
+  };
 }

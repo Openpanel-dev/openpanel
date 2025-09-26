@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
+import crypto from 'node:crypto';
+import { stripTrailingSlash } from '@openpanel/common';
+import { hashPassword } from '@openpanel/common/server';
 import {
+  type Prisma,
   db,
   getClientById,
   getClientByIdCached,
@@ -8,12 +12,10 @@ import {
   getProjectByIdCached,
   getProjectsByOrganizationId,
 } from '@openpanel/db';
-
-import { stripTrailingSlash } from '@openpanel/common';
-import { zProject } from '@openpanel/validation';
+import { zOnboardingProject, zProject } from '@openpanel/validation';
 import { addDays, addHours } from 'date-fns';
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const projectRouter = createTRPCRouter({
@@ -81,25 +83,50 @@ export const projectRouter = createTRPCRouter({
       return res;
     }),
   create: protectedProcedure
-    .input(
-      zProject.omit({ id: true }).merge(
-        z.object({
-          organizationId: z.string(),
-        }),
-      ),
-    )
+    .input(zOnboardingProject)
     .mutation(async ({ input }) => {
-      return db.project.create({
+      if (!input.organizationId) {
+        throw TRPCBadRequestError('Organization is required');
+      }
+
+      const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+      const data: Prisma.ClientCreateArgs['data'] = {
+        organizationId: input.organizationId,
+        name: 'First client',
+        type: 'write',
+        secret: await hashPassword(secret),
+      };
+      const project = await db.project.create({
         data: {
-          id: await getId('project', input.name),
+          id: await getId('project', input.project),
           organizationId: input.organizationId,
-          name: input.name,
+          name: input.project,
           domain: input.domain,
           cors: input.cors,
-          crossDomain: input.crossDomain,
+          crossDomain: false,
           filters: [],
+          clients: {
+            create: data,
+          },
+        },
+        include: {
+          clients: {
+            select: {
+              id: true,
+            },
+          },
         },
       });
+
+      return {
+        ...project,
+        client: project.clients[0]
+          ? {
+              id: project.clients[0].id,
+              secret,
+            }
+          : null,
+      };
     }),
   delete: protectedProcedure
     .input(

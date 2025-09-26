@@ -13,6 +13,14 @@ export function formatDateInterval(interval: IInterval, date: Date): string {
       return new Intl.DateTimeFormat('en-GB', { month: 'short' }).format(date);
     }
 
+    if (interval === 'week') {
+      return new Intl.DateTimeFormat('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+      }).format(date);
+    }
+
     if (interval === 'day') {
       return new Intl.DateTimeFormat('en-GB', {
         weekday: 'short',

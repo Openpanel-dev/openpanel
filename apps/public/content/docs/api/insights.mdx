@@ -1,0 +1,405 @@
+---
+title: Insights
+description: The Insights API provides access to website analytics data including metrics, page views, visitor statistics, and detailed breakdowns by various dimensions.
+---
+
+## Authentication
+
+To authenticate with the Insights API, you need to use your `clientId` and `clientSecret`. Make sure your client has `read` or `root` mode. The default client does not have access to the Insights API.
+
+For detailed authentication information, see the [Authentication](/docs/api/authentication) guide.
+
+Include the following headers with your requests:
+- `openpanel-client-id`: Your OpenPanel client ID  
+- `openpanel-client-secret`: Your OpenPanel client secret
+
+## Base URL
+
+All Insights API requests should be made to:
+
+```
+https://api.openpanel.dev/insights
+```
+
+## Common Query Parameters
+
+Most endpoints support the following query parameters:
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `startDate` | string | Start date (ISO format: YYYY-MM-DD) | Based on range |
+| `endDate` | string | End date (ISO format: YYYY-MM-DD) | Based on range |
+| `range` | string | Predefined date range (`7d`, `30d`, `90d`, etc.) | `7d` |
+| `filters` | array | Event filters to apply | `[]` |
+| `cursor` | number | Page number for pagination | `1` |
+| `limit` | number | Number of results per page (max: 50) | `10` |
+
+### Filter Configuration
+
+Filters can be applied to narrow down results. Each filter has the following structure:
+
+```json
+{
+  "name": "property_name",
+  "operator": "is|isNot|contains|doesNotContain|startsWith|endsWith|regex",
+  "value": ["value1", "value2"]
+}
+```
+
+## Endpoints
+
+### Get Metrics
+
+Retrieve comprehensive website metrics including visitors, sessions, page views, and engagement data.
+
+```
+GET /insights/{projectId}/metrics
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `startDate` | string | Start date for metrics | `2024-01-01` |
+| `endDate` | string | End date for metrics | `2024-01-31` |
+| `range` | string | Predefined range | `7d` |
+| `filters` | array | Event filters | `[{"name":"path","operator":"is","value":["/home"]}]` |
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/insights/abc123/metrics?range=30d&filters=[{"name":"path","operator":"contains","value":["/product"]}]' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "metrics": {
+    "bounce_rate": 45.2,
+    "unique_visitors": 1250,
+    "total_sessions": 1580,
+    "avg_session_duration": 185.5,
+    "total_screen_views": 4230,
+    "views_per_session": 2.67
+  },
+  "series": [
+    {
+      "date": "2024-01-01T00:00:00.000Z",
+      "bounce_rate": 42.1,
+      "unique_visitors": 85,
+      "total_sessions": 98,
+      "avg_session_duration": 195.2,
+      "total_screen_views": 156,
+      "views_per_session": 1.59
+    }
+  ]
+}
+```
+
+### Get Live Visitors
+
+Get the current number of active visitors on your website in real-time.
+
+```
+GET /insights/{projectId}/live
+```
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/insights/abc123/live' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "visitors": 23
+}
+```
+
+### Get Top Pages
+
+Retrieve the most visited pages with detailed analytics including session count, bounce rate, and average time on page.
+
+```
+GET /insights/{projectId}/pages
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `startDate` | string | Start date | `2024-01-01` |
+| `endDate` | string | End date | `2024-01-31` |
+| `range` | string | Predefined range | `7d` |
+| `filters` | array | Event filters | `[]` |
+| `cursor` | number | Page number | `1` |
+| `limit` | number | Results per page (max: 50) | `10` |
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/insights/abc123/pages?range=7d&limit=20' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+[
+  {
+    "title": "Homepage - Example Site",
+    "origin": "https://example.com",
+    "path": "/",
+    "sessions": 456,
+    "bounce_rate": 35.2,
+    "avg_duration": 125.8
+  },
+  {
+    "title": "About Us",
+    "origin": "https://example.com", 
+    "path": "/about",
+    "sessions": 234,
+    "bounce_rate": 45.1,
+    "avg_duration": 89.3
+  }
+]
+```
+
+### Get Referrer Data
+
+Retrieve referrer analytics to understand where your traffic is coming from.
+
+```
+GET /insights/{projectId}/referrer
+GET /insights/{projectId}/referrer_name
+GET /insights/{projectId}/referrer_type
+```
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/insights/abc123/referrer?range=30d&limit=15' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+[
+  {
+    "name": "google.com",
+    "sessions": 567,
+    "bounce_rate": 42.1,
+    "avg_session_duration": 156.7
+  },
+  {
+    "name": "facebook.com",
+    "sessions": 234,
+    "bounce_rate": 38.9,
+    "avg_session_duration": 189.2
+  }
+]
+```
+
+### Get UTM Campaign Data
+
+Analyze your marketing campaigns with UTM parameter breakdowns.
+
+```
+GET /insights/{projectId}/utm_source
+GET /insights/{projectId}/utm_medium  
+GET /insights/{projectId}/utm_campaign
+GET /insights/{projectId}/utm_term
+GET /insights/{projectId}/utm_content
+```
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/insights/abc123/utm_source?range=30d' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+[
+  {
+    "name": "google",
+    "sessions": 890,
+    "bounce_rate": 35.4,
+    "avg_session_duration": 178.9
+  },
+  {
+    "name": "facebook",
+    "sessions": 456,
+    "bounce_rate": 41.2,
+    "avg_session_duration": 142.3
+  }
+]
+```
+
+### Get Geographic Data
+
+Understand your audience location with country, region, and city breakdowns.
+
+```
+GET /insights/{projectId}/country
+GET /insights/{projectId}/region
+GET /insights/{projectId}/city
+```
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/insights/abc123/country?range=30d&limit=20' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+[
+  {
+    "name": "United States",
+    "sessions": 1234,
+    "bounce_rate": 38.7,
+    "avg_session_duration": 167.4
+  },
+  {
+    "name": "United Kingdom", 
+    "sessions": 567,
+    "bounce_rate": 42.1,
+    "avg_session_duration": 145.8
+  }
+]
+```
+
+For region and city endpoints, an additional `prefix` field may be included:
+
+```json
+[
+  {
+    "prefix": "United States",
+    "name": "California",
+    "sessions": 456,
+    "bounce_rate": 35.2,
+    "avg_session_duration": 172.1
+  }
+]
+```
+
+### Get Device & Technology Data
+
+Analyze visitor devices, browsers, and operating systems.
+
+```
+GET /insights/{projectId}/device
+GET /insights/{projectId}/browser
+GET /insights/{projectId}/browser_version
+GET /insights/{projectId}/os
+GET /insights/{projectId}/os_version
+GET /insights/{projectId}/brand
+GET /insights/{projectId}/model
+```
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/insights/abc123/browser?range=7d' \
+  -H 'openpanel-client-id: YOUR_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+[
+  {
+    "name": "Chrome",
+    "sessions": 789,
+    "bounce_rate": 36.4,
+    "avg_session_duration": 162.3
+  },
+  {
+    "name": "Firefox",
+    "sessions": 234,
+    "bounce_rate": 41.7,
+    "avg_session_duration": 148.9
+  }
+]
+```
+
+For version-specific endpoints (browser_version, os_version), a `prefix` field shows the parent:
+
+```json
+[
+  {
+    "prefix": "Chrome",
+    "name": "118.0.0.0",
+    "sessions": 456,
+    "bounce_rate": 35.8,
+    "avg_session_duration": 165.7
+  }
+]
+```
+
+## Error Handling
+
+The API uses standard HTTP response codes. Common error responses:
+
+### 400 Bad Request
+
+```json
+{
+  "error": "Bad Request",
+  "message": "Invalid query parameters",
+  "details": {
+    "issues": [
+      {
+        "path": ["range"],
+        "message": "Invalid enum value"
+      }
+    ]
+  }
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized", 
+  "message": "Invalid client credentials"
+}
+```
+
+### 429 Too Many Requests
+
+Rate limiting response includes headers indicating your rate limit status.
+
+## Rate Limiting
+
+The Insights API implements rate limiting:
+- **100 requests per 10 seconds** per client
+- Rate limit headers included in responses
+- Implement exponential backoff for retries
+
+## Notes
+
+- All dates are returned in ISO 8601 format
+- Durations are in seconds  
+- Bounce rates and percentages are returned as decimal numbers (e.g., 45.2 = 45.2%)
+- Session duration is the average time spent on the website
+- All timezone handling is done server-side based on project settings

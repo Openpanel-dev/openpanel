@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 import { parseAsStringEnum } from 'nuqs/server';
 
 import { auth } from '@openpanel/auth/nextjs';
-import { db, transformOrganization } from '@openpanel/db';
+import { db } from '@openpanel/db';
 
 import InvitesServer from './invites';
 import MembersServer from './members';
@@ -27,7 +27,7 @@ export default async function Page({
   params: { organizationSlug: organizationId },
   searchParams,
 }: PageProps) {
-  const isBillingEnabled = !process.env.SELF_HOSTED;
+  const isBillingEnabled = process.env.NEXT_PUBLIC_SELF_HOSTED !== 'true';
   const tab = parseAsStringEnum(['org', 'billing', 'members', 'invites'])
     .withDefault('org')
     .parseServerSide(searchParams.tab);

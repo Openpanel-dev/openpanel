@@ -15,6 +15,7 @@ import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useEventNames } from '@/hooks/useEventNames';
@@ -85,6 +86,10 @@ export default function AddNotificationRule({ rule }: Props) {
   });
 
   const onSubmit: SubmitHandler<IForm> = (data) => {
+    if (!data.config.events[0]?.name) {
+      toast.error('At least one event is required');
+      return;
+    }
     mutation.mutate(data);
   };
 
@@ -183,6 +188,10 @@ export default function AddNotificationRule({ rule }: Props) {
                   of a custom property
                 </li>
                 <li>
+                  <code>{'{{profile.firstName}}'}</code> - Get the value of a
+                  profile property
+                </li>
+                <li>
                   <div className="flex gap-x-2 flex-wrap">
                     And many more...
                     <code>profileId</code>
@@ -269,16 +278,13 @@ function EventField({
           control={form.control}
           name={`config.events.${index}.name`}
           render={({ field }) => (
-            <Combobox
+            <ComboboxEvents
               searchable
               className="flex-1"
               value={field.value}
               placeholder="Select event"
               onChange={field.onChange}
-              items={eventNames.map((item) => ({
-                label: item.name,
-                value: item.name,
-              }))}
+              items={eventNames}
             />
           )}
         />

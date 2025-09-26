@@ -5,8 +5,8 @@ import { cn } from '@/lib/utils';
 import NumberFlow from '@number-flow/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpIcon } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
-
 const TRAFFIC_SOURCES = [
   {
     icon: 'https://api.openpanel.dev/misc/favicon?url=https%3A%2F%2Fgoogle.com',
@@ -164,10 +164,12 @@ function BarCell({
       <div className="relative row justify-between ">
         <div className="row gap-2 items-center font-medium">
           {icon.startsWith('http') ? (
-            <img
+            <Image
               alt="serie icon"
               className="max-h-4 rounded-[2px] object-contain"
               src={icon}
+              width={16}
+              height={16}
             />
           ) : (
             <div className="text-2xl">{icon}</div>

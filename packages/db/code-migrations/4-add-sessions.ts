@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { formatClickhouseDate } from '../src/clickhouse/client';
+import { TABLE_NAMES, formatClickhouseDate } from '../src/clickhouse/client';
 import {
+  chMigrationClient,
   createTable,
   runClickhouseMigrationCommands,
 } from '../src/clickhouse/migration';
@@ -66,7 +67,7 @@ export async function up() {
     }),
   ];
 
-  sqls.push(...createOldSessions());
+  sqls.push(...(await createOldSessions()));
 
   fs.writeFileSync(
     path.join(__filename.replace('.ts', '.sql')),
@@ -86,8 +87,31 @@ export async function up() {
   }
 }
 
-function createOldSessions() {
-  let startDate = new Date('2024-03-01');
+async function createOldSessions() {
+  async function getFirstEventAt() {
+    const defaultDate = new Date('2024-03-01');
+    try {
+      const res = await chMigrationClient.query({
+        query: `SELECT min(created_at) as created_at, count() as count FROM ${TABLE_NAMES.events}`,
+        format: 'JSONEachRow',
+      });
+      const json = await res.json<{ created_at: string; count: string }>();
+      const row = json[0];
+      if (!row || row.count === '0') {
+        return null;
+      }
+      return new Date(row.created_at);
+    } catch (e) {
+      return defaultDate;
+    }
+  }
+
+  let startDate = await getFirstEventAt();
+
+  if (!startDate) {
+    return [];
+  }
+
   const endDate = new Date();
   const sqls: string[] = [];
   while (startDate <= endDate) {

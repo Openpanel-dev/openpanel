@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import type { z } from 'zod';
 
 import { stripTrailingSlash } from '@openpanel/common';
-import { db, getId, getOrganizationBySlug, getUserById } from '@openpanel/db';
+import { db, getId, getOrganizationById, getUserById } from '@openpanel/db';
 import type { IServiceUser, ProjectType } from '@openpanel/db';
 import { zOnboardingProject } from '@openpanel/validation';
 
@@ -16,7 +16,7 @@ async function createOrGetOrganization(
   user: IServiceUser,
 ) {
   if (input.organizationId) {
-    return await getOrganizationBySlug(input.organizationId);
+    return await getOrganizationById(input.organizationId);
   }
 
   const TRIAL_DURATION_IN_DAYS = 30;
@@ -29,10 +29,14 @@ async function createOrGetOrganization(
         createdByUserId: user.id,
         subscriptionEndsAt: addDays(new Date(), TRIAL_DURATION_IN_DAYS),
         subscriptionStatus: 'trialing',
+        timezone: input.timezone,
       },
     });
 
-    if (!process.env.SELF_HOSTED) {
+    if (
+      process.env.NEXT_PUBLIC_SELF_HOSTED !== 'true' &&
+      !process.env.SELF_HOSTED
+    ) {
       await addTrialEndingSoonJob(
         organization.id,
         1000 * 60 * 60 * 24 * TRIAL_DURATION_IN_DAYS * 0.9,

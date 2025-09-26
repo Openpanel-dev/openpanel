@@ -1,9 +1,7 @@
 'use client';
 
 import { ColorSquare } from '@/components/color-square';
-import { Combobox } from '@/components/ui/combobox';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
-import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/useAppParams';
 import { useDebounceFn } from '@/hooks/useDebounceFn';
@@ -28,10 +26,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { shortId } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import type { IChartEvent } from '@openpanel/validation';
-import { FilterIcon, GanttChartIcon, HandIcon, Users } from 'lucide-react';
+import { FilterIcon, HandIcon } from 'lucide-react';
+import { ReportSegment } from '../ReportSegment';
 import {
   addEvent,
   changeEvent,
+  duplicateEvent,
   removeEvent,
   reorderEvents,
 } from '../reportSlice';
@@ -82,7 +82,8 @@ function SortableEvent({
       {(showSegment || showAddFilter) && (
         <div className="flex gap-2 p-2 pt-0">
           {showSegment && (
-            <DropdownMenuComposed
+            <ReportSegment
+              value={event.segment}
               onChange={(segment) => {
                 dispatch(
                   changeEvent({
@@ -91,73 +92,7 @@ function SortableEvent({
                   }),
                 );
               }}
-              items={[
-                {
-                  value: 'event',
-                  label: 'All events',
-                },
-                {
-                  value: 'user',
-                  label: 'Unique users',
-                },
-                {
-                  value: 'session',
-                  label: 'Unique sessions',
-                },
-                {
-                  value: 'user_average',
-                  label: 'Average event per user',
-                },
-                {
-                  value: 'one_event_per_user',
-                  label: 'One event per user',
-                },
-                {
-                  value: 'property_sum',
-                  label: 'Sum of property',
-                },
-                {
-                  value: 'property_average',
-                  label: 'Average of property',
-                },
-              ]}
-              label="Segment"
-            >
-              <button
-                type="button"
-                className="flex items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-sm font-medium leading-none"
-              >
-                {event.segment === 'user' ? (
-                  <>
-                    <Users size={12} /> Unique users
-                  </>
-                ) : event.segment === 'session' ? (
-                  <>
-                    <Users size={12} /> Unique sessions
-                  </>
-                ) : event.segment === 'user_average' ? (
-                  <>
-                    <Users size={12} /> Average event per user
-                  </>
-                ) : event.segment === 'one_event_per_user' ? (
-                  <>
-                    <Users size={12} /> One event per user
-                  </>
-                ) : event.segment === 'property_sum' ? (
-                  <>
-                    <Users size={12} /> Sum of property
-                  </>
-                ) : event.segment === 'property_average' ? (
-                  <>
-                    <Users size={12} /> Average of property
-                  </>
-                ) : (
-                  <>
-                    <GanttChartIcon size={12} /> All events
-                  </>
-                )}
-              </button>
-            </DropdownMenuComposed>
+            />
           )}
           {showAddFilter && (
             <PropertiesCombobox
@@ -191,11 +126,9 @@ function SortableEvent({
             </PropertiesCombobox>
           )}
 
-          {showSegment &&
-            (event.segment === 'property_average' ||
-              event.segment === 'property_sum') && (
-              <EventPropertiesCombobox event={event} />
-            )}
+          {showSegment && event.segment.startsWith('property_') && (
+            <EventPropertiesCombobox event={event} />
+          )}
         </div>
       )}
 
@@ -213,6 +146,7 @@ export function ReportEvents() {
   const eventNames = useEventNames({
     projectId,
   });
+
   const showSegment = !['retention', 'funnel'].includes(chartType);
   const showAddFilter = !['retention'].includes(chartType);
   const showDisplayNameInput = !['retention'].includes(chartType);
@@ -248,6 +182,9 @@ export function ReportEvents() {
         case 'remove': {
           return dispatch(removeEvent(event));
         }
+        case 'duplicate': {
+          return dispatch(duplicateEvent(event));
+        }
       }
     };
 
@@ -278,54 +215,42 @@ export function ReportEvents() {
                   isSelectManyEvents={isSelectManyEvents}
                   className="rounded-lg border bg-def-100"
                 >
-                  {isSelectManyEvents ? (
-                    <ComboboxAdvanced
-                      className="flex-1"
-                      value={event.filters[0]?.value ?? []}
-                      onChange={(value) => {
-                        dispatch(
-                          changeEvent({
-                            id: event.id,
-                            segment: 'user',
-                            filters: [
-                              {
-                                name: 'name',
-                                operator: 'is',
-                                value: value,
+                  <ComboboxEvents
+                    className="flex-1"
+                    searchable
+                    multiple={isSelectManyEvents as false}
+                    value={
+                      (isSelectManyEvents
+                        ? (event.filters[0]?.value ?? [])
+                        : event.name) as any
+                    }
+                    onChange={(value) => {
+                      dispatch(
+                        changeEvent(
+                          Array.isArray(value)
+                            ? {
+                                id: event.id,
+                                segment: 'user',
+                                filters: [
+                                  {
+                                    name: 'name',
+                                    operator: 'is',
+                                    value: value,
+                                  },
+                                ],
+                                name: '*',
+                              }
+                            : {
+                                ...event,
+                                name: value,
+                                filters: [],
                               },
-                            ],
-                            name: '*',
-                          }),
-                        );
-                      }}
-                      items={eventNames.map((item) => ({
-                        label: item.name,
-                        value: item.name,
-                      }))}
-                      placeholder="Select event"
-                    />
-                  ) : (
-                    <Combobox
-                      icon={GanttChartIcon}
-                      className="flex-1"
-                      searchable
-                      value={event.name}
-                      onChange={(value) => {
-                        dispatch(
-                          changeEvent({
-                            ...event,
-                            name: value,
-                            filters: [],
-                          }),
-                        );
-                      }}
-                      items={eventNames.map((item) => ({
-                        label: item.name,
-                        value: item.name,
-                      }))}
-                      placeholder="Select event"
-                    />
-                  )}
+                        ),
+                      );
+                    }}
+                    items={eventNames}
+                    placeholder="Select event"
+                  />
                   {showDisplayNameInput && (
                     <Input
                       placeholder={
@@ -347,9 +272,8 @@ export function ReportEvents() {
               );
             })}
 
-            <Combobox
+            <ComboboxEvents
               disabled={isAddEventDisabled}
-              icon={GanttChartIcon}
               value={''}
               searchable
               onChange={(value) => {
@@ -377,11 +301,8 @@ export function ReportEvents() {
                   );
                 }
               }}
-              items={eventNames.map((item) => ({
-                label: item.name,
-                value: item.name,
-              }))}
               placeholder="Select event"
+              items={eventNames}
             />
           </div>
         </SortableContext>

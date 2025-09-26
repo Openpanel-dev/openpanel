@@ -1,0 +1,115 @@
+---
+title: Mixpanel Alternatives
+description: Our top open-source picks if you want to move away from Mixpanel
+date: 2025-07-18
+tag: Comparison
+team: OpenPanel Team
+cover: /content/cover-mixpanel.jpg
+---
+
+> We have tried to keep this list as fair as possible, even though we compete with these tools.
+
+Analytics tools fall into two main groups:  
+- Web analytics gives you page views, sessions, referrers  
+- Product analytics shows what users do inside your product
+
+Mixpanel is best known for product analytics. Web tools like Google Analytics tell you about traffic, but a product analytics tool tells you how and when users use your features.
+
+We start with the key features you need. Then we give you three open-source options.
+
+## Key product analytics features
+
+1. **Event tracking**  
+   Record any action—signups, clicks, purchases—to see how users behave.
+
+2. **Funnels**  
+   Show each step in a process (for example signup → verify email → first purchase). Find where users drop off so you can improve that step.
+
+3. **Retention analysis**  
+   Find out how many users come back over days or weeks:  
+   - **N-day retention**: percent who return after N days  
+   - **Rolling retention**: percent active in a set time period  
+   - **Cohorts**: compare groups of users who signed up at the same time
+
+4. **User details**  
+   Look at one user’s journey. This helps you fix issues and give users a better experience.
+
+5. **Flexible dashboards**  
+   Build charts and reports to answer any question about your product.
+
+## How to choose an open-source alternative
+
+Look at these points when you compare tools:
+
+| Point             | What to check                                    |
+|-------------------|--------------------------------------------------|
+| License           | True open source (MIT, Apache) or source-only    |
+| Resource needs    | CPU and memory for running the tool              |
+| Features          | Funnels, retention, user view, session replay    |
+| Setup             | Easy install or complex pipeline                 |
+| Maintenance       | Updates, docs and community support              |
+| Integrations      | SDKs for web, mobile, server; data exports       |
+
+## 1. OpenPanel
+
+You guessed it right, of course we'll promote OpenPanel, it was made solely because we wanted an alternative to Mixpanel. We have used Mixpanel a lot but for a startup we didn't have the cash flow needed to pay the bills. We also didn't need all Mixpanel's features so we decided to build our own platform that combined web & product analytics into one simple, affordable and self-hostable platform.
+
+**License:** AGPL-3.0 license
+
+**What you get**:  
+  - You get a very good web analytics overview (similar to Plausible, Simple Analytics)
+  - You can track custom events
+  - You can track users
+  - You can create any type of chart you want
+  - You can create funnels and conversions for A/B testing and improve your product
+  - You can create retention charts to understand how long your users stays
+
+**Good points**:  
+  - Low cost and self-hostable  
+  - Web and product analytics together  
+  - Fast setup and clean interface  
+
+**Drawbacks**:  
+  - Fewer third-party integrations  
+  - No session-replay or heatmaps yet  
+
+## 2. PostHog
+
+A full-feature platform with both cloud and self-hosted options.
+
+**License:** MIT License (core) + Enterprise License (ee/)
+
+**What you get**:  
+  - Funnels, trends, cohorts  
+  - Session recordings, feature flags, A/B tests  
+  - Plugins (Kafka, Snowflake exports)  
+**Good points**:  
+  - Lots of features, active community  
+  - Free up to 1 million events per month  
+  - Good docs and tutorials  
+
+**Drawbacks**:  
+  - Self-host needs high CPU and RAM  
+  - Cloud costs rise fast after 1M events  
+  - Some learning needed for plugins  
+
+## 3. Snowplow Analytics
+
+**Overview**  
+A tool that sends event data into your own data warehouse.
+
+**License:** Apache-2.0 license
+
+**What you get**:  
+  - Open collectors and pipelines  
+  - Works with Redshift, BigQuery, Snowflake  
+  - Custom schemas via Iglu registry  
+
+**Good points**:  
+  - Full control of raw events  
+  - Scales to billions of events  
+  - Good for teams with data-warehouse skills  
+
+**Drawbacks**:  
+  - Setup is complex (Kafka, Spark, Hadoop)  
+  - No built-in dashboards (need Looker or similar)  

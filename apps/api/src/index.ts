@@ -32,6 +32,7 @@ import aiRouter from './routes/ai.router';
 import eventRouter from './routes/event.router';
 import exportRouter from './routes/export.router';
 import importRouter from './routes/import.router';
+import insightsRouter from './routes/insights.router';
 import liveRouter from './routes/live.router';
 import miscRouter from './routes/misc.router';
 import oauthRouter from './routes/oauth-callback.router';
@@ -169,6 +170,7 @@ const startServer = async () => {
       instance.register(profileRouter, { prefix: '/profile' });
       instance.register(exportRouter, { prefix: '/export' });
       instance.register(importRouter, { prefix: '/import' });
+      instance.register(insightsRouter, { prefix: '/insights' });
       instance.register(trackRouter, { prefix: '/track' });
       instance.get('/healthcheck', healthcheck);
       instance.get('/healthcheck/queue', healthcheckQueue);
@@ -239,5 +241,4 @@ const startServer = async () => {
   }
 };
 
-// start
 startServer();

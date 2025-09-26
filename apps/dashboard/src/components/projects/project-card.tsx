@@ -52,7 +52,20 @@ function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
 
 async function ProjectChart({ id }: { id: string }) {
   const chart = await chQuery<{ value: number; date: string }>(
-    `SELECT countDistinct(profile_id) as value, toStartOfDay(created_at) as date FROM ${TABLE_NAMES.sessions} WHERE sign = 1 AND project_id = ${escape(id)} AND created_at >= now() - interval '1 month' GROUP BY date ORDER BY date ASC`,
+    `SELECT
+          uniqHLL12(profile_id) as value,
+          toStartOfDay(created_at) as date
+      FROM ${TABLE_NAMES.sessions}
+      WHERE 
+          sign = 1 AND 
+          project_id = ${escape(id)} AND 
+          created_at >= now() - interval '1 month'
+      GROUP BY date
+      ORDER BY date ASC
+      WITH FILL FROM toStartOfDay(now() - interval '1 month') 
+      TO toStartOfDay(now()) 
+      STEP INTERVAL 1 day
+    `,
   );
 
   return (
@@ -79,15 +92,13 @@ async function ProjectMetrics({ id }: { id: string }) {
   }>(
     `
       SELECT
-      (
-        SELECT uniq(DISTINCT profile_id) as count FROM ${TABLE_NAMES.sessions} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '6 months'
-      ) as months_3, 
-      (
-        SELECT uniq(DISTINCT profile_id) as count FROM ${TABLE_NAMES.sessions} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 month'
-      ) as month,
-      (
-        SELECT uniq(DISTINCT profile_id) as count FROM ${TABLE_NAMES.sessions} WHERE project_id = ${escape(id)} AND created_at >= now() - interval '1 day'
-      ) as day
+    uniqHLL12(if(created_at >= (now() - toIntervalMonth(6)), profile_id, null)) AS months_3,
+    uniqHLL12(if(created_at >= (now() - toIntervalMonth(1)), profile_id, null)) AS month,
+    uniqHLL12(if(created_at >= (now() - toIntervalDay(1)), profile_id, null)) AS day
+FROM sessions
+WHERE 
+    project_id = ${escape(id)} AND 
+    created_at >= (now() - toIntervalMonth(6))
     `,
   );
 

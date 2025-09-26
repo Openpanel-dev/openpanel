@@ -83,12 +83,7 @@ export default function EditProjectDetails({ project }: Props) {
         <span className="title">Details</span>
       </WidgetHead>
       <WidgetBody>
-        <form
-          onSubmit={form.handleSubmit(onSubmit, (errors) => {
-            console.log(errors);
-          })}
-          className="col gap-4"
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
           <InputWithLabel
             label="Name"
             {...form.register('name')}
@@ -113,12 +108,11 @@ export default function EditProjectDetails({ project }: Props) {
               control={form.control}
               render={({ field }) => (
                 <WithLabel
-                  label="Cors"
+                  label="Allowed domains"
                   error={form.formState.errors.cors?.message}
                 >
                   <TagInput
                     {...field}
-                    id="Cors"
                     error={form.formState.errors.cors?.message}
                     placeholder="Add a domain"
                     value={field.value ?? []}

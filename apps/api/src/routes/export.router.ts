@@ -7,7 +7,7 @@ import type { FastifyPluginCallback, FastifyRequest } from 'fastify';
 const exportRouter: FastifyPluginCallback = async (fastify) => {
   await activateRateLimiter({
     fastify,
-    max: 10,
+    max: 100,
     timeWindow: '10 seconds',
   });
 

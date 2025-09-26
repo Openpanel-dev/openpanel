@@ -71,6 +71,7 @@ export function OpenPanelComponent({
     <>
       <Script src={cdnUrl ?? CDN_URL} async defer />
       <Script
+        strategy="beforeInteractive"
         dangerouslySetInnerHTML={{
           __html: `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
           ${methods

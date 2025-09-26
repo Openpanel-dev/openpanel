@@ -1,9 +1,9 @@
-import { path, assocPath, last, mergeDeepRight, pick, uniq } from 'ramda';
+import { path, assocPath, last, mergeDeepRight } from 'ramda';
 import { escape } from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
-import { toDots } from '@openpanel/common';
-import { cacheable, getCache } from '@openpanel/redis';
+import { DateTime, toDots } from '@openpanel/common';
+import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
 
 import { botBuffer, eventBuffer, sessionBuffer } from '../buffers';
@@ -19,12 +19,8 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import type { IClickhouseProfile, IServiceProfile } from './profile.service';
-import {
-  getProfiles,
-  transformProfile,
-  upsertProfile,
-} from './profile.service';
+import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
+import { getProfileById, getProfiles, upsertProfile } from './profile.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -242,6 +238,16 @@ export function transformMinimalEvent(
   };
 }
 
+export function getEventMetas(projectId: string) {
+  return db.eventMeta.findMany({
+    where: {
+      projectId,
+    },
+  });
+}
+
+export const getEventMetasCached = cacheable(getEventMetas, 60 * 5);
+
 export async function getEvents(
   sql: string,
   options: GetEventsOptions = {},
@@ -265,17 +271,7 @@ export async function getEvents(
   }
 
   if (options.meta && projectId) {
-    const metas = await getCache(
-      `event-metas-${projectId}`,
-      60 * 5,
-      async () => {
-        return db.eventMeta.findMany({
-          where: {
-            projectId,
-          },
-        });
-      },
-    );
+    const metas = await getEventMetasCached(projectId);
     const map = new Map<string, EventMeta>();
     for (const meta of metas) {
       map.set(meta.name, meta);
@@ -292,8 +288,44 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     payload.profileId = payload.deviceId;
   }
 
+  const event: IClickhouseEvent = {
+    id: uuid(),
+    name: payload.name,
+    device_id: payload.deviceId,
+    profile_id: payload.profileId ? String(payload.profileId) : '',
+    project_id: payload.projectId,
+    session_id: payload.sessionId,
+    properties: toDots(payload.properties),
+    path: payload.path ?? '',
+    origin: payload.origin ?? '',
+    created_at: DateTime.fromJSDate(payload.createdAt)
+      .setZone('UTC')
+      .toFormat('yyyy-MM-dd HH:mm:ss.SSS'),
+    country: payload.country ?? '',
+    city: payload.city ?? '',
+    region: payload.region ?? '',
+    longitude: payload.longitude ?? null,
+    latitude: payload.latitude ?? null,
+    os: payload.os ?? '',
+    os_version: payload.osVersion ?? '',
+    browser: payload.browser ?? '',
+    browser_version: payload.browserVersion ?? '',
+    device: payload.device ?? '',
+    brand: payload.brand ?? '',
+    model: payload.model ?? '',
+    duration: payload.duration,
+    referrer: payload.referrer ?? '',
+    referrer_name: payload.referrerName ?? '',
+    referrer_type: payload.referrerType ?? '',
+    imported_at: null,
+    sdk_name: payload.sdkName ?? '',
+    sdk_version: payload.sdkVersion ?? '',
+  };
+
+  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
+
   if (payload.profileId) {
-    const profile = {
+    const profile: IServiceUpsertProfile = {
       id: String(payload.profileId),
       isExternal: payload.profileId !== payload.deviceId,
       projectId: payload.projectId,
@@ -324,40 +356,6 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
       await upsertProfile(profile, true);
     }
   }
-
-  const event: IClickhouseEvent = {
-    id: uuid(),
-    name: payload.name,
-    device_id: payload.deviceId,
-    profile_id: payload.profileId ? String(payload.profileId) : '',
-    project_id: payload.projectId,
-    session_id: payload.sessionId,
-    properties: toDots(payload.properties),
-    path: payload.path ?? '',
-    origin: payload.origin ?? '',
-    created_at: formatClickhouseDate(payload.createdAt),
-    country: payload.country ?? '',
-    city: payload.city ?? '',
-    region: payload.region ?? '',
-    longitude: payload.longitude ?? null,
-    latitude: payload.latitude ?? null,
-    os: payload.os ?? '',
-    os_version: payload.osVersion ?? '',
-    browser: payload.browser ?? '',
-    browser_version: payload.browserVersion ?? '',
-    device: payload.device ?? '',
-    brand: payload.brand ?? '',
-    model: payload.model ?? '',
-    duration: payload.duration,
-    referrer: payload.referrer ?? '',
-    referrer_name: payload.referrerName ?? '',
-    referrer_type: payload.referrerType ?? '',
-    imported_at: null,
-    sdk_name: payload.sdkName ?? '',
-    sdk_version: payload.sdkVersion ?? '',
-  };
-
-  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
 
   return {
     document: event,
@@ -505,7 +503,7 @@ export async function getEventList({
   }
 
   if (profileId) {
-    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
   }
 
   if (startDate && endDate) {
@@ -525,10 +523,6 @@ export async function getEventList({
       ...getEventFiltersWhereClause(filters),
     };
   }
-
-  // if (cursor) {
-  //   sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
-  // }
 
   sb.orderBy.created_at =
     'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
@@ -830,7 +824,7 @@ class EventService {
     id: string;
     createdAt?: Date;
   }) {
-    return clix(this.client)
+    const event = await clix(this.client)
       .select<IClickhouseEvent>(['*'])
       .from('events')
       .where('project_id', '=', projectId)
@@ -852,6 +846,15 @@ class EventService {
 
         return transformEvent(res[0]);
       });
+
+    if (event?.profileId) {
+      const profile = await getProfileById(event?.profileId, projectId);
+      if (profile) {
+        event.profile = profile;
+      }
+    }
+
+    return event;
   }
 
   async getList({

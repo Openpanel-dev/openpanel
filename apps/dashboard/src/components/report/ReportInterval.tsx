@@ -63,6 +63,15 @@ export function ReportInterval({
       label: 'Day',
     },
     {
+      value: 'week',
+      label: 'Week',
+      disabled:
+        range === 'today' ||
+        range === 'lastHour' ||
+        range === '30min' ||
+        range === '7d',
+    },
+    {
       value: 'month',
       label: 'Month',
       disabled: range === 'today' || range === 'lastHour' || range === '30min',

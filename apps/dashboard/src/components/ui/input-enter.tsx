@@ -18,8 +18,6 @@ export function InputEnter({
 
   useEffect(() => {
     if (value !== internalValue) {
-      console.log(value, internalValue);
-
       setInternalValue(value ?? '');
     }
   }, [value]);

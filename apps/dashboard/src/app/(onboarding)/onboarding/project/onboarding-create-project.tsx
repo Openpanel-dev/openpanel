@@ -51,6 +51,7 @@ export const OnboardingCreateProject = ({
     resolver: zodResolver(zOnboardingProject),
     defaultValues: {
       organization: '',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       project: '',
       domain: '',
       cors: [],
@@ -130,13 +131,33 @@ export const OnboardingCreateProject = ({
               }}
             />
           ) : (
-            <InputWithLabel
-              label="Workspace name"
-              info="This is the name of your workspace. It can be anything you like."
-              placeholder="Eg. The Music Company"
-              error={form.formState.errors.organization?.message}
-              {...form.register('organization')}
-            />
+            <>
+              <InputWithLabel
+                label="Workspace name"
+                info="This is the name of your workspace. It can be anything you like."
+                placeholder="Eg. The Music Company"
+                error={form.formState.errors.organization?.message}
+                {...form.register('organization')}
+              />
+              <Controller
+                name="timezone"
+                control={form.control}
+                render={({ field }) => (
+                  <WithLabel label="Timezone">
+                    <Combobox
+                      placeholder="Select timezone"
+                      items={Intl.supportedValuesOf('timeZone').map((item) => ({
+                        value: item,
+                        label: item,
+                      }))}
+                      value={field.value}
+                      onChange={field.onChange}
+                      className="w-full"
+                    />
+                  </WithLabel>
+                )}
+              />
+            </>
           )}
           <InputWithLabel
             label="Project name"
@@ -182,10 +203,9 @@ export const OnboardingCreateProject = ({
                       name="cors"
                       control={form.control}
                       render={({ field }) => (
-                        <WithLabel label="Cors">
+                        <WithLabel label="Allowed domains">
                           <TagInput
                             {...field}
-                            id="Cors"
                             error={form.formState.errors.cors?.message}
                             placeholder="Accept events from these domains"
                             value={field.value ?? []}

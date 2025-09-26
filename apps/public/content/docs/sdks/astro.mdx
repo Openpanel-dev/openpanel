@@ -2,4 +2,132 @@
 title: Astro
 ---
 
-You can use [script tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) to track events in Astro.
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+```bash
+pnpm install @openpanel/astro
+```
+
+### Initialize
+
+Add `OpenPanelComponent` to your root layout component.
+
+```astro
+---
+import { OpenPanelComponent } from '@openpanel/astro';
+---
+
+<html>
+  <head>
+    <OpenPanelComponent
+      clientId="your-client-id"
+      trackScreenViews={true}
+      // trackAttributes={true}
+      // trackOutgoingLinks={true}
+      // If you have a user id, you can pass it here to identify the user
+      // profileId={'123'}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+#### Options
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+##### Astro options
+
+- `profileId` - If you have a user id, you can pass it here to identify the user
+- `cdnUrl` - The url to the OpenPanel SDK (default: `https://openpanel.dev/op1.js`)
+- `filter` - This is a function that will be called before tracking an event. If it returns false the event will not be tracked. [Read more](#filter)
+- `globalProperties` - This is an object of properties that will be sent with every event.
+
+##### `filter`
+
+This options needs to be a stringified function and cannot access any variables outside of the function.
+
+```astro
+<OpenPanelComponent
+  clientId="your-client-id"
+  filter={`
+    function filter(event) {
+      return event.name !== 'my_event';
+    }
+  `}
+/>
+```
+
+To take advantage of typescript you can do the following. _Note `toString`_
+```ts
+import { type TrackHandlerPayload } from '@openpanel/astro';
+
+const opFilter = ((event: TrackHandlerPayload) => {
+  return event.type === 'track' && event.payload.name === 'my_event';
+}).toString();
+
+<OpenPanelComponent
+  clientId="your-client-id"
+  filter={opFilter}
+/>
+```
+
+</Steps>
+
+## Usage
+
+### Client-side Tracking
+
+You can track events with the global op function or you can use data attributes.
+
+```astro
+<button onclick="window.op('track', 'clicky')">Click me</button>
+<button data-track="clicky" data-prop1="prop1" data-prop2="prop2">Click me</button>
+```
+
+### Identifying Users
+
+To identify a user, you can use either the `identify` function or the `IdentifyComponent`.
+
+```astro
+---
+import { IdentifyComponent } from '@openpanel/astro';
+---
+
+<IdentifyComponent
+  profileId="123"
+  firstName="Joe"
+  lastName="Doe"
+  email="joe@doe.com"
+  properties={{
+    tier: 'premium',
+  }}
+/>
+```
+
+### Setting Global Properties
+
+You can set global properties that will be sent with every event using either the `setGlobalProperties` function or the `SetGlobalPropertiesComponent`.
+
+```astro
+---
+import { SetGlobalPropertiesComponent } from '@openpanel/astro';
+---
+
+<SetGlobalPropertiesComponent
+  properties={{
+    app_version: '1.0.2',
+    environment: 'production',
+  }}
+/>
+```

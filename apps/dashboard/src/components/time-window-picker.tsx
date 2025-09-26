@@ -15,18 +15,10 @@ import { bind } from 'bind-event-listener';
 import { CalendarIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 
+import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
 import { timeWindows } from '@openpanel/constants';
 import type { IChartRange } from '@openpanel/validation';
-
-function shouldIgnoreKeypress(event: KeyboardEvent) {
-  const tagName = (event?.target as HTMLElement)?.tagName;
-  const modifierPressed =
-    event.ctrlKey || event.metaKey || event.altKey || event.keyCode === 229;
-  const isTyping =
-    event.isComposing || tagName === 'INPUT' || tagName === 'TEXTAREA';
-
-  return modifierPressed || isTyping;
-}
+import { endOfDay, format, startOfDay } from 'date-fns';
 
 type Props = {
   value: IChartRange;
@@ -55,8 +47,8 @@ export function TimeWindowPicker({
   const handleCustom = useCallback(() => {
     pushModal('DateRangerPicker', {
       onChange: ({ startDate, endDate }) => {
-        onStartDateChange(startDate.toISOString());
-        onEndDateChange(endDate.toISOString());
+        onStartDateChange(format(startOfDay(startDate), 'yyyy-MM-dd HH:mm:ss'));
+        onEndDateChange(format(endOfDay(endDate), 'yyyy-MM-dd HH:mm:ss'));
         onChange('custom');
       },
       startDate: startDate ? new Date(startDate) : undefined,
@@ -122,6 +114,12 @@ export function TimeWindowPicker({
               {timeWindows.today.shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(timeWindows.yesterday.key)}>
+            {timeWindows.yesterday.label}
+            <DropdownMenuShortcut>
+              {timeWindows.yesterday.shortcut}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
@@ -137,6 +135,18 @@ export function TimeWindowPicker({
             {timeWindows['30d'].label}
             <DropdownMenuShortcut>
               {timeWindows['30d'].shortcut}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(timeWindows['6m'].key)}>
+            {timeWindows['6m'].label}
+            <DropdownMenuShortcut>
+              {timeWindows['6m'].shortcut}
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange(timeWindows['12m'].key)}>
+            {timeWindows['12m'].label}
+            <DropdownMenuShortcut>
+              {timeWindows['12m'].shortcut}
             </DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>

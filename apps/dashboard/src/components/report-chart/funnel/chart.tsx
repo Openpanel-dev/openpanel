@@ -300,7 +300,7 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
 
   return (
     <TooltipProvider data={data.current}>
-      <div className="aspect-video max-h-[100px] w-full p-4 card pb-1">
+      <div className="aspect-video max-h-[250px] w-full p-4 card pb-1">
         <ResponsiveContainer>
           <LineChart data={rechartData}>
             <CartesianGrid

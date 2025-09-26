@@ -2,9 +2,6 @@
 
 import { useEventQueryFilters } from '@/hooks/useEventQueryFilters';
 import { cn } from '@/utils/cn';
-import { useState } from 'react';
-
-import type { IChartType } from '@openpanel/validation';
 
 import { useNumber } from '@/hooks/useNumerFormatter';
 import { pushModal } from '@/modals';
@@ -30,7 +27,6 @@ interface OverviewTopGeoProps {
 export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
-  const [chartType, setChartType] = useState<IChartType>('bar');
   const [filters, setFilter] = useEventQueryFilters();
   const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidgetV2('geo', {
@@ -52,7 +48,6 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
 
   const query = api.overview.topGeneric.useQuery({
     projectId,
-    interval,
     range,
     filters,
     column: widget.key,

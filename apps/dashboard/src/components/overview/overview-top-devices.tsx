@@ -313,7 +313,6 @@ export default function OverviewTopDevices({
 
   const query = api.overview.topGeneric.useQuery({
     projectId,
-    interval,
     range,
     filters,
     column: widget.key,

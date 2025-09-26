@@ -4,8 +4,10 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
 
+import { getClientIp } from '@/utils/get-client-ip';
 import { createHash } from '@openpanel/common/server';
 import { TABLE_NAMES, ch, chQuery, formatClickhouseDate } from '@openpanel/db';
+import { getGeoLocation } from '@openpanel/geo';
 import { cacheable, getCache, getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
@@ -169,4 +171,13 @@ export async function stats(request: FastifyRequest, reply: FastifyReply) {
     eventsCount: res.projects.reduce((acc, { count }) => acc + count, 0),
     eventsLast24hCount: res.last24hCount,
   });
+}
+
+export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
+  const ip = getClientIp(request);
+  if (!ip) {
+    return reply.status(400).send('Bad Request');
+  }
+  const geo = await getGeoLocation(ip);
+  return reply.status(200).send(geo);
 }

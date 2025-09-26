@@ -27,7 +27,7 @@ const Verify = async ({ params: { projectId } }: Props) => {
   const [project, events] = await Promise.all([
     await getProjectWithClients(projectId),
     getEvents(
-      `SELECT * FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} LIMIT 100`,
+      `SELECT * FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT 100`,
     ),
   ]);
 
@@ -35,7 +35,7 @@ const Verify = async ({ params: { projectId } }: Props) => {
     return <div>Hmm, something fishy is going on. Please reload the page.</div>;
   }
 
-  return <OnboardingVerify project={project} events={events} />;
+  return <OnboardingVerify project={project} events={events.reverse()} />;
 };
 
 export default Verify;

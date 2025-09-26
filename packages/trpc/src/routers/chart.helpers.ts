@@ -1,45 +1,31 @@
-import {
-  differenceInMilliseconds,
-  endOfMonth,
-  endOfYear,
-  formatISO,
-  startOfDay,
-  startOfMonth,
-  startOfYear,
-  subDays,
-  subMilliseconds,
-  subMinutes,
-  subMonths,
-  subYears,
-} from 'date-fns';
 import * as mathjs from 'mathjs';
-import { last, pluck, repeat, reverse, uniq } from 'ramda';
+import { last, pluck, reverse, uniq } from 'ramda';
 import { escape } from 'sqlstring';
 
+import type { ISerieDataItem } from '@openpanel/common';
 import {
+  DateTime,
   average,
-  completeSerie,
   getPreviousMetric,
+  groupByLabels,
   max,
   min,
   round,
   slug,
   sum,
 } from '@openpanel/common';
-import type { ISerieDataItem } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
 import {
   TABLE_NAMES,
   chQuery,
   createSqlBuilder,
-  db,
   formatClickhouseDate,
+  getChartPrevStartEndDate,
   getChartSql,
+  getChartStartEndDate,
   getEventFiltersWhereClause,
-  getOrganizationByProjectId,
-  getOrganizationByProjectIdCached,
   getOrganizationSubscriptionChartEndDate,
-  getProfiles,
+  getSettingsForProject,
 } from '@openpanel/db';
 import type {
   FinalChart,
@@ -48,13 +34,7 @@ import type {
   IChartInputWithDates,
   IChartRange,
   IGetChartDataInput,
-  IInterval,
 } from '@openpanel/validation';
-import { TRPCNotFoundError } from '../errors';
-
-function getEventLegend(event: IChartEvent) {
-  return event.displayName || event.name;
-}
 
 export function withFormula(
   { formula, events }: IChartInput,
@@ -134,118 +114,6 @@ export function withFormula(
   ];
 }
 
-const toDynamicISODateWithTZ = (
-  date: string,
-  blueprint: string,
-  interval: IInterval,
-) => {
-  // If we have a space in the date we know it's a date with time
-  if (date.includes(' ')) {
-    // If interval is minutes we need to convert the timezone to what timezone is used (either on client or the server)
-    // - We use timezone from server if its a predefined range (yearToDate, lastYear, etc.)
-    // - We use timezone from client if its a custom range
-    if (interval === 'minute' || interval === 'hour') {
-      return (
-        date.replace(' ', 'T') +
-        // Only append timezone if it's not UTC (Z)
-        (blueprint.match(/[+-]\d{2}:\d{2}/) ? blueprint.slice(-6) : 'Z')
-      );
-    }
-    // Otherwise we just return without the timezone
-    // It will be converted to the correct timezone on the client
-    return date.replace(' ', 'T');
-  }
-  return `${date}T00:00:00Z`;
-};
-
-export function getDatesFromRange(range: IChartRange) {
-  if (range === '30min' || range === 'lastHour') {
-    const minutes = range === '30min' ? 30 : 60;
-    const startDate = formatISO(subMinutes(new Date(), minutes));
-    const endDate = formatISO(new Date());
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  if (range === 'today') {
-    // This is last 24 hours instead
-    // Makes it easier to handle timezones
-    // const startDate = startOfDay(new Date());
-    // const endDate = endOfDay(new Date());
-    const startDate = subDays(new Date(), 1);
-    const endDate = new Date();
-
-    return {
-      startDate: formatISO(startDate),
-      endDate: formatISO(endDate),
-    };
-  }
-
-  if (range === '7d') {
-    const startDate = formatISO(startOfDay(subDays(new Date(), 7)));
-    const endDate = formatISO(new Date());
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  if (range === 'monthToDate') {
-    const startDate = formatISO(startOfMonth(new Date()));
-    const endDate = formatISO(new Date());
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  if (range === 'lastMonth') {
-    const month = subMonths(new Date(), 1);
-    const startDate = formatISO(startOfMonth(month));
-    const endDate = formatISO(endOfMonth(month));
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  if (range === 'yearToDate') {
-    const startDate = formatISO(startOfYear(new Date()));
-    const endDate = formatISO(new Date());
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  if (range === 'lastYear') {
-    const year = subYears(new Date(), 1);
-    const startDate = formatISO(startOfYear(year));
-    const endDate = formatISO(endOfYear(year));
-
-    return {
-      startDate,
-      endDate,
-    };
-  }
-
-  // range === '30d'
-  const startDate = formatISO(startOfDay(subDays(new Date(), 30)));
-  const endDate = formatISO(new Date());
-
-  return {
-    startDate,
-    endDate,
-  };
-}
-
 function fillFunnel(funnel: { level: number; count: number }[], steps: number) {
   const filled = Array.from({ length: steps }, (_, index) => {
     const level = index + 1;
@@ -266,38 +134,6 @@ function fillFunnel(funnel: { level: number; count: number }[], steps: number) {
     }
   }
   return filled.reverse();
-}
-
-export function getChartStartEndDate({
-  startDate,
-  endDate,
-  range,
-}: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>) {
-  const ranges = getDatesFromRange(range);
-
-  if (startDate && endDate) {
-    return { startDate: startDate, endDate: endDate };
-  }
-
-  if (!startDate && endDate) {
-    return { startDate: ranges.startDate, endDate: endDate };
-  }
-
-  return ranges;
-}
-
-export function getChartPrevStartEndDate({
-  startDate,
-  endDate,
-}: {
-  startDate: string;
-  endDate: string;
-}) {
-  const diff = differenceInMilliseconds(new Date(endDate), new Date(startDate));
-  return {
-    startDate: formatISO(subMilliseconds(new Date(startDate), diff + 1000)),
-    endDate: formatISO(subMilliseconds(new Date(endDate), diff + 1000)),
-  };
 }
 
 export async function getFunnelData({
@@ -386,118 +222,60 @@ export async function getFunnelData({
   };
 }
 
-export async function getFunnelStep({
-  projectId,
-  startDate,
-  endDate,
-  step,
-  ...payload
-}: IChartInput & {
-  step: number;
-}) {
-  throw new Error('not implemented');
-  // if (!startDate || !endDate) {
-  //   throw new Error('startDate and endDate are required');
-  // }
-
-  // if (payload.events.length === 0) {
-  //   throw new Error('no events selected');
-  // }
-
-  // const funnels = payload.events.map((event) => {
-  //   const { sb, getWhere } = createSqlBuilder();
-  //   sb.where = getEventFiltersWhereClause(event.filters);
-  //   sb.where.name = `name = ${escape(event.name)}`;
-  //   return getWhere().replace('WHERE ', '');
-  // });
-
-  // const innerSql = `SELECT
-  //   session_id,
-  //   windowFunnel(${ONE_DAY_IN_SECONDS})(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level
-  // FROM ${TABLE_NAMES.events}
-  // WHERE
-  //   project_id = ${escape(projectId)} AND
-  //   created_at >= '${formatClickhouseDate(startDate)}' AND
-  //   created_at <= '${formatClickhouseDate(endDate)}' AND
-  //   name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  // GROUP BY session_id`;
-
-  // const profileIdsQuery = `WITH sessions AS (${innerSql})
-  //   SELECT
-  //     DISTINCT e.profile_id as id
-  //   FROM sessions s
-  //   JOIN ${TABLE_NAMES.events} e ON s.session_id = e.session_id
-  //   WHERE
-  //     s.level = ${step} AND
-  //     e.project_id = ${escape(projectId)} AND
-  //     e.created_at >= '${formatClickhouseDate(startDate)}' AND
-  //     e.created_at <= '${formatClickhouseDate(endDate)}' AND
-  //     name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
-  //   ORDER BY e.created_at DESC
-  //   LIMIT 500
-  //   `;
-
-  // const res = await chQuery<{
-  //   id: string;
-  // }>(profileIdsQuery);
-
-  // return getProfiles(
-  //   res.map((r) => r.id),
-  //   projectId,
-  // );
-}
-
-export async function getChartSerie(payload: IGetChartDataInput) {
+export async function getChartSerie(
+  payload: IGetChartDataInput,
+  timezone: string,
+) {
   async function getSeries() {
-    const result = await chQuery<ISerieDataItem>(getChartSql(payload));
+    const result = await chQuery<ISerieDataItem>(
+      getChartSql({ ...payload, timezone }),
+      {
+        session_timezone: timezone,
+      },
+    );
+
     if (result.length === 0 && payload.breakdowns.length > 0) {
       return await chQuery<ISerieDataItem>(
         getChartSql({
           ...payload,
           breakdowns: [],
+          timezone,
         }),
+        {
+          session_timezone: timezone,
+        },
       );
     }
     return result;
   }
 
   return getSeries()
-    .then((data) =>
-      completeSerie(data, payload.startDate, payload.endDate, payload.interval),
-    )
+    .then(groupByLabels)
     .then((series) => {
-      return Object.keys(series).map((key) => {
-        const firstDataItem = series[key]![0]!;
-        const isBreakdown =
-          payload.breakdowns.length && firstDataItem.labels.length;
-        const serieLabel = isBreakdown
-          ? firstDataItem.labels
-          : [getEventLegend(payload.event)];
+      return series.map((serie) => {
         return {
-          name: serieLabel,
+          ...serie,
           event: payload.event,
-          data: series[key]!.map((item) => ({
-            ...item,
-            date: toDynamicISODateWithTZ(
-              item.date,
-              payload.startDate,
-              payload.interval,
-            ),
-          })),
         };
       });
     });
 }
 
 export type IGetChartSerie = Awaited<ReturnType<typeof getChartSeries>>[number];
-export async function getChartSeries(input: IChartInputWithDates) {
+export async function getChartSeries(
+  input: IChartInputWithDates,
+  timezone: string,
+) {
   const series = (
     await Promise.all(
       input.events.map(async (event) =>
-        getChartSerie({
-          ...input,
-          event,
-        }),
+        getChartSerie(
+          {
+            ...input,
+            event,
+          },
+          timezone,
+        ),
       ),
     )
   ).flat();
@@ -510,7 +288,8 @@ export async function getChartSeries(input: IChartInputWithDates) {
 }
 
 export async function getChart(input: IChartInput) {
-  const currentPeriod = getChartStartEndDate(input);
+  const { timezone } = await getSettingsForProject(input.projectId);
+  const currentPeriod = getChartStartEndDate(input, timezone);
   const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
   const endDate = await getOrganizationSubscriptionChartEndDate(
@@ -522,14 +301,17 @@ export async function getChart(input: IChartInput) {
     currentPeriod.endDate = endDate;
   }
 
-  const promises = [getChartSeries({ ...input, ...currentPeriod })];
+  const promises = [getChartSeries({ ...input, ...currentPeriod }, timezone)];
 
   if (input.previous) {
     promises.push(
-      getChartSeries({
-        ...input,
-        ...previousPeriod,
-      }),
+      getChartSeries(
+        {
+          ...input,
+          ...previousPeriod,
+        },
+        timezone,
+      ),
     );
   }
 
@@ -565,9 +347,12 @@ export async function getChart(input: IChartInput) {
 
       return {
         id: getSerieId(serie),
-        names: includeEventName
-          ? [`(${alphaId}) ${serie.name[0]}`, ...serie.name.slice(1)]
-          : serie.name,
+        names:
+          input.breakdowns.length === 0 && serie.event.displayName
+            ? [serie.event.displayName]
+            : includeEventName
+              ? [`(${alphaId}) ${serie.name[0]}`, ...serie.name.slice(1)]
+              : serie.name,
         event,
         metrics: {
           ...metrics,

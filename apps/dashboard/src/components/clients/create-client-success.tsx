@@ -5,7 +5,7 @@ import type { IServiceClient } from '@openpanel/db';
 
 import CopyInput from '../forms/copy-input';
 
-type Props = IServiceClient;
+type Props = { id: string; secret: string };
 
 export function CreateClientSuccess({ id, secret }: Props) {
   return (

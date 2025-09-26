@@ -1,0 +1,20 @@
+{
+  "name": "@openpanel/geo",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "codegen": "jiti scripts/download.ts"
+  },
+  "dependencies": {
+    "@maxmind/geoip2-node": "^6.1.0"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "20.14.8",
+    "fast-extract": "^1.4.3",
+    "tar": "^7.4.3",
+    "typescript": "^5.2.2",
+    "jiti": "^2.4.1"
+  }
+}
