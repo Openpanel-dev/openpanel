@@ -109,7 +109,7 @@ export const eventsGroupQueue = new GroupQueue<
 >({
   namespace: 'group_events',
   redis: getRedisGroupQueue(),
-  orderingDelayMs: 5_000,
+  orderingDelayMs: 2_000,
   keepCompleted: 1000,
   keepFailed: Number.MAX_SAFE_INTEGER,
 });

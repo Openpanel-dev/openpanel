@@ -33,7 +33,6 @@ export async function bootWorkers() {
   const eventsGroupWorker = new GroupWorker<
     EventsQueuePayloadIncomingEvent['payload']
   >({
-    // redis: getRedisGroupQueue(),
     queue: eventsGroupQueue,
     handler: async (job) => {
       logger.info('processing event (group queue)', {
