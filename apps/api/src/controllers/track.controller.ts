@@ -6,8 +6,8 @@ import { checkDuplicatedEvent } from '@/utils/deduplicate';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import { eventsQueue, eventsWorkerQueue } from '@openpanel/queue';
-import { getLock } from '@openpanel/redis';
+import { eventsGroupQueue, eventsQueue } from '@openpanel/queue';
+import { getLock, getRedisCache } from '@openpanel/redis';
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -264,7 +264,6 @@ type TrackPayload = {
   name: string;
   properties?: Record<string, any>;
 };
-process.env.GROUP_QUEUE = '1';
 async function track({
   payload,
   currentDeviceId,
@@ -284,9 +283,11 @@ async function track({
   timestamp: string;
   isTimestampFromThePast: boolean;
 }) {
-  if (process.env.GROUP_QUEUE) {
-    await eventsWorkerQueue.add({
-      payload: {
+  const isGroupQueue = await getRedisCache().exists('group_queue');
+  if (isGroupQueue) {
+    await eventsGroupQueue.add({
+      orderMs: new Date(timestamp).getTime(),
+      data: {
         projectId,
         headers,
         event: {

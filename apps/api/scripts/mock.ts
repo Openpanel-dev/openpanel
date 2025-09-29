@@ -3,6 +3,7 @@ import * as faker from '@faker-js/faker';
 import { generateId } from '@openpanel/common';
 import { hashPassword } from '@openpanel/common/server';
 import { ClientType, db } from '@openpanel/db';
+import { getRedisCache } from '@openpanel/redis';
 import { v4 as uuidv4 } from 'uuid';
 
 const DOMAIN_COUNT = 5;
@@ -260,6 +261,8 @@ function insertFakeEvents(events: Event[]) {
 }
 
 async function simultaneousRequests() {
+  await getRedisCache().flushdb();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   const sessions: {
     ip: string;
     referrer: string;
@@ -272,9 +275,11 @@ async function simultaneousRequests() {
       userAgent:
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
       track: [
-        { name: 'screen_view', path: '/home' },
+        { name: 'screen_view', path: '/home', parallel: '1' },
         { name: 'button_click', element: 'signup', parallel: '1' },
+        { name: 'article_viewed', articleId: '123', parallel: '1' },
         { name: 'screen_view', path: '/pricing', parallel: '1' },
+        { name: 'screen_view', path: '/blog', parallel: '1' },
       ],
     },
     {
@@ -475,7 +480,7 @@ async function simultaneousRequests() {
       }
 
       // Add delay between groups (not within parallel groups)
-      await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
+      // await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
     }
   }
 }

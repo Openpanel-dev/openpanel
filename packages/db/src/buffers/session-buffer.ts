@@ -9,9 +9,7 @@ import type { IClickhouseSession } from '../services/session.service';
 import { BaseBuffer } from './base-buffer';
 
 export class SessionBuffer extends BaseBuffer {
-  private batchSize = process.env.SESSION_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.SESSION_BUFFER_BATCH_SIZE, 10)
-    : 1000;
+  private batchSize = 0;
 
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
@@ -64,16 +62,11 @@ export class SessionBuffer extends BaseBuffer {
       if (duration > 0) {
         newSession.duration = duration;
       } else {
-        console.log('Session duration is negative', {
-          duration,
-          event,
-          session: newSession,
-        });
-        this.logger.warn('Session duration is negative', {
-          duration,
-          event,
-          session: newSession,
-        });
+        // this.logger.warn('Session duration is negative', {
+        //   duration,
+        //   event,
+        //   session: newSession,
+        // });
       }
       newSession.properties = toDots({
         ...(event.properties || {}),

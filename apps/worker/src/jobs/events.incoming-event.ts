@@ -190,15 +190,14 @@ export async function incomingEventPure(
   if (!sessionEnd) {
     // Too avoid several created sessions we just throw if a lock exists
     // This will than retry the job
-    const lock = await getLock(
-      `create-session-end:${currentDeviceId}`,
-      'locked',
-      1000,
-    );
+    if (job) {
+      const lock = await getLock(
+        `create-session-end:${currentDeviceId}`,
+        'locked',
+        1000,
+      );
 
-    if (!lock) {
-      logger.warn('WARNING!!!!');
-      if (job) {
+      if (!lock) {
         await job.moveToDelayed(Date.now() + 50, token);
         throw new DelayedError();
       }

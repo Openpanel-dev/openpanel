@@ -4,6 +4,7 @@ import { Worker } from 'bullmq';
 import {
   type EventsQueuePayloadIncomingEvent,
   cronQueue,
+  eventsGroupQueue,
   eventsQueue,
   miscQueue,
   notificationQueue,
@@ -13,7 +14,7 @@ import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
 
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { Worker as GroupWorker } from '@openpanel/group-queue';
+import { Worker as GroupWorker } from 'groupmq';
 
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
@@ -32,14 +33,15 @@ export async function bootWorkers() {
   const eventsGroupWorker = new GroupWorker<
     EventsQueuePayloadIncomingEvent['payload']
   >({
-    redis: getRedisGroupQueue(),
+    // redis: getRedisGroupQueue(),
+    queue: eventsGroupQueue,
     handler: async (job) => {
-      await incomingEventPure(job.payload);
+      logger.info('processing event (group queue)', {
+        groupId: job.groupId,
+        timestamp: job.data.event.timestamp,
+      });
+      await incomingEventPure(job.data);
     },
-    namespace: 'events',
-    jobTimeoutMs: 30_000,
-    enableCleanup: true,
-    orderingDelayMs: 2_000,
   });
   eventsGroupWorker.run();
   const eventsWorker = new Worker(eventsQueue.name, eventsJob, workerOptions);
@@ -98,26 +100,14 @@ export async function bootWorkers() {
 
     (worker as Worker).on('completed', (job) => {
       if (job) {
-        // logger.info('job completed', {
-        //   worker: worker.name,
-        //   data: job.data,
-        //   elapsed:
-        //     job.processedOn && job.finishedOn
-        //       ? job.finishedOn - job.processedOn
-        //       : undefined,
-        // });
-        // Calculate elapsed time in milliseconds
-        // processedOn and finishedOn are now in milliseconds (performance.now() format)
-        const elapsedMs =
-          job.processedOn && job.finishedOn
-            ? Math.round(job.finishedOn - job.processedOn)
-            : undefined;
-
-        console.log(
-          'job completed',
-          job.id,
-          elapsedMs ? `${elapsedMs}ms` : 'unknown',
-        );
+        logger.info('job completed', {
+          worker: worker.name,
+          data: job.data,
+          elapsed:
+            job.processedOn && job.finishedOn
+              ? job.finishedOn - job.processedOn
+              : undefined,
+        });
       }
     });
 

@@ -7,9 +7,9 @@
   },
   "dependencies": {
     "@openpanel/db": "workspace:*",
-    "@openpanel/group-queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
-    "bullmq": "^5.8.7"
+    "bullmq": "^5.8.7",
+    "groupmq": "1.0.0-next.2"
   },
   "devDependencies": {
     "@openpanel/sdk": "workspace:*",
