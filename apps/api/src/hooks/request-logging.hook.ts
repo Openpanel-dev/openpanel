@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, pick } from 'ramda';
 
-const ignoreLog = ['/healthcheck', '/metrics', '/misc'];
+const ignoreLog = ['/healthcheck', '/healthz', '/metrics', '/misc'];
 const ignoreMethods = ['OPTIONS'];
 
 const getTrpcInput = (
