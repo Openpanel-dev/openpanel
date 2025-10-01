@@ -61,7 +61,7 @@ export class SessionBuffer extends BaseBuffer {
       const duration =
         new Date(newSession.ended_at).getTime() -
         new Date(newSession.created_at).getTime();
-      if (duration > 0) {
+      if (duration >= 0) {
         newSession.duration = duration;
       } else {
         this.logger.warn('Session duration is negative', {
