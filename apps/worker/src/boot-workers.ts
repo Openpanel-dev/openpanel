@@ -33,6 +33,7 @@ export async function bootWorkers() {
   const eventsGroupWorker = new GroupWorker<
     EventsQueuePayloadIncomingEvent['payload']
   >({
+    logger: true,
     queue: eventsGroupQueue,
     handler: async (job) => {
       logger.info('processing event (group queue)', {

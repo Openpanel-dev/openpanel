@@ -107,6 +107,7 @@ export const eventsQueue = new Queue<EventsQueuePayload>('events', {
 export const eventsGroupQueue = new GroupQueue<
   EventsQueuePayloadIncomingEvent['payload']
 >({
+  logger: true,
   namespace: 'group_events',
   redis: getRedisGroupQueue(),
   orderingDelayMs: 2_000,
