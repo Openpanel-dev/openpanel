@@ -9,7 +9,7 @@
     "@openpanel/db": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "bullmq": "^5.8.7",
-    "groupmq": "1.0.0-next.5"
+    "groupmq": "1.0.0-next.6"
   },
   "devDependencies": {
     "@openpanel/sdk": "workspace:*",
