@@ -8,6 +8,8 @@ const options: RedisOptions = {
 
 export { Redis };
 
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+
 export interface ExtendedRedis extends Redis {
   getJson: <T = any>(key: string) => Promise<T | null>;
   setJson: <T = any>(
@@ -63,7 +65,7 @@ const createRedisClient = (
 let redisCache: ExtendedRedis;
 export function getRedisCache() {
   if (!redisCache) {
-    redisCache = createRedisClient(process.env.REDIS_URL!, options);
+    redisCache = createRedisClient(REDIS_URL, options);
   }
 
   return redisCache;
@@ -72,7 +74,7 @@ export function getRedisCache() {
 let redisSub: ExtendedRedis;
 export function getRedisSub() {
   if (!redisSub) {
-    redisSub = createRedisClient(process.env.REDIS_URL!, options);
+    redisSub = createRedisClient(REDIS_URL, options);
   }
 
   return redisSub;
@@ -81,7 +83,7 @@ export function getRedisSub() {
 let redisPub: ExtendedRedis;
 export function getRedisPub() {
   if (!redisPub) {
-    redisPub = createRedisClient(process.env.REDIS_URL!, options);
+    redisPub = createRedisClient(REDIS_URL, options);
   }
 
   return redisPub;
@@ -91,15 +93,12 @@ let redisQueue: ExtendedRedis;
 export function getRedisQueue() {
   if (!redisQueue) {
     // Use different redis for queues (self-hosting will re-use the same redis instance)
-    redisQueue = createRedisClient(
-      (process.env.QUEUE_REDIS_URL || process.env.REDIS_URL)!,
-      {
-        ...options,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: null,
-        enableOfflineQueue: true,
-      },
-    );
+    redisQueue = createRedisClient(REDIS_URL, {
+      ...options,
+      enableReadyCheck: false,
+      maxRetriesPerRequest: null,
+      enableOfflineQueue: true,
+    });
   }
 
   return redisQueue;
@@ -109,15 +108,12 @@ let redisGroupQueue: ExtendedRedis;
 export function getRedisGroupQueue() {
   if (!redisGroupQueue) {
     // Dedicated Redis connection for GroupWorker to avoid blocking BullMQ
-    redisGroupQueue = createRedisClient(
-      (process.env.QUEUE_REDIS_URL || process.env.REDIS_URL)!,
-      {
-        ...options,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: null,
-        enableOfflineQueue: true,
-      },
-    );
+    redisGroupQueue = createRedisClient(REDIS_URL, {
+      ...options,
+      enableReadyCheck: false,
+      maxRetriesPerRequest: null,
+      enableOfflineQueue: true,
+    });
   }
 
   return redisGroupQueue;

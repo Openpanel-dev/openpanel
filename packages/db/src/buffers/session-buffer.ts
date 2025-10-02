@@ -14,6 +14,7 @@ export class SessionBuffer extends BaseBuffer {
     : 1000;
 
   private readonly redisKey = 'session-buffer';
+  protected readonly bufferCounterKey = 'session-buffer:count';
   private redis: Redis;
   constructor() {
     super({
@@ -21,6 +22,7 @@ export class SessionBuffer extends BaseBuffer {
       onFlush: async () => {
         await this.processBuffer();
       },
+      bufferCounterKey: 'session-buffer:count',
     });
     this.redis = getRedisCache();
   }
@@ -174,10 +176,12 @@ export class SessionBuffer extends BaseBuffer {
       for (const session of sessions) {
         multi.rpush(this.redisKey, JSON.stringify(session));
       }
+      // Increment counter by number of sessions added
+      multi.incrby(this.bufferCounterKey, sessions.length);
       await multi.exec();
 
-      // Check buffer length
-      const bufferLength = await this.redis.llen(this.redisKey);
+      // Check buffer length using counter
+      const bufferLength = await this.getBufferSize();
 
       if (bufferLength >= this.batchSize) {
         await this.tryFlush();
@@ -216,8 +220,12 @@ export class SessionBuffer extends BaseBuffer {
         });
       }
 
-      // Only remove events after successful insert
-      await this.redis.ltrim(this.redisKey, events.length, -1);
+      // Only remove events after successful insert and update counter
+      const multi = this.redis.multi();
+      multi
+        .ltrim(this.redisKey, events.length, -1)
+        .decrby(this.bufferCounterKey, events.length);
+      await multi.exec();
 
       this.logger.info('Processed sessions', {
         count: events.length,
@@ -228,6 +236,9 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    return getRedisCache().llen(this.redisKey);
+    return this.getBufferSizeWithCounter(
+      () => this.redis.llen(this.redisKey),
+      this.bufferCounterKey,
+    );
   }
 }

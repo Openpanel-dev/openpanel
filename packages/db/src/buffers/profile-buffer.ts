@@ -1,7 +1,7 @@
 import { deepMergeObjects } from '@openpanel/common';
 import { getSafeJson } from '@openpanel/json';
 import type { ILogger } from '@openpanel/logger';
-import { type Redis, getRedisCache } from '@openpanel/redis';
+import { type Redis, getRedisCache, runEvery } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
@@ -20,6 +20,7 @@ export class ProfileBuffer extends BaseBuffer {
     : 1000;
 
   private readonly redisBufferKey = 'profile-buffer';
+  protected readonly bufferCounterKey = 'profile-buffer:count';
   private readonly redisProfilePrefix = 'profile-cache:';
 
   private redis: Redis;
@@ -102,6 +103,7 @@ export class ProfileBuffer extends BaseBuffer {
         .multi()
         .set(cacheKey, JSON.stringify(mergedProfile), 'EX', cacheTtl)
         .rpush(this.redisBufferKey, JSON.stringify(mergedProfile))
+        .incr(this.bufferCounterKey)
         .llen(this.redisBufferKey)
         .exec();
 
@@ -112,7 +114,7 @@ export class ProfileBuffer extends BaseBuffer {
         });
         return;
       }
-      const bufferLength = (result?.[2]?.[1] as number) ?? 0;
+      const bufferLength = (result?.[3]?.[1] as number) ?? 0;
 
       this.logger.debug('Current buffer length', {
         bufferLength,
@@ -200,8 +202,12 @@ export class ProfileBuffer extends BaseBuffer {
         });
       }
 
-      // Only remove profiles after successful insert
-      await this.redis.ltrim(this.redisBufferKey, profiles.length, -1);
+      // Only remove profiles after successful insert and update counter
+      await this.redis
+        .multi()
+        .ltrim(this.redisBufferKey, profiles.length, -1)
+        .decrby(this.bufferCounterKey, profiles.length)
+        .exec();
 
       this.logger.info('Successfully completed profile processing', {
         totalProfiles: profiles.length,
@@ -212,6 +218,13 @@ export class ProfileBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    return getRedisCache().llen(this.redisBufferKey);
+    const counterValue = await getRedisCache().get(this.bufferCounterKey);
+    if (counterValue) {
+      return Math.max(0, Number.parseInt(counterValue, 10));
+    }
+
+    const count = await getRedisCache().llen(this.redisBufferKey);
+    await getRedisCache().set(this.bufferCounterKey, count.toString());
+    return count;
   }
 }
