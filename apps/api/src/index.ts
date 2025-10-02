@@ -217,15 +217,15 @@ const startServer = async () => {
 
     if (process.env.NODE_ENV === 'production') {
       logger.info('Registering graceful shutdown handlers');
-      process.on('SIGTERM', () => shutdown(fastify, 'SIGTERM'));
-      process.on('SIGINT', () => shutdown(fastify, 'SIGINT'));
-      process.on('uncaughtException', (error) => {
+      process.on('SIGTERM', async () => await shutdown(fastify, 'SIGTERM', 0));
+      process.on('SIGINT', async () => await shutdown(fastify, 'SIGINT', 0));
+      process.on('uncaughtException', async (error) => {
         logger.error('Uncaught exception', error);
-        shutdown(fastify, 'uncaughtException');
+        await shutdown(fastify, 'uncaughtException', 1);
       });
-      process.on('unhandledRejection', (reason, promise) => {
+      process.on('unhandledRejection', async (reason, promise) => {
         logger.error('Unhandled rejection', { reason, promise });
-        shutdown(fastify, 'unhandledRejection');
+        await shutdown(fastify, 'unhandledRejection', 1);
       });
     }
 

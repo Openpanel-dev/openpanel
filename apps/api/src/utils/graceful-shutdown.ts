@@ -26,13 +26,23 @@ export function isShuttingDown() {
 }
 
 // Graceful shutdown handler
-export async function shutdown(fastify: FastifyInstance, signal: string) {
+export async function shutdown(
+  fastify: FastifyInstance,
+  signal: string,
+  exitCode = 0,
+) {
+  if (isShuttingDown()) {
+    logger.warn('Shutdown already in progress, ignoring signal', { signal });
+    return;
+  }
+
   logger.info('Starting graceful shutdown', { signal });
 
   setShuttingDown(true);
 
   // Step 2: Wait for load balancer to stop sending traffic (matches preStop sleep)
-  await new Promise((resolve) => setTimeout(resolve, 5000));
+  const gracePeriod = Number(process.env.SHUTDOWN_GRACE_PERIOD_MS || '5000');
+  await new Promise((resolve) => setTimeout(resolve, gracePeriod));
 
   // Step 3: Close Fastify to drain in-flight requests
   try {
@@ -94,5 +104,5 @@ export async function shutdown(fastify: FastifyInstance, signal: string) {
   }
 
   logger.info('Graceful shutdown completed');
-  process.exit(0);
+  process.exit(exitCode);
 }
