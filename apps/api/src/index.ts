@@ -21,7 +21,8 @@ import {
 import sourceMapSupport from 'source-map-support';
 import {
   healthcheck,
-  healthcheckQueue,
+  liveness,
+  readiness,
 } from './controllers/healthcheck.controller';
 import { fixHook } from './hooks/fix.hook';
 import { ipHook } from './hooks/ip.hook';
@@ -40,6 +41,7 @@ import profileRouter from './routes/profile.router';
 import trackRouter from './routes/track.router';
 import webhookRouter from './routes/webhook.router';
 import { HttpError } from './utils/errors';
+import { shutdown } from './utils/graceful-shutdown';
 import { logger } from './utils/logger';
 
 sourceMapSupport.install();
@@ -172,8 +174,11 @@ const startServer = async () => {
       instance.register(importRouter, { prefix: '/import' });
       instance.register(insightsRouter, { prefix: '/insights' });
       instance.register(trackRouter, { prefix: '/track' });
+      // Keep existing endpoints for backward compatibility
       instance.get('/healthcheck', healthcheck);
-      instance.get('/healthcheck/queue', healthcheckQueue);
+      // New Kubernetes-style health endpoints
+      instance.get('/healthz/live', liveness);
+      instance.get('/healthz/ready', readiness);
       instance.get('/', (_request, reply) =>
         reply.send({ name: 'openpanel sdk api' }),
       );
@@ -211,14 +216,17 @@ const startServer = async () => {
     });
 
     if (process.env.NODE_ENV === 'production') {
-      for (const signal of ['SIGINT', 'SIGTERM']) {
-        process.on(signal, (error) => {
-          logger.error(`uncaught exception detected ${signal}`, error);
-          fastify.close().then((error) => {
-            process.exit(error ? 1 : 0);
-          });
-        });
-      }
+      logger.info('Registering graceful shutdown handlers');
+      process.on('SIGTERM', async () => await shutdown(fastify, 'SIGTERM', 0));
+      process.on('SIGINT', async () => await shutdown(fastify, 'SIGINT', 0));
+      process.on('uncaughtException', async (error) => {
+        logger.error('Uncaught exception', error);
+        await shutdown(fastify, 'uncaughtException', 1);
+      });
+      process.on('unhandledRejection', async (reason, promise) => {
+        logger.error('Unhandled rejection', { reason, promise });
+        await shutdown(fastify, 'unhandledRejection', 1);
+      });
     }
 
     await fastify.listen({
