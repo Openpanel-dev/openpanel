@@ -13,6 +13,7 @@ import type {
   IdentifyPayload,
   IncrementPayload,
   TrackHandlerPayload,
+  TrackPayload,
 } from '@openpanel/sdk';
 
 export function getStringHeaders(headers: FastifyRequest['headers']) {
@@ -260,10 +261,6 @@ export async function handler(
   reply.status(200).send();
 }
 
-type TrackPayload = {
-  name: string;
-  properties?: Record<string, any>;
-};
 async function track({
   payload,
   currentDeviceId,
@@ -285,6 +282,9 @@ async function track({
 }) {
   const isGroupQueue = await getRedisCache().exists('group_queue');
   if (isGroupQueue) {
+    const groupId = payload.profileId
+      ? `${projectId}:${payload.profileId}`
+      : currentDeviceId;
     await eventsGroupQueue.add({
       orderMs: new Date(timestamp).getTime(),
       data: {
@@ -299,7 +299,7 @@ async function track({
         currentDeviceId,
         previousDeviceId,
       },
-      groupId: currentDeviceId,
+      groupId,
     });
   } else {
     await eventsQueue.add(

@@ -62,6 +62,9 @@ export async function postEvent(
 
   const isGroupQueue = await getRedisCache().exists('group_queue');
   if (isGroupQueue) {
+    const groupId = request.body?.profileId
+      ? `${projectId}:${request.body?.profileId}`
+      : currentDeviceId;
     await eventsGroupQueue.add({
       orderMs: new Date(timestamp).getTime(),
       data: {
@@ -76,7 +79,7 @@ export async function postEvent(
         currentDeviceId,
         previousDeviceId,
       },
-      groupId: currentDeviceId,
+      groupId,
     });
   } else {
     await eventsQueue.add(
