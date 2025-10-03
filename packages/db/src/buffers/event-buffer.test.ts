@@ -52,7 +52,7 @@ import { EventBuffer } from './event-buffer';
 const redis = getRedisCache();
 
 beforeEach(async () => {
-  await redis.flushall();
+  await redis.flushdb();
 });
 
 afterAll(async () => {

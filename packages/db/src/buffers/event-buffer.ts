@@ -404,13 +404,14 @@ return "OK"
   private async getEligibleSessions(
     startOffset: number,
     maxEventsPerSession: number,
+    sessionsPerPage: number,
   ) {
     const sessionsSorted = await getRedisCache().eval(
       this.processReadySessionsScript,
       2, // number of KEYS
       this.readySessionsKey,
       this.sessionKeyPrefix,
-      this.maxSessionsPerFlush.toString(),
+      sessionsPerPage.toString(),
       maxEventsPerSession.toString(),
       startOffset.toString(),
     );
@@ -506,14 +507,19 @@ return "OK"
           break;
         }
 
+        const sessionsPerPage = Math.min(
+          this.maxSessionsPerFlush,
+          Math.max(1, Math.floor(sessionBudget / 2)),
+        );
         const perSessionBudget = Math.max(
-          1,
-          Math.floor(sessionBudget / this.maxSessionsPerFlush),
+          2,
+          Math.floor(sessionBudget / sessionsPerPage),
         );
 
         const sessionsPage = await this.getEligibleSessions(
           startOffset,
           perSessionBudget,
+          sessionsPerPage,
         );
         const sessionIds = Object.keys(sessionsPage);
         if (sessionIds.length === 0) {
@@ -543,8 +549,7 @@ return "OK"
             break;
           }
         }
-
-        startOffset += this.maxSessionsPerFlush;
+        startOffset += sessionsPerPage;
       }
 
       timer.processSessionEvents = performance.now() - now;

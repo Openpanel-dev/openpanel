@@ -19,8 +19,7 @@ export class ProfileBuffer extends BaseBuffer {
     ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
     : 1000;
 
-  private readonly redisBufferKey = 'profile-buffer';
-  protected readonly bufferCounterKey = 'profile-buffer:count';
+  private readonly redisKey = 'profile-buffer';
   private readonly redisProfilePrefix = 'profile-cache:';
 
   private redis: Redis;
@@ -102,9 +101,9 @@ export class ProfileBuffer extends BaseBuffer {
       const result = await this.redis
         .multi()
         .set(cacheKey, JSON.stringify(mergedProfile), 'EX', cacheTtl)
-        .rpush(this.redisBufferKey, JSON.stringify(mergedProfile))
+        .rpush(this.redisKey, JSON.stringify(mergedProfile))
         .incr(this.bufferCounterKey)
-        .llen(this.redisBufferKey)
+        .llen(this.redisKey)
         .exec();
 
       if (!result) {
@@ -179,7 +178,7 @@ export class ProfileBuffer extends BaseBuffer {
     try {
       this.logger.info('Starting profile buffer processing');
       const profiles = await this.redis.lrange(
-        this.redisBufferKey,
+        this.redisKey,
         0,
         this.batchSize - 1,
       );
@@ -205,7 +204,7 @@ export class ProfileBuffer extends BaseBuffer {
       // Only remove profiles after successful insert and update counter
       await this.redis
         .multi()
-        .ltrim(this.redisBufferKey, profiles.length, -1)
+        .ltrim(this.redisKey, profiles.length, -1)
         .decrby(this.bufferCounterKey, profiles.length)
         .exec();
 
@@ -218,13 +217,6 @@ export class ProfileBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    const counterValue = await getRedisCache().get(this.bufferCounterKey);
-    if (counterValue) {
-      return Math.max(0, Number.parseInt(counterValue, 10));
-    }
-
-    const count = await getRedisCache().llen(this.redisBufferKey);
-    await getRedisCache().set(this.bufferCounterKey, count.toString());
-    return count;
+    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
   }
 }

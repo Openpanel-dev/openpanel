@@ -80,8 +80,6 @@ export class BotBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    return this.getBufferSizeWithCounter(() =>
-      getRedisCache().llen(this.redisKey),
-    );
+    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
   }
 }

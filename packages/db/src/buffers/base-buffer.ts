@@ -14,7 +14,6 @@ export class BaseBuffer {
   constructor(options: {
     name: string;
     onFlush: () => Promise<void>;
-    bufferCounterKey?: string;
   }) {
     this.logger = createLogger({ name: options.name });
     this.name = options.name;
@@ -53,8 +52,16 @@ export class BaseBuffer {
       }).catch(() => {});
 
       const counterValue = await getRedisCache().get(key);
-      if (counterValue) {
-        return Math.max(0, Number.parseInt(counterValue, 10));
+      if (counterValue !== null) {
+        const parsed = Number.parseInt(counterValue, 10);
+        if (!Number.isNaN(parsed)) {
+          return Math.max(0, parsed);
+        }
+        // Corrupted value → treat as missing
+        this.logger.warn('Invalid buffer counter value, reinitializing', {
+          key,
+          counterValue,
+        });
       }
 
       // Initialize counter with current size
