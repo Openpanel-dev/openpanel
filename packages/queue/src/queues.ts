@@ -1,9 +1,12 @@
 import { Queue, QueueEvents } from 'bullmq';
 
 import type { IServiceEvent, Prisma } from '@openpanel/db';
+import { createLogger } from '@openpanel/logger';
 import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
 import type { TrackPayload } from '@openpanel/sdk';
 import { Queue as GroupQueue } from 'groupmq';
+
+export const queueLogger = createLogger({ name: 'queue' });
 
 export interface EventsQueuePayloadIncomingEvent {
   type: 'incomingEvent';
@@ -107,12 +110,12 @@ export const eventsQueue = new Queue<EventsQueuePayload>('events', {
 export const eventsGroupQueue = new GroupQueue<
   EventsQueuePayloadIncomingEvent['payload']
 >({
-  logger: true,
+  logger: queueLogger,
   namespace: 'group_events',
   redis: getRedisGroupQueue(),
-  orderingDelayMs: 2_000,
-  keepCompleted: 1000,
-  keepFailed: Number.MAX_SAFE_INTEGER,
+  orderingDelayMs: 2000,
+  keepCompleted: 10,
+  keepFailed: 10_000,
 });
 
 export const sessionsQueue = new Queue<SessionsQueuePayload>('sessions', {

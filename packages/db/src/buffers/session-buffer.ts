@@ -1,4 +1,4 @@
-import { type Redis, getRedisCache, runEvery } from '@openpanel/redis';
+import { type Redis, getRedisCache } from '@openpanel/redis';
 
 import { toDots } from '@openpanel/common';
 import { getSafeJson } from '@openpanel/json';
@@ -14,7 +14,6 @@ export class SessionBuffer extends BaseBuffer {
     : 1000;
 
   private readonly redisKey = 'session-buffer';
-  protected readonly bufferCounterKey = 'session-buffer:count';
   private redis: Redis;
   constructor() {
     super({
@@ -22,7 +21,6 @@ export class SessionBuffer extends BaseBuffer {
       onFlush: async () => {
         await this.processBuffer();
       },
-      bufferCounterKey: 'session-buffer:count',
     });
     this.redis = getRedisCache();
   }
@@ -236,9 +234,6 @@ export class SessionBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    return this.getBufferSizeWithCounter(
-      () => this.redis.llen(this.redisKey),
-      this.bufferCounterKey,
-    );
+    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
   }
 }

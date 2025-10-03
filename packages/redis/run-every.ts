@@ -15,6 +15,6 @@ export async function runEvery({
     return;
   }
 
-  await getRedisCache().set(cacheKey, 'true', 'EX', interval);
+  await getRedisCache().set(cacheKey, '1', 'EX', interval);
   return fn();
 }

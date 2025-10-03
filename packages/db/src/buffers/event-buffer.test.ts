@@ -467,4 +467,37 @@ describe('EventBuffer with real Redis', () => {
     evalSpy.mockRestore();
     insertSpy.mockRestore();
   });
+
+  it('flushes a lone session_end and clears the session list', async () => {
+    const s = 'session_only_end';
+    const end = {
+      project_id: 'p9',
+      profile_id: 'u9',
+      session_id: s,
+      name: 'session_end',
+      created_at: new Date().toISOString(),
+    } as any;
+
+    const eb = new EventBuffer();
+    await eb.add(end);
+
+    // Should be considered ready even though only 1 event (session_end)
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockResolvedValueOnce(undefined as any);
+
+    await eb.processBuffer();
+
+    expect(insertSpy).toHaveBeenCalledWith({
+      format: 'JSONEachRow',
+      table: 'events',
+      values: [end],
+    });
+
+    const sessionKey = `event_buffer:session:${s}`;
+    const remaining = await redis.lrange(sessionKey, 0, -1);
+    expect(remaining.length).toBe(0);
+
+    insertSpy.mockRestore();
+  });
 });

@@ -8,9 +8,10 @@ import {
   eventsQueue,
   miscQueue,
   notificationQueue,
+  queueLogger,
   sessionsQueue,
 } from '@openpanel/queue';
-import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
+import { getRedisQueue } from '@openpanel/redis';
 
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -33,7 +34,8 @@ export async function bootWorkers() {
   const eventsGroupWorker = new GroupWorker<
     EventsQueuePayloadIncomingEvent['payload']
   >({
-    logger: true,
+    concurrency: 2,
+    logger: queueLogger,
     queue: eventsGroupQueue,
     handler: async (job) => {
       logger.info('processing event (group queue)', {

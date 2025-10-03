@@ -11,7 +11,6 @@ export class BotBuffer extends BaseBuffer {
     : 1000;
 
   private readonly redisKey = 'bot-events-buffer';
-  protected readonly bufferCounterKey = 'bot-events-buffer:count';
   private redis: Redis;
   constructor() {
     super({
@@ -19,7 +18,6 @@ export class BotBuffer extends BaseBuffer {
       onFlush: async () => {
         await this.processBuffer();
       },
-      bufferCounterKey: 'bot-events-buffer:count',
     });
     this.redis = getRedisCache();
   }
@@ -82,9 +80,8 @@ export class BotBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    return this.getBufferSizeWithCounter(
-      () => getRedisCache().llen(this.redisKey),
-      this.bufferCounterKey,
+    return this.getBufferSizeWithCounter(() =>
+      getRedisCache().llen(this.redisKey),
     );
   }
 }

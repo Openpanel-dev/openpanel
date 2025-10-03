@@ -1,4 +1,4 @@
-import { getSafeJson, setSuperJson } from '@openpanel/json';
+import { getSafeJson } from '@openpanel/json';
 import {
   type Redis,
   getRedisCache,
@@ -38,12 +38,16 @@ import { BaseBuffer } from './base-buffer';
 
 export class EventBuffer extends BaseBuffer {
   // Configurable limits
+  // How many days to keep buffered session metadata before cleanup
   private daysToKeep = process.env.EVENT_BUFFER_DAYS_TO_KEEP
     ? Number.parseFloat(process.env.EVENT_BUFFER_DAYS_TO_KEEP)
     : 3;
-  private batchSize = process.env.EVENT_BUFFER_BATCH_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_BATCH_SIZE, 10)
+  // How many events we attempt to FETCH per flush cycle (split across sessions/non-sessions)
+  // Prefer new env EVENT_BUFFER_FETCH_BATCH_SIZE; fallback to legacy EVENT_BUFFER_BATCH_SIZE
+  private batchSize = process.env.EVENT_BUFFER_FETCH_BATCH_SIZE
+    ? Number.parseInt(process.env.EVENT_BUFFER_FETCH_BATCH_SIZE, 10)
     : 4000;
+  // How many events per insert chunk we send to ClickHouse (insert batch size)
   private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
     ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
     : 1000;
@@ -55,8 +59,17 @@ export class EventBuffer extends BaseBuffer {
       )
     : 300; // Reduced from 1000 to cap Lua payload size
 
+  // Cap of how many ready sessions to scan per flush cycle (configurable via env)
+  private maxSessionsPerFlush = process.env.EVENT_BUFFER_MAX_SESSIONS_PER_FLUSH
+    ? Number.parseInt(process.env.EVENT_BUFFER_MAX_SESSIONS_PER_FLUSH, 10)
+    : 500;
+
+  // Soft time budget per flush (ms) to avoid long lock holds
+  private flushTimeBudgetMs = process.env.EVENT_BUFFER_FLUSH_TIME_BUDGET_MS
+    ? Number.parseInt(process.env.EVENT_BUFFER_FLUSH_TIME_BUDGET_MS, 10)
+    : 1000;
+
   private minEventsInSession = 2;
-  private maxSessionsPerFlush = 100;
 
   private activeVisitorsExpiration = 60 * 5; // 5 minutes
 
@@ -89,12 +102,14 @@ local readySessionsKey = KEYS[1]
 local sessionPrefix = KEYS[2]
 local maxSessions = tonumber(ARGV[1])
 local maxEventsPerSession = tonumber(ARGV[2])
+local startOffset = tonumber(ARGV[3]) or 0
 
 local result = {}
 local sessionsToRemove = {}
 
--- Get up to maxSessions ready sessions
-local sessionIds = redis.call('ZRANGE', readySessionsKey, 0, maxSessions - 1)
+-- Get up to maxSessions ready sessions from window [startOffset, startOffset+maxSessions-1]
+local stopIndex = startOffset + maxSessions - 1
+local sessionIds = redis.call('ZRANGE', readySessionsKey, startOffset, stopIndex)
 local resultIndex = 1
 
 for i, sessionId in ipairs(sessionIds) do
@@ -286,7 +301,7 @@ if sessionId and sessionId ~= "" and (eventName == "screen_view" or eventName ==
   
   -- Check if session is now ready for processing
   local sessionLength = redis.call("LLEN", sessionKey)
-  if sessionLength >= minEventsInSession then
+  if sessionLength >= minEventsInSession or eventName == "session_end" then
     redis.call("ZADD", readySessionsKey, score, sessionId)
   end
   
@@ -386,11 +401,10 @@ return "OK"
     }
   }
 
-  private async getEligibleSessions() {
-    const maxEventsPerSession = Math.floor(
-      this.batchSize / this.maxSessionsPerFlush,
-    );
-
+  private async getEligibleSessions(
+    startOffset: number,
+    maxEventsPerSession: number,
+  ) {
     const sessionsSorted = await getRedisCache().eval(
       this.processReadySessionsScript,
       2, // number of KEYS
@@ -398,6 +412,7 @@ return "OK"
       this.sessionKeyPrefix,
       this.maxSessionsPerFlush.toString(),
       maxEventsPerSession.toString(),
+      startOffset.toString(),
     );
 
     const parsed = getSafeJson<
@@ -474,30 +489,62 @@ return "OK"
 
     try {
       let now = performance.now();
-      const [sessions, regularQueueEvents] = await Promise.all([
-        // (A) Fetch ready session events (optimized)
-        this.getEligibleSessions(),
-        // (B) Fetch no-session events
-        redis.lrange(this.regularQueueKey, 0, this.batchSize / 2 - 1),
-      ]);
+      // (A) Fetch no-session events once per run
+      const regularQueueEvents = await redis.lrange(
+        this.regularQueueKey,
+        0,
+        this.batchSize / 2 - 1,
+      );
 
-      timer.fetchUnprocessedEvents = performance.now() - now;
-      now = performance.now();
-
-      for (const [sessionId, sessionData] of Object.entries(sessions)) {
-        const { flush, pending } = this.processSessionEvents(
-          sessionData.events,
-        );
-
-        if (flush.length > 0) {
-          eventsToClickhouse.push(...flush);
+      // (A2) Page through ready sessions within time and budget
+      let sessionBudget = Math.floor(this.batchSize / 2);
+      let startOffset = 0;
+      let totalSessionEventsFetched = 0;
+      while (sessionBudget > 0) {
+        if (performance.now() - now > this.flushTimeBudgetMs) {
+          this.logger.debug('Stopping session paging due to time budget');
+          break;
         }
 
-        pendingUpdates.push({
-          sessionId,
-          snapshotCount: sessionData.events.length,
-          pending,
-        });
+        const perSessionBudget = Math.max(
+          1,
+          Math.floor(sessionBudget / this.maxSessionsPerFlush),
+        );
+
+        const sessionsPage = await this.getEligibleSessions(
+          startOffset,
+          perSessionBudget,
+        );
+        const sessionIds = Object.keys(sessionsPage);
+        if (sessionIds.length === 0) {
+          break;
+        }
+
+        for (const sessionId of sessionIds) {
+          const sessionData = sessionsPage[sessionId]!;
+          const { flush, pending } = this.processSessionEvents(
+            sessionData.events,
+          );
+
+          if (flush.length > 0) {
+            eventsToClickhouse.push(...flush);
+          }
+
+          pendingUpdates.push({
+            sessionId,
+            snapshotCount: sessionData.events.length,
+            pending,
+          });
+
+          // Decrease budget by fetched events for this session window
+          sessionBudget -= sessionData.events.length;
+          totalSessionEventsFetched += sessionData.events.length;
+          if (sessionBudget <= 0) {
+            break;
+          }
+        }
+
+        startOffset += this.maxSessionsPerFlush;
       }
 
       timer.processSessionEvents = performance.now() - now;
@@ -571,10 +618,7 @@ return "OK"
         batchSize: this.batchSize,
         eventsToClickhouse: eventsToClickhouse.length,
         pendingSessionUpdates: pendingUpdates.length,
-        sessionEvents: Object.entries(sessions).reduce(
-          (acc, [sId, sessionData]) => acc + sessionData.events.length,
-          0,
-        ),
+        sessionEventsFetched: totalSessionEventsFetched,
         regularEvents: regularQueueEvents.length,
         timer,
       });
@@ -807,26 +851,7 @@ return "OK"
   }
 
   public async getBufferSize() {
-    try {
-      const redis = getRedisCache();
-
-      // Try to get from incremental counter first
-      const counterValue = await redis.get(this.bufferCounterKey);
-      if (counterValue) {
-        return Math.max(0, Number.parseInt(counterValue, 10));
-      }
-
-      // Fallback to heavy calculation and initialize counter
-      const count = await this.getBufferSizeHeavy();
-      await redis.set(this.bufferCounterKey, count.toString());
-      return count;
-    } catch (error) {
-      this.logger.warn(
-        'Failed to get buffer size from counter, falling back to heavy calculation',
-        { error },
-      );
-      return this.getBufferSizeHeavy();
-    }
+    return this.getBufferSizeWithCounter(() => this.getBufferSizeHeavy());
   }
 
   private async incrementActiveVisitorCount(

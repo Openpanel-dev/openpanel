@@ -1,7 +1,7 @@
 import { deepMergeObjects } from '@openpanel/common';
 import { getSafeJson } from '@openpanel/json';
 import type { ILogger } from '@openpanel/logger';
-import { type Redis, getRedisCache, runEvery } from '@openpanel/redis';
+import { type Redis, getRedisCache } from '@openpanel/redis';
 import shallowEqual from 'fast-deep-equal';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';

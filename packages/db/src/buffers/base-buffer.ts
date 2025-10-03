@@ -1,6 +1,6 @@
 import { generateSecureId } from '@openpanel/common/server/id';
 import { type ILogger, createLogger } from '@openpanel/logger';
-import { Redis, getRedisCache } from '@openpanel/redis';
+import { getRedisCache, runEvery } from '@openpanel/redis';
 
 export class BaseBuffer {
   name: string;
@@ -9,8 +9,7 @@ export class BaseBuffer {
   lockTimeout = 60;
   onFlush: () => void;
 
-  // Optional buffer counter key for incremental size tracking
-  protected bufferCounterKey?: string;
+  protected bufferCounterKey: string;
 
   constructor(options: {
     name: string;
@@ -21,7 +20,7 @@ export class BaseBuffer {
     this.name = options.name;
     this.lockKey = `lock:${this.name}`;
     this.onFlush = options.onFlush;
-    this.bufferCounterKey = options.bufferCounterKey;
+    this.bufferCounterKey = `${this.name}:buffer:count`;
   }
 
   protected chunks<T>(items: T[], size: number) {
@@ -37,14 +36,22 @@ export class BaseBuffer {
    */
   protected async getBufferSizeWithCounter(
     fallbackFn: () => Promise<number>,
-    counterKey?: string,
   ): Promise<number> {
-    const key = counterKey || this.bufferCounterKey;
-    if (!key) {
-      return fallbackFn();
-    }
-
+    const key = this.bufferCounterKey;
     try {
+      await runEvery({
+        interval: 60 * 15,
+        key: `${this.name}-buffer:resync`,
+        fn: async () => {
+          try {
+            const actual = await fallbackFn();
+            await getRedisCache().set(this.bufferCounterKey, actual.toString());
+          } catch (error) {
+            this.logger.warn('Failed to resync buffer counter', { error });
+          }
+        },
+      }).catch(() => {});
+
       const counterValue = await getRedisCache().get(key);
       if (counterValue) {
         return Math.max(0, Number.parseInt(counterValue, 10));
