@@ -213,11 +213,10 @@ while i <= #ARGV do
   
   -- Re-insert pending events at the head in original order
   if pendingCount > 0 then
-    local pendingEvents = {}
-    for j = 1, pendingCount do
-      table.insert(pendingEvents, ARGV[i + 3 + j])
+    -- Reinsert in original order: LPUSH requires reverse iteration
+    for j = pendingCount, 1, -1 do
+      redis.call("LPUSH", sessionKey, ARGV[i + 3 + j])
     end
-    redis.call("LPUSH", sessionKey, unpack(pendingEvents))
   end
   
   local newLength = redis.call("LLEN", sessionKey)
@@ -386,16 +385,7 @@ return "OK"
         await multi.exec();
       }
 
-      // Publish compact event notification instead of full payload
-      // Use transformEvent but only publish essential fields to reduce overhead
-      const serviceEvent = transformEvent(event);
-      await publishEvent('events', 'received', {
-        ...serviceEvent,
-        // Clear heavy fields to reduce payload size
-        properties: { __compact: true },
-        profile: undefined,
-        meta: undefined,
-      });
+      await publishEvent('events', 'received', transformEvent(event));
     } catch (error) {
       this.logger.error('Failed to add event to Redis buffer', { error });
     }
@@ -494,7 +484,7 @@ return "OK"
       const regularQueueEvents = await redis.lrange(
         this.regularQueueKey,
         0,
-        this.batchSize / 2 - 1,
+        Math.floor(this.batchSize / 2) - 1,
       );
 
       // (A2) Page through ready sessions within time and budget
@@ -864,10 +854,13 @@ return "OK"
     projectId: string,
     profileId: string,
   ) {
-    // Use zset only, no ephemeral keys - much more efficient
+    // Track active visitors and emit expiry events when inactive for TTL
     const now = Date.now();
     const zsetKey = `live:visitors:${projectId}`;
-    return multi.zadd(zsetKey, now, profileId);
+    const heartbeatKey = `live:visitor:${projectId}:${profileId}`;
+    return multi
+      .zadd(zsetKey, now, profileId)
+      .set(heartbeatKey, '1', 'EX', this.activeVisitorsExpiration);
   }
 
   public async getActiveVisitorCount(projectId: string): Promise<number> {
