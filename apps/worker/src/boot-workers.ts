@@ -27,14 +27,13 @@ import { logger } from './utils/logger';
 
 const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
-  concurrency: Number.parseInt(process.env.CONCURRENCY || '1', 10),
 };
 
 export async function bootWorkers() {
   const eventsGroupWorker = new GroupWorker<
     EventsQueuePayloadIncomingEvent['payload']
   >({
-    concurrency: 2,
+    concurrency: Number.parseInt(process.env.EVENT_JOB_CONCURRENCY || '1', 10),
     logger: queueLogger,
     queue: eventsGroupQueue,
     handler: async (job) => {

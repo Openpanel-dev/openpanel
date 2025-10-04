@@ -43,9 +43,9 @@ export class EventBuffer extends BaseBuffer {
     ? Number.parseFloat(process.env.EVENT_BUFFER_DAYS_TO_KEEP)
     : 3;
   // How many events we attempt to FETCH per flush cycle (split across sessions/non-sessions)
-  // Prefer new env EVENT_BUFFER_FETCH_BATCH_SIZE; fallback to legacy EVENT_BUFFER_BATCH_SIZE
-  private batchSize = process.env.EVENT_BUFFER_FETCH_BATCH_SIZE
-    ? Number.parseInt(process.env.EVENT_BUFFER_FETCH_BATCH_SIZE, 10)
+  // Prefer new env EVENT_BUFFER_BATCH_SIZE; fallback to legacy EVENT_BUFFER_BATCH_SIZE
+  private batchSize = process.env.EVENT_BUFFER_BATCH_SIZE
+    ? Number.parseInt(process.env.EVENT_BUFFER_BATCH_SIZE, 10)
     : 4000;
   // How many events per insert chunk we send to ClickHouse (insert batch size)
   private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
@@ -57,7 +57,7 @@ export class EventBuffer extends BaseBuffer {
         process.env.EVENT_BUFFER_UPDATE_PENDING_SESSIONS_BATCH_SIZE,
         10,
       )
-    : 300; // Reduced from 1000 to cap Lua payload size
+    : 300;
 
   // Cap of how many ready sessions to scan per flush cycle (configurable via env)
   private maxSessionsPerFlush = process.env.EVENT_BUFFER_MAX_SESSIONS_PER_FLUSH
