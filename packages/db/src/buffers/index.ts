@@ -1,6 +1,6 @@
-import { BotBuffer as BotBufferRedis } from './bot-buffer-redis';
-import { EventBuffer as EventBufferRedis } from './event-buffer-redis';
-import { ProfileBuffer as ProfileBufferRedis } from './profile-buffer-redis';
+import { BotBuffer as BotBufferRedis } from './bot-buffer';
+import { EventBuffer as EventBufferRedis } from './event-buffer';
+import { ProfileBuffer as ProfileBufferRedis } from './profile-buffer';
 import { SessionBuffer } from './session-buffer';
 
 export const eventBuffer = new EventBufferRedis();

@@ -46,6 +46,14 @@ export async function incomingEvent(
   job: Job<EventsQueuePayloadIncomingEvent>,
   token?: string,
 ) {
+  return incomingEventPure(job.data.payload, job, token);
+}
+
+export async function incomingEventPure(
+  jobPayload: EventsQueuePayloadIncomingEvent['payload'],
+  job?: Job<EventsQueuePayloadIncomingEvent>,
+  token?: string,
+) {
   const {
     geo,
     event: body,
@@ -53,7 +61,7 @@ export async function incomingEvent(
     projectId,
     currentDeviceId,
     previousDeviceId,
-  } = job.data.payload;
+  } = jobPayload;
   const properties = body.properties ?? {};
   const reqId = headers['request-id'] ?? 'unknown';
   const logger = baseLogger.child({
@@ -151,11 +159,7 @@ export async function incomingEvent(
       origin: screenView?.origin ?? baseEvent.origin,
     };
 
-    return createEventAndNotify(
-      payload as IServiceEvent,
-      job.data.payload,
-      logger,
-    );
+    return createEventAndNotify(payload as IServiceEvent, jobPayload, logger);
   }
 
   const sessionEnd = await getSessionEnd({
@@ -186,21 +190,22 @@ export async function incomingEvent(
   if (!sessionEnd) {
     // Too avoid several created sessions we just throw if a lock exists
     // This will than retry the job
-    const lock = await getLock(
-      `create-session-end:${currentDeviceId}`,
-      'locked',
-      1000,
-    );
+    if (job) {
+      const lock = await getLock(
+        `create-session-end:${currentDeviceId}`,
+        'locked',
+        1000,
+      );
 
-    if (!lock) {
-      logger.warn('Move incoming event to delayed');
-      await job.moveToDelayed(Date.now() + 50, token);
-      throw new DelayedError();
+      if (!lock) {
+        await job.moveToDelayed(Date.now() + 50, token);
+        throw new DelayedError();
+      }
     }
     await createSessionStart({ payload });
   }
 
-  const event = await createEventAndNotify(payload, job.data.payload, logger);
+  const event = await createEventAndNotify(payload, jobPayload, logger);
 
   if (!sessionEnd) {
     await createSessionEndJob({ payload });

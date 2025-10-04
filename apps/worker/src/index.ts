@@ -6,6 +6,7 @@ import express from 'express';
 import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
+  eventsGroupQueue,
   eventsQueue,
   miscQueue,
   notificationQueue,
@@ -13,6 +14,7 @@ import {
 } from '@openpanel/queue';
 import client from 'prom-client';
 
+import { BullBoardGroupMQAdapter } from 'groupmq';
 import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
 import { bootWorkers } from './boot-workers';
@@ -33,6 +35,7 @@ async function start() {
     serverAdapter.setBasePath('/');
     createBullBoard({
       queues: [
+        new BullBoardGroupMQAdapter(eventsGroupQueue) as any,
         new BullMQAdapter(eventsQueue),
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),

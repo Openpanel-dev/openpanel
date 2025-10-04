@@ -6,7 +6,7 @@
   "author": "Carl-Gerhard Lindesvärd",
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
     "gen:bots": "pnpm -r --filter api gen:bots",
     "gen:referrers": "pnpm -r --filter worker gen:referrers",
     "dock:up": "docker compose up -d",

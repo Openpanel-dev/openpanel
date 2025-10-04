@@ -2,18 +2,24 @@ import type { Queue, WorkerOptions } from 'bullmq';
 import { Worker } from 'bullmq';
 
 import {
+  type EventsQueuePayloadIncomingEvent,
   cronQueue,
+  eventsGroupQueue,
   eventsQueue,
   miscQueue,
   notificationQueue,
+  queueLogger,
   sessionsQueue,
 } from '@openpanel/queue';
 import { getRedisQueue } from '@openpanel/redis';
 
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { Worker as GroupWorker } from 'groupmq';
+
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
+import { incomingEventPure } from './jobs/events.incoming-event';
 import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
@@ -21,10 +27,24 @@ import { logger } from './utils/logger';
 
 const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
-  concurrency: Number.parseInt(process.env.CONCURRENCY || '1', 10),
 };
 
 export async function bootWorkers() {
+  const eventsGroupWorker = new GroupWorker<
+    EventsQueuePayloadIncomingEvent['payload']
+  >({
+    concurrency: Number.parseInt(process.env.EVENT_JOB_CONCURRENCY || '1', 10),
+    logger: queueLogger,
+    queue: eventsGroupQueue,
+    handler: async (job) => {
+      logger.info('processing event (group queue)', {
+        groupId: job.groupId,
+        timestamp: job.data.event.timestamp,
+      });
+      await incomingEventPure(job.data);
+    },
+  });
+  eventsGroupWorker.run();
   const eventsWorker = new Worker(eventsQueue.name, eventsJob, workerOptions);
   const sessionsWorker = new Worker(
     sessionsQueue.name,
@@ -45,29 +65,30 @@ export async function bootWorkers() {
     cronWorker,
     notificationWorker,
     miscWorker,
+    eventsGroupWorker,
   ];
 
   workers.forEach((worker) => {
-    worker.on('error', (error) => {
+    (worker as Worker).on('error', (error) => {
       logger.error('worker error', {
         worker: worker.name,
         error,
       });
     });
 
-    worker.on('closed', () => {
+    (worker as Worker).on('closed', () => {
       logger.info('worker closed', {
         worker: worker.name,
       });
     });
 
-    worker.on('ready', () => {
+    (worker as Worker).on('ready', () => {
       logger.info('worker ready', {
         worker: worker.name,
       });
     });
 
-    worker.on('failed', (job) => {
+    (worker as Worker).on('failed', (job) => {
       if (job) {
         logger.error('job failed', {
           worker: worker.name,
@@ -78,7 +99,7 @@ export async function bootWorkers() {
       }
     });
 
-    worker.on('completed', (job) => {
+    (worker as Worker).on('completed', (job) => {
       if (job) {
         logger.info('job completed', {
           worker: worker.name,
@@ -91,7 +112,7 @@ export async function bootWorkers() {
       }
     });
 
-    worker.on('ioredis:close', () => {
+    (worker as Worker).on('ioredis:close', () => {
       logger.error('worker closed due to ioredis:close', {
         worker: worker.name,
       });

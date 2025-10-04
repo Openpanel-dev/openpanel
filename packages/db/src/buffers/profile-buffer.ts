@@ -19,7 +19,7 @@ export class ProfileBuffer extends BaseBuffer {
     ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
     : 1000;
 
-  private readonly redisBufferKey = 'profile-buffer';
+  private readonly redisKey = 'profile-buffer';
   private readonly redisProfilePrefix = 'profile-cache:';
 
   private redis: Redis;
@@ -101,8 +101,9 @@ export class ProfileBuffer extends BaseBuffer {
       const result = await this.redis
         .multi()
         .set(cacheKey, JSON.stringify(mergedProfile), 'EX', cacheTtl)
-        .rpush(this.redisBufferKey, JSON.stringify(mergedProfile))
-        .llen(this.redisBufferKey)
+        .rpush(this.redisKey, JSON.stringify(mergedProfile))
+        .incr(this.bufferCounterKey)
+        .llen(this.redisKey)
         .exec();
 
       if (!result) {
@@ -112,7 +113,7 @@ export class ProfileBuffer extends BaseBuffer {
         });
         return;
       }
-      const bufferLength = (result?.[2]?.[1] as number) ?? 0;
+      const bufferLength = (result?.[3]?.[1] as number) ?? 0;
 
       this.logger.debug('Current buffer length', {
         bufferLength,
@@ -177,7 +178,7 @@ export class ProfileBuffer extends BaseBuffer {
     try {
       this.logger.info('Starting profile buffer processing');
       const profiles = await this.redis.lrange(
-        this.redisBufferKey,
+        this.redisKey,
         0,
         this.batchSize - 1,
       );
@@ -200,8 +201,12 @@ export class ProfileBuffer extends BaseBuffer {
         });
       }
 
-      // Only remove profiles after successful insert
-      await this.redis.ltrim(this.redisBufferKey, profiles.length, -1);
+      // Only remove profiles after successful insert and update counter
+      await this.redis
+        .multi()
+        .ltrim(this.redisKey, profiles.length, -1)
+        .decrby(this.bufferCounterKey, profiles.length)
+        .exec();
 
       this.logger.info('Successfully completed profile processing', {
         totalProfiles: profiles.length,
@@ -212,6 +217,6 @@ export class ProfileBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    return getRedisCache().llen(this.redisBufferKey);
+    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
   }
 }

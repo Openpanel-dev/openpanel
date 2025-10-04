@@ -1,6 +1,6 @@
 import { generateSecureId } from '@openpanel/common/server/id';
 import { type ILogger, createLogger } from '@openpanel/logger';
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache, runEvery } from '@openpanel/redis';
 
 export class BaseBuffer {
   name: string;
@@ -8,6 +8,8 @@ export class BaseBuffer {
   lockKey: string;
   lockTimeout = 60;
   onFlush: () => void;
+
+  protected bufferCounterKey: string;
 
   constructor(options: {
     name: string;
@@ -17,6 +19,7 @@ export class BaseBuffer {
     this.name = options.name;
     this.lockKey = `lock:${this.name}`;
     this.onFlush = options.onFlush;
+    this.bufferCounterKey = `${this.name}:buffer:count`;
   }
 
   protected chunks<T>(items: T[], size: number) {
@@ -25,6 +28,53 @@ export class BaseBuffer {
       chunks.push(items.slice(i, i + size));
     }
     return chunks;
+  }
+
+  /**
+   * Utility method to safely get buffer size with counter fallback
+   */
+  protected async getBufferSizeWithCounter(
+    fallbackFn: () => Promise<number>,
+  ): Promise<number> {
+    const key = this.bufferCounterKey;
+    try {
+      await runEvery({
+        interval: 60 * 15,
+        key: `${this.name}-buffer:resync`,
+        fn: async () => {
+          try {
+            const actual = await fallbackFn();
+            await getRedisCache().set(this.bufferCounterKey, actual.toString());
+          } catch (error) {
+            this.logger.warn('Failed to resync buffer counter', { error });
+          }
+        },
+      }).catch(() => {});
+
+      const counterValue = await getRedisCache().get(key);
+      if (counterValue !== null) {
+        const parsed = Number.parseInt(counterValue, 10);
+        if (!Number.isNaN(parsed)) {
+          return Math.max(0, parsed);
+        }
+        // Corrupted value → treat as missing
+        this.logger.warn('Invalid buffer counter value, reinitializing', {
+          key,
+          counterValue,
+        });
+      }
+
+      // Initialize counter with current size
+      const count = await fallbackFn();
+      await getRedisCache().set(key, count.toString());
+      return count;
+    } catch (error) {
+      this.logger.warn(
+        'Failed to get buffer size from counter, using fallback',
+        { error },
+      );
+      return fallbackFn();
+    }
   }
 
   private async releaseLock(lockId: string): Promise<void> {
@@ -60,6 +110,11 @@ export class BaseBuffer {
           error,
           lockId,
         });
+        // On error, we might want to reset counter to avoid drift
+        if (this.bufferCounterKey) {
+          this.logger.warn('Resetting buffer counter due to flush error');
+          await getRedisCache().del(this.bufferCounterKey);
+        }
       } finally {
         await this.releaseLock(lockId);
         this.logger.info('Flush completed', {

@@ -24,11 +24,15 @@ export class BotBuffer extends BaseBuffer {
 
   async add(event: IClickhouseBotEvent) {
     try {
-      // Add event to Redis list
-      await this.redis.rpush(this.redisKey, JSON.stringify(event));
+      // Add event and increment counter atomically
+      await this.redis
+        .multi()
+        .rpush(this.redisKey, JSON.stringify(event))
+        .incr(this.bufferCounterKey)
+        .exec();
 
-      // Check buffer length
-      const bufferLength = await this.redis.llen(this.redisKey);
+      // Check buffer length using counter (fallback to LLEN if missing)
+      const bufferLength = await this.getBufferSize();
 
       if (bufferLength >= this.batchSize) {
         await this.tryFlush();
@@ -60,8 +64,12 @@ export class BotBuffer extends BaseBuffer {
         format: 'JSONEachRow',
       });
 
-      // Only remove events after successful insert
-      await this.redis.ltrim(this.redisKey, events.length, -1);
+      // Only remove events after successful insert and update counter
+      await this.redis
+        .multi()
+        .ltrim(this.redisKey, events.length, -1)
+        .decrby(this.bufferCounterKey, events.length)
+        .exec();
 
       this.logger.info('Processed bot events', {
         count: events.length,
@@ -72,6 +80,6 @@ export class BotBuffer extends BaseBuffer {
   }
 
   async getBufferSize() {
-    return getRedisCache().llen(this.redisKey);
+    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
   }
 }

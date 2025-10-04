@@ -3,8 +3,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { generateDeviceId } from '@openpanel/common/server';
 import { getSalts } from '@openpanel/db';
-import { eventsQueue } from '@openpanel/queue';
-import { getLock } from '@openpanel/redis';
+import { eventsGroupQueue, eventsQueue } from '@openpanel/queue';
+import { getLock, getRedisCache } from '@openpanel/redis';
 import type { PostEventPayload } from '@openpanel/sdk';
 
 import { checkDuplicatedEvent } from '@/utils/deduplicate';
@@ -17,10 +17,14 @@ export async function postEvent(
   }>,
   reply: FastifyReply,
 ) {
-  const timestamp = getTimestamp(request.timestamp, request.body);
+  const { timestamp, isTimestampFromThePast } = getTimestamp(
+    request.timestamp,
+    request.body,
+  );
   const ip = getClientIp(request)!;
   const ua = request.headers['user-agent']!;
   const projectId = request.client?.projectId;
+  const headers = getStringHeaders(request.headers);
 
   if (!projectId) {
     reply.status(400).send('missing origin');
@@ -56,31 +60,54 @@ export async function postEvent(
     return;
   }
 
-  await eventsQueue.add(
-    'event',
-    {
-      type: 'incomingEvent',
-      payload: {
+  const isGroupQueue = await getRedisCache().exists('group_queue');
+  if (isGroupQueue) {
+    const groupId = request.body?.profileId
+      ? `${projectId}:${request.body?.profileId}`
+      : currentDeviceId;
+    await eventsGroupQueue.add({
+      orderMs: new Date(timestamp).getTime(),
+      data: {
         projectId,
-        headers: getStringHeaders(request.headers),
+        headers,
         event: {
           ...request.body,
-          timestamp: timestamp.timestamp,
-          isTimestampFromThePast: timestamp.isTimestampFromThePast,
+          timestamp,
+          isTimestampFromThePast,
         },
         geo,
         currentDeviceId,
         previousDeviceId,
       },
-    },
-    {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 200,
+      groupId,
+    });
+  } else {
+    await eventsQueue.add(
+      'event',
+      {
+        type: 'incomingEvent',
+        payload: {
+          projectId,
+          headers,
+          event: {
+            ...request.body,
+            timestamp,
+            isTimestampFromThePast,
+          },
+          geo,
+          currentDeviceId,
+          previousDeviceId,
+        },
       },
-    },
-  );
+      {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 200,
+        },
+      },
+    );
+  }
 
   reply.status(202).send('ok');
 }

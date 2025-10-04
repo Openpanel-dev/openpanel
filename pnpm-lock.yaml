@@ -38,7 +38,7 @@ importers:
         version: 2.12.1
       vitest:
         specifier: ^3.0.4
-        version: 3.1.3(@types/debug@4.1.12)(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)
+        version: 3.1.3(@types/debug@4.1.12)(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)
 
   apps/api:
     dependencies:
@@ -126,6 +126,9 @@ importers:
       fastify-raw-body:
         specifier: ^5.0.0
         version: 5.0.0
+      groupmq:
+        specifier: 1.0.0-next.13
+        version: 1.0.0-next.13(ioredis@5.4.1)
       ico-to-png:
         specifier: ^0.2.2
         version: 0.2.2
@@ -756,6 +759,9 @@ importers:
       express:
         specifier: ^4.18.2
         version: 4.18.2
+      groupmq:
+        specifier: 1.0.0-next.13
+        version: 1.0.0-next.13(ioredis@5.4.1)
       prom-client:
         specifier: ^15.1.3
         version: 15.1.3
@@ -1208,12 +1214,18 @@ importers:
       '@openpanel/db':
         specifier: workspace:*
         version: link:../db
+      '@openpanel/logger':
+        specifier: workspace:*
+        version: link:../logger
       '@openpanel/redis':
         specifier: workspace:*
         version: link:../redis
       bullmq:
         specifier: ^5.8.7
         version: 5.8.7
+      groupmq:
+        specifier: 1.0.0-next.13
+        version: 1.0.0-next.13(ioredis@5.4.1)
     devDependencies:
       '@openpanel/sdk':
         specifier: workspace:*
@@ -1280,7 +1292,7 @@ importers:
     devDependencies:
       astro:
         specifier: ^5.7.7
-        version: 5.7.8(@types/node@20.14.8)(jiti@2.4.1)(rollup@4.40.1)(terser@5.27.1)(typescript@5.6.3)
+        version: 5.7.8(@types/node@20.14.8)(jiti@2.5.1)(rollup@4.40.1)(terser@5.27.1)(typescript@5.6.3)
 
   packages/sdks/express:
     dependencies:
@@ -7823,15 +7835,6 @@ packages:
       supports-color:
         optional: true
 
-  debug@4.3.4:
-    resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
-    engines: {node: '>=6.0'}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
-
   debug@4.3.7:
     resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
     engines: {node: '>=6.0'}
@@ -8834,6 +8837,12 @@ packages:
     resolution: {integrity: sha512-5v6yZd4JK3eMI3FqqCouswVqwugaA9r4dNZB1wwcmrD02QkV5H0y7XBQW8QwQqEaZY1pM9aqORSORhJRdNK44Q==}
     engines: {node: '>=6.0'}
 
+  groupmq@1.0.0-next.13:
+    resolution: {integrity: sha512-gPbzxXFZyeIUecEmhZWjqcODF5Xs9ZLhtAccemcD4mbeAei1CJox7gxY5eaXQ5uuu9bsBLiMFPOsSFl9/DJVRw==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      ioredis: '>=5'
+
   h3@1.15.3:
     resolution: {integrity: sha512-z6GknHqyX0h9aQaTx22VZDf6QyZn+0Nh+Ym8O/u0SGSkyF5cuTJYKlc8MkzW3Nzf9LE1ivcpmYC3FUGpywhuUQ==}
 
@@ -9444,6 +9453,10 @@ packages:
     resolution: {integrity: sha512-yPBThwecp1wS9DmoA4x4KR2h3QoslacnDR8ypuFM962kI4/456Iy1oHx2RAgh4jfZNdn0bctsdadceiBUgpU1g==}
     hasBin: true
 
+  jiti@2.5.1:
+    resolution: {integrity: sha512-twQoecYPiVA5K/h6SxtORw/Bs3ar+mLUtoPSc7iMXzQzK8d7eJ/R09wmTwAjiamETn1cXYPGfNnu7DMoHgu12w==}
+    hasBin: true
+
   joi@17.12.1:
     resolution: {integrity: sha512-vtxmq+Lsc5SlfqotnfVjlViWfOL9nt/avKNbKYizwf6gsCfq9NYY/ceYRMFD8XDdrjJ9abJyScWmhmIiy+XRtQ==}
 
@@ -9791,10 +9804,6 @@ packages:
     resolution: {integrity: sha512-CJZKq2g8Y8yN4Aq002GahSXbG2JpFv9kXwyiOAMvUBv7pxeOFHUWKB0mO7MiY4ZVFCV4aNjv2BJFq/z3DgKPQg==}
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
-
-  luxon@3.4.4:
-    resolution: {integrity: sha512-zobTr7akeGHnv7eBOXcRgMeCP6+uyYsczwmeRCauvpvaAltgNyTbLH/+VaEAPUeWBT+1GuNmz4wC/6jtQzbbVA==}
-    engines: {node: '>=12'}
 
   luxon@3.6.1:
     resolution: {integrity: sha512-tJLxrKJhO2ukZ5z0gyjY1zPh3Rh88Ej9P7jNrZiHMUXHae1yvI2imgOZtL1TO8TW6biMMKfTtAOoEJANgtWBMQ==}
@@ -10252,9 +10261,6 @@ packages:
   ms@2.0.0:
     resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
 
-  ms@2.1.2:
-    resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
-
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -10430,6 +10436,7 @@ packages:
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
     engines: {node: '>=10.5.0'}
+    deprecated: Use your platform's native DOMException instead
 
   node-fetch-native@1.6.6:
     resolution: {integrity: sha512-8Mc2HhqPdlIfedsuZoc3yioPuzp6b+L5jRCRY1QzuWZh2EGJVQrGppC6V6cF0bLdbW0+O2YpqCA25aF/1lvipQ==}
@@ -12035,6 +12042,7 @@ packages:
   source-map@0.8.0-beta.0:
     resolution: {integrity: sha512-2ymg6oRBpebeZi9UUNsgQ89bhx01TcTkmNTGnNO88imTmbSgy4nfujrgVEFKWpMTEGA11EDkTt7mqObTPdigIA==}
     engines: {node: '>= 8'}
+    deprecated: The work that was done in this beta branch won't be included in future versions
 
   space-separated-tokens@1.1.5:
     resolution: {integrity: sha512-q/JSVd1Lptzhf5bkYm4ob4iWPjx0KiRe3sRFBNrVqbJkFaBm5vbbowy1mymoPNLRa52+oadOhJ+K49wsSeSjTA==}
@@ -14865,7 +14873,7 @@ snapshots:
       getenv: 1.0.0
       glob: 7.1.6
       resolve-from: 5.0.0
-      semver: 7.6.3
+      semver: 7.7.1
       slash: 3.0.0
       slugify: 1.6.6
       xcode: 3.0.1
@@ -15904,7 +15912,7 @@ snapshots:
       '@opentelemetry/api': 1.8.0
       '@opentelemetry/instrumentation': 0.51.1(@opentelemetry/api@1.8.0)
       '@opentelemetry/semantic-conventions': 1.27.0
-      semver: 7.6.3
+      semver: 7.7.1
     transitivePeerDependencies:
       - supports-color
 
@@ -16338,7 +16346,7 @@ snapshots:
       '@opentelemetry/propagator-b3': 1.24.1(@opentelemetry/api@1.8.0)
       '@opentelemetry/propagator-jaeger': 1.24.1(@opentelemetry/api@1.8.0)
       '@opentelemetry/sdk-trace-base': 1.24.1(@opentelemetry/api@1.8.0)
-      semver: 7.6.3
+      semver: 7.7.1
 
   '@opentelemetry/semantic-conventions@1.24.1': {}
 
@@ -17985,7 +17993,7 @@ snapshots:
       hermes-profile-transformer: 0.0.6
       node-stream-zip: 1.15.0
       ora: 5.4.1
-      semver: 7.6.3
+      semver: 7.7.1
       strip-ansi: 5.2.0
       wcwidth: 1.0.1
       yaml: 2.3.4
@@ -18051,7 +18059,7 @@ snapshots:
       node-fetch: 2.7.0
       open: 6.4.0
       ora: 5.4.1
-      semver: 7.6.3
+      semver: 7.7.1
       shell-quote: 1.8.1
       sudo-prompt: 9.2.1
     transitivePeerDependencies:
@@ -18080,7 +18088,7 @@ snapshots:
       fs-extra: 8.1.0
       graceful-fs: 4.2.11
       prompts: 2.4.2
-      semver: 7.6.3
+      semver: 7.7.1
     transitivePeerDependencies:
       - bufferutil
       - encoding
@@ -19246,13 +19254,13 @@ snapshots:
       chai: 5.2.0
       tinyrainbow: 2.0.0
 
-  '@vitest/mocker@3.1.3(vite@6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1))':
+  '@vitest/mocker@3.1.3(vite@6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1))':
     dependencies:
       '@vitest/spy': 3.1.3
       estree-walker: 3.0.3
       magic-string: 0.30.17
     optionalDependencies:
-      vite: 6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)
+      vite: 6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)
 
   '@vitest/pretty-format@3.1.3':
     dependencies:
@@ -19498,7 +19506,7 @@ snapshots:
 
   astring@1.8.6: {}
 
-  astro@5.7.8(@types/node@20.14.8)(jiti@2.4.1)(rollup@4.40.1)(terser@5.27.1)(typescript@5.6.3):
+  astro@5.7.8(@types/node@20.14.8)(jiti@2.5.1)(rollup@4.40.1)(terser@5.27.1)(typescript@5.6.3):
     dependencies:
       '@astrojs/compiler': 2.11.0
       '@astrojs/internal-helpers': 0.6.1
@@ -19551,8 +19559,8 @@ snapshots:
       unist-util-visit: 5.0.0
       unstorage: 1.16.0
       vfile: 6.0.3
-      vite: 6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)
-      vitefu: 1.0.6(vite@6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1))
+      vite: 6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)
+      vitefu: 1.0.6(vite@6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1))
       xxhash-wasm: 1.1.0
       yargs-parser: 21.1.1
       yocto-spinner: 0.2.2
@@ -20353,7 +20361,7 @@ snapshots:
 
   cron-parser@4.9.0:
     dependencies:
-      luxon: 3.4.4
+      luxon: 3.6.1
 
   cross-fetch@3.1.8:
     dependencies:
@@ -20637,10 +20645,6 @@ snapshots:
   debug@3.2.7:
     dependencies:
       ms: 2.1.3
-
-  debug@4.3.4:
-    dependencies:
-      ms: 2.1.2
 
   debug@4.3.7:
     dependencies:
@@ -22056,6 +22060,11 @@ snapshots:
       section-matter: 1.0.0
       strip-bom-string: 1.0.0
 
+  groupmq@1.0.0-next.13(ioredis@5.4.1):
+    dependencies:
+      cron-parser: 4.9.0
+      ioredis: 5.4.1
+
   h3@1.15.3:
     dependencies:
       cookie-es: 1.2.2
@@ -22451,7 +22460,7 @@ snapshots:
     dependencies:
       '@ioredis/commands': 1.2.0
       cluster-key-slot: 1.1.2
-      debug: 4.3.4
+      debug: 4.4.0
       denque: 2.1.0
       lodash.defaults: 4.2.0
       lodash.isarguments: 3.1.0
@@ -22769,6 +22778,9 @@ snapshots:
   jiti@1.21.7: {}
 
   jiti@2.4.1: {}
+
+  jiti@2.5.1:
+    optional: true
 
   joi@17.12.1:
     dependencies:
@@ -23106,8 +23118,6 @@ snapshots:
   lucide-react@0.513.0(react@18.2.0):
     dependencies:
       react: 18.2.0
-
-  luxon@3.4.4: {}
 
   luxon@3.6.1: {}
 
@@ -23937,8 +23947,6 @@ snapshots:
   mrmime@2.0.1: {}
 
   ms@2.0.0: {}
-
-  ms@2.1.2: {}
 
   ms@2.1.3: {}
 
@@ -27086,13 +27094,13 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite-node@3.1.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1):
+  vite-node@3.1.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1):
     dependencies:
       cac: 6.7.14
       debug: 4.4.0
       es-module-lexer: 1.7.0
       pathe: 2.0.3
-      vite: 6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)
+      vite: 6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)
     transitivePeerDependencies:
       - '@types/node'
       - jiti
@@ -27107,7 +27115,7 @@ snapshots:
       - tsx
       - yaml
 
-  vite@6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1):
+  vite@6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1):
     dependencies:
       esbuild: 0.25.3
       fdir: 6.4.4(picomatch@4.0.2)
@@ -27118,17 +27126,17 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.14.8
       fsevents: 2.3.3
-      jiti: 2.4.1
+      jiti: 2.5.1
       terser: 5.27.1
 
-  vitefu@1.0.6(vite@6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)):
+  vitefu@1.0.6(vite@6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)):
     optionalDependencies:
-      vite: 6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)
+      vite: 6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)
 
-  vitest@3.1.3(@types/debug@4.1.12)(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1):
+  vitest@3.1.3(@types/debug@4.1.12)(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1):
     dependencies:
       '@vitest/expect': 3.1.3
-      '@vitest/mocker': 3.1.3(vite@6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1))
+      '@vitest/mocker': 3.1.3(vite@6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1))
       '@vitest/pretty-format': 3.1.3
       '@vitest/runner': 3.1.3
       '@vitest/snapshot': 3.1.3
@@ -27145,8 +27153,8 @@ snapshots:
       tinyglobby: 0.2.13
       tinypool: 1.0.2
       tinyrainbow: 2.0.0
-      vite: 6.3.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)
-      vite-node: 3.1.3(@types/node@20.14.8)(jiti@2.4.1)(terser@5.27.1)
+      vite: 6.3.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)
+      vite-node: 3.1.3(@types/node@20.14.8)(jiti@2.5.1)(terser@5.27.1)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@types/debug': 4.1.12
