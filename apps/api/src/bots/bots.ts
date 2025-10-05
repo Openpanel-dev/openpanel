@@ -4874,6 +4874,16 @@ const bots = [
     producer: { name: 'OpenGraph.io', url: 'https://www.opengraph.io' },
   },
   {
+    regex: 'microsoft-flow/',
+    name: 'Microsoft Power Automate',
+    category: 'Service Agent',
+    url: 'https://www.microsoft.com/en-us/power-platform/products/power-automate',
+    producer: {
+      name: 'Microsoft Corporation',
+      url: 'https://www.microsoft.com/',
+    },
+  },
+  {
     regex:
       'nuhk|grub-client|Download Demon|SearchExpress|Microsoft URL Control|borg|altavista|dataminr\\.com|teoma|oegp|http%20client|htdig|mogimogi|larbin|scrubby|searchsight|semanticdiscovery|snappy|zeal(?!ot)|dataparksearch|findlinks|BrowserMob|URL2PNG|ZooShot|GomezA|Google SketchUp|Read%20Later|7Siters|centuryb\\.o\\.t9|InterNaetBoten|EasyBib AutoCite|Bidtellect|tomnomnom/meg|cortex|Re-re Studio|adreview|AHC/|NameOfAgent|Request-Promise|ALittle Client|Hello,? world|wp_is_mobile|0xAbyssalDoesntExist|Anarchy99|^revolt|nvd0rz|xfa1|Hakai|gbrmss|fuck-your-hp|IDBTE4M CODE87|Antoine|Insomania|Hells-Net|b3astmode|Linux Gnu \\(cow\\)|Test Certificate Info|iplabel|Magellan|TheSafex?Internetx?Search|Searcherx?web|kirkland-signature|LinkChain|survey-security-dot-txt|infrawatch|Time/|r00ts3c-owned-you|nvdorz|Root Slut|NiggaBalls|BotPoke|GlobalWebSearch|xx032_bo9vs83_2a|sslshed|geckotrail|Wordup|Keydrop|\\(compatible\\)|John Recon|SPARK COMMIT|masjesu|Komaru_The_Cat|Jesus Christ of Nazareth is LORD|Kowai|Hakai|LoliSec|LMAO|^xenu|^(?:chrome|firefox|Abcd|Dark|KvshClient|Node.js|Report Runner|url|Zeus|ZmEu)$|OnlyScans|TheInternetSearchx',
     name: 'Generic Bot',
