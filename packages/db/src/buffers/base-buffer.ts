@@ -39,7 +39,7 @@ export class BaseBuffer {
     const key = this.bufferCounterKey;
     try {
       await runEvery({
-        interval: 60 * 15,
+        interval: 60 * 60,
         key: `${this.name}-buffer:resync`,
         fn: async () => {
           try {

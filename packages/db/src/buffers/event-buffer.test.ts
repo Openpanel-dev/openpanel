@@ -206,7 +206,7 @@ describe('EventBuffer with real Redis', () => {
     expect(await eventBuffer.getBufferSize()).toBe(0);
   });
 
-  it('adds session to ready set at 2 events and removes after processing', async () => {
+  it('adds session to ready set at 2 events and removes it when < 2 events remain', async () => {
     const s = 'session_ready';
     const e1 = {
       project_id: 'p3',
@@ -235,9 +235,18 @@ describe('EventBuffer with real Redis', () => {
       .mockResolvedValueOnce(undefined as any);
     await eventBuffer.processBuffer();
 
-    // After processing with one pending left, session should be removed from ready set
+    // After processing with one pending left, session should be REMOVED from ready set
+    // It will be re-added when the next event arrives
     expect(await redis.zscore('event_buffer:ready_sessions', s)).toBeNull();
     expect(insertSpy).toHaveBeenCalled();
+
+    // But the session and its data should still exist
+    const sessionKey = `event_buffer:session:${s}`;
+    const remaining = await redis.lrange(sessionKey, 0, -1);
+    expect(remaining.length).toBe(1); // One pending event
+    expect(
+      await redis.zscore('event_buffer:sessions_sorted', s),
+    ).not.toBeNull(); // Still in sorted set
   });
 
   it('sets last screen_view key and clears it on session_end', async () => {
@@ -427,16 +436,16 @@ describe('EventBuffer with real Redis', () => {
 
     await eb.processBuffer();
 
-    // Only consider eval calls for batchUpdateSessionsScript (2 keys, second is total_count)
+    // Only consider eval calls for batchUpdateSessionsScript (3 keys now: ready, sorted, counter)
     const batchEvalCalls = evalSpy.mock.calls.filter(
-      (call) => call[1] === 2 && call[3] === 'event_buffer:total_count',
+      (call) => call[1] === 3 && call[4] === 'event_buffer:total_count',
     );
 
     const expectedCalls = Math.ceil(numSessions / 3);
     expect(batchEvalCalls.length).toBeGreaterThanOrEqual(expectedCalls);
 
     function countSessionsInEvalCall(args: any[]): number {
-      let idx = 4; // ARGV starts after: script, numKeys, key1, key2
+      let idx = 5; // ARGV starts after: script, numKeys, key1, key2, key3
       let count = 0;
       while (idx < args.length) {
         if (idx + 3 >= args.length) break;
@@ -448,9 +457,10 @@ describe('EventBuffer with real Redis', () => {
     }
 
     for (const call of batchEvalCalls) {
-      expect(call[1]).toBe(2);
+      expect(call[1]).toBe(3);
       expect(call[2]).toBe('event_buffer:ready_sessions');
-      expect(call[3]).toBe('event_buffer:total_count');
+      expect(call[3]).toBe('event_buffer:sessions_sorted');
+      expect(call[4]).toBe('event_buffer:total_count');
 
       const sessionsInThisCall = countSessionsInEvalCall(call.slice(0));
       expect(sessionsInThisCall).toBeLessThanOrEqual(3);
@@ -499,5 +509,261 @@ describe('EventBuffer with real Redis', () => {
     expect(remaining.length).toBe(0);
 
     insertSpy.mockRestore();
+  });
+
+  it('flushes ALL screen_views when session_end arrives (no pending events)', async () => {
+    const t0 = Date.now();
+    const s = 'session_multi_end';
+    const view1 = {
+      project_id: 'p10',
+      profile_id: 'u10',
+      session_id: s,
+      name: 'screen_view',
+      created_at: new Date(t0).toISOString(),
+    } as any;
+    const view2 = {
+      ...view1,
+      created_at: new Date(t0 + 1000).toISOString(),
+    } as any;
+    const view3 = {
+      ...view1,
+      created_at: new Date(t0 + 2000).toISOString(),
+    } as any;
+    const end = {
+      ...view1,
+      name: 'session_end',
+      created_at: new Date(t0 + 3000).toISOString(),
+    } as any;
+
+    const eb = new EventBuffer();
+    await eb.add(view1);
+    await eb.add(view2);
+    await eb.add(view3);
+    await eb.add(end);
+
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockResolvedValueOnce(undefined as any);
+
+    await eb.processBuffer();
+
+    // All 4 events should be flushed (3 screen_views + session_end)
+    expect(insertSpy).toHaveBeenCalledWith({
+      format: 'JSONEachRow',
+      table: 'events',
+      values: [view1, view2, view3, end],
+    });
+
+    // Session should be completely empty and removed
+    const sessionKey = `event_buffer:session:${s}`;
+    const remaining = await redis.lrange(sessionKey, 0, -1);
+    expect(remaining.length).toBe(0);
+
+    // Session should be removed from both sorted sets
+    expect(await redis.zscore('event_buffer:sessions_sorted', s)).toBeNull();
+    expect(await redis.zscore('event_buffer:ready_sessions', s)).toBeNull();
+
+    insertSpy.mockRestore();
+  });
+
+  it('re-adds session to ready_sessions when new event arrives after processing', async () => {
+    const t0 = Date.now();
+    const s = 'session_continued';
+    const view1 = {
+      project_id: 'p11',
+      profile_id: 'u11',
+      session_id: s,
+      name: 'screen_view',
+      created_at: new Date(t0).toISOString(),
+    } as any;
+    const view2 = {
+      ...view1,
+      created_at: new Date(t0 + 1000).toISOString(),
+    } as any;
+
+    const eb = new EventBuffer();
+    await eb.add(view1);
+    await eb.add(view2);
+
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockResolvedValue(undefined as any);
+
+    // First processing: flush view1, keep view2 pending
+    await eb.processBuffer();
+
+    expect(insertSpy).toHaveBeenCalledWith({
+      format: 'JSONEachRow',
+      table: 'events',
+      values: [{ ...view1, duration: 1000 }],
+    });
+
+    // Session should be REMOVED from ready_sessions (only 1 event left)
+    expect(await redis.zscore('event_buffer:ready_sessions', s)).toBeNull();
+
+    // Add a third screen_view - this should re-add to ready_sessions
+    const view3 = {
+      ...view1,
+      created_at: new Date(t0 + 2000).toISOString(),
+    } as any;
+    await eb.add(view3);
+
+    // NOW it should be back in ready_sessions (2 events again)
+    expect(await redis.zscore('event_buffer:ready_sessions', s)).not.toBeNull();
+
+    insertSpy.mockClear();
+
+    // Second processing: should process view2 (now has duration), keep view3 pending
+    await eb.processBuffer();
+
+    expect(insertSpy).toHaveBeenCalledWith({
+      format: 'JSONEachRow',
+      table: 'events',
+      values: [{ ...view2, duration: 1000 }],
+    });
+
+    // Session should be REMOVED again (only 1 event left)
+    expect(await redis.zscore('event_buffer:ready_sessions', s)).toBeNull();
+
+    const sessionKey = `event_buffer:session:${s}`;
+    const remaining = await redis.lrange(sessionKey, 0, -1);
+    expect(remaining.length).toBe(1);
+    expect(JSON.parse(remaining[0]!)).toMatchObject({
+      session_id: s,
+      created_at: view3.created_at,
+    });
+
+    insertSpy.mockRestore();
+  });
+
+  it('removes session from ready_sessions only when completely empty', async () => {
+    const t0 = Date.now();
+    const s = 'session_complete';
+    const view = {
+      project_id: 'p12',
+      profile_id: 'u12',
+      session_id: s,
+      name: 'screen_view',
+      created_at: new Date(t0).toISOString(),
+    } as any;
+    const end = {
+      ...view,
+      name: 'session_end',
+      created_at: new Date(t0 + 1000).toISOString(),
+    } as any;
+
+    const eb = new EventBuffer();
+    await eb.add(view);
+    await eb.add(end);
+
+    const insertSpy = vi
+      .spyOn(ch, 'insert')
+      .mockResolvedValueOnce(undefined as any);
+
+    await eb.processBuffer();
+
+    // Both events flushed, session empty
+    expect(insertSpy).toHaveBeenCalledWith({
+      format: 'JSONEachRow',
+      table: 'events',
+      values: [view, end],
+    });
+
+    // NOW it should be removed from ready_sessions (because it's empty)
+    expect(await redis.zscore('event_buffer:ready_sessions', s)).toBeNull();
+    expect(await redis.zscore('event_buffer:sessions_sorted', s)).toBeNull();
+
+    insertSpy.mockRestore();
+  });
+
+  it('getBufferSizeHeavy correctly counts events across many sessions in batches', async () => {
+    const eb = new EventBuffer();
+    const numSessions = 250; // More than batch size (100) to test batching
+    const eventsPerSession = 3;
+    const numRegularEvents = 50;
+
+    // Add session events (3 events per session)
+    for (let i = 0; i < numSessions; i++) {
+      const sessionId = `batch_session_${i}`;
+      for (let j = 0; j < eventsPerSession; j++) {
+        await eb.add({
+          project_id: 'p_batch',
+          profile_id: `u_${i}`,
+          session_id: sessionId,
+          name: 'screen_view',
+          created_at: new Date(Date.now() + i * 100 + j * 10).toISOString(),
+        } as any);
+      }
+    }
+
+    // Add regular queue events
+    for (let i = 0; i < numRegularEvents; i++) {
+      await eb.add({
+        project_id: 'p_batch',
+        name: 'custom_event',
+        created_at: new Date().toISOString(),
+      } as any);
+    }
+
+    // Get buffer size using heavy method
+    const bufferSize = await eb.getBufferSizeHeavy();
+
+    // Should count all events: (250 sessions × 3 events) + 50 regular events
+    const expectedSize = numSessions * eventsPerSession + numRegularEvents;
+    expect(bufferSize).toBe(expectedSize);
+
+    // Verify sessions are properly tracked
+    const sessionCount = await redis.zcard('event_buffer:sessions_sorted');
+    expect(sessionCount).toBe(numSessions);
+
+    const regularQueueCount = await redis.llen('event_buffer:regular_queue');
+    expect(regularQueueCount).toBe(numRegularEvents);
+  });
+
+  it('getBufferSizeHeavy handles empty buffer correctly', async () => {
+    const eb = new EventBuffer();
+
+    const bufferSize = await eb.getBufferSizeHeavy();
+
+    expect(bufferSize).toBe(0);
+  });
+
+  it('getBufferSizeHeavy handles only regular queue events', async () => {
+    const eb = new EventBuffer();
+    const numEvents = 10;
+
+    for (let i = 0; i < numEvents; i++) {
+      await eb.add({
+        project_id: 'p_regular',
+        name: 'custom_event',
+        created_at: new Date().toISOString(),
+      } as any);
+    }
+
+    const bufferSize = await eb.getBufferSizeHeavy();
+
+    expect(bufferSize).toBe(numEvents);
+  });
+
+  it('getBufferSizeHeavy handles only session events', async () => {
+    const eb = new EventBuffer();
+    const numSessions = 5;
+    const eventsPerSession = 2;
+
+    for (let i = 0; i < numSessions; i++) {
+      for (let j = 0; j < eventsPerSession; j++) {
+        await eb.add({
+          project_id: 'p_sessions',
+          profile_id: `u_${i}`,
+          session_id: `session_${i}`,
+          name: 'screen_view',
+          created_at: new Date(Date.now() + i * 100 + j * 10).toISOString(),
+        } as any);
+      }
+    }
+
+    const bufferSize = await eb.getBufferSizeHeavy();
+
+    expect(bufferSize).toBe(numSessions * eventsPerSession);
   });
 });

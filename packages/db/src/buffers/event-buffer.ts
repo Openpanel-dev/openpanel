@@ -100,6 +100,7 @@ export class EventBuffer extends BaseBuffer {
   private readonly processReadySessionsScript = `
 local readySessionsKey = KEYS[1]
 local sessionPrefix = KEYS[2]
+local sessionsSortedKey = KEYS[3]
 local maxSessions = tonumber(ARGV[1])
 local maxEventsPerSession = tonumber(ARGV[2])
 local startOffset = tonumber(ARGV[3]) or 0
@@ -117,7 +118,7 @@ for i, sessionId in ipairs(sessionIds) do
   local eventCount = redis.call('LLEN', sessionKey)
   
   if eventCount == 0 then
-    -- Session is empty, remove from ready set
+    -- Session is empty, remove from both sets
     table.insert(sessionsToRemove, sessionId)
   else
     -- Fetch limited number of events to avoid huge payloads
@@ -133,9 +134,14 @@ for i, sessionId in ipairs(sessionIds) do
   end
 end
 
--- Clean up empty sessions from ready set
+-- Clean up empty sessions from both ready set and sorted set
 if #sessionsToRemove > 0 then
   redis.call('ZREM', readySessionsKey, unpack(sessionsToRemove))
+  redis.call('ZREM', sessionsSortedKey, unpack(sessionsToRemove))
+  -- Also delete the empty session keys
+  for i, sessionId in ipairs(sessionsToRemove) do
+    redis.call('DEL', sessionPrefix .. sessionId)
+  end
 end
 
 return cjson.encode(result)
@@ -147,7 +153,8 @@ return cjson.encode(result)
    *
    * KEYS[1] = session key
    * KEYS[2] = ready sessions key
-   * KEYS[3] = buffer counter key
+   * KEYS[3] = sessions sorted key
+   * KEYS[4] = buffer counter key
    * ARGV[1] = sessionId
    * ARGV[2] = snapshotCount (number of events that were present in our snapshot)
    * ARGV[3] = pendingCount (number of pending events)
@@ -157,7 +164,8 @@ return cjson.encode(result)
   private readonly updateSessionScript = `
 local sessionKey = KEYS[1]
 local readySessionsKey = KEYS[2]
-local bufferCounterKey = KEYS[3]
+local sessionsSortedKey = KEYS[3]
+local bufferCounterKey = KEYS[4]
 local sessionId = ARGV[1]
 local snapshotCount = tonumber(ARGV[2])
 local pendingCount = tonumber(ARGV[3])
@@ -174,9 +182,17 @@ end
 local newLength = redis.call("LLEN", sessionKey)
 
 -- Update ready sessions set based on new length
-if newLength >= minEventsInSession then
-  redis.call("ZADD", readySessionsKey, "XX", redis.call("TIME")[1], sessionId)
+if newLength == 0 then
+  -- Session is now empty, remove from both sets and delete key
+  redis.call("ZREM", readySessionsKey, sessionId)
+  redis.call("ZREM", sessionsSortedKey, sessionId)
+  redis.call("DEL", sessionKey)
+elseif newLength >= minEventsInSession then
+  -- Session has enough events, keep/add it in ready_sessions
+  redis.call("ZADD", readySessionsKey, redis.call("TIME")[1], sessionId)
 else
+  -- Session has events but < minEvents, remove from ready_sessions
+  -- It will be re-added when a new event arrives (via addEventScript)
   redis.call("ZREM", readySessionsKey, sessionId)
 end
 
@@ -192,12 +208,14 @@ return newLength
   /**
    * Optimized batch update script with counter and ready sessions management.
    * KEYS[1] = ready sessions key
-   * KEYS[2] = buffer counter key
-   * ARGV format: [sessionKey1, sessionId1, snapshotCount1, pendingCount1, pending1...., sessionKey2, ...]
+   * KEYS[2] = sessions sorted key
+   * KEYS[3] = buffer counter key
+   * ARGV format: [minEventsInSession, sessionKey1, sessionId1, snapshotCount1, pendingCount1, pending1...., sessionKey2, ...]
    */
   private readonly batchUpdateSessionsScript = `
 local readySessionsKey = KEYS[1]
-local bufferCounterKey = KEYS[2]
+local sessionsSortedKey = KEYS[2]
+local bufferCounterKey = KEYS[3]
 local minEventsInSession = tonumber(ARGV[1])
 local totalCounterChange = 0
 
@@ -222,9 +240,17 @@ while i <= #ARGV do
   local newLength = redis.call("LLEN", sessionKey)
   
   -- Update ready sessions set based on new length
-  if newLength >= minEventsInSession then
-    redis.call("ZADD", readySessionsKey, "XX", redis.call("TIME")[1], sessionId)
+  if newLength == 0 then
+    -- Session is now empty, remove from both sets and delete key
+    redis.call("ZREM", readySessionsKey, sessionId)
+    redis.call("ZREM", sessionsSortedKey, sessionId)
+    redis.call("DEL", sessionKey)
+  elseif newLength >= minEventsInSession then
+    -- Session has enough events, keep/add it in ready_sessions
+    redis.call("ZADD", readySessionsKey, redis.call("TIME")[1], sessionId)
   else
+    -- Session has events but < minEvents, remove from ready_sessions
+    -- It will be re-added when a new event arrives (via addEventScript)
     redis.call("ZREM", readySessionsKey, sessionId)
   end
   
@@ -398,9 +424,10 @@ return "OK"
   ) {
     const sessionsSorted = await getRedisCache().eval(
       this.processReadySessionsScript,
-      2, // number of KEYS
+      3, // number of KEYS
       this.readySessionsKey,
       this.sessionKeyPrefix,
+      this.sessionSortedKey,
       sessionsPerPage.toString(),
       maxEventsPerSession.toString(),
       startOffset.toString(),
@@ -646,29 +673,31 @@ return "OK"
 
     const flush: IClickhouseEvent[] = [];
     const pending: IClickhouseEvent[] = [];
-    let hasSessionEnd = false;
+
+    // Check if session has ended - if so, flush everything
+    const hasSessionEnd = events.some((e) => e.name === 'session_end');
+
+    if (hasSessionEnd) {
+      flush.push(...events);
+      return { flush, pending: [] };
+    }
+
+    const findNextScreenView = (events: IClickhouseEvent[]) => {
+      return events.find((e) => e.name === 'screen_view');
+    };
 
     for (let i = 0; i < events.length; i++) {
       const event = events[i]!;
-
-      if (event.name === 'session_end') {
-        hasSessionEnd = true;
+      // For screen_view events, look for next event
+      const next = findNextScreenView(events.slice(i + 1));
+      if (next) {
+        event.duration =
+          new Date(next.created_at).getTime() -
+          new Date(event.created_at).getTime();
         flush.push(event);
       } else {
-        // For screen_view events, look for next event
-        const next = events[i + 1];
-        if (next) {
-          if (next.name === 'screen_view') {
-            event.duration =
-              new Date(next.created_at).getTime() -
-              new Date(event.created_at).getTime();
-          }
-          flush.push(event);
-        } else if (hasSessionEnd) {
-          flush.push(event);
-        } else {
-          pending.push(event);
-        }
+        // Last screen_view with no next event - keep pending
+        pending.push(event);
       }
     }
 
@@ -696,23 +725,58 @@ return "OK"
     const cutoffTime = Date.now() - 1000 * 60 * 60 * 24 * this.daysToKeep;
 
     try {
-      const sessionIds = await redis.zrange(this.sessionSortedKey, 0, -1);
+      const sessionCount = await redis.zcard(this.sessionSortedKey);
+      const batchSize = 1000;
+      let offset = 0;
+      let totalCleaned = 0;
 
-      for (const sessionId of sessionIds) {
-        const score = await redis.zscore(this.sessionSortedKey, sessionId);
+      this.logger.info('Starting cleanup of stale sessions', {
+        cutoffTime: new Date(cutoffTime),
+        totalSessions: sessionCount,
+      });
 
-        if (score) {
-          const scoreInt = Number.parseInt(score, 10);
-          if (scoreInt < cutoffTime) {
-            this.logger.warn('Stale session found', {
-              sessionId,
-              score,
-              createdAt: new Date(Number.parseInt(score, 10)),
-              eventsCount: await redis.llen(this.getSessionKey(sessionId)),
-            });
+      while (offset < sessionCount) {
+        // Get batch of session IDs with scores
+        const sessionIdsWithScores = await redis.zrange(
+          this.sessionSortedKey,
+          offset,
+          offset + batchSize - 1,
+          'WITHSCORES',
+        );
+
+        if (sessionIdsWithScores.length === 0) break;
+
+        const pipeline = redis.pipeline();
+        let staleSessions = 0;
+
+        // Process pairs of [sessionId, score]
+        for (let i = 0; i < sessionIdsWithScores.length; i += 2) {
+          const sessionId = sessionIdsWithScores[i];
+          const score = Number.parseInt(sessionIdsWithScores[i + 1] || '0', 10);
+
+          if (sessionId && score < cutoffTime) {
+            staleSessions++;
+            // Remove from both sorted sets and delete the session key
+            pipeline.zrem(this.sessionSortedKey, sessionId);
+            pipeline.zrem(this.readySessionsKey, sessionId);
+            pipeline.del(this.getSessionKey(sessionId));
           }
         }
+
+        if (staleSessions > 0) {
+          await pipeline.exec();
+          totalCleaned += staleSessions;
+          this.logger.info('Cleaned batch of stale sessions', {
+            batch: Math.floor(offset / batchSize) + 1,
+            cleanedInBatch: staleSessions,
+            totalCleaned,
+          });
+        }
+
+        offset += batchSize;
       }
+
+      this.logger.info('Cleanup completed', { totalCleaned });
     } catch (error) {
       this.logger.error('Failed to cleanup stale sessions', { error });
     }
@@ -798,8 +862,9 @@ return "OK"
 
       await redis.eval(
         this.batchUpdateSessionsScript,
-        2, // KEYS: ready sessions, buffer counter
+        3, // KEYS: ready sessions, sessions sorted, buffer counter
         this.readySessionsKey,
+        this.sessionSortedKey,
         this.bufferCounterKey,
         ...batchArgs,
       );
@@ -809,40 +874,52 @@ return "OK"
   public async getBufferSizeHeavy() {
     // Fallback method for when counter is not available
     const redis = getRedisCache();
-    const pipeline = redis.pipeline();
 
-    // Queue up commands in the pipeline
-    pipeline.llen(this.regularQueueKey);
-    pipeline.zcard(this.sessionSortedKey);
+    // Get regular queue count
+    const regularQueueCount = await redis.llen(this.regularQueueKey);
 
-    // Execute pipeline to get initial counts
-    const [regularQueueCount, sessionCount] = (await pipeline.exec()) as [
-      any,
-      any,
-    ];
+    // Get total number of sessions
+    const sessionCount = await redis.zcard(this.sessionSortedKey);
 
-    if (sessionCount[1] === 0) {
-      return regularQueueCount[1];
+    if (sessionCount === 0) {
+      return regularQueueCount;
     }
 
-    // Get all session IDs and queue up LLEN commands for each session
-    const sessionIds = await redis.zrange(this.sessionSortedKey, 0, -1);
-    const sessionPipeline = redis.pipeline();
+    // Process sessions in batches to avoid memory spikes
+    const batchSize = 1000;
+    let totalSessionEvents = 0;
+    let offset = 0;
 
-    for (const sessionId of sessionIds) {
-      sessionPipeline.llen(this.getSessionKey(sessionId));
+    while (offset < sessionCount) {
+      // Get batch of session IDs
+      const sessionIds = await redis.zrange(
+        this.sessionSortedKey,
+        offset,
+        offset + batchSize - 1,
+      );
+
+      if (sessionIds.length === 0) break;
+
+      // Queue up LLEN commands for this batch
+      const sessionPipeline = redis.pipeline();
+      for (const sessionId of sessionIds) {
+        sessionPipeline.llen(this.getSessionKey(sessionId));
+      }
+
+      // Execute pipeline for this batch
+      const sessionCounts = (await sessionPipeline.exec()) as [any, any][];
+
+      // Sum up counts from this batch
+      for (const [err, count] of sessionCounts) {
+        if (!err) {
+          totalSessionEvents += count;
+        }
+      }
+
+      offset += batchSize;
     }
 
-    // Execute all LLEN commands in a single pipeline
-    const sessionCounts = (await sessionPipeline.exec()) as [any, any][];
-
-    // Sum up all counts
-    const totalSessionEvents = sessionCounts.reduce((sum, [err, count]) => {
-      if (err) return sum;
-      return sum + count;
-    }, 0);
-
-    return regularQueueCount[1] + totalSessionEvents;
+    return regularQueueCount + totalSessionEvents;
   }
 
   public async getBufferSize() {

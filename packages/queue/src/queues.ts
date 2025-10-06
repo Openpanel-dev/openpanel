@@ -113,7 +113,8 @@ export const eventsGroupQueue = new GroupQueue<
   logger: queueLogger,
   namespace: 'group_events',
   redis: getRedisGroupQueue(),
-  orderingDelayMs: 2000,
+  orderingMethod: 'in-memory',
+  orderingWindowMs: 50,
   keepCompleted: 10,
   keepFailed: 10_000,
 });
