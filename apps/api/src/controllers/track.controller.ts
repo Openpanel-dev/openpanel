@@ -3,6 +3,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
 import { checkDuplicatedEvent } from '@/utils/deduplicate';
+import { generateId } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -282,9 +283,12 @@ async function track({
 }) {
   const isGroupQueue = await getRedisCache().exists('group_queue');
   if (isGroupQueue) {
+    const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
     const groupId = payload.profileId
       ? `${projectId}:${payload.profileId}`
-      : currentDeviceId;
+      : uaInfo.isServer
+        ? `${projectId}:${generateId()}`
+        : currentDeviceId;
     await eventsGroupQueue.add({
       orderMs: new Date(timestamp).getTime(),
       data: {
