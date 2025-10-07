@@ -38,7 +38,7 @@
     "fastify": "^5.2.1",
     "fastify-metrics": "^12.1.0",
     "fastify-raw-body": "^5.0.0",
-    "groupmq": "1.0.0-next.16",
+    "groupmq": "1.0.0-next.17",
     "ico-to-png": "^0.2.2",
     "jsonwebtoken": "^9.0.2",
     "ramda": "^0.29.1",
