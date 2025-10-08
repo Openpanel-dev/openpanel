@@ -64,11 +64,11 @@ export async function postEvent(
   const isGroupQueue = await getRedisCache().exists('group_queue');
   if (isGroupQueue) {
     const uaInfo = parseUserAgent(ua, request.body?.properties);
-    const groupId = request.body?.profileId
-      ? `${projectId}:${request.body?.profileId}`
-      : uaInfo.isServer
-        ? `${projectId}:${generateId()}`
-        : currentDeviceId;
+    const groupId = uaInfo.isServer
+      ? request.body?.profileId
+        ? `${projectId}:${request.body?.profileId}`
+        : `${projectId}:${generateId()}`
+      : currentDeviceId;
     await eventsGroupQueue.add({
       orderMs: new Date(timestamp).getTime(),
       data: {
