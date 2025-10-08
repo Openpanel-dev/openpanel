@@ -37,7 +37,7 @@ async function createEventAndNotify(
   logger.info('Creating event', { event: payload, jobData });
   const [event] = await Promise.all([
     createEvent(payload),
-    checkNotificationRulesForEvent(payload),
+    checkNotificationRulesForEvent(payload).catch(() => {}),
   ]);
   return event;
 }
@@ -188,27 +188,21 @@ export async function incomingEventPure(
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
 
   if (!sessionEnd) {
-    // Too avoid several created sessions we just throw if a lock exists
-    // This will than retry the job
-    if (job) {
-      const lock = await getLock(
-        `create-session-end:${currentDeviceId}`,
-        'locked',
-        1000,
-      );
-
-      if (!lock) {
-        await job.moveToDelayed(Date.now() + 50, token);
-        throw new DelayedError();
-      }
-    }
-    await createSessionStart({ payload });
+    logger.info('Creating session start event', { event: payload });
+    await createSessionStart({ payload }).catch((error) => {
+      logger.error('Error creating session start event', { event: payload });
+      throw error;
+    });
   }
 
   const event = await createEventAndNotify(payload, jobPayload, logger);
 
   if (!sessionEnd) {
-    await createSessionEndJob({ payload });
+    logger.info('Creating session end job', { event: payload });
+    await createSessionEndJob({ payload }).catch((error) => {
+      logger.error('Error creating session end job', { event: payload });
+      throw error;
+    });
   }
 
   return event;

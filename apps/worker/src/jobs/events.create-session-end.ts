@@ -69,6 +69,8 @@ export async function createSessionEnd(
     reqId: job.data.payload.properties?.__reqId ?? 'unknown',
   });
 
+  logger.info('Processing session end job');
+
   const payload = job.data.payload;
 
   const events = await getNecessarySessionEvents({
@@ -92,9 +94,13 @@ export async function createSessionEnd(
   const sessionDuration =
     lastEvent.createdAt.getTime() - sessionStart.createdAt.getTime();
 
-  await checkNotificationRulesForSessionEnd(events);
+  await checkNotificationRulesForSessionEnd(events).catch(() => {
+    logger.error('Error checking notification rules for session end', {
+      data: job.data,
+    });
+  });
 
-  logger.info('Creating session_end', {
+  logger.info('Creating session_end event', {
     sessionStart,
     lastEvent,
     screenViews,

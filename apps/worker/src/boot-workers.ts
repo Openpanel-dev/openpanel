@@ -91,6 +91,7 @@ export async function bootWorkers() {
     (worker as Worker).on('failed', (job) => {
       if (job) {
         logger.error('job failed', {
+          jobId: job.id,
           worker: worker.name,
           data: job.data,
           error: job.failedReason,
@@ -102,6 +103,7 @@ export async function bootWorkers() {
     (worker as Worker).on('completed', (job) => {
       if (job) {
         logger.info('job completed', {
+          jobId: job.id,
           worker: worker.name,
           data: job.data,
           elapsed:
