@@ -1,7 +1,7 @@
 import { ch, db } from '@openpanel/db';
 import {
   cronQueue,
-  eventsQueue,
+  eventsGroupQueue,
   miscQueue,
   notificationQueue,
   sessionsQueue,
@@ -71,7 +71,7 @@ export async function shutdown(
   // Step 6: Close Bull queues (graceful shutdown of queue state)
   try {
     await Promise.all([
-      eventsQueue.close(),
+      eventsGroupQueue.close(),
       sessionsQueue.close(),
       cronQueue.close(),
       miscQueue.close(),

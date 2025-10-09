@@ -3,6 +3,8 @@ import type { Job } from 'bullmq';
 import { logger as baseLogger } from '@/utils/logger';
 import { getTime } from '@openpanel/common';
 import {
+  type IClickhouseSession,
+  type IServiceCreateEventPayload,
   type IServiceEvent,
   TABLE_NAMES,
   checkNotificationRulesForSessionEnd,
@@ -10,37 +12,33 @@ import {
   eventBuffer,
   formatClickhouseDate,
   getEvents,
+  getHasFunnelRules,
+  getNotificationRulesByProjectId,
+  sessionBuffer,
 } from '@openpanel/db';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
+const MAX_SESSION_EVENTS = 500;
+
 // Grabs session_start and screen_views + the last occured event
-async function getNecessarySessionEvents({
+async function getSessionEvents({
   projectId,
   sessionId,
-  createdAt,
+  startAt,
+  endAt,
 }: {
   projectId: string;
   sessionId: string;
-  createdAt: Date;
+  startAt: Date;
+  endAt: Date;
 }): Promise<ReturnType<typeof getEvents>> {
   const sql = `
     SELECT * FROM ${TABLE_NAMES.events} 
     WHERE 
       session_id = '${sessionId}' 
       AND project_id = '${projectId}'
-      AND created_at >= '${formatClickhouseDate(new Date(new Date(createdAt).getTime() - 1000 * 60 * 5))}'
-      AND (
-        name IN ('screen_view', 'session_start') 
-        OR created_at = (
-          SELECT MAX(created_at) 
-          FROM ${TABLE_NAMES.events} 
-          WHERE session_id = '${sessionId}' 
-          AND project_id = '${projectId}'
-          AND created_at >= '${formatClickhouseDate(new Date(new Date(createdAt).getTime() - 1000 * 60 * 5))}'
-          AND name NOT IN ('screen_view', 'session_start')
-        )
-      )
-    ORDER BY created_at DESC;
+      AND created_at BETWEEN '${formatClickhouseDate(startAt)}' AND '${formatClickhouseDate(endAt)}'
+    ORDER BY created_at DESC LIMIT ${MAX_SESSION_EVENTS};
   `;
 
   const [lastScreenView, eventsInDb] = await Promise.all([
@@ -63,62 +61,77 @@ async function getNecessarySessionEvents({
 export async function createSessionEnd(
   job: Job<EventsQueuePayloadCreateSessionEnd>,
 ) {
+  const { payload } = job.data;
   const logger = baseLogger.child({
-    payload: job.data.payload,
+    payload,
     jobId: job.id,
-    reqId: job.data.payload.properties?.__reqId ?? 'unknown',
+    reqId: payload.properties?.__reqId ?? 'unknown',
   });
 
   logger.info('Processing session end job');
 
-  const payload = job.data.payload;
+  const session = await sessionBuffer.getExistingSession(payload.sessionId);
 
-  const events = await getNecessarySessionEvents({
+  if (!session) {
+    throw new Error('Session not found');
+  }
+
+  try {
+    handleSessionEndNotifications({
+      session,
+      payload,
+    });
+  } catch (error) {
+    logger.error('Creating notificatios for session end failed', {
+      error,
+    });
+  }
+
+  const lastScreenView = await eventBuffer.getLastScreenView({
     projectId: payload.projectId,
     sessionId: payload.sessionId,
-    createdAt: payload.createdAt,
   });
 
-  const sessionStart = events.find((event) => event.name === 'session_start');
-  const screenViews = events.filter((event) => event.name === 'screen_view');
-  const lastEvent = events[0];
-
-  if (!sessionStart) {
-    throw new Error('No session_start found');
-  }
-
-  if (!lastEvent) {
-    throw new Error('No last event found');
-  }
-
-  const sessionDuration =
-    lastEvent.createdAt.getTime() - sessionStart.createdAt.getTime();
-
-  await checkNotificationRulesForSessionEnd(events).catch(() => {
-    logger.error('Error checking notification rules for session end', {
-      data: job.data,
-    });
-  });
-
-  logger.info('Creating session_end event', {
-    sessionStart,
-    lastEvent,
-    screenViews,
-    sessionDuration,
-    events,
-  });
-
+  // Create session end event
   return createEvent({
-    ...sessionStart,
+    ...payload,
     properties: {
-      ...sessionStart.properties,
-      ...(screenViews[0]?.properties ?? {}),
-      __bounce: screenViews.length <= 1,
+      ...payload.properties,
+      ...(lastScreenView?.properties ?? {}),
+      __bounce: session.is_bounce,
     },
     name: 'session_end',
-    duration: sessionDuration,
-    path: screenViews[0]?.path ?? '',
-    createdAt: new Date(getTime(lastEvent.createdAt) + 1000),
-    profileId: lastEvent.profileId || sessionStart.profileId,
+    duration: session.duration ?? 0,
+    path: lastScreenView?.path ?? '',
+    createdAt: new Date(getTime(session.ended_at) + 1000),
+    profileId: lastScreenView?.profileId || payload.profileId,
   });
+}
+
+async function handleSessionEndNotifications({
+  session,
+  payload,
+}: {
+  session: IClickhouseSession;
+  payload: IServiceCreateEventPayload;
+}) {
+  const notificationRules = await getNotificationRulesByProjectId(
+    payload.projectId,
+  );
+  const hasFunnelRules = getHasFunnelRules(notificationRules);
+  const isEventCountReasonable =
+    session.event_count + session.screen_view_count < MAX_SESSION_EVENTS;
+
+  if (hasFunnelRules && isEventCountReasonable) {
+    const events = await getSessionEvents({
+      projectId: payload.projectId,
+      sessionId: payload.sessionId,
+      startAt: new Date(session.created_at),
+      endAt: new Date(session.ended_at),
+    });
+
+    if (events.length > 0) {
+      await checkNotificationRulesForSessionEnd(events);
+    }
+  }
 }

@@ -3,8 +3,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getSalts } from '@openpanel/db';
-import { eventsGroupQueue, eventsQueue } from '@openpanel/queue';
-import { getLock, getRedisCache } from '@openpanel/redis';
+import { eventsGroupQueue } from '@openpanel/queue';
 import type { PostEventPayload } from '@openpanel/sdk';
 
 import { checkDuplicatedEvent } from '@/utils/deduplicate';
@@ -61,57 +60,28 @@ export async function postEvent(
     return;
   }
 
-  const isGroupQueue = await getRedisCache().exists('group_queue');
-  if (isGroupQueue) {
-    const uaInfo = parseUserAgent(ua, request.body?.properties);
-    const groupId = uaInfo.isServer
-      ? request.body?.profileId
-        ? `${projectId}:${request.body?.profileId}`
-        : `${projectId}:${generateId()}`
-      : currentDeviceId;
-    await eventsGroupQueue.add({
-      orderMs: new Date(timestamp).getTime(),
-      data: {
-        projectId,
-        headers,
-        event: {
-          ...request.body,
-          timestamp,
-          isTimestampFromThePast,
-        },
-        geo,
-        currentDeviceId,
-        previousDeviceId,
+  const uaInfo = parseUserAgent(ua, request.body?.properties);
+  const groupId = uaInfo.isServer
+    ? request.body?.profileId
+      ? `${projectId}:${request.body?.profileId}`
+      : `${projectId}:${generateId()}`
+    : currentDeviceId;
+  await eventsGroupQueue.add({
+    orderMs: new Date(timestamp).getTime(),
+    data: {
+      projectId,
+      headers,
+      event: {
+        ...request.body,
+        timestamp,
+        isTimestampFromThePast,
       },
-      groupId,
-    });
-  } else {
-    await eventsQueue.add(
-      'event',
-      {
-        type: 'incomingEvent',
-        payload: {
-          projectId,
-          headers,
-          event: {
-            ...request.body,
-            timestamp,
-            isTimestampFromThePast,
-          },
-          geo,
-          currentDeviceId,
-          previousDeviceId,
-        },
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 200,
-        },
-      },
-    );
-  }
+      geo,
+      currentDeviceId,
+      previousDeviceId,
+    },
+    groupId,
+  });
 
   reply.status(202).send('ok');
 }

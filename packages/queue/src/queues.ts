@@ -1,6 +1,10 @@
 import { Queue, QueueEvents } from 'bullmq';
 
-import type { IServiceEvent, Prisma } from '@openpanel/db';
+import type {
+  IServiceCreateEventPayload,
+  IServiceEvent,
+  Prisma,
+} from '@openpanel/db';
 import { createLogger } from '@openpanel/logger';
 import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
 import type { TrackPayload } from '@openpanel/sdk';
@@ -32,16 +36,10 @@ export interface EventsQueuePayloadCreateEvent {
   type: 'createEvent';
   payload: Omit<IServiceEvent, 'id'>;
 }
-type SessionEndRequired =
-  | 'sessionId'
-  | 'deviceId'
-  | 'profileId'
-  | 'projectId'
-  | 'createdAt';
+
 export interface EventsQueuePayloadCreateSessionEnd {
   type: 'createSessionEnd';
-  payload: Partial<Omit<IServiceEvent, SessionEndRequired>> &
-    Pick<IServiceEvent, SessionEndRequired>;
+  payload: IServiceCreateEventPayload;
 }
 
 // TODO: Rename `EventsQueuePayloadCreateSessionEnd`
@@ -94,18 +92,6 @@ export type MiscQueuePayloadTrialEndingSoon = {
 export type MiscQueuePayload = MiscQueuePayloadTrialEndingSoon;
 
 export type CronQueueType = CronQueuePayload['type'];
-
-export const eventsQueue = new Queue<EventsQueuePayload>('events', {
-  connection: getRedisQueue(),
-  defaultJobOptions: {
-    removeOnComplete: 10,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 1000,
-    },
-  },
-});
 
 const orderingWindowMs = Number.parseInt(
   process.env.ORDERING_WINDOW_MS || '50',

@@ -65,12 +65,6 @@ export async function getSessionEnd({
   });
 
   if (sessionEnd) {
-    // Hack: if session end job just got created, we want to give it a chance to complete
-    // So the order is correct
-    if (sessionEnd.job.timestamp > Date.now() - 50) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-
     const existingSessionIsAnonymous =
       sessionEnd.job.data.payload.profileId ===
       sessionEnd.job.data.payload.deviceId;

@@ -5,7 +5,6 @@ import {
   type EventsQueuePayloadIncomingEvent,
   cronQueue,
   eventsGroupQueue,
-  eventsQueue,
   miscQueue,
   notificationQueue,
   queueLogger,
@@ -45,7 +44,6 @@ export async function bootWorkers() {
     },
   });
   eventsGroupWorker.run();
-  const eventsWorker = new Worker(eventsQueue.name, eventsJob, workerOptions);
   const sessionsWorker = new Worker(
     sessionsQueue.name,
     sessionsJob,
@@ -61,7 +59,6 @@ export async function bootWorkers() {
 
   const workers = [
     sessionsWorker,
-    eventsWorker,
     cronWorker,
     notificationWorker,
     miscWorker,

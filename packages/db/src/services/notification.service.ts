@@ -69,7 +69,8 @@ export type INotificationRuleCached = Awaited<
   ReturnType<typeof getNotificationRulesByProjectId>
 >[number];
 export const getNotificationRulesByProjectId = cacheable(
-  function getNotificationRulesByProjectId(projectId: string) {
+  'getNotificationRulesByProjectId',
+  (projectId: string) => {
     return db.notificationRule.findMany({
       where: {
         projectId,
@@ -330,6 +331,17 @@ export async function checkNotificationRulesForEvent(
   );
 }
 
+const isFunnelRule = (rule: INotificationRuleCached) =>
+  rule.config.type === 'funnel';
+
+export function getHasFunnelRules(rules: INotificationRuleCached[]) {
+  return rules.some(isFunnelRule);
+}
+
+export function getFunnelRules(rules: INotificationRuleCached[]) {
+  return rules.filter(isFunnelRule);
+}
+
 export async function checkNotificationRulesForSessionEnd(
   events: IServiceEvent[],
 ) {
@@ -344,8 +356,7 @@ export async function checkNotificationRulesForSessionEnd(
     getNotificationRulesByProjectId(projectId),
   ]);
 
-  const funnelRules = rules.filter((rule) => rule.config.type === 'funnel');
-
+  const funnelRules = getFunnelRules(rules);
   const notificationPromises = funnelRules.flatMap((rule) => {
     // Match funnel events
     let funnelIndex = 0;

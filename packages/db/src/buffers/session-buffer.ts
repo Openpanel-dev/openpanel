@@ -25,7 +25,7 @@ export class SessionBuffer extends BaseBuffer {
     this.redis = getRedisCache();
   }
 
-  async getExistingSession(sessionId: string) {
+  public async getExistingSession(sessionId: string) {
     const hit = await this.redis.get(`session:${sessionId}`);
 
     if (hit) {

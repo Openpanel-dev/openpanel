@@ -7,18 +7,13 @@ import {
   profileBuffer,
   sessionBuffer,
 } from '@openpanel/db';
-import {
-  cronQueue,
-  eventsGroupQueue,
-  eventsQueue,
-  sessionsQueue,
-} from '@openpanel/queue';
+import { cronQueue, eventsGroupQueue, sessionsQueue } from '@openpanel/queue';
 
 const Registry = client.Registry;
 
 export const register = new Registry();
 
-const queues = [eventsQueue, sessionsQueue, cronQueue, eventsGroupQueue];
+const queues = [sessionsQueue, cronQueue, eventsGroupQueue];
 
 queues.forEach((queue) => {
   register.registerMetric(

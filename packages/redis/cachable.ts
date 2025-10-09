@@ -23,33 +23,57 @@ export async function getCache<T>(
   return data;
 }
 
-export function cacheable<T extends (...args: any) => any>(
-  fn: T,
-  expireInSec: number,
-) {
-  const cachePrefix = `cachable:${fn.name}`;
-  function stringify(obj: unknown): string {
-    if (obj === null) return 'null';
-    if (obj === undefined) return 'undefined';
-    if (typeof obj === 'boolean') return obj ? 'true' : 'false';
-    if (typeof obj === 'number') return String(obj);
-    if (typeof obj === 'string') return obj;
-    if (typeof obj === 'function') return obj.toString();
+function stringify(obj: unknown): string {
+  if (obj === null) return 'null';
+  if (obj === undefined) return 'undefined';
+  if (typeof obj === 'boolean') return obj ? 'true' : 'false';
+  if (typeof obj === 'number') return String(obj);
+  if (typeof obj === 'string') return obj;
+  if (typeof obj === 'function') return obj.toString();
 
-    if (Array.isArray(obj)) {
-      return `[${obj.map(stringify).join(',')}]`;
-    }
-
-    if (typeof obj === 'object') {
-      const pairs = Object.entries(obj)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, value]) => `${key}:${stringify(value)}`);
-      return pairs.join(':');
-    }
-
-    // Fallback for any other types
-    return String(obj);
+  if (Array.isArray(obj)) {
+    return `[${obj.map(stringify).join(',')}]`;
   }
+
+  if (typeof obj === 'object') {
+    const pairs = Object.entries(obj)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}:${stringify(value)}`);
+    return pairs.join(':');
+  }
+
+  // Fallback for any other types
+  return String(obj);
+}
+
+export function cacheable<T extends (...args: any) => any>(
+  fnOrName: T | string,
+  fnOrExpireInSec: number | T,
+  _expireInSec?: number,
+) {
+  const name = typeof fnOrName === 'string' ? fnOrName : fnOrName.name;
+  const fn =
+    typeof fnOrName === 'function'
+      ? fnOrName
+      : typeof fnOrExpireInSec === 'function'
+        ? fnOrExpireInSec
+        : null;
+  const expireInSec =
+    typeof fnOrExpireInSec === 'number'
+      ? fnOrExpireInSec
+      : typeof _expireInSec === 'number'
+        ? _expireInSec
+        : null;
+
+  if (typeof fn !== 'function') {
+    throw new Error('fn is not a function');
+  }
+
+  if (typeof expireInSec !== 'number') {
+    throw new Error('expireInSec is not a number');
+  }
+
+  const cachePrefix = `cachable:${name}`;
   const getKey = (...args: Parameters<T>) =>
     `${cachePrefix}:${stringify(args)}`;
   const cachedFn = async (

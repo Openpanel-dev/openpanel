@@ -3,13 +3,11 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
 import { checkDuplicatedEvent } from '@/utils/deduplicate';
-import { logger } from '@/utils/logger';
 import { generateId } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import { eventsGroupQueue, eventsQueue } from '@openpanel/queue';
-import { getLock, getRedisCache } from '@openpanel/redis';
+import { eventsGroupQueue } from '@openpanel/queue';
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -282,57 +280,28 @@ async function track({
   timestamp: string;
   isTimestampFromThePast: boolean;
 }) {
-  const isGroupQueue = await getRedisCache().exists('group_queue');
-  if (isGroupQueue) {
-    const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
-    const groupId = uaInfo.isServer
-      ? payload.profileId
-        ? `${projectId}:${payload.profileId}`
-        : `${projectId}:${generateId()}`
-      : currentDeviceId;
-    await eventsGroupQueue.add({
-      orderMs: new Date(timestamp).getTime(),
-      data: {
-        projectId,
-        headers,
-        event: {
-          ...payload,
-          timestamp,
-          isTimestampFromThePast,
-        },
-        geo,
-        currentDeviceId,
-        previousDeviceId,
+  const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
+  const groupId = uaInfo.isServer
+    ? payload.profileId
+      ? `${projectId}:${payload.profileId}`
+      : `${projectId}:${generateId()}`
+    : currentDeviceId;
+  await eventsGroupQueue.add({
+    orderMs: new Date(timestamp).getTime(),
+    data: {
+      projectId,
+      headers,
+      event: {
+        ...payload,
+        timestamp,
+        isTimestampFromThePast,
       },
-      groupId,
-    });
-  } else {
-    await eventsQueue.add(
-      'event',
-      {
-        type: 'incomingEvent',
-        payload: {
-          projectId,
-          headers,
-          event: {
-            ...payload,
-            timestamp,
-            isTimestampFromThePast,
-          },
-          geo,
-          currentDeviceId,
-          previousDeviceId,
-        },
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 200,
-        },
-      },
-    );
-  }
+      geo,
+      currentDeviceId,
+      previousDeviceId,
+    },
+    groupId,
+  });
 }
 
 async function identify({

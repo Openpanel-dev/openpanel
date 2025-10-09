@@ -7,7 +7,6 @@ import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
   eventsGroupQueue,
-  eventsQueue,
   miscQueue,
   notificationQueue,
   sessionsQueue,
@@ -36,7 +35,6 @@ async function start() {
     createBullBoard({
       queues: [
         new BullBoardGroupMQAdapter(eventsGroupQueue) as any,
-        new BullMQAdapter(eventsQueue),
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
         new BullMQAdapter(notificationQueue),
