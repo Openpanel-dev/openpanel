@@ -95,7 +95,7 @@ const startServer = async () => {
         if (isPrivatePath) {
           // Allow multiple dashboard domains
           const allowedOrigins = [
-            process.env.NEXT_PUBLIC_DASHBOARD_URL,
+            process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
             ...(process.env.API_CORS_ORIGINS?.split(',') ?? []),
           ].filter(Boolean);
 
