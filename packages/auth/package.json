@@ -16,10 +16,10 @@
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "prisma": "^5.1.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   },
   "peerDependencies": {
     "next": "14.2.1",

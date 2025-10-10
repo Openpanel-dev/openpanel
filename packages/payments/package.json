@@ -14,10 +14,10 @@
     "@openpanel/tsconfig": "workspace:*",
     "@types/inquirer": "^9.0.7",
     "@types/inquirer-autocomplete-prompt": "^3.0.3",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "inquirer": "^9.3.5",
     "inquirer-autocomplete-prompt": "^3.0.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

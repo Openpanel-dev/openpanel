@@ -9,6 +9,6 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "date-fns": "^3.3.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

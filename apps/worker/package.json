@@ -39,6 +39,6 @@
     "@types/sqlstring": "^2.3.2",
     "@types/uuid": "^9.0.8",
     "tsdown": "^0.14.2",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

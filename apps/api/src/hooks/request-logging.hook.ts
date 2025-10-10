@@ -7,7 +7,7 @@ const ignoreMethods = ['OPTIONS'];
 const getTrpcInput = (
   request: FastifyRequest,
 ): Record<string, unknown> | undefined => {
-  const input = path(['query', 'input'], request);
+  const input = path<any>(['query', 'input'], request);
   try {
     return typeof input === 'string' ? JSON.parse(input).json : input;
   } catch (e) {

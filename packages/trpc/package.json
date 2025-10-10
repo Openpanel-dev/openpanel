@@ -33,10 +33,10 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/bcrypt": "^5.0.2",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "@types/ramda": "^0.29.6",
     "@types/sqlstring": "^2.3.2",
     "prisma": "^5.1.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

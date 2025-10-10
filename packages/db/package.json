@@ -34,11 +34,11 @@
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "@types/ramda": "^0.29.6",
     "@types/sqlstring": "^2.3.2",
     "@types/uuid": "^9.0.8",
     "prisma": "^6.14.0",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }
