@@ -189,7 +189,7 @@ export async function polarWebhook(
           data: {
             subscriptionId: event.data.id,
             subscriptionCustomerId: event.data.customer.id,
-            subscriptionPriceId: event.data.priceId,
+            subscriptionPriceId: event.data.prices[0]?.id ?? null,
             subscriptionProductId: event.data.productId,
             subscriptionStatus: event.data.status,
             subscriptionStartsAt: event.data.currentPeriodStart,

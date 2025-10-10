@@ -1,10 +1,8 @@
 import { db } from '@openpanel/db';
 import { Polar } from '@polar-sh/sdk';
-import type { ProductCreate } from '@polar-sh/sdk/models/components/productcreate';
 import inquirer from 'inquirer';
 import inquirerAutocomplete from 'inquirer-autocomplete-prompt';
-import { PRICING, getProducts, getSuccessUrl, polar } from '..';
-import { formatEventsCount } from './create-products';
+import { getSuccessUrl } from '..';
 
 // Register the autocomplete prompt
 inquirer.registerPrompt('autocomplete', inquirerAutocomplete);
@@ -222,6 +220,7 @@ async function main() {
   });
 
   const checkoutLink = await polar.checkoutLinks.create({
+    paymentProcessor: 'stripe',
     productId: product.id,
     allowDiscountCodes: false,
     metadata: {

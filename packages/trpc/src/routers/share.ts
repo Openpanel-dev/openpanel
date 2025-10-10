@@ -53,7 +53,7 @@ export const shareRouter = createTRPCRouter({
 
       return {
         ...share,
-        hasAccess: !!ctx.req.cookies[`shared-overview-${share?.id}`],
+        hasAccess: !!ctx.cookies[`shared-overview-${share?.id}`],
       };
     }),
   createOverview: protectedProcedure

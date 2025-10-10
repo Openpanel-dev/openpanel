@@ -8,9 +8,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@react-email/components": "^0.0.30",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "@react-email/components": "^0.5.6",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "resend": "^4.0.1",
     "responsive-react-email": "^0.0.5",
     "zod": "catalog:"
@@ -18,7 +18,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "20.14.8",
-    "@types/react": "^18.2.0",
+    "@types/react": "catalog:",
     "react-email": "3.0.4",
     "typescript": "^5.2.2"
   }

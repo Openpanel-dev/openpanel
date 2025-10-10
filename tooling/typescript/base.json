@@ -15,8 +15,8 @@
     "noUncheckedIndexedAccess": true,
     "allowUnreachableCode": true,
     "module": "ESNext",
-    "moduleResolution": "node",
-    "allowImportingTsExtensions": false,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true
