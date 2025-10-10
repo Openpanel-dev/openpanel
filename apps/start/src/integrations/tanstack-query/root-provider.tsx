@@ -6,31 +6,27 @@ import superjson from 'superjson';
 import { TRPCProvider } from '@/integrations/trpc/react';
 import type { AppRouter } from '@openpanel/trpc';
 import { createIsomorphicFn } from '@tanstack/react-start';
-import { type HTTPHeaderName, getHeaders } from '@tanstack/react-start/server';
+import { getRequestHeaders } from '@tanstack/react-start/server';
+import { useMemo } from 'react';
 
-type Headers = Partial<Record<HTTPHeaderName, string | undefined>>;
-
-function getUrl() {
-  // const base = (() => {
-  //   if (typeof window !== 'undefined') return ''
-  //   return `http://localhost:${process.env.PORT ?? 3000}`
-  // })()
-  return 'http://localhost:3333/trpc';
-}
+type Headers = ReturnType<typeof getRequestHeaders>;
 
 export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
-    return getHeaders();
+    return getRequestHeaders();
   })
-  .client(() => ({}));
+  .client(() => ({}) as Headers);
 
 // Create a function that returns a tRPC client with optional cookies
-export function createTRPCClientWithHeaders(headers?: Headers) {
+export function createTRPCClientWithHeaders(
+  headers: Headers | undefined,
+  apiUrl: string,
+) {
   return createTRPCClient<AppRouter>({
     links: [
       httpBatchLink({
         transformer: superjson,
-        url: getUrl(),
+        url: apiUrl,
         headers,
         maxItems: 3,
         fetch: (url, options) => {
@@ -45,10 +41,7 @@ export function createTRPCClientWithHeaders(headers?: Headers) {
   });
 }
 
-// Default client for client-side usage
-export const trpcClient = createTRPCClientWithHeaders();
-
-export function getContext(headers: Headers) {
+export function getContext(headers: Headers, apiUrl: string) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -64,7 +57,7 @@ export function getContext(headers: Headers) {
   });
 
   // Create a tRPC client with cookies if provided
-  const client = createTRPCClientWithHeaders(headers);
+  const client = createTRPCClientWithHeaders(headers, apiUrl);
 
   const serverHelpers = createTRPCOptionsProxy({
     client: client,
@@ -79,10 +72,16 @@ export function getContext(headers: Headers) {
 export function Provider({
   children,
   queryClient,
+  apiUrl,
 }: {
   children: React.ReactNode;
   queryClient: QueryClient;
+  apiUrl: string;
 }) {
+  const trpcClient = useMemo(
+    () => createTRPCClientWithHeaders(undefined, apiUrl),
+    [apiUrl],
+  );
   return (
     <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
       {children}

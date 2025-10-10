@@ -1,12 +1,8 @@
-import { TanstackDevtools } from '@tanstack/react-devtools';
 import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
 } from '@tanstack/react-router';
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
 
 import 'flag-icons/css/flag-icons.min.css';
 import 'katex/dist/katex.min.css';
@@ -16,7 +12,6 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
-import { getServerEnvsQueryOptions } from '@/server/get-envs';
 import type { AppRouter } from '@openpanel/trpc';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
@@ -26,9 +21,6 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  beforeLoad({ context }) {
-    return context.queryClient.ensureQueryData(getServerEnvsQueryOptions);
-  },
   head: () => ({
     meta: [
       {
@@ -58,18 +50,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="grainy min-h-screen bg-def-100 font-sans text-base antialiased leading-normal">
         <Providers>{children}</Providers>
-        <TanstackDevtools
-          config={{
-            position: 'bottom-left',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-            TanStackQueryDevtools,
-          ]}
-        />
         <ThemeScriptOnce />
         <Scripts />
         <div className="hidden">

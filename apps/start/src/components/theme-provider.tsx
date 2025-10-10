@@ -1,11 +1,16 @@
 import { mapKeys } from '@openpanel/validation';
 import { ScriptOnce } from '@tanstack/react-router';
-import { clientOnly, createIsomorphicFn } from '@tanstack/react-start';
+import { createIsomorphicFn } from '@tanstack/react-start';
 import { type ReactNode, createContext, use, useEffect, useState } from 'react';
 import { z } from 'zod';
 
 const UserThemeSchema = z.enum(['light', 'dark', 'system']).catch('system');
 const AppThemeSchema = z.enum(['light', 'dark']).catch('light');
+
+const clientOnly = <T extends (...args: any[]) => void>(fn: T) => {
+  if (typeof window === 'undefined') return (() => {}) as unknown as T;
+  return fn;
+};
 
 export type UserTheme = z.infer<typeof UserThemeSchema>;
 export type AppTheme = z.infer<typeof AppThemeSchema>;

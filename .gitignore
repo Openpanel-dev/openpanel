@@ -168,6 +168,9 @@ dist
 
 .vscode-test
 
+# Wrangler build artifacts and cache
+.wrangler/
+
 # yarn v2
 
 .yarn/cache
