@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
+import { createProjectTitle } from '@/utils/title';
 import {
   ChevronRight,
   LayoutPanelTopIcon,
@@ -33,6 +34,15 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/dashboards_/$dashboardId',
 )({
   component: Component,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle('Dashboard'),
+        },
+      ],
+    };
+  },
   loader: async ({ context, params }) => {
     await Promise.all([
       context.queryClient.prefetchQuery(
@@ -45,6 +55,16 @@ export const Route = createFileRoute(
         context.trpc.report.list.queryOptions({
           dashboardId: params.dashboardId,
           projectId: params.projectId,
+        }),
+      ),
+      context.queryClient.prefetchQuery(
+        context.trpc.project.getProjectWithClients.queryOptions({
+          projectId: params.projectId,
+        }),
+      ),
+      context.queryClient.prefetchQuery(
+        context.trpc.organization.get.queryOptions({
+          organizationId: params.organizationId,
         }),
       ),
     ]);

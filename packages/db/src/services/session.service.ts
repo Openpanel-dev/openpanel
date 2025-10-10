@@ -11,6 +11,7 @@ import {
 import { clix } from '../clickhouse/query-builder';
 import { createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
+import { getOrganizationByProjectIdCached } from './organization.service';
 import { type IServiceProfile, getProfilesCached } from './profile.service';
 
 export type IClickhouseSession = {
@@ -99,11 +100,11 @@ export interface GetSessionListOptions {
   projectId: string;
   profileId?: string;
   take: number;
-  cursor?: number | Date;
   filters?: IChartEventFilter[];
   startDate?: Date;
   endDate?: Date;
   search?: string;
+  cursor?: Cursor | null;
 }
 
 export function transformSession(session: IClickhouseSession): IServiceSession {
@@ -148,6 +149,17 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
   };
 }
 
+type Direction = 'initial' | 'next' | 'prev';
+
+type PageInfo = {
+  next?: Cursor; // use last row
+};
+
+type Cursor = {
+  createdAt: string; // ISO 8601 with ms
+  id: string;
+};
+
 export async function getSessionList({
   cursor,
   take,
@@ -160,149 +172,114 @@ export async function getSessionList({
 }: GetSessionListOptions) {
   const { sb, getSql } = createSqlBuilder();
 
-  if (typeof cursor === 'number') {
-    sb.offset = Math.max(0, (cursor ?? 0) * take);
-  } else if (cursor instanceof Date) {
-    sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
-  }
-
+  sb.from = `${TABLE_NAMES.sessions} FINAL`;
   sb.limit = take;
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
-  // Add sign > 0 condition for versioned collapsing merge tree
-  sb.where.sign = 'sign = 1';
-
-  // Select all session fields
-  sb.select.id = 'id';
-  sb.select.project_id = 'project_id';
-  sb.select.profile_id = 'argMax(profile_id, version) AS max_profile_id';
-  sb.select.device_id = 'argMax(device_id, version) AS max_device_id';
-  sb.select.created_at = 'argMax(created_at, version) AS max_created_at';
-  sb.select.ended_at = 'argMax(ended_at, version) AS max_ended_at';
-  sb.select.is_bounce = 'argMax(is_bounce, version) AS max_is_bounce';
-  sb.select.entry_origin = 'argMax(entry_origin, version) AS max_entry_origin';
-  sb.select.entry_path = 'argMax(entry_path, version) AS max_entry_path';
-  sb.select.exit_origin = 'argMax(exit_origin, version) AS max_exit_origin';
-  sb.select.exit_path = 'argMax(exit_path, version) AS max_exit_path';
-  sb.select.screen_view_count =
-    'argMax(screen_view_count, version) AS max_screen_view_count';
-  sb.select.revenue = 'argMax(revenue, version) AS max_revenue';
-  sb.select.event_count = 'argMax(event_count, version) AS max_event_count';
-  sb.select.duration = 'argMax(duration, version) AS max_duration';
-  sb.select.country = 'argMax(country, version) AS max_country';
-  sb.select.region = 'argMax(region, version) AS max_region';
-  sb.select.city = 'argMax(city, version) AS max_city';
-  sb.select.longitude = 'argMax(longitude, version) AS max_longitude';
-  sb.select.latitude = 'argMax(latitude, version) AS max_latitude';
-  sb.select.device = 'argMax(device, version) AS max_device';
-  sb.select.brand = 'argMax(brand, version) AS max_brand';
-  sb.select.model = 'argMax(model, version) AS max_model';
-  sb.select.browser = 'argMax(browser, version) AS max_browser';
-  sb.select.browser_version =
-    'argMax(browser_version, version) AS max_browser_version';
-  sb.select.os = 'argMax(os, version) AS max_os';
-  sb.select.os_version = 'argMax(os_version, version) AS max_os_version';
-  sb.select.utm_medium = 'argMax(utm_medium, version) AS max_utm_medium';
-  sb.select.utm_source = 'argMax(utm_source, version) AS max_utm_source';
-  sb.select.utm_campaign = 'argMax(utm_campaign, version) AS max_utm_campaign';
-  sb.select.utm_content = 'argMax(utm_content, version) AS max_utm_content';
-  sb.select.utm_term = 'argMax(utm_term, version) AS max_utm_term';
-  sb.select.referrer = 'argMax(referrer, version) AS max_referrer';
-  sb.select.referrer_name =
-    'argMax(referrer_name, version) AS max_referrer_name';
-  sb.select.referrer_type =
-    'argMax(referrer_type, version) AS max_referrer_type';
-  sb.select.properties = 'argMax(properties, version) AS max_propertie';
-
-  sb.groupBy.id = 'id';
-
-  if (profileId) {
-    sb.where.profileId = `profile_id = ${sqlstring.escape(profileId)}`;
-  }
-
   if (startDate && endDate) {
-    sb.where.created_at = `toDate(created_at) BETWEEN toDate('${formatClickhouseDate(startDate)}') AND toDate('${formatClickhouseDate(endDate)}')`;
+    sb.where.range = `created_at BETWEEN toDateTime('${formatClickhouseDate(startDate)}') AND toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
+  if (profileId)
+    sb.where.profileId = `profile_id = ${sqlstring.escape(profileId)}`;
   if (search) {
-    sb.where.search = `(entry_path ILIKE '%${search}%' OR exit_path ILIKE '%${search}%' OR referrer ILIKE '%${search}%' OR referrer_name ILIKE '%${search}%')`;
+    const s = sqlstring.escape(`%${search}%`);
+    sb.where.search = `(entry_path ILIKE ${s} OR exit_path ILIKE ${s} OR referrer ILIKE ${s} OR referrer_name ILIKE ${s})`;
+  }
+  if (filters?.length) {
+    Object.assign(sb.where, getEventFiltersWhereClause(filters));
   }
 
-  if (filters && filters.length > 0) {
-    // Adapt the event filters to work with session fields where possible
-    const sessionFilters = getEventFiltersWhereClause(filters);
-    sb.where = {
-      ...sb.where,
-      ...sessionFilters,
-    };
+  const organization = await getOrganizationByProjectIdCached(projectId);
+  // This will speed up the query quite a lot for big organizations
+  const dateIntervalInDays =
+    organization?.subscriptionPeriodEventsLimit &&
+    organization?.subscriptionPeriodEventsLimit > 1_000_000
+      ? 1
+      : 7;
+
+  if (cursor) {
+    const cAt = sqlstring.escape(cursor.createdAt);
+    const cId = sqlstring.escape(cursor.id);
+    sb.where.cursor = `(created_at < toDateTime64(${cAt}, 3) OR (created_at = toDateTime64(${cAt}, 3) AND id < ${cId}))`;
+    sb.where.cursorWindow = `created_at >= toDateTime64(${cAt}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
+    sb.orderBy.created_at = 'toDate(created_at) DESC, created_at DESC, id DESC';
+  } else {
+    sb.orderBy.created_at = 'toDate(created_at) DESC, created_at DESC, id DESC';
+    sb.where.created_at = `created_at > now() - INTERVAL ${dateIntervalInDays} DAY`;
   }
 
-  sb.orderBy.created_at = 'toDate(s.created_at) DESC';
-  sb.from = `${TABLE_NAMES.sessions} s`;
-  sb.groupBy.sign = 'sign';
-  sb.groupBy.pid = 'project_id';
+  // ==== Select columns (as you had) ====
+  // sb.select.id = 'id'; sb.select.project_id = 'project_id'; ... etc.
+  const columns = [
+    'created_at',
+    'ended_at',
+    'id',
+    'profile_id',
+    'entry_path',
+    'exit_path',
+    'duration',
+    'is_bounce',
+    'referrer_name',
+    'referrer',
+    'country',
+    'city',
+    'os',
+    'browser',
+    'brand',
+    'model',
+    'device',
+    'screen_view_count',
+    'event_count',
+    'revenue',
+  ];
 
-  console.log('SQL-------------->', getSql());
+  columns.forEach((column) => {
+    sb.select[column] = column;
+  });
 
-  const data = await chQuery<IClickhouseSession>(getSql());
-  console.log('data', data[0]);
+  const sql = getSql();
+  const data = await chQuery<
+    IClickhouseSession & {
+      latestCreatedAt: string;
+    }
+  >(sql);
 
+  // Compute cursors from page edges
+  const last = data[take - 1];
+
+  const meta: PageInfo = {
+    next: last
+      ? {
+          createdAt: last.created_at,
+          id: last.id,
+        }
+      : undefined,
+  };
+
+  // Profile hydration (unchanged)
   const profileIds = data
     .filter((e) => e.device_id !== e.profile_id)
     .map((e) => e.profile_id);
   const profiles = await getProfilesCached(profileIds, projectId);
+  const map = new Map<string, IServiceProfile>(profiles.map((p) => [p.id, p]));
 
-  const map = new Map<string, IServiceProfile>();
-  for (const profile of profiles) {
-    map.set(profile.id, profile);
-  }
+  const items = data.map(transformSession).map((item) => ({
+    ...item,
+    profile: map.get(item.profileId) ?? {
+      id: item.profileId,
+      email: '',
+      avatar: '',
+      firstName: '',
+      lastName: '',
+      createdAt: new Date(),
+      projectId,
+      isExternal: false,
+      properties: {},
+    },
+  }));
 
-  const removeMaxPrefix = (key: string) => key.replace('max_', '');
-
-  const najs = data
-    .map((item) => {
-      return Object.fromEntries(
-        Object.entries(item).map(([key, value]) => [
-          removeMaxPrefix(key),
-          value,
-        ]),
-      );
-    })
-    .map(transformSession)
-    .map((item) => {
-      return {
-        ...item,
-        profile: map.get(item.profileId) ?? {
-          id: item.profileId,
-          email: '',
-          avatar: '',
-          firstName: '',
-          lastName: '',
-          createdAt: new Date(),
-          projectId,
-          isExternal: false,
-          properties: {},
-        },
-      };
-    })
-    .map((item) => ({
-      ...item,
-      profile: map.get(item.profileId) ?? {
-        id: item.profileId,
-        email: '',
-        avatar: '',
-        firstName: '',
-        lastName: '',
-        createdAt: new Date(),
-        projectId,
-        isExternal: false,
-        properties: {},
-      },
-    }));
-
-  console.log(najs[0]);
-
-  return najs;
+  return { items, meta };
 }
 
 export async function getSessionsCount({

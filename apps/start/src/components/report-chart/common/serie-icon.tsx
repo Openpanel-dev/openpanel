@@ -18,6 +18,7 @@ import { useMemo } from 'react';
 
 import { NOT_SET_VALUE } from '@openpanel/constants';
 
+import { useAppContext } from '@/hooks/use-app-context';
 import flags from './serie-icon.flags';
 import iconsWithUrls from './serie-icon.urls';
 
@@ -26,17 +27,20 @@ type SerieIconProps = Omit<LucideProps, 'name'> & {
 };
 
 function getProxyImage(url: string) {
-  return `${String(import.meta.env.VITE_API_URL)}/misc/favicon?url=${encodeURIComponent(url)}`;
+  return `/misc/favicon?url=${encodeURIComponent(url)}`;
 }
 
 const createImageIcon = (url: string) => {
-  return ((_props: LucideProps) => (
-    <img
-      alt="serie icon"
-      className="max-h-4 rounded-[2px] object-contain"
-      src={url}
-    />
-  )) as LucideIcon;
+  return ((_props: LucideProps) => {
+    const context = useAppContext();
+    return (
+      <img
+        alt="serie icon"
+        className="max-h-4 rounded-[2px] object-contain"
+        src={context.apiUrl?.replace(/\/$/, '') + url}
+      />
+    );
+  }) as LucideIcon;
 };
 
 const mapper: Record<string, LucideIcon> = {

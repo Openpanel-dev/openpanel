@@ -2,6 +2,7 @@ import { pushModal } from '@/modals';
 import { ServerIcon } from 'lucide-react';
 
 import Syntax from '@/components/syntax';
+import { useAppContext } from '@/hooks/use-app-context';
 import type { IServiceClient } from '@openpanel/db';
 import { frameworks } from '@openpanel/sdk-info';
 
@@ -10,6 +11,7 @@ type Props = {
 };
 
 const ConnectBackend = ({ client }: Props) => {
+  const context = useAppContext();
   return (
     <div className="col gap-4 rounded-lg border p-4 md:p-6">
       <div className="flex items-center gap-2 text-2xl capitalize">
@@ -24,7 +26,7 @@ const ConnectBackend = ({ client }: Props) => {
         <Syntax
           language="bash"
           className="border"
-          code={`curl -X POST ${import.meta.env.VITE_API_URL}/track \\
+          code={`curl -X POST ${context.apiUrl}/track \\
 -H "Content-Type: application/json" \\
 -H "openpanel-client-id: ${client?.id}" \\
 -H "openpanel-client-secret: ${client?.secret}" \\

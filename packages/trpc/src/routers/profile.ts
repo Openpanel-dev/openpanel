@@ -84,10 +84,14 @@ export const profileRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
+      const [data, count] = await Promise.all([
+        getProfileList(input),
+        getProfileListCount(input),
+      ]);
       return {
-        data: await getProfileList(input),
+        data,
         meta: {
-          count: await getProfileListCount(input),
+          count,
           pageCount: input.take,
         },
       };
@@ -117,17 +121,24 @@ export const profileRouter = createTRPCRouter({
         res.map((r) => r.profile_id),
         projectId,
       );
-      return (
-        res
-          .map((item) => {
-            return {
-              count: item.count,
-              ...(profiles.find((p) => p.id === item.profile_id)! ?? {}),
-            };
-          })
-          // Make sure we return actual profiles
-          .filter((item) => item.id)
-      );
+
+      const data = res
+        .map((item) => {
+          return {
+            count: item.count,
+            ...(profiles.find((p) => p.id === item.profile_id)! ?? {}),
+          };
+        })
+        // Make sure we return actual profiles
+        .filter((item) => item.id);
+
+      return {
+        data,
+        meta: {
+          count: data.length,
+          pageCount: take,
+        },
+      };
     }),
 
   values: protectedProcedure

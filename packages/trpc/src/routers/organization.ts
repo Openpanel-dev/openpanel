@@ -139,7 +139,7 @@ export const organizationRouter = createTRPCRouter({
       await sendEmail('invite', {
         to: email,
         data: {
-          url: `${process.env.VITE_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
+          url: `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
           organizationName: invite.organization.name,
         },
       });

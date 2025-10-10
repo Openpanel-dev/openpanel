@@ -1,5 +1,6 @@
 import ReportEditor from '@/components/report-chart/report-editor';
 import { useTRPC } from '@/integrations/trpc/react';
+import { createProjectTitle } from '@/utils/title';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
@@ -8,6 +9,15 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/reports_/$reportId',
 )({
   component: Component,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle('Report'),
+        },
+      ],
+    };
+  },
   loader: async ({ context, params }) => {
     await context.queryClient.prefetchQuery(
       context.trpc.report.get.queryOptions({

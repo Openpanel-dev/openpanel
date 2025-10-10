@@ -1,35 +1,46 @@
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SessionsTable } from '@/components/sessions/table';
-import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQuery,
+} from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/sessions',
 )({
   component: Component,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle(PAGE_TITLES.SESSIONS),
+        },
+      ],
+    };
+  },
 });
 
 function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
-
-  const { page } = useDataTablePagination(50);
   const { debouncedSearch } = useSearchQueryState();
 
-  const query = useQuery(
-    trpc.session.list.queryOptions(
+  const query = useInfiniteQuery(
+    trpc.session.list.infiniteQueryOptions(
       {
-        cursor: (page - 1) * 50,
         projectId,
         take: 50,
         search: debouncedSearch,
       },
       {
-        placeholderData: keepPreviousData,
+        getNextPageParam: (lastPage) => lastPage.meta.next,
       },
     ),
   );

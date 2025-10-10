@@ -4,6 +4,7 @@ import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LinkButton } from '@/components/ui/button';
+import { PAGE_TITLES } from '@/utils/title';
 import { createFileRoute } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
 import { z } from 'zod';
@@ -15,6 +16,9 @@ const zLoginSearch = z.object({
 
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
+  head: () => ({
+    title: `${PAGE_TITLES.LOGIN} | OpenPanel.dev`,
+  }),
   validateSearch: (search) => zLoginSearch.parse(search),
 });
 

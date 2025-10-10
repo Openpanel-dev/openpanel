@@ -34,7 +34,7 @@ function AllProviders({ children }: { children: React.ReactNode }) {
       transformer: superjson,
       links: [
         httpLink({
-          url: `${process.env.VITE_API_URL}/trpc`,
+          url: `${process.env.NEXT_PUBLIC_API_URL}/trpc`,
           fetch(url, options) {
             return fetch(url, {
               ...options,

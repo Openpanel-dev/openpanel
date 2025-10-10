@@ -1,13 +1,32 @@
 import { z } from 'zod';
 
-import {
-  getSessionList,
-  getSessionsCountCached,
-  sessionService,
-} from '@openpanel/db';
+import { getSessionList, sessionService } from '@openpanel/db';
 import { zChartEventFilter } from '@openpanel/validation';
 
 import { createTRPCRouter, protectedProcedure } from '../trpc';
+
+export function encodeCursor(cursor: {
+  createdAt: string;
+  id: string;
+}): string {
+  const json = JSON.stringify(cursor);
+  return Buffer.from(json, 'utf8').toString('base64url'); // URL-safe
+}
+
+export function decodeCursor(
+  encoded: string,
+): { createdAt: string; id: string } | null {
+  try {
+    const json = Buffer.from(encoded, 'base64url').toString('utf8');
+    const obj = JSON.parse(json);
+    if (typeof obj.createdAt === 'string' && typeof obj.id === 'string') {
+      return obj;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 export const sessionRouter = createTRPCRouter({
   list: protectedProcedure
@@ -15,7 +34,7 @@ export const sessionRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         profileId: z.string().optional(),
-        cursor: z.number().optional(),
+        cursor: z.string().nullish(),
         filters: z.array(zChartEventFilter).default([]),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
@@ -24,26 +43,15 @@ export const sessionRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
-      const [data, totalCount] = await Promise.all([
-        getSessionList({
-          ...input,
-          cursor: input.cursor,
-        }),
-        getSessionsCountCached({
-          projectId: input.projectId,
-          profileId: input.profileId,
-          filters: input.filters,
-          startDate: input.startDate,
-          endDate: input.endDate,
-          search: input.search,
-        }),
-      ]);
-
+      const cursor = input.cursor ? decodeCursor(input.cursor) : null;
+      const data = await getSessionList({
+        ...input,
+        cursor,
+      });
       return {
-        data,
+        data: data.items,
         meta: {
-          count: totalCount,
-          pageCount: input.take,
+          next: data.meta.next ? encodeCursor(data.meta.next) : undefined,
         },
       };
     }),

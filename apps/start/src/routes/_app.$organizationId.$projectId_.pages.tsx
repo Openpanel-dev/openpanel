@@ -13,6 +13,7 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import type { IChartRange, IInterval } from '@openpanel/validation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -22,6 +23,15 @@ import { memo } from 'react';
 export const Route = createFileRoute('/_app/$organizationId/$projectId_/pages')(
   {
     component: Component,
+    head: () => {
+      return {
+        meta: [
+          {
+            title: createProjectTitle(PAGE_TITLES.PAGES),
+          },
+        ],
+      };
+    },
   },
 );
 

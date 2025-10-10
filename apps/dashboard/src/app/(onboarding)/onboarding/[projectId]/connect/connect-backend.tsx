@@ -24,7 +24,7 @@ const ConnectBackend = ({ client }: Props) => {
         <Syntax
           language="bash"
           className="border"
-          code={`curl -X POST ${process.env.VITE_API_URL}/track \\
+          code={`curl -X POST ${process.env.NEXT_PUBLIC_API_URL}/track \\
 -H "Content-Type: application/json" \\
 -H "openpanel-client-id: ${client?.id}" \\
 -H "openpanel-client-secret: ${client?.secret}" \\

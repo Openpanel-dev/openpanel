@@ -9,6 +9,9 @@ import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
+  head: () => ({
+    title: 'Welcome | OpenPanel.dev',
+  }),
   loader: async ({ context }) => {
     try {
       const organizations = await context.queryClient.fetchQuery(

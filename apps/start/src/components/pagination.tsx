@@ -25,7 +25,7 @@ export function usePagination(take: number) {
 export type Props = {
   canNextPage: boolean;
   canPreviousPage: boolean;
-  pageIndex: number;
+  pageIndex: number | string;
   nextPage: () => void;
   previousPage: () => void;
   className?: string;
@@ -43,11 +43,9 @@ export function Pagination({
   nextPage,
   previousPage,
   className,
-  loading,
 }: Props) {
   const isFetching = useIsFetching() > 0;
-  const [isPending, startTransition] = useTransition();
-  const isLoading = isFetching || isPending;
+  const isLoading = isFetching;
   return (
     <div
       className={cn(
@@ -59,7 +57,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => startTransition(() => firstPage?.())}
+          onClick={() => firstPage?.()}
           disabled={!canPreviousPage}
           className="max-sm:hidden"
           icon={ChevronsLeftIcon}
@@ -68,25 +66,27 @@ export function Pagination({
       <Button
         variant="outline"
         size="icon"
-        onClick={() => startTransition(() => previousPage())}
+        onClick={() => previousPage()}
         disabled={!canPreviousPage}
         icon={ChevronLeftIcon}
       />
 
       <Button
         loading={isLoading}
+        loadingAbsolute
         loadingType="ring"
         disabled
         variant="outline"
         size="icon"
+        className={cn(typeof pageIndex === 'string' && 'min-w-8 w-auto px-2')}
       >
-        {isLoading ? '' : pageIndex + 1}
+        {typeof pageIndex === 'number' ? pageIndex + 1 : pageIndex}
       </Button>
 
       <Button
         variant="outline"
         size="icon"
-        onClick={() => startTransition(() => nextPage())}
+        onClick={() => nextPage()}
         disabled={!canNextPage}
         icon={ChevronRightIcon}
       />
@@ -95,7 +95,7 @@ export function Pagination({
         <Button
           variant="outline"
           size="icon"
-          onClick={() => startTransition(() => lastPage?.())}
+          onClick={() => lastPage?.()}
           disabled={!canNextPage}
           className="max-sm:hidden"
           icon={ChevronsRightIcon}

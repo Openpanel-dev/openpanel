@@ -143,8 +143,8 @@ services:
       - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
       - SERVICE_FQDN_OPAPI=/api
       # Set coolify FQDN domain
-      - VITE_API_URL=$SERVICE_FQDN_OPAPI
-      - VITE_DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
+      - API_URL=$SERVICE_FQDN_OPAPI
+      - DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
       # Others
       - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
       - ALLOW_REGISTRATION=${OPENPANEL_ALLOW_REGISTRATION:-false}
@@ -173,8 +173,8 @@ services:
       - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
       - SERVICE_FQDN_OPDASHBOARD
       # Set coolify FQDN domain
-      - VITE_API_URL=$SERVICE_FQDN_OPAPI
-      - VITE_DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
+      - API_URL=$SERVICE_FQDN_OPAPI
+      - DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
     healthcheck:
       test:
         ["CMD-SHELL", "curl -f http://localhost:3000/api/healthcheck || exit 1"]
@@ -200,7 +200,7 @@ services:
       - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@opkv:6379
       - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
       # Set coolify FQDN domain
-      - VITE_API_URL=$SERVICE_FQDN_OPAPI
+      - API_URL=$SERVICE_FQDN_OPAPI
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
       interval: 10s

@@ -1,6 +1,5 @@
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { Tooltiper } from '@/components/ui/tooltip';
 import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -30,26 +29,31 @@ export function useColumns() {
     {
       accessorKey: 'createdAt',
       header: 'Started',
+      size: 140,
       cell: ({ row }) => {
         const session = row.original;
         return (
-          <Tooltiper asChild content={formatDateTime(session.createdAt)}>
-            <div className="text-muted-foreground">
+          <div className="relative">
+            <div className="absolute inset-0 opacity-0 group-hover/row:opacity-100 transition-opacity duration-100">
+              {formatDateTime(session.createdAt)}
+            </div>
+            <div className="text-muted-foreground group-hover/row:opacity-0 transition-opacity duration-100">
               {formatTimeAgoOrDateTime(session.createdAt)}
             </div>
-          </Tooltiper>
+          </div>
         );
       },
     },
     {
       accessorKey: 'id',
       header: 'Session ID',
+      size: 120,
       cell: ({ row }) => {
         const session = row.original;
         return (
           <ProjectLink
             href={`/sessions/${session.id}`}
-            className="font-mono text-sm font-medium"
+            className="font-medium"
             title={session.id}
           >
             {session.id.slice(0, 8)}...
@@ -60,6 +64,7 @@ export function useColumns() {
     {
       accessorKey: 'profileId',
       header: 'Profile',
+      size: 150,
       cell: ({ row }) => {
         const session = row.original;
         if (session.profile) {
@@ -75,7 +80,7 @@ export function useColumns() {
         return (
           <ProjectLink
             href={`/profiles/${session.profileId}`}
-            className="font-mono text-sm font-medium"
+            className="font-mono font-medium"
           >
             {session.profileId}
           </ProjectLink>
@@ -85,13 +90,12 @@ export function useColumns() {
     {
       accessorKey: 'entryPath',
       header: 'Entry Page',
+      size: 200,
       cell: ({ row }) => {
         const session = row.original;
         return (
           <div className="min-w-0">
-            <span className="truncate font-mono text-sm">
-              {session.entryPath || '/'}
-            </span>
+            <span className="font-mono">{session.entryPath || '/'}</span>
           </div>
         );
       },
@@ -99,11 +103,12 @@ export function useColumns() {
     {
       accessorKey: 'exitPath',
       header: 'Exit Page',
+      size: 200,
       cell: ({ row }) => {
         const session = row.original;
         return (
           <div className="min-w-0">
-            <span className="truncate font-mono text-sm">
+            <span className="font-mono">
               {session.exitPath || session.entryPath || '/'}
             </span>
           </div>
@@ -113,6 +118,7 @@ export function useColumns() {
     {
       accessorKey: 'duration',
       header: 'Duration',
+      size: 100,
       cell: ({ row }) => {
         const session = row.original;
         return (
@@ -123,6 +129,7 @@ export function useColumns() {
     {
       accessorKey: 'isBounce',
       header: 'Bounce',
+      size: 80,
       cell: ({ row }) => {
         const session = row.original;
         return (
@@ -139,6 +146,7 @@ export function useColumns() {
     {
       accessorKey: 'referrerName',
       header: 'Referrer',
+      size: 150,
       cell: ({ row }) => {
         const session = row.original;
         const ref = session.referrerName || session.referrer || 'Direct';
@@ -153,6 +161,7 @@ export function useColumns() {
     {
       accessorKey: 'country',
       header: 'Location',
+      size: 150,
       cell: ({ row }) => {
         const session = row.original;
         return (
@@ -166,6 +175,7 @@ export function useColumns() {
     {
       accessorKey: 'os',
       header: 'OS',
+      size: 120,
       cell: ({ row }) => {
         const session = row.original;
         return (
@@ -179,6 +189,7 @@ export function useColumns() {
     {
       accessorKey: 'browser',
       header: 'Browser',
+      size: 120,
       cell: ({ row }) => {
         const session = row.original;
         return (
@@ -192,6 +203,7 @@ export function useColumns() {
     {
       accessorKey: 'device',
       header: 'Device',
+      size: 150,
       cell: ({ row }) => {
         const session = row.original;
         let deviceInfo =
@@ -212,6 +224,7 @@ export function useColumns() {
     {
       accessorKey: 'screenViewCount',
       header: 'Page views',
+      size: 100,
       cell: ({ row }) => {
         const session = row.original;
         return (
@@ -224,6 +237,7 @@ export function useColumns() {
     {
       accessorKey: 'eventCount',
       header: 'Events',
+      size: 90,
       cell: ({ row }) => {
         const session = row.original;
         return (
@@ -234,6 +248,7 @@ export function useColumns() {
     {
       accessorKey: 'revenue',
       header: 'Revenue',
+      size: 100,
       cell: ({ row }) => {
         const session = row.original;
         return session.revenue > 0 ? (
@@ -248,6 +263,7 @@ export function useColumns() {
     {
       accessorKey: 'deviceId',
       header: 'Device ID',
+      size: 120,
     },
   ];
 

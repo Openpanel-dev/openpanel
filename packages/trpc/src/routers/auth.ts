@@ -320,7 +320,7 @@ export const authRouter = createTRPCRouter({
       await sendEmail('reset-password', {
         to: input.email,
         data: {
-          url: `${process.env.VITE_DASHBOARD_URL}/reset-password?token=${token}`,
+          url: `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/reset-password?token=${token}`,
         },
       });
 

@@ -19,6 +19,7 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { type SqlBuilderObject, createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
+import { getOrganizationByProjectIdCached } from './organization.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
 import {
   getProfileById,
@@ -407,10 +408,23 @@ export async function getEventList({
 }: GetEventListOptions) {
   const { sb, getSql, join } = createSqlBuilder();
 
+  const organization = await getOrganizationByProjectIdCached(projectId);
+  // This will speed up the query quite a lot for big organizations
+  const dateIntervalInDays =
+    organization?.subscriptionPeriodEventsLimit &&
+    organization?.subscriptionPeriodEventsLimit > 1_000_000
+      ? 1
+      : 7;
+
   if (typeof cursor === 'number') {
     sb.offset = Math.max(0, (cursor ?? 0) * take);
   } else if (cursor instanceof Date) {
-    sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(cursor))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
+    sb.where.cursor = `created_at <= ${sqlstring.escape(formatClickhouseDate(cursor))}`;
+  }
+
+  if (!cursor) {
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
   }
 
   sb.limit = take;
@@ -554,6 +568,8 @@ export async function getEventList({
   if (custom) {
     custom(sb);
   }
+
+  console.log('getSql()', getSql());
 
   return getEvents(getSql(), {
     profile: select.profile ?? true,

@@ -1,12 +1,22 @@
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/profiles/_tabs',
 )({
   component: Component,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle(PAGE_TITLES.PROFILES),
+        },
+      ],
+    };
+  },
 });
 
 function Component() {

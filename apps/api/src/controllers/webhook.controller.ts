@@ -105,7 +105,7 @@ export async function slackWebhook(
     });
 
     return reply.redirect(
-      `${process.env.VITE_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
+      `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
     );
   } catch (err) {
     request.log.error(err);

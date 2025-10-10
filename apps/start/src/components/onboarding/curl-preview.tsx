@@ -1,3 +1,4 @@
+import { useAppContext } from '@/hooks/use-app-context';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { clipboard } from '@/utils/clipboard';
 import type { IServiceProjectWithClients } from '@openpanel/db';
@@ -12,6 +13,8 @@ import {
 export function CurlPreview({
   project,
 }: { project: IServiceProjectWithClients }) {
+  const context = useAppContext();
+
   const [secret] = useClientSecret();
   const client = project.clients[0];
   if (!client) {
@@ -25,7 +28,7 @@ export function CurlPreview({
       properties: {
         __title: `Testing OpenPanel - ${project.name}`,
         __path: `${project.domain}`,
-        __referrer: `${import.meta.env.VITE_DASHBOARD_URL}`,
+        __referrer: `${context.dashboardUrl}`,
       },
     },
   };
@@ -40,7 +43,7 @@ export function CurlPreview({
     payload.payload.properties = {};
   }
 
-  const code = `curl -X POST ${import.meta.env.VITE_API_URL}/track \\
+  const code = `curl -X POST ${context.apiUrl}/track \\
 -H "Content-Type: application/json" \\
 -H "openpanel-client-id: ${client.id}" \\
 -H "openpanel-client-secret: ${secret}" \\

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { zEditOrganization } from '@openpanel/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -19,12 +20,14 @@ type IForm = z.infer<typeof validator>;
 
 export const Route = createFileRoute('/_app/$organizationId/settings')({
   component: Component,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.organization.get.queryOptions({
-        organizationId: params.organizationId,
-      }),
-    );
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createOrganizationTitle(PAGE_TITLES.SETTINGS),
+        },
+      ],
+    };
   },
 });
 

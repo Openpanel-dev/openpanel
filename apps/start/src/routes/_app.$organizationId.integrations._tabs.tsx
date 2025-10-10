@@ -1,12 +1,33 @@
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/integrations/_tabs',
 )({
   component: Component,
+  loader: async ({ context, params }) => {
+    const organization = await context.queryClient.fetchQuery(
+      context.trpc.organization.get.queryOptions({
+        organizationId: params.organizationId,
+      }),
+    );
+    return { organization };
+  },
+  head: ({ loaderData }) => {
+    return {
+      meta: [
+        {
+          title: createOrganizationTitle(
+            PAGE_TITLES.INTEGRATIONS,
+            loaderData?.organization?.name,
+          ),
+        },
+      ],
+    };
+  },
 });
 
 function Component() {

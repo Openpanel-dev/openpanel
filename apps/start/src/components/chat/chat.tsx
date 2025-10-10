@@ -1,7 +1,9 @@
 import { ChatForm } from '@/components/chat/chat-form';
 import { ChatMessages } from '@/components/chat/chat-messages';
+import { useAppContext } from '@/hooks/use-app-context';
 import { useChat } from '@ai-sdk/react';
 import type { IServiceOrganization } from '@openpanel/db';
+import { useRouteContext } from '@tanstack/react-router';
 import type { UIMessage } from 'ai';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { toast } from 'sonner';
@@ -23,13 +25,15 @@ export default function Chat({
   projectId: string;
   organization: IServiceOrganization;
 }) {
+  const context = useAppContext();
+
   const { messages, input, handleInputChange, handleSubmit, status, append } =
     useChat({
       onError(error) {
         const message = getErrorMessage(error);
         toast.error(message);
       },
-      api: `${import.meta.env.VITE_API_URL}/ai/chat?projectId=${projectId}`,
+      api: `${context.apiUrl}/ai/chat?projectId=${projectId}`,
       initialMessages: (initialMessages ?? []) as any,
       fetch: (url, options) => {
         return fetch(url, {

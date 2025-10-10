@@ -11,6 +11,7 @@ import {
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getProfileName } from '@/utils/getters';
+import { createEntityTitle } from '@/utils/title';
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -25,12 +26,42 @@ export const Route = createFileRoute(
 )({
   component: Component,
   loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.session.byId.queryOptions({
-        sessionId: params.sessionId,
-        projectId: params.projectId,
-      }),
-    );
+    const [session, project, organization] = await Promise.all([
+      context.queryClient.fetchQuery(
+        context.trpc.session.byId.queryOptions({
+          sessionId: params.sessionId,
+          projectId: params.projectId,
+        }),
+      ),
+      context.queryClient.fetchQuery(
+        context.trpc.project.getProjectWithClients.queryOptions({
+          projectId: params.projectId,
+        }),
+      ),
+      context.queryClient.fetchQuery(
+        context.trpc.organization.get.queryOptions({
+          organizationId: params.organizationId,
+        }),
+      ),
+    ]);
+    return { session, project, organization };
+  },
+  head: ({ loaderData }) => {
+    const sessionTitle = loaderData?.session
+      ? `${loaderData.session.id.slice(0, 4)}...${loaderData.session.id.slice(-4)}`
+      : 'Session';
+    return {
+      meta: [
+        {
+          title: createEntityTitle(
+            sessionTitle,
+            'Sessions',
+            loaderData?.project?.name,
+            loaderData?.organization?.name,
+          ),
+        },
+      ],
+    };
   },
 });
 
@@ -72,7 +103,9 @@ function Component() {
 
   return (
     <PageContainer>
-      <PageHeader title={session.id}>
+      <PageHeader
+        title={`Session: ${session.id.slice(0, 4)}...${session.id.slice(-4)}`}
+      >
         <div className="row gap-4 mb-6">
           {session.country && (
             <div className="row gap-2 items-center">

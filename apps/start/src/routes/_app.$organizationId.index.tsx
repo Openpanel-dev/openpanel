@@ -9,6 +9,7 @@ import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolb
 import { TableButtons } from '@/components/ui/table';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
+import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { BoxSelectIcon, PlusIcon } from 'lucide-react';
@@ -21,6 +22,15 @@ export const Route = createFileRoute('/_app/$organizationId/')({
         organizationId: params.organizationId,
       }),
     );
+  },
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createOrganizationTitle('Projects'),
+        },
+      ],
+    };
   },
 });
 

@@ -1,11 +1,8 @@
 import { TooltipComplete } from '@/components/tooltip-complete';
-import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRouteContext } from '@tanstack/react-router';
-import type { ColumnDef, Row } from '@tanstack/react-table';
-import { useRef, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
@@ -136,59 +133,4 @@ export function useColumns() {
   ];
 
   return columns;
-}
-
-function AccessCell({
-  row,
-}: {
-  row: Row<IServiceMember>;
-}) {
-  const currentUserId = useRouteContext({
-    from: '/_app',
-    select: (context) => context.session.userId,
-  });
-  const initial = useRef(
-    row.original.access?.map((item) => item.projectId) ?? [],
-  );
-  const [access, setAccess] = useState<string[]>(initial.current);
-  const trpc = useTRPC();
-  const projectsQuery = useQuery(
-    trpc.project.list.queryOptions({
-      organizationId: row.original.organizationId,
-    }),
-  );
-  const projects = projectsQuery.data ?? [];
-  const mutation = useMutation(
-    trpc.organization.updateMemberAccess.mutationOptions({
-      onError(error) {
-        toast.error(error.message);
-        setAccess(initial.current);
-      },
-    }),
-  );
-
-  if (currentUserId === row.original.userId) {
-    return (
-      <div className="text-muted-foreground">Can't change your own access</div>
-    );
-  }
-
-  return (
-    <ComboboxAdvanced
-      placeholder="Restrict access to projects"
-      value={access}
-      onChange={(newAccess) => {
-        setAccess(newAccess);
-        mutation.mutate({
-          userId: row.original.user!.id,
-          organizationId: row.original.organizationId,
-          access: newAccess as string[],
-        });
-      }}
-      items={projects.map((item) => ({
-        label: item.name,
-        value: item.id,
-      }))}
-    />
-  );
 }

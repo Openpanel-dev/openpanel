@@ -64,8 +64,8 @@ RUN pnpm db:codegen
 WORKDIR /app/apps/dashboard
 
 # Will be replaced on runtime
-ENV VITE_DASHBOARD_URL="__VITE_DASHBOARD_URL__"
-ENV VITE_API_URL="__VITE_API_URL__"
+ENV NEXT_PUBLIC_DASHBOARD_URL="__VITE_DASHBOARD_URL__"
+ENV NEXT_PUBLIC_API_URL="__VITE_API_URL__"
 
 RUN pnpm run build
 

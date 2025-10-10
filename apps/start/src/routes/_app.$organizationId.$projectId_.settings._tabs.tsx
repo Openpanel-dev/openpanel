@@ -1,5 +1,6 @@
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import {
   Outlet,
   createFileRoute,
@@ -11,6 +12,15 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/settings/_tabs',
 )({
   component: ProjectDashboard,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle(PAGE_TITLES.SETTINGS),
+        },
+      ],
+    };
+  },
   loader: async ({ context, params }) => {
     const { trpc, queryClient } = context;
     await queryClient.prefetchQuery(

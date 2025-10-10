@@ -8,14 +8,15 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools';
 
-import appCss from '../styles.css?url';
 import 'flag-icons/css/flag-icons.min.css';
 import 'katex/dist/katex.min.css';
+import appCss from '../styles.css?url';
 
 import type { QueryClient } from '@tanstack/react-query';
 
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
+import { getServerEnvsQueryOptions } from '@/server/get-envs';
 import type { AppRouter } from '@openpanel/trpc';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
@@ -25,6 +26,9 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad({ context }) {
+    return context.queryClient.ensureQueryData(getServerEnvsQueryOptions);
+  },
   head: () => ({
     meta: [
       {
@@ -34,10 +38,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         name: 'viewport',
         content: 'width=device-width, initial-scale=1',
       },
-      {
-        title: 'OpenPanel.dev',
-      },
     ],
+    title: 'OpenPanel.dev',
     links: [
       {
         rel: 'stylesheet',

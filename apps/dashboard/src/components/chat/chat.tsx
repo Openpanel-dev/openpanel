@@ -31,7 +31,7 @@ export default function Chat({
         const message = getErrorMessage(error);
         toast.error(message);
       },
-      api: `${process.env.VITE_API_URL}/ai/chat?projectId=${projectId}`,
+      api: `${process.env.NEXT_PUBLIC_API_URL}/ai/chat?projectId=${projectId}`,
       initialMessages: (initialMessages ?? []) as any,
       fetch: (url, options) => {
         return fetch(url, {

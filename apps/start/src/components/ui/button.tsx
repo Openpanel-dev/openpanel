@@ -4,7 +4,6 @@ import { Link, type LinkComponentProps } from '@tanstack/react-router';
 import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import type { LucideIcon } from 'lucide-react';
-import { Loader2 } from 'lucide-react';
 import * as React from 'react';
 import { Spinner, type SpinnerProps } from './spinner';
 
@@ -47,6 +46,7 @@ export interface ButtonProps
   icon?: LucideIcon;
   responsive?: boolean;
   autoHeight?: boolean;
+  loadingAbsolute?: boolean;
 }
 
 function fixHeight({
@@ -83,6 +83,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       icon,
       responsive,
       autoHeight,
+      loadingAbsolute,
       ...props
     },
     ref,
@@ -98,25 +99,33 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           buttonVariants({ variant, size, className }),
           fixHeight({ autoHeight, size }),
+          loadingAbsolute && 'relative',
         )}
         ref={ref}
         disabled={loading || disabled}
         {...props}
       >
         {loading && (
-          <Spinner
-            type={loadingType}
-            size={spinnerSize}
-            speed={loadingSpeed}
-            variant={
-              variant === 'default' || variant === 'cta' ? 'white' : 'default'
-            }
+          <div
             className={cn(
-              'flex-shrink-0',
-              size !== 'icon' && responsive && 'mr-0 sm:mr-2',
-              size !== 'icon' && !responsive && 'mr-2',
+              loadingAbsolute &&
+                'absolute top-0 left-0 right-0 bottom-0 center-center backdrop-blur bg-background/10',
             )}
-          />
+          >
+            <Spinner
+              type={loadingType}
+              size={spinnerSize}
+              speed={loadingSpeed}
+              variant={
+                variant === 'default' || variant === 'cta' ? 'white' : 'default'
+              }
+              className={cn(
+                'flex-shrink-0',
+                size !== 'icon' && responsive && 'mr-0 sm:mr-2',
+                size !== 'icon' && !responsive && 'mr-2',
+              )}
+            />
+          </div>
         )}
         {Icon && (
           <Icon
@@ -167,33 +176,41 @@ const LinkButton = ({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      {loading && (
-        <Spinner
-          type={loadingType}
-          size={spinnerSize}
-          speed={loadingSpeed}
-          variant={
-            variant === 'default' || variant === 'cta' ? 'white' : 'default'
-          }
-          className={cn(
-            'flex-shrink-0',
-            responsive && 'mr-0 sm:mr-2',
-            !responsive && 'mr-2',
+      {(linkProps) => (
+        <>
+          {loading && (
+            <Spinner
+              type={loadingType}
+              size={spinnerSize}
+              speed={loadingSpeed}
+              variant={
+                variant === 'default' || variant === 'cta' ? 'white' : 'default'
+              }
+              className={cn(
+                'flex-shrink-0',
+                responsive && 'mr-0 sm:mr-2',
+                !responsive && 'mr-2',
+              )}
+            />
           )}
-        />
-      )}
-      {Icon && (
-        <Icon
-          className={cn(
-            'mr-2 h-4 w-4 flex-shrink-0',
-            responsive && 'mr-0 sm:mr-2',
+          {Icon && (
+            <Icon
+              className={cn(
+                'mr-2 h-4 w-4 flex-shrink-0',
+                responsive && 'mr-0 sm:mr-2',
+              )}
+            />
           )}
-        />
-      )}
-      {responsive ? (
-        <span className="hidden sm:block">{children}</span>
-      ) : (
-        children
+          {responsive ? (
+            <span className="hidden sm:block">
+              {typeof children === 'function' ? children(linkProps) : children}
+            </span>
+          ) : typeof children === 'function' ? (
+            children(linkProps)
+          ) : (
+            children
+          )}
+        </>
       )}
     </Link>
   );

@@ -6,18 +6,21 @@ import CurrentSubscription from '@/components/organization/current-subscription'
 import Usage from '@/components/organization/usage';
 import { PageHeader } from '@/components/page-header';
 import { useTRPC } from '@/integrations/trpc/react';
+import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/$organizationId/billing')({
   component: OrganizationPage,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.organization.get.queryOptions({
-        organizationId: params.organizationId,
-      }),
-    );
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createOrganizationTitle(PAGE_TITLES.BILLING),
+        },
+      ],
+    };
   },
 });
 

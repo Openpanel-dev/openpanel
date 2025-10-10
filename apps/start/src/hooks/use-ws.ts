@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 
 import { getSuperJson } from '@openpanel/json';
+import { useAppContext } from './use-app-context';
 
 type UseWSOptions = {
   debounce?: {
@@ -15,9 +16,8 @@ export default function useWS<T>(
   onMessage: (event: T) => void,
   options?: UseWSOptions,
 ) {
-  const ws = String(import.meta.env.VITE_API_URL)
-    .replace(/^https/, 'wss')
-    .replace(/^http/, 'ws');
+  const context = useAppContext();
+  const ws = context.apiUrl.replace(/^https/, 'wss').replace(/^http/, 'ws');
   const [baseUrl, setBaseUrl] = useState(`${ws}${path}`);
 
   const debouncedOnMessage = useMemo(() => {

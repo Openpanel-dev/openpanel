@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { format } from 'date-fns';
 import {
   AreaChartIcon,
@@ -33,12 +34,14 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/dashboards',
 )({
   component: Component,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.dashboard.list.queryOptions({
-        projectId: params.projectId,
-      }),
-    );
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle('Dashboards'),
+        },
+      ],
+    };
   },
 });
 

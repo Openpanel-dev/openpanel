@@ -7,6 +7,7 @@ import { RealtimePaths } from '@/components/realtime/realtime-paths';
 import { RealtimeReferrals } from '@/components/realtime/realtime-referrals';
 import RealtimeReloader from '@/components/realtime/realtime-reloader';
 import { useTRPC } from '@/integrations/trpc/react';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -14,12 +15,14 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/realtime',
 )({
   component: Component,
-  loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
-      context.trpc.realtime.coordinates.queryOptions({
-        projectId: params.projectId,
-      }),
-    );
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle(PAGE_TITLES.REALTIME),
+        },
+      ],
+    };
   },
 });
 

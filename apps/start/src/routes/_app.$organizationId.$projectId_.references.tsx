@@ -18,6 +18,7 @@ import {
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { formatDate, formatDateTime } from '@/utils/date';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import type { IServiceReference } from '@openpanel/db';
 import {
   keepPreviousData,
@@ -34,6 +35,15 @@ export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/references',
 )({
   component: Component,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle(PAGE_TITLES.REFERENCES),
+        },
+      ],
+    };
+  },
 });
 
 export const columnDefs: ColumnDef<IServiceReference>[] = [
