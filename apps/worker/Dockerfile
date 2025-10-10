@@ -85,6 +85,7 @@ COPY --from=build /app/packages/queue ./packages/queue
 COPY --from=build /app/packages/common ./packages/common
 COPY --from=build /app/packages/validation ./packages/validation
 COPY --from=build /app/packages/integrations ./packages/integrations
+COPY --from=build /app/tooling/typescript ./tooling/typescript
 RUN pnpm db:codegen
 
 WORKDIR /app/apps/worker
