@@ -93,8 +93,19 @@ const startServer = async () => {
         );
 
         if (isPrivatePath) {
+          // Allow multiple dashboard domains
+          const allowedOrigins = [
+            process.env.NEXT_PUBLIC_DASHBOARD_URL,
+            ...(process.env.API_CORS_ORIGINS?.split(',') ?? []),
+          ].filter(Boolean);
+
+          const origin = req.headers.origin;
+          const isAllowed = origin && allowedOrigins.includes(origin);
+
+          logger.info('Allowed origins', { allowedOrigins, origin, isAllowed });
+
           return callback(null, {
-            origin: process.env.NEXT_PUBLIC_DASHBOARD_URL,
+            origin: isAllowed ? origin : false,
             credentials: true,
           });
         }
