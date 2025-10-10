@@ -38,6 +38,7 @@ COPY packages/common/package.json ./packages/common/
 COPY packages/constants/package.json ./packages/constants/
 COPY packages/validation/package.json ./packages/validation/
 COPY packages/integrations/package.json packages/integrations/
+COPY patches ./patches
 
 # BUILD
 FROM base AS build
