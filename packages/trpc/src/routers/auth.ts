@@ -27,7 +27,6 @@ import {
   zSignInShare,
   zSignUpEmail,
 } from '@openpanel/validation';
-import * as bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { TRPCAccessError, TRPCNotFoundError } from '../errors';
 import {
@@ -217,14 +216,9 @@ export const authRouter = createTRPCRouter({
             throw TRPCAccessError('Incorrect email or password');
           }
         } else {
-          const validPassword = await bcrypt.compare(
-            password,
-            user.account.password ?? '',
+          throw TRPCAccessError(
+            'Reset your password, old password has expired',
           );
-
-          if (!validPassword) {
-            throw TRPCAccessError('Incorrect email or password');
-          }
         }
       }
 

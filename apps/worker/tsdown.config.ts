@@ -5,12 +5,7 @@ const options: Options = {
   clean: true,
   entry: ['src/index.ts'],
   noExternal: [/^@openpanel\/.*$/u, /^@\/.*$/u],
-  external: [
-    '@hyperdx/node-opentelemetry',
-    'winston',
-    '@node-rs/argon2',
-    'bcrypt',
-  ],
+  external: ['@hyperdx/node-opentelemetry', 'winston', '@node-rs/argon2'],
   sourcemap: true,
   platform: 'node',
   shims: true,

@@ -67,6 +67,8 @@ RUN pnpm codegen && \
 # PROD
 FROM base AS prod
 
+ENV npm_config_build_from_source=true
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
@@ -76,12 +78,14 @@ WORKDIR /app
 COPY --from=build /app/package.json ./
 COPY --from=build /app/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod && \
+    pnpm rebuild && \
     pnpm store prune
 
 # FINAL
 FROM base AS runner
 
 ENV NODE_ENV=production
+ENV npm_config_build_from_source=true
 
 WORKDIR /app
 

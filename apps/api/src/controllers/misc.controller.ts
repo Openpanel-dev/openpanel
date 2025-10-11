@@ -1,53 +1,186 @@
+import crypto from 'node:crypto';
 import { logger } from '@/utils/logger';
 import { parseUrlMeta } from '@/utils/parseUrlMeta';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import icoToPng from 'ico-to-png';
 import sharp from 'sharp';
 
 import { getClientIp } from '@/utils/get-client-ip';
-import { createHash } from '@openpanel/common/server';
 import { TABLE_NAMES, ch, chQuery, formatClickhouseDate } from '@openpanel/db';
 import { getGeoLocation } from '@openpanel/geo';
-import { cacheable, getCache, getRedisCache } from '@openpanel/redis';
+import { getCache, getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
   url: string;
 }
 
-async function getImageBuffer(url: string) {
+// Configuration
+const TTL_SECONDS = 60 * 60 * 24; // 24h
+const MAX_BYTES = 1_000_000; // 1MB cap
+const USER_AGENT = 'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
+const FALLBACK_FAVICON =
+  'https://www.iconsdb.com/icons/download/orange/warning-128.png';
+
+// Helper functions
+function createCacheKey(url: string): string {
+  const hash = crypto.createHash('sha256').update(url).digest('hex');
+  return `favicon:${hash}`;
+}
+
+function validateUrl(raw?: string): URL {
+  if (!raw) throw new Error('Missing ?url');
+  const url = new URL(raw);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Only http/https URLs are allowed');
+  }
+  return url;
+}
+
+// Binary cache functions (more efficient than base64)
+async function getFromCacheBinary(
+  key: string,
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const redis = getRedisCache();
+  const [bufferBase64, contentType] = await Promise.all([
+    redis.get(key),
+    redis.get(`${key}:ctype`),
+  ]);
+
+  if (!bufferBase64 || !contentType) return null;
+  return { buffer: Buffer.from(bufferBase64, 'base64'), contentType };
+}
+
+async function setToCacheBinary(
+  key: string,
+  buffer: Buffer,
+  contentType: string,
+): Promise<void> {
+  const redis = getRedisCache();
+  await Promise.all([
+    redis.set(key, buffer.toString('base64'), 'EX', TTL_SECONDS),
+    redis.set(`${key}:ctype`, contentType, 'EX', TTL_SECONDS),
+  ]);
+}
+
+// Fetch image with timeout and size limits
+async function fetchImage(
+  url: URL,
+): Promise<{ buffer: Buffer; contentType: string; status: number }> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
   try {
-    const res = await fetch(url);
-    const contentType = res.headers.get('content-type');
+    const response = await fetch(url.toString(), {
+      redirect: 'follow',
+      signal: controller.signal,
+      headers: {
+        'user-agent': USER_AGENT,
+        accept: 'image/*,*/*;q=0.8',
+      },
+    });
 
-    if (!contentType?.includes('image')) {
-      return null;
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      return {
+        buffer: Buffer.alloc(0),
+        contentType: 'text/plain',
+        status: response.status,
+      };
     }
 
-    if (!res.ok) {
-      return null;
+    // Size guard
+    const contentLength = Number(response.headers.get('content-length') ?? '0');
+    if (contentLength > MAX_BYTES) {
+      throw new Error(`Remote file too large: ${contentLength} bytes`);
     }
 
-    if (contentType === 'image/x-icon' || url.endsWith('.ico')) {
-      const arrayBuffer = await res.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      return await icoToPng(buffer, 30);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Additional size check for actual content
+    if (buffer.length > MAX_BYTES) {
+      throw new Error('Remote file exceeded size limit');
     }
 
-    return await sharp(await res.arrayBuffer())
+    const contentType =
+      response.headers.get('content-type') || 'application/octet-stream';
+    return { buffer, contentType, status: 200 };
+  } catch (error) {
+    clearTimeout(timeout);
+    throw error;
+  }
+}
+
+// Check if URL is an ICO file
+function isIcoFile(url: string, contentType?: string): boolean {
+  return url.toLowerCase().endsWith('.ico') || contentType === 'image/x-icon';
+}
+
+// Process image with Sharp (resize to 30x30 PNG)
+async function processImage(
+  buffer: Buffer,
+  originalUrl?: string,
+  contentType?: string,
+): Promise<Buffer> {
+  // If it's an ICO file, just return it as-is (no conversion needed)
+  if (originalUrl && isIcoFile(originalUrl, contentType)) {
+    logger.info('Serving ICO file directly', {
+      originalUrl,
+      bufferSize: buffer.length,
+    });
+    return buffer;
+  }
+
+  try {
+    // For other formats, process with Sharp
+    return await sharp(buffer)
       .resize(30, 30, {
         fit: 'cover',
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
       })
       .png()
       .toBuffer();
   } catch (error) {
-    logger.error('Failed to get image from url', {
-      error,
-      url,
+    logger.warn('Sharp failed to process image, trying fallback', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      originalUrl,
+      bufferSize: buffer.length,
     });
+
+    // If Sharp fails, try to create a simple fallback image
+    return await createFallbackImage();
   }
 }
 
-const imageExtensions = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'];
+// Create a simple fallback image when Sharp can't process the original
+async function createFallbackImage(): Promise<Buffer> {
+  try {
+    // Create a simple 30x30 PNG with a default icon
+    return await sharp({
+      create: {
+        width: 30,
+        height: 30,
+        channels: 4,
+        background: { r: 200, g: 200, b: 200, alpha: 1 },
+      },
+    })
+      .png()
+      .toBuffer();
+  } catch (error) {
+    logger.error('Failed to create fallback image', { error });
+    // Return a minimal 1x1 transparent PNG as last resort
+    return Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      'base64',
+    );
+  }
+}
+
+// Check if URL is a direct image
+function isDirectImage(url: string): boolean {
+  const imageExtensions = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'];
+  return imageExtensions.some((ext) => url.toLowerCase().endsWith(`.${ext}`));
+}
 
 export async function getFavicon(
   request: FastifyRequest<{
@@ -55,68 +188,105 @@ export async function getFavicon(
   }>,
   reply: FastifyReply,
 ) {
-  function sendBuffer(buffer: Buffer, cacheKey?: string) {
-    if (cacheKey) {
-      getRedisCache().set(`favicon:${cacheKey}`, buffer.toString('base64'));
+  try {
+    const url = validateUrl(request.query.url);
+    const cacheKey = createCacheKey(url.toString());
+
+    // Check cache first
+    const cached = await getFromCacheBinary(cacheKey);
+    if (cached) {
+      reply.header('Content-Type', cached.contentType);
+      reply.header('Cache-Control', 'public, max-age=3600, immutable');
+      return reply.send(cached.buffer);
     }
-    reply.header('Cache-Control', 'public, max-age=604800');
-    reply.header('Expires', new Date(Date.now() + 604800000).toUTCString());
-    reply.type('image/png');
-    return reply.send(buffer);
-  }
 
-  if (!request.query.url) {
-    return reply.status(404).send('Not found');
-  }
+    let imageUrl: URL;
 
-  const url = decodeURIComponent(request.query.url);
-
-  if (imageExtensions.find((ext) => url.endsWith(ext))) {
-    const cacheKey = createHash(url, 32);
-    const cache = await getRedisCache().get(`favicon:${cacheKey}`);
-    if (cache) {
-      return sendBuffer(Buffer.from(cache, 'base64'));
+    // If it's a direct image URL, use it directly
+    if (isDirectImage(url.toString())) {
+      imageUrl = url;
+    } else {
+      // For website URLs, extract favicon from HTML
+      const meta = await parseUrlMeta(url.toString());
+      if (meta?.favicon) {
+        imageUrl = new URL(meta.favicon);
+      } else {
+        // Fallback to Google's favicon service
+        const { hostname } = url;
+        imageUrl = new URL(
+          `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`,
+        );
+      }
     }
-    const buffer = await getImageBuffer(url);
-    if (buffer && buffer.byteLength > 0) {
-      return sendBuffer(buffer, cacheKey);
+
+    // Fetch the image
+    const { buffer, contentType, status } = await fetchImage(imageUrl);
+
+    if (status !== 200 || buffer.length === 0) {
+      // Try fallback favicon
+      const fallbackResult = await fetchImage(new URL(FALLBACK_FAVICON));
+      if (fallbackResult.status === 200 && fallbackResult.buffer.length > 0) {
+        const processedBuffer = await processImage(
+          fallbackResult.buffer,
+          FALLBACK_FAVICON,
+          fallbackResult.contentType,
+        );
+        await setToCacheBinary(cacheKey, processedBuffer, 'image/png');
+
+        reply.header('Content-Type', 'image/png');
+        reply.header('Cache-Control', 'public, max-age=3600, immutable');
+        return reply.send(processedBuffer);
+      }
+
+      return reply.status(404).send('Favicon not found');
     }
+
+    // Process the image (resize to 30x30 PNG, or serve ICO as-is)
+    const processedBuffer = await processImage(
+      buffer,
+      imageUrl.toString(),
+      contentType,
+    );
+
+    // Determine the correct content type for caching and response
+    const isIco = isIcoFile(imageUrl.toString(), contentType);
+    const responseContentType = isIco ? 'image/x-icon' : 'image/png';
+
+    // Cache the result with correct content type
+    await setToCacheBinary(cacheKey, processedBuffer, responseContentType);
+
+    reply.header('Content-Type', responseContentType);
+    reply.header('Cache-Control', 'public, max-age=3600, immutable');
+    return reply.send(processedBuffer);
+  } catch (error: any) {
+    logger.error('Favicon fetch error', {
+      error: error.message,
+      url: request.query.url,
+    });
+
+    const message =
+      process.env.NODE_ENV === 'production'
+        ? 'Bad request'
+        : (error?.message ?? 'Error');
+    reply.header('Cache-Control', 'no-store');
+    return reply.status(400).send(message);
   }
-
-  const { hostname } = new URL(url);
-  const cache = await getRedisCache().get(`favicon:${hostname}`);
-
-  if (cache) {
-    return sendBuffer(Buffer.from(cache, 'base64'));
-  }
-
-  const meta = await parseUrlMeta(url);
-  if (meta?.favicon) {
-    const buffer = await getImageBuffer(meta.favicon);
-    if (buffer && buffer.byteLength > 0) {
-      return sendBuffer(buffer, hostname);
-    }
-  }
-
-  const buffer = await getImageBuffer(
-    'https://www.iconsdb.com/icons/download/orange/warning-128.png',
-  );
-  if (buffer && buffer.byteLength > 0) {
-    return sendBuffer(buffer, hostname);
-  }
-
-  return reply.status(404).send('Not found');
 }
 
 export async function clearFavicons(
   request: FastifyRequest,
   reply: FastifyReply,
 ) {
-  const keys = await getRedisCache().keys('favicon:*');
+  const redis = getRedisCache();
+  const keys = await redis.keys('favicon:*');
+
+  // Delete both the binary data and content-type keys
   for (const key of keys) {
-    await getRedisCache().del(key);
+    await redis.del(key);
+    await redis.del(`${key}:ctype`);
   }
-  return reply.status(404).send('OK');
+
+  return reply.status(200).send('OK');
 }
 
 export async function ping(
