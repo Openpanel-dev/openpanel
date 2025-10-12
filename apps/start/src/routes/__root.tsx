@@ -10,14 +10,18 @@ import appCss from '../styles.css?url';
 
 import type { QueryClient } from '@tanstack/react-query';
 
+import { FullPageErrorState } from '@/components/full-page-error-state';
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
+import { LinkButton } from '@/components/ui/button';
 import type { AppRouter } from '@openpanel/trpc';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
 interface MyRouterContext {
   queryClient: QueryClient;
   trpc: TRPCOptionsProxy<AppRouter>;
+  apiUrl: string;
+  dashboardUrl: string;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
@@ -40,6 +44,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  errorComponent: ({ error }) => (
+    <FullPageErrorState
+      title={'Something went wrong'}
+      description={error.message}
+    >
+      <LinkButton href="/">Go back to home</LinkButton>
+    </FullPageErrorState>
+  ),
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {

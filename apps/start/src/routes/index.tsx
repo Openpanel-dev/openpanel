@@ -4,28 +4,27 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
 import { useTRPC } from '@/integrations/trpc/react';
+import { createTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
   head: () => ({
-    title: 'Welcome | OpenPanel.dev',
+    meta: [{ title: createTitle('Welcome') }],
   }),
   loader: async ({ context }) => {
-    try {
-      const organizations = await context.queryClient.fetchQuery(
-        context.trpc.organization.list.queryOptions(),
-      );
+    const organizations = await context.queryClient
+      .fetchQuery(context.trpc.organization.list.queryOptions())
+      .catch(() => {
+        throw redirect({ to: '/login' });
+      });
 
-      if (organizations.length === 1) {
-        return redirect({
-          to: '/$organizationId',
-          params: { organizationId: organizations[0].id },
-        });
-      }
-    } catch (error) {
-      return redirect({ to: '/login' });
+    if (organizations.length === 1) {
+      throw redirect({
+        to: '/$organizationId',
+        params: { organizationId: organizations[0].id },
+      });
     }
   },
   pendingComponent: FullPageLoadingState,

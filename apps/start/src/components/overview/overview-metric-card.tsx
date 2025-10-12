@@ -1,14 +1,11 @@
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
-import type { IChartData, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Area, AreaChart } from 'recharts';
 
 import { formatDate, timeAgo } from '@/utils/date';
-import { average, getPreviousMetric, sum } from '@openpanel/common';
-import type { IChartMetric, Metrics } from '@openpanel/validation';
+import { getPreviousMetric } from '@openpanel/common';
 import {
-  PreviousDiffIndicator,
   PreviousDiffIndicatorPure,
   getDiffIndicator,
 } from '../report-chart/common/previous-diff-indicator';

@@ -18,7 +18,7 @@ export function SignInEmailForm() {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
-      onSuccess(res) {
+      onSuccess() {
         toast.success('Successfully signed in');
         navigate({
           to: '/',

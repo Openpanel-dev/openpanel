@@ -49,7 +49,10 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
           )}
           {data?.public && (
             <DropdownMenuItem asChild>
-              <Link to={`/share/overview/${data.id}`}>
+              <Link
+                to={'/share/overview/$shareId'}
+                params={{ shareId: data.id }}
+              >
                 <EyeIcon size={16} className="mr-2" />
                 View
               </Link>

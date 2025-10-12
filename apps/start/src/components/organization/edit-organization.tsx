@@ -3,8 +3,10 @@
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { api, handleError } from '@/trpc/client';
-import { useRouter } from 'next/navigation';
+import { useTRPC } from '@/integrations/trpc/react';
+import { handleError } from '@/trpc/client';
+import { useMutation } from '@tanstack/react-query';
+import { useRouter } from '@tanstack/react-router';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -32,19 +34,22 @@ export default function EditOrganization({
     },
   });
 
-  const mutation = api.organization.update.useMutation({
-    onSuccess(res) {
-      toast('Organization updated', {
-        description: 'Your organization has been updated.',
-      });
-      reset({
-        ...res,
-        timezone: res.timezone!,
-      });
-      router.refresh();
-    },
-    onError: handleError,
-  });
+  const trpc = useTRPC();
+  const mutation = useMutation(
+    trpc.organization.update.mutationOptions({
+      onSuccess(res: any) {
+        toast('Organization updated', {
+          description: 'Your organization has been updated.',
+        });
+        reset({
+          ...res,
+          timezone: res.timezone!,
+        });
+        router.invalidate();
+      },
+      onError: handleError,
+    }),
+  );
 
   return (
     <form

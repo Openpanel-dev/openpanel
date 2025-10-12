@@ -1,6 +1,6 @@
 import { cn } from '@/utils/cn';
 
-import { Logo, LogoSquare } from './logo';
+import { LogoSquare } from './logo';
 
 type Props = {
   children: React.ReactNode;

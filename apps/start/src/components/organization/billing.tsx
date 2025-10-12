@@ -31,11 +31,21 @@ type Props = {
 
 const useOpenPanel = () => {
   return {
-    track: () => {},
-    screenView: () => {},
-    identify: () => {},
-    increment: () => {},
-    decrement: () => {},
+    track: (name: string, properties?: Record<string, any>) => {
+      console.log('track', name, properties);
+    },
+    screenView: (name: string, properties?: Record<string, any>) => {
+      console.log('screenView', name, properties);
+    },
+    identify: (user: any) => {
+      console.log('identify', user);
+    },
+    increment: (name: string, value?: number) => {
+      console.log('increment', name, value);
+    },
+    decrement: (name: string, value?: number) => {
+      console.log('decrement', name, value);
+    },
   };
 };
 
@@ -53,7 +63,7 @@ export default function Billing({ organization }: Props) {
     }),
   );
 
-  useWS(`/live/organization/${organization.id}`, (event) => {
+  useWS(`/live/organization/${organization.id}`, () => {
     queryClient.invalidateQueries(trpc.organization.pathFilter());
   });
 

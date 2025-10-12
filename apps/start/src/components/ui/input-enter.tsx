@@ -45,7 +45,7 @@ export function InputEnter({
               exit={{ opacity: 0, scale: 0.8 }}
               onClick={() => onChangeValue(internalValue)}
             >
-              <Badge variant="muted">
+              <Badge variant="secondary">
                 Press enter
                 <RefreshCcwIcon className="ml-1 h-3 w-3" />
               </Badge>

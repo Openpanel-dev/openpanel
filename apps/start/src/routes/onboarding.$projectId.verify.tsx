@@ -34,7 +34,7 @@ function Component() {
     trpc.project.getProjectWithClients.queryOptions({ projectId }),
   );
 
-  const isVerified = events && events.items.length > 0;
+  const isVerified = events && events.data.length > 0;
 
   if (!project) {
     return (
@@ -60,7 +60,7 @@ function Component() {
       <VerifyListener
         project={project}
         client={client}
-        events={events?.items ?? []}
+        events={events?.data ?? []}
         onVerified={() => refetch()}
       />
 

@@ -32,7 +32,7 @@ function Component() {
         take: 50,
       },
       {
-        initialData: keepPreviousData,
+        placeholderData: keepPreviousData,
       },
     ),
   );

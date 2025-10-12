@@ -3,7 +3,6 @@ import { ChatMessages } from '@/components/chat/chat-messages';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useChat } from '@ai-sdk/react';
 import type { IServiceOrganization } from '@openpanel/db';
-import { useRouteContext } from '@tanstack/react-router';
 import type { UIMessage } from 'ai';
 import { parseAsBoolean, useQueryState } from 'nuqs';
 import { toast } from 'sonner';
@@ -44,10 +43,7 @@ export default function Chat({
       },
     });
 
-  const [debug, setDebug] = useQueryState(
-    'debug',
-    parseAsBoolean.withDefault(false),
-  );
+  const [debug] = useQueryState('debug', parseAsBoolean.withDefault(false));
   const isLimited = Boolean(
     messages.length > 5 &&
       (organization.isCanceled ||

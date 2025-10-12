@@ -1,8 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { RocketIcon } from 'lucide-react';
 
-import type { IServiceClient } from '@openpanel/db';
-
 import CopyInput from '../forms/copy-input';
 
 type Props = { id: string; secret: string };

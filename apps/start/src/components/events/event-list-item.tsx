@@ -88,7 +88,12 @@ export function EventListItem(props: EventListItemProps) {
               onClick={(e) => {
                 e.stopPropagation();
               }}
-              href={`/${organizationId}/${projectId}/profiles/${profile?.id}`}
+              to={'/$organizationId/$projectId/profiles/$profileId'}
+              params={{
+                organizationId,
+                projectId,
+                profileId: profile!.id,
+              }}
               className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap  text-muted-foreground hover:underline"
             >
               {getProfileName(profile)}

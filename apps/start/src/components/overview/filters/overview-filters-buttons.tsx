@@ -19,7 +19,7 @@ export function OverviewFiltersButtons({
   nuqsOptions,
 }: OverviewFiltersButtonsProps) {
   const [events, setEvents] = useEventQueryNamesFilter(nuqsOptions);
-  const [filters, setFilter, setFilters, removeFilter] =
+  const [filters, _setFilter, _setFilters, removeFilter] =
     useEventQueryFilters(nuqsOptions);
   if (filters.length === 0 && events.length === 0) return null;
   return (

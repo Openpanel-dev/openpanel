@@ -102,8 +102,6 @@ const startServer = async () => {
           const origin = req.headers.origin;
           const isAllowed = origin && allowedOrigins.includes(origin);
 
-          logger.info('Allowed origins', { allowedOrigins, origin, isAllowed });
-
           return callback(null, {
             origin: isAllowed ? origin : false,
             credentials: true,
@@ -160,6 +158,12 @@ const startServer = async () => {
           router: appRouter,
           createContext: createContext,
           onError(ctx) {
+            if (
+              ctx.error.code === 'UNAUTHORIZED' &&
+              ctx.path === 'organization.list'
+            ) {
+              return;
+            }
             ctx.req.log.error('trpc error', {
               error: ctx.error,
               path: ctx.path,

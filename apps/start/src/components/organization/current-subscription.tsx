@@ -32,7 +32,7 @@ export default function CurrentSubscription({ organization }: Props) {
   );
   const cancelSubscription = useMutation(
     trpc.subscription.cancelSubscription.mutationOptions({
-      onSuccess(res) {
+      onSuccess() {
         toast.success('Subscription cancelled', {
           description: 'It might take a few seconds to update',
         });

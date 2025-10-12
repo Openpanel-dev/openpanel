@@ -31,5 +31,11 @@
   },
   "editor.codeActionsOnSave": {
     "source.organizeImports.biome": "explicit"
-  }
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "on",
+  "typescript.suggest.autoImports": true,
+  "typescript.validate.enable": true,
+  "typescript.preferences.strictNullChecks": true,
+  "typescript.preferences.noUnusedLocals": true,
+  "typescript.preferences.noUnusedParameters": true
 }

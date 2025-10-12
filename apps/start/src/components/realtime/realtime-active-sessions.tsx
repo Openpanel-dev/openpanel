@@ -6,33 +6,13 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 import useWS from '@/hooks/use-ws';
-import { timeAgo } from '@/utils/date';
 import type { IServiceEvent } from '@openpanel/db';
-import { EventIcon } from '../events/event-icon';
 import { EventItem } from '../events/table/item';
-import { SerieIcon } from '../report-chart/common/serie-icon';
 
 interface RealtimeActiveSessionsProps {
   projectId: string;
   limit?: number;
 }
-
-type ActiveSession = {
-  id: string;
-  country: string;
-  city: string;
-  longitude: number;
-  latitude: number;
-  path: string;
-  origin: string;
-  referrer_name: string;
-  browser: string;
-  os: string;
-  name: string;
-  device: string;
-  created_at: Date;
-  meta?: any;
-};
 
 export function RealtimeActiveSessions({
   projectId,

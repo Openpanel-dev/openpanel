@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { pushModal } from '@/modals';
-import { PlugIcon, WebhookIcon } from 'lucide-react';
+import { PlugIcon } from 'lucide-react';
 import { IntegrationCard, IntegrationCardFooter } from './integration-card';
 import { INTEGRATIONS } from './integrations';
 

@@ -2,9 +2,6 @@ import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { cn } from '@/utils/cn';
 import { Globe2Icon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
-import { useState } from 'react';
-
-import type { IChartType } from '@openpanel/validation';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
@@ -14,7 +11,6 @@ import { Widget, WidgetBody } from '../widget';
 import OverviewDetailsButton from './overview-details-button';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
 import {
-  OverviewWidgetTableBots,
   OverviewWidgetTableLoading,
   OverviewWidgetTablePages,
 } from './overview-widget-table';
@@ -26,8 +22,7 @@ interface OverviewTopPagesProps {
 }
 
 export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
-  const { interval, range, previous, startDate, endDate } =
-    useOverviewOptions();
+  const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const [domain, setDomain] = useQueryState('d', parseAsBoolean);
   const [widget, setWidget, widgets] = useOverviewWidgetV2('pages', {
@@ -73,8 +68,6 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
       endDate,
       mode: widget.key,
       range,
-      interval,
-      domain,
     }),
   );
 

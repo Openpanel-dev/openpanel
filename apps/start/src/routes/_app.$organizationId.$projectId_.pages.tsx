@@ -101,13 +101,15 @@ function Component() {
       </div>
       <div className="p-4">
         <Pagination
-          take={20}
-          count={9999}
-          cursor={cursor}
-          setCursor={setCursor}
-          className="self-auto"
-          size="base"
-          loading={query.isFetching}
+          canNextPage={true}
+          canPreviousPage={cursor > 0}
+          pageIndex={cursor}
+          nextPage={() => {
+            setCursor((p) => p + 1);
+          }}
+          previousPage={() => {
+            setCursor((p) => p - 1);
+          }}
         />
       </div>
     </PageContainer>

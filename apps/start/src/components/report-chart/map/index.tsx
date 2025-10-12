@@ -1,5 +1,5 @@
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
@@ -14,7 +14,7 @@ export function ReportMapChart() {
 
   const res = useQuery(
     trpc.chart.chart.queryOptions(report, {
-      keepPreviousData: true,
+      placeholderData: keepPreviousData,
       staleTime: 1000 * 60 * 1,
       enabled: !isLazyLoading,
     }),
@@ -32,7 +32,7 @@ export function ReportMapChart() {
     return <Error />;
   }
 
-  if (res.data.series.length === 0) {
+  if (!res.data || res.data?.series.length === 0) {
     return <Empty />;
   }
 

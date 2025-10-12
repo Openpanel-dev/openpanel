@@ -14,6 +14,7 @@
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",
+    "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
@@ -150,6 +151,7 @@
     "@tanstack/devtools-event-client": "^0.3.3",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
+    "@types/lodash.isequal": "^4.5.8",
     "@types/lodash.throttle": "^4.1.9",
     "@types/ramda": "^0.31.0",
     "@types/react": "catalog:",

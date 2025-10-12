@@ -7,7 +7,6 @@ import {
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
-import { api } from '@/trpc/client';
 import { formatDate } from '@/utils/date';
 import { getChartColor } from '@/utils/theme';
 import { sum } from '@openpanel/common';

@@ -27,7 +27,7 @@ export const Route = createFileRoute('/_app/$organizationId/')({
     return {
       meta: [
         {
-          title: createOrganizationTitle('Projects'),
+          title: createOrganizationTitle(PAGE_TITLES.PROJECTS),
         },
       ],
     };
@@ -42,7 +42,7 @@ function OrganizationPage() {
       organizationId,
     }),
   );
-  const { debouncedSearch, setSearch, search } = useSearchQueryState();
+  const { setSearch, search } = useSearchQueryState();
 
   if (!projects?.length) {
     return (

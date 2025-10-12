@@ -1,5 +1,5 @@
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
@@ -40,7 +40,7 @@ export function ReportRetentionChart() {
         interval,
       },
       {
-        keepPreviousData: true,
+        placeholderData: keepPreviousData,
         staleTime: 1000 * 60 * 1,
         enabled: isEnabled,
       },
@@ -59,7 +59,7 @@ export function ReportRetentionChart() {
     return <Error />;
   }
 
-  if (res.data.length === 0) {
+  if (!res.data || res.data?.length === 0) {
     return <Empty />;
   }
 

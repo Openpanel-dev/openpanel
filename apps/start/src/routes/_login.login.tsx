@@ -4,22 +4,35 @@ import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LinkButton } from '@/components/ui/button';
-import { PAGE_TITLES } from '@/utils/title';
-import { createFileRoute } from '@tanstack/react-router';
+import { PAGE_TITLES, createTitle } from '@/utils/title';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
 import { z } from 'zod';
-
-const zLoginSearch = z.object({
-  error: z.string().optional(),
-  correlationId: z.string().optional(),
-});
 
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
   head: () => ({
-    title: `${PAGE_TITLES.LOGIN} | OpenPanel.dev`,
+    meta: [{ title: createTitle(PAGE_TITLES.LOGIN) }],
   }),
-  validateSearch: (search) => zLoginSearch.parse(search),
+  beforeLoad: async ({ context }) => {
+    const session = await context.queryClient.ensureQueryData(
+      context.trpc.auth.session.queryOptions(undefined, {
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+      }),
+    );
+
+    if (session) {
+      throw redirect({ to: '/' });
+    }
+  },
+  validateSearch: z.object({
+    error: z.string().optional(),
+    correlationId: z.string().optional(),
+  }),
 });
 
 function LoginPage() {

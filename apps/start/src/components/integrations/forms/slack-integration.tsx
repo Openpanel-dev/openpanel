@@ -1,13 +1,11 @@
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
-import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zCreateSlackIntegration } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
-import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -37,6 +35,7 @@ export function SlackIntegrationForm({
     trpc.integration.createOrUpdateSlack.mutationOptions({
       async onSuccess(res) {
         window.location.href = res.slackInstallUrl;
+        onSuccess();
       },
       onError() {
         toast.error('Failed to create integration');

@@ -6,7 +6,7 @@ export const Route = createFileRoute(
 )({
   component: Component,
   beforeLoad: ({ params }) => {
-    return redirect({
+    throw redirect({
       to: '/$organizationId/integrations/installed',
       params,
     });

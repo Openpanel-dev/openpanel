@@ -5,7 +5,7 @@ import {
   ChevronsLeftIcon,
   ChevronsRightIcon,
 } from 'lucide-react';
-import { useState, useTransition } from 'react';
+import { useState } from 'react';
 
 import { useIsFetching } from '@tanstack/react-query';
 import { Button } from './ui/button';

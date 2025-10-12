@@ -4,13 +4,11 @@ import { LinkButton } from '@/components/ui/button';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 
-const zLoginSearch = z.object({
-  token: z.string(),
-});
-
 export const Route = createFileRoute('/_login/reset-password')({
   component: Component,
-  validateSearch: (search) => zLoginSearch.parse(search),
+  validateSearch: z.object({
+    token: z.string(),
+  }),
   errorComponent: () => (
     <FullPageErrorState description="Missing reset password token" />
   ),

@@ -177,14 +177,14 @@ export function ReportTable({
         </div>
       </div>
 
-      <div className="row mt-4 justify-end">
+      {/* <div className="row mt-4 justify-end">
         <Pagination
           cursor={page}
           setCursor={setPage}
           take={ROWS_LIMIT}
           count={data.series.length}
         />
-      </div>
+      </div> */}
     </>
   );
 }

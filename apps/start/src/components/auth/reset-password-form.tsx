@@ -17,7 +17,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.resetPassword.mutationOptions({
-      onSuccess(res) {
+      onSuccess() {
         toast.success('Password reset successfully');
         navigate({
           to: '/login',

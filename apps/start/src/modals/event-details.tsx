@@ -248,8 +248,8 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
               </div>
               {!!session && (
                 <div className="text-sm">
-                  This session has {session.screen_view_count} screen views and{' '}
-                  {session.event_count} events. Visit duration is{' '}
+                  This session has {session.screenViewCount} screen views and{' '}
+                  {session.eventCount} events. Visit duration is{' '}
                   {fancyMinutes(session.duration / 1000)}.
                 </div>
               )}

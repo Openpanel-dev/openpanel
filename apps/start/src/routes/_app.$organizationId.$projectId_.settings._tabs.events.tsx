@@ -1,6 +1,5 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import EditProjectFilters from '@/components/settings/edit-project-filters';
-import ListReferences from '@/components/settings/list-references';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';

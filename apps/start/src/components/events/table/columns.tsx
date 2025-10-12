@@ -8,7 +8,6 @@ import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
 
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { IServiceEvent } from '@openpanel/db';
 
 export function useColumns() {

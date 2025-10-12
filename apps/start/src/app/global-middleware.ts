@@ -1,13 +1,10 @@
-import * as Sentry from '@sentry/tanstackstart-react';
-import {
-  createMiddleware,
-  registerGlobalMiddleware,
-} from '@tanstack/react-start';
+// import * as Sentry from '@sentry/tanstackstart-react';
+// import { createMiddleware } from '@tanstack/react-start';
 
-registerGlobalMiddleware({
-  middleware: [
-    createMiddleware({
-      type: 'function',
-    }).server(Sentry.sentryGlobalServerMiddlewareHandler()),
-  ],
-});
+// registerGlobalMiddleware({
+//   middleware: [
+//     createMiddleware({
+//       type: 'function',
+//     }).server(Sentry.sentryGlobalServerMiddlewareHandler()),
+//   ],
+// });

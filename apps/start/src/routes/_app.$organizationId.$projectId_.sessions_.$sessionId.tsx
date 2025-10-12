@@ -2,7 +2,6 @@ import { EventsTable } from '@/components/events/table';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { SessionsTable } from '@/components/sessions/table';
 import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import {
   useEventQueryFilters,
@@ -10,14 +9,8 @@ import {
 } from '@/hooks/use-event-query-filters';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
-import { getProfileName } from '@/utils/getters';
-import { createEntityTitle } from '@/utils/title';
-import {
-  keepPreviousData,
-  useInfiniteQuery,
-  useQuery,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
+import { createProjectTitle } from '@/utils/title';
+import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 
@@ -26,39 +19,20 @@ export const Route = createFileRoute(
 )({
   component: Component,
   loader: async ({ context, params }) => {
-    const [session, project, organization] = await Promise.all([
-      context.queryClient.fetchQuery(
+    await Promise.all([
+      context.queryClient.prefetchQuery(
         context.trpc.session.byId.queryOptions({
           sessionId: params.sessionId,
           projectId: params.projectId,
         }),
       ),
-      context.queryClient.fetchQuery(
-        context.trpc.project.getProjectWithClients.queryOptions({
-          projectId: params.projectId,
-        }),
-      ),
-      context.queryClient.fetchQuery(
-        context.trpc.organization.get.queryOptions({
-          organizationId: params.organizationId,
-        }),
-      ),
     ]);
-    return { session, project, organization };
   },
-  head: ({ loaderData }) => {
-    const sessionTitle = loaderData?.session
-      ? `${loaderData.session.id.slice(0, 4)}...${loaderData.session.id.slice(-4)}`
-      : 'Session';
+  head: () => {
     return {
       meta: [
         {
-          title: createEntityTitle(
-            sessionTitle,
-            'Sessions',
-            loaderData?.project?.name,
-            loaderData?.organization?.name,
-          ),
+          title: createProjectTitle('Sessions'),
         },
       ],
     };

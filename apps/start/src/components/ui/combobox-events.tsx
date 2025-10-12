@@ -15,12 +15,10 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { PopoverPortal } from '@radix-ui/react-popover';
-import type { LucideIcon } from 'lucide-react';
-import { Check, CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
+import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
-import { EventIcon, EventIconMapper } from '../events/event-icon';
-import { TooltipComplete } from '../tooltip-complete';
+import { EventIcon } from '../events/event-icon';
 
 /**
  * Type-safe ComboboxEvents component that supports both single and multiple selection.

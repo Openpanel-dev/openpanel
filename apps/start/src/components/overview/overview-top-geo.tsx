@@ -53,7 +53,6 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
   const query = useQuery(
     trpc.overview.topGeneric.queryOptions({
       projectId,
-      interval,
       range,
       filters,
       column: widget.key,

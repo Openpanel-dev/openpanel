@@ -1,4 +1,4 @@
-import { type RouterOutputs, handleError } from '@/trpc/client';
+import type { RouterOutputs } from '@/trpc/client';
 
 import { SheetContent } from '@/components/ui/sheet';
 import { useQueryClient } from '@tanstack/react-query';

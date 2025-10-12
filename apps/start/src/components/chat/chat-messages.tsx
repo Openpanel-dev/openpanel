@@ -1,13 +1,9 @@
 import { useScrollAnchor } from '@/hooks/use-scroll-anchor';
-import type { IServiceOrganization, Organization } from '@openpanel/db';
 import type { UIMessage } from 'ai';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect } from 'react';
 import { ProjectLink } from '../links';
-import { Markdown } from '../markdown';
-import { Skeleton } from '../skeleton';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Button, LinkButton } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import { ChatMessage } from './chat-message';
 

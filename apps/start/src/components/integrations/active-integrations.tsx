@@ -1,13 +1,11 @@
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { BoxSelectIcon } from 'lucide-react';
 import { useMemo } from 'react';
-import { toast } from 'sonner';
 import { PingBadge } from '../ping';
 import { Button } from '../ui/button';
 import {

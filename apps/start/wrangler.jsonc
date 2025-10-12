@@ -12,7 +12,7 @@
     }
   ],
   "vars": {
-    "API_URL": "https://api.openpanel.dev",
+    "API_URL": "https://api.staging.k8s.openpanel.dev",
     "DASHBOARD_URL": "https://start.openpanel.dev",
     "NODE_ENV": "production",
     "APP_VERSION": "1.0.0"

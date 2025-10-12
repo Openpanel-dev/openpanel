@@ -14,7 +14,11 @@ export const getRouter = async () => {
 
   const router = createTanstackRouter({
     routeTree,
-    context: { ...rqContext, ...envs },
+    context: {
+      ...rqContext,
+      apiUrl: envs.apiUrl,
+      dashboardUrl: envs.dashboardUrl,
+    },
     defaultPreload: 'intent',
     Wrap: (props: { children: React.ReactNode }) => {
       return (

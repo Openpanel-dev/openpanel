@@ -1,7 +1,6 @@
 import { formatDateTime, formatTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
-import { useMemo } from 'react';
 
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';

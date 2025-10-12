@@ -1,5 +1,5 @@
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
@@ -10,7 +10,7 @@ export function ReportMetricChart() {
 
   const res = useQuery(
     trpc.chart.chart.queryOptions(report, {
-      keepPreviousData: true,
+      placeholderData: keepPreviousData,
       staleTime: 1000 * 60 * 1,
       enabled: !isLazyLoading,
     }),
@@ -28,7 +28,7 @@ export function ReportMetricChart() {
     return <Error />;
   }
 
-  if (res.data.series.length === 0) {
+  if (!res.data || res.data?.series.length === 0) {
     return <Empty />;
   }
 

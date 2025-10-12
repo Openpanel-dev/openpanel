@@ -130,7 +130,7 @@ const Map = ({ markers, sidebarConfig }: Props) => {
       0.25: [5, 10],
       0.5: [0, 5],
     };
-    const found = Object.entries(map).find(([key, value]) => {
+    const found = Object.entries(map).find(([, value]) => {
       if (currentZoom >= value[0] && currentZoom <= value[1]) {
         return true;
       }

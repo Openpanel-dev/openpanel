@@ -5,7 +5,7 @@ import { InputDateTime } from '@/components/ui/input-date-time';
 import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -45,24 +45,19 @@ export default function EditReference({
       datetime: new Date(date).toISOString(),
     },
   });
+  const queryClient = useQueryClient();
 
   const mutation = useMutation(
     trpc.reference.update.mutationOptions({
       onSuccess() {
         toast('Success', { description: 'Reference updated.' });
         reset();
-        // Refetch lists using pathFilter
-        // Invalidate both list and charts in case they display titles/dates
-        // reference.getReferences
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        Promise.all([
-          trpc.queryClient.invalidateQueries(
-            trpc.reference.getReferences.pathFilter(),
-          ),
-          trpc.queryClient.invalidateQueries(
-            trpc.reference.getChartReferences.pathFilter(),
-          ),
-        ]);
+        queryClient.invalidateQueries(
+          trpc.reference.getReferences.pathFilter(),
+        );
+        queryClient.invalidateQueries(
+          trpc.reference.getChartReferences.pathFilter(),
+        );
         popModal();
       },
       onError: handleError,

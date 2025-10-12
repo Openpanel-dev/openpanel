@@ -30,7 +30,7 @@ export default function OverviewTopDevices({
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
-  const [chartType, setChartType] = useState<IChartType>('bar');
+  const [chartType] = useState<IChartType>('bar');
   const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidget('tech', {
     device: {
@@ -308,13 +308,11 @@ export default function OverviewTopDevices({
     },
   });
 
-  const number = useNumber();
   const trpc = useTRPC();
 
   const query = useQuery(
     trpc.overview.topGeneric.queryOptions({
       projectId,
-      interval,
       range,
       filters,
       column: widget.key,

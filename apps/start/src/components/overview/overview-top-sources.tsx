@@ -23,7 +23,7 @@ interface OverviewTopSourcesProps {
 export default function OverviewTopSources({
   projectId,
 }: OverviewTopSourcesProps) {
-  const { interval, range, startDate, endDate } = useOverviewOptions();
+  const { range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
   const [widget, setWidget, widgets] = useOverviewWidgetV2('sources', {
     referrer_name: {
@@ -64,7 +64,6 @@ export default function OverviewTopSources({
   const query = useQuery(
     trpc.overview.topGeneric.queryOptions({
       projectId,
-      interval,
       range,
       filters,
       column: widget.key,

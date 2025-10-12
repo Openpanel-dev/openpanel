@@ -19,12 +19,12 @@ const RealtimeReloader = ({ projectId }: Props) => {
         });
       }
     },
-    {
-      debounce: {
-        maxWait: 60000,
-        delay: 60000,
-      },
-    },
+    // {
+    //   debounce: {
+    //     maxWait: 60000,
+    //     delay: 60000,
+    //   },
+    // },
   );
 
   return null;

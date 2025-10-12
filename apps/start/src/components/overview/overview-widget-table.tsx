@@ -122,7 +122,7 @@ export function OverviewWidgetTablePages({
   }[];
   showDomain?: boolean;
 }) {
-  const [filters, setFilter] = useEventQueryFilters();
+  const [_filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
   return (

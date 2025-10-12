@@ -36,7 +36,7 @@ function Component() {
         isExternal: false,
       },
       {
-        initialData: keepPreviousData,
+        placeholderData: keepPreviousData,
       },
     ),
   );

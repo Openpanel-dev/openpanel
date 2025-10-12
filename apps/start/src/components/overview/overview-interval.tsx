@@ -1,10 +1,8 @@
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { TimeWindowPicker } from '@/components/time-window-picker';
 import {
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
 } from '@openpanel/constants';
-import { endOfDay, formatISO, startOfDay } from 'date-fns';
 import { ClockIcon } from 'lucide-react';
 import { Combobox } from '../ui/combobox';
 

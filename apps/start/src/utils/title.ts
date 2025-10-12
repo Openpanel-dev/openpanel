@@ -114,6 +114,7 @@ export const PAGE_TITLES = {
   CONNECT: 'Connect',
   VERIFY: 'Verify',
   PROJECT: 'Project',
+  PROJECTS: 'Projects',
 
   // Auth
   LOGIN: 'Login',

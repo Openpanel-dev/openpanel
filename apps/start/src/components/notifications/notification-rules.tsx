@@ -3,14 +3,10 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BoxSelectIcon, PencilRulerIcon, PlusIcon } from 'lucide-react';
+import { PencilRulerIcon, PlusIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { FullPageEmptyState } from '../full-page-empty-state';
-import {
-  IntegrationCard,
-  IntegrationCardLogo,
-  IntegrationCardSkeleton,
-} from '../integrations/integration-card';
+import { IntegrationCardSkeleton } from '../integrations/integration-card';
 import { Button } from '../ui/button';
 import { RuleCard } from './rule-card';
 

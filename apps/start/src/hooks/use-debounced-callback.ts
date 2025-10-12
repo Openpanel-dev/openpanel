@@ -1,6 +1,6 @@
-import * as React from "react";
+import * as React from 'react';
 
-import { useCallbackRef } from "@/hooks/use-callback-ref";
+import { useCallbackRef } from '@/hooks/use-callback-ref';
 
 export function useDebouncedCallback<T extends (...args: never[]) => unknown>(
   callback: T,

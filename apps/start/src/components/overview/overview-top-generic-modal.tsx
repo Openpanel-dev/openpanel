@@ -25,7 +25,7 @@ export default function OverviewTopGenericModal({
   column,
 }: OverviewTopGenericModalProps) {
   const [filters, setFilter] = useEventQueryFilters();
-  const { startDate, endDate, range, interval } = useOverviewOptions();
+  const { startDate, endDate, range } = useOverviewOptions();
   const trpc = useTRPC();
   const query = useInfiniteQuery(
     trpc.overview.topGeneric.infiniteQueryOptions(
@@ -35,7 +35,6 @@ export default function OverviewTopGenericModal({
         startDate,
         endDate,
         range,
-        interval,
         limit: 50,
         column,
       },

@@ -5,7 +5,7 @@ import TagInput from '@/components/forms/tag-input';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
-import type { RouterOutputs } from '@/integrations/trpc/react';
+import type { RouterOutputs } from '@/trpc/client';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type {
   IProjectFilterIp,
@@ -17,7 +17,9 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-type Props = { project: RouterOutputs['project']['getProjectWithClients'] };
+type Props = {
+  project: NonNullable<RouterOutputs['project']['getProjectWithClients']>;
+};
 
 const validator = z.object({
   ips: z.array(z.string()),

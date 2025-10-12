@@ -98,7 +98,7 @@ export const ProfileProperties = ({ profile }: Props) => {
           className="border-0"
           columns={3}
           data={Object.entries(profile.properties)
-            .filter(([key, value]) => value !== undefined && value !== '')
+            .filter(([, value]) => value !== undefined && value !== '')
             .map(([key, value]) => ({
               name: key,
               value: value,

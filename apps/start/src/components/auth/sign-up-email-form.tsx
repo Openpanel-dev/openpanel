@@ -20,7 +20,7 @@ export function SignUpEmailForm({
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signUpEmail.mutationOptions({
-      onSuccess(res) {
+      onSuccess() {
         toast.success('Successfully signed up');
         router.navigate({
           to: '/onboarding/project',

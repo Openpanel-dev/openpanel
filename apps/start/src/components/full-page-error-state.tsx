@@ -5,7 +5,8 @@ import { FullPageEmptyState } from './full-page-empty-state';
 export const FullPageErrorState = ({
   title = 'Error...',
   description = 'Something went wrong...',
-}: { title?: string; description?: string }) => {
+  children,
+}: { title?: string; description?: string; children?: React.ReactNode }) => {
   return (
     <FullPageEmptyState
       className="min-h-[calc(100vh-theme(spacing.16))]"
@@ -13,6 +14,7 @@ export const FullPageErrorState = ({
       icon={ServerCrashIcon}
     >
       {description}
+      {children && <div className="mt-4">{children}</div>}
     </FullPageEmptyState>
   );
 };
