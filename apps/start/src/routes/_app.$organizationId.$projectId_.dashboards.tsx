@@ -2,7 +2,7 @@ import { Card, CardActions, CardActionsItem } from '@/components/card';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
-import { pushModal } from '@/modals';
+import { pushModal, showConfirm } from '@/modals';
 import { cn } from '@/utils/cn';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { format } from 'date-fns';
@@ -195,8 +195,10 @@ function Component() {
                   <button
                     type="button"
                     onClick={() => {
-                      deletion.mutate({
-                        id: item.id,
+                      showConfirm({
+                        title: 'Delete dashboard',
+                        text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
+                        onConfirm: () => deletion.mutate({ id: item.id }),
                       });
                     }}
                   >

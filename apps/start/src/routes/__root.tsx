@@ -6,6 +6,8 @@ import {
 
 import 'flag-icons/css/flag-icons.min.css';
 import 'katex/dist/katex.min.css';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 import appCss from '../styles.css?url';
 
 import type { QueryClient } from '@tanstack/react-query';

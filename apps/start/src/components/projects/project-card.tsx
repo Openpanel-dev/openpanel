@@ -6,7 +6,7 @@ import { Link } from '@tanstack/react-router';
 import type { IServiceProject } from '@openpanel/db';
 
 import { cn } from '@/utils/cn';
-import { SettingsIcon } from 'lucide-react';
+import { SettingsIcon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react';
 import { ChartSSR } from '../chart-ssr';
 import { FadeIn } from '../fade-in';
 import { SerieIcon } from '../report-chart/common/serie-icon';
@@ -87,16 +87,7 @@ function ProjectChart({ id }: { id: string }) {
 
   return (
     <FadeIn className="h-full w-full">
-      <ChartSSR
-        data={data?.chart || []}
-        color={
-          data?.trend?.direction === 'up'
-            ? 'green'
-            : data?.trend?.direction === 'down'
-              ? 'red'
-              : 'blue'
-        }
-      />
+      <ChartSSR data={data?.chart || []} color={'blue'} />
     </FadeIn>
   );
 }
@@ -128,6 +119,7 @@ function ProjectMetrics({ id }: { id: string }) {
               <span
                 className={cn(
                   'font-semibold',
+                  'row gap-1 items-center',
                   data?.trend?.direction === 'up'
                     ? 'text-green-600'
                     : data?.trend?.direction === 'down'
@@ -135,7 +127,12 @@ function ProjectMetrics({ id }: { id: string }) {
                       : 'text-muted-foreground',
                 )}
               >
-                {data.trend.direction === 'down' ? '-' : '+'}
+                {data.trend.direction === 'up' && (
+                  <TrendingUpIcon className="size-4" />
+                )}
+                {data.trend.direction === 'down' && (
+                  <TrendingDownIcon className="size-4" />
+                )}
                 {Math.abs(data.trend.percentage)}%
               </span>
             }

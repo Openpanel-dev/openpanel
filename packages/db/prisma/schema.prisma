@@ -319,12 +319,36 @@ model Report {
   funnelWindow Float?
 
   dashboardId String
-  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  layout      ReportLayout?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("reports")
+}
+
+model ReportLayout {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reportId String @unique @db.Uuid
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Grid position and size
+  x Int @default(0)
+  y Int @default(0)
+  w Int @default(4)
+  h Int @default(3)
+
+  // Optional: store additional layout preferences
+  minW Int? @default(2)
+  minH Int? @default(2)
+  maxW Int?
+  maxH Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("report_layouts")
 }
 
 model ShareOverview {

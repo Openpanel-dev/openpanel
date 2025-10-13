@@ -15,7 +15,7 @@ interface GetFaviconParams {
 
 // Configuration
 const TTL_SECONDS = 60 * 60 * 24; // 24h
-const MAX_BYTES = 500_000; // 1MB cap
+const MAX_BYTES = 1_000_000; // 1MB cap
 const USER_AGENT = 'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
 
 // Helper functions
@@ -109,7 +109,7 @@ async function fetchImage(
     return { buffer, contentType, status: 200 };
   } catch (error) {
     clearTimeout(timeout);
-    throw error;
+    return { buffer: Buffer.alloc(0), contentType: 'text/plain', status: 500 };
   }
 }
 

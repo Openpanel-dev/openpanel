@@ -14,7 +14,7 @@ import type {
 } from '@openpanel/validation';
 
 import { db } from '../prisma-client';
-import type { Report as DbReport } from '../prisma-client';
+import type { Report as DbReport, ReportLayout } from '../prisma-client';
 
 export type IServiceReport = Awaited<ReturnType<typeof getReportById>>;
 
@@ -46,8 +46,8 @@ export function transformReportEvent(
 }
 
 export function transformReport(
-  report: DbReport,
-): IChartProps & { id: string } {
+  report: DbReport & { layout?: ReportLayout | null },
+): IChartProps & { id: string; layout?: ReportLayout | null } {
   return {
     id: report.id,
     projectId: report.projectId,
@@ -68,6 +68,7 @@ export function transformReport(
     criteria: (report.criteria as ICriteria) ?? undefined,
     funnelGroup: report.funnelGroup ?? undefined,
     funnelWindow: report.funnelWindow ?? undefined,
+    layout: report.layout ?? undefined,
   };
 }
 
@@ -77,6 +78,9 @@ export function getReportsByDashboardId(dashboardId: string) {
       where: {
         dashboardId,
       },
+      include: {
+        layout: true,
+      },
     })
     .then((reports) => reports.map(transformReport));
 }
@@ -85,6 +89,9 @@ export async function getReportById(id: string) {
   const report = await db.report.findUnique({
     where: {
       id,
+    },
+    include: {
+      layout: true,
     },
   });
 
