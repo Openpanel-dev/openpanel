@@ -17,8 +17,6 @@ interface GetFaviconParams {
 const TTL_SECONDS = 60 * 60 * 24; // 24h
 const MAX_BYTES = 1_000_000; // 1MB cap
 const USER_AGENT = 'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
-const FALLBACK_FAVICON =
-  'https://www.iconsdb.com/icons/download/orange/warning-128.png';
 
 // Helper functions
 function createCacheKey(url: string): string {
@@ -131,12 +129,20 @@ async function processImage(
     return buffer;
   }
 
+  // If buffer isnt to big just return it as well
+  if (buffer.length < 5000) {
+    logger.info('Serving image directly without processing', {
+      originalUrl,
+      bufferSize: buffer.length,
+    });
+    return buffer;
+  }
+
   try {
     // For other formats, process with Sharp
     return await sharp(buffer)
       .resize(30, 30, {
         fit: 'cover',
-        background: { r: 255, g: 255, b: 255, alpha: 0 },
       })
       .png()
       .toBuffer();
@@ -148,38 +154,22 @@ async function processImage(
     });
 
     // If Sharp fails, try to create a simple fallback image
-    return await createFallbackImage();
+    return createFallbackImage();
   }
 }
 
 // Create a simple fallback image when Sharp can't process the original
-async function createFallbackImage(): Promise<Buffer> {
-  try {
-    // Create a simple 30x30 PNG with a default icon
-    return await sharp({
-      create: {
-        width: 30,
-        height: 30,
-        channels: 4,
-        background: { r: 200, g: 200, b: 200, alpha: 1 },
-      },
-    })
-      .png()
-      .toBuffer();
-  } catch (error) {
-    logger.error('Failed to create fallback image', { error });
-    // Return a minimal 1x1 transparent PNG as last resort
-    return Buffer.from(
-      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
-      'base64',
-    );
-  }
+function createFallbackImage(): Buffer {
+  return Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'base64',
+  );
 }
 
 // Check if URL is a direct image
-function isDirectImage(url: string): boolean {
+function isDirectImage(url: URL): boolean {
   const imageExtensions = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'];
-  return imageExtensions.some((ext) => url.toLowerCase().endsWith(`.${ext}`));
+  return imageExtensions.some((ext) => url.pathname.endsWith(`.${ext}`));
 }
 
 export async function getFavicon(
@@ -196,14 +186,14 @@ export async function getFavicon(
     const cached = await getFromCacheBinary(cacheKey);
     if (cached) {
       reply.header('Content-Type', cached.contentType);
-      reply.header('Cache-Control', 'public, max-age=3600, immutable');
+      reply.header('Cache-Control', 'public, max-age=604800, immutable');
       return reply.send(cached.buffer);
     }
 
     let imageUrl: URL;
 
     // If it's a direct image URL, use it directly
-    if (isDirectImage(url.toString())) {
+    if (isDirectImage(url)) {
       imageUrl = url;
     } else {
       // For website URLs, extract favicon from HTML
@@ -223,22 +213,7 @@ export async function getFavicon(
     const { buffer, contentType, status } = await fetchImage(imageUrl);
 
     if (status !== 200 || buffer.length === 0) {
-      // Try fallback favicon
-      const fallbackResult = await fetchImage(new URL(FALLBACK_FAVICON));
-      if (fallbackResult.status === 200 && fallbackResult.buffer.length > 0) {
-        const processedBuffer = await processImage(
-          fallbackResult.buffer,
-          FALLBACK_FAVICON,
-          fallbackResult.contentType,
-        );
-        await setToCacheBinary(cacheKey, processedBuffer, 'image/png');
-
-        reply.header('Content-Type', 'image/png');
-        reply.header('Cache-Control', 'public, max-age=3600, immutable');
-        return reply.send(processedBuffer);
-      }
-
-      return reply.status(404).send('Favicon not found');
+      return reply.send(createFallbackImage());
     }
 
     // Process the image (resize to 30x30 PNG, or serve ICO as-is)
