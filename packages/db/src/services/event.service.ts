@@ -393,19 +393,20 @@ export interface GetEventListOptions {
   custom?: (sb: SqlBuilderObject) => void;
 }
 
-export async function getEventList({
-  cursor,
-  take,
-  projectId,
-  profileId,
-  sessionId,
-  events,
-  filters,
-  startDate,
-  endDate,
-  select: incomingSelect,
-  custom,
-}: GetEventListOptions) {
+export async function getEventList(options: GetEventListOptions) {
+  const {
+    cursor,
+    take,
+    projectId,
+    profileId,
+    sessionId,
+    events,
+    filters,
+    startDate,
+    endDate,
+    select: incomingSelect,
+    custom,
+  } = options;
   const { sb, getSql, join } = createSqlBuilder();
 
   const organization = await getOrganizationByProjectIdCached(projectId);
@@ -571,10 +572,23 @@ export async function getEventList({
 
   console.log('getSql()', getSql());
 
-  return getEvents(getSql(), {
+  const data = await getEvents(getSql(), {
     profile: select.profile ?? true,
     meta: select.meta ?? true,
   });
+
+  // If we dont get any events, try without the cursor window
+  if (data.length === 0 && sb.where.cursorWindow) {
+    return getEventList({
+      ...options,
+      custom(sb) {
+        options.custom?.(sb);
+        delete sb.where.cursorWindow;
+      },
+    });
+  }
+
+  return data;
 }
 
 export const getEventsCountCached = cacheable(getEventsCount, 60 * 10);

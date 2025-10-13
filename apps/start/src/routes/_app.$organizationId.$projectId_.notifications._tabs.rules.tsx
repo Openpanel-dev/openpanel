@@ -1,4 +1,5 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { IntegrationCardSkeleton } from '@/components/integrations/integration-card';
 import { RuleCard } from '@/components/notifications/rule-card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ export const Route = createFileRoute(
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

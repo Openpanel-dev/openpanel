@@ -14,7 +14,6 @@ export const Route = createFileRoute('/_app')({
     );
 
     if (!session) {
-      console.log('No session, redirecting to login');
       throw redirect({ to: '/login' });
     }
     return { session };

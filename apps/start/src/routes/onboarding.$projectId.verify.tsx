@@ -1,5 +1,6 @@
 import { ButtonContainer } from '@/components/button-container';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { CurlPreview } from '@/components/onboarding/curl-preview';
 import {
   OnboardingDescription,
@@ -22,6 +23,7 @@ export const Route = createFileRoute('/onboarding/$projectId/verify')({
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

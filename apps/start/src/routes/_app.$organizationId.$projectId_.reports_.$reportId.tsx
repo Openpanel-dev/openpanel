@@ -1,3 +1,4 @@
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import ReportEditor from '@/components/report-chart/report-editor';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
@@ -28,6 +29,7 @@ export const Route = createFileRoute(
   validateSearch: z.object({
     dashboardId: z.string().optional(),
   }),
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

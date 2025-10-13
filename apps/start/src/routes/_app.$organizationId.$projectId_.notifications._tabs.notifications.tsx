@@ -1,3 +1,4 @@
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { NotificationsTable } from '@/components/notifications/table';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
@@ -14,6 +15,7 @@ export const Route = createFileRoute(
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

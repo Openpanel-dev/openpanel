@@ -116,7 +116,7 @@ export const EventItem = memo<EventItemProps>(
             )}
             {viewOptions.profileId !== false && (
               <Pill
-                className="@max-xl:ml-auto @max-lg:[&>span]:inline"
+                className="@max-xl:ml-auto @max-lg:[&>span]:inline mx-4"
                 icon={<ProfileAvatar size="xs" {...event.profile} />}
               >
                 {getProfileName(event.profile)}
@@ -167,7 +167,7 @@ function Pill({
   return (
     <div
       className={cn(
-        'shrink-0 whitespace-nowrap inline-flex gap-2 items-center rounded-full @3xl:px-2.5 @3xl:py-0.5 text-sm/5 @3xl:bg-neutral-100 @3xl:text-neutral-700 h-6',
+        'shrink-0 whitespace-nowrap inline-flex gap-2 items-center rounded-full @3xl:text-muted-foreground h-6 text-xs font-mono',
         className,
       )}
     >

@@ -1,4 +1,5 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LazyComponent } from '@/components/lazy-component';
 import { PageHeader } from '@/components/page-header';
 import ProjectCard, {
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/_app/$organizationId/')({
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
   head: () => {
     return {
       meta: [

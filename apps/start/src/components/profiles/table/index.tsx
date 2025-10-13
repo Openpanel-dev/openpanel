@@ -65,7 +65,14 @@ export const ProfilesTable = memo(
     return (
       <>
         <ProfileTableToolbar table={table} />
-        <DataTable table={table} loading={isLoading} />
+        <DataTable
+          table={table}
+          loading={isLoading}
+          empty={{
+            title: 'No profiles',
+            description: "Looks like you haven't identified any profiles yet.",
+          }}
+        />
       </>
     );
   },

@@ -11,6 +11,7 @@ import appCss from '../styles.css?url';
 import type { QueryClient } from '@tanstack/react-query';
 
 import { FullPageErrorState } from '@/components/full-page-error-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
@@ -52,6 +53,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       <LinkButton href="/">Go back to home</LinkButton>
     </FullPageErrorState>
   ),
+  pendingComponent: FullPageLoadingState,
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {

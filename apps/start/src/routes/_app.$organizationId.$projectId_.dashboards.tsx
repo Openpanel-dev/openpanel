@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
@@ -43,6 +44,14 @@ export const Route = createFileRoute(
       ],
     };
   },
+  async loader({ context, params }) {
+    await context.queryClient.prefetchQuery(
+      context.trpc.dashboard.list.queryOptions({
+        projectId: params.projectId,
+      }),
+    );
+  },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

@@ -22,6 +22,7 @@ import { toast } from 'sonner';
 
 import { timeWindows } from '@openpanel/constants';
 
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { PageContainer } from '@/components/page-container';
@@ -69,6 +70,7 @@ export const Route = createFileRoute(
       ),
     ]);
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

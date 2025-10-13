@@ -1,11 +1,32 @@
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Outlet, createFileRoute, useLocation } from '@tanstack/react-router';
+import {
+  Outlet,
+  createFileRoute,
+  notFound,
+  useLocation,
+} from '@tanstack/react-router';
 import { format } from 'date-fns';
+
+const IGNORE_ORGANIZATION_IDS = [
+  '.well-known',
+  'robots.txt',
+  'sitemap.xml',
+  'favicon.ico',
+  'manifest.json',
+  'sw.js',
+  'service-worker.js',
+];
 
 export const Route = createFileRoute('/_app/$organizationId')({
   component: Component,
+  beforeLoad: async ({ context, params }) => {
+    if (IGNORE_ORGANIZATION_IDS.includes(params.organizationId)) {
+      throw notFound();
+    }
+  },
   loader: async ({ context, params }) => {
     await context.queryClient.prefetchQuery(
       context.trpc.organization.get.queryOptions({
@@ -13,6 +34,7 @@ export const Route = createFileRoute('/_app/$organizationId')({
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Alert({

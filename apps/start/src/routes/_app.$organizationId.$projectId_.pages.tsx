@@ -1,3 +1,4 @@
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -86,6 +87,12 @@ function Component() {
           }}
         />
       </TableButtons>
+      {data.length === 0 && (
+        <FullPageEmptyState
+          title="No pages"
+          description={'Integrate our web sdk to your site to get pages here.'}
+        />
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {data.map((page) => {
           return (
@@ -99,19 +106,21 @@ function Component() {
           );
         })}
       </div>
-      <div className="p-4">
-        <Pagination
-          canNextPage={true}
-          canPreviousPage={cursor > 0}
-          pageIndex={cursor}
-          nextPage={() => {
-            setCursor((p) => p + 1);
-          }}
-          previousPage={() => {
-            setCursor((p) => p - 1);
-          }}
-        />
-      </div>
+      {data.length !== 0 && (
+        <div className="p-4">
+          <Pagination
+            canNextPage={true}
+            canPreviousPage={cursor > 0}
+            pageIndex={cursor}
+            nextPage={() => {
+              setCursor((p) => p + 1);
+            }}
+            previousPage={() => {
+              setCursor((p) => p - 1);
+            }}
+          />
+        </div>
+      )}
     </PageContainer>
   );
 }

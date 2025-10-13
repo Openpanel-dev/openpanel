@@ -42,12 +42,16 @@ export const SkipOnboarding = () => {
     );
   }
 
+  if (res.isLoading || res.isError) {
+    return null;
+  }
+
   return (
     <button
       type="button"
       onClick={() => {
-        if (res.data?.canSkip && res.data?.url) {
-          navigate({ to: res.data.url });
+        if (res.data?.canSkip) {
+          navigate({ to: '/' });
         } else {
           showConfirm({
             title: 'Skip onboarding?',

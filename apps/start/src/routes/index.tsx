@@ -3,9 +3,10 @@ import { LogoSquare } from '@/components/logo';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createTitle } from '@/utils/title';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
@@ -15,7 +16,12 @@ export const Route = createFileRoute('/')({
   }),
   loader: async ({ context }) => {
     const organizations = await context.queryClient
-      .fetchQuery(context.trpc.organization.list.queryOptions())
+      .fetchQuery(
+        context.trpc.organization.list.queryOptions(undefined, {
+          staleTime: 0,
+          gcTime: 0,
+        }),
+      )
       .catch(() => {
         throw redirect({ to: '/login' });
       });
@@ -33,12 +39,13 @@ export const Route = createFileRoute('/')({
 function LandingPage() {
   const trpc = useTRPC();
   const logout = useLogout();
-  const { data: organizations } = useQuery(
+  const { data: organizations } = useSuspenseQuery(
     trpc.organization.list.queryOptions(),
   );
+  const number = useNumber();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+    <div className="min-h-screen flex flex-col items-center justify-center">
       <div className="max-w-2xl mx-auto px-4 col gap-12">
         <div className="col gap-4">
           <LogoSquare className="w-full max-w-24" />
@@ -48,16 +55,25 @@ function LandingPage() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="col gap-2">
           {organizations?.map((org) => (
             <Link
               key={org.id}
               to={'/$organizationId'}
               params={{ organizationId: org.id }}
-              className="block p-3 bg-white rounded-lg border border-gray-200 hover:border-primary hover:shadow-md transition-all hover:translate-x-1"
+              className="row justify-between items-center p-3 rounded-lg border bg-card hover:border-primary hover:shadow-md transition-all hover:translate-x-1"
             >
-              <span className="font-medium text-gray-900">{org.name}</span>
-              <span className="text-gray-500 text-sm ml-2">({org.id})</span>
+              <div className="col gap-2">
+                <span className="font-medium text-lg">{org.name}</span>
+                <span className="text-muted-foreground text-sm">
+                  ({org.id})
+                </span>
+              </div>
+              <span>
+                {number.format(org.subscriptionPeriodEventsCount)}
+                <span className="mx-1 opacity-50">/</span>
+                {number.format(org.subscriptionPeriodEventsLimit)}
+              </span>
             </Link>
           ))}
         </div>

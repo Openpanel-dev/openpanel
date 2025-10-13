@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/popover';
 import { Check, ChevronsUpDown, Settings2Icon } from 'lucide-react';
 
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
 import { Button } from '@/components/ui/button';
@@ -129,6 +130,12 @@ export const EventsTable = memo(
               <EventItemSkeleton />
               <EventItemSkeleton />
             </div>
+          )}
+          {!isLoading && data.length === 0 && (
+            <FullPageEmptyState
+              title="No events"
+              description={"Start sending events and you'll see them here"}
+            />
           )}
           <div
             style={{

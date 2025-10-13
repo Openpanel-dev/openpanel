@@ -4,6 +4,7 @@ import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-ta
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { useColumns } from './columns';
 
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Skeleton } from '@/components/skeleton';
 import {
   AnimatedSearchInput,
@@ -170,6 +171,13 @@ const VirtualizedSessionsTable = memo(
             );
           })}
         </div>
+
+        {!isLoading && data.length === 0 && (
+          <FullPageEmptyState
+            title="No sessions found"
+            description="Looks like you haven't inserted any events yet."
+          />
+        )}
 
         {/* Table Body */}
         <div

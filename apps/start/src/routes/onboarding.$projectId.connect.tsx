@@ -1,6 +1,7 @@
 import { ButtonContainer } from '@/components/button-container';
 import CopyInput from '@/components/forms/copy-input';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import ConnectApp from '@/components/onboarding/connect-app';
 import ConnectBackend from '@/components/onboarding/connect-backend';
 import ConnectWeb from '@/components/onboarding/connect-web';
@@ -24,6 +25,7 @@ export const Route = createFileRoute('/onboarding/$projectId/connect')({
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

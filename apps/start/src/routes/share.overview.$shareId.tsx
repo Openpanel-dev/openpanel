@@ -1,4 +1,5 @@
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { LiveCounter } from '@/components/overview/live-counter';
 import OverviewMetrics from '@/components/overview/overview-metrics';
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/share/overview/$shareId')({
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function RouteComponent() {

@@ -61,7 +61,6 @@ export const onboardingRouter = createTRPCRouter({
     if (members.length > 0) {
       return {
         canSkip: true,
-        url: `/${members[0]?.organizationId}`,
       };
     }
 
@@ -74,11 +73,10 @@ export const onboardingRouter = createTRPCRouter({
     if (projectAccess.length > 0) {
       return {
         canSkip: true,
-        url: `/${projectAccess[0]?.organizationId}/${projectAccess[0]?.projectId}`,
       };
     }
 
-    return { canSkip: false, url: null };
+    return { canSkip: false };
   }),
   project: protectedProcedure
     .input(zOnboardingProject)

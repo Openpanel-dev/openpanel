@@ -1,3 +1,4 @@
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
@@ -28,6 +29,7 @@ export const Route = createFileRoute(
       ],
     };
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

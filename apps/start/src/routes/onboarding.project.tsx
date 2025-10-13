@@ -3,6 +3,7 @@ import { ButtonContainer } from '@/components/button-container';
 import { CheckboxItem } from '@/components/forms/checkbox-item';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import {
   OnboardingDescription,
   OnboardingLayout,
@@ -47,6 +48,7 @@ export const Route = createFileRoute('/onboarding/project')({
       );
     }
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 type IForm = z.infer<typeof zOnboardingProject>;

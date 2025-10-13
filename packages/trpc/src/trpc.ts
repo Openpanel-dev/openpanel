@@ -50,6 +50,12 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
       })
     : EMPTY_SESSION;
 
+  if (process.env.NODE_ENV !== 'production') {
+    await new Promise((res) =>
+      setTimeout(() => res(1), Math.min(Math.random() * 500, 200)),
+    );
+  }
+
   return {
     req,
     res,

@@ -9,9 +9,6 @@ export const getServerEnvs = createServerFn().handler(async () => {
     ),
   };
 
-  console.log('Loaded envs for dashboard');
-  console.log(JSON.stringify(envs, null, 2));
-
   return envs;
 });
 

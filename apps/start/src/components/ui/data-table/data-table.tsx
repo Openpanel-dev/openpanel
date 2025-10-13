@@ -1,3 +1,4 @@
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { FloatingPagination } from '@/components/pagination-floating';
 import { Skeleton } from '@/components/skeleton';
 import { cn } from '@/utils/cn';
@@ -17,6 +18,10 @@ export interface DataTableProps<TData> {
   table: ITable<TData>;
   className?: string;
   loading?: boolean;
+  empty?: {
+    title: string;
+    description: string;
+  };
 }
 
 declare module '@tanstack/react-table' {
@@ -30,6 +35,10 @@ export function DataTable<TData>({
   table,
   loading,
   className,
+  empty = {
+    title: 'No data',
+    description: 'We could not find any data here yet',
+  },
   ...props
 }: DataTableProps<TData>) {
   return (
@@ -100,7 +109,10 @@ export function DataTable<TData>({
                   colSpan={table.getAllColumns().length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  <FullPageEmptyState
+                    title={empty.title}
+                    description={empty.description}
+                  />
                 </TableCell>
               </TableRow>
             )}

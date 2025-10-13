@@ -1,3 +1,4 @@
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LatestEvents } from '@/components/profiles/latest-events';
 import { MostEvents } from '@/components/profiles/most-events';
 import { PopularRoutes } from '@/components/profiles/popular-routes';
@@ -48,6 +49,7 @@ export const Route = createFileRoute(
       ),
     ]);
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

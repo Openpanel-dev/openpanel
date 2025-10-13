@@ -2,19 +2,35 @@ import { Or } from '@/components/auth/or';
 import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import {
   OnboardingDescription,
   OnboardingLayout,
 } from '@/components/onboarding/onboarding-layout';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { z } from 'zod';
 
 const validateSearch = z.object({
   inviteId: z.string().optional(),
 });
 export const Route = createFileRoute('/onboarding/')({
+  beforeLoad: async ({ context }) => {
+    const session = await context.queryClient.ensureQueryData(
+      context.trpc.auth.session.queryOptions(undefined, {
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+      }),
+    );
+
+    if (session) {
+      throw redirect({ to: '/' });
+    }
+  },
   component: Component,
   validateSearch,
   loader: async ({ context, location }) => {
@@ -27,6 +43,7 @@ export const Route = createFileRoute('/onboarding/')({
       );
     }
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {

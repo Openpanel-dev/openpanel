@@ -173,8 +173,8 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                       <Geography
                         key={geo.rsmKey}
                         geography={geo}
-                        fill={theme.theme === 'dark' ? '#000' : '#e5eef6'}
-                        stroke={theme.theme === 'dark' ? '#333' : '#bcccda'}
+                        fill={theme.theme === 'dark' ? '#000' : '#f0f0f0'}
+                        stroke={theme.theme === 'dark' ? '#333' : '#999'}
                         strokeWidth={getBorderWidth()}
                         pointerEvents={'none'}
                       />

@@ -32,7 +32,7 @@
     "@openpanel/redis": "workspace:*",
     "@openpanel/trpc": "workspace:*",
     "@openpanel/validation": "workspace:*",
-    "@trpc/server": "^11.4.3",
+    "@trpc/server": "^11.6.0",
     "ai": "^4.2.10",
     "fast-json-stable-hash": "^1.0.3",
     "fastify": "^5.2.1",

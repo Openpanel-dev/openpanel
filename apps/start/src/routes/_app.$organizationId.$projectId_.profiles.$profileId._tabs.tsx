@@ -1,3 +1,4 @@
+import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
@@ -24,6 +25,7 @@ export const Route = createFileRoute(
       }),
     );
   },
+  pendingComponent: FullPageLoadingState,
 });
 
 function Component() {
