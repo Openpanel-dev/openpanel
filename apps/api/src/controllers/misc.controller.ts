@@ -15,7 +15,7 @@ interface GetFaviconParams {
 
 // Configuration
 const TTL_SECONDS = 60 * 60 * 24; // 24h
-const MAX_BYTES = 1_000_000; // 1MB cap
+const MAX_BYTES = 500_000; // 1MB cap
 const USER_AGENT = 'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
 
 // Helper functions
@@ -24,13 +24,17 @@ function createCacheKey(url: string): string {
   return `favicon:${hash}`;
 }
 
-function validateUrl(raw?: string): URL {
-  if (!raw) throw new Error('Missing ?url');
-  const url = new URL(raw);
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new Error('Only http/https URLs are allowed');
+function validateUrl(raw?: string): URL | null {
+  try {
+    if (!raw) throw new Error('Missing ?url');
+    const url = new URL(raw);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('Only http/https URLs are allowed');
+    }
+    return url;
+  } catch (error) {
+    return null;
   }
-  return url;
 }
 
 // Binary cache functions (more efficient than base64)
@@ -158,12 +162,49 @@ async function processImage(
   }
 }
 
-// Create a simple fallback image when Sharp can't process the original
+// Create a simple transparent fallback image when Sharp can't process the original
 function createFallbackImage(): Buffer {
+  // 1x1 transparent PNG
   return Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
     'base64',
   );
+}
+
+// Process OG image with Sharp (resize to 300px width)
+async function processOgImage(
+  buffer: Buffer,
+  originalUrl?: string,
+  contentType?: string,
+): Promise<Buffer> {
+  // If buffer is small enough, return it as-is
+  if (buffer.length < 10000) {
+    logger.info('Serving OG image directly without processing', {
+      originalUrl,
+      bufferSize: buffer.length,
+    });
+    return buffer;
+  }
+
+  try {
+    // For OG images, process with Sharp to 300px width, maintaining aspect ratio
+    return await sharp(buffer)
+      .resize(300, null, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .png()
+      .toBuffer();
+  } catch (error) {
+    logger.warn('Sharp failed to process OG image, trying fallback', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      originalUrl,
+      bufferSize: buffer.length,
+    });
+
+    // If Sharp fails, try to create a simple fallback image
+    return createFallbackImage();
+  }
 }
 
 // Check if URL is a direct image
@@ -180,6 +221,10 @@ export async function getFavicon(
 ) {
   try {
     const url = validateUrl(request.query.url);
+    if (!url) {
+      return createFallbackImage();
+    }
+
     const cacheKey = createCacheKey(url.toString());
 
     // Check cache first
@@ -264,6 +309,22 @@ export async function clearFavicons(
   return reply.status(200).send('OK');
 }
 
+export async function clearOgImages(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  const redis = getRedisCache();
+  const keys = await redis.keys('og:*');
+
+  // Delete both the binary data and content-type keys
+  for (const key of keys) {
+    await redis.del(key);
+    await redis.del(`${key}:ctype`);
+  }
+
+  return reply.status(200).send('OK');
+}
+
 export async function ping(
   request: FastifyRequest<{
     Body: {
@@ -325,4 +386,78 @@ export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
   }
   const geo = await getGeoLocation(ip);
   return reply.status(200).send(geo);
+}
+
+export async function getOgImage(
+  request: FastifyRequest<{
+    Querystring: {
+      url: string;
+    };
+  }>,
+  reply: FastifyReply,
+) {
+  try {
+    const url = validateUrl(request.query.url);
+    if (!url) {
+      return getFavicon(request, reply);
+    }
+    const cacheKey = `og:${createCacheKey(url.toString())}`;
+
+    // Check cache first
+    const cached = await getFromCacheBinary(cacheKey);
+    if (cached) {
+      reply.header('Content-Type', cached.contentType);
+      reply.header('Cache-Control', 'public, max-age=604800, immutable');
+      return reply.send(cached.buffer);
+    }
+
+    let imageUrl: URL;
+
+    // If it's a direct image URL, use it directly
+    if (isDirectImage(url)) {
+      imageUrl = url;
+    } else {
+      // For website URLs, extract OG image from HTML
+      const meta = await parseUrlMeta(url.toString());
+      if (meta?.ogImage) {
+        imageUrl = new URL(meta.ogImage);
+      } else {
+        // No OG image found, return a fallback
+        return getFavicon(request, reply);
+      }
+    }
+
+    // Fetch the image
+    const { buffer, contentType, status } = await fetchImage(imageUrl);
+
+    if (status !== 200 || buffer.length === 0) {
+      return getFavicon(request, reply);
+    }
+
+    // Process the image (resize to 1200x630 for OG standards, or serve as-is if reasonable size)
+    const processedBuffer = await processOgImage(
+      buffer,
+      imageUrl.toString(),
+      contentType,
+    );
+
+    // Cache the result
+    await setToCacheBinary(cacheKey, processedBuffer, 'image/png');
+
+    reply.header('Content-Type', 'image/png');
+    reply.header('Cache-Control', 'public, max-age=3600, immutable');
+    return reply.send(processedBuffer);
+  } catch (error: any) {
+    logger.error('OG image fetch error', {
+      error: error.message,
+      url: request.query.url,
+    });
+
+    const message =
+      process.env.NODE_ENV === 'production'
+        ? 'Bad request'
+        : (error?.message ?? 'Error');
+    reply.header('Cache-Control', 'no-store');
+    return reply.status(400).send(message);
+  }
 }

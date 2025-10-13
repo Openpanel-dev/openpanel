@@ -1,6 +1,13 @@
 import { Tooltiper } from '@/components/ui/tooltip';
 import { bind } from 'bind-event-listener';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ComposableMap,
   Geographies,
@@ -12,6 +19,30 @@ import {
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useTheme } from '@/hooks/use-theme';
 import type { Coordinate } from './coordinates';
+
+// Interpolate function similar to React Native Reanimated
+const interpolate = (
+  value: number,
+  inputRange: [number, number],
+  outputRange: [number, number],
+  extrapolate?: 'clamp' | 'extend' | 'identity',
+): number => {
+  const [inputMin, inputMax] = inputRange;
+  const [outputMin, outputMax] = outputRange;
+
+  // Handle edge cases
+  if (inputMin === inputMax) return outputMin;
+
+  const progress = (value - inputMin) / (inputMax - inputMin);
+
+  // Apply extrapolation
+  if (extrapolate === 'clamp') {
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+    return outputMin + clampedProgress * (outputMax - outputMin);
+  }
+
+  return outputMin + progress * (outputMax - outputMin);
+};
 import {
   calculateGeographicMidpoint,
   clusterCoordinates,
@@ -35,53 +66,84 @@ const Map = ({ markers, sidebarConfig }: Props) => {
     null,
   );
   const [currentZoom, setCurrentZoom] = useState(1);
+  const [debouncedZoom, setDebouncedZoom] = useState(1);
+  const zoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Calculate center based on markers
-  const hull = getOuterMarkers(markers);
-  const center =
-    hull.length < 2
-      ? getAverageCenter(markers)
-      : calculateGeographicMidpoint(hull);
+  // Memoize expensive calculations
+  const { hull, center, initialZoom } = useMemo(() => {
+    const hull = getOuterMarkers(markers);
+    const center =
+      hull.length < 2
+        ? getAverageCenter(markers)
+        : calculateGeographicMidpoint(hull);
 
-  // Calculate initial zoom based on markers distribution
-  const boundingBox = getBoundingBox(hull.length > 0 ? hull : markers);
-  const minZoom = 1;
-  const maxZoom = 20;
+    // Calculate initial zoom based on markers distribution
+    const boundingBox = getBoundingBox(hull.length > 0 ? hull : markers);
+    const minZoom = 1;
+    const maxZoom = 20;
 
-  const aspectRatio = size ? size.width / size.height : 1;
-  const autoZoom = Math.max(
-    minZoom,
-    Math.min(maxZoom, determineZoom(boundingBox, aspectRatio) * 0.4),
-  );
+    const aspectRatio = size ? size.width / size.height : 1;
+    const autoZoom = Math.max(
+      minZoom,
+      Math.min(maxZoom, determineZoom(boundingBox, aspectRatio) * 0.4),
+    );
 
-  // Use calculated zoom if we have markers, otherwise default to 1
-  const initialZoom = markers.length > 0 ? autoZoom : 1;
+    // Use calculated zoom if we have markers, otherwise default to 1
+    const initialZoom = markers.length > 0 ? autoZoom : 1;
+
+    return { hull, center, initialZoom };
+  }, [markers, size]);
 
   // Update current zoom when initial zoom changes (when new markers are loaded)
   useEffect(() => {
     setCurrentZoom(initialZoom);
+    setDebouncedZoom(initialZoom);
   }, [initialZoom]);
 
-  // Adjust center coordinates to shift viewport for sidebar
-  let adjustedLong = center.long;
+  // Debounced zoom update for marker clustering
+  const updateDebouncedZoom = useCallback((newZoom: number) => {
+    if (zoomTimeoutRef.current) {
+      clearTimeout(zoomTimeoutRef.current);
+    }
 
-  if (sidebarConfig && size) {
-    // Calculate how much to shift the map to center content in visible area
-    const sidebarOffset =
-      sidebarConfig.position === 'left'
-        ? sidebarConfig.width / 2
-        : -sidebarConfig.width / 2;
+    zoomTimeoutRef.current = setTimeout(() => {
+      setDebouncedZoom(newZoom);
+    }, 100); // 100ms debounce delay
+  }, []);
 
-    // Convert pixel offset to longitude degrees
-    // This is a rough approximation - degrees per pixel at current zoom
-    const longitudePerPixel = 360 / (size.width * initialZoom);
-    const longitudeOffset = sidebarOffset * longitudePerPixel;
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (zoomTimeoutRef.current) {
+        clearTimeout(zoomTimeoutRef.current);
+      }
+    };
+  }, []);
 
-    adjustedLong = center.long - longitudeOffset; // Subtract to shift map right for left sidebar
-  }
+  // Memoize center coordinates adjustment for sidebar
+  const { long, lat } = useMemo(() => {
+    let adjustedLong = center.long;
 
-  const long = adjustedLong;
-  const lat = center.lat;
+    if (sidebarConfig && size) {
+      // Calculate how much to shift the map to center content in visible area
+      const sidebarOffset =
+        sidebarConfig.position === 'left'
+          ? sidebarConfig.width / 2
+          : -sidebarConfig.width / 2;
+
+      // Convert pixel offset to longitude degrees
+      // This is a rough approximation - degrees per pixel at current zoom
+      const longitudePerPixel = 360 / (size.width * initialZoom);
+      const longitudeOffset = sidebarOffset * longitudePerPixel;
+
+      adjustedLong = center.long - longitudeOffset; // Subtract to shift map right for left sidebar
+    }
+
+    return { long: adjustedLong, lat: center.lat };
+  }, [center.long, center.lat, sidebarConfig, size, initialZoom]);
+
+  const minZoom = 1;
+  const maxZoom = 20;
 
   useEffect(() => {
     return bind(window, {
@@ -109,21 +171,29 @@ const Map = ({ markers, sidebarConfig }: Props) => {
   }, []);
 
   // Dynamic marker size based on zoom level - balanced scaling for new size range
-  const getMarkerSize = (baseSize: number) => {
-    // Use more gradual scaling since we now have a better base size range (4-20px)
-    // At zoom 1: full size
-    // At zoom 4: ~50% of base size
-    // At zoom 8: ~25% of base size
-    const scaleFactor = Math.max(0.25, 1 / Math.sqrt(currentZoom));
+  const getMarkerSize = useCallback(
+    (baseSize: number) => {
+      // Interpolate the adjustment value from zoom 1 to 20
+      // At zoom 1: adjustThisValue = 1
+      // At zoom 20: adjustThisValue = 0.5
+      const adjustThisValue = interpolate(
+        currentZoom,
+        [1, 20],
+        [1.5, 0.6],
+        'clamp',
+      );
+      const scaleFactor = (1 / Math.sqrt(currentZoom)) * adjustThisValue;
 
-    // Ensure minimum size for visibility, but allow smaller sizes for precision
-    const minSize = baseSize * 0.05;
-    const scaledSize = baseSize * scaleFactor;
+      // Ensure minimum size for visibility, but allow smaller sizes for precision
+      const minSize = baseSize * 0.05;
+      const scaledSize = baseSize * scaleFactor;
 
-    return Math.max(minSize, scaledSize);
-  };
+      return Math.max(minSize, scaledSize);
+    },
+    [currentZoom],
+  );
 
-  const getBorderWidth = () => {
+  const getBorderWidth = useCallback(() => {
     const map = {
       0.1: [15, 20],
       0.15: [10, 15],
@@ -136,9 +206,17 @@ const Map = ({ markers, sidebarConfig }: Props) => {
       }
     });
     return found ? Number.parseFloat(found[0]) : 0.1;
-  };
+  }, [currentZoom]);
 
   const theme = useTheme();
+
+  // Memoize clustered markers
+  const clusteredMarkers = useMemo(() => {
+    return clusterCoordinates(markers, 150, {
+      zoom: debouncedZoom,
+      adaptiveRadius: true,
+    });
+  }, [markers, debouncedZoom]);
 
   return (
     <div ref={ref} className="relative">
@@ -160,6 +238,7 @@ const Map = ({ markers, sidebarConfig }: Props) => {
               onMove={(event) => {
                 if (currentZoom !== event.zoom) {
                   setCurrentZoom(event.zoom);
+                  updateDebouncedZoom(event.zoom);
                 }
               }}
             >
@@ -186,10 +265,7 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                   <circle r={getMarkerSize(10)} fill="green" stroke="#fff" />
                 </Marker>
               )}
-              {clusterCoordinates(markers, 150, {
-                zoom: currentZoom,
-                adaptiveRadius: true,
-              }).map((marker, index) => {
+              {clusteredMarkers.map((marker, index) => {
                 const size = getMarkerSize(calculateMarkerSize(marker.count));
                 const coordinates: [number, number] = [
                   marker.center.long,
@@ -218,6 +294,7 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                           </h3>
 
                           {marker.members
+                            .slice(0, 5)
                             .filter((item) => item.country || item.city)
                             .map((item) => (
                               <div
@@ -232,6 +309,11 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                                 {item.city || 'Unknown'}
                               </div>
                             ))}
+                          {marker.members.length > 5 && (
+                            <div className="text-sm text-gray-500">
+                              + {marker.members.length - 5} more
+                            </div>
+                          )}
                         </div>
                       }
                     >
@@ -243,6 +325,17 @@ const Map = ({ markers, sidebarConfig }: Props) => {
                           stroke="#fff"
                           strokeWidth={getBorderWidth() * 0.5}
                         />
+                        <text
+                          x={0}
+                          y={0}
+                          fill="#fff"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize={size * 0.6}
+                          fontWeight="bold"
+                        >
+                          {marker.count}
+                        </text>
                       </Marker>
                     </Tooltiper>
                   </Fragment>

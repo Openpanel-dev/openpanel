@@ -14,10 +14,8 @@ interface RealtimeLiveHistogramProps {
   projectId: string;
 }
 
-export function RealtimeLiveHistogram({
-  projectId,
-}: RealtimeLiveHistogramProps) {
-  const report: IChartProps = {
+export const getReport = (projectId: string): IChartProps => {
+  return {
     projectId,
     events: [
       {
@@ -36,7 +34,10 @@ export function RealtimeLiveHistogram({
     lineType: 'monotone',
     previous: false,
   };
-  const countReport: IChartProps = {
+};
+
+export const getCountReport = (projectId: string): IChartProps => {
+  return {
     name: '',
     projectId,
     events: [
@@ -55,6 +56,13 @@ export function RealtimeLiveHistogram({
     previous: false,
     metric: 'sum',
   };
+};
+
+export function RealtimeLiveHistogram({
+  projectId,
+}: RealtimeLiveHistogramProps) {
+  const report = getReport(projectId);
+  const countReport = getCountReport(projectId);
 
   const trpc = useTRPC();
   const res = useQuery(trpc.chart.chart.queryOptions(report));

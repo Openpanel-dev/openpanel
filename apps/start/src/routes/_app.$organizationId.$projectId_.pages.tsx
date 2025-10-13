@@ -7,8 +7,10 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
 import { ReportChart } from '@/components/report-chart';
+import { Skeleton } from '@/components/skeleton';
 import { Input } from '@/components/ui/input';
 import { TableButtons } from '@/components/ui/table';
+import { useAppContext } from '@/hooks/use-app-context';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
@@ -87,11 +89,18 @@ function Component() {
           }}
         />
       </TableButtons>
-      {data.length === 0 && (
+      {data.length === 0 && !query.isLoading && (
         <FullPageEmptyState
           title="No pages"
           description={'Integrate our web sdk to your site to get pages here.'}
         />
+      )}
+      {query.isLoading && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <PageCardSkeleton />
+          <PageCardSkeleton />
+          <PageCardSkeleton />
+        </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {data.map((page) => {
@@ -138,21 +147,31 @@ const PageCard = memo(
     projectId: string;
   }) => {
     const number = useNumber();
+    const { apiUrl } = useAppContext();
     return (
       <div className="card">
         <div className="row gap-4 justify-between p-4 py-2 items-center">
-          <div className="col min-w-0">
-            <div className="font-medium leading-[28px] truncate">
-              {page.title}
+          <div className="row gap-2 items-center h-16">
+            <img
+              src={`${apiUrl}/misc/og?url=${page.origin}${page.path}`}
+              alt={page.title}
+              className="size-10 rounded-sm object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            <div className="col min-w-0">
+              <div className="font-medium leading-[28px] truncate">
+                {page.title}
+              </div>
+              <a
+                target="_blank"
+                rel="noreferrer"
+                href={`${page.origin}${page.path}`}
+                className="text-muted-foreground font-mono truncate hover:underline"
+              >
+                {page.path}
+              </a>
             </div>
-            <a
-              target="_blank"
-              rel="noreferrer"
-              href={`${page.origin}${page.path}`}
-              className="text-muted-foreground font-mono truncate hover:underline"
-            >
-              {page.path}
-            </a>
           </div>
         </div>
         <div className="row border-y">
@@ -226,3 +245,36 @@ const PageCard = memo(
     );
   },
 );
+
+const PageCardSkeleton = memo(() => {
+  return (
+    <div className="card">
+      <div className="row gap-4 justify-between p-4 py-2 items-center">
+        <div className="row gap-2 items-center h-16">
+          <Skeleton className="size-10 rounded-sm" />
+          <div className="col min-w-0">
+            <Skeleton className="h-3 w-32 mb-2" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+      </div>
+      <div className="row border-y">
+        <div className="center-center col flex-1 p-4 py-2">
+          <Skeleton className="h-6 w-16 mb-1" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+        <div className="center-center col flex-1 p-4 py-2">
+          <Skeleton className="h-6 w-12 mb-1" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+        <div className="center-center col flex-1 p-4 py-2">
+          <Skeleton className="h-6 w-14 mb-1" />
+          <Skeleton className="h-4 w-14" />
+        </div>
+      </div>
+      <div className="p-4">
+        <Skeleton className="h-16 w-full rounded" />
+      </div>
+    </div>
+  );
+});

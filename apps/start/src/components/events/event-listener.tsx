@@ -19,11 +19,20 @@ export default function EventListener({
   const { projectId } = useAppParams();
   const counter = useDebounceState(0, 1000);
 
-  useWS<IServiceEventMinimal>(`/live/events/${projectId}`, (event) => {
-    if (event?.name) {
-      counter.set((prev) => prev + 1);
-    }
-  });
+  useWS<IServiceEventMinimal>(
+    `/live/events/${projectId}`,
+    (event) => {
+      if (event?.name) {
+        counter.set((prev) => prev + 1);
+      }
+    },
+    {
+      debounce: {
+        delay: 1000,
+        maxWait: 5000,
+      },
+    },
+  );
 
   return (
     <Tooltip>

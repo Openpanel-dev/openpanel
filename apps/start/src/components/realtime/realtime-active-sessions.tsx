@@ -35,13 +35,22 @@ export function RealtimeActiveSessions({
   }, [activeSessionsQuery.data, state]);
 
   // Set up WebSocket connection for real-time updates
-  useWS<IServiceEvent>(`/live/events/${projectId}`, (session) => {
-    setState((prev) => {
-      // Add new session and remove duplicates, keeping most recent
-      const filtered = prev.filter((s) => s.id !== session.id);
-      return [session, ...filtered].slice(0, limit);
-    });
-  });
+  useWS<IServiceEvent>(
+    `/live/events/${projectId}`,
+    (session) => {
+      setState((prev) => {
+        // Add new session and remove duplicates, keeping most recent
+        const filtered = prev.filter((s) => s.id !== session.id);
+        return [session, ...filtered].slice(0, limit);
+      });
+    },
+    {
+      debounce: {
+        delay: 1000,
+        maxWait: 5000,
+      },
+    },
+  );
 
   const sessions = state.length > 0 ? state : (activeSessionsQuery.data ?? []);
 

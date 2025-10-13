@@ -8,7 +8,7 @@ import { useAppContext } from './use-app-context';
 type UseWSOptions = {
   debounce?: {
     delay: number;
-  } & Parameters<typeof debounce>[2];
+  };
 };
 
 export default function useWS<T>(
@@ -22,7 +22,7 @@ export default function useWS<T>(
 
   const debouncedOnMessage = useMemo(() => {
     if (options?.debounce) {
-      return debounce(onMessage, options.debounce.delay, options.debounce);
+      return debounce(onMessage, options.debounce.delay, { immediate: true });
     }
     return onMessage;
   }, [options?.debounce?.delay]);

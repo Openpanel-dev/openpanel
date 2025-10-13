@@ -22,6 +22,18 @@ const miscRouter: FastifyPluginCallback = async (fastify) => {
 
   fastify.route({
     method: 'GET',
+    url: '/og',
+    handler: controller.getOgImage,
+  });
+
+  fastify.route({
+    method: 'GET',
+    url: '/og/clear',
+    handler: controller.clearOgImages,
+  });
+
+  fastify.route({
+    method: 'GET',
     url: '/favicon/clear',
     handler: controller.clearFavicons,
   });

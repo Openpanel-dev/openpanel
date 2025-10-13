@@ -38,6 +38,8 @@ const createImageIcon = (url: string) => {
         alt="serie icon"
         className="max-h-4 rounded-[2px] object-contain"
         src={context.apiUrl?.replace(/\/$/, '') + url}
+        loading="lazy"
+        decoding="async"
       />
     );
   }) as LucideIcon;

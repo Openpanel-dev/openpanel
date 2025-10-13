@@ -1,9 +1,10 @@
 import { TooltipComplete } from '@/components/tooltip-complete';
 import { useDebounceState } from '@/hooks/use-debounce-state';
 import useWS from '@/hooks/use-ws';
+import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { useQueryClient } from '@tanstack/react-query';
-import { useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { AnimatedNumber } from '../animated-number';
 
@@ -14,24 +15,45 @@ export interface LiveCounterProps {
 const FIFTEEN_SECONDS = 1000 * 30;
 
 export function LiveCounter({ projectId }: LiveCounterProps) {
+  const trpc = useTRPC();
   const client = useQueryClient();
   const counter = useDebounceState(0, 1000);
   const lastRefresh = useRef(Date.now());
+  const query = useQuery(
+    trpc.overview.liveVisitors.queryOptions({
+      projectId,
+    }),
+  );
 
-  useWS<number>(`/live/visitors/${projectId}`, (value) => {
-    if (!Number.isNaN(value)) {
-      counter.set(value);
-      if (Date.now() - lastRefresh.current > FIFTEEN_SECONDS) {
-        lastRefresh.current = Date.now();
-        if (!document.hidden) {
-          toast('Refreshed data');
-          client.refetchQueries({
-            type: 'active',
-          });
+  useEffect(() => {
+    if (query.data) {
+      counter.set(query.data);
+    }
+  }, [query.data]);
+
+  useWS<number>(
+    `/live/visitors/${projectId}`,
+    (value) => {
+      if (!Number.isNaN(value)) {
+        counter.set(value);
+        if (Date.now() - lastRefresh.current > FIFTEEN_SECONDS) {
+          lastRefresh.current = Date.now();
+          if (!document.hidden) {
+            toast('Refreshed data');
+            client.refetchQueries({
+              type: 'active',
+            });
+          }
         }
       }
-    }
-  });
+    },
+    {
+      debounce: {
+        delay: 1000,
+        maxWait: 5000,
+      },
+    },
+  );
 
   return (
     <TooltipComplete

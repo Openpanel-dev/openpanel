@@ -18,11 +18,32 @@ function findBestFavicon(favicons: UrlMetaData['favicons']) {
   return null;
 }
 
+function findBestOgImage(data: UrlMetaData): string | null {
+  // Priority order for OG images
+  const candidates = [
+    data['og:image:secure_url'],
+    data['og:image:url'],
+    data['og:image'],
+    data['twitter:image:src'],
+    data['twitter:image'],
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate?.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
 function transform(data: UrlMetaData, url: string) {
   const favicon = findBestFavicon(data.favicons);
+  const ogImage = findBestOgImage(data);
 
   return {
     favicon: favicon ? new URL(favicon, url).toString() : fallbackFavicon(url),
+    ogImage: ogImage ? new URL(ogImage, url).toString() : null,
   };
 }
 
@@ -32,6 +53,11 @@ interface UrlMetaData {
     href: string;
     sizes: string;
   }[];
+  'og:image'?: string;
+  'og:image:url'?: string;
+  'og:image:secure_url'?: string;
+  'twitter:image'?: string;
+  'twitter:image:src'?: string;
 }
 
 export async function parseUrlMeta(url: string) {
@@ -42,6 +68,7 @@ export async function parseUrlMeta(url: string) {
   } catch (err) {
     return {
       favicon: fallbackFavicon(url),
+      ogImage: null,
     };
   }
 }

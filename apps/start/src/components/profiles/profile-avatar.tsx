@@ -34,11 +34,11 @@ export function ProfileAvatar({
   ...profile
 }: ProfileAvatarProps) {
   const name = getProfileName(profile);
-  console.log('name', name);
+  const isValidAvatar = avatar?.startsWith('http');
 
   return (
     <Avatar className={cn(variants({ className, size }), className)}>
-      {avatar && <AvatarImage src={avatar} className="rounded-full" />}
+      {isValidAvatar && <AvatarImage src={avatar} className="rounded-full" />}
       <AvatarFallback
         className={cn(
           'rounded-full',
@@ -52,7 +52,7 @@ export function ProfileAvatar({
           'bg-def-200 text-muted-foreground',
         )}
       >
-        {name?.at(0)?.toUpperCase() ?? '🫣'}
+        {name?.at(0)?.toUpperCase() ?? '🧔‍♂️'}
       </AvatarFallback>
     </Avatar>
   );

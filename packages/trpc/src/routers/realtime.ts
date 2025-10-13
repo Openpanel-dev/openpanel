@@ -12,7 +12,6 @@ import {
 } from '@openpanel/db';
 
 import { subMinutes } from 'date-fns';
-import { uniqBy } from 'ramda';
 import sqlstring from 'sqlstring';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -79,6 +78,7 @@ export const realtimeRouter = createTRPCRouter({
         )
         .groupBy(['path', 'origin'])
         .orderBy('count', 'DESC')
+        .limit(100)
         .execute();
 
       return res;
@@ -106,6 +106,7 @@ export const realtimeRouter = createTRPCRouter({
         )
         .groupBy(['referrer_name'])
         .orderBy('count', 'DESC')
+        .limit(100)
         .execute();
 
       return res;
@@ -134,6 +135,7 @@ export const realtimeRouter = createTRPCRouter({
         )
         .groupBy(['country', 'city'])
         .orderBy('count', 'DESC')
+        .limit(100)
         .execute();
 
       return res;
