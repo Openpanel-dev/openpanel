@@ -1,4 +1,4 @@
-import debounce from 'debounce';
+import debounce from 'lodash.debounce';
 import { useEffect, useMemo, useState } from 'react';
 import { useWebSocket } from 'react-use-websocket/dist/lib/use-websocket';
 
@@ -8,6 +8,7 @@ import { useAppContext } from './use-app-context';
 type UseWSOptions = {
   debounce?: {
     delay: number;
+    maxWait?: number;
   };
 };
 
@@ -22,7 +23,7 @@ export default function useWS<T>(
 
   const debouncedOnMessage = useMemo(() => {
     if (options?.debounce) {
-      return debounce(onMessage, options.debounce.delay, { immediate: true });
+      return debounce(onMessage, options.debounce.delay, options.debounce);
     }
     return onMessage;
   }, [options?.debounce?.delay]);
