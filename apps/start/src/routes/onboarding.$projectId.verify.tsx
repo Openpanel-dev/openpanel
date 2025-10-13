@@ -11,10 +11,15 @@ import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { Link, createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/onboarding/$projectId/verify')({
+  beforeLoad: async ({ context }) => {
+    if (!context.session.session) {
+      throw redirect({ to: '/onboarding' });
+    }
+  },
   component: Component,
   loader: async ({ context, params }) => {
     await context.queryClient.prefetchQuery(

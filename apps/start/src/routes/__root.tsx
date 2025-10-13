@@ -26,6 +26,19 @@ interface MyRouterContext {
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
+  beforeLoad: async ({ context }) => {
+    const session = await context.queryClient.ensureQueryData(
+      context.trpc.auth.session.queryOptions(undefined, {
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 10,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+      }),
+    );
+
+    return { session };
+  },
   head: () => ({
     meta: [
       {

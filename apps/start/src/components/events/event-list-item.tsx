@@ -83,22 +83,24 @@ export function EventListItem(props: EventListItemProps) {
           </div>
         </div>
         <div className="flex gap-4">
-          <Tooltiper asChild content={getProfileName(profile)}>
-            <Link
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-              to={'/$organizationId/$projectId/profiles/$profileId'}
-              params={{
-                organizationId,
-                projectId,
-                profileId: profile!.id,
-              }}
-              className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap  text-muted-foreground hover:underline"
-            >
-              {getProfileName(profile)}
-            </Link>
-          </Tooltiper>
+          {profile && (
+            <Tooltiper asChild content={getProfileName(profile)}>
+              <Link
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+                to={'/$organizationId/$projectId/profiles/$profileId'}
+                params={{
+                  organizationId,
+                  projectId,
+                  profileId: profile.id,
+                }}
+                className="max-w-[80px] overflow-hidden text-ellipsis whitespace-nowrap  text-muted-foreground hover:underline"
+              >
+                {getProfileName(profile)}
+              </Link>
+            </Tooltiper>
+          )}
 
           <Tooltiper asChild content={createdAt.toLocaleString()}>
             <div className=" text-muted-foreground">

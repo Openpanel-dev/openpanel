@@ -10,11 +10,19 @@ import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/')({
+  beforeLoad: async ({ context }) => {
+    if (!context.session.session) {
+      throw redirect({ to: '/login' });
+    }
+  },
   component: LandingPage,
   head: () => ({
     meta: [{ title: createTitle('Welcome') }],
   }),
   loader: async ({ context }) => {
+    // Unsure why not using ensureQueryData here works
+    // We need to put staleTime and gcTime to 0 to get the latest data
+    // Even tho this query has never been called before
     const organizations = await context.queryClient
       .fetchQuery(
         context.trpc.organization.list.queryOptions(undefined, {
@@ -22,9 +30,11 @@ export const Route = createFileRoute('/')({
           gcTime: 0,
         }),
       )
-      .catch(() => {
-        throw redirect({ to: '/login' });
-      });
+      .catch(() => []);
+
+    if (organizations.length === 0) {
+      throw redirect({ to: '/onboarding/project' });
+    }
 
     if (organizations.length === 1) {
       throw redirect({

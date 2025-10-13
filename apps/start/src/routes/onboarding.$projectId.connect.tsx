@@ -13,10 +13,15 @@ import { LinkButton } from '@/components/ui/button';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { LockIcon, XIcon } from 'lucide-react';
 
 export const Route = createFileRoute('/onboarding/$projectId/connect')({
+  beforeLoad: async ({ context }) => {
+    if (!context.session.session) {
+      throw redirect({ to: '/onboarding' });
+    }
+  },
   component: Component,
   loader: async ({ context, params }) => {
     await context.queryClient.prefetchQuery(

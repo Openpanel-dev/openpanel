@@ -14,21 +14,6 @@ export const Route = createFileRoute('/_login/login')({
   head: () => ({
     meta: [{ title: createTitle(PAGE_TITLES.LOGIN) }],
   }),
-  beforeLoad: async ({ context }) => {
-    const session = await context.queryClient.ensureQueryData(
-      context.trpc.auth.session.queryOptions(undefined, {
-        staleTime: 1000 * 60 * 5,
-        gcTime: 1000 * 60 * 10,
-        refetchOnWindowFocus: false,
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-      }),
-    );
-
-    if (session) {
-      throw redirect({ to: '/' });
-    }
-  },
   validateSearch: z.object({
     error: z.string().optional(),
     correlationId: z.string().optional(),

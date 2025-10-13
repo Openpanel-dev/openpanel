@@ -16,7 +16,7 @@ import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zOnboardingProject } from '@openpanel/validation';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import {
   BuildingIcon,
   MonitorIcon,
@@ -38,6 +38,11 @@ const validateSearch = z.object({
 export const Route = createFileRoute('/onboarding/project')({
   component: Component,
   validateSearch,
+  beforeLoad: async ({ context }) => {
+    if (!context.session.session) {
+      throw redirect({ to: '/onboarding' });
+    }
+  },
   loader: async ({ context, location }) => {
     const search = validateSearch.safeParse(location.search);
     if (search.success && search.data.inviteId) {

@@ -17,17 +17,7 @@ const validateSearch = z.object({
 });
 export const Route = createFileRoute('/onboarding/')({
   beforeLoad: async ({ context }) => {
-    const session = await context.queryClient.ensureQueryData(
-      context.trpc.auth.session.queryOptions(undefined, {
-        staleTime: 1000 * 60 * 5,
-        gcTime: 1000 * 60 * 10,
-        refetchOnWindowFocus: false,
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-      }),
-    );
-
-    if (session) {
+    if (context.session.session) {
       throw redirect({ to: '/' });
     }
   },

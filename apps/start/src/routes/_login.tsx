@@ -1,7 +1,12 @@
 import { MockEventList } from '@/components/mock-event-list';
-import { Outlet, createFileRoute } from '@tanstack/react-router';
+import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_login')({
+  beforeLoad: async ({ context }) => {
+    if (context.session.session) {
+      throw redirect({ to: '/' });
+    }
+  },
   component: AuthLayout,
 });
 
