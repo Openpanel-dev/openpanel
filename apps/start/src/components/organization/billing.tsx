@@ -17,6 +17,7 @@ import { useAppParams } from '@/hooks/use-app-params';
 import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
+import { op } from '@/utils/op';
 import type { IServiceOrganization } from '@openpanel/db';
 import type { IPolarPrice } from '@openpanel/payments';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -29,31 +30,10 @@ type Props = {
   organization: IServiceOrganization;
 };
 
-const useOpenPanel = () => {
-  return {
-    track: (name: string, properties?: Record<string, any>) => {
-      console.log('track', name, properties);
-    },
-    screenView: (name: string, properties?: Record<string, any>) => {
-      console.log('screenView', name, properties);
-    },
-    identify: (user: any) => {
-      console.log('identify', user);
-    },
-    increment: (name: string, value?: number) => {
-      console.log('increment', name, value);
-    },
-    decrement: (name: string, value?: number) => {
-      console.log('decrement', name, value);
-    },
-  };
-};
-
 export default function Billing({ organization }: Props) {
   const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
-  const op = useOpenPanel();
   const [customerSessionToken, setCustomerSessionToken] = useQueryState(
     'customer_session_token',
   );
@@ -257,7 +237,6 @@ function CheckoutButton({
   projectId: string;
   disabled?: string | null;
 }) {
-  const op = useOpenPanel();
   const trpc = useTRPC();
   const isCurrentPrice = organization.subscriptionPriceId === price.id;
   const checkout = useMutation(

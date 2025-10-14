@@ -1,6 +1,8 @@
 export function shouldIgnoreKeypress(event: KeyboardEvent) {
   const feedbackWidget =
-    'uj' in window ? (window.uj as any).getWidgetState() : null;
+    typeof window !== 'undefined' && 'uj' in window
+      ? (window.uj as any).getWidgetState()
+      : null;
   const tagName = (event?.target as HTMLElement)?.tagName;
   const modifierPressed =
     event.ctrlKey || event.metaKey || event.altKey || event.keyCode === 229;

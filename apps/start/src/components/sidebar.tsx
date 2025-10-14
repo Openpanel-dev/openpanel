@@ -1,4 +1,3 @@
-import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import type { IServiceOrganization } from '@openpanel/db';
@@ -6,12 +5,12 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Link,
   useLocation,
-  useNavigate,
   useParams,
   useRouteContext,
 } from '@tanstack/react-router';
-import { MenuIcon, SparklesIcon, XIcon } from 'lucide-react';
+import { MenuIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { FeedbackButton } from './feedback-button';
 import { LogoSquare } from './logo';
 import { ProfileToggle } from './profile-toggle';
 import ProjectSelector from './project-selector';
@@ -82,7 +81,6 @@ export function SidebarContainer({
 }: SidebarContainerProps) {
   const [active, setActive] = useState(false);
   const location = useLocation();
-  const context = useRouteContext({ strict: false });
 
   useEffect(() => {
     setActive(false);
@@ -136,24 +134,7 @@ export function SidebarContainer({
           {children}
 
           <div className="mt-auto w-full ">
-            {'uj' in window && (
-              <Button
-                variant={'outline'}
-                className="w-full text-left justify-start [&_svg]:mx-2"
-                icon={SparklesIcon}
-                onClick={() => {
-                  if ('uj' in window) {
-                    (window.uj as any).identify({
-                      id: context.session?.userId,
-                      firstName: context.session?.user?.firstName,
-                    });
-                    (window.uj as any).showWidget();
-                  }
-                }}
-              >
-                Give feedback
-              </Button>
-            )}
+            <FeedbackButton />
             {import.meta.env.VITE_SELF_HOSTED === 'true' && (
               <div className={cn('text-sm w-full text-center')}>
                 Self-hosted instance

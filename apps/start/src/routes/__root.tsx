@@ -17,8 +17,11 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
+import { op } from '@/utils/op';
 import type { AppRouter } from '@openpanel/trpc';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
+
+op.init();
 
 interface MyRouterContext {
   queryClient: QueryClient;
