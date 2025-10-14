@@ -8,8 +8,9 @@ import {
   useLocation,
   useNavigate,
   useParams,
+  useRouteContext,
 } from '@tanstack/react-router';
-import { MenuIcon, XIcon } from 'lucide-react';
+import { MenuIcon, SparklesIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { LogoSquare } from './logo';
 import { ProfileToggle } from './profile-toggle';
@@ -81,6 +82,7 @@ export function SidebarContainer({
 }: SidebarContainerProps) {
   const [active, setActive] = useState(false);
   const location = useLocation();
+  const context = useRouteContext({ strict: false });
 
   useEffect(() => {
     setActive(false);
@@ -131,141 +133,33 @@ export function SidebarContainer({
             "[&_a[data-status='active']]:bg-def-200",
           ])}
         >
-          {/* <div className="col border rounded mb-2 divide-y">
-            {(subscriptionProductId ===
-              '036efa2a-b3b4-4c75-b24a-9cac6bb8893b' ||
-              subscriptionProductId ===
-                'a18b4bee-d3db-4404-be6f-fba2f042d9ed') && (
-              <ProjectLink
-                href={'/settings/organization?tab=billing'}
-                className={cn(
-                  'rounded p-2 row items-center gap-2 hover:bg-def-200 text-destructive',
-                )}
+          {children}
+
+          <div className="mt-auto w-full ">
+            {'uj' in window && (
+              <Button
+                variant={'outline'}
+                className="w-full text-left justify-start [&_svg]:mx-2"
+                icon={SparklesIcon}
+                onClick={() => {
+                  if ('uj' in window) {
+                    (window.uj as any).identify({
+                      id: context.session?.userId,
+                      firstName: context.session?.user?.firstName,
+                    });
+                    (window.uj as any).showWidget();
+                  }
+                }}
               >
-                <BanknoteIcon size={20} />
-                <div className="flex-1 col gap-1">
-                  <div className="font-medium">Free plan is removed</div>
-                  <div className="text-sm opacity-80">
-                    We've removed the free plan. You can upgrade to a paid plan
-                    to continue using OpenPanel.
-                  </div>
-                </div>
-              </ProjectLink>
+                Give feedback
+              </Button>
             )}
             {import.meta.env.VITE_SELF_HOSTED === 'true' && (
-              <a
-                className="rounded p-2 row items-center gap-2 hover:bg-def-200"
-                href="https://openpanel.dev/supporter"
-              >
-                <HeartHandshakeIcon size={20} />
-                <div className="flex-1 col gap-1">
-                  <div className="font-medium">Become a supporter</div>
-                </div>
-              </a>
-            )}
-            {isTrial && subscriptionEndsAt && (
-              <ProjectLink
-                href={'/settings/organization?tab=billing'}
-                className={cn(
-                  'rounded p-2 row items-center gap-2 hover:bg-def-200 text-destructive',
-                )}
-              >
-                <BanknoteIcon size={20} />
-                <div className="flex-1 col gap-1">
-                  <div className="font-medium">
-                    Free trial ends in{' '}
-                    {differenceInDays(subscriptionEndsAt, new Date())} days
-                  </div>
-                </div>
-              </ProjectLink>
-            )}
-            {isExpired && subscriptionEndsAt && (
-              <ProjectLink
-                href={'/settings/organization?tab=billing'}
-                className={cn(
-                  'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
-                )}
-              >
-                <BanknoteIcon size={20} />
-                <div className="flex-1 col gap-0.5">
-                  <div className="font-medium">Subscription expired</div>
-                  <div className="text-sm opacity-80">
-                    You can still use OpenPanel but you won't have access to new
-                    incoming data.
-                  </div>
-                </div>
-              </ProjectLink>
-            )}
-            {isCanceled && subscriptionEndsAt && (
-              <ProjectLink
-                href={'/settings/organization?tab=billing'}
-                className={cn(
-                  'rounded p-2 row gap-2 hover:bg-def-200 text-red-600',
-                )}
-              >
-                <BanknoteIcon size={20} />
-                <div className="flex-1 col gap-0.5">
-                  <div className="font-medium">Subscription canceled</div>
-                  <div className="text-sm opacity-80">
-                    {differenceInDays(new Date(), subscriptionEndsAt)} days ago
-                  </div>
-                </div>
-              </ProjectLink>
-            )}
-            {isExceeded && subscriptionEndsAt && (
-              <ProjectLink
-                href={'/settings/organization?tab=billing'}
-                className={cn(
-                  'rounded p-2 row gap-2 hover:bg-def-200 text-destructive',
-                )}
-              >
-                <BanknoteIcon size={20} />
-                <div className="flex-1 col gap-0.5">
-                  <div className="font-medium">Events limit exceeded</div>
-                  <div className="text-sm opacity-80">
-                    {formatNumber(subscriptionPeriodEventsCount)} /{' '}
-                    {formatNumber(subscriptionPeriodEventsLimit)}
-                  </div>
-                </div>
-              </ProjectLink>
-            )}
-            <ProjectLink
-              href={'/chat'}
-              className={cn(
-                'rounded p-1.5 row gap-2 hover:bg-def-200 items-center transition-colors',
-              )}
-            >
-              <SparklesIcon size={16} />
-              <div className="flex-1">
-                <div className="font-medium text-sm">Ask AI</div>
-              </div>
-              <CommandShortcut className="text-xs opacity-70">
-                ⌘K
-              </CommandShortcut>
-            </ProjectLink>
-            <ProjectLink
-              href={'/reports'}
-              className={cn(
-                'rounded p-1.5 row gap-2 hover:bg-def-200 items-center transition-colors',
-              )}
-            >
-              <ChartLineIcon size={16} />
-              <div className="flex-1">
-                <div className="font-medium text-sm">Create report</div>
-              </div>
-              <CommandShortcut className="text-xs opacity-70">
-                ⌘J
-              </CommandShortcut>
-            </ProjectLink>
-          </div> */}
-          {children}
-          {import.meta.env.VITE_SELF_HOSTED === 'true' && (
-            <div className="mt-auto w-full ">
               <div className={cn('text-sm w-full text-center')}>
                 Self-hosted instance
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
         <div className="fixed bottom-0 left-0 right-0 pointer-events-none">
           <div className="h-8 w-full bg-gradient-to-t from-card to-card/0" />
