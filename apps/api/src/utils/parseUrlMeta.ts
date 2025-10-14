@@ -5,12 +5,16 @@ function fallbackFavicon(url: string) {
 }
 
 function findBestFavicon(favicons: UrlMetaData['favicons']) {
-  const match = favicons.find(
-    (favicon) =>
-      favicon.rel === 'shortcut icon' ||
-      favicon.rel === 'icon' ||
-      favicon.rel === 'apple-touch-icon',
-  );
+  const match = favicons
+    .sort((a, b) => {
+      return a.rel.length - b.rel.length;
+    })
+    .find(
+      (favicon) =>
+        favicon.rel === 'shortcut icon' ||
+        favicon.rel === 'icon' ||
+        favicon.rel === 'apple-touch-icon',
+    );
 
   if (match) {
     return match.href;

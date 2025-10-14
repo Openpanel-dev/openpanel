@@ -121,9 +121,9 @@ function ProjectMetrics({ id }: { id: string }) {
                   'font-semibold',
                   'row gap-1 items-center',
                   data?.trend?.direction === 'up'
-                    ? 'text-green-600'
+                    ? 'text-emerald-300'
                     : data?.trend?.direction === 'down'
-                      ? 'text-red-600'
+                      ? 'text-orange-300'
                       : 'text-muted-foreground',
                 )}
               >

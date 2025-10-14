@@ -6,6 +6,7 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Pagination } from '@/components/pagination';
+import { FloatingPagination } from '@/components/pagination-floating';
 import { ReportChart } from '@/components/report-chart';
 import { Skeleton } from '@/components/skeleton';
 import { Input } from '@/components/ui/input';
@@ -46,7 +47,7 @@ function Component() {
   const [filters] = useEventQueryFilters();
   const [cursor, setCursor] = useQueryState(
     'cursor',
-    parseAsInteger.withDefault(0),
+    parseAsInteger.withDefault(1),
   );
 
   const { debouncedSearch, setSearch, search } = useSearchQueryState();
@@ -117,10 +118,11 @@ function Component() {
       </div>
       {data.length !== 0 && (
         <div className="p-4">
-          <Pagination
+          <FloatingPagination
+            firstPage={cursor > 1 ? () => setCursor(1) : undefined}
             canNextPage={true}
             canPreviousPage={cursor > 0}
-            pageIndex={cursor}
+            pageIndex={cursor - 1}
             nextPage={() => {
               setCursor((p) => p + 1);
             }}

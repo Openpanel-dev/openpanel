@@ -117,6 +117,9 @@ async function fetchImage(
 function isIcoFile(url: string, contentType?: string): boolean {
   return url.toLowerCase().endsWith('.ico') || contentType === 'image/x-icon';
 }
+function isSvgFile(url: string, contentType?: string): boolean {
+  return url.toLowerCase().endsWith('.svg') || contentType === 'image/svg+xml';
+}
 
 // Process image with Sharp (resize to 30x30 PNG)
 async function processImage(
@@ -127,6 +130,14 @@ async function processImage(
   // If it's an ICO file, just return it as-is (no conversion needed)
   if (originalUrl && isIcoFile(originalUrl, contentType)) {
     logger.info('Serving ICO file directly', {
+      originalUrl,
+      bufferSize: buffer.length,
+    });
+    return buffer;
+  }
+
+  if (originalUrl && isSvgFile(originalUrl, contentType)) {
+    logger.info('Serving SVG file directly', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -270,7 +281,7 @@ export async function getFavicon(
 
     // Determine the correct content type for caching and response
     const isIco = isIcoFile(imageUrl.toString(), contentType);
-    const responseContentType = isIco ? 'image/x-icon' : 'image/png';
+    const responseContentType = isIco ? 'image/x-icon' : contentType;
 
     // Cache the result with correct content type
     await setToCacheBinary(cacheKey, processedBuffer, responseContentType);

@@ -4,7 +4,20 @@ import { useQuery } from '@tanstack/react-query';
 
 import type { IChartProps } from '@openpanel/validation';
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { getChartColor } from '@/utils/theme';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Customized,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 interface OverviewLiveHistogramProps {
   projectId: string;
@@ -68,21 +81,70 @@ export function OverviewLiveHistogram({
   const minutes = (res.data?.series[0]?.data || []).slice(-30);
   const liveCount = countRes.data?.series[0]?.metrics?.sum ?? 0;
 
-  if (res.isInitialLoading || countRes.isInitialLoading) {
-    const staticArray = [
-      10, 25, 30, 45, 20, 5, 55, 18, 40, 12, 50, 35, 8, 22, 38, 42, 15, 28, 52,
-      5, 48, 14, 32, 58, 7, 19, 33, 56, 24, 5,
-    ];
+  // Transform data for Recharts
+  const chartData = minutes.map((minute) => ({
+    ...minute,
+    timestamp: new Date(minute.date).getTime(),
+    time: new Date(minute.date).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+  }));
 
+  const BarWithBorder = (borderHeight: number, borderColor: string) => {
+    return (props: any) => {
+      const { fill, x, y, width, height, payload } = props;
+      const isActive = payload?.count > 0;
+
+      return (
+        <g>
+          <rect
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+            stroke="none"
+            fill={isActive ? fill : 'var(--def-200)'}
+            rx={2}
+            ry={2}
+          />
+          {isActive && (
+            <rect
+              x={x}
+              y={y}
+              width={width}
+              height={borderHeight}
+              stroke="none"
+              fill={borderColor}
+              rx={2}
+              ry={2}
+            />
+          )}
+        </g>
+      );
+    };
+  };
+
+  // Custom component to draw dashed line at the top
+  const TopDashedLine = (props: any) => {
+    const { width, height } = props;
+    return (
+      <line
+        x1={0}
+        y1={0}
+        x2={width}
+        y2={0}
+        stroke="var(--border)"
+        strokeDasharray="3 3"
+        strokeWidth={1}
+      />
+    );
+  };
+
+  if (res.isInitialLoading || countRes.isInitialLoading) {
     return (
       <Wrapper count={0}>
-        {staticArray.map((percent, i) => (
-          <div
-            key={i as number}
-            className="flex-1 animate-pulse rounded-t-[2px] bg-def-200 shadow-sm"
-            style={{ height: `${percent}%` }}
-          />
-        ))}
+        <div className="h-full w-full animate-pulse bg-def-200 rounded" />
       </Wrapper>
     );
   }
@@ -93,38 +155,37 @@ export function OverviewLiveHistogram({
 
   return (
     <Wrapper count={liveCount}>
-      {minutes.map((minute) => {
-        return (
-          <Tooltip key={minute.date}>
-            <TooltipTrigger asChild>
-              <div
-                className={cn(
-                  'flex-1 rounded-t-[2px] transition-all ease-in-out hover:scale-105',
-                  minute.count === 0 ? 'bg-def-200 shadow-sm' : 'bg-highlight',
-                )}
-                style={{
-                  height:
-                    minute.count === 0
-                      ? '5%'
-                      : `${(minute.count / metrics!.max) * 100}%`,
-                  filter:
-                    minute.count > 0
-                      ? 'drop-shadow(0 0 4px rgba(59, 130, 246, 0.2)) drop-shadow(0 0 8px rgba(59, 130, 246, 0.1))'
-                      : 'none',
-                  boxShadow:
-                    minute.count > 0
-                      ? '0 0 8px rgba(59, 130, 246, 0.3), 0 0 16px rgba(59, 130, 246, 0.1)'
-                      : 'none',
-                }}
-              />
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <div>{minute.count} active users</div>
-              <div>@ {new Date(minute.date).toLocaleTimeString()}</div>
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
+      <div className="h-full w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={chartData}
+            margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
+          >
+            <Tooltip
+              content={CustomTooltip}
+              cursor={{
+                fill: 'var(--def-200)',
+              }}
+            />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={true}
+              vertical={false}
+              className="stroke-border"
+            />
+            <XAxis dataKey="time" axisLine={false} tickLine={false} hide />
+            <YAxis hide />
+            <Bar
+              dataKey="count"
+              fill="rgba(59, 121, 255, 0.2)"
+              isAnimationActive={false}
+              shape={BarWithBorder(3, 'rgba(59, 121, 255, 1)')}
+              activeBar={BarWithBorder(3, 'rgba(59, 121, 255, 1)')}
+            />
+            <Customized component={TopDashedLine} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </Wrapper>
   );
 }
@@ -146,3 +207,101 @@ function Wrapper({ children, count }: WrapperProps) {
     </div>
   );
 }
+
+// Custom tooltip component that uses portals to escape overflow hidden
+const CustomTooltip = ({ active, payload, coordinate }: any) => {
+  const [tooltipContainer] = useState(() => document.createElement('div'));
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const number = useNumber();
+
+  useEffect(() => {
+    document.body.appendChild(tooltipContainer);
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      if (document.body.contains(tooltipContainer)) {
+        document.body.removeChild(tooltipContainer);
+      }
+      document.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [tooltipContainer]);
+
+  if (!active || !payload || !payload.length) {
+    return null;
+  }
+
+  const data = payload[0].payload;
+
+  // Smart positioning to avoid going out of bounds
+  const tooltipWidth = 180; // min-w-[180px]
+  const tooltipHeight = 80; // approximate height
+  const offset = 10;
+
+  let left = mousePosition.x + offset;
+  let top = mousePosition.y - offset;
+
+  // Check if tooltip would go off the right edge
+  if (left + tooltipWidth > window.innerWidth) {
+    left = mousePosition.x - tooltipWidth - offset;
+  }
+
+  // Check if tooltip would go off the left edge
+  if (left < 0) {
+    left = offset;
+  }
+
+  // Check if tooltip would go off the top edge
+  if (top < 0) {
+    top = mousePosition.y + offset;
+  }
+
+  // Check if tooltip would go off the bottom edge
+  if (top + tooltipHeight > window.innerHeight) {
+    top = window.innerHeight - tooltipHeight - offset;
+  }
+
+  const tooltipContent = (
+    <div
+      className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-background/80 p-3 shadow-xl backdrop-blur-sm"
+      style={{
+        position: 'fixed',
+        top,
+        left,
+        pointerEvents: 'none',
+        zIndex: 1000,
+      }}
+    >
+      <div className="flex justify-between gap-8 text-muted-foreground">
+        <div>
+          {new Date(data.date).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </div>
+      </div>
+      <React.Fragment>
+        <div className="flex gap-2">
+          <div
+            className="w-[3px] rounded-full"
+            style={{ background: getChartColor(0) }}
+          />
+          <div className="col flex-1 gap-1">
+            <div className="flex items-center gap-1">Active users</div>
+            <div className="flex justify-between gap-8 font-mono font-medium">
+              <div className="row gap-1">
+                {number.formatWithUnit(data.count)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </React.Fragment>
+    </div>
+  );
+
+  return createPortal(tooltipContent, tooltipContainer);
+};

@@ -12,13 +12,13 @@ import { getPreviousMetric } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
-import { last } from 'ramda';
-import React from 'react';
+import { last, omit } from 'ramda';
+import React, { useState } from 'react';
 import {
+  Bar,
   CartesianGrid,
-  Customized,
+  ComposedChart,
   Line,
-  LineChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -97,47 +97,6 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       timestamp: new Date(item.date).getTime(),
     })) || [];
 
-  const xAxisProps = useXAxisProps({ interval });
-  const yAxisProps = useYAxisProps();
-
-  let dotIndex = undefined;
-  if (range === 'today') {
-    // Find closest index based on times
-    dotIndex = data.findIndex((item) => {
-      return isSameHour(item.date, new Date());
-    });
-  }
-
-  const { calcStrokeDasharray, handleAnimationEnd, getStrokeDasharray } =
-    useDashedStroke({
-      dotIndex,
-    });
-
-  const lastSerieDataItem = last(data)?.date || new Date();
-  const useDashedLastLine = (() => {
-    if (range === 'today') {
-      return true;
-    }
-
-    if (interval === 'hour') {
-      return isSameHour(lastSerieDataItem, new Date());
-    }
-
-    if (interval === 'day') {
-      return isSameDay(lastSerieDataItem, new Date());
-    }
-
-    if (interval === 'month') {
-      return isSameMonth(lastSerieDataItem, new Date());
-    }
-
-    if (interval === 'week') {
-      return isSameWeek(lastSerieDataItem, new Date());
-    }
-
-    return false;
-  })();
-
   return (
     <>
       <div className="relative -top-0.5 col-span-6 -m-4 mb-0 mt-0 md:m-0">
@@ -177,113 +136,11 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
           </div>
           <div className="w-full h-[150px]">
             {overviewQuery.isLoading && <Skeleton className="h-full w-full" />}
-            <TooltipProvider metric={activeMetric} interval={interval}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                  <Customized component={calcStrokeDasharray} />
-                  <Line
-                    dataKey="calcStrokeDasharray"
-                    legendType="none"
-                    animationDuration={0}
-                    onAnimationEnd={handleAnimationEnd}
-                  />
-                  <Tooltip />
-                  <YAxis
-                    {...yAxisProps}
-                    domain={[
-                      0,
-                      activeMetric.key === 'bounce_rate' ? 100 : 'dataMax',
-                    ]}
-                    width={25}
-                  />
-                  <XAxis {...xAxisProps} />
-
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    horizontal={true}
-                    vertical={false}
-                    className="stroke-border"
-                  />
-
-                  <Line
-                    key={`prev_${activeMetric.key}`}
-                    type="monotone"
-                    dataKey={`prev_${activeMetric.key}`}
-                    stroke={'var(--border)'}
-                    strokeWidth={2}
-                    isAnimationActive={false}
-                    dot={
-                      data.length > 90
-                        ? false
-                        : {
-                            stroke: 'var(--border)',
-                            fill: 'var(--def-100)',
-                            strokeWidth: 1.5,
-                            r: 2,
-                          }
-                    }
-                    activeDot={{
-                      stroke: 'var(--border)',
-                      fill: 'var(--def-100)',
-                      strokeWidth: 1.5,
-                      r: 3,
-                    }}
-                    filter="url(#rainbow-line-glow)"
-                  />
-
-                  <defs>
-                    <filter
-                      id="rainbow-line-glow"
-                      x="-20%"
-                      y="-20%"
-                      width="140%"
-                      height="140%"
-                    >
-                      <feGaussianBlur stdDeviation="5" result="blur" />
-                      <feComponentTransfer in="blur" result="dimmedBlur">
-                        <feFuncA type="linear" slope="0.5" />
-                      </feComponentTransfer>
-                      <feComposite
-                        in="SourceGraphic"
-                        in2="dimmedBlur"
-                        operator="over"
-                      />
-                    </filter>
-                  </defs>
-
-                  <Line
-                    key={activeMetric.key}
-                    type="monotone"
-                    dataKey={activeMetric.key}
-                    stroke={getChartColor(0)}
-                    strokeWidth={2}
-                    strokeDasharray={
-                      useDashedLastLine
-                        ? getStrokeDasharray(activeMetric.key)
-                        : undefined
-                    }
-                    isAnimationActive={false}
-                    dot={
-                      data.length > 90
-                        ? false
-                        : {
-                            stroke: getChartColor(0),
-                            fill: 'var(--def-100)',
-                            strokeWidth: 1.5,
-                            r: 3,
-                          }
-                    }
-                    activeDot={{
-                      stroke: getChartColor(0),
-                      fill: 'var(--def-100)',
-                      strokeWidth: 2,
-                      r: 4,
-                    }}
-                    filter="url(#rainbow-line-glow)"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </TooltipProvider>
+            <Chart
+              activeMetric={activeMetric}
+              interval={interval}
+              data={data}
+            />
           </div>
         </div>
       </div>
@@ -342,3 +199,121 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
     </>
   );
 });
+
+const BarWithBorder = (options: {
+  borderHeight: number;
+  border: string;
+  fill: string;
+  active: { border: string; fill: string };
+}) => {
+  return (props: any) => {
+    const { x, y, width, height, value, isActive } = props;
+
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          stroke="none"
+          fill={isActive ? options.active.fill : options.fill}
+        />
+        {value > 0 && (
+          <rect
+            x={x}
+            y={y - options.borderHeight - 2}
+            width={width}
+            height={options.borderHeight}
+            stroke="none"
+            fill={isActive ? options.active.border : options.border}
+          />
+        )}
+      </g>
+    );
+  };
+};
+
+const BarShape = BarWithBorder({
+  borderHeight: 2,
+  border: 'rgba(59, 121, 255, 1)',
+  fill: 'rgba(59, 121, 255, 0.3)',
+  active: {
+    border: 'rgba(59, 121, 255, 1)',
+    fill: 'rgba(59, 121, 255, 0.4)',
+  },
+});
+
+function Chart({
+  activeMetric,
+  interval,
+  data,
+}: {
+  activeMetric: (typeof TITLES)[number];
+  interval: IInterval;
+  data: RouterOutputs['overview']['stats']['series'];
+}) {
+  const xAxisProps = useXAxisProps({ interval });
+  const yAxisProps = useYAxisProps();
+  const [activeBar, setActiveBar] = useState(-1);
+  return (
+    <TooltipProvider metric={activeMetric} interval={interval}>
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart
+          data={data}
+          margin={{ top: 0, right: 0, left: 0, bottom: 10 }}
+          onMouseMove={(e) => {
+            setActiveBar(e.activeTooltipIndex ?? -1);
+          }}
+          barCategoryGap={2}
+        >
+          <Tooltip
+            cursor={{
+              stroke: 'var(--def-200)',
+              fill: 'var(--def-200)',
+            }}
+          />
+          <YAxis
+            {...yAxisProps}
+            domain={[0, activeMetric.key === 'bounce_rate' ? 100 : 'auto']}
+            width={25}
+          />
+          <XAxis {...omit(['scale', 'type'], xAxisProps)} />
+
+          <CartesianGrid
+            strokeDasharray="3 3"
+            horizontal={true}
+            vertical={false}
+            className="stroke-border"
+          />
+
+          <Line
+            key={`prev_${activeMetric.key}`}
+            type="step"
+            dataKey={`prev_${activeMetric.key}`}
+            stroke={'var(--border)'}
+            strokeWidth={2}
+            isAnimationActive={false}
+            dot={false}
+            activeDot={{
+              stroke: 'var(--foreground)',
+              fill: 'var(--def-100)',
+              strokeWidth: 1,
+              r: 2,
+            }}
+          />
+          <Bar
+            key={activeMetric.key}
+            dataKey={activeMetric.key}
+            radius={5}
+            strokeWidth={0}
+            isAnimationActive={false}
+            shape={(props: any) => (
+              <BarShape isActive={activeBar === props.index} {...props} />
+            )}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </TooltipProvider>
+  );
+}
