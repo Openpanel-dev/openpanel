@@ -25,7 +25,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
   const number = useNumber();
   const unique = uniqBy(prop('referrer_name'), data)
     .filter((i) => !!i.referrer_name.trim())
-    .slice(0, 5);
+    .slice(0, 8);
 
   return (
     <div className="col h-full card">

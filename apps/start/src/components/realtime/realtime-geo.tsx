@@ -28,7 +28,7 @@ export function RealtimeGeo({ projectId }: RealtimeGeoProps) {
   // Get unique countries for header icons
   const unique = uniqBy(prop('country'), data)
     .filter((i) => !!i.country.trim())
-    .slice(0, 10);
+    .slice(0, 8);
 
   return (
     <div className="col h-full card">

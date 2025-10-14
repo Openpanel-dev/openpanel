@@ -41,14 +41,15 @@ function validateUrl(raw?: string): URL | null {
 async function getFromCacheBinary(
   key: string,
 ): Promise<{ buffer: Buffer; contentType: string } | null> {
-  const redis = getRedisCache();
-  const [bufferBase64, contentType] = await Promise.all([
-    redis.get(key),
-    redis.get(`${key}:ctype`),
-  ]);
+  return null;
+  // const redis = getRedisCache();
+  // const [bufferBase64, contentType] = await Promise.all([
+  //   redis.get(key),
+  //   redis.get(`${key}:ctype`),
+  // ]);
 
-  if (!bufferBase64 || !contentType) return null;
-  return { buffer: Buffer.from(bufferBase64, 'base64'), contentType };
+  // if (!bufferBase64 || !contentType) return null;
+  // return { buffer: Buffer.from(bufferBase64, 'base64'), contentType };
 }
 
 async function setToCacheBinary(
@@ -221,7 +222,10 @@ async function processOgImage(
 // Check if URL is a direct image
 function isDirectImage(url: URL): boolean {
   const imageExtensions = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'];
-  return imageExtensions.some((ext) => url.pathname.endsWith(`.${ext}`));
+  return (
+    imageExtensions.some((ext) => url.pathname.endsWith(`.${ext}`)) ||
+    url.toString().includes('googleusercontent.com')
+  );
 }
 
 export async function getFavicon(
