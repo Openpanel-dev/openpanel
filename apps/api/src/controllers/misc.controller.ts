@@ -41,15 +41,14 @@ function validateUrl(raw?: string): URL | null {
 async function getFromCacheBinary(
   key: string,
 ): Promise<{ buffer: Buffer; contentType: string } | null> {
-  return null;
-  // const redis = getRedisCache();
-  // const [bufferBase64, contentType] = await Promise.all([
-  //   redis.get(key),
-  //   redis.get(`${key}:ctype`),
-  // ]);
+  const redis = getRedisCache();
+  const [bufferBase64, contentType] = await Promise.all([
+    redis.get(key),
+    redis.get(`${key}:ctype`),
+  ]);
 
-  // if (!bufferBase64 || !contentType) return null;
-  // return { buffer: Buffer.from(bufferBase64, 'base64'), contentType };
+  if (!bufferBase64 || !contentType) return null;
+  return { buffer: Buffer.from(bufferBase64, 'base64'), contentType };
 }
 
 async function setToCacheBinary(
