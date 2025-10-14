@@ -105,8 +105,6 @@ export function OverviewLiveHistogram({
             height={height}
             stroke="none"
             fill={isActive ? fill : 'var(--def-200)'}
-            rx={2}
-            ry={2}
           />
           {isActive && (
             <rect
@@ -116,8 +114,6 @@ export function OverviewLiveHistogram({
               height={borderHeight}
               stroke="none"
               fill={borderColor}
-              rx={2}
-              ry={2}
             />
           )}
         </g>
@@ -179,8 +175,8 @@ export function OverviewLiveHistogram({
               dataKey="count"
               fill="rgba(59, 121, 255, 0.2)"
               isAnimationActive={false}
-              shape={BarWithBorder(3, 'rgba(59, 121, 255, 1)')}
-              activeBar={BarWithBorder(3, 'rgba(59, 121, 255, 1)')}
+              shape={BarWithBorder(2, 'rgba(59, 121, 255, 1)')}
+              activeBar={BarWithBorder(2, 'rgba(59, 121, 255, 1)')}
             />
             <Customized component={TopDashedLine} />
           </BarChart>

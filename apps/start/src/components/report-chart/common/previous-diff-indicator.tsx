@@ -29,7 +29,7 @@ interface PreviousDiffIndicatorProps {
   children?: React.ReactNode;
   inverted?: boolean;
   className?: string;
-  size?: 'sm' | 'lg' | 'md';
+  size?: 'sm' | 'lg' | 'md' | 'xs';
 }
 
 export function PreviousDiffIndicator({
@@ -81,6 +81,7 @@ export function PreviousDiffIndicator({
             variant,
             size === 'lg' && 'size-8',
             size === 'md' && 'size-6',
+            size === 'xs' && 'size-3',
           )}
         >
           {renderIcon()}
@@ -96,7 +97,7 @@ interface PreviousDiffIndicatorPureProps {
   diff?: number | null | undefined;
   state?: string | null | undefined;
   inverted?: boolean;
-  size?: 'sm' | 'lg' | 'md';
+  size?: 'sm' | 'lg' | 'md' | 'xs';
   className?: string;
   showPrevious?: boolean;
 }
@@ -145,6 +146,7 @@ export function PreviousDiffIndicatorPure({
           variant,
           size === 'lg' && 'size-8',
           size === 'md' && 'size-6',
+          size === 'xs' && 'size-3',
         )}
       >
         {renderIcon()}

@@ -166,7 +166,7 @@ export default function OverviewTopEvents({
               ))}
           </WidgetButtons>
         </WidgetHead>
-        <WidgetBody>
+        <WidgetBody className="p-3">
           <ReportChart
             options={{ hideID: true, columns: ['Event', 'Count'] }}
             report={{
