@@ -19,9 +19,9 @@ const MAX_BYTES = 1_000_000; // 1MB cap
 const USER_AGENT = 'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
 
 // Helper functions
-function createCacheKey(url: string): string {
+function createCacheKey(url: string, prefix = 'favicon'): string {
   const hash = crypto.createHash('sha256').update(url).digest('hex');
-  return `favicon:${hash}`;
+  return `${prefix}:v2:${hash}`;
 }
 
 function validateUrl(raw?: string): URL | null {
@@ -415,7 +415,7 @@ export async function getOgImage(
     if (!url) {
       return getFavicon(request, reply);
     }
-    const cacheKey = `og:${createCacheKey(url.toString())}`;
+    const cacheKey = createCacheKey(url.toString(), 'og');
 
     // Check cache first
     const cached = await getFromCacheBinary(cacheKey);
