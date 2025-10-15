@@ -65,7 +65,6 @@ export function getCommonPinningStyles<TData>({
     right: isPinned === 'right' ? `${column.getAfter('right')}px` : undefined,
     opacity: isPinned ? 0.97 : 1,
     position: isPinned ? 'sticky' : 'relative',
-    background: isPinned ? 'var(--background)' : 'var(--background)',
     zIndex: isPinned ? 1 : 0,
     // Force fixed width for pinned columns, let others auto-size
     width: isPinned ? `${pinnedColumnWidth}px` : 'auto',
