@@ -1,24 +1,12 @@
 import { LogoSquare } from '@/components/logo';
 import {
-  SellingPoint,
-  SellingPointIcon,
-} from '@/components/shared/selling-points';
-import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { motion } from 'framer-motion';
-import {
-  BarChart3,
-  CheckCircle,
-  DollarSign,
-  Globe,
-  Shield,
-  TrendingUp,
-} from 'lucide-react';
+import { SellingPoint } from './selling-points';
 
 const sellingPoints = [
   {
@@ -26,9 +14,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-1.png"
-        title="Analytics You Control."
-        icon={<SellingPointIcon icon={CheckCircle} />}
-        description="Self-hosted analytics built for teams who value privacy, speed, and freedom."
+        title="Best open-source alternative"
+        description="Mixpanel to expensive, Google Analytics has no privacy, Amplitude old and boring"
       />
     ),
   },
@@ -37,9 +24,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-2.png"
-        title="Own Your Data. Understand Your Users."
-        icon={<SellingPointIcon icon={Shield} />}
-        description="Open-source, event-based analytics without tracking bloat or data sharing."
+        title="Fast and reliable"
+        description="Never miss a beat with our real-time analytics"
       />
     ),
   },
@@ -48,9 +34,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-3.png"
-        title="Privacy-First Product Analytics."
-        icon={<SellingPointIcon icon={TrendingUp} />}
-        description="Beautiful insights. No cookies. No third-party scripts."
+        title="Easy to use"
+        description="Compared to other tools we have kept it simple"
       />
     ),
   },
@@ -59,9 +44,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-4.png"
-        title="Open Analytics. Zero Compromise."
-        icon={<SellingPointIcon icon={Globe} />}
-        description="Understand user behavior—without giving away your users."
+        title="Privacy by default"
+        description="We have built our platform with privacy at its heart"
       />
     ),
   },
@@ -70,9 +54,8 @@ const sellingPoints = [
     render: () => (
       <SellingPoint
         bgImage="/img-5.png"
-        title="Faster. Fairer. Fully Yours."
-        icon={<SellingPointIcon icon={BarChart3} />}
-        description="Mixpanel-style analytics you actually own."
+        title="Open source"
+        description="You can inspect the code and self-host if you choose"
       />
     ),
   },

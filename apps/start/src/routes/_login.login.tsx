@@ -2,10 +2,10 @@ import { Or } from '@/components/auth/or';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
 import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
+import { LogoSquare } from '@/components/logo';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { PAGE_TITLES, createTitle } from '@/utils/title';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import { z } from 'zod';
 
@@ -24,13 +24,9 @@ function LoginPage() {
   const { error, correlationId } = Route.useSearch();
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="col gap-8 w-full text-left"
-    >
+    <div className="col gap-8 w-full text-left">
       <div>
+        <LogoSquare className="size-12 mb-8 md:hidden" />
         <h1 className="text-3xl font-bold text-foreground mb-2">Sign in</h1>
         <p className="text-muted-foreground">
           Don't have an account?{' '}
@@ -66,10 +62,12 @@ function LoginPage() {
         </Alert>
       )}
 
-      <SignInEmailForm />
+      <div className="space-y-4">
+        <SignInGoogle type="sign-in" />
+        <SignInGithub type="sign-in" />
+      </div>
       <Or />
-      <SignInGoogle type="sign-in" />
-      <SignInGithub type="sign-in" />
-    </motion.div>
+      <SignInEmailForm />
+    </div>
   );
 }

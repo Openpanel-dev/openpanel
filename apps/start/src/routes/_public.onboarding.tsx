@@ -3,11 +3,13 @@ import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { LogoSquare } from '@/components/logo';
 import { useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createEntityTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { motion } from 'framer-motion';
+import { MailIcon } from 'lucide-react';
 import { z } from 'zod';
 const validateSearch = z.object({
   inviteId: z.string().optional(),
@@ -52,13 +54,9 @@ function Component() {
     ),
   );
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
-      className="col gap-8 w-full text-left"
-    >
+    <div className="col gap-8 w-full text-left">
       <div>
+        <LogoSquare className="size-12 mb-8 md:hidden" />
         <h1 className="text-3xl font-bold text-foreground mb-2">
           Create an account
         </h1>
@@ -117,9 +115,12 @@ function Component() {
 
         <Or className="my-6" />
 
-        <h2 className="text-xl font-semibold mb-4">Sign up with email</h2>
+        <div className="flex items-center gap-2 font-semibold mb-4 text-lg">
+          <MailIcon className="size-4" />
+          Sign up with email
+        </div>
         <SignUpEmailForm inviteId={inviteId} />
       </div>
-    </motion.div>
+    </div>
   );
 }
