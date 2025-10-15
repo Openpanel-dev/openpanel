@@ -22,10 +22,7 @@ export function SignUpEmailForm({
     trpc.auth.signUpEmail.mutationOptions({
       onSuccess() {
         toast.success('Successfully signed up');
-        router.invalidate();
-        router.navigate({
-          to: '/onboarding/project',
-        });
+        window.location.href = '/onboarding/project';
       },
       onError(error) {
         toast.error(error.message);
