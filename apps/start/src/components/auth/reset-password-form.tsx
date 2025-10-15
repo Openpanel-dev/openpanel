@@ -43,7 +43,17 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   return (
     <div className="col gap-8">
-      <h3 className="text-2xl font-medium text-left">Reset your password</h3>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground mb-2">
+          Reset your password
+        </h1>
+        <p className="text-muted-foreground">
+          Already have an account?{' '}
+          <a href="/login" className="underline">
+            Sign in
+          </a>
+        </p>
+      </div>
       <form onSubmit={onSubmit} className="col gap-6">
         <InputWithLabel
           label="New password"

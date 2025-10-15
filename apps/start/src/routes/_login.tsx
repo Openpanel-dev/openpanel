@@ -17,7 +17,7 @@ function AuthLayout() {
       <div className="hidden md:block">
         <LoginLeftPanel />
       </div>
-      <div className="center-center w-full max-w-md mx-auto pr-4">
+      <div className="center-center w-full max-w-md mx-auto px-4">
         <Outlet />
       </div>
     </div>
