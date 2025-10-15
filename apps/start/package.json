@@ -89,6 +89,7 @@
     "d3": "^7.8.5",
     "date-fns": "^3.3.1",
     "debounce": "^2.2.0",
+    "embla-carousel-autoplay": "^8.6.0",
     "embla-carousel-react": "8.0.0-rc22",
     "flag-icons": "^7.1.0",
     "framer-motion": "^11.0.28",

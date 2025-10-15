@@ -4,10 +4,6 @@ import { CheckboxItem } from '@/components/forms/checkbox-item';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import FullPageLoadingState from '@/components/full-page-loading-state';
-import {
-  OnboardingDescription,
-  OnboardingLayout,
-} from '@/components/onboarding/onboarding-layout';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
@@ -35,7 +31,7 @@ import { z } from 'zod';
 const validateSearch = z.object({
   inviteId: z.string().optional(),
 });
-export const Route = createFileRoute('/onboarding/project')({
+export const Route = createFileRoute('/_steps/onboarding/project')({
   component: Component,
   validateSearch,
   beforeLoad: async ({ context }) => {
@@ -126,14 +122,7 @@ function Component() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
-      <OnboardingLayout
-        title="What are you tracking?"
-        description={
-          <OnboardingDescription>
-            Let us know what you want to track so we can help you get started.
-          </OnboardingDescription>
-        }
-      >
+      <div className="p-4">
         <div className="grid gap-4 md:grid-cols-2">
           {organizations.length > 0 ? (
             <Controller
@@ -197,9 +186,10 @@ function Component() {
             placeholder="Eg. The Music App"
             error={form.formState.errors.project?.message}
             {...form.register('project')}
+            className="col-span-2"
           />
         </div>
-        <div className="flex flex-col divide-y">
+        <div className="flex flex-col divide-y mt-4">
           <Controller
             name="website"
             control={form.control}
@@ -299,19 +289,19 @@ function Component() {
             )}
           />
         </div>
+      </div>
 
-        <ButtonContainer>
-          <div />
-          <Button
-            type="submit"
-            size="lg"
-            className="min-w-28 self-start"
-            loading={mutation.isPending}
-          >
-            Next
-          </Button>
-        </ButtonContainer>
-      </OnboardingLayout>
+      <ButtonContainer className="p-4 border-t">
+        <div />
+        <Button
+          type="submit"
+          size="lg"
+          className="min-w-28 self-start"
+          loading={mutation.isPending}
+        >
+          Next
+        </Button>
+      </ButtonContainer>
     </form>
   );
 }

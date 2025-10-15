@@ -10,14 +10,15 @@ type Props = {
 
 const ConnectApp = ({ client }: Props) => {
   return (
-    <div className="rounded-lg border p-4 md:p-6">
-      <div className="flex items-center gap-2 text-2xl capitalize">
-        <SmartphoneIcon />
+    <div>
+      <div className="flex items-center gap-2 text-xl font-bold capitalize mb-1">
+        <SmartphoneIcon className="size-4" />
         App
       </div>
-      <p className="mt-2  text-muted-foreground">
+      <div className="text-muted-foreground mb-2">
         Pick a framework below to get started.
-      </p>
+      </div>
+
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {frameworks
           .filter((framework) => framework.type.includes('app'))

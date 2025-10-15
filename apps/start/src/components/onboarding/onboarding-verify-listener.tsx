@@ -18,7 +18,12 @@ type Props = {
   onVerified: (verified: boolean) => void;
 };
 
-const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
+const VerifyListener = ({
+  client,
+  events: _events,
+  onVerified,
+  project,
+}: Props) => {
   const [events, setEvents] = useState<IServiceEvent[]>(_events ?? []);
   useWS<IServiceEvent>(
     `/live/events/${client?.projectId}?type=received`,
@@ -47,22 +52,16 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
   };
 
   return (
-    <div className="rounded-lg border p-4 md:p-6">
-      <div className="flex items-center gap-2 text-2xl capitalize">
-        {client?.name}
-      </div>
-
+    <div>
       <div
         className={cn(
-          'my-6 flex gap-6 rounded-xl p-4 md:p-6',
-          isConnected
-            ? 'bg-emerald-100 dark:bg-emerald-700'
-            : 'bg-blue-100 dark:bg-blue-700',
+          'flex gap-6 rounded-xl p-4 md:p-6',
+          isConnected ? 'bg-emerald-100 dark:bg-emerald-700' : 'bg-blue-500/10',
         )}
       >
         {renderIcon()}
         <div className="flex-1">
-          <div className="text-lg font-semibold leading-normal">
+          <div className="text-lg font-semibold leading-normal text-foreground/90">
             {isConnected ? 'Success' : 'Waiting for events'}
           </div>
           {isConnected ? (
@@ -84,9 +83,8 @@ const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
               ))}
             </div>
           ) : (
-            <div className="">
-              Verify that your events works before submitting any changes to App
-              Store/Google Play
+            <div className="text-foreground/50">
+              Verify that your implementation works.
             </div>
           )}
         </div>

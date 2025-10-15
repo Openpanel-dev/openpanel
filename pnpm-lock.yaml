@@ -550,6 +550,9 @@ importers:
       debounce:
         specifier: ^2.2.0
         version: 2.2.0
+      embla-carousel-autoplay:
+        specifier: ^8.6.0
+        version: 8.6.0(embla-carousel@8.0.0-rc22)
       embla-carousel-react:
         specifier: 8.0.0-rc22
         version: 8.0.0-rc22(react@19.1.1)
@@ -9795,6 +9798,11 @@ packages:
 
   electron-to-chromium@1.5.49:
     resolution: {integrity: sha512-ZXfs1Of8fDb6z7WEYZjXpgIRF6MEu8JdeGA0A40aZq6OQbS+eJpnnV49epZRna2DU/YsEjSQuGtQPPtvt6J65A==}
+
+  embla-carousel-autoplay@8.6.0:
+    resolution: {integrity: sha512-OBu5G3nwaSXkZCo1A6LTaFMZ8EpkYbwIaH+bPqdBnDGQ2fh4+NbzjXjs2SktoPNKCtflfVMc75njaDHOYXcrsA==}
+    peerDependencies:
+      embla-carousel: 8.6.0
 
   embla-carousel-react@8.0.0-rc22:
     resolution: {integrity: sha512-NwmISV0Cw9XVo76Vquz3hJaeZe7qoCRtrzStxlEY7qfZD8WR/f4JlQAso35URTs1BeYVhcuClflelioo+Zmidg==}
@@ -24696,6 +24704,10 @@ snapshots:
       jake: 10.8.7
 
   electron-to-chromium@1.5.49: {}
+
+  embla-carousel-autoplay@8.6.0(embla-carousel@8.0.0-rc22):
+    dependencies:
+      embla-carousel: 8.0.0-rc22
 
   embla-carousel-react@8.0.0-rc22(react@19.1.1):
     dependencies:

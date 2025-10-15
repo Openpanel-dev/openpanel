@@ -13,16 +13,18 @@ type Props = {
 const ConnectBackend = ({ client }: Props) => {
   const context = useAppContext();
   return (
-    <div className="col gap-4 rounded-lg border p-4 md:p-6">
-      <div className="flex items-center gap-2 text-2xl capitalize">
-        <ServerIcon />
-        Backend
-      </div>
-
+    <>
       <div>
-        <div className="text-lg font-medium mb-2">
-          Try with a basic curl command
+        <div>
+          <div className="flex items-center gap-2 text-xl font-bold capitalize mb-1">
+            <ServerIcon className="size-4" />
+            Backend
+          </div>
+          <div className="text-muted-foreground mb-2">
+            Try with a basic curl command
+          </div>
         </div>
+
         <Syntax
           language="bash"
           className="border"
@@ -77,7 +79,7 @@ const ConnectBackend = ({ client }: Props) => {
           </a>
         </p>
       </div>
-    </div>
+    </>
   );
 };
 

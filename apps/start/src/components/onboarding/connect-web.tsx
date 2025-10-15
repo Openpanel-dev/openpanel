@@ -11,16 +11,16 @@ type Props = {
 
 const ConnectWeb = ({ client }: Props) => {
   return (
-    <div className="rounded-lg border p-4 md:p-6 col gap-4">
-      <div className="flex items-center gap-2 text-2xl capitalize">
-        <MonitorIcon />
-        Website
-      </div>
-
+    <>
       <div>
-        <div className="text-lg font-medium mb-2">
+        <div className="flex items-center gap-2 text-xl font-bold capitalize mb-1">
+          <MonitorIcon className="size-4" />
+          Website
+        </div>
+        <div className="text-muted-foreground mb-2">
           Paste the script to your website
         </div>
+
         <Syntax
           className="border"
           code={`<script>
@@ -71,7 +71,7 @@ const ConnectWeb = ({ client }: Props) => {
           </a>
         </p>
       </div>
-    </div>
+    </>
   );
 };
 

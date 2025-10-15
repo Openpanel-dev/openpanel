@@ -2,19 +2,19 @@ import { ButtonContainer } from '@/components/button-container';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { CurlPreview } from '@/components/onboarding/curl-preview';
-import {
-  OnboardingDescription,
-  OnboardingLayout,
-} from '@/components/onboarding/onboarding-layout';
 import VerifyListener from '@/components/onboarding/onboarding-verify-listener';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
+import { PAGE_TITLES, createEntityTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
 
-export const Route = createFileRoute('/onboarding/$projectId/verify')({
+export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
+  head: () => ({
+    meta: [{ title: createEntityTitle('Verify', PAGE_TITLES.ONBOARDING) }],
+  }),
   beforeLoad: async ({ context }) => {
     if (!context.session.session) {
       throw redirect({ to: '/onboarding' });
@@ -55,15 +55,7 @@ function Component() {
   }
 
   return (
-    <OnboardingLayout
-      title="Verify that you get events"
-      description={
-        <OnboardingDescription>
-          Deploy your changes, as soon as you see events here, you&apos;re all
-          set!
-        </OnboardingDescription>
-      }
-    >
+    <div className="p-4 col gap-8">
       <VerifyListener
         project={project}
         client={client}
@@ -113,6 +105,6 @@ function Component() {
           </LinkButton>
         </div>
       </ButtonContainer>
-    </OnboardingLayout>
+    </div>
   );
 }

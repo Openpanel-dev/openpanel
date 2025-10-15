@@ -5,18 +5,20 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import ConnectApp from '@/components/onboarding/connect-app';
 import ConnectBackend from '@/components/onboarding/connect-backend';
 import ConnectWeb from '@/components/onboarding/connect-web';
-import {
-  OnboardingDescription,
-  OnboardingLayout,
-} from '@/components/onboarding/onboarding-layout';
 import { LinkButton } from '@/components/ui/button';
 import { useClientSecret } from '@/hooks/use-client-secret';
 import { useTRPC } from '@/integrations/trpc/react';
+import { PAGE_TITLES, createEntityTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { LockIcon, XIcon } from 'lucide-react';
 
-export const Route = createFileRoute('/onboarding/$projectId/connect')({
+export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
+  head: () => ({
+    meta: [
+      { title: createEntityTitle('Connect data', PAGE_TITLES.ONBOARDING) },
+    ],
+  }),
   beforeLoad: async ({ context }) => {
     if (!context.session.session) {
       throw redirect({ to: '/onboarding' });
@@ -53,22 +55,16 @@ function Component() {
   }
 
   return (
-    <OnboardingLayout
-      title="Setup your data sources"
-      description={
-        <OnboardingDescription>
-          Let&apos;s connect your data sources to OpenPanel
-        </OnboardingDescription>
-      }
-    >
-      <div className="flex flex-col gap-4 rounded-xl border p-4 md:p-6">
-        <div className="flex items-center gap-2 text-2xl capitalize">
-          <LockIcon />
+    <div className="p-4 col gap-8">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2 text-xl font-bold capitalize">
+          <LockIcon className="size-4" />
           Credentials
         </div>
         <CopyInput label="Client ID" value={client.id} />
         <CopyInput label="Secret" value={secret} />
       </div>
+      <div className="h-px bg-muted -mx-4" />
       {project?.types?.map((type) => {
         const Component = {
           website: ConnectWeb,
@@ -89,6 +85,6 @@ function Component() {
           Next
         </LinkButton>
       </ButtonContainer>
-    </OnboardingLayout>
+    </div>
   );
 }

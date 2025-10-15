@@ -102,7 +102,7 @@ const TagInput = ({
     <div
       ref={scope}
       className={cn(
-        'inline-flex w-full flex-wrap items-center gap-2 rounded-md border border-input p-1 px-3 ring-offset-background has-[input:focus]:ring-2 has-[input:focus]:ring-ring has-[input:focus]:ring-offset-1',
+        'inline-flex w-full flex-wrap items-center gap-2 rounded-md border border-input p-1 px-3 ring-offset-background has-[input:focus]:ring-2 has-[input:focus]:ring-ring has-[input:focus]:ring-offset-1 bg-card',
         !!error && 'border-destructive',
       )}
     >

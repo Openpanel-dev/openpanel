@@ -3,7 +3,7 @@ import { pushModal } from '@/modals';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zSignInEmail } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouter } from '@tanstack/react-router';
 import { type SubmitHandler, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -15,11 +15,13 @@ type IForm = z.infer<typeof validator>;
 
 export function SignInEmailForm() {
   const navigate = useNavigate();
+  const router = useRouter();
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
       onSuccess() {
         toast.success('Successfully signed in');
+        router.invalidate();
         navigate({
           to: '/',
         });
@@ -43,20 +45,23 @@ export function SignInEmailForm() {
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-6">
-      <h3 className="text-2xl font-medium text-left">Sign in with email</h3>
+    <form onSubmit={form.handleSubmit(onSubmit)} className="col gap-4">
       <InputWithLabel
         {...form.register('email')}
         error={form.formState.errors.email?.message}
         label="Email"
+        className="bg-def-100/50 border-def-300 focus:border-highlight focus:ring-highlight/20"
       />
       <InputWithLabel
         {...form.register('password')}
         error={form.formState.errors.password?.message}
         label="Password"
         type="password"
+        className="bg-def-100/50 border-def-300 focus:border-highlight focus:ring-highlight/20"
       />
-      <Button type="submit">Sign in</Button>
+      <Button type="submit" size="lg">
+        Sign in
+      </Button>
       <button
         type="button"
         onClick={() =>
@@ -64,7 +69,7 @@ export function SignInEmailForm() {
             email: form.getValues('email'),
           })
         }
-        className="text-sm text-muted-foreground hover:underline"
+        className="text-sm text-muted-foreground hover:text-highlight hover:underline transition-colors duration-200 text-center mt-2"
       >
         Forgot password?
       </button>

@@ -22,7 +22,7 @@ export function SignInGithub({
   };
   return (
     <Button
-      className="md:flex-1"
+      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm hover:shadow-md transition-all duration-200 [&_svg]:shrink-0"
       size="lg"
       onClick={() =>
         mutation.mutate({

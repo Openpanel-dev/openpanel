@@ -22,6 +22,7 @@ export function SignUpEmailForm({
     trpc.auth.signUpEmail.mutationOptions({
       onSuccess() {
         toast.success('Successfully signed up');
+        router.invalidate();
         router.navigate({
           to: '/onboarding/project',
         });
@@ -41,8 +42,8 @@ export function SignUpEmailForm({
     });
   };
   return (
-    <form className="col gap-8" onSubmit={form.handleSubmit(onSubmit)}>
-      <div className="row gap-8 w-full flex-1">
+    <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <div className="row gap-4 w-full flex-1">
         <InputWithLabel
           label="First name"
           className="flex-1"
@@ -65,7 +66,7 @@ export function SignUpEmailForm({
         {...form.register('email')}
         error={form.formState.errors.email?.message}
       />
-      <div className="row gap-8 w-full">
+      <div className="row gap-4 w-full">
         <InputWithLabel
           label="Password"
           className="flex-1"
@@ -81,12 +82,9 @@ export function SignUpEmailForm({
           error={form.formState.errors.confirmPassword?.message}
         />
       </div>
-      <div className="grid grid-cols-2 gap-8">
-        <div />
-        <Button type="submit" className="w-full" size="lg">
-          Create account
-        </Button>
-      </div>
+      <Button type="submit" className="w-full" size="lg">
+        Create account
+      </Button>
     </form>
   );
 }

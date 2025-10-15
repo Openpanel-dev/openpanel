@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
+import Autoplay from 'embla-carousel-autoplay';
 import useEmblaCarousel from 'embla-carousel-react';
 import type { UseEmblaCarouselType } from 'embla-carousel-react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
@@ -128,6 +129,11 @@ const Carousel = React.forwardRef<
           scrollNext,
           canScrollPrev,
           canScrollNext,
+          plugins: [
+            Autoplay({
+              delay: 2000,
+            }),
+          ],
         }}
       >
         <div
@@ -202,7 +208,7 @@ const CarouselPrevious = React.forwardRef<
       variant={variant}
       size={size}
       className={cn(
-        'absolute  h-10 w-10 rounded-full',
+        'absolute  h-10 w-10 rounded-full hover:scale-100 hover:translate-y-[-50%] transition-all duration-200',
         orientation === 'horizontal'
           ? 'left-6 top-1/2 -translate-y-1/2'
           : '-top-12 left-1/2 -translate-x-1/2 rotate-90',
@@ -231,7 +237,7 @@ const CarouselNext = React.forwardRef<
       variant={variant}
       size={size}
       className={cn(
-        'absolute h-10 w-10 rounded-full',
+        'absolute h-10 w-10 rounded-full hover:scale-100 hover:translate-y-[-50%] transition-all duration-200',
         orientation === 'horizontal'
           ? 'right-6 top-1/2 -translate-y-1/2'
           : '-bottom-12 left-1/2 -translate-x-1/2 rotate-90',

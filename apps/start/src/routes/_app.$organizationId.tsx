@@ -18,6 +18,7 @@ const IGNORE_ORGANIZATION_IDS = [
   'manifest.json',
   'sw.js',
   'service-worker.js',
+  'onboarding',
 ];
 
 export const Route = createFileRoute('/_app/$organizationId')({

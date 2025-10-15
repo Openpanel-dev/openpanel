@@ -3,9 +3,9 @@ import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
 import { SignInGithub } from '@/components/auth/sign-in-github';
 import { SignInGoogle } from '@/components/auth/sign-in-google';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { LinkButton } from '@/components/ui/button';
 import { PAGE_TITLES, createTitle } from '@/utils/title';
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import { z } from 'zod';
 
@@ -24,43 +24,52 @@ function LoginPage() {
   const { error, correlationId } = Route.useSearch();
 
   return (
-    <div className="flex h-full center-center w-full">
-      <div className="col gap-8 max-w-md w-full">
-        {error && (
-          <Alert variant="destructive" className="text-left bg-background">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>
-              <p>{error}</p>
-              {correlationId && (
-                <>
-                  <p>Correlation ID: {correlationId}</p>
-                  <p className="mt-2">
-                    Contact us if you have any issues.{' '}
-                    <a
-                      className="underline font-medium"
-                      href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
-                    >
-                      hello[at]openpanel.dev
-                    </a>
-                  </p>
-                </>
-              )}
-            </AlertDescription>
-          </Alert>
-        )}
-        <div className="col md:row gap-4">
-          <SignInGithub type="sign-in" />
-          <SignInGoogle type="sign-in" />
-        </div>
-        <Or />
-        <div className="card p-8">
-          <SignInEmailForm />
-        </div>
-        <LinkButton variant={'outline'} size="lg" href="/onboarding">
-          No account? Sign up today
-        </LinkButton>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      className="col gap-8 w-full text-left"
+    >
+      <div>
+        <h1 className="text-3xl font-bold text-foreground mb-2">Sign in</h1>
+        <p className="text-muted-foreground">
+          Don't have an account?{' '}
+          <a href="/onboarding" className="underline">
+            Create one today
+          </a>
+        </p>
       </div>
-    </div>
+      {error && (
+        <Alert
+          variant="destructive"
+          className="text-left bg-destructive/10 border-destructive/20 mb-6"
+        >
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            <p>{error}</p>
+            {correlationId && (
+              <>
+                <p>Correlation ID: {correlationId}</p>
+                <p className="mt-2">
+                  Contact us if you have any issues.{' '}
+                  <a
+                    className="underline font-medium"
+                    href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
+                  >
+                    hello[at]openpanel.dev
+                  </a>
+                </p>
+              </>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <SignInEmailForm />
+      <Or />
+      <SignInGoogle type="sign-in" />
+      <SignInGithub type="sign-in" />
+    </motion.div>
   );
 }

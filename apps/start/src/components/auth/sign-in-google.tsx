@@ -22,7 +22,7 @@ export function SignInGoogle({
   };
   return (
     <Button
-      className="md:flex-1"
+      className="w-full bg-background hover:bg-def-100 border border-def-300 text-foreground shadow-sm hover:shadow-md transition-all duration-200 [&_svg]:shrink-0"
       size="lg"
       onClick={() =>
         mutation.mutate({
