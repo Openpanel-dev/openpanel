@@ -4,6 +4,9 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { subMonths } from 'date-fns';
 import { useState } from 'react';
 
+import { Input } from '@/components/ui/input';
+import { formatDate } from '@/utils/date';
+import { CheckIcon, XIcon } from 'lucide-react';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
@@ -20,9 +23,9 @@ export default function DateRangerPicker({
   const { isBelowSm } = useBreakpoint('sm');
   const [startDate, setStartDate] = useState(initialStartDate);
   const [endDate, setEndDate] = useState(initialEndDate);
+
   return (
-    <ModalContent className="max-w-[540px]!">
-      <ModalHeader title="Pick a date range" className="mb-0" />
+    <ModalContent className="p-4 md:p-8 min-w-fit">
       <Calendar
         initialFocus
         mode="range"
@@ -44,22 +47,39 @@ export default function DateRangerPicker({
           }
         }}
         numberOfMonths={isBelowSm ? 1 : 2}
-        className="mx-auto min-h-[350px] [&_table]:mx-auto [&_table]:w-auto"
+        className="mx-auto min-h-[310px] [&_table]:mx-auto [&_table]:w-auto p-0"
       />
-      <Button
-        className="mt-8"
-        onClick={() => {
-          popModal();
-          if (startDate && endDate) {
-            onChange({
-              startDate: startDate,
-              endDate: endDate,
-            });
-          }
-        }}
-      >
-        Select
-      </Button>
+      <div className="col flex-col-reverse md:row gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => popModal()}
+          icon={XIcon}
+        >
+          Cancel
+        </Button>
+
+        {startDate && endDate && (
+          <Button
+            type="button"
+            className="md:ml-auto"
+            onClick={() => {
+              popModal();
+              if (startDate && endDate) {
+                onChange({
+                  startDate: startDate,
+                  endDate: endDate,
+                });
+              }
+            }}
+            icon={startDate && endDate ? CheckIcon : XIcon}
+          >
+            {startDate && endDate
+              ? `Select ${formatDate(startDate)} - ${formatDate(endDate)}`
+              : 'Cancel'}
+          </Button>
+        )}
+      </div>
     </ModalContent>
   );
 }
