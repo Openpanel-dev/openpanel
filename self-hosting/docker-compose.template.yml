@@ -16,6 +16,11 @@ services:
         condition: service_healthy
       op-api:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "3m"
+        max-file: 3
 
   op-db:
     image: postgres:14-alpine
@@ -33,6 +38,11 @@ services:
     # Uncomment to expose ports
     # ports:
     #   - 5432:5432
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: 3
 
   op-kv:
     image: redis:7.2.5-alpine
@@ -48,6 +58,11 @@ services:
     # Uncomment to expose ports
     # ports:
     #   - 6379:6379
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: 3
 
   op-ch:
     image: clickhouse/clickhouse-server:24.3.2-alpine
@@ -67,6 +82,11 @@ services:
       nofile:
         soft: 262144
         hard: 262144
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: 3
 
   op-api:
     image: carabala/hub:openpanel-api-latest
@@ -92,6 +112,11 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: 3
 
   op-dashboard:
     image: carabala/hub:openpanel-dashboard-latest
@@ -106,6 +131,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: 3
 
   op-worker:
     image: lindesvard/openpanel-worker:latest
@@ -123,6 +153,11 @@ services:
     deploy:
       mode: replicated
       replicas: $OP_WORKER_REPLICAS
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: 3
 
 volumes:
   op-db-data:
