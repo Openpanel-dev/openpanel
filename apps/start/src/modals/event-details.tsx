@@ -18,8 +18,14 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { ArrowLeftIcon, ArrowRightIcon, FilterIcon, XIcon } from 'lucide-react';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  FilterIcon,
+  Loader2Icon,
+  XIcon,
+} from 'lucide-react';
 import { omit } from 'ramda';
 import { useState } from 'react';
 import { popModal } from '.';
@@ -67,13 +73,18 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
   };
   const [widget, setWidget] = useState(TABS.essentials);
   const trpc = useTRPC();
-  const query = useSuspenseQuery(
+  const query = useQuery(
     trpc.event.details.queryOptions({
       id,
       projectId,
       createdAt,
     }),
   );
+
+  if (!query.data) {
+    return <EventDetailsSkeleton />;
+  }
+
   const { event, session } = query.data;
 
   const profile = event.profile;
@@ -173,7 +184,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
           <div className="row items-center justify-between">
             <div className="title">{event.name}</div>
             <div className="row items-center gap-2 pr-2">
-              <Button
+              {/* <Button
                 size="icon"
                 variant={'ghost'}
                 onClick={() => {
@@ -196,7 +207,7 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
                 }}
               >
                 <ArrowRightIcon className="size-4" />
-              </Button>
+              </Button> */}
               <Button size="icon" variant={'ghost'} onClick={() => popModal()}>
                 <XIcon className="size-4" />
               </Button>
@@ -346,6 +357,97 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
                   },
                 ]}
               />
+            </div>
+          </section>
+        </WidgetBody>
+      </Widget>
+    </ModalContent>
+  );
+}
+
+function EventDetailsSkeleton() {
+  return (
+    <ModalContent className="!p-0">
+      <Widget className="bg-transparent border-0 min-w-0">
+        <WidgetHead>
+          <div className="row items-center justify-between">
+            <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+            <div className="row items-center gap-2 pr-2">
+              <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+              <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+              <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+            </div>
+          </div>
+
+          <WidgetButtons>
+            <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+          </WidgetButtons>
+        </WidgetHead>
+        <WidgetBody className="col gap-4 bg-def-100">
+          {/* Profile skeleton */}
+          <div className="card p-4 py-2 col gap-2">
+            <div className="row items-center gap-2 justify-between">
+              <div className="row items-center gap-2 min-w-0">
+                <div className="size-4 bg-muted animate-pulse rounded-full" />
+                <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+              </div>
+              <div className="row items-center gap-2 shrink-0">
+                <div className="row gap-1 items-center">
+                  <div className="size-4 bg-muted animate-pulse rounded" />
+                  <div className="size-4 bg-muted animate-pulse rounded" />
+                  <div className="size-4 bg-muted animate-pulse rounded" />
+                </div>
+                <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+              </div>
+            </div>
+            <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+          </div>
+
+          {/* Properties skeleton */}
+          <section>
+            <div className="mb-2 flex justify-between font-medium">
+              <div className="h-5 w-20 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i.toString()}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded"
+                >
+                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Information skeleton */}
+          <section>
+            <div className="mb-2 flex justify-between font-medium">
+              <div className="h-5 w-24 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i.toString()}
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded"
+                >
+                  <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Chart skeleton */}
+          <section>
+            <div className="mb-2 flex justify-between font-medium">
+              <div className="h-5 w-40 bg-muted animate-pulse rounded" />
+              <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="card p-4">
+              <div className="h-32 w-full bg-muted animate-pulse rounded" />
             </div>
           </section>
         </WidgetBody>

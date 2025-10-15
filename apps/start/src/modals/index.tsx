@@ -27,12 +27,6 @@ import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
 import ShareOverviewModal from './share-overview-modal';
 
-// const Loading = () => (
-//   <ModalContent className="flex items-center justify-center p-16">
-//     <Loader2Icon className="animate-spin" size={40} />
-//   </ModalContent>
-// );
-
 const modals = {
   OverviewTopPagesModal: OverviewTopPagesModal,
   OverviewTopGenericModal: OverviewTopGenericModal,
