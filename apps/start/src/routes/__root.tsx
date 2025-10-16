@@ -17,6 +17,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
+import { useSessionExtension } from '@/hooks/use-session-extension';
 import { op } from '@/utils/op';
 import type { AppRouter } from '@openpanel/trpc';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
@@ -75,6 +76,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useSessionExtension();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

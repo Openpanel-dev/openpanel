@@ -9,10 +9,10 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { WidgetTable } from '@/components/widget-table';
 import { useAppParams } from '@/hooks/use-app-params';
 import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -71,7 +71,62 @@ export default function Billing({ organization }: Props) {
     }
   }, [customerSessionToken]);
 
-  function renderBillingTable() {
+  const [selectedProductIndex, setSelectedProductIndex] = useState<number>(0);
+
+  // Check if organization has a custom product
+  const hasCustomProduct = useMemo(() => {
+    return products.some((product) => product.metadata?.custom === true);
+  }, [products]);
+
+  // Find current subscription index
+  const currentSubscriptionIndex = useMemo(() => {
+    if (!organization.subscriptionProductId) {
+      // Default to 100K events plan if no subscription
+      const defaultIndex = products.findIndex(
+        (product) => product.metadata?.eventsLimit === 100_000,
+      );
+      return defaultIndex >= 0 ? defaultIndex : 0;
+    }
+    return products.findIndex(
+      (product) => product.id === organization.subscriptionProductId,
+    );
+  }, [products, organization.subscriptionProductId]);
+
+  // Check if selected index is the "custom" option (beyond available products)
+  const isCustomOption = selectedProductIndex >= products.length;
+
+  // Find the highest event limit to make the custom option dynamic
+  const highestEventLimit = useMemo(() => {
+    const limits = products
+      .map((product) => product.metadata?.eventsLimit)
+      .filter((limit): limit is number => typeof limit === 'number');
+    return Math.max(...limits, 0);
+  }, [products]);
+
+  // Format the custom option label dynamically
+  const customOptionLabel = useMemo(() => {
+    if (highestEventLimit >= 1_000_000) {
+      return `+${(highestEventLimit / 1_000_000).toFixed(0)}M`;
+    }
+    if (highestEventLimit >= 1_000) {
+      return `+${(highestEventLimit / 1_000).toFixed(0)}K`;
+    }
+    return `+${highestEventLimit}`;
+  }, [highestEventLimit]);
+
+  // Set initial slider position to current subscription
+  useEffect(() => {
+    if (currentSubscriptionIndex >= 0) {
+      setSelectedProductIndex(currentSubscriptionIndex);
+    }
+  }, [currentSubscriptionIndex]);
+
+  const selectedProduct = products[selectedProductIndex];
+  const isUpgrade = selectedProductIndex > currentSubscriptionIndex;
+  const isDowngrade = selectedProductIndex < currentSubscriptionIndex;
+  const isCurrentPlan = selectedProductIndex === currentSubscriptionIndex;
+
+  function renderBillingSlider() {
     if (productsQuery.isLoading) {
       return (
         <div className="center-center p-8">
@@ -86,79 +141,162 @@ export default function Billing({ organization }: Props) {
         </div>
       );
     }
+
+    if (hasCustomProduct) {
+      return (
+        <div className="p-8 text-center">
+          <div className="text-muted-foreground">
+            Not applicable since custom product
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <WidgetTable
-        className="w-full max-w-full [&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4"
-        columnClassName="!h-auto"
-        data={products}
-        keyExtractor={(item) => item.id}
-        columns={[
-          {
-            name: 'Tier',
-            className: 'text-left',
-            width: 'auto',
-            render(item) {
-              return <div className="font-medium">{item.name}</div>;
-            },
-          },
-          {
-            name: 'Price',
-            width: 'auto',
-            render(item) {
-              const price = item.prices[0];
-              if (!price) {
-                return null;
-              }
+      <div className="p-6 space-y-6">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium">Select your plan</span>
+            <span className="text-sm text-muted-foreground">
+              {selectedProduct?.name || 'No plan selected'}
+            </span>
+          </div>
 
-              if (price.amountType === 'free') {
-                return null;
-                // return (
-                //   <div className="row gap-2 whitespace-nowrap">
-                //     <div className="items-center text-right justify-end gap-4 flex-1 row">
-                //       <span>Free</span>
-                //       <CheckoutButton
-                //         disabled={item.disabled}
-                //         key={price.id}
-                //         price={price}
-                //         organization={organization}
-                //         projectId={projectId}
-                //       />
-                //     </div>
-                //   </div>
-                // );
-              }
+          <Slider
+            value={[selectedProductIndex]}
+            onValueChange={([value]) => setSelectedProductIndex(value)}
+            min={0}
+            max={products.length} // +1 for the custom option
+            step={1}
+            className="w-full"
+            disabled={hasCustomProduct}
+          />
 
-              if (price.amountType !== 'fixed') {
-                return null;
-              }
-
+          <div className="flex justify-between text-xs text-muted-foreground">
+            {products.map((product, index) => {
+              const eventsLimit = product.metadata?.eventsLimit;
               return (
-                <div className="row gap-2 whitespace-nowrap">
-                  <div className="items-center text-right justify-end gap-4 flex-1 col md:row">
-                    <span>
-                      {new Intl.NumberFormat('en-US', {
-                        style: 'currency',
-                        currency: price.priceCurrency,
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 1,
-                      }).format(price.priceAmount / 100)}
-                      {' / '}
-                      {recurringInterval === 'year' ? 'year' : 'month'}
-                    </span>
-                    <CheckoutButton
-                      disabled={item.disabled}
-                      key={price.id}
-                      price={price}
-                      organization={organization}
-                      projectId={projectId}
-                    />
+                <div key={product.id} className="text-center">
+                  <div className="font-medium">
+                    {eventsLimit && typeof eventsLimit === 'number'
+                      ? `${(eventsLimit / 1000).toFixed(0)}K`
+                      : 'Free'}
                   </div>
+                  <div className="text-xs">events</div>
                 </div>
               );
-            },
-          },
-        ]}
-      />
+            })}
+            {/* Add the custom option label */}
+            <div className="text-center">
+              <div className="font-medium">{customOptionLabel}</div>
+              <div className="text-xs">events</div>
+            </div>
+          </div>
+        </div>
+
+        {(selectedProduct || isCustomOption) && (
+          <div className="border rounded-lg p-4 space-y-4">
+            {isCustomOption ? (
+              // Custom option content
+              <>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">Custom Plan</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {customOptionLabel} events per {recurringInterval}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-lg font-semibold">
+                      Custom Pricing
+                    </span>
+                  </div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-4 text-center">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Need higher limits?
+                  </p>
+                  <p className="text-sm">
+                    Reach out to{' '}
+                    <a
+                      className="underline font-medium"
+                      href="mailto:hello@openpanel.dev"
+                    >
+                      hello@openpanel.dev
+                    </a>{' '}
+                    and we'll help you with a custom quota.
+                  </p>
+                </div>
+              </>
+            ) : (
+              // Regular product content
+              <>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold">{selectedProduct.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedProduct.metadata?.eventsLimit
+                        ? `${selectedProduct.metadata.eventsLimit.toLocaleString()} events per ${recurringInterval}`
+                        : 'Free tier'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    {selectedProduct.prices[0]?.amountType === 'free' ? (
+                      <span className="text-lg font-semibold">Free</span>
+                    ) : (
+                      <span className="text-lg font-semibold">
+                        {new Intl.NumberFormat('en-US', {
+                          style: 'currency',
+                          currency:
+                            selectedProduct.prices[0]?.priceCurrency || 'USD',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 1,
+                        }).format(
+                          (selectedProduct.prices[0] &&
+                          'priceAmount' in selectedProduct.prices[0]
+                            ? selectedProduct.prices[0].priceAmount
+                            : 0) / 100,
+                        )}
+                        <span className="text-sm text-muted-foreground">
+                          {' / '}
+                          {recurringInterval === 'year' ? 'year' : 'month'}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {!isCurrentPlan && selectedProduct.prices[0] && (
+                  <div className="flex justify-end">
+                    <CheckoutButton
+                      disabled={selectedProduct.disabled}
+                      key={selectedProduct.prices[0].id}
+                      price={selectedProduct.prices[0]}
+                      organization={organization}
+                      projectId={projectId}
+                      buttonText={
+                        isUpgrade
+                          ? 'Upgrade'
+                          : isDowngrade
+                            ? 'Downgrade'
+                            : 'Activate'
+                      }
+                    />
+                  </div>
+                )}
+
+                {isCurrentPlan && (
+                  <div className="flex justify-end">
+                    <Button variant="outline" disabled>
+                      Current Plan
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -182,22 +320,7 @@ export default function Billing({ organization }: Props) {
           </div>
         </WidgetHead>
         <WidgetBody>
-          <div className="-m-4">
-            {renderBillingTable()}
-            <div className="text-center p-4 border-t">
-              <p>Do you need higher limits? </p>
-              <p>
-                Reach out to{' '}
-                <a
-                  className="underline font-medium"
-                  href="mailto:hello@openpanel.dev"
-                >
-                  hello@openpanel.dev
-                </a>{' '}
-                and we'll help you out.
-              </p>
-            </div>
-          </div>
+          <div className="-m-4">{renderBillingSlider()}</div>
         </WidgetBody>
       </Widget>
       <Dialog
@@ -231,11 +354,13 @@ function CheckoutButton({
   organization,
   projectId,
   disabled,
+  buttonText,
 }: {
   price: IPolarPrice;
   organization: IServiceOrganization;
   projectId: string;
   disabled?: string | null;
+  buttonText?: string;
 }) {
   const trpc = useTRPC();
   const isCurrentPrice = organization.subscriptionPriceId === price.id;
@@ -299,7 +424,8 @@ function CheckoutButton({
         className="w-28"
         variant={isActive ? 'outline' : 'default'}
       >
-        {isCanceled ? 'Reactivate' : isActive ? 'Active' : 'Activate'}
+        {buttonText ||
+          (isCanceled ? 'Reactivate' : isActive ? 'Active' : 'Activate')}
       </Button>
     </Tooltiper>
   );

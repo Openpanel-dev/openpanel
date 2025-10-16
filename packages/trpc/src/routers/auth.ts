@@ -324,6 +324,26 @@ export const authRouter = createTRPCRouter({
     return ctx.session;
   }),
 
+  extendSession: publicProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.session.session || !ctx.cookies.session) {
+      return { extended: false };
+    }
+
+    const token = ctx.cookies.session;
+    const session = await validateSessionToken(token);
+
+    if (session.session) {
+      // Re-set the cookie with updated expiration
+      setSessionTokenCookie(ctx.setCookie, token, session.session.expiresAt);
+      return {
+        extended: true,
+        expiresAt: session.session.expiresAt,
+      };
+    }
+
+    return { extended: false };
+  }),
+
   signInShare: publicProcedure
     .use(
       rateLimitMiddleware({

@@ -18,6 +18,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { BarShapeBlue } from '../charts/common-bar';
 
 interface OverviewLiveHistogramProps {
   projectId: string;
@@ -91,52 +92,6 @@ export function OverviewLiveHistogram({
     }),
   }));
 
-  const BarWithBorder = (borderHeight: number, borderColor: string) => {
-    return (props: any) => {
-      const { fill, x, y, width, height, payload } = props;
-      const isActive = payload?.count > 0;
-
-      return (
-        <g>
-          <rect
-            x={x}
-            y={y}
-            width={width}
-            height={height}
-            stroke="none"
-            fill={isActive ? fill : 'var(--def-200)'}
-          />
-          {isActive && (
-            <rect
-              x={x}
-              y={y}
-              width={width}
-              height={borderHeight}
-              stroke="none"
-              fill={borderColor}
-            />
-          )}
-        </g>
-      );
-    };
-  };
-
-  // Custom component to draw dashed line at the top
-  const TopDashedLine = (props: any) => {
-    const { width, height } = props;
-    return (
-      <line
-        x1={0}
-        y1={0}
-        x2={width}
-        y2={0}
-        stroke="var(--border)"
-        strokeDasharray="3 3"
-        strokeWidth={1}
-      />
-    );
-  };
-
   if (res.isInitialLoading || countRes.isInitialLoading) {
     return (
       <Wrapper count={0}>
@@ -163,22 +118,15 @@ export function OverviewLiveHistogram({
                 fill: 'var(--def-200)',
               }}
             />
-            <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={true}
-              vertical={false}
-              className="stroke-border"
-            />
             <XAxis dataKey="time" axisLine={false} tickLine={false} hide />
             <YAxis hide />
             <Bar
               dataKey="count"
               fill="rgba(59, 121, 255, 0.2)"
               isAnimationActive={false}
-              shape={BarWithBorder(2, 'rgba(59, 121, 255, 1)')}
-              activeBar={BarWithBorder(2, 'rgba(59, 121, 255, 1)')}
+              shape={BarShapeBlue}
+              activeBar={BarShapeBlue}
             />
-            <Customized component={TopDashedLine} />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -24,6 +24,7 @@ import {
   YAxis,
 } from 'recharts';
 import { createChartTooltip } from '../charts/chart-tooltip';
+import { BarShapeBlue } from '../charts/common-bar';
 import { useXAxisProps, useYAxisProps } from '../report-chart/common/axis';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
@@ -200,50 +201,6 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
   );
 });
 
-const BarWithBorder = (options: {
-  borderHeight: number;
-  border: string;
-  fill: string;
-  active: { border: string; fill: string };
-}) => {
-  return (props: any) => {
-    const { x, y, width, height, value, isActive } = props;
-
-    return (
-      <g>
-        <rect
-          x={x}
-          y={y}
-          width={width}
-          height={height}
-          stroke="none"
-          fill={isActive ? options.active.fill : options.fill}
-        />
-        {value > 0 && (
-          <rect
-            x={x}
-            y={y - options.borderHeight - 2}
-            width={width}
-            height={options.borderHeight}
-            stroke="none"
-            fill={isActive ? options.active.border : options.border}
-          />
-        )}
-      </g>
-    );
-  };
-};
-
-const BarShape = BarWithBorder({
-  borderHeight: 2,
-  border: 'rgba(59, 121, 255, 1)',
-  fill: 'rgba(59, 121, 255, 0.3)',
-  active: {
-    border: 'rgba(59, 121, 255, 1)',
-    fill: 'rgba(59, 121, 255, 0.4)',
-  },
-});
-
 function Chart({
   activeMetric,
   interval,
@@ -256,6 +213,7 @@ function Chart({
   const xAxisProps = useXAxisProps({ interval });
   const yAxisProps = useYAxisProps();
   const [activeBar, setActiveBar] = useState(-1);
+
   return (
     <TooltipProvider metric={activeMetric} interval={interval}>
       <ResponsiveContainer width="100%" height="100%">
@@ -305,11 +263,9 @@ function Chart({
           <Bar
             key={activeMetric.key}
             dataKey={activeMetric.key}
-            radius={5}
-            strokeWidth={0}
             isAnimationActive={false}
             shape={(props: any) => (
-              <BarShape isActive={activeBar === props.index} {...props} />
+              <BarShapeBlue isActive={activeBar === props.index} {...props} />
             )}
           />
         </ComposedChart>

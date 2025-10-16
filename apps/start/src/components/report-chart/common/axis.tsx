@@ -49,6 +49,14 @@ export const useYAxisProps = (options?: {
   };
 };
 
+export const X_AXIS_STYLE_PROPS = {
+  height: 14,
+  tickSize: 10,
+  axisLine: false,
+  tickLine: false,
+  ...AXIS_FONT_PROPS,
+};
+
 export const useXAxisProps = (
   {
     interval = 'auto',
@@ -65,9 +73,8 @@ export const useXAxisProps = (
     interval === 'auto' ? 'day' : interval,
   );
   return {
-    height: hide ? 0 : 14,
-    tickSize: 10,
-    axisLine: false,
+    ...X_AXIS_STYLE_PROPS,
+    height: hide ? 0 : X_AXIS_STYLE_PROPS.height,
     dataKey: 'timestamp',
     scale: 'utc',
     domain: ['dataMin', 'dataMax'] as AxisDomain,
@@ -82,8 +89,5 @@ export const useXAxisProps = (
             return formatDate(new Date(m));
           },
     type: 'number' as const,
-    tickLine: false,
-    minTickGap: 20,
-    ...AXIS_FONT_PROPS,
   } as const;
 };

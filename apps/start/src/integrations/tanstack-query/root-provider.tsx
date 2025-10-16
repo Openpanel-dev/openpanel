@@ -18,16 +18,13 @@ export const getIsomorphicHeaders = createIsomorphicFn()
   .client(() => ({}) as Headers);
 
 // Create a function that returns a tRPC client with optional cookies
-export function createTRPCClientWithHeaders(
-  headers: Headers | undefined,
-  apiUrl: string,
-) {
+export function createTRPCClientWithHeaders(apiUrl: string) {
   return createTRPCClient<AppRouter>({
     links: [
       httpLink({
         transformer: superjson,
         url: `${apiUrl}/trpc`,
-        headers,
+        headers: () => getIsomorphicHeaders(),
         fetch: (url, options) => {
           return fetch(url, {
             ...options,
@@ -40,7 +37,7 @@ export function createTRPCClientWithHeaders(
   });
 }
 
-export function getContext(headers: Headers, apiUrl: string) {
+export function getContext(apiUrl: string) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -56,7 +53,7 @@ export function getContext(headers: Headers, apiUrl: string) {
   });
 
   // Create a tRPC client with cookies if provided
-  const client = createTRPCClientWithHeaders(headers, apiUrl);
+  const client = createTRPCClientWithHeaders(apiUrl);
 
   const serverHelpers = createTRPCOptionsProxy({
     client: client,
@@ -78,7 +75,7 @@ export function Provider({
   apiUrl: string;
 }) {
   const trpcClient = useMemo(
-    () => createTRPCClientWithHeaders(undefined, apiUrl),
+    () => createTRPCClientWithHeaders(apiUrl),
     [apiUrl],
   );
   return (

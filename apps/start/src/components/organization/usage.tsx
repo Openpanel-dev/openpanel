@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  X_AXIS_STYLE_PROPS,
   useXAxisProps,
   useYAxisProps,
 } from '@/components/report-chart/common/axis';
@@ -13,6 +14,7 @@ import { sum } from '@openpanel/common';
 import type { IServiceOrganization } from '@openpanel/db';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2Icon } from 'lucide-react';
+import { pick } from 'ramda';
 import {
   Bar,
   BarChart,
@@ -23,6 +25,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { BarShapeBlue } from '../charts/common-bar';
 
 type Props = {
   organization: IServiceOrganization;
@@ -39,14 +42,31 @@ function Card({ title, value }: { title: string; value: string }) {
 
 export default function Usage({ organization }: Props) {
   const number = useNumber();
-  const xAxisProps = useXAxisProps({ interval: 'day' });
-  const yAxisProps = useYAxisProps({});
   const trpc = useTRPC();
   const usageQuery = useQuery(
     trpc.subscription.usage.queryOptions({
       organizationId: organization.id,
     }),
   );
+
+  // Determine interval based on data range - use weekly if more than 30 days
+  const getDataInterval = () => {
+    if (!usageQuery.data || usageQuery.data.length === 0) return 'day';
+
+    const dates = usageQuery.data.map((item) => new Date(item.day));
+    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+    const daysDiff = Math.ceil(
+      (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    return daysDiff > 30 ? 'week' : 'day';
+  };
+
+  const interval = getDataInterval();
+  const useWeeklyIntervals = interval === 'week';
+  const xAxisProps = useXAxisProps({ interval });
+  const yAxisProps = useYAxisProps({});
 
   const wrapper = (node: React.ReactNode) => (
     <Widget className="w-full">
@@ -79,12 +99,61 @@ export default function Usage({ organization }: Props) {
     ? organization.subscriptionPeriodEventsCount
     : 0;
 
+  // Group daily data into weekly intervals if data spans more than 30 days
+  const processChartData = () => {
+    if (!usageQuery.data) return [];
+
+    if (useWeeklyIntervals) {
+      // Group daily data into weekly intervals
+      const weeklyData: {
+        [key: string]: { count: number; startDate: Date; endDate: Date };
+      } = {};
+
+      usageQuery.data.forEach((item) => {
+        const date = new Date(item.day);
+        // Get the start of the week (Monday)
+        const startOfWeek = new Date(date);
+        const dayOfWeek = date.getDay();
+        const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust when day is Sunday
+        startOfWeek.setDate(diff);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const weekKey = startOfWeek.toISOString().split('T')[0];
+
+        if (!weeklyData[weekKey]) {
+          weeklyData[weekKey] = {
+            count: 0,
+            startDate: new Date(startOfWeek),
+            endDate: new Date(startOfWeek),
+          };
+        }
+
+        weeklyData[weekKey].count += item.count;
+        weeklyData[weekKey].endDate = new Date(date);
+      });
+
+      return Object.values(weeklyData).map((week) => ({
+        date: week.startDate.getTime(),
+        count: week.count,
+        weekRange: `${formatDate(week.startDate)} - ${formatDate(week.endDate)}`,
+      }));
+    }
+
+    // Use daily data for monthly subscriptions
+    return usageQuery.data.map((item) => ({
+      date: new Date(item.day).getTime(),
+      count: item.count,
+    }));
+  };
+
+  const chartData = processChartData();
+
   const domain = [
     0,
     Math.max(
       subscriptionPeriodEventsLimit,
       subscriptionPeriodEventsCount,
-      ...(usageQuery.data?.map((item) => item.count) ?? []),
+      ...chartData.map((item) => item.count),
     ),
   ] as [number, number];
 
@@ -142,119 +211,154 @@ export default function Usage({ organization }: Props) {
           </>
         )}
       </div>
-      <div className="aspect-video max-h-[300px] w-full p-4">
-        <ResponsiveContainer>
-          <BarChart
-            data={usageQuery.data?.map((item) => ({
-              date: new Date(item.day).getTime(),
-              count: item.count,
-              limit: subscriptionPeriodEventsLimit,
-              total: subscriptionPeriodEventsCount,
-            }))}
-            barSize={8}
-          >
-            <defs>
-              <linearGradient id="usage" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="0%"
-                  stopColor={getChartColor(0)}
-                  stopOpacity={0.8}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Events Chart */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {useWeeklyIntervals ? 'Weekly Events' : 'Daily Events'}
+          </h3>
+          <div className="max-h-[300px] h-[250px] w-full p-4">
+            <ResponsiveContainer>
+              <BarChart data={chartData} barSize={useWeeklyIntervals ? 20 : 8}>
+                <RechartTooltip
+                  content={<EventsTooltip useWeekly={useWeeklyIntervals} />}
                 />
-                <stop
-                  offset="100%"
-                  stopColor={getChartColor(0)}
-                  stopOpacity={0.1}
+                <Bar
+                  dataKey="count"
+                  isAnimationActive={false}
+                  shape={BarShapeBlue}
                 />
-              </linearGradient>
-            </defs>
-            <RechartTooltip
-              content={<Tooltip />}
-              cursor={{
-                stroke: 'hsl(var(--def-400))',
-                fill: 'hsl(var(--def-200))',
-              }}
-            />
-            {organization.hasSubscription && (
-              <>
-                <ReferenceLine
-                  y={subscriptionPeriodEventsLimit}
-                  stroke={getChartColor(1)}
-                  strokeWidth={2}
+                <XAxis {...xAxisProps} dataKey="date" />
+                <YAxis {...yAxisProps} domain={[0, 'dataMax']} />
+                <CartesianGrid
+                  horizontal={true}
+                  vertical={false}
                   strokeDasharray="3 3"
                   strokeOpacity={0.5}
-                  strokeLinecap="round"
-                  label={{
-                    value: `Limit (${number.format(subscriptionPeriodEventsLimit)})`,
-                    fill: getChartColor(1),
-                    position: 'insideTopRight',
-                    fontSize: 12,
-                  }}
                 />
-                <ReferenceLine
-                  y={subscriptionPeriodEventsCount}
-                  stroke={getChartColor(2)}
-                  strokeWidth={2}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Total Events vs Limit Chart */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            Total Events vs Limit
+          </h3>
+          <div className="max-h-[300px] h-[250px] w-full p-4">
+            <ResponsiveContainer>
+              <BarChart
+                data={[
+                  {
+                    name: 'Total Events',
+                    count: subscriptionPeriodEventsCount,
+                    limit: subscriptionPeriodEventsLimit,
+                  },
+                ]}
+              >
+                <RechartTooltip content={<TotalTooltip />} cursor={false} />
+                {organization.hasSubscription &&
+                  subscriptionPeriodEventsLimit > 0 && (
+                    <ReferenceLine
+                      y={subscriptionPeriodEventsLimit}
+                      stroke={getChartColor(1)}
+                      strokeWidth={2}
+                      strokeDasharray="3 3"
+                      strokeOpacity={0.8}
+                      strokeLinecap="round"
+                      label={{
+                        value: `Limit (${number.format(subscriptionPeriodEventsLimit)})`,
+                        fill: getChartColor(1),
+                        position: 'insideTopRight',
+                        fontSize: 12,
+                      }}
+                    />
+                  )}
+                <Bar
+                  dataKey="count"
+                  isAnimationActive={false}
+                  shape={BarShapeBlue}
+                />
+                <XAxis {...X_AXIS_STYLE_PROPS} dataKey="name" />
+                <YAxis
+                  {...yAxisProps}
+                  domain={[
+                    0,
+                    Math.max(
+                      subscriptionPeriodEventsLimit,
+                      subscriptionPeriodEventsCount,
+                    ) * 1.1,
+                  ]}
+                />
+                <CartesianGrid
+                  horizontal={true}
+                  vertical={false}
                   strokeDasharray="3 3"
                   strokeOpacity={0.5}
-                  strokeLinecap="round"
-                  label={{
-                    value: `Your events count (${number.format(subscriptionPeriodEventsCount)})`,
-                    fill: getChartColor(2),
-                    position:
-                      subscriptionPeriodEventsCount > 1000
-                        ? 'insideTop'
-                        : 'insideBottom',
-                    fontSize: 12,
-                  }}
                 />
-              </>
-            )}
-            <Bar
-              dataKey="count"
-              stroke={getChartColor(0)}
-              strokeWidth={0.5}
-              fill={'url(#usage)'}
-              isAnimationActive={false}
-            />
-            <XAxis {...xAxisProps} dataKey="date" />
-            <YAxis
-              {...yAxisProps}
-              domain={domain}
-              interval={0}
-              ticks={[
-                0,
-                subscriptionPeriodEventsLimit * 0.25,
-                subscriptionPeriodEventsLimit * 0.5,
-                subscriptionPeriodEventsLimit * 0.75,
-                subscriptionPeriodEventsLimit,
-              ]}
-            />
-            <CartesianGrid
-              horizontal={true}
-              vertical={false}
-              strokeDasharray="3 3"
-              strokeOpacity={0.5}
-            />
-          </BarChart>
-        </ResponsiveContainer>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
       </div>
     </>,
   );
 }
 
-function Tooltip(props: any) {
+function EventsTooltip({ useWeekly, ...props }: { useWeekly: boolean } & any) {
   const number = useNumber();
   const payload = props.payload?.[0]?.payload;
 
   if (!payload) {
     return null;
   }
+
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3  shadow-xl">
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">
       <div className="text-sm text-muted-foreground">
-        {formatDate(payload.date)}
+        {useWeekly && payload.weekRange
+          ? payload.weekRange
+          : payload?.date
+            ? formatDate(new Date(payload.date))
+            : 'Unknown date'}
       </div>
-      {payload.limit !== 0 && (
+      <div className="flex items-center gap-2">
+        <div className="h-10 w-1 rounded-full bg-chart-0" />
+        <div className="col gap-1">
+          <div className="text-sm text-muted-foreground">
+            Events {useWeekly ? 'this week' : 'this day'}
+          </div>
+          <div className="text-lg font-semibold text-chart-0">
+            {number.format(payload.count)}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TotalTooltip(props: any) {
+  const number = useNumber();
+  const payload = props.payload?.[0]?.payload;
+
+  if (!payload) {
+    return null;
+  }
+
+  return (
+    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">
+      <div className="text-sm text-muted-foreground">Total Events</div>
+      <div className="flex items-center gap-2">
+        <div className="h-10 w-1 rounded-full bg-chart-2" />
+        <div className="col gap-1">
+          <div className="text-sm text-muted-foreground">Your events count</div>
+          <div className="text-lg font-semibold text-chart-2">
+            {number.format(payload.count)}
+          </div>
+        </div>
+      </div>
+      {payload.limit > 0 && (
         <div className="flex items-center gap-2">
           <div className="h-10 w-1 rounded-full border-2 border-dashed border-chart-1" />
           <div className="col gap-1">
@@ -265,28 +369,6 @@ function Tooltip(props: any) {
           </div>
         </div>
       )}
-      {payload.total !== 0 && (
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-1 rounded-full border-2 border-dashed border-chart-2" />
-          <div className="col gap-1">
-            <div className="text-sm text-muted-foreground">
-              Total events count
-            </div>
-            <div className="text-lg font-semibold text-chart-2">
-              {number.format(payload.total)}
-            </div>
-          </div>
-        </div>
-      )}
-      <div className="flex items-center gap-2">
-        <div className="h-10 w-1 rounded-full bg-chart-0" />
-        <div className="col gap-1">
-          <div className="text-sm text-muted-foreground">Events this day</div>
-          <div className="text-lg font-semibold text-chart-0">
-            {number.format(payload.count)}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
