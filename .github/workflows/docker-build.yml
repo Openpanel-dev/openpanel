@@ -106,6 +106,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Generate tags
+        id: tags
+        run: |
+          # Sanitize branch name by replacing / with -
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          # Get first 4 characters of commit SHA
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -125,8 +135,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/${{ env.repo_owner }}/api:latest
-            ghcr.io/${{ env.repo_owner }}/api:${{ github.sha }}
+            ghcr.io/${{ env.repo_owner }}/api:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
@@ -139,6 +148,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Generate tags
+        id: tags
+        run: |
+          # Sanitize branch name by replacing / with -
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          # Get first 4 characters of commit SHA
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -159,7 +178,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/${{ env.repo_owner }}/worker:latest
-            ghcr.io/${{ env.repo_owner }}/worker:${{ github.sha }}
+            ghcr.io/${{ env.repo_owner }}/worker:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy

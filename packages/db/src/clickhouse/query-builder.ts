@@ -1,6 +1,6 @@
 import type { ClickHouseClient, ResponseJSON } from '@clickhouse/client';
 import type { IInterval } from '@openpanel/validation';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 type SqlValue = string | number | boolean | Date | null | Expression;
 type SqlParam = SqlValue | SqlValue[];
@@ -133,7 +133,7 @@ export class Query<T = any> {
       return this.escapeDate(value);
     }
 
-    return escape(value);
+    return sqlstring.escape(value);
   }
 
   where(column: string, operator: Operator, value?: SqlParam): this {
@@ -258,11 +258,11 @@ export class Query<T = any> {
 
   private escapeDate(value: string | Date): string {
     if (value instanceof Date) {
-      return escape(clix.datetime(value));
+      return sqlstring.escape(clix.datetime(value));
     }
 
     return value.replaceAll(this._dateRegex, (match) => {
-      return escape(match);
+      return sqlstring.escape(match);
     });
   }
 

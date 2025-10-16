@@ -1,0 +1,18 @@
+diff --git a/package.json b/package.json
+index b8472a122d4a0c0e1650a082d72fb05bf567ddd1..721ffb9e46665f179171e336c26864098f24fb76 100644
+--- a/package.json
++++ b/package.json
+@@ -141,12 +141,7 @@
+     "@standard-schema/spec": "1.0.0"
+   },
+   "peerDependencies": {
+-    "@remix-run/react": ">=2",
+-    "@tanstack/react-router": "^1",
+-    "next": ">=14.2.0",
+-    "react": ">=18.2.0 || ^19.0.0-0",
+-    "react-router": "^6 || ^7",
+-    "react-router-dom": "^6 || ^7"
++    "@tanstack/react-router": "^1"
+   },
+   "peerDependenciesMeta": {
+     "@remix-run/react": {

@@ -1,5 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { db, getOrganizationByProjectIdCached } from '@openpanel/db';
 import {
   sendSlackNotification,
@@ -100,7 +105,7 @@ export async function slackWebhook(
     });
 
     return reply.redirect(
-      `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
+      `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
     );
   } catch (err) {
     request.log.error(err);
@@ -184,7 +189,7 @@ export async function polarWebhook(
           data: {
             subscriptionId: event.data.id,
             subscriptionCustomerId: event.data.customer.id,
-            subscriptionPriceId: event.data.priceId,
+            subscriptionPriceId: event.data.prices[0]?.id ?? null,
             subscriptionProductId: event.data.productId,
             subscriptionStatus: event.data.status,
             subscriptionStartsAt: event.data.currentPeriodStart,

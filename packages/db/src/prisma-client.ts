@@ -1,8 +1,8 @@
 import { createLogger } from '@openpanel/logger';
-import { type Organization, PrismaClient } from '@prisma/client';
 import { readReplicas } from '@prisma/extension-read-replicas';
+import { type Organization, PrismaClient } from './generated/prisma/client';
 
-export * from '@prisma/client';
+export * from './generated/prisma/client';
 
 const logger = createLogger({ name: 'db' });
 
@@ -59,7 +59,7 @@ const getPrismaClient = () => {
           subscriptionStatus: {
             needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return 'active';
               }
 
@@ -69,7 +69,7 @@ const getPrismaClient = () => {
           hasSubscription: {
             needs: { subscriptionStatus: true, subscriptionEndsAt: true },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return false;
               }
 
@@ -94,7 +94,7 @@ const getPrismaClient = () => {
               subscriptionPeriodEventsCountExceededAt: true,
             },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return null;
               }
 
@@ -131,7 +131,7 @@ const getPrismaClient = () => {
           isCanceled: {
             needs: { subscriptionStatus: true, subscriptionCanceledAt: true },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return false;
               }
 
@@ -145,7 +145,7 @@ const getPrismaClient = () => {
               subscriptionEndsAt: true,
             },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return false;
               }
 
@@ -159,7 +159,7 @@ const getPrismaClient = () => {
               subscriptionCanceledAt: true,
             },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return false;
               }
 
@@ -182,7 +182,7 @@ const getPrismaClient = () => {
               subscriptionPeriodEventsLimit: true,
             },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return false;
               }
 
@@ -195,7 +195,7 @@ const getPrismaClient = () => {
           subscriptionCurrentPeriodStart: {
             needs: { subscriptionStartsAt: true, subscriptionInterval: true },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return null;
               }
 
@@ -229,7 +229,7 @@ const getPrismaClient = () => {
               subscriptionInterval: true,
             },
             compute(org) {
-              if (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true') {
+              if (process.env.VITE_SELF_HOSTED === 'true') {
                 return null;
               }
 

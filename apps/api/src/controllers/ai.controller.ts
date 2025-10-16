@@ -112,7 +112,7 @@ export async function chat(
 
         await db.chat.create({
           data: {
-            messages: messagesToSave.slice(-10),
+            messages: messagesToSave.slice(-10) as any,
             projectId,
           },
         });

@@ -1,4 +1,4 @@
-ARG NODE_VERSION=20.15.1
+ARG NODE_VERSION=22.20.0
 
 FROM node:${NODE_VERSION}-slim AS base
 
@@ -38,6 +38,7 @@ COPY packages/common/package.json ./packages/common/
 COPY packages/constants/package.json ./packages/constants/
 COPY packages/validation/package.json ./packages/validation/
 COPY packages/integrations/package.json packages/integrations/
+COPY patches ./patches
 
 # BUILD
 FROM base AS build
@@ -84,6 +85,7 @@ COPY --from=build /app/packages/queue ./packages/queue
 COPY --from=build /app/packages/common ./packages/common
 COPY --from=build /app/packages/validation ./packages/validation
 COPY --from=build /app/packages/integrations ./packages/integrations
+COPY --from=build /app/tooling/typescript ./tooling/typescript
 RUN pnpm db:codegen
 
 WORKDIR /app/apps/worker

@@ -95,14 +95,12 @@ const startServer = async () => {
         if (isPrivatePath) {
           // Allow multiple dashboard domains
           const allowedOrigins = [
-            process.env.NEXT_PUBLIC_DASHBOARD_URL,
+            process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
             ...(process.env.API_CORS_ORIGINS?.split(',') ?? []),
           ].filter(Boolean);
 
           const origin = req.headers.origin;
           const isAllowed = origin && allowedOrigins.includes(origin);
-
-          logger.info('Allowed origins', { allowedOrigins, origin, isAllowed });
 
           return callback(null, {
             origin: isAllowed ? origin : false,
@@ -160,6 +158,12 @@ const startServer = async () => {
           router: appRouter,
           createContext: createContext,
           onError(ctx) {
+            if (
+              ctx.error.code === 'UNAUTHORIZED' &&
+              ctx.path === 'organization.list'
+            ) {
+              return;
+            }
             ctx.req.log.error('trpc error', {
               error: ctx.error,
               path: ctx.path,
@@ -191,7 +195,10 @@ const startServer = async () => {
       instance.get('/healthz/live', liveness);
       instance.get('/healthz/ready', readiness);
       instance.get('/', (_request, reply) =>
-        reply.send({ name: 'openpanel sdk api' }),
+        reply.send({
+          status: 'ok',
+          message: 'Successfully running OpenPanel.dev API',
+        }),
       );
     });
 

@@ -1,12 +1,16 @@
 {
-  "extends": "@openpanel/tsconfig/base.json",
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    },
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo.json"
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "resolveJsonModule": true,
+    "allowJs": true
   },
-  "include": ["."],
-  "exclude": ["node_modules"]
+  "include": ["src/**/*"]
 }

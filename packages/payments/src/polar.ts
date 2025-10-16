@@ -50,13 +50,13 @@ export async function createPortal({
 }
 
 export async function createCheckout({
-  priceId,
+  productId,
   organizationId,
   projectId,
   user,
   ipAddress,
 }: {
-  priceId: string;
+  productId: string;
   organizationId: string;
   projectId?: string;
   user: {
@@ -68,9 +68,10 @@ export async function createCheckout({
   ipAddress: string;
 }) {
   return polar.checkouts.create({
-    productPriceId: priceId,
+    // productPriceId: priceId,
+    products: [productId],
     successUrl: getSuccessUrl(
-      process.env.NEXT_PUBLIC_DASHBOARD_URL!,
+      process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!,
       organizationId,
       projectId,
     ),
@@ -90,7 +91,6 @@ export async function cancelSubscription(subscriptionId: string) {
       id: subscriptionId,
       subscriptionUpdate: {
         cancelAtPeriodEnd: true,
-        revoke: null,
       },
     });
   } catch (error) {
@@ -110,7 +110,6 @@ export function reactivateSubscription(subscriptionId: string) {
     id: subscriptionId,
     subscriptionUpdate: {
       cancelAtPeriodEnd: false,
-      revoke: null,
     },
   });
 }

@@ -1,6 +1,7 @@
 // Cred to (@c_alares) https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
-import { LogLevel, App as SlackApp } from '@slack/bolt';
+import * as Slack from '@slack/bolt';
+const { LogLevel, App: SlackApp } = Slack;
 import { InstallProvider } from '@slack/oauth';
 
 const SLACK_CLIENT_ID = process.env.SLACK_CLIENT_ID;

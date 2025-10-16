@@ -1,0 +1,330 @@
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+@custom-variant light (&:is(.light *));
+@custom-variant system (&:is(.system *));
+
+body {
+  @apply m-0;
+  font-family: ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family:
+    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+:root {
+  /* Core colors converted from HSL to OKLCH using convert-to-oklch tool */
+  --highlight: oklch(55.1% 0.21 262); /* hsl(220, 84%, 53%) -> #2266ec */
+  
+  /* def- color scale converted from HSL to OKLCH */
+  --def-100: oklch(98.4% 0 248); /* hsl(210, 40%, 98%) -> #F0F4F9 */
+  --def-200: oklch(96.8% 0 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
+  --def-300: oklch(91.7% 0 248); /* hsl(210, 15.14%, 89.41%) -> #DDE3E9 */
+  --def-400: oklch(80.3% 0 248); /* hsl(210, 9.08%, 75.05%) -> #B3BDC7 */
+  
+  /* foregroundish converted from HSL to OKLCH */
+  --foregroundish: oklch(34.4% 0 273); /* hsl(226.49, 3.06%, 22.62%) */
+
+  --background: oklch(100% 0 0); /* hsl(0, 0%, 100%) -> #FFFFFF */
+  --foreground: oklch(13.7% 0.04 259); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
+  --card: oklch(100% 0 0); /* hsl(0, 0%, 100%) -> #FFFFFF */
+  --card-foreground: oklch(13.7% 0.04 259); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
+  --popover: oklch(100% 0 0); /* hsl(0, 0%, 100%) -> #FFFFFF */
+  --popover-foreground: oklch(13.7% 0.04 259); /* hsl(222.2, 84%, 4.9%) -> #0C162A */
+  --primary: oklch(20.8% 0.04 266); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
+  --primary-foreground: oklch(98.4% 0 248); /* hsl(210, 40%, 98%) -> #F0F4F9 */
+  --secondary: oklch(96.8% 0.01 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
+  --secondary-foreground: oklch(20.8% 0.04 266); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
+  --muted: oklch(96.8% 0.01 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
+  --muted-foreground: oklch(55.5% 0.04 257); /* hsl(215.4, 16.3%, 46.9%) -> #798290 */
+  --accent: oklch(96.8% 0.01 248); /* hsl(210, 40%, 96.1%) -> #E7ECF2 */
+  --accent-foreground: oklch(20.8% 0.04 266); /* hsl(222.2, 47.4%, 11.2%) -> #163049 */
+  --destructive: oklch(63.7% 0.21 25.3); /* hsl(0, 84.2%, 60.2%) -> #F2677D */
+  --destructive-foreground: oklch(96.9% 0.02 17.4); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
+  --border: oklch(92.9% 0.01 256); /* hsl(214.3, 31.8%, 91.4%) -> #E8EBF1 */
+  --input: oklch(92.9% 0.01 256); /* hsl(214.3, 31.8%, 91.4%) -> #E8EBF1 */
+  --ring: oklch(86.9% 0.02 253); /* hsl(212.73, 26.83%, 83.92%) -> #CDD6E2 */
+  
+  /* Chart colors converted to OKLCH for consistency */
+  --chart-0: oklch(54.6% 0.22 263); /* #2563EB */
+  --chart-1: oklch(72.2% 0.17 33.7); /* #ff7557 */
+  --chart-2: oklch(84.7% 0.09 188); /* #7fe1d8 */
+  --chart-3: oklch(82.9% 0.15 82); /* #f8bc3c */
+  --chart-4: oklch(57.8% 0.12 6.72); /* #b3596e */
+  --chart-5: oklch(77.3% 0.11 241); /* #72bef4 */
+  --chart-6: oklch(82.5% 0.12 56.4); /* #ffb27a */
+  --chart-7: oklch(55.3% 0.1 226); /* #0f7ea0 */
+  --chart-8: oklch(65.8% 0.13 159); /* #3ba974 */
+  --chart-9: oklch(85.1% 0.08 27.5); /* #febbb2 */
+  --chart-10: oklch(71.1% 0.15 320); /* #cb80dc */
+  --chart-11: oklch(72.1% 0.09 188); /* #5cb7af */
+  --chart-12: oklch(58.7% 0.24 286); /* #7856ff */
+  
+  --radius: 0.5rem;
+}
+
+.dark {
+  /* Core colors converted from HSL to OKLCH for dark mode using convert-to-oklch tool */
+  --highlight: oklch(61.3% 0.21 263); /* hsl(221.44, 100%, 62.04%) */
+  
+  /* def- color scale converted from HSL to OKLCH for dark mode */
+  --def-100: oklch(19.3% 0 0); /* hsl(0, 0%, 8%) -> #0f0f0f */
+  --def-200: oklch(25% 0 0); /* hsl(0, 0%, 13.12%) -> #212121 */
+  --def-300: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
+  --def-400: oklch(37.3% 0 0); /* hsl(0, 0%, 25.23%) -> #404040 */
+  
+  --foregroundish: oklch(83.9% 0 0); /* hsl(0, 0%, 79.23%) */
+
+  --background: oklch(23.8% 0 0); /* hsl(0, 0%, 12.02%) -> #1e1e1e */
+  --foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
+  --card: oklch(21.6% 0 0); /* hsl(0, 0%, 10%) -> #1a1a1a */
+  --card-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
+  --popover: oklch(21.6% 0 0); /* hsl(0, 0%, 10%) -> #1a1a1a */
+  --popover-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
+  --primary: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
+  --primary-foreground: oklch(22.9% 0 0); /* hsl(0, 0%, 11.2%) -> #1c1c1c */
+  --secondary: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
+  --secondary-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
+  --muted: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
+  --muted-foreground: oklch(72.4% 0 0); /* hsl(0, 0%, 65%) */
+  --accent: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
+  --accent-foreground: oklch(98.5% 0 0); /* hsl(0, 0%, 98%) -> #fafafa */
+  --destructive: oklch(63.7% 0.21 25.3); /* hsl(0, 84.2%, 60.2%) -> #F2677D */
+  --destructive-foreground: oklch(96.9% 0.02 17.4); /* hsl(0, 100%, 97.25%) -> #F8F9FB */
+  --border: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
+  --input: oklch(27.1% 0 0); /* hsl(0, 0%, 15.1%) -> #262626 */
+  --ring: oklch(87.6% 0 0); /* hsl(0, 0%, 83.9%) -> #d6d6d6 */
+}
+
+@theme {
+  /* Font sizes matching dashboard config */
+  --text-xs: 10px;
+  --text-xs--line-height: 10px;
+  --text-sm: 12px;
+  --text-sm--line-height: 12px;
+  --text-base: 14px;
+  --text-base--line-height: 14px;
+  --text-lg: 16px;
+  --text-lg--line-height: 16px;
+  --text-xl: 18px;
+  --text-xl--line-height: 18px;
+  --text-2xl: 20px;
+  --text-2xl--line-height: 20px;
+  --text-3xl: 24px;
+  --text-3xl--line-height: 24px;
+  --text-4xl: 30px;
+  --text-4xl--line-height: 30px;
+  --text-5xl: 36px;
+  --text-5xl--line-height: 36px;
+  --text-6xl: 48px;
+  --text-6xl--line-height: 48px;
+  --text-7xl: 64px;
+  --text-7xl--line-height: 64px;
+  --text-8xl: 72px;
+  --text-8xl--line-height: 72px;
+  --text-9xl: 96px;
+  --text-9xl--line-height: 96px;
+
+  /* Color variables */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  /* Extended chart colors */
+  --color-chart-0: var(--chart-0);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+  --color-chart-9: var(--chart-9);
+  --color-chart-10: var(--chart-10);
+  --color-chart-11: var(--chart-11);
+  --color-chart-12: var(--chart-12);
+  
+  /* Additional colors */
+  --color-highlight: var(--highlight);
+  --color-foregroundish: var(--foregroundish);
+  
+  /* def color scale - properly defined for all variants */
+  --color-def-100: var(--def-100);
+  --color-def-200: var(--def-200);
+  --color-def-300: var(--def-300);
+  --color-def-400: var(--def-400);
+  
+  /* Radius variables */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  
+  /* Sidebar colors */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Typography classes from globals.css */
+  .h1 {
+    @apply text-3xl font-medium;
+  }
+
+  .h2 {
+    @apply text-xl font-medium;
+  }
+
+  .h3 {
+    @apply text-lg font-medium;
+  }
+
+  .h4 {
+    @apply font-medium;
+  }
+
+  .ellipsis {
+    @apply overflow-hidden text-ellipsis whitespace-nowrap;
+  }
+
+  .heading {
+    @apply text-3xl font-semibold;
+  }
+
+  .title {
+    @apply text-lg font-semibold;
+  }
+
+  .subtitle {
+    @apply text-base font-medium;
+  }
+  
+  .card {
+    @apply rounded-md border border-border bg-card;
+  }
+}
+
+@utility center-center {
+  @apply flex items-center justify-center text-center;
+}
+
+@utility col {
+  @apply flex flex-col;
+}
+
+@utility row {
+  @apply flex flex-row;
+}
+
+@utility text-text {
+  @apply text-foreground;
+}
+
+@utility scrollbar-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Rechart styles from globals.css */
+.recharts-wrapper .recharts-cartesian-grid-horizontal line:first-child,
+.recharts-wrapper .recharts-cartesian-grid-horizontal line:last-child {
+  stroke-opacity: 0;
+}
+
+button {
+  @apply cursor-pointer;
+}
+
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Custom slow pulse animation */
+@keyframes slow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-slow-pulse {
+  animation: slow-pulse 4s ease-in-out infinite;
+}
+
+/* Floating element animations */
+@keyframes float-1 {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.6;
+  }
+}
+
+@keyframes float-2 {
+  0%, 100% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+}
+
+.animate-float-1 {
+  animation: float-1 4s ease-in-out infinite;
+}
+
+.animate-float-2 {
+  animation: float-2 3.5s ease-in-out infinite;
+  animation-delay: 1s;
+}

@@ -336,7 +336,7 @@ async function sendBatchToAPI(
         'openpanel-client-id': clientId,
         'openpanel-client-secret': clientSecret,
       },
-      body: zlib.gzipSync(JSON.stringify(batch)),
+      body: Buffer.from(zlib.gzipSync(JSON.stringify(batch))),
     });
     if (!res.ok) {
       throw new Error(`Failed to send batch: ${await res.text()}`);

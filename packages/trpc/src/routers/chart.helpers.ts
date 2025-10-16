@@ -1,6 +1,6 @@
 import * as mathjs from 'mathjs';
 import { last, pluck, reverse, uniq } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 import type { ISerieDataItem } from '@openpanel/common';
 import {
@@ -162,11 +162,11 @@ export async function getFunnelData({
   const funnels = payload.events.map((event) => {
     const { sb, getWhere } = createSqlBuilder();
     sb.where = getEventFiltersWhereClause(event.filters);
-    sb.where.name = `name = ${escape(event.name)}`;
+    sb.where.name = `name = ${sqlstring.escape(event.name)}`;
     return getWhere().replace('WHERE ', '');
   });
 
-  const commonWhere = `project_id = ${escape(projectId)} AND 
+  const commonWhere = `project_id = ${sqlstring.escape(projectId)} AND 
     created_at >= '${formatClickhouseDate(startDate)}' AND 
     created_at <= '${formatClickhouseDate(endDate)}'`;
 
@@ -177,7 +177,7 @@ export async function getFunnelData({
   ${funnelGroup[0] === 'session_id' ? '' : `LEFT JOIN (SELECT profile_id, id FROM sessions WHERE ${commonWhere}) AS s ON s.id = e.session_id`}
   WHERE 
     ${commonWhere} AND
-    name IN (${payload.events.map((event) => escape(event.name)).join(', ')})
+    name IN (${payload.events.map((event) => sqlstring.escape(event.name)).join(', ')})
   GROUP BY ${funnelGroup[0]}`;
 
   const sql = `SELECT level, count() AS count FROM (${innerSql}) WHERE level != 0 GROUP BY level ORDER BY level DESC`;

@@ -6,12 +6,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "react": "18.2.0"
+    "react": "catalog:"
   },
   "devDependencies": {
-    "@types/react": "^18.2.20",
+    "@types/react": "catalog:",
     "@openpanel/tsconfig": "workspace:*",
     "prisma": "^5.1.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

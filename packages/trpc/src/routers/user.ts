@@ -5,6 +5,12 @@ import { db } from '@openpanel/db';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const userRouter = createTRPCRouter({
+  test: publicProcedure.query(async ({ ctx }) => {
+    const user = await db.user.findFirst();
+    return {
+      user,
+    };
+  }),
   update: protectedProcedure
     .input(
       z.object({

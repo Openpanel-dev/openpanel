@@ -1,10 +1,11 @@
 {
   "name": "@openpanel/root",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "license": "MIT",
   "author": "Carl-Gerhard Lindesvärd",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.6.2",
   "scripts": {
     "test": "vitest run",
     "gen:bots": "pnpm -r --filter api gen:bots",
@@ -25,7 +26,8 @@
     "lint:fix": "biome check --write .",
     "lint:workspace": "pnpm dlx sherif@latest",
     "typecheck": "pnpm -r typecheck",
-    "update-simple-git-hooks": "npx simple-git-hooks"
+    "update-simple-git-hooks": "npx simple-git-hooks",
+    "deps:unused": "node tooling/unused-deps.mjs"
   },
   "simple-git-hooks": {
     "pre-push": "pnpm typecheck && pnpm test"
@@ -34,7 +36,7 @@
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "dotenv-cli": "^7.3.0",
     "semver": "^7.5.4",
-    "typescript": "^5.2.2",
+    "typescript": "catalog:",
     "winston": "^3.14.2"
   },
   "trustedDependencies": [
@@ -51,7 +53,13 @@
   ],
   "devDependencies": {
     "@biomejs/biome": "1.9.1",
+    "depcheck": "^1.4.7",
     "simple-git-hooks": "^2.12.1",
     "vitest": "^3.0.4"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "nuqs": "patches/nuqs.patch"
+    }
   }
 }

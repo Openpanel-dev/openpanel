@@ -1,7 +1,5 @@
+import type { TrackProperties } from '@openpanel/sdk';
 import type { OpenPanel, OpenPanelOptions } from './';
-import type {
-  TrackProperties,
-} from '@openpanel/sdk';
 
 type ExposedMethodsNames =
   | 'track'
@@ -22,7 +20,11 @@ export type OpenPanelMethodNames = ExposedMethodsNames | 'init' | 'screenView';
 export type OpenPanelMethods =
   | ExposedMethods
   | ['init', OpenPanelOptions]
-  | ['screenView', string | TrackProperties | undefined, TrackProperties | undefined];
+  | [
+      'screenView',
+      string | TrackProperties | undefined,
+      TrackProperties | undefined,
+    ];
 
 declare global {
   interface Window {

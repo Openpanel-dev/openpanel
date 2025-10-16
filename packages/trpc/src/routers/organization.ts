@@ -1,6 +1,14 @@
 import { z } from 'zod';
 
-import { connectUserToOrganization, db } from '@openpanel/db';
+import {
+  connectUserToOrganization,
+  db,
+  getInviteById,
+  getInvites,
+  getMembers,
+  getOrganizationById,
+  getOrganizations,
+} from '@openpanel/db';
 import { zEditOrganization, zInviteUser } from '@openpanel/validation';
 
 import { generateSecureId } from '@openpanel/common/server/id';
@@ -8,9 +16,24 @@ import { sendEmail } from '@openpanel/email';
 import { addDays } from 'date-fns';
 import { getOrganizationAccess } from '../access';
 import { TRPCAccessError, TRPCBadRequestError } from '../errors';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+import {
+  createTRPCRouter,
+  protectedProcedure,
+  publicProcedure,
+  rateLimitMiddleware,
+} from '../trpc';
 
 export const organizationRouter = createTRPCRouter({
+  get: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      return getOrganizationById(input.organizationId);
+    }),
+
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return getOrganizations(ctx.session.userId);
+  }),
+
   update: protectedProcedure
     .input(zEditOrganization)
     .mutation(async ({ input, ctx }) => {
@@ -116,7 +139,7 @@ export const organizationRouter = createTRPCRouter({
       await sendEmail('invite', {
         to: email,
         data: {
-          url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
+          url: `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/onboarding?inviteId=${invite.id}`,
           organizationName: invite.organization.name,
         },
       });
@@ -239,5 +262,32 @@ export const organizationRouter = createTRPCRouter({
           })),
         }),
       ]);
+    }),
+
+  members: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      return getMembers(input.organizationId);
+    }),
+
+  invitations: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ input }) => {
+      return getInvites(input.organizationId);
+    }),
+
+  getInvite: publicProcedure
+    .use(
+      rateLimitMiddleware({
+        max: 5,
+        windowMs: 30_000,
+      }),
+    )
+    .input(z.object({ inviteId: z.string().optional() }))
+    .query(async ({ input }) => {
+      if (!input.inviteId) {
+        throw TRPCBadRequestError('Invite ID is required');
+      }
+      return getInviteById(input.inviteId);
     }),
 });

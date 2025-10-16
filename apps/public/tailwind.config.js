@@ -1,4 +1,5 @@
 import { createPreset } from 'fumadocs-ui/tailwind-plugin';
+import animate from 'tailwindcss-animate';
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -11,7 +12,7 @@ export default {
     './node_modules/fumadocs-ui/dist/**/*.js',
   ],
   presets: [createPreset()],
-  plugins: [require('tailwindcss-animate')],
+  plugins: [animate],
   corePlugins: {
     container: false,
   },

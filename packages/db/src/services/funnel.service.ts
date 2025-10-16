@@ -1,7 +1,7 @@
 import { ifNaN } from '@openpanel/common';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
 import { last, reverse } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { ch } from '../clickhouse/client';
 import { TABLE_NAMES } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -24,7 +24,7 @@ export class FunnelService {
     return events.map((event) => {
       const { sb, getWhere } = createSqlBuilder();
       sb.where = getEventFiltersWhereClause(event.filters);
-      sb.where.name = `name = ${escape(event.name)}`;
+      sb.where.name = `name = ${sqlstring.escape(event.name)}`;
       return getWhere().replace('WHERE ', '');
     });
   }

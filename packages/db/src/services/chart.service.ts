@@ -1,4 +1,4 @@
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
@@ -45,7 +45,7 @@ export function getSelectPropertyKey(property: string) {
   if (!match) return property;
 
   if (property.includes('*')) {
-    return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${match}, ${escape(
+    return `arrayMap(x -> trim(x), mapValues(mapExtractKeyLike(${match}, ${sqlstring.escape(
       transformPropertyKey(property),
     )})))`;
   }
@@ -76,11 +76,11 @@ export function getChartSql({
   } = createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
-  sb.where.projectId = `project_id = ${escape(projectId)}`;
+  sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
   if (event.name !== '*') {
-    sb.select.label_0 = `${escape(event.name)} as label_0`;
-    sb.where.eventName = `name = ${escape(event.name)}`;
+    sb.select.label_0 = `${sqlstring.escape(event.name)} as label_0`;
+    sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
   } else {
     sb.select.label_0 = `'*' as label_0`;
   }
@@ -99,7 +99,7 @@ export function getChartSql({
       first_name as "profile.first_name",
       last_name as "profile.last_name",
       properties as "profile.properties"
-    FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${escape(projectId)}) as profile on profile.id = profile_id`;
+    FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
   }
 
   sb.select.count = 'count(*) as count';
@@ -251,14 +251,15 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'is': {
           if (isWildcard) {
             where[id] = `arrayExists(x -> ${value
-              .map((val) => `x = ${escape(String(val).trim())}`)
+              .map((val) => `x = ${sqlstring.escape(String(val).trim())}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
             if (value.length === 1) {
-              where[id] = `${whereFrom} = ${escape(String(value[0]).trim())}`;
+              where[id] =
+                `${whereFrom} = ${sqlstring.escape(String(value[0]).trim())}`;
             } else {
               where[id] = `${whereFrom} IN (${value
-                .map((val) => escape(String(val).trim()))
+                .map((val) => sqlstring.escape(String(val).trim()))
                 .join(', ')})`;
             }
           }
@@ -267,14 +268,15 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'isNot': {
           if (isWildcard) {
             where[id] = `arrayExists(x -> ${value
-              .map((val) => `x != ${escape(String(val).trim())}`)
+              .map((val) => `x != ${sqlstring.escape(String(val).trim())}`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
             if (value.length === 1) {
-              where[id] = `${whereFrom} != ${escape(String(value[0]).trim())}`;
+              where[id] =
+                `${whereFrom} != ${sqlstring.escape(String(value[0]).trim())}`;
             } else {
               where[id] = `${whereFrom} NOT IN (${value
-                .map((val) => escape(String(val).trim()))
+                .map((val) => sqlstring.escape(String(val).trim()))
                 .join(', ')})`;
             }
           }
@@ -283,13 +285,16 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'contains': {
           if (isWildcard) {
             where[id] = `arrayExists(x -> ${value
-              .map((val) => `x LIKE ${escape(`%${String(val).trim()}%`)}`)
+              .map(
+                (val) =>
+                  `x LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
+              )
               .join(' OR ')}, ${whereFrom})`;
           } else {
             where[id] = `(${value
               .map(
                 (val) =>
-                  `${whereFrom} LIKE ${escape(`%${String(val).trim()}%`)}`,
+                  `${whereFrom} LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
               )
               .join(' OR ')})`;
           }
@@ -298,13 +303,16 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'doesNotContain': {
           if (isWildcard) {
             where[id] = `arrayExists(x -> ${value
-              .map((val) => `x NOT LIKE ${escape(`%${String(val).trim()}%`)}`)
+              .map(
+                (val) =>
+                  `x NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
+              )
               .join(' OR ')}, ${whereFrom})`;
           } else {
             where[id] = `(${value
               .map(
                 (val) =>
-                  `${whereFrom} NOT LIKE ${escape(`%${String(val).trim()}%`)}`,
+                  `${whereFrom} NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
               )
               .join(' OR ')})`;
           }
@@ -313,13 +321,15 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'startsWith': {
           if (isWildcard) {
             where[id] = `arrayExists(x -> ${value
-              .map((val) => `x LIKE ${escape(`${String(val).trim()}%`)}`)
+              .map(
+                (val) => `x LIKE ${sqlstring.escape(`${String(val).trim()}%`)}`,
+              )
               .join(' OR ')}, ${whereFrom})`;
           } else {
             where[id] = `(${value
               .map(
                 (val) =>
-                  `${whereFrom} LIKE ${escape(`${String(val).trim()}%`)}`,
+                  `${whereFrom} LIKE ${sqlstring.escape(`${String(val).trim()}%`)}`,
               )
               .join(' OR ')})`;
           }
@@ -328,13 +338,15 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'endsWith': {
           if (isWildcard) {
             where[id] = `arrayExists(x -> ${value
-              .map((val) => `x LIKE ${escape(`%${String(val).trim()}`)}`)
+              .map(
+                (val) => `x LIKE ${sqlstring.escape(`%${String(val).trim()}`)}`,
+              )
               .join(' OR ')}, ${whereFrom})`;
           } else {
             where[id] = `(${value
               .map(
                 (val) =>
-                  `${whereFrom} LIKE ${escape(`%${String(val).trim()}`)}`,
+                  `${whereFrom} LIKE ${sqlstring.escape(`%${String(val).trim()}`)}`,
               )
               .join(' OR ')})`;
           }
@@ -343,12 +355,13 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         case 'regex': {
           if (isWildcard) {
             where[id] = `arrayExists(x -> ${value
-              .map((val) => `match(x, ${escape(String(val).trim())})`)
+              .map((val) => `match(x, ${sqlstring.escape(String(val).trim())})`)
               .join(' OR ')}, ${whereFrom})`;
           } else {
             where[id] = `(${value
               .map(
-                (val) => `match(${whereFrom}, ${escape(String(val).trim())})`,
+                (val) =>
+                  `match(${whereFrom}, ${sqlstring.escape(String(val).trim())})`,
               )
               .join(' OR ')})`;
           }
@@ -376,10 +389,11 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
       switch (operator) {
         case 'is': {
           if (value.length === 1) {
-            where[id] = `${name} = ${escape(String(value[0]).trim())}`;
+            where[id] =
+              `${name} = ${sqlstring.escape(String(value[0]).trim())}`;
           } else {
             where[id] = `${name} IN (${value
-              .map((val) => escape(String(val).trim()))
+              .map((val) => sqlstring.escape(String(val).trim()))
               .join(', ')})`;
           }
           break;
@@ -394,37 +408,48 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
         }
         case 'isNot': {
           if (value.length === 1) {
-            where[id] = `${name} != ${escape(String(value[0]).trim())}`;
+            where[id] =
+              `${name} != ${sqlstring.escape(String(value[0]).trim())}`;
           } else {
             where[id] = `${name} NOT IN (${value
-              .map((val) => escape(String(val).trim()))
+              .map((val) => sqlstring.escape(String(val).trim()))
               .join(', ')})`;
           }
           break;
         }
         case 'contains': {
           where[id] = `(${value
-            .map((val) => `${name} LIKE ${escape(`%${String(val).trim()}%`)}`)
+            .map(
+              (val) =>
+                `${name} LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
+            )
             .join(' OR ')})`;
           break;
         }
         case 'doesNotContain': {
           where[id] = `(${value
             .map(
-              (val) => `${name} NOT LIKE ${escape(`%${String(val).trim()}%`)}`,
+              (val) =>
+                `${name} NOT LIKE ${sqlstring.escape(`%${String(val).trim()}%`)}`,
             )
             .join(' OR ')})`;
           break;
         }
         case 'startsWith': {
           where[id] = `(${value
-            .map((val) => `${name} LIKE ${escape(`${String(val).trim()}%`)}`)
+            .map(
+              (val) =>
+                `${name} LIKE ${sqlstring.escape(`${String(val).trim()}%`)}`,
+            )
             .join(' OR ')})`;
           break;
         }
         case 'endsWith': {
           where[id] = `(${value
-            .map((val) => `${name} LIKE ${escape(`%${String(val).trim()}`)}`)
+            .map(
+              (val) =>
+                `${name} LIKE ${sqlstring.escape(`%${String(val).trim()}`)}`,
+            )
             .join(' OR ')})`;
           break;
         }
@@ -432,7 +457,7 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           where[id] = `(${value
             .map(
               (val) =>
-                `match(${name}, ${escape(stripLeadingAndTrailingSlashes(String(val)).trim())})`,
+                `match(${name}, ${sqlstring.escape(stripLeadingAndTrailingSlashes(String(val)).trim())})`,
             )
             .join(' OR ')})`;
           break;

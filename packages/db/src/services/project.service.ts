@@ -1,5 +1,5 @@
 import { cacheable } from '@openpanel/redis';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { TABLE_NAMES, chQuery } from '../clickhouse/client';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -50,7 +50,7 @@ export async function getProjectsByOrganizationId(organizationId: string) {
       organizationId,
     },
     orderBy: {
-      createdAt: 'desc',
+      eventsCount: 'desc',
     },
   });
 }
@@ -104,7 +104,7 @@ export async function getProjects({
 
 export const getProjectEventsCount = async (projectId: string) => {
   const res = await chQuery<{ count: number }>(
-    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)}`,
+    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)}`,
   );
   return res[0]?.count;
 };

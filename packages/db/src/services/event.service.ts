@@ -1,5 +1,5 @@
 import { path, assocPath, last, mergeDeepRight } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
 import { DateTime, toDots } from '@openpanel/common';
@@ -17,10 +17,17 @@ import {
 import { type Query, clix } from '../clickhouse/query-builder';
 import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
-import { createSqlBuilder } from '../sql-builder';
+import { type SqlBuilderObject, createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
+import { getOrganizationByProjectIdCached } from './organization.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
-import { getProfileById, getProfiles, upsertProfile } from './profile.service';
+import {
+  getProfileById,
+  getProfileByIdCached,
+  getProfiles,
+  getProfilesCached,
+  upsertProfile,
+} from './profile.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -258,7 +265,7 @@ export async function getEvents(
     const ids = events
       .filter((e) => e.device_id !== e.profile_id)
       .map((e) => e.profile_id);
-    const profiles = await getProfiles(ids, projectId);
+    const profiles = await getProfilesCached(ids, projectId);
 
     const map = new Map<string, IServiceProfile>();
     for (const profile of profiles) {
@@ -266,7 +273,17 @@ export async function getEvents(
     }
 
     for (const event of events) {
-      event.profile = map.get(event.profile_id);
+      event.profile = map.get(event.profile_id) ?? {
+        id: event.profile_id,
+        email: '',
+        avatar: '',
+        firstName: '',
+        lastName: '',
+        createdAt: new Date(),
+        projectId,
+        isExternal: false,
+        properties: {},
+      };
     }
   }
 
@@ -365,6 +382,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
 export interface GetEventListOptions {
   projectId: string;
   profileId?: string;
+  sessionId?: string;
   take: number;
   cursor?: number | Date;
   events?: string[] | null;
@@ -372,29 +390,46 @@ export interface GetEventListOptions {
   startDate?: Date;
   endDate?: Date;
   select?: SelectHelper<IServiceEvent>;
+  custom?: (sb: SqlBuilderObject) => void;
 }
 
-export async function getEventList({
-  cursor,
-  take,
-  projectId,
-  profileId,
-  events,
-  filters,
-  startDate,
-  endDate,
-  select: incomingSelect,
-}: GetEventListOptions) {
+export async function getEventList(options: GetEventListOptions) {
+  const {
+    cursor,
+    take,
+    projectId,
+    profileId,
+    sessionId,
+    events,
+    filters,
+    startDate,
+    endDate,
+    select: incomingSelect,
+    custom,
+  } = options;
   const { sb, getSql, join } = createSqlBuilder();
+
+  const organization = await getOrganizationByProjectIdCached(projectId);
+  // This will speed up the query quite a lot for big organizations
+  const dateIntervalInDays =
+    organization?.subscriptionPeriodEventsLimit &&
+    organization?.subscriptionPeriodEventsLimit > 1_000_000
+      ? 1
+      : 7;
 
   if (typeof cursor === 'number') {
     sb.offset = Math.max(0, (cursor ?? 0) * take);
   } else if (cursor instanceof Date) {
-    sb.where.cursor = `created_at <= '${formatClickhouseDate(cursor)}'`;
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(cursor))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
+    sb.where.cursor = `created_at <= ${sqlstring.escape(formatClickhouseDate(cursor))}`;
+  }
+
+  if (!cursor) {
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
   }
 
   sb.limit = take;
-  sb.where.projectId = `project_id = ${escape(projectId)}`;
+  sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
   const select = mergeDeepRight(
     {
       id: true,
@@ -503,7 +538,11 @@ export async function getEventList({
   }
 
   if (profileId) {
-    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)} AND device_id != '' AND profile_id = ${escape(profileId)} group by did) OR profile_id = ${escape(profileId)})`;
+    sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND device_id != '' AND profile_id = ${sqlstring.escape(profileId)} group by did) OR profile_id = ${sqlstring.escape(profileId)})`;
+  }
+
+  if (sessionId) {
+    sb.where.sessionId = `session_id = ${sqlstring.escape(sessionId)}`;
   }
 
   if (startDate && endDate) {
@@ -527,10 +566,29 @@ export async function getEventList({
   sb.orderBy.created_at =
     'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
 
-  return getEvents(getSql(), {
+  if (custom) {
+    custom(sb);
+  }
+
+  console.log('getSql()', getSql());
+
+  const data = await getEvents(getSql(), {
     profile: select.profile ?? true,
     meta: select.meta ?? true,
   });
+
+  // If we dont get any events, try without the cursor window
+  if (data.length === 0 && sb.where.cursorWindow) {
+    return getEventList({
+      ...options,
+      custom(sb) {
+        options.custom?.(sb);
+        delete sb.where.cursorWindow;
+      },
+    });
+  }
+
+  return data;
 }
 
 export const getEventsCountCached = cacheable(getEventsCount, 60 * 10);
@@ -543,9 +601,9 @@ export async function getEventsCount({
   endDate,
 }: Omit<GetEventListOptions, 'cursor' | 'take'>) {
   const { sb, getSql, join } = createSqlBuilder();
-  sb.where.projectId = `project_id = ${escape(projectId)}`;
+  sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
   if (profileId) {
-    sb.where.profileId = `profile_id = ${escape(profileId)}`;
+    sb.where.profileId = `profile_id = ${sqlstring.escape(profileId)}`;
   }
 
   if (startDate && endDate) {
@@ -614,7 +672,7 @@ export async function getTopPages({
     SELECT path, count(*) as count, project_id, first_value(created_at) as first_seen, last_value(properties['__title']) as title, origin
     FROM ${TABLE_NAMES.events} 
     WHERE name = 'screen_view' 
-    AND  project_id = ${escape(projectId)} 
+    AND  project_id = ${sqlstring.escape(projectId)} 
     AND created_at > now() - INTERVAL 30 DAY 
     ${search ? `AND path ILIKE '%${search}%'` : ''}
     GROUP BY path, project_id, origin
@@ -824,34 +882,41 @@ class EventService {
     id: string;
     createdAt?: Date;
   }) {
-    const event = await clix(this.client)
-      .select<IClickhouseEvent>(['*'])
-      .from('events')
-      .where('project_id', '=', projectId)
-      .when(!!createdAt, (q) => {
-        if (createdAt) {
-          q.where('created_at', 'BETWEEN', [
-            new Date(createdAt.getTime() - 1000),
-            new Date(createdAt.getTime() + 1000),
-          ]);
-        }
-      })
-      .where('id', '=', id)
-      .limit(1)
-      .execute()
-      .then((res) => {
-        if (!res[0]) {
-          return null;
-        }
+    const [event, metas] = await Promise.all([
+      clix(this.client)
+        .select<IClickhouseEvent>(['*'])
+        .from('events')
+        .where('project_id', '=', projectId)
+        .when(!!createdAt, (q) => {
+          if (createdAt) {
+            q.where('created_at', 'BETWEEN', [
+              new Date(createdAt.getTime() - 1000),
+              new Date(createdAt.getTime() + 1000),
+            ]);
+          }
+        })
+        .where('id', '=', id)
+        .limit(1)
+        .execute()
+        .then((res) => {
+          if (!res[0]) {
+            return null;
+          }
 
-        return transformEvent(res[0]);
-      });
+          return transformEvent(res[0]);
+        }),
+      getEventMetasCached(projectId),
+    ]);
 
     if (event?.profileId) {
-      const profile = await getProfileById(event?.profileId, projectId);
+      const profile = await getProfileByIdCached(event?.profileId, projectId);
       if (profile) {
         event.profile = profile;
       }
+    }
+
+    if (event) {
+      event.meta = metas.find((meta) => meta.name === event.name);
     }
 
     return event;

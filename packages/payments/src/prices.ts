@@ -26,7 +26,7 @@ export const PRICING: IPrice[] = [
   },
   { price: 180, events: 2_500_000 },
   { price: 250, events: 5_000_000 },
-  { price: 400, events: 10_000_000 },
+  { price: 300, events: 10_000_000 },
 ];
 
 export const FREE_PRODUCT_IDS = [

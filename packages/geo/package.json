@@ -11,10 +11,10 @@
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "fast-extract": "^1.4.3",
     "tar": "^7.4.3",
-    "typescript": "^5.2.2",
+    "typescript": "catalog:",
     "jiti": "^2.4.1"
   }
 }

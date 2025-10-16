@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "openpanel-dashboard",
+  "account_id": "ff15074258b1981316524df0b09047df",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "routes": [
+    {
+      "pattern": "start.openpanel.dev/*",
+      "zone_name": "openpanel.dev"
+    }
+  ],
+  "vars": {
+    "API_URL": "https://api.staging.k8s.openpanel.dev",
+    "DASHBOARD_URL": "https://start.openpanel.dev",
+    "NODE_ENV": "production",
+    "APP_VERSION": "1.0.0"
+  }
+}

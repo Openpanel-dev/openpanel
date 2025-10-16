@@ -4,8 +4,12 @@ import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
-import { COOKIE_OPTIONS, validateSessionToken } from '@openpanel/auth';
-import { getRedisCache } from '@openpanel/redis';
+import {
+  COOKIE_OPTIONS,
+  EMPTY_SESSION,
+  validateSessionToken,
+} from '@openpanel/auth';
+import { getCache, getRedisCache } from '@openpanel/redis';
 import type { ISetCookie } from '@openpanel/validation';
 import {
   createTrpcRedisLimiter,
@@ -31,6 +35,7 @@ export const rateLimitMiddleware = ({
   });
 
 export async function createContext({ req, res }: CreateFastifyContextOptions) {
+  const cookies = (req as any).cookies as Record<string, string | undefined>;
   const setCookie: ISetCookie = (key, value, options) => {
     // @ts-ignore
     res.setCookie(key, value, {
@@ -39,8 +44,17 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
     });
   };
 
-  // @ts-ignore
-  const session = await validateSessionToken(req.cookies?.session);
+  const session = cookies?.session
+    ? await getCache(`session:${cookies?.session}`, 1000 * 60 * 5, async () => {
+        return validateSessionToken(cookies.session!);
+      })
+    : EMPTY_SESSION;
+
+  if (process.env.NODE_ENV !== 'production') {
+    await new Promise((res) =>
+      setTimeout(() => res(1), Math.min(Math.random() * 500, 200)),
+    );
+  }
 
   return {
     req,
@@ -49,6 +63,7 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
     // we do not get types for `setCookie` from fastify
     // so define it here and be safe in routers
     setCookie,
+    cookies,
   };
 }
 export type Context = Awaited<ReturnType<typeof createContext>>;
@@ -88,7 +103,8 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 });
 
 // Only used on protected routes
-const enforceAccess = t.middleware(async ({ ctx, next, rawInput, type }) => {
+const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
+  const rawInput = await getRawInput();
   if (type === 'mutation' && process.env.DEMO_USER_ID) {
     throw new TRPCError({
       code: 'UNAUTHORIZED',
@@ -124,7 +140,8 @@ const enforceAccess = t.middleware(async ({ ctx, next, rawInput, type }) => {
 export const createTRPCRouter = t.router;
 
 const loggerMiddleware = t.middleware(
-  async ({ ctx, next, rawInput, path, input, type }) => {
+  async ({ ctx, next, getRawInput, path, input, type }) => {
+    const rawInput = await getRawInput();
     // Only log mutations
     if (type === 'mutation') {
       ctx.req.log.info('TRPC mutation', {
@@ -153,7 +170,8 @@ const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
 };
 
 export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
-  t.middleware(async ({ ctx, next, path, type, rawInput, input }) => {
+  t.middleware(async ({ ctx, next, path, type, getRawInput, input }) => {
+    const rawInput = await getRawInput();
     if (type !== 'query') {
       return next();
     }

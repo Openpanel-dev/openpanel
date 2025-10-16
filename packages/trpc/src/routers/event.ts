@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { z } from 'zod';
 
 import {
@@ -117,6 +117,7 @@ export const eventRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         profileId: z.string().optional(),
+        sessionId: z.string().optional(),
         cursor: z.string().optional(),
         filters: z.array(zChartEventFilter).default([]),
         startDate: z.date().optional(),
@@ -130,10 +131,15 @@ export const eventRouter = createTRPCRouter({
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
         select: {
+          profile: true,
           properties: true,
           sessionId: true,
           deviceId: true,
           profileId: true,
+          referrerName: true,
+          referrerType: true,
+          referrer: true,
+          origin: true,
         },
       });
 
@@ -159,7 +165,7 @@ export const eventRouter = createTRPCRouter({
       const lastItem = items[items.length - 1];
 
       return {
-        items,
+        data: items,
         meta: {
           next:
             items.length === 50 && lastItem
@@ -168,39 +174,80 @@ export const eventRouter = createTRPCRouter({
         },
       };
     }),
+  conversionNames: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input: { projectId } }) => {
+      return getConversionEventNames(projectId);
+    }),
   conversions: protectedProcedure
     .input(
       z.object({
         projectId: z.string(),
         cursor: z.string().optional(),
+        startDate: z.date().optional(),
+        endDate: z.date().optional(),
       }),
     )
-    .query(async ({ input: { projectId, cursor } }) => {
-      const conversions = await getConversionEventNames(projectId);
+    .query(async ({ input }) => {
+      const conversions = await getConversionEventNames(input.projectId);
 
       if (conversions.length === 0) {
         return {
-          items: [],
+          data: [],
           meta: {
             next: null,
           },
         };
       }
 
-      const items = await getEvents(
-        `SELECT * FROM ${TABLE_NAMES.events} WHERE ${cursor ? `created_at <= '${formatClickhouseDate(cursor)}' AND` : ''} project_id = ${escape(projectId)} AND name IN (${conversions.map((c) => escape(c.name)).join(', ')}) ORDER BY toDate(created_at) DESC, created_at DESC LIMIT 50;`,
-        {
+      const items = await getEventList({
+        ...input,
+        take: 50,
+        cursor: input.cursor ? new Date(input.cursor) : undefined,
+        select: {
           profile: true,
-          meta: true,
+          properties: true,
+          sessionId: true,
+          deviceId: true,
+          profileId: true,
+          referrerName: true,
+          referrerType: true,
+          referrer: true,
+          origin: true,
         },
-      );
+        custom: (sb) => {
+          sb.where.name = `name IN (${conversions.map((event) => sqlstring.escape(event.name)).join(',')})`;
+        },
+      });
+
+      // Hacky join to get profile for entire session
+      // TODO: Replace this with a join on the session table
+      const map = new Map<string, IServiceProfile>(); // sessionId -> profileId
+      for (const item of items) {
+        if (item.sessionId && item.profile?.isExternal === true) {
+          map.set(item.sessionId, item.profile);
+        }
+      }
+
+      for (const item of items) {
+        const profile = map.get(item.sessionId);
+        if (profile && (item.profile?.isExternal === false || !item.profile)) {
+          item.profile = clone(profile);
+          if (item?.profile?.firstName) {
+            item.profile.firstName = `* ${item.profile.firstName}`;
+          }
+        }
+      }
 
       const lastItem = items[items.length - 1];
 
       return {
-        items,
+        data: items,
         meta: {
-          next: lastItem ? lastItem.createdAt.toISOString() : null,
+          next:
+            items.length === 50 && lastItem
+              ? lastItem.createdAt.toISOString()
+              : null,
         },
       };
     }),
@@ -243,12 +290,12 @@ export const eventRouter = createTRPCRouter({
           path: string;
           created_at: string;
         }>(
-          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`,
+          `SELECT * FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${sqlstring.escape(projectId)} ORDER BY created_at DESC LIMIT ${limit} OFFSET ${(cursor ?? 0) * limit}`,
         ),
         chQuery<{
           count: number;
         }>(
-          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${escape(projectId)}`,
+          `SELECT count(*) as count FROM ${TABLE_NAMES.events_bots} WHERE project_id = ${sqlstring.escape(projectId)}`,
         ),
       ]);
 
@@ -303,7 +350,7 @@ export const eventRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       const res = await chQuery<{ origin: string }>(
-        `SELECT DISTINCT origin FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(
+        `SELECT DISTINCT origin FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(
           input.projectId,
         )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY ORDER BY origin ASC`,
       );

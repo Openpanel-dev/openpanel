@@ -1,5 +1,5 @@
 import { omit, uniq } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 import { strip, toObject } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
@@ -21,25 +21,69 @@ export type IProfileMetrics = {
   sessions: number;
   durationAvg: number;
   durationP90: number;
+  totalEvents: number;
+  uniqueDaysActive: number;
+  bounceRate: number;
+  avgEventsPerSession: number;
+  conversionEvents: number;
+  avgTimeBetweenSessions: number;
 };
 export function getProfileMetrics(profileId: string, projectId: string) {
   return chQuery<IProfileMetrics>(`
     WITH lastSeen AS (
-      SELECT max(created_at) as lastSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT max(created_at) as lastSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     firstSeen AS (
-      SELECT min(created_at) as firstSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT min(created_at) as firstSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     screenViews AS (
-      SELECT count(*) as screenViews FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT count(*) as screenViews FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     sessions AS (
-      SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     duration AS (
-      SELECT avg(duration) as durationAvg, quantilesExactInclusive(0.9)(duration)[1] as durationP90 FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND duration != 0 AND profile_id = ${escape(profileId)} AND project_id = ${escape(projectId)}
+      SELECT 
+        round(avg(duration) / 1000 / 60, 2) as durationAvg, 
+        round(quantilesExactInclusive(0.9)(duration)[1] / 1000 / 60, 2) as durationP90 
+      FROM ${TABLE_NAMES.events} 
+      WHERE name = 'session_end' AND duration != 0 AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    totalEvents AS (
+      SELECT count(*) as totalEvents FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    uniqueDaysActive AS (
+      SELECT count(DISTINCT toDate(created_at)) as uniqueDaysActive FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    bounceRate AS (
+      SELECT round(avg(properties['__bounce'] = '1') * 100, 4) as bounceRate FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    avgEventsPerSession AS (
+      SELECT round((SELECT totalEvents FROM totalEvents) / nullIf((SELECT sessions FROM sessions), 0), 2) as avgEventsPerSession
+    ),
+    conversionEvents AS (
+      SELECT count(*) as conversionEvents FROM ${TABLE_NAMES.events} WHERE name NOT IN ('screen_view', 'session_start', 'session_end') AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+    ),
+    avgTimeBetweenSessions AS (
+      SELECT 
+        CASE 
+          WHEN (SELECT sessions FROM sessions) <= 1 THEN 0
+          ELSE round(dateDiff('second', (SELECT firstSeen FROM firstSeen), (SELECT lastSeen FROM lastSeen)) / nullIf((SELECT sessions FROM sessions) - 1, 0), 1)
+        END as avgTimeBetweenSessions
     )
-    SELECT lastSeen, firstSeen, screenViews, sessions, durationAvg, durationP90 FROM lastSeen, firstSeen, screenViews,sessions, duration
+    SELECT 
+      (SELECT lastSeen FROM lastSeen) as lastSeen, 
+      (SELECT firstSeen FROM firstSeen) as firstSeen, 
+      (SELECT screenViews FROM screenViews) as screenViews, 
+      (SELECT sessions FROM sessions) as sessions, 
+      (SELECT durationAvg FROM duration) as durationAvg, 
+      (SELECT durationP90 FROM duration) as durationP90,
+      (SELECT totalEvents FROM totalEvents) as totalEvents,
+      (SELECT uniqueDaysActive FROM uniqueDaysActive) as uniqueDaysActive,
+      (SELECT bounceRate FROM bounceRate) as bounceRate,
+      (SELECT avgEventsPerSession FROM avgEventsPerSession) as avgEventsPerSession,
+      (SELECT conversionEvents FROM conversionEvents) as conversionEvents,
+      (SELECT avgTimeBetweenSessions FROM avgTimeBetweenSessions) as avgTimeBetweenSessions
   `).then((data) => data[0]!);
 }
 
@@ -59,7 +103,7 @@ export async function getProfileById(id: string, projectId: string) {
       last_value(is_external) as is_external, 
       last_value(properties) as properties, 
       last_value(created_at) as created_at
-    FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${escape(String(id))} AND project_id = ${escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`,
+    FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${sqlstring.escape(String(id))} AND project_id = ${sqlstring.escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`,
   );
 
   if (!profile) {
@@ -77,6 +121,7 @@ interface GetProfileListOptions {
   cursor?: number;
   filters?: IChartEventFilter[];
   search?: string;
+  isExternal?: boolean;
 }
 
 export async function getProfiles(ids: string[], projectId: string) {
@@ -99,8 +144,8 @@ export async function getProfiles(ids: string[], projectId: string) {
       any(created_at) as created_at
     FROM ${TABLE_NAMES.profiles}
     WHERE 
-      project_id = ${escape(projectId)} AND
-      id IN (${filteredIds.map((id) => escape(id)).join(',')})
+      project_id = ${sqlstring.escape(projectId)} AND
+      id IN (${filteredIds.map((id) => sqlstring.escape(id)).join(',')})
     GROUP BY id, project_id
     `,
   );
@@ -108,22 +153,27 @@ export async function getProfiles(ids: string[], projectId: string) {
   return data.map(transformProfile);
 }
 
+export const getProfilesCached = cacheable(getProfiles, 60 * 5);
+
 export async function getProfileList({
   take,
   cursor,
   projectId,
-  filters,
   search,
+  isExternal,
 }: GetProfileListOptions) {
   const { sb, getSql } = createSqlBuilder();
   sb.from = `${TABLE_NAMES.profiles} FINAL`;
   sb.select.all = '*';
-  sb.where.project_id = `project_id = ${escape(projectId)}`;
+  sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.limit = take;
   sb.offset = Math.max(0, (cursor ?? 0) * take);
   sb.orderBy.created_at = 'created_at DESC';
   if (search) {
     sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
+  }
+  if (isExternal !== undefined) {
+    sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
   }
   const data = await chQuery<IClickhouseProfile>(getSql());
   return data.map(transformProfile);
@@ -131,13 +181,20 @@ export async function getProfileList({
 
 export async function getProfileListCount({
   projectId,
-  filters,
+  isExternal,
+  search,
 }: Omit<GetProfileListOptions, 'cursor' | 'take'>) {
   const { sb, getSql } = createSqlBuilder();
   sb.from = 'profiles';
   sb.select.count = 'count(id) as count';
-  sb.where.project_id = `project_id = ${escape(projectId)}`;
+  sb.where.project_id = `project_id = ${sqlstring.escape(projectId)}`;
   sb.groupBy.project_id = 'project_id';
+  if (search) {
+    sb.where.search = `(email ILIKE '%${search}%' OR first_name ILIKE '%${search}%' OR last_name ILIKE '%${search}%')`;
+  }
+  if (isExternal !== undefined) {
+    sb.where.external = `is_external = ${isExternal ? 'true' : 'false'}`;
+  }
   const data = await chQuery<{ count: number }>(getSql());
   return data[0]?.count ?? 0;
 }

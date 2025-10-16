@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/integrations",
   "version": "0.0.1",
+  "type": "module",
   "main": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -12,7 +13,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
-    "@types/node": "20.14.8",
-    "typescript": "^5.2.2"
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }

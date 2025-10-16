@@ -16,19 +16,3 @@ export async function getReferenceById(id: string) {
 
   return reference;
 }
-
-export async function getReferences({
-  where,
-  take,
-  skip,
-}: {
-  where: Prisma.ReferenceWhereInput;
-  take?: number;
-  skip?: number;
-}) {
-  return db.reference.findMany({
-    where,
-    take: take ?? 50,
-    skip,
-  });
-}

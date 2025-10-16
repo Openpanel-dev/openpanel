@@ -1,6 +1,6 @@
 import { getSuperJson, setSuperJson } from '@openpanel/json';
 import type { RedisOptions } from 'ioredis';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 const options: RedisOptions = {
   connectTimeout: 10000,

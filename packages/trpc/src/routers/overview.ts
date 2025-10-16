@@ -1,4 +1,5 @@
 import {
+  eventBuffer,
   getChartPrevStartEndDate,
   getChartStartEndDate,
   getOrganizationSubscriptionChartEndDate,
@@ -76,6 +77,11 @@ function getCurrentAndPrevious<
 }
 
 export const overviewRouter = createTRPCRouter({
+  liveVisitors: publicProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input }) => {
+      return eventBuffer.getActiveVisitorCount(input.projectId);
+    }),
   stats: publicProcedure
     .input(
       zGetMetricsInput.omit({ startDate: true, endDate: true }).extend({

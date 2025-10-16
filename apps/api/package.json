@@ -1,11 +1,12 @@
 {
   "name": "@openpanel/api",
   "version": "0.0.4",
+  "type": "module",
   "scripts": {
-    "dev": "dotenv -e ../../.env -c -v WATCH=1 tsup",
+    "dev": "dotenv -e ../../.env -c -v WATCH=1 tsdown",
     "testing": "API_PORT=3333 pnpm dev",
-    "start": "node dist/index.js",
-    "build": "rm -rf dist && tsup",
+    "start": "dotenv -e ../../.env node dist/index.js",
+    "build": "rm -rf dist && tsdown",
     "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
     "typecheck": "tsc --noEmit"
   },
@@ -31,15 +32,13 @@
     "@openpanel/redis": "workspace:*",
     "@openpanel/trpc": "workspace:*",
     "@openpanel/validation": "workspace:*",
-    "@trpc/server": "^10.45.2",
+    "@trpc/server": "^11.6.0",
     "ai": "^4.2.10",
-    "bcrypt": "^5.1.1",
     "fast-json-stable-hash": "^1.0.3",
     "fastify": "^5.2.1",
     "fastify-metrics": "^12.1.0",
     "fastify-raw-body": "^5.0.0",
     "groupmq": "1.0.0-next.19",
-    "ico-to-png": "^0.2.2",
     "jsonwebtoken": "^9.0.2",
     "ramda": "^0.29.1",
     "request-ip": "^3.3.0",
@@ -65,7 +64,7 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.14",
     "js-yaml": "^4.1.0",
-    "tsup": "^7.2.0",
-    "typescript": "^5.2.2"
+    "tsdown": "^0.14.2",
+    "typescript": "catalog:"
   }
 }

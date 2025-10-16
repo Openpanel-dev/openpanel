@@ -1,5 +1,6 @@
 import { Polar } from '@polar-sh/sdk';
-import type { ProductCreate } from '@polar-sh/sdk/models/components/productcreate';
+import type { Product } from '@polar-sh/sdk/dist/esm/models/components/product';
+import type { ProductCreate } from '@polar-sh/sdk/dist/esm/models/components/productcreate';
 import inquirer from 'inquirer';
 import { PRICING } from '../';
 
@@ -69,7 +70,7 @@ async function main() {
 
   const isDry = process.argv.includes('--dry');
   const products = await getProducts();
-  const createProducts = [];
+  const createProducts: Product[] = [];
   for (const price of PRICING) {
     if (price.price === 0) {
       const exists = products.find(

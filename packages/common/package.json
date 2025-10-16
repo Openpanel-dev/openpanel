@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/common",
   "version": "0.0.1",
+  "type": "module",
   "main": "index.ts",
   "scripts": {
     "test": "vitest",
@@ -22,10 +23,10 @@
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@types/luxon": "^3.6.2",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",
     "prisma": "^5.1.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

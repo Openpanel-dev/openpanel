@@ -16,8 +16,8 @@
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/react": "^18.2.20",
+    "@types/react": "catalog:",
     "tsup": "^7.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

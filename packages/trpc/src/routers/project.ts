@@ -6,19 +6,38 @@ import { hashPassword } from '@openpanel/common/server';
 import {
   type Prisma,
   db,
-  getClientById,
   getClientByIdCached,
   getId,
   getProjectByIdCached,
+  getProjectWithClients,
   getProjectsByOrganizationId,
 } from '@openpanel/db';
 import { zOnboardingProject, zProject } from '@openpanel/validation';
-import { addDays, addHours } from 'date-fns';
+import { addHours } from 'date-fns';
 import { getProjectAccess } from '../access';
 import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const projectRouter = createTRPCRouter({
+  getProjectWithClients: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input: { projectId }, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      return getProjectWithClients(projectId);
+    }),
+
   list: protectedProcedure
     .input(
       z.object({
