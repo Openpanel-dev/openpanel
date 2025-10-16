@@ -36,6 +36,15 @@ export const BarWithBorder = (options: Options) => {
   };
 };
 
+export const BarShapeGrey = BarWithBorder({
+  borderHeight: 2,
+  border: 'rgba(100, 100, 100, 1)',
+  fill: 'rgba(100, 100, 100, 0.3)',
+  active: {
+    border: 'rgba(100, 100, 100, 1)',
+    fill: 'rgba(100, 100, 100, 0.4)',
+  },
+});
 export const BarShapeBlue = BarWithBorder({
   borderHeight: 2,
   border: 'rgba(59, 121, 255, 1)',

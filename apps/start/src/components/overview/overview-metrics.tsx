@@ -24,7 +24,7 @@ import {
   YAxis,
 } from 'recharts';
 import { createChartTooltip } from '../charts/chart-tooltip';
-import { BarShapeBlue } from '../charts/common-bar';
+import { BarShapeBlue, BarShapeGrey } from '../charts/common-bar';
 import { useXAxisProps, useYAxisProps } from '../report-chart/common/axis';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
@@ -245,20 +245,13 @@ function Chart({
             className="stroke-border"
           />
 
-          <Line
+          <Bar
             key={`prev_${activeMetric.key}`}
-            type="step"
             dataKey={`prev_${activeMetric.key}`}
-            stroke={'var(--border)'}
-            strokeWidth={2}
             isAnimationActive={false}
-            dot={false}
-            activeDot={{
-              stroke: 'var(--foreground)',
-              fill: 'var(--def-100)',
-              strokeWidth: 1,
-              r: 2,
-            }}
+            shape={(props: any) => (
+              <BarShapeGrey isActive={activeBar === props.index} {...props} />
+            )}
           />
           <Bar
             key={activeMetric.key}
