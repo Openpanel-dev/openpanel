@@ -7,14 +7,21 @@
   "main": "@tanstack/react-start/server-entry",
   "routes": [
     {
-      "pattern": "start.openpanel.dev/*",
+      "pattern": "dashboard.openpanel.dev/*",
       "zone_name": "openpanel.dev"
     }
   ],
   "vars": {
-    "API_URL": "https://api.staging.k8s.openpanel.dev",
-    "DASHBOARD_URL": "https://start.openpanel.dev",
+    "API_URL": "https://api.openpanel.dev",
+    "DASHBOARD_URL": "https://dashboard.openpanel.dev",
     "NODE_ENV": "production",
     "APP_VERSION": "1.0.0"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true
+    }
   }
 }
