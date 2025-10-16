@@ -26,8 +26,7 @@
     "lint:fix": "biome check --write .",
     "lint:workspace": "pnpm dlx sherif@latest",
     "typecheck": "pnpm -r typecheck",
-    "update-simple-git-hooks": "npx simple-git-hooks",
-    "deps:unused": "node tooling/unused-deps.mjs"
+    "update-simple-git-hooks": "npx simple-git-hooks"
   },
   "simple-git-hooks": {
     "pre-push": "pnpm typecheck && pnpm test"
