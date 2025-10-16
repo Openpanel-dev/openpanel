@@ -217,14 +217,14 @@ export class OverviewService {
           clix(this.client, timezone)
             .select(['bounce_rate'])
             .from('session_agg')
-            .where('date', '=', clix.exp("'1970-01-01 00:00:00'")),
+            .where('date', '=', clix.datetime('1970-01-01 00:00:00')),
         )
         .with(
           'daily_stats',
           clix(this.client, timezone)
             .select(['date', 'bounce_rate'])
             .from('session_agg')
-            .where('date', '!=', clix.exp("'1970-01-01 00:00:00'")),
+            .where('date', '!=', clix.datetime('1970-01-01 00:00:00')),
         )
         .with('overall_unique_visitors', overallUniqueVisitorsQuery)
         .select<{
