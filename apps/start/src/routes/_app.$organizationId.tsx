@@ -1,6 +1,8 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
+import { FREE_PRODUCT_IDS } from '@openpanel/payments';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import {
   Outlet,
@@ -42,7 +44,13 @@ function Alert({
   title,
   description,
   children,
-}: { title: string; description: string; children: React.ReactNode }) {
+  className,
+}: {
+  title: string;
+  description: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   const location = useLocation();
 
   // Hide on billing page
@@ -51,7 +59,7 @@ function Alert({
   }
 
   return (
-    <div className="p-4 lg:p-8 bg-card border-b col gap-1">
+    <div className={cn('p-4 lg:p-8 bg-card border-b col gap-1', className)}>
       <div className="text-lg font-medium">{title}</div>
       <div className="mb-1">{description}</div>
       <div className="row gap-2">{children}</div>
@@ -130,6 +138,24 @@ function Component() {
           </LinkButton>
         </Alert>
       )}
+      {organization.subscriptionProductId &&
+        FREE_PRODUCT_IDS.includes(organization.subscriptionProductId) && (
+          <Alert
+            title="Free plan is removed"
+            description="We've removed the free plan. You can upgrade to a paid plan to continue using OpenPanel."
+            className="bg-orange-400/40 border-orange-400/50"
+          >
+            <LinkButton
+              className="bg-orange-400 text-white hover:bg-orange-400/80"
+              to="/$organizationId/billing"
+              params={{
+                organizationId: organizationId,
+              }}
+            >
+              Upgrade
+            </LinkButton>
+          </Alert>
+        )}
       <Outlet />
     </>
   );
