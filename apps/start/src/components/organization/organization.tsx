@@ -1,5 +1,3 @@
-'use client';
-
 import type { IServiceOrganization } from '@openpanel/db';
 import EditOrganization from './edit-organization';
 

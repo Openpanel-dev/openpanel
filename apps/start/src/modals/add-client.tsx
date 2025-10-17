@@ -44,6 +44,9 @@ export default function AddClient() {
         queryClient.invalidateQueries(
           trpc.project.getProjectWithClients.pathFilter(),
         );
+        queryClient.invalidateQueries(
+          trpc.client.list.queryFilter({ projectId }),
+        );
       },
       onError: handleError,
     }),

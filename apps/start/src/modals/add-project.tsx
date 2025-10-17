@@ -10,7 +10,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zOnboardingProject } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
   MonitorIcon,
@@ -45,10 +45,14 @@ export default function AddProject() {
     },
   });
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const mutation = useMutation(
     trpc.project.create.mutationOptions({
       onError: handleError,
       onSuccess: (res) => {
+        queryClient.invalidateQueries(
+          trpc.project.list.queryFilter({ organizationId }),
+        );
         toast.success('Project created', {
           description: `${res.name}`,
           action: {

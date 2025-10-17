@@ -1,5 +1,3 @@
-'use client';
-
 import AnimateHeight from '@/components/animate-height';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
@@ -13,7 +11,7 @@ import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { IServiceProjectWithClients } from '@openpanel/db';
 import { zProject } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SaveIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -44,11 +42,22 @@ export default function EditProjectDetails({ project }: Props) {
     },
   });
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const mutation = useMutation(
     trpc.project.update.mutationOptions({
       onError: handleError,
       onSuccess: () => {
         toast.success('Project updated');
+        queryClient.invalidateQueries(
+          trpc.project.list.queryFilter({
+            organizationId: project.organizationId,
+          }),
+        );
+        queryClient.invalidateQueries(
+          trpc.project.getProjectWithClients.queryFilter({
+            projectId: project.id,
+          }),
+        );
       },
     }),
   );

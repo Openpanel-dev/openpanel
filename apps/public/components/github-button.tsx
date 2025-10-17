@@ -1,5 +1,3 @@
-'use client';
-
 import { getGithubRepoInfo } from '@/lib/github';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';

@@ -1,5 +1,3 @@
-'use client';
-
 import type { Column, Table } from '@tanstack/react-table';
 import { SearchIcon, X, XIcon } from 'lucide-react';
 import * as React from 'react';

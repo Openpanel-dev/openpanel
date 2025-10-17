@@ -1,12 +1,10 @@
-'use client';
-
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
 import type { IServiceProjectWithClients } from '@openpanel/db';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { addHours, format, startOfHour } from 'date-fns';
 import { TrashIcon } from 'lucide-react';
@@ -18,12 +16,17 @@ export default function DeleteProject({ project }: Props) {
   const router = useRouter();
   const trpc = useTRPC();
 
+  const queryClient = useQueryClient();
   const mutation = useMutation(
     trpc.project.delete.mutationOptions({
       onError: handleError,
       onSuccess: () => {
-        toast.success('Project updated');
-        router.invalidate();
+        toast.success('Project is scheduled for deletion');
+        queryClient.invalidateQueries(
+          trpc.project.getProjectWithClients.queryFilter({
+            projectId: project.id,
+          }),
+        );
       },
     }),
   );
@@ -32,8 +35,12 @@ export default function DeleteProject({ project }: Props) {
     trpc.project.cancelDeletion.mutationOptions({
       onError: handleError,
       onSuccess: () => {
-        toast.success('Project updated');
-        router.invalidate();
+        toast.success('Project deletion cancelled');
+        queryClient.invalidateQueries(
+          trpc.project.getProjectWithClients.queryFilter({
+            projectId: project.id,
+          }),
+        );
       },
     }),
   );

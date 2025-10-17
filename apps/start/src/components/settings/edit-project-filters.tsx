@@ -1,5 +1,3 @@
-'use client';
-
 import { WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import { Button } from '@/components/ui/button';

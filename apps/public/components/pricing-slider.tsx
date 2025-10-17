@@ -1,4 +1,3 @@
-'use client';
 import NumberFlow from '@number-flow/react';
 
 import { cn } from '@/lib/utils';

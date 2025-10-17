@@ -1,5 +1,3 @@
-'use client';
-
 import {
   X_AXIS_STYLE_PROPS,
   useXAxisProps,

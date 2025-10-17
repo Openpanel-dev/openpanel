@@ -1,5 +1,3 @@
-'use client';
-
 import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQueryClient } from '@tanstack/react-query';

@@ -551,7 +551,7 @@ export async function getEventList(options: GetEventListOptions) {
 
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
-      events.map((event) => escape(event)),
+      events.map((event) => sqlstring.escape(event)),
       ',',
     )})`;
   }
@@ -612,7 +612,7 @@ export async function getEventsCount({
 
   if (events && events.length > 0) {
     sb.where.events = `name IN (${join(
-      events.map((event) => escape(event)),
+      events.map((event) => sqlstring.escape(event)),
       ',',
     )})`;
   }

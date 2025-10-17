@@ -1,12 +1,9 @@
-'use client';
-
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/trpc/client';
-import { useMutation } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -24,8 +21,6 @@ interface EditOrganizationProps {
 export default function EditOrganization({
   organization,
 }: EditOrganizationProps) {
-  const router = useRouter();
-
   const { register, handleSubmit, formState, reset, control } = useForm<IForm>({
     defaultValues: {
       id: organization.id,
@@ -35,6 +30,7 @@ export default function EditOrganization({
   });
 
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const mutation = useMutation(
     trpc.organization.update.mutationOptions({
       onSuccess(res: any) {
@@ -45,7 +41,7 @@ export default function EditOrganization({
           ...res,
           timezone: res.timezone!,
         });
-        router.invalidate();
+        queryClient.invalidateQueries(trpc.organization.get.pathFilter());
       },
       onError: handleError,
     }),

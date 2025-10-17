@@ -12,8 +12,8 @@
     "gen:referrers": "jiti scripts/get-referrers.ts && biome format --write ./src/referrers/index.ts"
   },
   "dependencies": {
-    "@bull-board/api": "5.21.0",
-    "@bull-board/express": "5.21.0",
+    "@bull-board/api": "6.13.1",
+    "@bull-board/express": "6.13.1",
     "@openpanel/common": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",

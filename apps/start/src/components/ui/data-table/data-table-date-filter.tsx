@@ -1,5 +1,3 @@
-'use client';
-
 import type { Column } from '@tanstack/react-table';
 import { CalendarIcon, XCircle, XCircleIcon } from 'lucide-react';
 import * as React from 'react';

@@ -16,6 +16,7 @@ export function FeedbackButton() {
           (window.uj as any).identify({
             id: context.session?.userId,
             firstName: context.session?.user?.firstName,
+            email: context.session?.user?.email,
           });
           (window.uj as any).showWidget();
         }

@@ -1,8 +1,6 @@
 import { createBullBoard } from '@bull-board/api';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
-import express from 'express';
-
 import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
@@ -11,6 +9,7 @@ import {
   notificationQueue,
   sessionsQueue,
 } from '@openpanel/queue';
+import express from 'express';
 import client from 'prom-client';
 
 import { BullBoardGroupMQAdapter } from 'groupmq';
@@ -32,7 +31,7 @@ async function start() {
   if (process.env.DISABLE_BULLBOARD === undefined) {
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath('/');
-    createBullBoard({
+    ({
       queues: [
         new BullBoardGroupMQAdapter(eventsGroupQueue) as any,
         new BullMQAdapter(sessionsQueue),

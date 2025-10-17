@@ -1,5 +1,3 @@
-'use client';
-
 import { SimpleChart } from '@/components/simple-chart';
 import { cn } from '@/lib/utils';
 import NumberFlow from '@number-flow/react';
