@@ -29,8 +29,8 @@ export function SignInEmailForm() {
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
-      email: 'lindesvard+22@gmail.com',
-      password: 'demodemo',
+      email: '',
+      password: '',
     },
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
