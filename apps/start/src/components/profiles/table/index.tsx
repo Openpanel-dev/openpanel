@@ -31,8 +31,12 @@ export const ProfilesTable = memo(
     const columns = useColumns(type);
 
     const { setPage, state: pagination } = useDataTablePagination();
-    const { columnVisibility, setColumnVisibility } =
-      useDataTableColumnVisibility(columns);
+    const {
+      columnVisibility,
+      setColumnVisibility,
+      columnOrder,
+      setColumnOrder,
+    } = useDataTableColumnVisibility(columns, 'profiles');
 
     const table = useReactTable({
       data: isLoading ? LOADING_DATA : (data?.data ?? []),
@@ -51,8 +55,10 @@ export const ProfilesTable = memo(
       state: {
         pagination,
         columnVisibility,
+        columnOrder,
       },
       onColumnVisibilityChange: setColumnVisibility,
+      onColumnOrderChange: setColumnOrder,
       onPaginationChange: (updaterOrValue: Updater<PaginationState>) => {
         const nextPagination =
           typeof updaterOrValue === 'function'

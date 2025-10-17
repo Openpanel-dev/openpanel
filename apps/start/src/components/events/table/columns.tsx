@@ -3,16 +3,34 @@ import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
-import { formatDateTime, formatTime } from '@/utils/date';
+import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
-import { isToday } from 'date-fns';
 
+import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import type { IServiceEvent } from '@openpanel/db';
 
 export function useColumns() {
   const number = useNumber();
   const columns: ColumnDef<IServiceEvent>[] = [
+    {
+      accessorKey: 'createdAt',
+      header: 'Created at',
+      size: 140,
+      cell: ({ row }) => {
+        const session = row.original;
+        return (
+          <div className="relative">
+            <div className="absolute inset-0 opacity-0 group-hover/row:opacity-100 transition-opacity duration-100">
+              {formatDateTime(session.createdAt)}
+            </div>
+            <div className="text-muted-foreground group-hover/row:opacity-0 transition-opacity duration-100">
+              {formatTimeAgoOrDateTime(session.createdAt)}
+            </div>
+          </div>
+        );
+      },
+    },
     {
       size: 300,
       accessorKey: 'name',
@@ -86,17 +104,6 @@ export function useColumns() {
       },
     },
     {
-      accessorKey: 'createdAt',
-      header: 'Created at',
-      size: 170,
-      cell({ row }) {
-        const date = row.original.createdAt;
-        return (
-          <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
-        );
-      },
-    },
-    {
       accessorKey: 'profileId',
       header: 'Profile',
       cell({ row }) {
@@ -141,11 +148,17 @@ export function useColumns() {
       accessorKey: 'sessionId',
       header: 'Session ID',
       size: 320,
+      meta: {
+        hidden: true,
+      },
     },
     {
       accessorKey: 'deviceId',
       header: 'Device ID',
       size: 320,
+      meta: {
+        hidden: true,
+      },
     },
     {
       accessorKey: 'country',
@@ -193,6 +206,9 @@ export function useColumns() {
       accessorKey: 'properties',
       header: 'Properties',
       size: 400,
+      meta: {
+        hidden: true,
+      },
       cell({ row }) {
         const { properties } = row.original;
         const filteredProperties = Object.fromEntries(
@@ -201,19 +217,23 @@ export function useColumns() {
           ),
         );
         const items = Object.entries(filteredProperties);
-        return (
-          <div className="row flex-wrap gap-x-4 gap-y-1 overflow-hidden text-sm">
-            {items.slice(0, 4).map(([key, value]) => (
-              <div key={key} className="row items-center gap-1 min-w-0">
-                <span className="text-muted-foreground">{key}</span>
-                <span className="truncate font-medium">{String(value)}</span>
-              </div>
-            ))}
-            {items.length > 5 && (
-              <span className="truncate">{items.length - 5} more</span>
-            )}
-          </div>
-        );
+        const limit = 1;
+        const data = items.slice(0, limit).map(([key, value]) => ({
+          name: key,
+          value: value,
+        }));
+        if (items.length > limit) {
+          data.push({
+            name: '',
+            value: `${items.length - limit} more item${items.length - limit === 1 ? '' : 's'}`,
+          });
+        }
+
+        if (data.length === 0) {
+          return null;
+        }
+
+        return <KeyValueGrid className="w-full" data={data} />;
       },
     },
   ];

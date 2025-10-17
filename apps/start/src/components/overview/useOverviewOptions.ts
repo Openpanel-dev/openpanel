@@ -6,7 +6,7 @@ import {
   useQueryState,
 } from 'nuqs';
 
-import { getStorageItem, setStorageItem } from '@/utils/storage';
+import { useCookieStore } from '@/hooks/use-cookie-store';
 import {
   getDefaultIntervalByDates,
   getDefaultIntervalByRange,
@@ -27,10 +27,14 @@ export function useOverviewOptions() {
     'end',
     parseAsString.withOptions(nuqsOptions),
   );
+  const [cookieRange, setCookieRange] = useCookieStore<IChartRange>(
+    'range',
+    '7d',
+  );
   const [range, setRange] = useQueryState(
     'range',
     parseAsStringEnum(mapKeys(timeWindows))
-      .withDefault(getStorageItem('range', '7d'))
+      .withDefault(cookieRange)
       .withOptions({
         ...nuqsOptions,
         clearOnDefault: false,
@@ -69,7 +73,9 @@ export function useOverviewOptions() {
       if (value !== 'custom') {
         setStartDate(null);
         setEndDate(null);
-        setStorageItem('range', value);
+        if (value) {
+          setCookieRange(value);
+        }
         setInterval(null);
       }
       setRange(value);

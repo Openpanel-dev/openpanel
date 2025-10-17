@@ -2,7 +2,40 @@ import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 
 import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
+import { useLocalStorage } from 'usehooks-ts';
 import { useColumns } from './columns';
+
+// Custom hook for persistent column visibility
+const usePersistentColumnVisibility = (columns: any[]) => {
+  const [savedVisibility, setSavedVisibility] = useLocalStorage<
+    Record<string, boolean>
+  >('@op:sessions-table-column-visibility', {});
+
+  // Create column visibility from saved state, defaulting to true (visible)
+  const columnVisibility = useMemo(() => {
+    return columns.reduce(
+      (acc, column) => {
+        const columnId = column.id || column.accessorKey;
+        if (columnId) {
+          acc[columnId] = savedVisibility[columnId] ?? true;
+        }
+        return acc;
+      },
+      {} as Record<string, boolean>,
+    );
+  }, [columns, savedVisibility]);
+
+  const handleColumnVisibilityChange = (updater: any) => {
+    const newVisibility =
+      typeof updater === 'function' ? updater(columnVisibility) : updater;
+    setSavedVisibility(newVisibility);
+  };
+
+  return {
+    columnVisibility,
+    setColumnVisibility: handleColumnVisibilityChange,
+  };
+};
 
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Skeleton } from '@/components/skeleton';
@@ -21,7 +54,7 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
 import { Loader2Icon } from 'lucide-react';
 import { last } from 'ramda';
-import { memo, useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useInViewport } from 'react-in-viewport';
 
 type Props = {
@@ -49,6 +82,7 @@ interface VirtualRowProps {
   headerColumns: any[];
   scrollMargin: number;
   isLoading: boolean;
+  headerColumnsHash: string;
 }
 
 const VirtualRow = memo(
@@ -109,109 +143,105 @@ const VirtualRow = memo(
       prevProps.virtualRow.index === nextProps.virtualRow.index &&
       prevProps.virtualRow.start === nextProps.virtualRow.start &&
       prevProps.virtualRow.size === nextProps.virtualRow.size &&
-      prevProps.isLoading === nextProps.isLoading
+      prevProps.isLoading === nextProps.isLoading &&
+      prevProps.headerColumnsHash === nextProps.headerColumnsHash
     );
   },
 );
 
-const VirtualizedSessionsTable = memo(
-  function VirtualizedSessionsTable({
-    table,
-    data,
-    isLoading,
-  }: VirtualizedSessionsTableProps) {
-    const parentRef = useRef<HTMLDivElement>(null);
+const VirtualizedSessionsTable = ({
+  table,
+  data,
+  isLoading,
+}: VirtualizedSessionsTableProps) => {
+  const parentRef = useRef<HTMLDivElement>(null);
 
-    const headerColumns = useMemo(
-      () =>
-        table.getAllLeafColumns().filter((col) => {
-          return table.getState().columnVisibility[col.id] !== false;
-        }),
-      [table],
-    );
+  const headerColumns = table.getAllLeafColumns().filter((col) => {
+    return table.getState().columnVisibility[col.id] !== false;
+  });
 
-    const rowVirtualizer = useWindowVirtualizer({
-      count: data.length,
-      estimateSize: () => ROW_HEIGHT, // Estimated row height
-      overscan: 10,
-      scrollMargin: parentRef.current?.offsetTop ?? 0,
-    });
+  const rowVirtualizer = useWindowVirtualizer({
+    count: data.length,
+    estimateSize: () => ROW_HEIGHT, // Estimated row height
+    overscan: 10,
+    scrollMargin: parentRef.current?.offsetTop ?? 0,
+  });
 
-    const virtualRows = rowVirtualizer.getVirtualItems();
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const headerColumnsHash = headerColumns.map((col) => col.id).join(',');
 
-    return (
+  return (
+    <div
+      ref={parentRef}
+      className="w-full overflow-x-auto border rounded-md bg-card"
+    >
+      {/* Table Header */}
       <div
-        ref={parentRef}
-        className="w-full overflow-x-auto border rounded-md bg-card"
+        className="sticky top-0 z-10 bg-card border-b"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: headerColumns
+            .map((col) => `${col.getSize()}px`)
+            .join(' '),
+          minWidth: 'fit-content',
+        }}
       >
-        {/* Table Header */}
-        <div
-          className="sticky top-0 z-10 bg-card border-b"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: headerColumns
-              .map((col) => `${col.getSize()}px`)
-              .join(' '),
-            minWidth: 'fit-content',
-          }}
-        >
-          {headerColumns.map((column) => {
-            const header = column.columnDef.header;
-            const width = `${column.getSize()}px`;
-            return (
-              <div
-                key={column.id}
-                className="flex items-center h-10 px-4 text-left text-[10px] uppercase text-foreground font-semibold whitespace-nowrap"
-                style={{
-                  width,
-                }}
-              >
-                {typeof header === 'function' ? header({} as any) : header}
-              </div>
-            );
-          })}
-        </div>
-
-        {!isLoading && data.length === 0 && (
-          <FullPageEmptyState
-            title="No sessions found"
-            description="Looks like you haven't inserted any events yet."
-          />
-        )}
-
-        {/* Table Body */}
-        <div
-          className="relative w-full"
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            minHeight: 'fit-content',
-            minWidth: 'fit-content',
-          }}
-        >
-          {virtualRows.map((virtualRow) => {
-            const row = table.getRowModel().rows[virtualRow.index];
-            if (!row) return null;
-
-            return (
-              <VirtualRow
-                key={virtualRow.key}
-                row={row}
-                virtualRow={{
-                  ...virtualRow,
-                  measureElement: rowVirtualizer.measureElement,
-                }}
-                headerColumns={headerColumns}
-                scrollMargin={rowVirtualizer.options.scrollMargin}
-                isLoading={isLoading}
-              />
-            );
-          })}
-        </div>
+        {headerColumns.map((column) => {
+          const header = column.columnDef.header;
+          const width = `${column.getSize()}px`;
+          return (
+            <div
+              key={column.id}
+              className="flex items-center h-10 px-4 text-left text-[10px] uppercase text-foreground font-semibold whitespace-nowrap"
+              style={{
+                width,
+              }}
+            >
+              {typeof header === 'function' ? header({} as any) : header}
+            </div>
+          );
+        })}
       </div>
-    );
-  },
-  arePropsEqual(['data', 'isLoading']),
-);
+
+      {!isLoading && data.length === 0 && (
+        <FullPageEmptyState
+          title="No sessions found"
+          description="Looks like you haven't inserted any events yet."
+        />
+      )}
+
+      {/* Table Body */}
+      <div
+        className="relative w-full"
+        style={{
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          minHeight: 'fit-content',
+          minWidth: 'fit-content',
+        }}
+      >
+        {virtualRows.map((virtualRow) => {
+          const row = table.getRowModel().rows[virtualRow.index];
+          if (!row) return null;
+
+          return (
+            <VirtualRow
+              key={virtualRow.key}
+              row={row}
+              virtualRow={{
+                ...virtualRow,
+                measureElement: rowVirtualizer.measureElement,
+              }}
+              headerColumns={headerColumns}
+              headerColumnsHash={headerColumnsHash}
+              scrollMargin={rowVirtualizer.options.scrollMargin}
+              isLoading={isLoading}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 export const SessionsTable = ({ query }: Props) => {
   const { isLoading } = query;
@@ -227,7 +257,7 @@ export const SessionsTable = ({ query }: Props) => {
 
   // const { setPage, state: pagination } = useDataTablePagination();
   const { columnVisibility, setColumnVisibility } =
-    useDataTableColumnVisibility(columns);
+    usePersistentColumnVisibility(columns);
 
   const table = useReactTable({
     data,

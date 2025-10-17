@@ -17,9 +17,16 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
+import { getCookiesFn } from '@/hooks/use-cookie-store';
 import { useSessionExtension } from '@/hooks/use-session-extension';
 import { op } from '@/utils/op';
 import type { AppRouter } from '@openpanel/trpc';
+import { createServerOnlyFn } from '@tanstack/react-start';
+import {
+  getCookie,
+  getCookies,
+  getRequestHeaders,
+} from '@tanstack/react-start/server';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
 op.init();
@@ -33,17 +40,20 @@ interface MyRouterContext {
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   beforeLoad: async ({ context }) => {
-    const session = await context.queryClient.ensureQueryData(
-      context.trpc.auth.session.queryOptions(undefined, {
-        staleTime: 1000 * 60 * 5,
-        gcTime: 1000 * 60 * 10,
-        refetchOnWindowFocus: false,
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-      }),
-    );
+    const [session, cookies] = await Promise.all([
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.session.queryOptions(undefined, {
+          staleTime: 1000 * 60 * 5,
+          gcTime: 1000 * 60 * 10,
+          refetchOnWindowFocus: false,
+          refetchOnMount: false,
+          refetchOnReconnect: false,
+        }),
+      ),
+      getCookiesFn(),
+    ]);
 
-    return { session };
+    return { session, cookies };
   },
   head: () => ({
     meta: [

@@ -17,6 +17,7 @@ export const NotificationsTable = ({ query }: Props) => {
   const columns = useColumns();
   const { data, isLoading } = query;
   const { table } = useTable({
+    name: 'notifications',
     columns,
     data: data ?? [],
     loading: isLoading,

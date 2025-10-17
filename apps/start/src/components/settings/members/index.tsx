@@ -16,6 +16,7 @@ export const MembersTable = ({ query }: Props) => {
   const columns = useColumns();
   const { data, isLoading } = query;
   const { table } = useTable({
+    name: 'members',
     columns,
     data: data ?? [],
     loading: isLoading,

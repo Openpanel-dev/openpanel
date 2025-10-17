@@ -23,6 +23,7 @@ import {
   useQueryStates,
 } from 'nuqs';
 import React, { useMemo, useState } from 'react';
+import { useDataTableColumnVisibility } from './data-table-hooks';
 
 const nuqsOptions: Options = {
   shallow: true,
@@ -35,11 +36,13 @@ export function useTable<TData>({
   pageSize,
   data,
   loading,
+  name,
 }: {
   columns: ColumnDef<TData>[];
   pageSize: number;
   data: TData[];
   loading: boolean;
+  name: string;
 }) {
   const [page, setPage] = useQueryState(
     'page',
@@ -53,6 +56,9 @@ export function useTable<TData>({
     pageIndex: page - 1,
     pageSize: perPage,
   };
+
+  const { columnVisibility, setColumnVisibility, columnOrder, setColumnOrder } =
+    useDataTableColumnVisibility(columns, name);
 
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({
     left: [
@@ -149,6 +155,9 @@ export function useTable<TData>({
   };
 
   const table = useReactTable({
+    meta: {
+      name,
+    },
     columns,
     data: useMemo(
       () =>
@@ -181,7 +190,11 @@ export function useTable<TData>({
       pagination,
       columnPinning,
       columnFilters: loading ? [] : columnFilters,
+      columnOrder,
+      columnVisibility,
     },
+    onColumnOrderChange: setColumnOrder,
+    onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
     onColumnFiltersChange: (updaterOrValue: Updater<ColumnFiltersState>) => {
       setColumnFilters((prev) => {

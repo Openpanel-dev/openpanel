@@ -169,8 +169,15 @@ const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
   __brand: 'middlewareMarker';
 };
 
-export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
+export const cacheMiddleware = (
+  cbOrTtl: number | ((input: any, opts: { path: string }) => number),
+) =>
   t.middleware(async ({ ctx, next, path, type, getRawInput, input }) => {
+    const ttl =
+      typeof cbOrTtl === 'function' ? cbOrTtl(input, { path }) : cbOrTtl;
+    if (!ttl) {
+      return next();
+    }
     const rawInput = await getRawInput();
     if (type !== 'query') {
       return next();
@@ -194,7 +201,7 @@ export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
     if (result.data) {
       getRedisCache().setJson(
         key,
-        typeof cbOrTtl === 'function' ? cbOrTtl(input) : cbOrTtl,
+        ttl,
         // @ts-expect-error
         result.data,
       );

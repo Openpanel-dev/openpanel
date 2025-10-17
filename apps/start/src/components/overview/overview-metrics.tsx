@@ -2,6 +2,7 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { cn } from '@/utils/cn';
 
+import { useCookieStore } from '@/hooks/use-cookie-store';
 import { useDashedStroke } from '@/hooks/use-dashed-stroke';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -18,11 +19,14 @@ import {
   Bar,
   CartesianGrid,
   ComposedChart,
+  Customized,
   Line,
+  LineChart,
   ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts';
+import { useLocalStorage } from 'usehooks-ts';
 import { createChartTooltip } from '../charts/chart-tooltip';
 import { BarShapeBlue, BarShapeGrey } from '../charts/common-bar';
 import { useXAxisProps, useYAxisProps } from '../report-chart/common/axis';
@@ -80,6 +84,11 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
   const [filters] = useEventQueryFilters();
   const trpc = useTRPC();
 
+  const [chartType, setChartType] = useCookieStore<'bars' | 'lines'>(
+    'chartType',
+    'bars',
+  );
+
   const activeMetric = TITLES[metric]!;
   const overviewQuery = useQuery(
     trpc.overview.stats.queryOptions({
@@ -132,8 +141,36 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
         </div>
 
         <div className="card p-4">
-          <div className="text-center mb-3 -mt-1 text-sm font-medium text-muted-foreground">
-            {activeMetric.title}
+          <div className="flex items-center justify-between mb-3 -mt-1">
+            <div className="text-sm font-medium text-muted-foreground">
+              {activeMetric.title}
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setChartType('bars')}
+                className={cn(
+                  'px-2 py-1 text-xs rounded transition-colors',
+                  chartType === 'bars'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                Bars
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartType('lines')}
+                className={cn(
+                  'px-2 py-1 text-xs rounded transition-colors',
+                  chartType === 'lines'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                Lines
+              </button>
+            </div>
           </div>
           <div className="w-full h-[150px]">
             {overviewQuery.isLoading && <Skeleton className="h-full w-full" />}
@@ -141,6 +178,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               activeMetric={activeMetric}
               interval={interval}
               data={data}
+              chartType={chartType}
             />
           </div>
         </div>
@@ -205,15 +243,142 @@ function Chart({
   activeMetric,
   interval,
   data,
+  chartType,
 }: {
   activeMetric: (typeof TITLES)[number];
   interval: IInterval;
   data: RouterOutputs['overview']['stats']['series'];
+  chartType: 'bars' | 'lines';
 }) {
   const xAxisProps = useXAxisProps({ interval });
   const yAxisProps = useYAxisProps();
   const [activeBar, setActiveBar] = useState(-1);
 
+  // Line chart specific logic
+  let dotIndex = undefined;
+  if (chartType === 'lines') {
+    if (interval === 'hour') {
+      // Find closest index based on times
+      dotIndex = data.findIndex((item) => {
+        return isSameHour(item.date, new Date());
+      });
+    }
+  }
+
+  const { calcStrokeDasharray, handleAnimationEnd, getStrokeDasharray } =
+    useDashedStroke({
+      dotIndex,
+    });
+
+  const lastSerieDataItem = last(data)?.date || new Date();
+  const useDashedLastLine = (() => {
+    if (interval === 'hour') {
+      return isSameHour(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'day') {
+      return isSameDay(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'month') {
+      return isSameMonth(lastSerieDataItem, new Date());
+    }
+
+    if (interval === 'week') {
+      return isSameWeek(lastSerieDataItem, new Date());
+    }
+
+    return false;
+  })();
+
+  if (chartType === 'lines') {
+    return (
+      <TooltipProvider metric={activeMetric} interval={interval}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <Customized component={calcStrokeDasharray} />
+            <Line
+              dataKey="calcStrokeDasharray"
+              legendType="none"
+              animationDuration={0}
+              onAnimationEnd={handleAnimationEnd}
+            />
+            <Tooltip />
+            <YAxis
+              {...yAxisProps}
+              domain={[0, activeMetric.key === 'bounce_rate' ? 100 : 'dataMax']}
+              width={25}
+            />
+            <XAxis {...xAxisProps} />
+
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={true}
+              vertical={false}
+              className="stroke-border"
+            />
+
+            <Line
+              key={`prev_${activeMetric.key}`}
+              type="linear"
+              dataKey={`prev_${activeMetric.key}`}
+              stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+              strokeWidth={2}
+              isAnimationActive={false}
+              dot={
+                data.length > 90
+                  ? false
+                  : {
+                      stroke: 'oklch(from var(--foreground) l c h / 0.1)',
+                      fill: 'var(--def-100)',
+                      strokeWidth: 1.5,
+                      r: 2,
+                    }
+              }
+              activeDot={{
+                stroke: 'oklch(from var(--foreground) l c h / 0.2)',
+                fill: 'var(--def-100)',
+                strokeWidth: 1.5,
+                r: 3,
+              }}
+            />
+
+            <Line
+              key={activeMetric.key}
+              type="linear"
+              dataKey={activeMetric.key}
+              stroke={getChartColor(0)}
+              strokeWidth={2}
+              strokeDasharray={
+                useDashedLastLine
+                  ? getStrokeDasharray(activeMetric.key)
+                  : undefined
+              }
+              isAnimationActive={false}
+              dot={
+                data.length > 90
+                  ? false
+                  : {
+                      stroke: getChartColor(0),
+                      fill: 'var(--def-100)',
+                      strokeWidth: 1.5,
+                      r: 3,
+                    }
+              }
+              activeDot={{
+                stroke: getChartColor(0),
+                fill: 'var(--def-100)',
+                strokeWidth: 2,
+                r: 4,
+              }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </TooltipProvider>
+    );
+  }
+
+  // Bar chart (default)
   return (
     <TooltipProvider metric={activeMetric} interval={interval}>
       <ResponsiveContainer width="100%" height="100%">

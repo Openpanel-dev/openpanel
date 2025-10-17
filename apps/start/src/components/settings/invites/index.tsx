@@ -18,6 +18,7 @@ export const InvitesTable = ({ query }: Props) => {
   const columns = useColumns();
   const { data, isLoading } = query;
   const { table } = useTable({
+    name: 'invites',
     columns,
     data: data ?? [],
     loading: isLoading,

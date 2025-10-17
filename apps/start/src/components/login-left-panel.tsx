@@ -15,7 +15,7 @@ const sellingPoints = [
       <SellingPoint
         bgImage="/img-1.png"
         title="Best open-source alternative"
-        description="Mixpanel to expensive, Google Analytics has no privacy, Amplitude old and boring"
+        description="Mixpanel too expensive, Google Analytics has no privacy, Amplitude old and boring"
       />
     ),
   },

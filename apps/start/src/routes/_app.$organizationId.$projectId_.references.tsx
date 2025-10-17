@@ -163,6 +163,7 @@ function Component() {
   const data = query.data ?? [];
 
   const { table, loading } = useTable({
+    name: 'references',
     columns: columnDefs,
     data,
     pageSize: 30,

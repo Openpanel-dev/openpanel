@@ -4,8 +4,8 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { ActivityIcon } from 'lucide-react';
-import { EventsViewOptions, useEventsViewOptions } from '../events/table';
-import { EventItem } from '../events/table/item';
+import { useEffect, useRef } from 'react';
+import { EventListItem } from '../events/event-list-item';
 import {
   WidgetAbsoluteButtons,
   WidgetHead,
@@ -24,7 +24,6 @@ export const LatestEvents = ({
   projectId,
   organizationId,
 }: Props) => {
-  const [viewOptions] = useEventsViewOptions();
   const router = useRouter();
   const trpc = useTRPC();
   const query = useQuery(
@@ -45,26 +44,30 @@ export const LatestEvents = ({
     });
   };
 
+  const ref = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (ref.current && scrollRef.current) {
+      scrollRef.current.style.height = `${ref.current?.getBoundingClientRect().height}px`;
+    }
+  }, [query.data?.data?.length]);
+
   return (
-    <Widget className="w-full overflow-hidden">
+    <Widget className="w-full overflow-hidden h-full" ref={ref}>
       <WidgetHead>
         <WidgetTitle icon={ActivityIcon}>Latest Events</WidgetTitle>
         <WidgetAbsoluteButtons>
           <Button variant="outline" size="sm" onClick={handleShowMore}>
             All
           </Button>
-          <EventsViewOptions />
         </WidgetAbsoluteButtons>
       </WidgetHead>
 
-      <ScrollArea className="h-72">
+      <ScrollArea ref={scrollRef} className="h-0 p-4">
         {query.data?.data?.map((event) => (
-          <EventItem
-            className="border-0 rounded-none border-b last:border-b-0 [&_[data-slot='inner']]:px-4"
-            key={event.id}
-            event={event}
-            viewOptions={viewOptions}
-          />
+          <div key={event.id} className="mb-4">
+            <EventListItem {...event} />
+          </div>
         ))}
       </ScrollArea>
     </Widget>

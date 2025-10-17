@@ -2,8 +2,6 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 
-import type { IChartProps } from '@openpanel/validation';
-
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
 import React, { useEffect, useState } from 'react';
@@ -19,6 +17,7 @@ import {
   YAxis,
 } from 'recharts';
 import { BarShapeBlue } from '../charts/common-bar';
+import { SerieIcon } from '../report-chart/common/serie-icon';
 
 interface OverviewLiveHistogramProps {
   projectId: string;
@@ -27,72 +26,17 @@ interface OverviewLiveHistogramProps {
 export function OverviewLiveHistogram({
   projectId,
 }: OverviewLiveHistogramProps) {
-  const report: IChartProps = {
-    projectId,
-    events: [
-      {
-        segment: 'user',
-        filters: [
-          {
-            id: '1',
-            name: 'name',
-            operator: 'is',
-            value: ['screen_view', 'session_start'],
-          },
-        ],
-        id: 'A',
-        name: '*',
-        displayName: 'Active users',
-      },
-    ],
-    chartType: 'histogram',
-    interval: 'minute',
-    range: '30min',
-    name: '',
-    metric: 'sum',
-    breakdowns: [],
-    lineType: 'monotone',
-    previous: false,
-  };
-  const countReport: IChartProps = {
-    name: '',
-    projectId,
-    events: [
-      {
-        segment: 'user',
-        filters: [],
-        id: 'A',
-        name: 'session_start',
-      },
-    ],
-    breakdowns: [],
-    chartType: 'metric',
-    lineType: 'monotone',
-    interval: 'minute',
-    range: '30min',
-    previous: false,
-    metric: 'sum',
-  };
   const trpc = useTRPC();
 
-  const res = useQuery(trpc.chart.chart.queryOptions(report));
-  const countRes = useQuery(trpc.chart.chart.queryOptions(countReport));
+  // Use the new liveData endpoint instead of chart props
+  const { data: liveData, isLoading } = useQuery(
+    trpc.overview.liveData.queryOptions({ projectId }),
+  );
 
-  const metrics = res.data?.series[0]?.metrics;
-  const minutes = (res.data?.series[0]?.data || []).slice(-30);
-  const liveCount = countRes.data?.series[0]?.metrics?.sum ?? 0;
+  const totalSessions = liveData?.totalSessions ?? 0;
+  const chartData = liveData?.minuteCounts ?? [];
 
-  // Transform data for Recharts
-  const chartData = minutes.map((minute) => ({
-    ...minute,
-    timestamp: new Date(minute.date).getTime(),
-    time: new Date(minute.date).toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
-  }));
-
-  if (res.isInitialLoading || countRes.isInitialLoading) {
+  if (isLoading) {
     return (
       <Wrapper count={0}>
         <div className="h-full w-full animate-pulse bg-def-200 rounded" />
@@ -100,12 +44,30 @@ export function OverviewLiveHistogram({
     );
   }
 
-  if (!res.isSuccess && !countRes.isSuccess) {
+  if (!liveData) {
     return null;
   }
 
+  const maxDomain =
+    Math.max(...chartData.map((item) => item.sessionCount)) * 1.2;
+
   return (
-    <Wrapper count={liveCount}>
+    <Wrapper
+      count={totalSessions}
+      icons={
+        <div className="row gap-2">
+          {liveData.referrers.slice(0, 3).map((ref, index) => (
+            <div
+              key={`${ref.referrer}-${ref.count}-${index}`}
+              className="font-bold text-xs row gap-1 items-center"
+            >
+              <SerieIcon name={ref.referrer} />
+              <span>{ref.count}</span>
+            </div>
+          ))}
+        </div>
+      }
+    >
       <div className="h-full w-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -119,9 +81,9 @@ export function OverviewLiveHistogram({
               }}
             />
             <XAxis dataKey="time" axisLine={false} tickLine={false} hide />
-            <YAxis hide />
+            <YAxis hide domain={[0, maxDomain]} />
             <Bar
-              dataKey="count"
+              dataKey="sessionCount"
               fill="rgba(59, 121, 255, 0.2)"
               isAnimationActive={false}
               shape={BarShapeBlue}
@@ -137,13 +99,17 @@ export function OverviewLiveHistogram({
 interface WrapperProps {
   children: React.ReactNode;
   count: number;
+  icons?: React.ReactNode;
 }
 
-function Wrapper({ children, count }: WrapperProps) {
+function Wrapper({ children, count, icons }: WrapperProps) {
   return (
     <div className="flex h-full flex-col">
-      <div className="relative mb-1 text-sm font-medium text-muted-foreground">
-        {count} unique vistors last 30 minutes
+      <div className="row gap-2 justify-between">
+        <div className="relative mb-1 text-sm font-medium text-muted-foreground">
+          {count} sessions last 30 minutes
+        </div>
+        <div>{icons}</div>
       </div>
       <div className="relative flex h-full w-full flex-1 items-end justify-center gap-2">
         {children}
@@ -182,8 +148,8 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
   const data = payload[0].payload;
 
   // Smart positioning to avoid going out of bounds
-  const tooltipWidth = 180; // min-w-[180px]
-  const tooltipHeight = 80; // approximate height
+  const tooltipWidth = 220; // min-w-[220px] to accommodate referrers
+  const tooltipHeight = 120; // approximate height with referrers
   const offset = 10;
 
   let left = mousePosition.x + offset;
@@ -211,7 +177,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
 
   const tooltipContent = (
     <div
-      className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-background/80 p-3 shadow-xl backdrop-blur-sm"
+      className="flex min-w-[220px] flex-col gap-2 rounded-xl border bg-background/80 p-3 shadow-xl backdrop-blur-sm"
       style={{
         position: 'fixed',
         top,
@@ -221,12 +187,7 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
       }}
     >
       <div className="flex justify-between gap-8 text-muted-foreground">
-        <div>
-          {new Date(data.date).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </div>
+        <div>{data.time}</div>
       </div>
       <React.Fragment>
         <div className="flex gap-2">
@@ -235,14 +196,43 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
             style={{ background: getChartColor(0) }}
           />
           <div className="col flex-1 gap-1">
-            <div className="flex items-center gap-1">Active users</div>
+            <div className="flex items-center gap-1">Sessions</div>
             <div className="flex justify-between gap-8 font-mono font-medium">
               <div className="row gap-1">
-                {number.formatWithUnit(data.count)}
+                {number.formatWithUnit(data.sessionCount)}
               </div>
             </div>
           </div>
         </div>
+        {data.referrers && data.referrers.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-border">
+            <div className="text-xs text-muted-foreground mb-2">Referrers:</div>
+            <div className="space-y-1">
+              {data.referrers.slice(0, 3).map((ref: any, index: number) => (
+                <div
+                  key={`${ref.referrer}-${ref.count}-${index}`}
+                  className="row items-center justify-between text-xs"
+                >
+                  <div className="row items-center gap-1">
+                    <SerieIcon name={ref.referrer} />
+                    <span
+                      className="truncate max-w-[120px]"
+                      title={ref.referrer}
+                    >
+                      {ref.referrer}
+                    </span>
+                  </div>
+                  <span className="font-mono">{ref.count}</span>
+                </div>
+              ))}
+              {data.referrers.length > 3 && (
+                <div className="text-xs text-muted-foreground">
+                  +{data.referrers.length - 3} more
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </React.Fragment>
     </div>
   );

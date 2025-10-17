@@ -57,7 +57,12 @@ export function WidgetBody({ children, className }: WidgetBodyProps) {
 export interface WidgetProps {
   children: React.ReactNode;
   className?: string;
+  ref?: React.RefObject<HTMLDivElement | null>;
 }
-export function Widget({ children, className }: WidgetProps) {
-  return <div className={cn('card self-start', className)}>{children}</div>;
+export function Widget({ children, className, ...props }: WidgetProps) {
+  return (
+    <div className={cn('card self-start', className)} {...props}>
+      {children}
+    </div>
+  );
 }

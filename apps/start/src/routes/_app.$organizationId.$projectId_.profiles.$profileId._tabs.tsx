@@ -59,13 +59,15 @@ function Component() {
     <PageContainer>
       <PageHeader
         title={
-          <div className="row items-center gap-4">
+          <div className="row items-center gap-4 min-w-0">
             <ProfileAvatar {...profile.data} />
-            {getProfileName(profile.data, false)}
+            <span className="truncate">
+              {getProfileName(profile.data, false)}
+            </span>
           </div>
         }
       >
-        <div className="row gap-4 mb-6">
+        <div className="row gap-4 mb-6 flex-wrap">
           {profile.data?.properties.country && (
             <div className="row gap-2 items-center">
               <SerieIcon name={profile.data.properties.country} />

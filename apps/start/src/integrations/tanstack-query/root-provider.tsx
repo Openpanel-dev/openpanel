@@ -15,7 +15,11 @@ export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
     return getRequestHeaders();
   })
-  .client(() => ({}) as Headers);
+  .client(() => {
+    const headers = new Headers();
+    headers.set('content-type', 'application/json');
+    return headers as Headers;
+  });
 
 // Create a function that returns a tRPC client with optional cookies
 export function createTRPCClientWithHeaders(apiUrl: string) {

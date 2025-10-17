@@ -42,7 +42,11 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button icon={data?.public ? Globe2Icon : LockIcon} responsive>
+        <Button
+          icon={data?.public ? Globe2Icon : LockIcon}
+          responsive
+          loading={query.isLoading}
+        >
           {data?.public ? 'Public' : 'Private'}
         </Button>
       </DropdownMenuTrigger>

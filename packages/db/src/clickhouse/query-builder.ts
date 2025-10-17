@@ -247,11 +247,16 @@ export class Query<T = any> {
   }
 
   // Fill
-  fill(from: string | Date, to: string | Date, step: string): this {
+  fill(
+    from: string | Date | Expression,
+    to: string | Date | Expression,
+    step: string | Expression,
+  ): this {
     this._fill = {
-      from: this.escapeDate(from),
-      to: this.escapeDate(to),
-      step: step,
+      from:
+        from instanceof Expression ? from.toString() : this.escapeDate(from),
+      to: to instanceof Expression ? to.toString() : this.escapeDate(to),
+      step: step instanceof Expression ? step.toString() : step,
     };
     return this;
   }

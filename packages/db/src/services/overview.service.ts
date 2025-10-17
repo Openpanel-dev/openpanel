@@ -165,16 +165,6 @@ export class OverviewService {
       views_per_session: number;
     }[];
   }> {
-    console.log('-----------------');
-    console.log('getMetrics', {
-      projectId,
-      filters,
-      startDate,
-      endDate,
-      interval,
-      timezone,
-    });
-
     const where = this.getRawWhereClause('sessions', filters);
     if (this.isPageFilter(filters)) {
       // Session aggregation with bounce rates
