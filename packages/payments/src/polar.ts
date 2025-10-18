@@ -13,14 +13,8 @@ export const polar = new Polar({
   server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
 });
 
-export const getSuccessUrl = (
-  baseUrl: string,
-  organizationId: string,
-  projectId?: string,
-) =>
-  projectId
-    ? `${baseUrl}/${organizationId}/${projectId}/settings?tab=billing`
-    : `${baseUrl}/${organizationId}`;
+export const getSuccessUrl = (baseUrl: string, organizationId: string) =>
+  `${baseUrl}/${organizationId}/billing`;
 
 export async function getProducts() {
   const products = await polar.products.list({
@@ -52,13 +46,11 @@ export async function createPortal({
 export async function createCheckout({
   productId,
   organizationId,
-  projectId,
   user,
   ipAddress,
 }: {
   productId: string;
   organizationId: string;
-  projectId?: string;
   user: {
     id: string;
     firstName: string | null;
@@ -73,7 +65,6 @@ export async function createCheckout({
     successUrl: getSuccessUrl(
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!,
       organizationId,
-      projectId,
     ),
     customerEmail: user.email,
     customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),

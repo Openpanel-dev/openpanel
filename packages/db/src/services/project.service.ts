@@ -28,7 +28,7 @@ export async function getProjectById(id: string) {
 export const getProjectByIdCached = cacheable(getProjectById, 60 * 60 * 24);
 
 export async function getProjectWithClients(id: string) {
-  const res = await db.project.findUnique({
+  const res = await db.$primary().project.findUnique({
     where: {
       id,
     },

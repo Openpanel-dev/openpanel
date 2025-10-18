@@ -27,7 +27,6 @@ const paramsSchema = z.object({
 
 const metadataSchema = z.object({
   organizationId: z.string(),
-  projectId: z.string(),
   integrationId: z.string(),
 });
 
@@ -89,7 +88,7 @@ export async function slackWebhook(
         '👋 Hello. You have successfully connected OpenPanel.dev to your Slack workspace.',
     });
 
-    const { projectId, organizationId, integrationId } = parsedMetadata.data;
+    const { organizationId, integrationId } = parsedMetadata.data;
 
     await db.integration.update({
       where: {
@@ -105,7 +104,7 @@ export async function slackWebhook(
     });
 
     return reply.redirect(
-      `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
+      `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/integrations/installed`,
     );
   } catch (err) {
     request.log.error(err);

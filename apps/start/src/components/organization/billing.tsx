@@ -29,7 +29,6 @@ type Props = {
 };
 
 export default function Billing({ organization }: Props) {
-  const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
   const [customerSessionToken, setCustomerSessionToken] = useQueryState(
@@ -271,7 +270,6 @@ export default function Billing({ organization }: Props) {
                       key={selectedProduct.prices[0].id}
                       price={selectedProduct.prices[0]}
                       organization={organization}
-                      projectId={projectId}
                       buttonText={
                         isUpgrade
                           ? 'Upgrade'
@@ -350,13 +348,11 @@ export default function Billing({ organization }: Props) {
 function CheckoutButton({
   price,
   organization,
-  projectId,
   disabled,
   buttonText,
 }: {
   price: IPolarPrice;
   organization: IServiceOrganization;
-  projectId: string;
   disabled?: string | null;
   buttonText?: string;
 }) {
@@ -396,7 +392,6 @@ function CheckoutButton({
         onClick={() => {
           const createCheckout = () =>
             checkout.mutate({
-              projectId,
               organizationId: organization.id,
               productPriceId: price!.id,
               productId: price.productId,

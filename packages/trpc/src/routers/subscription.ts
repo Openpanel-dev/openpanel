@@ -77,7 +77,6 @@ export const subscriptionRouter = createTRPCRouter({
       const checkout = await createCheckout({
         productId: input.productId,
         organizationId: input.organizationId,
-        projectId: input.projectId ?? undefined,
         user,
         ipAddress: ctx.req.ip,
       });
