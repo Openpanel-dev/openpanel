@@ -1,7 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zSignUpEmail } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useRouter } from '@tanstack/react-router';
 import { type SubmitHandler, useForm } from 'react-hook-form';
@@ -16,11 +16,10 @@ type IForm = z.infer<typeof validator>;
 export function SignUpEmailForm({
   inviteId,
 }: { inviteId: string | undefined }) {
-  const router = useRouter();
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signUpEmail.mutationOptions({
-      onSuccess() {
+      async onSuccess() {
         toast.success('Successfully signed up');
         window.location.href = '/onboarding/project';
       },

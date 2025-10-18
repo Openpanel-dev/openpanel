@@ -70,7 +70,7 @@ export async function validateSessionToken(
     return EMPTY_SESSION;
   }
   const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-  const result = await db.session.findUnique({
+  const result = await db.$primary().session.findUnique({
     where: {
       id: sessionId,
     },

@@ -321,7 +321,6 @@ export const authRouter = createTRPCRouter({
       return true;
     }),
   session: publicProcedure.query(async ({ ctx }) => {
-    ctx.req.log.info('DEBUG: session', { session: ctx.session });
     return ctx.session;
   }),
 

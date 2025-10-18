@@ -9,16 +9,12 @@ import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
 import { useMemo } from 'react';
 
-type Headers = ReturnType<typeof getRequestHeaders>;
-
 export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
     return getRequestHeaders();
   })
   .client(() => {
-    const headers = new Headers();
-    headers.set('content-type', 'application/json');
-    return headers as Headers;
+    return {};
   });
 
 // Create a function that returns a tRPC client with optional cookies
