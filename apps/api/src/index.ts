@@ -169,6 +169,7 @@ const startServer = async () => {
               path: ctx.path,
               input: ctx.input,
               type: ctx.type,
+              session: ctx.ctx?.session,
             });
           },
         } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
