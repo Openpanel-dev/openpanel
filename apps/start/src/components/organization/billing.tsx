@@ -75,14 +75,18 @@ export default function Billing({ organization }: Props) {
     return products.some((product) => product.metadata?.custom === true);
   }, [products]);
 
-  // Find current subscription index
+  // Preferred default selection when there is no active subscription
+  const defaultSelectedIndex = useMemo(() => {
+    const defaultIndex = products.findIndex(
+      (product) => product.metadata?.eventsLimit === 100_000,
+    );
+    return defaultIndex >= 0 ? defaultIndex : 0;
+  }, [products]);
+
+  // Find current subscription index (-1 when no subscription)
   const currentSubscriptionIndex = useMemo(() => {
     if (!organization.subscriptionProductId) {
-      // Default to 100K events plan if no subscription
-      const defaultIndex = products.findIndex(
-        (product) => product.metadata?.eventsLimit === 100_000,
-      );
-      return defaultIndex >= 0 ? defaultIndex : 0;
+      return -1;
     }
     return products.findIndex(
       (product) => product.id === organization.subscriptionProductId,
@@ -111,12 +115,14 @@ export default function Billing({ organization }: Props) {
     return `+${highestEventLimit}`;
   }, [highestEventLimit]);
 
-  // Set initial slider position to current subscription
+  // Set initial slider position to current subscription or default plan when none
   useEffect(() => {
     if (currentSubscriptionIndex >= 0) {
       setSelectedProductIndex(currentSubscriptionIndex);
+    } else {
+      setSelectedProductIndex(defaultSelectedIndex);
     }
-  }, [currentSubscriptionIndex]);
+  }, [currentSubscriptionIndex, defaultSelectedIndex]);
 
   const selectedProduct = products[selectedProductIndex];
   const isUpgrade = selectedProductIndex > currentSubscriptionIndex;
