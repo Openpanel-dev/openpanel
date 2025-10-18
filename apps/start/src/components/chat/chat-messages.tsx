@@ -1,4 +1,6 @@
+import { useAppParams } from '@/hooks/use-app-params';
 import { useScrollAnchor } from '@/hooks/use-scroll-anchor';
+import { Link } from '@tanstack/react-router';
 import type { UIMessage } from 'ai';
 import { Loader2Icon } from 'lucide-react';
 import { useEffect } from 'react';
@@ -18,6 +20,7 @@ export function ChatMessages({
   status: 'submitted' | 'streaming' | 'ready' | 'error';
   isLimited: boolean;
 }) {
+  const { organizationId } = useAppParams();
   const { messagesRef, scrollRef, visibilityRef, scrollToBottom } =
     useScrollAnchor();
 
@@ -60,12 +63,15 @@ export function ChatMessages({
                   To keep using this feature you need to upgrade your account.
                 </p>
                 <p>
-                  <ProjectLink
-                    href="/settings/organization?tab=billing"
+                  <Link
+                    to="/$organizationId/billing"
+                    params={{
+                      organizationId,
+                    }}
                     className="font-medium underline"
                   >
                     Visit Billing
-                  </ProjectLink>{' '}
+                  </Link>{' '}
                   to upgrade.
                 </p>
               </AlertDescription>
