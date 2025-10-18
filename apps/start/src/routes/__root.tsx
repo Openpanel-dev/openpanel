@@ -42,15 +42,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   beforeLoad: async ({ context }) => {
     const [session, cookies] = await Promise.all([
       context.queryClient.ensureQueryData(
-        context.trpc.auth.session.queryOptions(undefined, {
-          staleTime: 1000 * 60 * 5,
-          gcTime: 1000 * 60 * 10,
-          refetchOnWindowFocus: false,
-          refetchOnMount: false,
-          refetchOnReconnect: false,
-        }),
+        context.trpc.auth.session.queryOptions(),
       ),
-      getCookiesFn(),
+      getCookiesFn().catch(() => ({}) as Record<string, string>),
     ]);
 
     return { session, cookies };

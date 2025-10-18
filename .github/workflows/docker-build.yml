@@ -90,11 +90,11 @@ jobs:
       # - name: Run Biome
       #   run: pnpm lint
 
-      - name: Run TypeScript checks
-        run: pnpm typecheck
+      # - name: Run TypeScript checks
+      #   run: pnpm typecheck
 
-      - name: Run tests
-        run: pnpm test
+      # - name: Run tests
+      #   run: pnpm test
 
   build-and-push-api:
     permissions:

@@ -45,9 +45,7 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
   };
 
   const session = cookies?.session
-    ? await getCache(`session:${cookies?.session}`, 1000 * 60 * 5, async () => {
-        return validateSessionToken(cookies.session!);
-      })
+    ? await validateSessionToken(cookies.session!)
     : EMPTY_SESSION;
 
   if (process.env.NODE_ENV !== 'production') {
