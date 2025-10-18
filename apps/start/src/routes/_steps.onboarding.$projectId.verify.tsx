@@ -23,7 +23,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
   component: Component,
   loader: async ({ context, params }) => {
     await context.queryClient.prefetchQuery(
-      context.trpc.event.events.queryOptions({
+      context.trpc.project.getProjectWithClients.queryOptions({
         projectId: params.projectId,
       }),
     );
