@@ -21,12 +21,6 @@ import { getCookiesFn } from '@/hooks/use-cookie-store';
 import { useSessionExtension } from '@/hooks/use-session-extension';
 import { op } from '@/utils/op';
 import type { AppRouter } from '@openpanel/trpc';
-import { createServerOnlyFn } from '@tanstack/react-start';
-import {
-  getCookie,
-  getCookies,
-  getRequestHeaders,
-} from '@tanstack/react-start/server';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
 op.init();

@@ -46,6 +46,31 @@ function stringify(obj: unknown): string {
   return String(obj);
 }
 
+function hasResult(result: unknown): boolean {
+  // Don't cache undefined or null
+  if (result === undefined || result === null) {
+    return false;
+  }
+
+  // Don't cache empty strings
+  if (typeof result === 'string') {
+    return result.length > 0;
+  }
+
+  // Don't cache empty arrays
+  if (Array.isArray(result)) {
+    return result.length > 0;
+  }
+
+  // Don't cache empty objects
+  if (typeof result === 'object' && result !== null) {
+    return Object.keys(result).length > 0;
+  }
+
+  // Cache everything else (booleans, numbers, etc.)
+  return true;
+}
+
 export function cacheable<T extends (...args: any) => any>(
   fnOrName: T | string,
   fnOrExpireInSec: number | T,
@@ -84,7 +109,7 @@ export function cacheable<T extends (...args: any) => any>(
     const cached = await getRedisCache().get(key);
     if (cached) {
       try {
-        return JSON.parse(cached, (_, value) => {
+        const parsed = JSON.parse(cached, (_, value) => {
           if (
             typeof value === 'string' &&
             /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*Z$/.test(value)
@@ -93,13 +118,16 @@ export function cacheable<T extends (...args: any) => any>(
           }
           return value;
         });
+        if (hasResult(parsed)) {
+          return parsed;
+        }
       } catch (e) {
         console.error('Failed to parse cache', e);
       }
     }
     const result = await fn(...(args as any));
 
-    if (result !== undefined || result !== null) {
+    if (hasResult(result)) {
       getRedisCache().setex(key, expireInSec, JSON.stringify(result));
     }
 

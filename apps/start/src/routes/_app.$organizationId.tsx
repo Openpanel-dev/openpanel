@@ -12,21 +12,34 @@ import {
 } from '@tanstack/react-router';
 import { format } from 'date-fns';
 
-const IGNORE_ORGANIZATION_IDS = [
-  '.well-known',
-  'robots.txt',
-  'sitemap.xml',
-  'favicon.ico',
-  'manifest.json',
-  'sw.js',
-  'service-worker.js',
-  'onboarding',
+const IGNORE_ORGANIZATION_IDS = ['.well-known', 'onboarding', 'assets'];
+
+const FILE_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'bmp',
+  'tiff',
+  'ico',
+  'js',
+  'xml',
+  'txt',
+  'json',
+  'webmanifest',
 ];
+
+const isStaticFile = (path: string) => {
+  return FILE_EXTENSIONS.some((extension) => path.endsWith(`.${extension}`));
+};
 
 export const Route = createFileRoute('/_app/$organizationId')({
   component: Component,
   beforeLoad: async ({ context, params }) => {
     if (IGNORE_ORGANIZATION_IDS.includes(params.organizationId)) {
+      throw notFound();
+    }
+    if (isStaticFile(params.organizationId)) {
       throw notFound();
     }
   },
