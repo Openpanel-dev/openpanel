@@ -68,6 +68,7 @@ const parse = (ua: string): UAParser.IResult => {
   return res;
 };
 
+export type UserAgentInfo = ReturnType<typeof parseUserAgent>;
 export function parseUserAgent(
   ua?: string | null,
   overrides?: Record<string, unknown>,
@@ -80,13 +81,35 @@ export function parseUserAgent(
   }
 
   return {
-    os: overrides?.__os || res.os.name,
-    osVersion: overrides?.__osVersion || res.os.version,
-    browser: overrides?.__browser || res.browser.name,
-    browserVersion: overrides?.__browserVersion || res.browser.version,
-    device: overrides?.__device || res.device.type || getDevice(ua),
-    brand: overrides?.__brand || res.device.vendor,
-    model: overrides?.__model || res.device.model,
+    os:
+      typeof overrides?.__os === 'string' && overrides?.__os
+        ? overrides?.__os
+        : res.os.name,
+    osVersion:
+      typeof overrides?.__osVersion === 'string' && overrides?.__osVersion
+        ? overrides?.__osVersion
+        : res.os.version,
+    browser:
+      typeof overrides?.__browser === 'string' && overrides?.__browser
+        ? overrides?.__browser
+        : res.browser.name,
+    browserVersion:
+      typeof overrides?.__browserVersion === 'string' &&
+      overrides?.__browserVersion
+        ? overrides?.__browserVersion
+        : res.browser.version,
+    device:
+      typeof overrides?.__device === 'string' && overrides?.__device
+        ? overrides?.__device
+        : res.device.type || getDevice(ua),
+    brand:
+      typeof overrides?.__brand === 'string' && overrides?.__brand
+        ? overrides?.__brand
+        : res.device.vendor,
+    model:
+      typeof overrides?.__model === 'string' && overrides?.__model
+        ? overrides?.__model
+        : res.device.model,
     isServer: false,
   } as const;
 }

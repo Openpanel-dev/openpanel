@@ -19,7 +19,7 @@ export function toDots(
       };
     }
 
-    if (value === undefined || value === null) {
+    if (value === undefined || value === null || value === '') {
       return acc;
     }
 

@@ -10,6 +10,18 @@ import {
 } from 'vitest';
 import { ch } from '../clickhouse/client';
 
+const clickhouseSettings = {
+  async_insert: 1,
+  http_headers_progress_interval_ms: '50000',
+  input_format_parallel_parsing: 1,
+  max_execution_time: 300,
+  max_http_get_redirects: '0',
+  max_insert_block_size: '500000',
+  send_progress_in_http_headers: 1,
+  wait_end_of_query: 1,
+  wait_for_async_insert: 1,
+};
+
 // Mock transformEvent to avoid circular dependency with buffers -> services -> buffers
 vi.mock('../services/event.service', () => ({
   transformEvent: (event: any) => ({
@@ -127,6 +139,7 @@ describe('EventBuffer with real Redis', () => {
           duration: 1000,
         },
       ],
+      clickhouse_settings: clickhouseSettings,
     });
 
     const sessionKey = `event_buffer:session:${first.session_id}`;
@@ -171,6 +184,7 @@ describe('EventBuffer with real Redis', () => {
       format: 'JSONEachRow',
       table: 'events',
       values: [first, end],
+      clickhouse_settings: clickhouseSettings,
     });
     const sessionKey = `event_buffer:session:${first.session_id}`;
     const storedEvents = await redis.lrange(sessionKey, 0, -1);
@@ -502,6 +516,7 @@ describe('EventBuffer with real Redis', () => {
       format: 'JSONEachRow',
       table: 'events',
       values: [end],
+      clickhouse_settings: clickhouseSettings,
     });
 
     const sessionKey = `event_buffer:session:${s}`;
@@ -552,6 +567,7 @@ describe('EventBuffer with real Redis', () => {
       format: 'JSONEachRow',
       table: 'events',
       values: [view1, view2, view3, end],
+      clickhouse_settings: clickhouseSettings,
     });
 
     // Session should be completely empty and removed
@@ -596,6 +612,7 @@ describe('EventBuffer with real Redis', () => {
       format: 'JSONEachRow',
       table: 'events',
       values: [{ ...view1, duration: 1000 }],
+      clickhouse_settings: clickhouseSettings,
     });
 
     // Session should be REMOVED from ready_sessions (only 1 event left)
@@ -620,6 +637,7 @@ describe('EventBuffer with real Redis', () => {
       format: 'JSONEachRow',
       table: 'events',
       values: [{ ...view2, duration: 1000 }],
+      clickhouse_settings: clickhouseSettings,
     });
 
     // Session should be REMOVED again (only 1 event left)
@@ -667,6 +685,7 @@ describe('EventBuffer with real Redis', () => {
       format: 'JSONEachRow',
       table: 'events',
       values: [view, end],
+      clickhouse_settings: clickhouseSettings,
     });
 
     // NOW it should be removed from ready_sessions (because it's empty)

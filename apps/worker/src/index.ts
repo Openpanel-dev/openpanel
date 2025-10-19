@@ -5,6 +5,7 @@ import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
   eventsGroupQueue,
+  importQueue,
   miscQueue,
   notificationQueue,
   sessionsQueue,
@@ -31,13 +32,14 @@ async function start() {
   if (process.env.DISABLE_BULLBOARD === undefined) {
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath('/');
-    ({
+    createBullBoard({
       queues: [
         new BullBoardGroupMQAdapter(eventsGroupQueue) as any,
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
         new BullMQAdapter(notificationQueue),
         new BullMQAdapter(miscQueue),
+        new BullMQAdapter(importQueue),
       ],
       serverAdapter: serverAdapter,
     });

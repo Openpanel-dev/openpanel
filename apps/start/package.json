@@ -30,6 +30,7 @@
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",
     "@openpanel/integrations": "workspace:^",
+    "@openpanel/importer": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/sdk-info": "workspace:^",

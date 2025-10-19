@@ -8,8 +8,7 @@
     "testing": "WORKER_PORT=9999 pnpm dev",
     "start": "node dist/index.js",
     "build": "rm -rf dist && tsdown",
-    "typecheck": "tsc --noEmit",
-    "gen:referrers": "jiti scripts/get-referrers.ts && biome format --write ./src/referrers/index.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@bull-board/api": "6.13.1",
@@ -20,6 +19,7 @@
     "@openpanel/integrations": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
+    "@openpanel/importer": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "bullmq": "^5.8.7",
@@ -38,7 +38,7 @@
     "@types/source-map-support": "^0.5.10",
     "@types/sqlstring": "^2.3.2",
     "@types/uuid": "^9.0.8",
-    "tsdown": "^0.14.2",
+    "tsdown": "0.14.2",
     "typescript": "catalog:"
   }
 }

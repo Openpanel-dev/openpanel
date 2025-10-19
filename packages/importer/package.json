@@ -1,0 +1,35 @@
+{
+  "name": "@openpanel/importer",
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./providers": "./src/providers/metadata.ts"
+  },
+  "dependencies": {
+    "@openpanel/common": "workspace:*",
+    "@openpanel/db": "workspace:*",
+    "@openpanel/queue": "workspace:*",
+    "@openpanel/validation": "workspace:*",
+    "csv-parse": "^6.1.0",
+    "ramda": "^0.29.1",
+    "uuid": "^9.0.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@openpanel/logger": "workspace:*",
+    "@types/node": "^20.0.0",
+    "@types/ramda": "^0.31.1",
+    "@types/uuid": "^9.0.7",
+    "bullmq": "^5.8.7",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
