@@ -4,18 +4,15 @@ import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
-import {
-  COOKIE_OPTIONS,
-  EMPTY_SESSION,
-  validateSessionToken,
-} from '@openpanel/auth';
-import { getCache, getRedisCache } from '@openpanel/redis';
+import { COOKIE_OPTIONS, type SessionValidationResult } from '@openpanel/auth';
+import { runWithAlsSession } from '@openpanel/db';
+import { getRedisCache } from '@openpanel/redis';
 import type { ISetCookie } from '@openpanel/validation';
 import {
   createTrpcRedisLimiter,
   defaultFingerPrint,
 } from '@trpc-limiter/redis';
-import { getOrganizationAccessCached, getProjectAccessCached } from './access';
+import { getOrganizationAccess, getProjectAccess } from './access';
 import { TRPCAccessError } from './errors';
 
 export const rateLimitMiddleware = ({
@@ -44,10 +41,6 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
     });
   };
 
-  const session = cookies?.session
-    ? await validateSessionToken(cookies.session!)
-    : EMPTY_SESSION;
-
   if (process.env.NODE_ENV !== 'production') {
     await new Promise((res) =>
       setTimeout(() => res(1), Math.min(Math.random() * 500, 200)),
@@ -57,7 +50,7 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
   return {
     req,
     res,
-    session,
+    session: (req as any).session as SessionValidationResult,
     // we do not get types for `setCookie` from fastify
     // so define it here and be safe in routers
     setCookie,
@@ -102,37 +95,39 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 
 // Only used on protected routes
 const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
-  const rawInput = await getRawInput();
-  if (type === 'mutation' && process.env.DEMO_USER_ID) {
-    throw new TRPCError({
-      code: 'UNAUTHORIZED',
-      message: 'You are not allowed to do this in demo mode',
-    });
-  }
-
-  if (has('projectId', rawInput)) {
-    const access = await getProjectAccessCached({
-      userId: ctx.session.userId!,
-      projectId: rawInput.projectId as string,
-    });
-
-    if (!access) {
-      throw TRPCAccessError('You do not have access to this project');
+  return runWithAlsSession(ctx.session.session?.id, async () => {
+    const rawInput = await getRawInput();
+    if (type === 'mutation' && process.env.DEMO_USER_ID) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'You are not allowed to do this in demo mode',
+      });
     }
-  }
 
-  if (has('organizationId', rawInput)) {
-    const access = await getOrganizationAccessCached({
-      userId: ctx.session.userId!,
-      organizationId: rawInput.organizationId as string,
-    });
+    if (has('projectId', rawInput)) {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId!,
+        projectId: rawInput.projectId as string,
+      });
 
-    if (!access) {
-      throw TRPCAccessError('You do not have access to this organization');
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
     }
-  }
 
-  return next();
+    if (has('organizationId', rawInput)) {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId!,
+        organizationId: rawInput.organizationId as string,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this organization');
+      }
+    }
+
+    return next();
+  });
 });
 
 export const createTRPCRouter = t.router;
@@ -157,11 +152,21 @@ const loggerMiddleware = t.middleware(
   },
 );
 
-export const publicProcedure = t.procedure.use(loggerMiddleware);
+const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
+  const sessionId = ctx.session.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
+    return next();
+  });
+});
+
+export const publicProcedure = t.procedure
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
 export const protectedProcedure = t.procedure
   .use(enforceUserIsAuthed)
   .use(enforceAccess)
-  .use(loggerMiddleware);
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
 
 const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
   __brand: 'middlewareMarker';

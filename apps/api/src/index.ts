@@ -8,14 +8,18 @@ import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
 
 import { generateId } from '@openpanel/common';
-import type { IServiceClientWithProject } from '@openpanel/db';
-import { getRedisPub } from '@openpanel/redis';
+import {
+  type IServiceClientWithProject,
+  runWithAlsSession,
+} from '@openpanel/db';
+import { getCache, getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
 import {
   EMPTY_SESSION,
   type SessionValidationResult,
+  decodeSessionToken,
   validateSessionToken,
 } from '@openpanel/auth';
 import sourceMapSupport from 'source-map-support';
@@ -140,7 +144,12 @@ const startServer = async () => {
       instance.addHook('onRequest', async (req) => {
         if (req.cookies?.session) {
           try {
-            const session = await validateSessionToken(req.cookies.session);
+            const sessionId = await decodeSessionToken(req.cookies.session);
+            const session = await runWithAlsSession(sessionId, () =>
+              getCache(`validateSession:${sessionId}`, 60 * 5, async () =>
+                validateSessionToken(req.cookies.session),
+              ),
+            );
             if (session.session) {
               req.session = session;
             }

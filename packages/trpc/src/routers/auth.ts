@@ -20,6 +20,7 @@ import {
   getUserAccount,
 } from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';
+import { deleteCache } from '@openpanel/redis';
 import {
   zRequestResetPassword,
   zResetPassword,
@@ -333,6 +334,7 @@ export const authRouter = createTRPCRouter({
     const session = await validateSessionToken(token);
 
     if (session.session) {
+      await deleteCache(`validateSession:${session.session.id}`);
       // Re-set the cookie with updated expiration
       setSessionTokenCookie(ctx.setCookie, token, session.session.expiresAt);
       return {

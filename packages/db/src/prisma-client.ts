@@ -1,10 +1,14 @@
 import { createLogger } from '@openpanel/logger';
 import { readReplicas } from '@prisma/extension-read-replicas';
-import { type Organization, PrismaClient } from './generated/prisma/client';
+import {
+  type Organization,
+  Prisma,
+  PrismaClient,
+} from './generated/prisma/client';
+import { logger } from './logger';
+import { sessionConsistency } from './session-consistency';
 
 export * from './generated/prisma/client';
-
-const logger = createLogger({ name: 'db' });
 
 const isWillBeCanceled = (
   organization: Pick<
@@ -30,11 +34,6 @@ const getPrismaClient = () => {
   const prisma = new PrismaClient({
     log: ['error'],
   })
-    .$extends(
-      readReplicas({
-        url: process.env.DATABASE_URL_REPLICA ?? process.env.DATABASE_URL!,
-      }),
-    )
     .$extends({
       query: {
         async $allOperations({ operation, model, args, query }) {
@@ -53,6 +52,8 @@ const getPrismaClient = () => {
         },
       },
     })
+
+    .$extends(sessionConsistency())
     .$extends({
       result: {
         organization: {
@@ -258,7 +259,12 @@ const getPrismaClient = () => {
           },
         },
       },
-    });
+    })
+    .$extends(
+      readReplicas({
+        url: process.env.DATABASE_URL_REPLICA ?? process.env.DATABASE_URL!,
+      }),
+    );
 
   return prisma;
 };

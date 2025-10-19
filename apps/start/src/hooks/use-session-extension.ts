@@ -24,9 +24,11 @@ export function useSessionExtension() {
       1000 * 60 * 5,
     );
 
-    extendSessionFn();
+    // Delay initial call a bit to prioritize other requests
+    const timer = setTimeout(() => extendSessionFn(), 5000);
 
     return () => {
+      clearTimeout(timer);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
