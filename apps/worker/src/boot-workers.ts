@@ -5,6 +5,7 @@ import {
   type EventsQueuePayloadIncomingEvent,
   cronQueue,
   eventsGroupQueue,
+  importQueue,
   miscQueue,
   notificationQueue,
   queueLogger,
@@ -19,6 +20,7 @@ import { Worker as GroupWorker } from 'groupmq';
 import { cronJob } from './jobs/cron';
 import { eventsJob } from './jobs/events';
 import { incomingEventPure } from './jobs/events.incoming-event';
+import { importJob } from './jobs/import';
 import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
@@ -29,21 +31,21 @@ const workerOptions: WorkerOptions = {
 };
 
 export async function bootWorkers() {
-  const eventsGroupWorker = new GroupWorker<
-    EventsQueuePayloadIncomingEvent['payload']
-  >({
-    concurrency: Number.parseInt(process.env.EVENT_JOB_CONCURRENCY || '1', 10),
-    logger: queueLogger,
-    queue: eventsGroupQueue,
-    handler: async (job) => {
-      logger.info('processing event (group queue)', {
-        groupId: job.groupId,
-        timestamp: job.data.event.timestamp,
-      });
-      await incomingEventPure(job.data);
-    },
-  });
-  eventsGroupWorker.run();
+  // const eventsGroupWorker = new GroupWorker<
+  //   EventsQueuePayloadIncomingEvent['payload']
+  // >({
+  //   concurrency: Number.parseInt(process.env.EVENT_JOB_CONCURRENCY || '1', 10),
+  //   logger: queueLogger,
+  //   queue: eventsGroupQueue,
+  //   handler: async (job) => {
+  //     logger.info('processing event (group queue)', {
+  //       groupId: job.groupId,
+  //       timestamp: job.data.event.timestamp,
+  //     });
+  //     await incomingEventPure(job.data);
+  //   },
+  // });
+  // eventsGroupWorker.run();
   const sessionsWorker = new Worker(
     sessionsQueue.name,
     sessionsJob,
@@ -56,13 +58,18 @@ export async function bootWorkers() {
     workerOptions,
   );
   const miscWorker = new Worker(miscQueue.name, miscJob, workerOptions);
+  const importWorker = new Worker(importQueue.name, importJob, {
+    ...workerOptions,
+    concurrency: Number.parseInt(process.env.IMPORT_JOB_CONCURRENCY || '1', 10),
+  });
 
   const workers = [
     sessionsWorker,
     cronWorker,
     notificationWorker,
     miscWorker,
-    eventsGroupWorker,
+    importWorker,
+    // eventsGroupWorker,
   ];
 
   workers.forEach((worker) => {
@@ -148,7 +155,15 @@ export async function bootWorkers() {
   ['uncaughtException', 'unhandledRejection', 'SIGTERM', 'SIGINT'].forEach(
     (evt) => {
       process.on(evt, (code) => {
-        exitHandler(evt, code);
+        if (process.env.NODE_ENV === 'production') {
+          exitHandler(evt, code);
+        } else {
+          logger.info('Shutting down for development', {
+            event: evt,
+            code,
+          });
+          process.exit(0);
+        }
       });
     },
   );
