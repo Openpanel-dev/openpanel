@@ -80,6 +80,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+      </head>
+      <body className="grainy min-h-screen bg-def-100 font-sans text-base antialiased leading-normal">
+        <Providers>{children}</Providers>
+        <ThemeScriptOnce />
+        <Scripts />
         <script
           dangerouslySetInnerHTML={{
             __html: `window.$ujq=window.$ujq||[];window.uj=window.uj||new Proxy({},{get:(_,p)=>(...a)=>window.$ujq.push([p,...a])});document.head.appendChild(Object.assign(document.createElement('script'),{src:'https://cdn.userjot.com/sdk/v2/uj.js',type:'module',async:!0}));`,
@@ -90,11 +95,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
             __html: `window.uj.init('cm6thlmwr03xr13jghznx87gk', { widget: true, trigger: 'custom' });`,
           }}
         />
-      </head>
-      <body className="grainy min-h-screen bg-def-100 font-sans text-base antialiased leading-normal">
-        <Providers>{children}</Providers>
-        <ThemeScriptOnce />
-        <Scripts />
         <div className="hidden">
           <div className="text-chart-0 bg-chart-0" />
           <div className="text-chart-1 bg-chart-1" />

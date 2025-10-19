@@ -1,5 +1,6 @@
+import { useCookieStore } from '@/hooks/use-cookie-store';
 import { mapKeys } from '@openpanel/validation';
-import { ScriptOnce } from '@tanstack/react-router';
+import { ScriptOnce, useRouteContext } from '@tanstack/react-router';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { type ReactNode, createContext, use, useEffect, useState } from 'react';
 import { z } from 'zod';
@@ -115,7 +116,10 @@ type ThemeProviderProps = {
   children: ReactNode;
 };
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [userTheme, setUserTheme] = useState<UserTheme>(getStoredUserTheme);
+  const [userTheme, setUserTheme] = useCookieStore<UserTheme>(
+    'ui-theme',
+    'system',
+  );
 
   useEffect(() => {
     if (userTheme !== 'system') return;
