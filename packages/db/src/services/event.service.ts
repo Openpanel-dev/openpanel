@@ -141,6 +141,10 @@ export type IServiceCreateEventPayload = Omit<
   IServiceEvent,
   'id' | 'importedAt' | 'profile' | 'meta'
 >;
+export type IServiceImportedEventPayload = Omit<
+  IServiceEvent,
+  'profile' | 'meta'
+>;
 
 export interface IServiceEvent {
   id: string;

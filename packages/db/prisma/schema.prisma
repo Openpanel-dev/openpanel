@@ -194,6 +194,7 @@ model Project {
 
   notificationRules NotificationRule[]
   notifications     Notification[]
+  imports           Import[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -466,4 +467,32 @@ model ResetPassword {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("reset_password")
+}
+
+enum ImportStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model Import {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  jobId           String? // BullMQ job ID
+  status          ImportStatus
+  statusMessage   String? // Human-readable current step like "Importing events (Feb 2025)", "Generating session IDs"
+  errorMessage    String?
+  /// [IPrismaImportConfig]
+  config          Json
+  totalEvents     Int          @default(0)
+  processedEvents Int          @default(0)
+  currentStep     String?
+  currentBatch    String? // String date 2020-01-01
+  createdAt       DateTime     @default(now())
+  completedAt     DateTime?
+  updatedAt       DateTime     @default(now()) @updatedAt
+
+  @@map("imports")
 }

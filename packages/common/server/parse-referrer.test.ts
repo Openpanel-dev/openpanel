@@ -5,13 +5,13 @@ describe('parseReferrer', () => {
   it('should handle undefined or empty URLs', () => {
     expect(parseReferrer(undefined)).toEqual({
       name: '',
-      type: 'unknown',
+      type: '',
       url: '',
     });
 
     expect(parseReferrer('')).toEqual({
       name: '',
-      type: 'unknown',
+      type: '',
       url: '',
     });
   });
@@ -41,7 +41,7 @@ describe('parseReferrer', () => {
   it('should handle unknown referrers', () => {
     expect(parseReferrer('https://unknown-site.com')).toEqual({
       name: '',
-      type: 'unknown',
+      type: '',
       url: 'https://unknown-site.com',
     });
   });
@@ -49,7 +49,7 @@ describe('parseReferrer', () => {
   it('should handle invalid URLs', () => {
     expect(parseReferrer('not-a-url')).toEqual({
       name: '',
-      type: 'unknown',
+      type: '',
       url: 'not-a-url',
     });
   });
@@ -64,7 +64,7 @@ describe('getReferrerWithQuery', () => {
   it('should parse utm_source parameter', () => {
     expect(getReferrerWithQuery({ utm_source: 'google' })).toEqual({
       name: 'Google',
-      type: 'unknown',
+      type: 'search',
       url: '',
     });
   });
@@ -88,7 +88,7 @@ describe('getReferrerWithQuery', () => {
   it('should handle case-insensitive matching', () => {
     expect(getReferrerWithQuery({ utm_source: 'GoOgLe' })).toEqual({
       name: 'Google',
-      type: 'unknown',
+      type: 'search',
       url: '',
     });
   });
@@ -96,7 +96,7 @@ describe('getReferrerWithQuery', () => {
   it('should handle unknown sources', () => {
     expect(getReferrerWithQuery({ utm_source: 'unknown-source' })).toEqual({
       name: 'unknown-source',
-      type: 'unknown',
+      type: '',
       url: '',
     });
   });
@@ -110,7 +110,7 @@ describe('getReferrerWithQuery', () => {
       }),
     ).toEqual({
       name: 'Google',
-      type: 'unknown',
+      type: 'search',
       url: '',
     });
   });

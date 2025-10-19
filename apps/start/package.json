@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "testing": "pnpm dev",
+    "testing2": "pnpm dev",
     "dev": "pnpm with-env vite dev --port 3000",
     "start_deprecated": "pnpm with-env node .output/server/index.mjs",
     "preview": "vite preview",
@@ -31,6 +31,7 @@
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",
     "@openpanel/integrations": "workspace:^",
+    "@openpanel/importer": "workspace:^",
     "@openpanel/json": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/sdk-info": "workspace:^",

@@ -50,12 +50,15 @@ export function IntegrationCardHeaderButtons({
 export function IntegrationCardLogoImage({
   src,
   backgroundColor,
+  className,
 }: {
   src: string;
   backgroundColor: string;
+  className?: string;
 }) {
   return (
     <IntegrationCardLogo
+      className={className}
       style={{
         backgroundColor,
       }}
