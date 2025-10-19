@@ -5,6 +5,7 @@ import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
   eventsGroupQueue,
+  importQueue,
   miscQueue,
   notificationQueue,
   sessionsQueue,
@@ -31,19 +32,36 @@ async function start() {
   if (process.env.DISABLE_BULLBOARD === undefined) {
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath('/');
-    ({
+    createBullBoard({
       queues: [
         new BullBoardGroupMQAdapter(eventsGroupQueue) as any,
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
         new BullMQAdapter(notificationQueue),
         new BullMQAdapter(miscQueue),
+        new BullMQAdapter(importQueue),
       ],
       serverAdapter: serverAdapter,
     });
 
     app.use('/', serverAdapter.getRouter());
   }
+
+  // TODO: REMOVE :D
+  // app.get('/test', (req, res) => {
+  //   importQueue.add('test', {
+  //     type: 'import',
+  //     payload: {
+  //       importId: 'public-web',
+  //       projectId: 'public-web',
+  //       provider: 'umami',
+  //       sourceType: 'file',
+  //       sourceLocation:
+  //         'https://umami-public.s3.eu-central-1.amazonaws.com/a70ff57d-f632-4292-a98b-658d7734fbec.csv.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=AKIAZUN3SJZPVYG37IPH%2F20251017%2Feu-central-1%2Fs3%2Faws4_request&X-Amz-Date=20251017T150722Z&X-Amz-Expires=259200&X-Amz-Signature=0a60e739b5de1e6674397de94c44e97d5107bbbe7a57fc4c05c0fd394baae4eb&X-Amz-SignedHeaders=host&x-id=GetObject',
+  //     },
+  //   });
+  //   res.json({ status: 'ok' });
+  // });
 
   app.get('/metrics', (req, res) => {
     res.set('Content-Type', register.contentType);

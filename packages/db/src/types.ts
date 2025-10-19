@@ -1,4 +1,5 @@
 import type {
+  IImportConfig,
   IIntegrationConfig,
   INotificationRuleConfig,
   IProjectFilters,
@@ -12,6 +13,7 @@ import type { IClickhouseProfile } from './services/profile.service';
 
 declare global {
   namespace PrismaJson {
+    type IPrismaImportConfig = IImportConfig;
     type IPrismaNotificationRuleConfig = INotificationRuleConfig;
     type IPrismaIntegrationConfig = IIntegrationConfig;
     type IPrismaNotificationPayload = INotificationPayload;

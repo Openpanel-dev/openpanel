@@ -56,6 +56,7 @@ export const TABLE_NAMES = {
   event_property_values_mv: 'event_property_values_mv',
   cohort_events_mv: 'cohort_events_mv',
   sessions: 'sessions',
+  events_imports: 'events_imports',
 };
 
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {

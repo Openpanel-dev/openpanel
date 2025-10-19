@@ -5,6 +5,7 @@ import OverviewTopPagesModal from '@/components/overview/overview-top-pages-moda
 import Instructions from './Instructions';
 import AddClient from './add-client';
 import AddDashboard from './add-dashboard';
+import AddImport from './add-import';
 import AddIntegration from './add-integration';
 import AddNotificationRule from './add-notification-rule';
 import AddProject from './add-project';
@@ -37,6 +38,7 @@ const modals = {
   EditClient: EditClient,
   AddProject: AddProject,
   AddClient: AddClient,
+  AddImport: AddImport,
   Confirm: Confirm,
   SaveReport: SaveReport,
   AddDashboard: AddDashboard,
