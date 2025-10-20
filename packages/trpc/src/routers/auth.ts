@@ -75,6 +75,7 @@ export const authRouter = createTRPCRouter({
     deleteSessionTokenCookie(ctx.setCookie);
     if (ctx.session?.session?.id) {
       await invalidateSession(ctx.session.session.id);
+      await deleteCache(`validateSession:${ctx.session.session.id}`);
     }
   }),
   signInOAuth: publicProcedure

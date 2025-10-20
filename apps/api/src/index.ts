@@ -144,11 +144,13 @@ const startServer = async () => {
       instance.addHook('onRequest', async (req) => {
         if (req.cookies?.session) {
           try {
-            const sessionId = await decodeSessionToken(req.cookies.session);
+            const sessionId = decodeSessionToken(req.cookies.session);
             const session = await runWithAlsSession(sessionId, () =>
-              getCache(`validateSession:${sessionId}`, 60 * 5, async () =>
-                validateSessionToken(req.cookies.session),
-              ),
+              sessionId
+                ? getCache(`validateSession:${sessionId}`, 60 * 5, async () =>
+                    validateSessionToken(req.cookies.session),
+                  )
+                : validateSessionToken(req.cookies.session),
             );
             if (session.session) {
               req.session = session;

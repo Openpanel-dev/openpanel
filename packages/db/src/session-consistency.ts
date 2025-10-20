@@ -4,6 +4,10 @@ import { Prisma, type PrismaClient } from './generated/prisma/client';
 import { logger } from './logger';
 import { getAlsSessionId } from './session-context';
 
+type BarePrismaClient = {
+  $queryRaw: <T>(query: TemplateStringsArray, ...args: unknown[]) => Promise<T>;
+};
+
 // WAL LSN tracking for read-after-write consistency
 const LSN_CACHE_PREFIX = 'db:wal_lsn:';
 const LSN_CACHE_TTL = 5;
@@ -39,7 +43,7 @@ const isReadOperation = (operation: string) =>
   READ_OPERATIONS.includes(operation as Operation);
 
 async function getCurrentWalLsn(
-  prismaClient: PrismaClient,
+  prismaClient: BarePrismaClient,
 ): Promise<string | null> {
   try {
     const result = await prismaClient.$queryRaw<[{ lsn: string }]>`
@@ -91,10 +95,11 @@ async function sleep(ms: number): Promise<void> {
 }
 
 async function waitForReplicaCatchup(
-  prismaClient: PrismaClient,
+  prismaClient: BarePrismaClient,
   sessionId: string,
 ): Promise<boolean> {
   const expectedLsn = await getCachedWalLsn(sessionId);
+
   if (!expectedLsn) {
     return true;
   }
@@ -154,63 +159,66 @@ async function waitForReplicaCatchup(
  *
  */
 export function sessionConsistency() {
-  return Prisma.defineExtension({
-    name: 'session-consistency',
-    query: {
-      $allOperations: async ({
-        operation,
-        model,
-        args,
-        query,
-        // This is a hack to force reads to primary when replica hasn't caught up.
-        // The readReplicas extension routes queries to primary when in a transaction,
-        // so we set __internalParams.transaction = true to achieve this.
-        // @ts-expect-error - __internalParams is not in the types
-        __internalParams,
-      }) => {
-        const sessionId = getAlsSessionId();
+  return Prisma.defineExtension((client) =>
+    client.$extends({
+      name: 'session-consistency',
+      query: {
+        $allOperations: async ({
+          operation,
+          model,
+          args,
+          query,
+          // This is a hack to force reads to primary when replica hasn't caught up.
+          // The readReplicas extension routes queries to primary when in a transaction,
+          // so we set __internalParams.transaction = true to achieve this.
+          // @ts-expect-error - __internalParams is not in the types
+          __internalParams,
+        }) => {
+          const sessionId = getAlsSessionId();
 
-        // For write operations with session: cache WAL LSN after write
-        if (isWriteOperation(operation)) {
-          logger.info('Prisma operation', {
-            operation,
-            args,
-            model,
-          });
+          // For write operations with session: cache WAL LSN after write
+          if (isWriteOperation(operation)) {
+            logger.info('Prisma operation', {
+              operation,
+              args,
+              model,
+            });
 
-          const result = await query(args);
+            const result = await query(args);
 
-          if (sessionId) {
-            // Get current WAL LSN and cache it for this session
-            // @ts-expect-error - 'this' refers to the Prisma client
-            const lsn = await getCurrentWalLsn(this);
-            if (lsn) {
-              await cacheWalLsnForSession(sessionId, lsn);
-              logger.debug('Cached WAL LSN after write', {
-                sessionId,
-                lsn,
-                operation,
-                model,
-              });
+            if (sessionId) {
+              // Get current WAL LSN and cache it for this session
+              const lsn = await getCurrentWalLsn(client);
+              if (lsn) {
+                await cacheWalLsnForSession(sessionId, lsn);
+                logger.debug('Cached WAL LSN after write', {
+                  sessionId,
+                  lsn,
+                  operation,
+                  model,
+                });
+              }
+            }
+
+            return result;
+          }
+
+          // For read operations with session: try replica first, fallback to primary
+          if (isReadOperation(operation) && sessionId) {
+            const replicaCaughtUp = await waitForReplicaCatchup(
+              client,
+              sessionId,
+            );
+
+            if (!replicaCaughtUp) {
+              // This will force readReplicas extension to use primary
+              __internalParams.transaction = true;
             }
           }
 
-          return result;
-        }
-
-        // For read operations with session: try replica first, fallback to primary
-        if (isReadOperation(operation) && sessionId) {
-          // @ts-expect-error - 'this' refers to the Prisma client
-          const replicaCaughtUp = await waitForReplicaCatchup(this, sessionId);
-
-          if (!replicaCaughtUp) {
-            // This will force readReplicas extension to use primary
-            __internalParams.transaction = true;
-          }
-        }
-
-        return query(args);
+          return query(args);
+        },
       },
-    },
-  });
+    }),
+  );
 }
