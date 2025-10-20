@@ -18,18 +18,6 @@ export type AppTheme = z.infer<typeof AppThemeSchema>;
 
 const themeStorageKey = 'ui-theme';
 
-const getStoredUserTheme = createIsomorphicFn()
-  .server((): UserTheme => 'system')
-  .client((): UserTheme => {
-    const stored = localStorage.getItem(themeStorageKey);
-    return UserThemeSchema.parse(stored);
-  });
-
-const setStoredTheme = clientOnly((theme: UserTheme) => {
-  const validatedTheme = UserThemeSchema.parse(theme);
-  localStorage.setItem(themeStorageKey, validatedTheme);
-});
-
 const getSystemTheme = createIsomorphicFn()
   .server((): AppTheme => 'light')
   .client((): AppTheme => {
@@ -73,7 +61,10 @@ const themes = mapKeys(themeConfig).map((key) => ({
 const themeScript = (() => {
   function themeFn() {
     try {
-      const storedTheme = localStorage.getItem('ui-theme') || 'system';
+      // Read theme from cookie
+      const cookies = document.cookie.split('; ');
+      const themeCookie = cookies.find((c) => c.startsWith('ui-theme='));
+      const storedTheme = themeCookie ? themeCookie.split('=')[1] : 'system';
       const validTheme = ['light', 'dark', 'system'].includes(storedTheme)
         ? storedTheme
         : 'system';
@@ -131,7 +122,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   const setTheme = (newUserTheme: UserTheme) => {
     const validatedTheme = UserThemeSchema.parse(newUserTheme);
     setUserTheme(validatedTheme);
-    setStoredTheme(validatedTheme);
     handleThemeChange(validatedTheme);
   };
 
