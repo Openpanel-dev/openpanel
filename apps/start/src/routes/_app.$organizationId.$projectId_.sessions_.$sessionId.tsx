@@ -3,12 +3,11 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
-import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
+import { useReadColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
-import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle } from '@/utils/title';
 import { useInfiniteQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -46,8 +45,6 @@ function Component() {
   const trpc = useTRPC();
 
   const LIMIT = 50;
-  const { page } = useDataTablePagination(LIMIT);
-  const { debouncedSearch } = useSearchQueryState();
 
   const { data: session } = useSuspenseQuery(
     trpc.session.byId.queryOptions({
@@ -60,7 +57,7 @@ function Component() {
   const [startDate] = useQueryState('startDate', parseAsIsoDateTime);
   const [endDate] = useQueryState('endDate', parseAsIsoDateTime);
   const [eventNames] = useEventQueryNamesFilter();
-
+  const columnVisibility = useReadColumnVisibility('events');
   const query = useInfiniteQuery(
     trpc.event.events.infiniteQueryOptions(
       {
@@ -70,8 +67,10 @@ function Component() {
         events: eventNames,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        columnVisibility: columnVisibility ?? {},
       },
       {
+        enabled: columnVisibility !== null,
         getNextPageParam: (lastPage) => lastPage.meta.next,
       },
     ),

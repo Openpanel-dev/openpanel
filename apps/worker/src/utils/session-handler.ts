@@ -113,7 +113,7 @@ export async function getSessionEndJob(args: {
   } | null> {
     const state = await job.getState();
     if (state !== 'delayed') {
-      logger.info(`[session-handler] Session end job is in "${state}" state`, {
+      logger.debug(`[session-handler] Session end job is in "${state}" state`, {
         state,
         retryCount,
         jobTimestamp: new Date(job.timestamp).toISOString(),

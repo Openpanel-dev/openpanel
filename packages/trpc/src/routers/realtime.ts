@@ -62,10 +62,12 @@ export const realtimeRouter = createTRPCRouter({
           path: string;
           count: number;
           avg_duration: number;
+          unique_sessions: number;
         }>([
           'origin',
           'path',
           'COUNT(*) as count',
+          'COUNT(DISTINCT session_id) as unique_sessions',
           'round(avg(duration)/1000, 2) as avg_duration',
         ])
         .from(TABLE_NAMES.events)
@@ -91,9 +93,11 @@ export const realtimeRouter = createTRPCRouter({
           referrer_name: string;
           count: number;
           avg_duration: number;
+          unique_sessions: number;
         }>([
           'referrer_name',
           'COUNT(*) as count',
+          'COUNT(DISTINCT session_id) as unique_sessions',
           'round(avg(duration)/1000, 2) as avg_duration',
         ])
         .from(TABLE_NAMES.events)
@@ -120,10 +124,12 @@ export const realtimeRouter = createTRPCRouter({
           city: string;
           count: number;
           avg_duration: number;
+          unique_sessions: number;
         }>([
           'country',
           'city',
           'COUNT(*) as count',
+          'COUNT(DISTINCT session_id) as unique_sessions',
           'round(avg(duration)/1000, 2) as avg_duration',
         ])
         .from(TABLE_NAMES.events)

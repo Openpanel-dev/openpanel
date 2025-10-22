@@ -10,6 +10,7 @@
   "dependencies": {
     "@openpanel/constants": "workspace:*",
     "date-fns": "^3.3.1",
+    "lru-cache": "^11.2.2",
     "luxon": "^3.6.1",
     "mathjs": "^12.3.2",
     "nanoid": "^5.0.7",

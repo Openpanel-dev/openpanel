@@ -129,7 +129,7 @@ async function processImage(
 ): Promise<Buffer> {
   // If it's an ICO file, just return it as-is (no conversion needed)
   if (originalUrl && isIcoFile(originalUrl, contentType)) {
-    logger.info('Serving ICO file directly', {
+    logger.debug('Serving ICO file directly', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -137,7 +137,7 @@ async function processImage(
   }
 
   if (originalUrl && isSvgFile(originalUrl, contentType)) {
-    logger.info('Serving SVG file directly', {
+    logger.debug('Serving SVG file directly', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -146,7 +146,7 @@ async function processImage(
 
   // If buffer isnt to big just return it as well
   if (buffer.length < 5000) {
-    logger.info('Serving image directly without processing', {
+    logger.debug('Serving image directly without processing', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -190,7 +190,7 @@ async function processOgImage(
 ): Promise<Buffer> {
   // If buffer is small enough, return it as-is
   if (buffer.length < 10000) {
-    logger.info('Serving OG image directly without processing', {
+    logger.debug('Serving OG image directly without processing', {
       originalUrl,
       bufferSize: buffer.length,
     });

@@ -127,23 +127,20 @@ export const eventRouter = createTRPCRouter({
         startDate: z.date().optional(),
         endDate: z.date().optional(),
         events: z.array(z.string()).optional(),
+        columnVisibility: z.record(z.string(), z.boolean()).optional(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input: { columnVisibility, ...input } }) => {
       const items = await getEventList({
         ...input,
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
         select: {
-          profile: true,
-          properties: true,
-          sessionId: true,
-          deviceId: true,
-          profileId: true,
-          referrerName: true,
-          referrerType: true,
-          referrer: true,
-          origin: true,
+          ...columnVisibility,
+          city: columnVisibility?.country ?? true,
+          path: columnVisibility?.name ?? true,
+          duration: columnVisibility?.name ?? true,
+          projectId: false,
         },
       });
 
@@ -190,9 +187,10 @@ export const eventRouter = createTRPCRouter({
         cursor: z.string().optional(),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
+        columnVisibility: z.record(z.string(), z.boolean()).optional(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ input: { columnVisibility, ...input } }) => {
       const conversions = await getConversionEventNames(input.projectId);
 
       if (conversions.length === 0) {
@@ -209,15 +207,11 @@ export const eventRouter = createTRPCRouter({
         take: 50,
         cursor: input.cursor ? new Date(input.cursor) : undefined,
         select: {
-          profile: true,
-          properties: true,
-          sessionId: true,
-          deviceId: true,
-          profileId: true,
-          referrerName: true,
-          referrerType: true,
-          referrer: true,
-          origin: true,
+          ...columnVisibility,
+          city: columnVisibility?.country ?? true,
+          path: columnVisibility?.name ?? true,
+          duration: columnVisibility?.name ?? true,
+          projectId: false,
         },
         custom: (sb) => {
           sb.where.name = `name IN (${conversions.map((event) => sqlstring.escape(event.name)).join(',')})`;

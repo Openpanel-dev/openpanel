@@ -82,12 +82,25 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
           },
           {
             name: 'Events',
-            width: '84px',
+            width: '60px',
             render(item) {
               return (
                 <div className="row gap-2 justify-end">
                   <span className="font-semibold">
                     {number.short(item.count)}
+                  </span>
+                </div>
+              );
+            },
+          },
+          {
+            name: 'Sessions',
+            width: '82px',
+            render(item) {
+              return (
+                <div className="row gap-2 justify-end">
+                  <span className="font-semibold">
+                    {number.short(item.unique_sessions)}
                   </span>
                 </div>
               );

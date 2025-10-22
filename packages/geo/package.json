@@ -7,14 +7,15 @@
     "codegen": "jiti scripts/download.ts"
   },
   "dependencies": {
-    "@maxmind/geoip2-node": "^6.1.0"
+    "@maxmind/geoip2-node": "^6.1.0",
+    "lru-cache": "^11.2.2"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "fast-extract": "^1.4.3",
+    "jiti": "^2.4.1",
     "tar": "^7.4.3",
-    "typescript": "catalog:",
-    "jiti": "^2.4.1"
+    "typescript": "catalog:"
   }
 }
