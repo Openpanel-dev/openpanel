@@ -21,13 +21,12 @@ export function DiscordIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
-  const { organizationId, projectId } = useAppParams();
+  const { organizationId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
       {
         id: defaultValues?.id,
         organizationId,
-        projectId,
         config: {
           type: 'discord' as const,
           url: '',
