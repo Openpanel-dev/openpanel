@@ -65,6 +65,7 @@
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.0.6",
     "@tanstack/match-sorter-utils": "^8.19.4",
+    "@tanstack/nitro-v2-vite-plugin": "^1.133.19",
     "@tanstack/react-devtools": "^0.7.6",
     "@tanstack/react-query": "^5.90.2",
     "@tanstack/react-query-devtools": "^5.90.2",

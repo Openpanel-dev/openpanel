@@ -1,0 +1,270 @@
+#!/bin/bash
+
+# GitHub repository (update if needed)
+REPO="${GITHUB_REPO:-Openpanel-dev/openpanel}"
+
+# Components to find tags for
+COMPONENTS=("worker" "api" "dashboard")
+
+# Docker compose file path
+DOCKER_COMPOSE_FILE="${DOCKER_COMPOSE_FILE:-./docker-compose.yml}"
+
+# Color codes for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+GRAY='\033[0;90m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Show usage
+show_usage() {
+    echo "Usage: $0 [COMMAND] [OPTIONS]"
+    echo ""
+    echo "Fetches the latest Git tags for worker, api, and dashboard components"
+    echo ""
+    echo "Commands:"
+    echo "  apply            Apply the latest tags to docker-compose.yml"
+    echo "  (none)           Show the latest tags (default)"
+    echo ""
+    echo "Options:"
+    echo "  --list, -l       List all available tags"
+    echo "  --repo REPO      Specify GitHub repository (default: $REPO)"
+    echo "  --file FILE      Specify docker-compose file (default: $DOCKER_COMPOSE_FILE)"
+    echo "  --help, -h       Show this help message"
+    echo ""
+    echo "Environment variables:"
+    echo "  GITHUB_REPO           Set the GitHub repository"
+    echo "  DOCKER_COMPOSE_FILE   Set the docker-compose file path"
+    echo ""
+    echo "Examples:"
+    echo "  $0                    # Show latest tags"
+    echo "  $0 apply              # Update docker-compose.yml with latest tags"
+    echo "  $0 --list             # List all available tags"
+    echo ""
+    exit 0
+}
+
+# Parse arguments
+LIST_ALL=false
+APPLY_MODE=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        apply)
+            APPLY_MODE=true
+            shift
+            ;;
+        --list|-l)
+            LIST_ALL=true
+            shift
+            ;;
+        --repo)
+            REPO="$2"
+            shift 2
+            ;;
+        --file)
+            DOCKER_COMPOSE_FILE="$2"
+            shift 2
+            ;;
+        --help|-h)
+            show_usage
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}"
+            show_usage
+            ;;
+    esac
+done
+
+# Check if user needs to be logged in (for apply mode)
+if [ "$APPLY_MODE" = true ]; then
+    # Check if Docker is available
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}Error: Docker is not installed or not in PATH${NC}"
+        exit 1
+    fi
+    
+    # Check if logged into docker.openpanel.dev
+    echo -e "${BLUE}Checking Docker registry authentication...${NC}\n"
+    
+    if ! docker info 2>/dev/null | grep -q "docker.openpanel.dev" && ! grep -q "docker.openpanel.dev" ~/.docker/config.json 2>/dev/null; then
+        echo -e "${YELLOW}⚠ You need to login to the OpenPanel Docker registry first!${NC}\n"
+        echo -e "${CYAN}To access the latest Docker images, you need:${NC}"
+        echo -e "  1. Be a supporter (starts at \$20/month)"
+        echo -e "  2. Get your API key from your supporter dashboard"
+        echo -e "  3. Login to the registry with:\n"
+        echo -e "${GREEN}     echo \"your_api_key\" | docker login docker.openpanel.dev -u user --password-stdin${NC}\n"
+        echo -e "${GRAY}For more info: https://openpanel.dev/docs/self-hosting/supporter-access-latest-docker-images${NC}\n"
+        
+        read -p "$(echo -e ${YELLOW}Have you already logged in? [y/N]:${NC} )" -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo -e "${RED}Please login first and try again.${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${GREEN}✓ Docker registry authentication OK${NC}\n"
+    fi
+fi
+
+echo -e "${BLUE}Fetching tags from ${REPO}...${NC}\n"
+
+# Fetch all tags from GitHub API
+TAGS_JSON=$(curl -s "https://api.github.com/repos/${REPO}/tags")
+
+# Check if we got valid JSON response
+if [ -z "$TAGS_JSON" ]; then
+    echo -e "${RED}Failed to fetch tags from GitHub API${NC}"
+    exit 1
+fi
+
+# Check if repository has any tags
+TAGS_CLEAN=$(echo "$TAGS_JSON" | tr -d '[:space:]')
+if [ "$TAGS_CLEAN" == "[]" ]; then
+    echo -e "${RED}No tags found in repository${NC}"
+    echo -e "${YELLOW}Create tags using: git tag <tag-name> && git push origin <tag-name>${NC}"
+    echo ""
+    echo -e "${GRAY}Example tag naming patterns:${NC}"
+    echo -e "  ${GRAY}- worker-v1.0.0${NC}"
+    echo -e "  ${GRAY}- api-v1.0.0${NC}"
+    echo -e "  ${GRAY}- dashboard-v1.0.0${NC}"
+    exit 1
+fi
+
+# List all tags if requested
+if [ "$LIST_ALL" = true ]; then
+    echo -e "${GREEN}All available tags:${NC}\n"
+    if command -v jq &> /dev/null; then
+        echo "$TAGS_JSON" | jq -r '.[] | "  \(.name) (\(.commit.sha[0:7]))"'
+    else
+        echo "$TAGS_JSON" | grep "\"name\":" | sed 's/.*"name": "\([^"]*\)".*/  \1/'
+    fi
+    echo ""
+    exit 0
+fi
+
+# Function to find latest tag matching a component
+get_latest_tag() {
+    local component=$1
+    local output_var_tag=$2
+    local output_var_sha=$3
+    
+    if command -v jq &> /dev/null; then
+        # Use jq for better JSON parsing
+        local tag=$(echo "$TAGS_JSON" | jq -r "[.[] | select(.name | contains(\"${component}\"))] | .[0] | .name" 2>/dev/null)
+        local sha=$(echo "$TAGS_JSON" | jq -r "[.[] | select(.name | contains(\"${component}\"))] | .[0] | .commit.sha" 2>/dev/null)
+    else
+        # Fallback to grep/sed
+        local tag=$(echo "$TAGS_JSON" | grep -o "\"name\": \"[^\"]*${component}[^\"]*\"" | head -1 | cut -d'"' -f4)
+        local sha=$(echo "$TAGS_JSON" | grep -B5 "\"name\": \"${tag}\"" | grep "\"sha\"" | head -1 | cut -d'"' -f4)
+    fi
+    
+    if [ -z "$tag" ] || [ "$tag" == "null" ]; then
+        echo -e "${RED}✗${NC} ${component}: No matching tag found"
+        echo
+        return 1
+    fi
+    
+    echo -e "${GREEN}✓${NC} ${component}:"
+    echo -e "  Tag: ${YELLOW}${tag}${NC}"
+    echo -e "  SHA: ${sha}"
+    echo
+    
+    # Return values via eval (for compatibility with older bash)
+    if [ -n "$output_var_tag" ]; then
+        eval "$output_var_tag='$tag'"
+    fi
+    if [ -n "$output_var_sha" ]; then
+        eval "$output_var_sha='$sha'"
+    fi
+    
+    return 0
+}
+
+# Function to apply tags to docker-compose.yml
+apply_tags() {
+    echo -e "${CYAN}Applying tags to ${DOCKER_COMPOSE_FILE}...${NC}\n"
+    
+    # Check if docker-compose file exists
+    if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
+        echo -e "${RED}Error: Docker compose file not found: ${DOCKER_COMPOSE_FILE}${NC}"
+        exit 1
+    fi
+    
+    # Create a backup
+    local backup_file="${DOCKER_COMPOSE_FILE}.backup.$(date +%Y%m%d_%H%M%S)"
+    cp "$DOCKER_COMPOSE_FILE" "$backup_file"
+    echo -e "${GRAY}Created backup: ${backup_file}${NC}\n"
+    
+    local updated=0
+    local failed=0
+    
+    for component in "${COMPONENTS[@]}"; do
+        # Get tag and SHA for this component
+        local component_tag=""
+        local component_sha=""
+        get_latest_tag "$component" component_tag component_sha >/dev/null 2>&1
+        
+        if [ -z "$component_sha" ] || [ "$component_sha" == "null" ]; then
+            echo -e "${RED}✗${NC} ${component}: Skipping (no tag found)"
+            ((failed++))
+            continue
+        fi
+        
+        # Get first 4 characters of SHA
+        local short_sha="${component_sha:0:4}"
+        
+        # New image tag format
+        local new_image="docker.openpanel.dev/openpanel-dev/${component}:main-${short_sha}"
+        
+        # Find and replace the image line in docker-compose.yml
+        # Look for lines like: image: something{component}something
+        if grep -q "image:.*${component}" "$DOCKER_COMPOSE_FILE"; then
+            # Use sed to replace the entire image line
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                # macOS sed syntax
+                sed -i '' "s|image:.*${component}.*|image: ${new_image}|g" "$DOCKER_COMPOSE_FILE"
+            else
+                # Linux sed syntax
+                sed -i "s|image:.*${component}.*|image: ${new_image}|g" "$DOCKER_COMPOSE_FILE"
+            fi
+            echo -e "${GREEN}✓${NC} Updated ${component}: ${CYAN}${new_image}${NC}"
+            ((updated++))
+        else
+            echo -e "${YELLOW}⚠${NC} ${component}: No matching image line found in docker-compose.yml"
+            ((failed++))
+        fi
+    done
+    
+    echo ""
+    echo -e "${BLUE}Summary:${NC}"
+    echo -e "  Updated: ${GREEN}${updated}${NC}"
+    echo -e "  Failed:  ${RED}${failed}${NC}"
+    echo -e "  Backup:  ${GRAY}${backup_file}${NC}"
+    echo ""
+    
+    if [ $updated -gt 0 ]; then
+        echo -e "${GREEN}Successfully updated docker-compose.yml!${NC}"
+    fi
+}
+
+# Main execution
+if [ "$APPLY_MODE" = true ]; then
+    # Apply mode: update docker-compose.yml
+    # First, show all tags
+    for component in "${COMPONENTS[@]}"; do
+        get_latest_tag "$component"
+    done
+    
+    # Then apply them
+    apply_tags
+else
+    # Default mode: just show the tags
+    for component in "${COMPONENTS[@]}"; do
+        get_latest_tag "$component"
+    done
+    
+    echo -e "${GRAY}Tip: Use --list to see all available tags, or 'apply' to update docker-compose.yml${NC}"
+    echo -e "${BLUE}Done!${NC}"
+fi

@@ -30,6 +30,7 @@ interface MyRouterContext {
   trpc: TRPCOptionsProxy<AppRouter>;
   apiUrl: string;
   dashboardUrl: string;
+  isSelfHosted: boolean;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({

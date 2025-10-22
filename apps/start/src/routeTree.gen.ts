@@ -16,6 +16,8 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as LoginRouteImport } from './routes/_login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiHealthcheckRouteImport } from './routes/api/healthcheck'
+import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as PublicOnboardingRouteImport } from './routes/_public.onboarding'
 import { Route as LoginResetPasswordRouteImport } from './routes/_login.reset-password'
 import { Route as LoginLoginRouteImport } from './routes/_login.login'
@@ -110,6 +112,16 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthcheckRoute = ApiHealthcheckRouteImport.update({
+  id: '/api/healthcheck',
+  path: '/api/healthcheck',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiConfigRoute = ApiConfigRouteImport.update({
+  id: '/api/config',
+  path: '/api/config',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PublicOnboardingRoute = PublicOnboardingRouteImport.update({
@@ -459,6 +471,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
   '/onboarding': typeof PublicOnboardingRoute
+  '/api/config': typeof ApiConfigRoute
+  '/api/healthcheck': typeof ApiHealthcheckRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -513,6 +527,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
   '/onboarding': typeof PublicOnboardingRoute
+  '/api/config': typeof ApiConfigRoute
+  '/api/healthcheck': typeof ApiHealthcheckRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -566,6 +582,8 @@ export interface FileRoutesById {
   '/_login/login': typeof LoginLoginRoute
   '/_login/reset-password': typeof LoginResetPasswordRoute
   '/_public/onboarding': typeof PublicOnboardingRoute
+  '/api/config': typeof ApiConfigRoute
+  '/api/healthcheck': typeof ApiHealthcheckRoute
   '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/_app/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -630,6 +648,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/onboarding'
+    | '/api/config'
+    | '/api/healthcheck'
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
@@ -684,6 +704,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/onboarding'
+    | '/api/config'
+    | '/api/healthcheck'
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
@@ -736,6 +758,8 @@ export interface FileRouteTypes {
     | '/_login/login'
     | '/_login/reset-password'
     | '/_public/onboarding'
+    | '/api/config'
+    | '/api/healthcheck'
     | '/_app/$organizationId/$projectId'
     | '/_app/$organizationId/billing'
     | '/_app/$organizationId/settings'
@@ -799,6 +823,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   StepsRoute: typeof StepsRouteWithChildren
+  ApiConfigRoute: typeof ApiConfigRoute
+  ApiHealthcheckRoute: typeof ApiHealthcheckRoute
   ShareOverviewShareIdRoute: typeof ShareOverviewShareIdRoute
 }
 
@@ -837,6 +863,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/healthcheck': {
+      id: '/api/healthcheck'
+      path: '/api/healthcheck'
+      fullPath: '/api/healthcheck'
+      preLoaderRoute: typeof ApiHealthcheckRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/config': {
+      id: '/api/config'
+      path: '/api/config'
+      fullPath: '/api/config'
+      preLoaderRoute: typeof ApiConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_public/onboarding': {
@@ -1631,6 +1671,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   StepsRoute: StepsRouteWithChildren,
+  ApiConfigRoute: ApiConfigRoute,
+  ApiHealthcheckRoute: ApiHealthcheckRoute,
   ShareOverviewShareIdRoute: ShareOverviewShareIdRoute,
 }
 export const routeTree = rootRouteImport

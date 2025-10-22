@@ -1,21 +1,34 @@
 import { cloudflare } from '@cloudflare/vite-plugin';
 import { wrapVinxiConfigWithSentry } from '@sentry/tanstackstart-react';
 import tailwindcss from '@tailwindcss/vite';
+import { nitroV2Plugin } from '@tanstack/nitro-v2-vite-plugin';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import viteTsConfigPaths from 'vite-tsconfig-paths';
 
-const config = defineConfig({
-  plugins: [
-    cloudflare({ viteEnvironment: { name: 'ssr' } }),
-    viteTsConfigPaths({
-      projects: ['./tsconfig.json'],
+const plugins = [
+  viteTsConfigPaths({
+    projects: ['./tsconfig.json'],
+  }),
+  tailwindcss(),
+  tanstackStart(),
+  viteReact(),
+];
+
+if (process.env.NITRO) {
+  plugins.unshift(
+    nitroV2Plugin({
+      preset: 'node-server',
+      compatibilityDate: '2025-10-21',
     }),
-    tailwindcss(),
-    tanstackStart(),
-    viteReact(),
-  ],
+  );
+} else {
+  plugins.unshift(cloudflare({ viteEnvironment: { name: 'ssr' } }));
+}
+
+const config = defineConfig({
+  plugins,
 });
 
 export default wrapVinxiConfigWithSentry(config, {

@@ -10,7 +10,7 @@ export async function healthcheck(
 ) {
   try {
     const redisRes = await getRedisCache().ping();
-    const dbRes = await db.project.findFirst();
+    const dbRes = await db.$executeRaw`SELECT 1`;
     const chRes = await chQuery('SELECT 1');
     const status = redisRes && dbRes && chRes ? 200 : 503;
 

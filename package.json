@@ -59,6 +59,9 @@
   "pnpm": {
     "patchedDependencies": {
       "nuqs": "patches/nuqs.patch"
+    },
+    "overrides": {
+      "rolldown": "1.0.0-beta.43"
     }
   }
 }

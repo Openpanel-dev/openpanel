@@ -1,0 +1,134 @@
+---
+title: Supporter Access - Latest Docker Images
+description: Get access to OpenPanel's latest private Docker images with bleeding-edge features built on every commit.
+---
+
+## Thank You for Your Support! 🙏
+
+First and foremost, **thank you** for supporting OpenPanel! Your contribution means the world to us and helps keep this project alive, maintained, and constantly improving. Every dollar you contribute goes directly into development, infrastructure, and making OpenPanel better for everyone.
+
+As a supporter, you get exclusive access to our private Docker images that are built with every commit, giving you the absolute latest features and fixes before they're publicly released.
+
+## Why Latest Images Matter
+
+### Bleeding-Edge Features
+- **Instant access**: Get new features the moment they're merged
+- **Early bug fixes**: Patches and fixes deployed immediately
+- **Continuous improvements**: Performance enhancements and optimizations in real-time
+- **Stay ahead**: Run the most advanced version of OpenPanel available
+
+### Built on Every Commit
+We maintain a continuous integration pipeline that builds new Docker images with every single commit to our repository. This means:
+- Zero delay between development and deployment
+- Production-ready images tested and validated automatically
+- Access to features weeks or months before stable releases
+
+## How It Works
+
+Our private Docker images are hosted on GitHub's container registry and protected from public access. As a supporter, you get an API key that grants you access to our private Docker proxy at `docker.openpanel.dev`, which seamlessly pulls these images for you.
+
+## Getting Started
+
+### Step 1: Become a Supporter
+
+Support starts at just **$20/month** and includes:
+- Access to all private Docker images
+- Priority support in our Discord community
+- Direct impact on OpenPanel's development
+- Our eternal gratitude ❤️
+
+### Step 2: Get Your API Key
+
+Once you become a supporter, you'll receive a unique API key that grants access to our Docker proxy.
+
+### Step 3: Login to Docker Registry
+
+On your server, authenticate with our Docker proxy using your API key:
+
+```bash
+echo "your_api_key" | docker login docker.openpanel.dev -u user --password-stdin
+```
+
+Replace `your_api_key` with the actual API key provided to you.
+
+<Callout>
+Make sure to keep your API key secure and never commit it to version control!
+</Callout>
+
+### Step 4: Update to Latest Images
+
+We've created a convenient script to make updating your images effortless. Navigate to your self-hosting folder and run:
+
+```bash
+./get_latest_images apply
+```
+
+This script will:
+- Check that you're authenticated with our Docker registry
+- Fetch the latest Git tags from our repository
+- Update your `docker-compose.yml` with the new image tags pointing to the latest builds
+
+<Callout type="info">
+The script will automatically check if you're logged in. If not, it will provide you with instructions to authenticate first.
+</Callout>
+
+You can also check what tags are available without applying them:
+
+```bash
+./get_latest_images           # Show latest tags
+./get_latest_images --list    # List all available tags
+```
+
+### Step 5: Restart Your Services
+
+After pulling the latest images, simply restart your services:
+
+```bash
+./restart
+```
+
+That's it! Your OpenPanel instance is now running the latest and greatest version.
+
+## Quick Update Workflow
+
+Once you're set up, updating to the latest version is as simple as:
+
+```bash
+cd /path/to/self-hosting
+./get_latest_images apply
+./restart
+```
+
+This entire process takes less than a minute, giving you instant access to new features and fixes.
+
+The `get_latest_images` script will:
+1. Verify you're logged into the Docker registry
+2. Fetch the latest tags from GitHub
+3. Update your `docker-compose.yml` with images pointing to the latest commit SHAs
+4. Create a backup of your docker-compose file before making changes
+
+## Important Notes
+
+- **Stability**: While these images are tested, they may occasionally contain bugs that haven't been discovered yet. We recommend having a backup strategy.
+- **Breaking changes**: We strive to maintain backwards compatibility, but occasionally breaking changes may occur. Always check the [changelog](/docs/self-hosting/changelog) before updating.
+- **Support**: As a supporter, you have priority access to support. If you encounter any issues, reach out to us on Discord or via email.
+
+## Need Help?
+
+If you have any questions or run into issues:
+- Join our [Discord community](https://go.openpanel.dev/discord) (supporters get a special role!)
+- Email us at [hello@openpanel.dev](mailto:hello@openpanel.dev)
+- Check our [GitHub repository](https://github.com/Openpanel-dev/openpanel)
+
+---
+
+## Your Impact
+
+Every contribution helps us:
+- Dedicate more time to development
+- Maintain and improve infrastructure
+- Provide better documentation and support
+- Keep OpenPanel free and open-source for everyone
+
+Thank you for being an essential part of OpenPanel's journey. We couldn't do this without supporters like you! 💙
+

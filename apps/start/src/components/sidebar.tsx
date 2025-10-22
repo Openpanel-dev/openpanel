@@ -1,13 +1,9 @@
+import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import type { IServiceOrganization } from '@openpanel/db';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Link,
-  useLocation,
-  useParams,
-  useRouteContext,
-} from '@tanstack/react-router';
+import { Link, useLocation, useParams } from '@tanstack/react-router';
 import { MenuIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FeedbackButton } from './feedback-button';
@@ -81,6 +77,7 @@ export function SidebarContainer({
 }: SidebarContainerProps) {
   const [active, setActive] = useState(false);
   const location = useLocation();
+  const { isSelfHosted } = useAppContext();
 
   useEffect(() => {
     setActive(false);
@@ -135,7 +132,7 @@ export function SidebarContainer({
 
           <div className="mt-auto w-full ">
             <FeedbackButton />
-            {import.meta.env.VITE_SELF_HOSTED === 'true' && (
+            {isSelfHosted && (
               <div className={cn('text-sm w-full text-center')}>
                 Self-hosted instance
               </div>

@@ -110,6 +110,7 @@ export const eventsGroupQueue = new GroupQueue<
 >({
   logger: queueLogger,
   namespace: 'group_events',
+  // @ts-expect-error - TODO: Fix this in groupmq
   redis: getRedisGroupQueue(),
   orderingMethod: 'in-memory',
   orderingWindowMs,

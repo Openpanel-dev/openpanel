@@ -7,6 +7,7 @@ export const getServerEnvs = createServerFn().handler(async () => {
     dashboardUrl: String(
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
     ),
+    isSelfHosted: process.env.SELF_HOSTED !== undefined,
   };
 
   return envs;
