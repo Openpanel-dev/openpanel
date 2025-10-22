@@ -5,7 +5,11 @@ export function useAppContext() {
     strict: false,
   });
 
-  if (!params.apiUrl || !params.dashboardUrl || !params.isSelfHosted) {
+  if (
+    !params.apiUrl ||
+    !params.dashboardUrl ||
+    typeof params.isSelfHosted === 'undefined'
+  ) {
     throw new Error('API URL or dashboard URL is not set');
   }
 

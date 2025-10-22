@@ -2,6 +2,7 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
+  useRouteContext,
 } from '@tanstack/react-router';
 
 import 'flag-icons/css/flag-icons.min.css';
@@ -23,7 +24,9 @@ import { op } from '@/utils/op';
 import type { AppRouter } from '@openpanel/trpc';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 
-op.init();
+if (import.meta.env.VITE_OP_CLIENT_ID) {
+  op.init();
+}
 
 interface MyRouterContext {
   queryClient: QueryClient;

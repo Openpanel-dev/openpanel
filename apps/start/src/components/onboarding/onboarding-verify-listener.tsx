@@ -18,12 +18,7 @@ type Props = {
   onVerified: (verified: boolean) => void;
 };
 
-const VerifyListener = ({
-  client,
-  events: _events,
-  onVerified,
-  project,
-}: Props) => {
+const VerifyListener = ({ client, events: _events, onVerified }: Props) => {
   const [events, setEvents] = useState<IServiceEvent[]>(_events ?? []);
   useWS<IServiceEvent>(
     `/live/events/${client?.projectId}?type=received`,

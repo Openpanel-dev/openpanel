@@ -12,6 +12,7 @@
     }
   ],
   "vars": {
+    "VITE_OP_CLIENT_ID": "301c6dc1-424c-4bc3-9886-a8beab09b615",
     "API_URL": "https://api.openpanel.dev",
     "DASHBOARD_URL": "https://dashboard.openpanel.dev",
     "NODE_ENV": "production",

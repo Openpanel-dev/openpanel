@@ -10,6 +10,7 @@ import { PAGE_TITLES, createEntityTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute, redirect } from '@tanstack/react-router';
 import { BoxSelectIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
   head: () => ({
@@ -32,6 +33,7 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/verify')({
 });
 
 function Component() {
+  const [isVerified, setIsVerified] = useState(false);
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { data: events, refetch } = useQuery(
@@ -41,7 +43,11 @@ function Component() {
     trpc.project.getProjectWithClients.queryOptions({ projectId }),
   );
 
-  const isVerified = events && events.data.length > 0;
+  useEffect(() => {
+    if (events && events.data.length > 0) {
+      setIsVerified(true);
+    }
+  }, [events]);
 
   if (!project) {
     return (
@@ -60,7 +66,10 @@ function Component() {
         project={project}
         client={client}
         events={events?.data ?? []}
-        onVerified={() => refetch()}
+        onVerified={() => {
+          refetch();
+          setIsVerified(true);
+        }}
       />
 
       <CurlPreview project={project} />

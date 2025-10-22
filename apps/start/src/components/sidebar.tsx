@@ -130,10 +130,10 @@ export function SidebarContainer({
         >
           {children}
 
-          <div className="mt-auto w-full ">
+          <div className="mt-auto w-full pt-6">
             <FeedbackButton />
             {isSelfHosted && (
-              <div className={cn('text-sm w-full text-center')}>
+              <div className={cn('text-sm w-full text-left mt-2')}>
                 Self-hosted instance
               </div>
             )}
