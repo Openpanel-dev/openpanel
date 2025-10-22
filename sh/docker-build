@@ -46,7 +46,6 @@ build_image() {
             --platform linux/amd64,linux/arm64 \
             -t "$full_version" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
-            --build-arg VITE_SELF_HOSTED="true" \
             -f "apps/$app/Dockerfile" \
             --push \
             .
@@ -57,7 +56,6 @@ build_image() {
             -t "$full_version" \
             -t "$image_name:latest" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
-            --build-arg VITE_SELF_HOSTED="true" \
             -f "apps/$app/Dockerfile" \
             --push \
             .

@@ -47,7 +47,7 @@ export async function deleteProjects(job: Job<CronQueuePayload>) {
 
   for (const table of tables) {
     const query =
-      process.env.VITE_SELF_HOSTED === 'true'
+      process.env.SELF_HOSTED === 'true'
         ? `ALTER TABLE ${table} DELETE WHERE ${where};`
         : `ALTER TABLE ${table}_replicated ON CLUSTER '{cluster}' DELETE WHERE ${where};`;
 

@@ -77,6 +77,65 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Check if jq is installed (required for JSON parsing)
+if ! command -v jq &> /dev/null; then
+    echo -e "${YELLOW}jq is required but not installed${NC}\n"
+    echo -e "${CYAN}jq is a lightweight JSON processor needed to parse GitHub API responses.${NC}\n"
+    
+    # Detect OS and suggest installation
+    if [[ -f /etc/os-release ]]; then
+        . /etc/os-release
+        OS_ID=$ID
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        OS_ID="macos"
+    else
+        OS_ID="unknown"
+    fi
+    
+    # Determine installation command
+    case $OS_ID in
+        ubuntu|debian)
+            INSTALL_CMD="sudo apt-get update && sudo apt-get install -y jq"
+            ;;
+        rhel|centos|fedora)
+            INSTALL_CMD="sudo yum install -y jq"
+            ;;
+        alpine)
+            INSTALL_CMD="sudo apk add --no-cache jq"
+            ;;
+        macos)
+            INSTALL_CMD="brew install jq"
+            ;;
+        *)
+            echo -e "${RED}Could not detect your OS.${NC}"
+            echo -e "${YELLOW}Please install jq manually:${NC}"
+            echo -e "  ${GREEN}Ubuntu/Debian:${NC}  sudo apt-get update && sudo apt-get install -y jq"
+            echo -e "  ${GREEN}RHEL/CentOS:${NC}    sudo yum install -y jq"
+            echo -e "  ${GREEN}Alpine:${NC}         sudo apk add --no-cache jq"
+            echo -e "  ${GREEN}macOS:${NC}          brew install jq"
+            echo ""
+            exit 1
+            ;;
+    esac
+    
+    # Ask user if they want to install
+    read -p "$(echo -e ${GREEN}Would you like to install jq now? [Y/n]:${NC} )" -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        echo -e "${RED}jq is required to continue. Please install it manually.${NC}"
+        exit 1
+    fi
+    
+    # Install jq
+    echo -e "${BLUE}Installing jq...${NC}\n"
+    if eval "$INSTALL_CMD"; then
+        echo -e "\n${GREEN}✓ jq installed successfully!${NC}\n"
+    else
+        echo -e "\n${RED}✗ Failed to install jq. Please install it manually.${NC}"
+        exit 1
+    fi
+fi
+
 # Check if user needs to be logged in (for apply mode)
 if [ "$APPLY_MODE" = true ]; then
     # Check if Docker is available
@@ -135,11 +194,7 @@ fi
 # List all tags if requested
 if [ "$LIST_ALL" = true ]; then
     echo -e "${GREEN}All available tags:${NC}\n"
-    if command -v jq &> /dev/null; then
-        echo "$TAGS_JSON" | jq -r '.[] | "  \(.name) (\(.commit.sha[0:7]))"'
-    else
-        echo "$TAGS_JSON" | grep "\"name\":" | sed 's/.*"name": "\([^"]*\)".*/  \1/'
-    fi
+    echo "$TAGS_JSON" | jq -r '.[] | "  \(.name) (\(.commit.sha[0:7]))"'
     echo ""
     exit 0
 fi
@@ -150,15 +205,9 @@ get_latest_tag() {
     local output_var_tag=$2
     local output_var_sha=$3
     
-    if command -v jq &> /dev/null; then
-        # Use jq for better JSON parsing
-        local tag=$(echo "$TAGS_JSON" | jq -r "[.[] | select(.name | contains(\"${component}\"))] | .[0] | .name" 2>/dev/null)
-        local sha=$(echo "$TAGS_JSON" | jq -r "[.[] | select(.name | contains(\"${component}\"))] | .[0] | .commit.sha" 2>/dev/null)
-    else
-        # Fallback to grep/sed
-        local tag=$(echo "$TAGS_JSON" | grep -o "\"name\": \"[^\"]*${component}[^\"]*\"" | head -1 | cut -d'"' -f4)
-        local sha=$(echo "$TAGS_JSON" | grep -B5 "\"name\": \"${tag}\"" | grep "\"sha\"" | head -1 | cut -d'"' -f4)
-    fi
+    # Use jq for JSON parsing
+    local tag=$(echo "$TAGS_JSON" | jq -r "[.[] | select(.name | contains(\"${component}\"))] | .[0] | .name" 2>/dev/null)
+    local sha=$(echo "$TAGS_JSON" | jq -r "[.[] | select(.name | contains(\"${component}\"))] | .[0] | .commit.sha" 2>/dev/null)
     
     if [ -z "$tag" ] || [ "$tag" == "null" ]; then
         echo -e "${RED}✗${NC} ${component}: No matching tag found"

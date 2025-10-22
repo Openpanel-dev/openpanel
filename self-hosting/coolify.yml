@@ -135,7 +135,7 @@ services:
     environment:
       # Common
       - NODE_ENV=production
-      - VITE_SELF_HOSTED=true
+      - SELF_HOSTED=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
@@ -166,7 +166,7 @@ services:
     environment:
       # Common
       - NODE_ENV=production
-      - VITE_SELF_HOSTED=true
+      - SELF_HOSTED=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@opkv:6379
@@ -193,7 +193,7 @@ services:
       - SERVICE_FQDN_OPBULLBOARD
       # Common
       - NODE_ENV=production
-      - VITE_SELF_HOSTED=true
+      - SELF_HOSTED=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
