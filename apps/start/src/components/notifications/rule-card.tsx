@@ -51,7 +51,11 @@ export function RuleCard({
     trpc.notification.deleteRule.mutationOptions({
       onSuccess() {
         toast.success('Rule deleted');
-        client.refetchQueries(trpc.notification.rules.pathFilter());
+        client.refetchQueries(
+          trpc.notification.rules.queryOptions({
+            projectId: rule.projectId,
+          }),
+        );
       },
     }),
   );
