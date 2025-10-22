@@ -1,11 +1,14 @@
 import { getLock } from '@openpanel/redis';
 import fastJsonStableHash from 'fast-json-stable-hash';
-import type { FastifyReply } from 'fastify';
 
 export async function isDuplicatedEvent({
+  ip,
+  origin,
   payload,
   projectId,
 }: {
+  ip: string;
+  origin: string;
   payload: Record<string, any>;
   projectId: string;
 }) {
@@ -13,6 +16,8 @@ export async function isDuplicatedEvent({
     `fastify:deduplicate:${fastJsonStableHash.hash(
       {
         ...payload,
+        ip,
+        origin,
         projectId,
       },
       'md5',
@@ -26,25 +31,4 @@ export async function isDuplicatedEvent({
   }
 
   return true;
-}
-
-export async function checkDuplicatedEvent({
-  reply,
-  payload,
-  projectId,
-}: {
-  reply: FastifyReply;
-  payload: Record<string, any>;
-  projectId: string;
-}) {
-  if (await isDuplicatedEvent({ payload, projectId })) {
-    reply.log.info('duplicated event', {
-      payload,
-      projectId,
-    });
-    reply.status(200).send('duplicated');
-    return true;
-  }
-
-  return false;
 }

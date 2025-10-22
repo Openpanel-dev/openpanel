@@ -1,4 +1,5 @@
 import { EventsTable } from '@/components/events/table';
+import { useReadColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import { useEventQueryNamesFilter } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ function Component() {
   );
   const [endDate, setEndDate] = useQueryState('endDate', parseAsIsoDateTime);
   const [eventNames] = useEventQueryNamesFilter();
+  const columnVisibility = useReadColumnVisibility('events');
   const query = useInfiniteQuery(
     trpc.event.conversions.infiniteQueryOptions(
       {
@@ -27,6 +29,7 @@ function Component() {
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         events: eventNames,
+        columnVisibility: columnVisibility ?? {},
       },
       {
         getNextPageParam: (lastPage) => lastPage.meta.next,

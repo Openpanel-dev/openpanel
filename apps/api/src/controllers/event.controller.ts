@@ -2,10 +2,9 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getSalts } from '@openpanel/db';
-import { eventsGroupQueue } from '@openpanel/queue';
+import { getEventsGroupQueueShard } from '@openpanel/queue';
 import type { PostEventPayload } from '@openpanel/sdk';
 
-import { checkDuplicatedEvent } from '@/utils/deduplicate';
 import { generateId } from '@openpanel/common';
 import { getGeoLocation } from '@openpanel/geo';
 import { getStringHeaders, getTimestamp } from './track.controller';
@@ -44,28 +43,22 @@ export async function postEvent(
     ua,
   });
 
-  if (
-    await checkDuplicatedEvent({
-      reply,
-      payload: {
-        ...request.body,
-        timestamp,
-        previousDeviceId,
-        currentDeviceId,
-      },
-      projectId,
-    })
-  ) {
-    return;
-  }
-
   const uaInfo = parseUserAgent(ua, request.body?.properties);
   const groupId = uaInfo.isServer
     ? request.body?.profileId
       ? `${projectId}:${request.body?.profileId}`
       : `${projectId}:${generateId()}`
     : currentDeviceId;
-  await eventsGroupQueue.add({
+  const jobId = [
+    request.body.name,
+    timestamp,
+    projectId,
+    currentDeviceId,
+    groupId,
+  ]
+    .filter(Boolean)
+    .join('-');
+  await getEventsGroupQueueShard(groupId).add({
     orderMs: new Date(timestamp).getTime(),
     data: {
       projectId,
@@ -75,11 +68,13 @@ export async function postEvent(
         timestamp,
         isTimestampFromThePast,
       },
+      uaInfo,
       geo,
       currentDeviceId,
       previousDeviceId,
     },
     groupId,
+    jobId,
   });
 
   reply.status(202).send('ok');

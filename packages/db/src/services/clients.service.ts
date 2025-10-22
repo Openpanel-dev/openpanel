@@ -34,4 +34,4 @@ export async function getClientById(
   });
 }
 
-export const getClientByIdCached = cacheable(getClientById, 60 * 60 * 24);
+export const getClientByIdCached = cacheable(getClientById, 60 * 60 * 24, true);

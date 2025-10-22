@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   op-db:
@@ -12,12 +12,25 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 
+  op-df:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: op-df
+    restart: always
+    ports:
+      - "6380:6379"
+    ulimits:
+      memlock: -1
+      nofile: 65535
+    command:
+      - "--cluster_mode=emulated"
+      - "--lock_on_hashtags"
+
   op-kv:
     image: redis:7.2.5-alpine
     restart: always
     volumes:
       - ./docker/data/op-kv-data:/data
-    command: [ 'redis-server', '--maxmemory-policy', 'noeviction' ]
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
     ports:
       - 6379:6379
 
