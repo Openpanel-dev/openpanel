@@ -6,8 +6,10 @@ import { WebhookIntegrationForm } from '@/components/integrations/forms/webhook-
 import { IntegrationCardContent } from '@/components/integrations/integration-card';
 import { INTEGRATIONS } from '@/components/integrations/integrations';
 import { SheetContent } from '@/components/ui/sheet';
+import { useAppParams } from '@/hooks/use-app-params';
 import type { IIntegrationConfig } from '@openpanel/validation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { useQueryState } from 'nuqs';
 import { toast } from 'sonner';
 import { popModal } from '.';
@@ -18,6 +20,7 @@ interface Props {
   type: IIntegrationConfig['type'];
 }
 export default function AddIntegration(props: Props) {
+  const { organizationId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.integration.get.queryOptions(
@@ -43,20 +46,21 @@ export default function AddIntegration(props: Props) {
     );
   };
 
-  const [tab, setTab] = useQueryState('tab', {
-    shallow: false,
-  });
+  const navigate = useNavigate();
   const client = useQueryClient();
   const handleSuccess = () => {
     toast.success('Integration created');
     popModal();
-    client.invalidateQueries(trpc.integration.list.queryFilter());
+    client.invalidateQueries(trpc.integration.list.pathFilter());
     client.invalidateQueries(
       trpc.integration.get.queryFilter({ id: props.id }),
     );
-    if (tab !== undefined) {
-      setTab('installed');
-    }
+    navigate({
+      to: '/$organizationId/integrations/installed',
+      params: {
+        organizationId,
+      },
+    });
   };
 
   const renderForm = () => {
