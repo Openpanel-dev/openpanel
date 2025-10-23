@@ -104,6 +104,7 @@ jobs:
   build-and-push-api:
     permissions:
       packages: write
+      contents: write
     needs: [changes, lint-and-test]
     if: ${{ needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
@@ -144,9 +145,26 @@ jobs:
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
+      - name: Create/Update API tag
+        run: |
+          # Delete existing tag if it exists
+          if git tag -l "api" | grep -q "api"; then
+            git tag -d "api"
+            echo "Deleted local tag: api"
+          fi
+
+          # Create new tag
+          git tag "api" "${{ github.sha }}"
+          echo "Created tag: api"
+
+          # Push tag to remote
+          git push origin "api" --force
+          echo "Pushed tag: api"
+
   build-and-push-worker:
     permissions:
       packages: write
+      contents: write
     needs: [changes, lint-and-test]
     if: ${{ needs.changes.outputs.worker == 'true' }}
     runs-on: ubuntu-latest
@@ -187,9 +205,26 @@ jobs:
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
+      - name: Create/Update Worker tag
+        run: |
+          # Delete existing tag if it exists
+          if git tag -l "worker" | grep -q "worker"; then
+            git tag -d "worker"
+            echo "Deleted local tag: worker"
+          fi
+
+          # Create new tag
+          git tag "worker" "${{ github.sha }}"
+          echo "Created tag: worker"
+
+          # Push tag to remote
+          git push origin "worker" --force
+          echo "Pushed tag: worker"
+
   build-and-push-dashboard:
     permissions:
       packages: write
+      contents: write
     needs: [changes, lint-and-test]
     if: ${{ needs.changes.outputs.dashboard == 'true' }}
     runs-on: ubuntu-latest
@@ -229,3 +264,19 @@ jobs:
             ghcr.io/${{ env.repo_owner }}/dashboard:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
           build-args: |
             NO_CLOUDFLARE=1
+
+      - name: Create/Update Dashboard tag
+        run: |
+          # Delete existing tag if it exists
+          if git tag -l "dashboard" | grep -q "dashboard"; then
+            git tag -d "dashboard"
+            echo "Deleted local tag: dashboard"
+          fi
+
+          # Create new tag
+          git tag "dashboard" "${{ github.sha }}"
+          echo "Created tag: dashboard"
+
+          # Push tag to remote
+          git push origin "dashboard" --force
+          echo "Pushed tag: dashboard"
