@@ -510,7 +510,7 @@ export async function getEventList(options: GetEventListOptions) {
     sb.select.model = 'model';
   }
   if (select.duration) {
-    sb.select.duration = 'duration';
+    sb.select.duration = `${getDurationSql()} as duration`;
   }
   if (select.path) {
     sb.select.path = 'path';
@@ -570,7 +570,7 @@ export async function getEventList(options: GetEventListOptions) {
     custom(sb);
   }
 
-  console.log('getSql()', getSql());
+  console.log('getSql() ----> ', getSql());
 
   const data = await getEvents(getSql(), {
     profile: select.profile ?? true,
@@ -1016,3 +1016,6 @@ class EventService {
 }
 
 export const eventService = new EventService(ch);
+
+export const getDurationSql = (field = 'created_at') =>
+  `dateDiff('millisecond', ${field}, leadInFrame(toNullable(${field}), 1, NULL) OVER (PARTITION BY session_id ORDER BY ${field} ASC ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING))`;

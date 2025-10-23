@@ -13,6 +13,7 @@ import {
   formatClickhouseDate,
 } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
+import { getDurationSql } from './event.service';
 
 export type IProfileMetrics = {
   lastSeen: string;
@@ -39,15 +40,15 @@ export function getProfileMetrics(profileId: string, projectId: string) {
     screenViews AS (
       SELECT count(*) as screenViews FROM ${TABLE_NAMES.events} WHERE name = 'screen_view' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
-    sessions AS (
+    sessionsCount AS (
       SELECT count(*) as sessions FROM ${TABLE_NAMES.events} WHERE name = 'session_start' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
-    duration AS (
+    sessionDuration AS (
       SELECT 
-        round(avg(duration) / 1000 / 60, 2) as durationAvg, 
-        round(quantilesExactInclusive(0.9)(duration)[1] / 1000 / 60, 2) as durationP90 
-      FROM ${TABLE_NAMES.events} 
-      WHERE name = 'session_end' AND duration != 0 AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
+        avg(duration) / 1000 as durationAvg, 
+        quantilesExactInclusive(0.9)(duration)[1] / 1000 as durationP90 
+      FROM ${TABLE_NAMES.sessions} 
+      WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     totalEvents AS (
       SELECT count(*) as totalEvents FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
@@ -59,7 +60,7 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       SELECT round(avg(properties['__bounce'] = '1') * 100, 4) as bounceRate FROM ${TABLE_NAMES.events} WHERE name = 'session_end' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
     avgEventsPerSession AS (
-      SELECT round((SELECT totalEvents FROM totalEvents) / nullIf((SELECT sessions FROM sessions), 0), 2) as avgEventsPerSession
+      SELECT round((SELECT totalEvents FROM totalEvents) / nullIf((SELECT sessions FROM sessionsCount), 0), 2) as avgEventsPerSession
     ),
     conversionEvents AS (
       SELECT count(*) as conversionEvents FROM ${TABLE_NAMES.events} WHERE name NOT IN ('screen_view', 'session_start', 'session_end') AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
@@ -67,17 +68,17 @@ export function getProfileMetrics(profileId: string, projectId: string) {
     avgTimeBetweenSessions AS (
       SELECT 
         CASE 
-          WHEN (SELECT sessions FROM sessions) <= 1 THEN 0
-          ELSE round(dateDiff('second', (SELECT firstSeen FROM firstSeen), (SELECT lastSeen FROM lastSeen)) / nullIf((SELECT sessions FROM sessions) - 1, 0), 1)
+          WHEN (SELECT sessions FROM sessionsCount) <= 1 THEN 0
+          ELSE round(dateDiff('second', (SELECT firstSeen FROM firstSeen), (SELECT lastSeen FROM lastSeen)) / nullIf((SELECT sessions FROM sessionsCount) - 1, 0), 1)
         END as avgTimeBetweenSessions
     )
     SELECT 
       (SELECT lastSeen FROM lastSeen) as lastSeen, 
       (SELECT firstSeen FROM firstSeen) as firstSeen, 
       (SELECT screenViews FROM screenViews) as screenViews, 
-      (SELECT sessions FROM sessions) as sessions, 
-      (SELECT durationAvg FROM duration) as durationAvg, 
-      (SELECT durationP90 FROM duration) as durationP90,
+      (SELECT sessions FROM sessionsCount) as sessions, 
+      (SELECT durationAvg FROM sessionDuration) as durationAvg, 
+      (SELECT durationP90 FROM sessionDuration) as durationP90,
       (SELECT totalEvents FROM totalEvents) as totalEvents,
       (SELECT uniqueDaysActive FROM uniqueDaysActive) as uniqueDaysActive,
       (SELECT bounceRate FROM bounceRate) as bounceRate,
