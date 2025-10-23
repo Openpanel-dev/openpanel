@@ -32,7 +32,7 @@ import {
   differenceInWeeks,
   formatISO,
 } from 'date-fns';
-import { getProjectAccessCached } from '../access';
+import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import {
   cacheMiddleware,
@@ -363,7 +363,7 @@ export const chartRouter = createTRPCRouter({
     .input(zChartInput)
     .query(async ({ input, ctx }) => {
       if (ctx.session.userId) {
-        const access = await getProjectAccessCached({
+        const access = await getProjectAccess({
           projectId: input.projectId,
           userId: ctx.session.userId,
         });

@@ -59,8 +59,14 @@ export async function createDemoSession(
   };
 }
 
+export const decodeSessionToken = (token: string): string | null => {
+  return token
+    ? encodeHexLowerCase(sha256(new TextEncoder().encode(token)))
+    : null;
+};
+
 export async function validateSessionToken(
-  token: string | null,
+  token: string | null | undefined,
 ): Promise<SessionValidationResult> {
   if (process.env.DEMO_USER_ID) {
     return createDemoSession(process.env.DEMO_USER_ID);
@@ -69,7 +75,10 @@ export async function validateSessionToken(
   if (!token) {
     return EMPTY_SESSION;
   }
-  const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+  const sessionId = decodeSessionToken(token);
+  if (!sessionId) {
+    return EMPTY_SESSION;
+  }
   const result = await db.$primary().session.findUnique({
     where: {
       id: sessionId,

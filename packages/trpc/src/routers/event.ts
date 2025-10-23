@@ -26,7 +26,7 @@ import {
 } from '@openpanel/validation';
 
 import { clone } from 'ramda';
-import { getProjectAccessCached } from '../access';
+import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
@@ -262,7 +262,7 @@ export const eventRouter = createTRPCRouter({
     )
     .query(async ({ input: { projectId, cursor, limit }, ctx }) => {
       if (ctx.session.userId) {
-        const access = await getProjectAccessCached({
+        const access = await getProjectAccess({
           projectId,
           userId: ctx.session.userId,
         });

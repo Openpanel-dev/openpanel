@@ -61,7 +61,7 @@ export async function getOrganizationByProjectId(projectId: string) {
 
 export const getOrganizationByProjectIdCached = cacheable(
   getOrganizationByProjectId,
-  60 * 60 * 24,
+  60 * 5,
 );
 
 export async function getInvites(organizationId: string) {
