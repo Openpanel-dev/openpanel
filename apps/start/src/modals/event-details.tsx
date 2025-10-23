@@ -18,14 +18,8 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import {
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  FilterIcon,
-  Loader2Icon,
-  XIcon,
-} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
 import { useState } from 'react';
 import { popModal } from '.';

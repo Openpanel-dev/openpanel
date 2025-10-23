@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import {
   type IServiceProfile,
+  type IServiceSession,
   TABLE_NAMES,
   chQuery,
   convertClickhouseDateToJs,
@@ -104,7 +105,10 @@ export const eventRouter = createTRPCRouter({
         });
       }
 
-      const session = await sessionService.byId(res?.sessionId, projectId);
+      let session: IServiceSession | undefined;
+      if (res?.sessionId) {
+        session = await sessionService.byId(res?.sessionId, projectId);
+      }
 
       return {
         event: res,
