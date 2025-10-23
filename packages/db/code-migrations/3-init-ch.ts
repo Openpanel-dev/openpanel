@@ -16,7 +16,7 @@ import {
   renameTable,
   runClickhouseMigrationCommands,
 } from '../src/clickhouse/migration';
-import { getIsSelfHosting, printBoxMessage } from './helpers';
+import { getIsCluster, getIsSelfHosting, printBoxMessage } from './helpers';
 
 export async function up() {
   const replicatedVersion = '1';
@@ -31,7 +31,7 @@ export async function up() {
   );
 
   const isSelfHosting = getIsSelfHosting();
-  const isClustered = !isSelfHosting;
+  const isClustered = getIsCluster();
 
   const isSelfHostingPostCluster =
     existingTables.includes('events_replicated') && isSelfHosting;
@@ -58,7 +58,7 @@ export async function up() {
           return renameTable({
             from: table,
             to: `${table}_tmp`,
-            isClustered: false,
+            isClustered,
           });
         }),
     );

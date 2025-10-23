@@ -6,7 +6,12 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { db } from '../index';
-import { getIsDry, getIsSelfHosting, printBoxMessage } from './helpers';
+import {
+  getIsCluster,
+  getIsDry,
+  getIsSelfHosting,
+  printBoxMessage,
+} from './helpers';
 
 async function migrate() {
   const args = process.argv.slice(2);
@@ -37,6 +42,11 @@ async function migrate() {
           ),
       )
       .map((migration) => `\t- ${migration}`),
+  ]);
+
+  printBoxMessage('🤝 Config', [
+    `isClustered:   ${getIsCluster()}`,
+    `isSelfHosting: ${getIsSelfHosting()}`,
   ]);
 
   printBoxMessage('🌍 Environment', [

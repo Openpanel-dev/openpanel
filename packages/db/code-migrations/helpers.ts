@@ -16,11 +16,11 @@ export function printBoxMessage(title: string, lines: (string | unknown)[]) {
 
 export function getIsCluster() {
   const args = process.argv;
-  const noClusterArg = args.includes('--no-cluster');
-  if (noClusterArg) {
-    return false;
-  }
-  return !getIsSelfHosting();
+  return (
+    args.includes('--cluster') ||
+    process.env.CLICKHOUSE_CLUSTER === 'true' ||
+    process.env.CLICKHOUSE_CLUSTER === '1'
+  );
 }
 
 export function getIsSelfHosting() {
