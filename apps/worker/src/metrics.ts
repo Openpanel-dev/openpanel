@@ -2,7 +2,6 @@ import client from 'prom-client';
 
 import {
   botBuffer,
-  db,
   eventBuffer,
   profileBuffer,
   sessionBuffer,
@@ -14,6 +13,28 @@ const Registry = client.Registry;
 export const register = new Registry();
 
 const queues = [sessionsQueue, cronQueue, eventsGroupQueue];
+
+register.registerMetric(
+  new client.Gauge({
+    name: `buffer_${eventBuffer.name}_retry_count`,
+    help: 'Retry buffer size',
+    async collect() {
+      const metric = await eventBuffer.getRetryBufferSize();
+      this.set(metric);
+    },
+  }),
+);
+
+register.registerMetric(
+  new client.Gauge({
+    name: `buffer_${eventBuffer.name}_dlq_count`,
+    help: 'DLQ buffer size',
+    async collect() {
+      const metric = await eventBuffer.getDLQSize();
+      this.set(metric);
+    },
+  }),
+);
 
 queues.forEach((queue) => {
   register.registerMetric(

@@ -1,10 +1,10 @@
+import { Readable } from 'node:stream';
 import { getSafeJson } from '@openpanel/json';
 import {
   type Redis,
   getRedisCache,
   getRedisPub,
   publishEvent,
-  runEvery,
 } from '@openpanel/redis';
 import { ch } from '../clickhouse/client';
 import {
@@ -14,389 +14,157 @@ import {
 } from '../services/event.service';
 import { BaseBuffer } from './base-buffer';
 
-/**
- *
- * Usuful redis commands:
- * ---------------------
- *
- * Add empty session
- * ZADD event_buffer:sessions_sorted 1710831600000 "test_empty_session"
- *
- * Get session events
- * LRANGE event_buffer:session:test_empty_session 0 -1
- *
- * Get session events count
- * LLEN event_buffer:session:test_empty_session
- *
- * Get regular queue events
- * LRANGE event_buffer:regular_queue 0 -1
- *
- * Get regular queue count
- * LLEN event_buffer:regular_queue
- *
- */
-
 export class EventBuffer extends BaseBuffer {
-  // Configurable limits
-  // How many days to keep buffered session metadata before cleanup
-  private daysToKeep = process.env.EVENT_BUFFER_DAYS_TO_KEEP
-    ? Number.parseFloat(process.env.EVENT_BUFFER_DAYS_TO_KEEP)
-    : 3;
-  // How many events we attempt to FETCH per flush cycle (split across sessions/non-sessions)
-  // Prefer new env EVENT_BUFFER_BATCH_SIZE; fallback to legacy EVENT_BUFFER_BATCH_SIZE
   private batchSize = process.env.EVENT_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.EVENT_BUFFER_BATCH_SIZE, 10)
     : 4000;
-  // How many events per insert chunk we send to ClickHouse (insert batch size)
   private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
     ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
     : 1000;
-  private updatePendingSessionsBatchSize = process.env
-    .EVENT_BUFFER_UPDATE_PENDING_SESSIONS_BATCH_SIZE
-    ? Number.parseInt(
-        process.env.EVENT_BUFFER_UPDATE_PENDING_SESSIONS_BATCH_SIZE,
-        10,
-      )
-    : 300;
-
-  // Cap of how many ready sessions to scan per flush cycle (configurable via env)
-  private maxSessionsPerFlush = process.env.EVENT_BUFFER_MAX_SESSIONS_PER_FLUSH
-    ? Number.parseInt(process.env.EVENT_BUFFER_MAX_SESSIONS_PER_FLUSH, 10)
-    : 500;
-
-  // Soft time budget per flush (ms) to avoid long lock holds
-  private flushTimeBudgetMs = process.env.EVENT_BUFFER_FLUSH_TIME_BUDGET_MS
-    ? Number.parseInt(process.env.EVENT_BUFFER_FLUSH_TIME_BUDGET_MS, 10)
-    : 1000;
-
-  private minEventsInSession = 2;
 
   private activeVisitorsExpiration = 60 * 5; // 5 minutes
+  private lastScreenViewTTL = 60 * 60; // 1 hour
 
-  private sessionEvents = ['screen_view', 'session_end'];
-
-  // LIST - Stores events without sessions
-  private regularQueueKey = 'event_buffer:regular_queue';
-
-  // SORTED SET - Tracks all active session IDs with their timestamps
-  private sessionSortedKey = 'event_buffer:sessions_sorted'; // sorted set of session IDs
-
-  // SORTED SET - Tracks sessions that are ready for processing (have >= minEvents)
-  private readySessionsKey = 'event_buffer:ready_sessions';
-
-  // STRING - Tracks total buffer size incrementally
-  protected bufferCounterKey = 'event_buffer:total_count';
-
-  private readonly sessionKeyPrefix = 'event_buffer:session:';
-  // LIST - Stores events for a given session
-  private getSessionKey(sessionId: string) {
-    return `${this.sessionKeyPrefix}${sessionId}`;
-  }
-  /**
-   * Optimized Lua script that processes ready sessions efficiently.
-   * Only fetches from sessions known to have >= minEvents.
-   * Limits the number of events fetched per session to avoid huge payloads.
-   */
-  private readonly processReadySessionsScript = `
-local readySessionsKey = KEYS[1]
-local sessionPrefix = KEYS[2]
-local sessionsSortedKey = KEYS[3]
-local maxSessions = tonumber(ARGV[1])
-local maxEventsPerSession = tonumber(ARGV[2])
-local startOffset = tonumber(ARGV[3]) or 0
-
-local result = {}
-local sessionsToRemove = {}
-
--- Get up to maxSessions ready sessions from window [startOffset, startOffset+maxSessions-1]
-local stopIndex = startOffset + maxSessions - 1
-local sessionIds = redis.call('ZRANGE', readySessionsKey, startOffset, stopIndex)
-local resultIndex = 1
-
-for i, sessionId in ipairs(sessionIds) do
-  local sessionKey = sessionPrefix .. sessionId
-  local eventCount = redis.call('LLEN', sessionKey)
-  
-  if eventCount == 0 then
-    -- Session is empty, remove from both sets
-    table.insert(sessionsToRemove, sessionId)
-  else
-    -- Fetch limited number of events to avoid huge payloads
-    local eventsToFetch = math.min(eventCount, maxEventsPerSession)
-    local events = redis.call('LRANGE', sessionKey, 0, eventsToFetch - 1)
-    
-    result[resultIndex] = { 
-      sessionId = sessionId, 
-      events = events,
-      totalEventCount = eventCount
-    }
-    resultIndex = resultIndex + 1
-  end
-end
-
--- Clean up empty sessions from both ready set and sorted set
-if #sessionsToRemove > 0 then
-  redis.call('ZREM', readySessionsKey, unpack(sessionsToRemove))
-  redis.call('ZREM', sessionsSortedKey, unpack(sessionsToRemove))
-  -- Also delete the empty session keys
-  for i, sessionId in ipairs(sessionsToRemove) do
-    redis.call('DEL', sessionPrefix .. sessionId)
-  end
-end
-
-return cjson.encode(result)
-`;
-
-  /**
-   * Optimized atomic Lua script to update a session's list with pending events.
-   * Also manages the ready_sessions set and buffer counter.
-   *
-   * KEYS[1] = session key
-   * KEYS[2] = ready sessions key
-   * KEYS[3] = sessions sorted key
-   * KEYS[4] = buffer counter key
-   * ARGV[1] = sessionId
-   * ARGV[2] = snapshotCount (number of events that were present in our snapshot)
-   * ARGV[3] = pendingCount (number of pending events)
-   * ARGV[4] = minEventsInSession
-   * ARGV[5..(4+pendingCount)] = the pending event strings
-   */
-  private readonly updateSessionScript = `
-local sessionKey = KEYS[1]
-local readySessionsKey = KEYS[2]
-local sessionsSortedKey = KEYS[3]
-local bufferCounterKey = KEYS[4]
-local sessionId = ARGV[1]
-local snapshotCount = tonumber(ARGV[2])
-local pendingCount = tonumber(ARGV[3])
-local minEventsInSession = tonumber(ARGV[4])
-
--- Trim the list to remove the processed (snapshot) events.
-redis.call("LTRIM", sessionKey, snapshotCount, -1)
-
--- Re-insert the pending events at the head in their original order.
-for i = pendingCount, 1, -1 do
-  redis.call("LPUSH", sessionKey, ARGV[i+4])
-end
-
-local newLength = redis.call("LLEN", sessionKey)
-
--- Update ready sessions set based on new length
-if newLength == 0 then
-  -- Session is now empty, remove from both sets and delete key
-  redis.call("ZREM", readySessionsKey, sessionId)
-  redis.call("ZREM", sessionsSortedKey, sessionId)
-  redis.call("DEL", sessionKey)
-elseif newLength >= minEventsInSession then
-  -- Session has enough events, keep/add it in ready_sessions
-  redis.call("ZADD", readySessionsKey, redis.call("TIME")[1], sessionId)
-else
-  -- Session has events but < minEvents, remove from ready_sessions
-  -- It will be re-added when a new event arrives (via addEventScript)
-  redis.call("ZREM", readySessionsKey, sessionId)
-end
-
--- Update buffer counter (decrement by processed events, increment by pending)
-local counterChange = pendingCount - snapshotCount
-if counterChange ~= 0 then
-  redis.call("INCRBY", bufferCounterKey, counterChange)
-end
-
-return newLength
-`;
-
-  /**
-   * Optimized batch update script with counter and ready sessions management.
-   * KEYS[1] = ready sessions key
-   * KEYS[2] = sessions sorted key
-   * KEYS[3] = buffer counter key
-   * ARGV format: [minEventsInSession, sessionKey1, sessionId1, snapshotCount1, pendingCount1, pending1...., sessionKey2, ...]
-   */
-  private readonly batchUpdateSessionsScript = `
-local readySessionsKey = KEYS[1]
-local sessionsSortedKey = KEYS[2]
-local bufferCounterKey = KEYS[3]
-local minEventsInSession = tonumber(ARGV[1])
-local totalCounterChange = 0
-
-local i = 2
-while i <= #ARGV do
-  local sessionKey = ARGV[i]
-  local sessionId = ARGV[i + 1]
-  local snapshotCount = tonumber(ARGV[i + 2])
-  local pendingCount = tonumber(ARGV[i + 3])
-  
-  -- Trim the list to remove processed events
-  redis.call("LTRIM", sessionKey, snapshotCount, -1)
-  
-  -- Re-insert pending events at the head in original order
-  if pendingCount > 0 then
-    -- Reinsert in original order: LPUSH requires reverse iteration
-    for j = pendingCount, 1, -1 do
-      redis.call("LPUSH", sessionKey, ARGV[i + 3 + j])
-    end
-  end
-  
-  local newLength = redis.call("LLEN", sessionKey)
-  
-  -- Update ready sessions set based on new length
-  if newLength == 0 then
-    -- Session is now empty, remove from both sets and delete key
-    redis.call("ZREM", readySessionsKey, sessionId)
-    redis.call("ZREM", sessionsSortedKey, sessionId)
-    redis.call("DEL", sessionKey)
-  elseif newLength >= minEventsInSession then
-    -- Session has enough events, keep/add it in ready_sessions
-    redis.call("ZADD", readySessionsKey, redis.call("TIME")[1], sessionId)
-  else
-    -- Session has events but < minEvents, remove from ready_sessions
-    -- It will be re-added when a new event arrives (via addEventScript)
-    redis.call("ZREM", readySessionsKey, sessionId)
-  end
-  
-  -- Track counter change
-  totalCounterChange = totalCounterChange + (pendingCount - snapshotCount)
-  
-  i = i + 4 + pendingCount
-end
-
--- Update buffer counter once
-if totalCounterChange ~= 0 then
-  redis.call("INCRBY", bufferCounterKey, totalCounterChange)
-end
-
-return "OK"
-`;
+  private readonly redisKey = 'event-buffer';
+  private readonly retryKey = 'event-buffer:retry';
+  private readonly dlqKey = 'event-buffer:dlq'; // Dead Letter Queue
+  private readonly retryCounterKey = 'event:retry:count';
+  private readonly dlqCounterKey = 'event:dlq:count';
+  private readonly maxRetries = 3;
+  private redis: Redis;
 
   constructor() {
     super({
       name: 'event',
       onFlush: async () => {
         await this.processBuffer();
-        await this.tryCleanup();
       },
+      // Enable parallel processing for better scalability with multiple workers
+      enableParallelProcessing: process.env.EVENT_BUFFER_PARALLEL === 'true',
     });
+    this.redis = getRedisCache();
+  }
+
+  /**
+   * Convert event to CSV row format with headers
+   * Order must match the ClickHouse table schema
+   */
+  private eventToCsvRow(event: IClickhouseEvent): string {
+    const escapeCsvValue = (value: any): string => {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      // Replace double quotes with single quotes, then escape single quotes by doubling them
+      const withSingleQuotes = str.replace(/"/g, "'");
+      return `'${withSingleQuotes.replace(/'/g, "''")}'`;
+    };
+
+    // Order matches the ClickHouse table schema exactly
+    const columns = [
+      event.id, // id UUID
+      event.name, // name
+      event.sdk_name, // sdk_name
+      event.sdk_version, // sdk_version
+      event.device_id, // device_id
+      event.profile_id, // profile_id
+      event.project_id, // project_id
+      event.session_id, // session_id
+      event.path, // path
+      event.origin, // origin
+      event.referrer, // referrer
+      event.referrer_name, // referrer_name
+      event.referrer_type, // referrer_type
+      event.duration, // duration
+      escapeCsvValue(JSON.stringify(event.properties)), // properties
+      event.created_at, // created_at
+      event.country, // country
+      event.city, // city
+      event.region, // region
+      event.longitude, // longitude
+      event.latitude, // latitude
+      event.os, // os
+      event.os_version, // os_version
+      event.browser, // browser
+      event.browser_version, // browser_version
+      event.device, // device
+      event.brand, // brand
+      event.model, // model
+      event.imported_at, // imported_at
+    ];
+
+    return columns.join(',');
+  }
+
+  /**
+   * Get CSV headers matching the ClickHouse table schema
+   */
+  private getCsvHeaders(): string {
+    return [
+      'id',
+      'name',
+      'sdk_name',
+      'sdk_version',
+      'device_id',
+      'profile_id',
+      'project_id',
+      'session_id',
+      'path',
+      'origin',
+      'referrer',
+      'referrer_name',
+      'referrer_type',
+      'duration',
+      'properties',
+      'created_at',
+      'country',
+      'city',
+      'region',
+      'longitude',
+      'latitude',
+      'os',
+      'os_version',
+      'browser',
+      'browser_version',
+      'device',
+      'brand',
+      'model',
+      'imported_at',
+    ].join(',');
   }
 
   bulkAdd(events: IClickhouseEvent[]) {
-    const redis = getRedisCache();
-    const multi = redis.multi();
+    const multi = this.redis.multi();
     for (const event of events) {
       this.add(event, multi);
     }
     return multi.exec();
   }
 
-  /**
-   * Optimized Lua script for adding events with counter management.
-   * KEYS[1] = session key (if session event)
-   * KEYS[2] = regular queue key
-   * KEYS[3] = sessions sorted key
-   * KEYS[4] = ready sessions key
-   * KEYS[5] = buffer counter key
-   * KEYS[6] = last event key (if screen_view)
-   * ARGV[1] = event JSON
-   * ARGV[2] = session_id
-   * ARGV[3] = event_name
-   * ARGV[4] = score (timestamp)
-   * ARGV[5] = minEventsInSession
-   * ARGV[6] = last event TTL (if screen_view)
-   */
-  private readonly addEventScript = `
-local sessionKey = KEYS[1]
-local regularQueueKey = KEYS[2]
-local sessionsSortedKey = KEYS[3]
-local readySessionsKey = KEYS[4]
-local bufferCounterKey = KEYS[5]
-local lastEventKey = KEYS[6]
-
-local eventJson = ARGV[1]
-local sessionId = ARGV[2]
-local eventName = ARGV[3]
-local score = tonumber(ARGV[4])
-local minEventsInSession = tonumber(ARGV[5])
-local lastEventTTL = tonumber(ARGV[6] or 0)
-
-local counterIncrement = 1
-
-if sessionId and sessionId ~= "" and (eventName == "screen_view" or eventName == "session_end") then
-  -- Add to session
-  redis.call("RPUSH", sessionKey, eventJson)
-  redis.call("ZADD", sessionsSortedKey, "NX", score, sessionId)
-  
-  -- Check if session is now ready for processing
-  local sessionLength = redis.call("LLEN", sessionKey)
-  if sessionLength >= minEventsInSession or eventName == "session_end" then
-    redis.call("ZADD", readySessionsKey, score, sessionId)
-  end
-  
-  -- Handle screen_view specific logic
-  if eventName == "screen_view" and lastEventKey ~= "" then
-    redis.call("SET", lastEventKey, eventJson, "EX", lastEventTTL)
-  elseif eventName == "session_end" and lastEventKey ~= "" then
-    redis.call("DEL", lastEventKey)
-  end
-else
-  -- Add to regular queue
-  redis.call("RPUSH", regularQueueKey, eventJson)
-end
-
--- Increment buffer counter
-redis.call("INCR", bufferCounterKey)
-
-return "OK"
-`;
-
-  /**
-   * Add an event into Redis.
-   * Uses optimized Lua script to reduce round trips and manage counters.
-   */
   async add(event: IClickhouseEvent, _multi?: ReturnType<Redis['multi']>) {
     try {
-      const redis = getRedisCache();
       const eventJson = JSON.stringify(event);
-      const multi = _multi || redis.multi();
+      const multi = _multi || this.redis.multi();
+      if (event.name !== 'session_start' && event.name !== 'session_end') {
+        multi.incr('event:buffer:counter');
+      }
 
-      const isSessionEvent =
-        event.session_id && this.sessionEvents.includes(event.name);
+      multi.rpush(this.redisKey, eventJson).incr(this.bufferCounterKey);
 
-      if (isSessionEvent) {
-        const sessionKey = this.getSessionKey(event.session_id);
-        const score = new Date(event.created_at || Date.now()).getTime();
-        const lastEventKey =
-          event.name === 'screen_view'
-            ? this.getLastEventKey({
-                projectId: event.project_id,
-                profileId: event.profile_id,
-              })
-            : event.name === 'session_end'
-              ? this.getLastEventKey({
-                  projectId: event.project_id,
-                  profileId: event.profile_id,
-                })
-              : '';
+      // Store last screen_view for event enrichment
+      if (event.name === 'screen_view' && event.profile_id) {
+        const lastEventKey = this.getLastEventKey({
+          projectId: event.project_id,
+          profileId: event.profile_id,
+        });
+        multi.set(lastEventKey, eventJson, 'EX', this.lastScreenViewTTL);
+      }
 
-        multi.eval(
-          this.addEventScript,
-          6,
-          sessionKey,
-          this.regularQueueKey,
-          this.sessionSortedKey,
-          this.readySessionsKey,
-          this.bufferCounterKey,
-          lastEventKey,
-          eventJson,
-          event.session_id,
-          event.name,
-          score.toString(),
-          this.minEventsInSession.toString(),
-          '3600', // 1 hour TTL for last event
-        );
-      } else {
-        // Non-session events go to regular queue
-        multi
-          .rpush(this.regularQueueKey, eventJson)
-          .incr(this.bufferCounterKey);
+      // Clear last screen_view on session_end
+      if (event.name === 'session_end' && event.profile_id) {
+        const lastEventKey = this.getLastEventKey({
+          projectId: event.project_id,
+          profileId: event.profile_id,
+        });
+        multi.del(lastEventKey);
       }
 
       if (event.profile_id) {
@@ -412,395 +180,49 @@ return "OK"
       }
 
       await publishEvent('events', 'received', transformEvent(event));
+
+      // Check buffer length using counter
+      const bufferLength = await this.getBufferSize();
+
+      if (bufferLength >= this.batchSize) {
+        await this.tryFlush();
+      }
     } catch (error) {
       this.logger.error('Failed to add event to Redis buffer', { error });
     }
   }
 
-  private async getEligibleSessions(
-    startOffset: number,
-    maxEventsPerSession: number,
-    sessionsPerPage: number,
-  ) {
-    const sessionsSorted = await getRedisCache().eval(
-      this.processReadySessionsScript,
-      3, // number of KEYS
-      this.readySessionsKey,
-      this.sessionKeyPrefix,
-      this.sessionSortedKey,
-      sessionsPerPage.toString(),
-      maxEventsPerSession.toString(),
-      startOffset.toString(),
-    );
-
-    const parsed = getSafeJson<
-      Array<{
-        sessionId: string;
-        events: string[];
-        totalEventCount: number;
-      }>
-    >(sessionsSorted as string);
-
-    const sessions: Record<
-      string,
-      {
-        events: IClickhouseEvent[];
-        totalEventCount: number;
-      }
-    > = {};
-
-    if (!parsed || !Array.isArray(parsed)) {
-      return sessions;
-    }
-
-    for (const session of parsed) {
-      const events = session.events
-        .map((e) => getSafeJson<IClickhouseEvent>(e))
-        .filter((e): e is IClickhouseEvent => e !== null);
-
-      sessions[session.sessionId] = {
-        events,
-        totalEventCount: session.totalEventCount,
-      };
-    }
-
-    return sessions;
-  }
-
   /**
-   * Process the Redis buffer.
-   *
-   * 1. Fetch events from two sources in parallel:
-   *    - Pick events from regular queue (batchSize / 2)
-   *    - Pick events from sessions (batchSize / 2).
-   *      This only have screen_view and session_end events
-   *
-   * 2. Process session events:
-   *    - For screen_view events, calculate duration if next event exists
-   *    - Last screen_view of each session remains pending
-   *    - All other events are marked for flushing
-   *
-   * 3. Process regular queue events:
-   *    - Inherit path/origin from last screen_view of same session if exists
-   *
-   * 4. Insert all flushable events into ClickHouse in chunks and publish notifications
-   *
-   * 5. Clean up processed events:
-   *    - For regular queue: LTRIM processed events
-   *    - For sessions: Update lists atomically via Lua script, preserving pending events
-   */
-  async processBuffer() {
-    const redis = getRedisCache();
-    const eventsToClickhouse: IClickhouseEvent[] = [];
-    const pendingUpdates: Array<{
-      sessionId: string;
-      snapshotCount: number;
-      pending: IClickhouseEvent[];
-    }> = [];
-    const timer = {
-      fetchUnprocessedEvents: 0,
-      processSessionEvents: 0,
-      processRegularQueueEvents: 0,
-      insertEvents: 0,
-      updatePendingSessions: 0,
-    };
-
-    try {
-      let now = performance.now();
-      // (A) Fetch no-session events once per run
-      const regularQueueEvents = await redis.lrange(
-        this.regularQueueKey,
-        0,
-        Math.floor(this.batchSize / 2) - 1,
-      );
-
-      // (A2) Page through ready sessions within time and budget
-      let sessionBudget = Math.floor(this.batchSize / 2);
-      let startOffset = 0;
-      let totalSessionEventsFetched = 0;
-      while (sessionBudget > 0) {
-        if (performance.now() - now > this.flushTimeBudgetMs) {
-          this.logger.debug('Stopping session paging due to time budget');
-          break;
-        }
-
-        const sessionsPerPage = Math.min(
-          this.maxSessionsPerFlush,
-          Math.max(1, Math.floor(sessionBudget / 2)),
-        );
-        const perSessionBudget = Math.max(
-          2,
-          Math.floor(sessionBudget / sessionsPerPage),
-        );
-
-        const sessionsPage = await this.getEligibleSessions(
-          startOffset,
-          perSessionBudget,
-          sessionsPerPage,
-        );
-        const sessionIds = Object.keys(sessionsPage);
-        if (sessionIds.length === 0) {
-          break;
-        }
-
-        for (const sessionId of sessionIds) {
-          const sessionData = sessionsPage[sessionId]!;
-          const { flush, pending } = this.processSessionEvents(
-            sessionData.events,
-          );
-
-          if (flush.length > 0) {
-            eventsToClickhouse.push(...flush);
-          }
-
-          pendingUpdates.push({
-            sessionId,
-            snapshotCount: sessionData.events.length,
-            pending,
-          });
-
-          // Decrease budget by fetched events for this session window
-          sessionBudget -= sessionData.events.length;
-          totalSessionEventsFetched += sessionData.events.length;
-          if (sessionBudget <= 0) {
-            break;
-          }
-        }
-        startOffset += sessionsPerPage;
-      }
-
-      timer.processSessionEvents = performance.now() - now;
-      now = performance.now();
-
-      // (B) Process no-session events
-      for (const eventStr of regularQueueEvents) {
-        const event = getSafeJson<IClickhouseEvent>(eventStr);
-        if (event) {
-          eventsToClickhouse.push(event);
-        }
-      }
-
-      timer.processRegularQueueEvents = performance.now() - now;
-      now = performance.now();
-
-      if (eventsToClickhouse.length === 0) {
-        this.logger.debug('No events to process');
-        return;
-      }
-
-      // (C) Sort events by creation time.
-      eventsToClickhouse.sort(
-        (a, b) =>
-          new Date(a.created_at || 0).getTime() -
-          new Date(b.created_at || 0).getTime(),
-      );
-
-      // (D) Insert events into ClickHouse in chunks
-      this.logger.info('Inserting events into ClickHouse', {
-        totalEvents: eventsToClickhouse.length,
-        chunks: Math.ceil(eventsToClickhouse.length / this.chunkSize),
-      });
-
-      for (const chunk of this.chunks(eventsToClickhouse, this.chunkSize)) {
-        await ch.insert({
-          table: 'events',
-          values: chunk,
-          format: 'JSONEachRow',
-        });
-      }
-
-      timer.insertEvents = performance.now() - now;
-      now = performance.now();
-
-      // (E) Publish "saved" events.
-      const pubMulti = getRedisPub().multi();
-      for (const event of eventsToClickhouse) {
-        await publishEvent('events', 'saved', transformEvent(event), pubMulti);
-      }
-      await pubMulti.exec();
-
-      // (F) Only after successful processing, update Redis
-      const multi = redis.multi();
-
-      // Clean up no-session events and update counter
-      if (regularQueueEvents.length > 0) {
-        multi
-          .ltrim(this.regularQueueKey, regularQueueEvents.length, -1)
-          .decrby(this.bufferCounterKey, regularQueueEvents.length);
-      }
-
-      await multi.exec();
-
-      // Process pending sessions in batches
-      await this.processPendingSessionsInBatches(redis, pendingUpdates);
-
-      timer.updatePendingSessions = performance.now() - now;
-
-      this.logger.info('Processed events from Redis buffer', {
-        batchSize: this.batchSize,
-        eventsToClickhouse: eventsToClickhouse.length,
-        pendingSessionUpdates: pendingUpdates.length,
-        sessionEventsFetched: totalSessionEventsFetched,
-        regularEvents: regularQueueEvents.length,
-        timer,
-      });
-    } catch (error) {
-      this.logger.error('Error processing Redis buffer', { error });
-    }
-  }
-
-  /**
-   * Process a session's events.
-   *
-   * For each event in the session (in order):
-   * - If it is a screen_view, look for a subsequent event (screen_view or session_end)
-   *   to calculate its duration. If found, flush it; if not, leave it pending.
-   *
-   * Returns an object with two arrays:
-   *   flush: events to be sent to ClickHouse.
-   *   pending: events that remain in the Redis session list.
-   */
-  private processSessionEvents(events: IClickhouseEvent[]): {
-    flush: IClickhouseEvent[];
-    pending: IClickhouseEvent[];
-  } {
-    // Ensure events are sorted by created_at
-    events.sort(
-      (a, b) =>
-        new Date(a.created_at || 0).getTime() -
-        new Date(b.created_at || 0).getTime(),
-    );
-
-    const flush: IClickhouseEvent[] = [];
-    const pending: IClickhouseEvent[] = [];
-
-    // Check if session has ended - if so, flush everything
-    const hasSessionEnd = events.some((e) => e.name === 'session_end');
-
-    if (hasSessionEnd) {
-      flush.push(...events);
-      return { flush, pending: [] };
-    }
-
-    const findNextScreenView = (events: IClickhouseEvent[]) => {
-      return events.find((e) => e.name === 'screen_view');
-    };
-
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i]!;
-      // For screen_view events, look for next event
-      const next = findNextScreenView(events.slice(i + 1));
-      if (next) {
-        event.duration =
-          new Date(next.created_at).getTime() -
-          new Date(event.created_at).getTime();
-        flush.push(event);
-      } else {
-        // Last screen_view with no next event - keep pending
-        pending.push(event);
-      }
-    }
-
-    return { flush, pending };
-  }
-
-  async tryCleanup() {
-    try {
-      await runEvery({
-        interval: 60 * 60 * 24,
-        fn: this.cleanup.bind(this),
-        key: `${this.name}-cleanup`,
-      });
-    } catch (error) {
-      this.logger.error('Failed to run cleanup', { error });
-    }
-  }
-
-  /**
-   * Cleanup old events from Redis.
-   * For each key (no-session and per-session), remove events older than the cutoff date.
-   */
-  async cleanup() {
-    const redis = getRedisCache();
-    const cutoffTime = Date.now() - 1000 * 60 * 60 * 24 * this.daysToKeep;
-
-    try {
-      const sessionCount = await redis.zcard(this.sessionSortedKey);
-      const batchSize = 1000;
-      let offset = 0;
-      let totalCleaned = 0;
-
-      this.logger.info('Starting cleanup of stale sessions', {
-        cutoffTime: new Date(cutoffTime),
-        totalSessions: sessionCount,
-      });
-
-      while (offset < sessionCount) {
-        // Get batch of session IDs with scores
-        const sessionIdsWithScores = await redis.zrange(
-          this.sessionSortedKey,
-          offset,
-          offset + batchSize - 1,
-          'WITHSCORES',
-        );
-
-        if (sessionIdsWithScores.length === 0) break;
-
-        const pipeline = redis.pipeline();
-        let staleSessions = 0;
-
-        // Process pairs of [sessionId, score]
-        for (let i = 0; i < sessionIdsWithScores.length; i += 2) {
-          const sessionId = sessionIdsWithScores[i];
-          const score = Number.parseInt(sessionIdsWithScores[i + 1] || '0', 10);
-
-          if (sessionId && score < cutoffTime) {
-            staleSessions++;
-            // Remove from both sorted sets and delete the session key
-            pipeline.zrem(this.sessionSortedKey, sessionId);
-            pipeline.zrem(this.readySessionsKey, sessionId);
-            pipeline.del(this.getSessionKey(sessionId));
-          }
-        }
-
-        if (staleSessions > 0) {
-          await pipeline.exec();
-          totalCleaned += staleSessions;
-          this.logger.info('Cleaned batch of stale sessions', {
-            batch: Math.floor(offset / batchSize) + 1,
-            cleanedInBatch: staleSessions,
-            totalCleaned,
-          });
-        }
-
-        offset += batchSize;
-      }
-
-      this.logger.info('Cleanup completed', { totalCleaned });
-    } catch (error) {
-      this.logger.error('Failed to cleanup stale sessions', { error });
-    }
-  }
-
-  /**
-   * Retrieve the latest screen_view event for a given project/profile or project/session
+   * Retrieve the latest screen_view event for a given project/profile
+   * Used for event enrichment - inheriting properties from last screen view
    */
   public async getLastScreenView({
     projectId,
-    ...rest
-  }:
-    | {
-        projectId: string;
-        profileId: string;
-      }
-    | {
-        projectId: string;
-        sessionId: string;
-      }): Promise<IServiceEvent | null> {
-    if ('profileId' in rest) {
+    profileId,
+  }: {
+    projectId: string;
+    profileId: string;
+  }): Promise<IServiceEvent | null>;
+  public async getLastScreenView({
+    projectId,
+    sessionId,
+  }: {
+    projectId: string;
+    sessionId: string;
+  }): Promise<IServiceEvent | null>;
+  public async getLastScreenView({
+    projectId,
+    profileId,
+    sessionId,
+  }: {
+    projectId: string;
+    profileId?: string;
+    sessionId?: string;
+  }): Promise<IServiceEvent | null> {
+    if (profileId) {
       const redis = getRedisCache();
       const eventStr = await redis.get(
-        this.getLastEventKey({ projectId, profileId: rest.profileId }),
+        this.getLastEventKey({ projectId, profileId }),
       );
       if (eventStr) {
         const parsed = getSafeJson<IClickhouseEvent>(eventStr);
@@ -810,18 +232,8 @@ return "OK"
       }
     }
 
-    if ('sessionId' in rest) {
-      const redis = getRedisCache();
-      const sessionKey = this.getSessionKey(rest.sessionId);
-      const lastEvent = await redis.lindex(sessionKey, -1);
-      if (lastEvent) {
-        const parsed = getSafeJson<IClickhouseEvent>(lastEvent);
-        if (parsed) {
-          return transformEvent(parsed);
-        }
-      }
-    }
-
+    // sessionId lookup not supported in simplified version
+    // Events are processed immediately, no session-specific storage
     return null;
   }
 
@@ -835,95 +247,354 @@ return "OK"
     return `session:last_screen_view:${projectId}:${profileId}`;
   }
 
-  private async processPendingSessionsInBatches(
-    redis: ReturnType<typeof getRedisCache>,
-    pendingUpdates: Array<{
-      sessionId: string;
-      snapshotCount: number;
-      pending: IClickhouseEvent[];
-    }>,
-  ) {
-    for (const batch of this.chunks(
-      pendingUpdates,
-      this.updatePendingSessionsBatchSize,
-    )) {
-      const batchArgs: string[] = [this.minEventsInSession.toString()];
+  /**
+   * Atomically pop a batch of events from the buffer
+   * Multiple workers can call this in parallel without conflicts
+   */
+  private async popBatch(batchSize: number): Promise<string[]> {
+    try {
+      // LPOP with count - single atomic operation (Redis 6.2+)
+      // This is significantly more efficient than looping
+      const items = await this.redis.lpop(this.redisKey, batchSize);
 
-      for (const { sessionId, snapshotCount, pending } of batch) {
-        const sessionKey = this.getSessionKey(sessionId);
-        batchArgs.push(
-          sessionKey,
-          sessionId,
-          snapshotCount.toString(),
-          pending.length.toString(),
-          ...pending.map((e) => JSON.stringify(e)),
-        );
+      if (!items) {
+        return [];
       }
 
-      await redis.eval(
-        this.batchUpdateSessionsScript,
-        3, // KEYS: ready sessions, sessions sorted, buffer counter
-        this.readySessionsKey,
-        this.sessionSortedKey,
-        this.bufferCounterKey,
-        ...batchArgs,
-      );
+      // LPOP with count returns either a single string or array
+      const itemsArray = Array.isArray(items) ? items : [items];
+
+      // Update counter atomically
+      if (itemsArray.length > 0) {
+        await this.redis.decrby(this.bufferCounterKey, itemsArray.length);
+      }
+
+      return itemsArray;
+    } catch (error) {
+      this.logger.error('Failed to pop batch atomically', { error });
+      return [];
     }
   }
 
-  public async getBufferSizeHeavy() {
-    // Fallback method for when counter is not available
-    const redis = getRedisCache();
+  /**
+   * Push failed events back to retry buffer or DLQ
+   * Updates counters atomically to maintain accurate counts in parallel mode
+   */
+  private async pushToRetry(
+    events: string[],
+    retryCount: number,
+  ): Promise<void> {
+    if (events.length === 0) return;
 
-    // Get regular queue count
-    const regularQueueCount = await redis.llen(this.regularQueueKey);
+    const multi = this.redis.multi();
+    let retryEvents = 0;
+    let dlqEvents = 0;
 
-    // Get total number of sessions
-    const sessionCount = await redis.zcard(this.sessionSortedKey);
+    for (const event of events) {
+      const retryItem = JSON.stringify({
+        event,
+        retryCount: retryCount + 1,
+        lastAttempt: Date.now(),
+      });
 
-    if (sessionCount === 0) {
-      return regularQueueCount;
+      if (retryCount >= this.maxRetries) {
+        // Max retries exceeded, send to DLQ
+        multi.rpush(this.dlqKey, retryItem);
+        dlqEvents++;
+      } else {
+        // Push to retry buffer
+        multi.rpush(this.retryKey, retryItem);
+        retryEvents++;
+      }
     }
 
-    // Process sessions in batches to avoid memory spikes
-    const batchSize = 1000;
-    let totalSessionEvents = 0;
-    let offset = 0;
+    // Update counters atomically in the same transaction
+    if (retryEvents > 0) {
+      multi.incrby(this.retryCounterKey, retryEvents);
+    }
+    if (dlqEvents > 0) {
+      multi.incrby(this.dlqCounterKey, dlqEvents);
+    }
 
-    while (offset < sessionCount) {
-      // Get batch of session IDs
-      const sessionIds = await redis.zrange(
-        this.sessionSortedKey,
-        offset,
-        offset + batchSize - 1,
-      );
+    await multi.exec();
 
-      if (sessionIds.length === 0) break;
+    if (dlqEvents > 0) {
+      this.logger.warn(`Pushed ${dlqEvents} events to DLQ after max retries`, {
+        retryCount: retryCount + 1,
+      });
+    }
+    if (retryEvents > 0) {
+      this.logger.info(`Pushed ${retryEvents} events to retry buffer`, {
+        retryCount: retryCount + 1,
+      });
+    }
+  }
 
-      // Queue up LLEN commands for this batch
-      const sessionPipeline = redis.pipeline();
-      for (const sessionId of sessionIds) {
-        sessionPipeline.llen(this.getSessionKey(sessionId));
+  /**
+   * Process buffer with parallel worker support
+   * Multiple workers can call this simultaneously and will atomically claim batches
+   */
+  async processBuffer() {
+    const events = await this.popBatch(this.batchSize);
+
+    if (events.length === 0) {
+      this.logger.debug('No events to process');
+      return;
+    }
+
+    try {
+      await this.processEventsChunk(events);
+
+      this.logger.info('Processed events from Redis buffer', {
+        count: events.length,
+      });
+    } catch (error) {
+      this.logger.error('Error processing Redis buffer, pushing to retry', {
+        error,
+        eventCount: events.length,
+      });
+
+      // Push events back to retry buffer to prevent data loss
+      await this.pushToRetry(events, 0);
+    }
+  }
+
+  /**
+   * Process retry buffer - events that failed to insert
+   * Handles counter updates atomically for parallel worker safety
+   */
+  async processRetryBuffer() {
+    try {
+      // Pop from retry buffer atomically
+      const retryItems = await this.redis.lpop(this.retryKey, this.batchSize);
+
+      if (!retryItems) {
+        this.logger.debug('No retry events to process');
+        return;
       }
 
-      // Execute pipeline for this batch
-      const sessionCounts = (await sessionPipeline.exec()) as [any, any][];
+      const itemsArray = Array.isArray(retryItems) ? retryItems : [retryItems];
 
-      // Sum up counts from this batch
-      for (const [err, count] of sessionCounts) {
-        if (!err) {
-          totalSessionEvents += count;
+      if (itemsArray.length === 0) return;
+
+      // Decrement retry counter atomically (events are now claimed by this worker)
+      await this.redis.decrby(this.retryCounterKey, itemsArray.length);
+
+      // Parse retry items
+      const parsedItems = itemsArray
+        .map((item) => {
+          try {
+            return JSON.parse(item) as {
+              event: string;
+              retryCount: number;
+              lastAttempt: number;
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
+
+      const events = parsedItems.map((item) => item.event);
+      const maxRetryCount = Math.max(...parsedItems.map((i) => i.retryCount));
+
+      this.logger.info('Processing retry buffer', {
+        count: events.length,
+        maxRetryCount,
+      });
+
+      try {
+        await this.processEventsChunk(events);
+
+        this.logger.info('Successfully processed retry events', {
+          count: events.length,
+        });
+      } catch (error) {
+        this.logger.error('Failed to process retry events', {
+          error,
+          eventCount: events.length,
+          maxRetryCount,
+        });
+
+        // Push back to retry/DLQ with incremented count
+        // This will update the appropriate counter (retry or DLQ)
+        await this.pushToRetry(events, maxRetryCount);
+      }
+    } catch (error) {
+      this.logger.error('Error in retry buffer processing', { error });
+    }
+  }
+
+  /**
+   * Process a chunk of event strings (used by both processBuffer and drainBuffer)
+   */
+  private async processEventsChunk(events: string[]) {
+    const eventsToClickhouse = events
+      .map((e) => getSafeJson<IClickhouseEvent>(e))
+      .filter((e): e is IClickhouseEvent => e !== null);
+
+    // Sort events by creation time
+    eventsToClickhouse.sort(
+      (a, b) =>
+        new Date(a.created_at || 0).getTime() -
+        new Date(b.created_at || 0).getTime(),
+    );
+
+    this.logger.debug('Inserting events into ClickHouse', {
+      totalEvents: eventsToClickhouse.length,
+      chunks: Math.ceil(eventsToClickhouse.length / this.chunkSize),
+    });
+
+    // Insert events into ClickHouse in chunks using CSV format with headers
+    for (const chunk of this.chunks(eventsToClickhouse, this.chunkSize)) {
+      if (process.env.USE_CSV === 'true' || process.env.USE_CSV === '1') {
+        // Convert events to CSV format
+        const csvRows = chunk.map((event) => this.eventToCsvRow(event));
+        const csv = [this.getCsvHeaders(), ...csvRows].join('\n');
+
+        // Create a readable stream in binary mode for CSV
+        const csvStream = Readable.from(csv, { objectMode: false });
+
+        await ch.insert({
+          table: 'events',
+          values: csvStream,
+          format: 'CSV',
+          clickhouse_settings: {
+            input_format_csv_skip_first_lines: '1',
+            format_csv_allow_single_quotes: 1,
+            format_csv_allow_double_quotes: 1,
+          },
+        });
+
+        await getRedisCache().incrby('event:buffer:csv:counter', chunk.length);
+      } else {
+        await getRedisCache().incrby('event:buffer:json:counter', chunk.length);
+        await ch.insert({
+          table: 'events',
+          values: chunk,
+          format: 'JSONEachRow',
+        });
+      }
+    }
+
+    // Publish "saved" events
+    const pubMulti = getRedisPub().multi();
+    for (const event of eventsToClickhouse) {
+      await publishEvent('events', 'saved', transformEvent(event), pubMulti);
+    }
+    await pubMulti.exec();
+  }
+
+  async getBufferSize() {
+    return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
+  }
+
+  /**
+   * Get retry buffer size with counter optimization
+   */
+  async getRetryBufferSize(): Promise<number> {
+    try {
+      const counterValue = await this.redis.get(this.retryCounterKey);
+      if (counterValue !== null) {
+        const parsed = Number.parseInt(counterValue, 10);
+        if (!Number.isNaN(parsed)) {
+          return Math.max(0, parsed);
         }
       }
 
-      offset += batchSize;
+      // Fallback: get actual size and initialize counter
+      const count = await this.redis.llen(this.retryKey);
+      await this.redis.set(this.retryCounterKey, count.toString());
+      return count;
+    } catch (error) {
+      this.logger.warn(
+        'Failed to get retry buffer size from counter, using fallback',
+        { error },
+      );
+      return this.redis.llen(this.retryKey);
     }
-
-    return regularQueueCount + totalSessionEvents;
   }
 
-  public async getBufferSize() {
-    return this.getBufferSizeWithCounter(() => this.getBufferSizeHeavy());
+  /**
+   * Get dead letter queue size with counter optimization
+   */
+  async getDLQSize(): Promise<number> {
+    try {
+      const counterValue = await this.redis.get(this.dlqCounterKey);
+      if (counterValue !== null) {
+        const parsed = Number.parseInt(counterValue, 10);
+        if (!Number.isNaN(parsed)) {
+          return Math.max(0, parsed);
+        }
+      }
+
+      // Fallback: get actual size and initialize counter
+      const count = await this.redis.llen(this.dlqKey);
+      await this.redis.set(this.dlqCounterKey, count.toString());
+      return count;
+    } catch (error) {
+      this.logger.warn('Failed to get DLQ size from counter, using fallback', {
+        error,
+      });
+      return this.redis.llen(this.dlqKey);
+    }
+  }
+
+  /**
+   * Get comprehensive buffer stats
+   */
+  async getBufferStats() {
+    const [main, retry, dlq] = await Promise.all([
+      this.getBufferSize(),
+      this.getRetryBufferSize(),
+      this.getDLQSize(),
+    ]);
+
+    return {
+      main,
+      retry,
+      dlq,
+      total: main + retry,
+    };
+  }
+
+  /**
+   * Inspect DLQ events (for debugging/monitoring)
+   * @param limit - Number of events to inspect (default: 10)
+   */
+  async inspectDLQ(limit = 10) {
+    const items = await this.redis.lrange(this.dlqKey, 0, limit - 1);
+
+    return items
+      .map((item) => {
+        try {
+          return JSON.parse(item) as {
+            event: string;
+            retryCount: number;
+            lastAttempt: number;
+          };
+        } catch {
+          return null;
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }
+
+  /**
+   * Clear dead letter queue (use with caution!)
+   * Also resets the DLQ counter
+   */
+  async clearDLQ(): Promise<number> {
+    const size = await this.getDLQSize();
+    if (size > 0) {
+      const multi = this.redis.multi();
+      multi.del(this.dlqKey);
+      multi.set(this.dlqCounterKey, '0');
+      await multi.exec();
+
+      this.logger.warn('DLQ cleared', { eventsRemoved: size });
+    }
+    return size;
   }
 
   private async incrementActiveVisitorCount(

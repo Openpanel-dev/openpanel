@@ -4,7 +4,7 @@ import superjson from 'superjson';
 import type { WebSocket } from '@fastify/websocket';
 import {
   eventBuffer,
-  getProfileByIdCached,
+  getProfileById,
   transformMinimalEvent,
 } from '@openpanel/db';
 import { setSuperJson } from '@openpanel/json';
@@ -92,10 +92,7 @@ export async function wsProjectEvents(
     type,
     async (event) => {
       if (event.projectId === params.projectId) {
-        const profile = await getProfileByIdCached(
-          event.profileId,
-          event.projectId,
-        );
+        const profile = await getProfileById(event.profileId, event.projectId);
         socket.send(
           superjson.stringify(
             access

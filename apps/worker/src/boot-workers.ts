@@ -10,14 +10,13 @@ import {
   queueLogger,
   sessionsQueue,
 } from '@openpanel/queue';
-import { getRedisQueue } from '@openpanel/redis';
+import { getLock, getRedisQueue } from '@openpanel/redis';
 
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { Worker as GroupWorker } from 'groupmq';
 
 import { cronJob } from './jobs/cron';
-import { eventsJob } from './jobs/events';
 import { incomingEventPure } from './jobs/events.incoming-event';
 import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
@@ -35,11 +34,25 @@ export async function bootWorkers() {
     concurrency: Number.parseInt(process.env.EVENT_JOB_CONCURRENCY || '1', 10),
     logger: queueLogger,
     queue: eventsGroupQueue,
+    blockingTimeoutSec: Number.parseFloat(
+      process.env.EVENT_BLOCKING_TIMEOUT_SEC || '1',
+    ),
     handler: async (job) => {
-      logger.info('processing event (group queue)', {
-        groupId: job.groupId,
-        timestamp: job.data.event.timestamp,
-      });
+      if (await getLock(job.id, '1', 10000)) {
+        logger.info('worker handler', {
+          jobId: job.id,
+          groupId: job.groupId,
+          timestamp: job.data.event.timestamp,
+          data: job.data,
+        });
+      } else {
+        logger.info('event already processed', {
+          jobId: job.id,
+          groupId: job.groupId,
+          timestamp: job.data.event.timestamp,
+          data: job.data,
+        });
+      }
       await incomingEventPure(job.data);
     },
   });

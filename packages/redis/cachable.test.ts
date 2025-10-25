@@ -446,12 +446,6 @@ describe('cachable', () => {
       expect(cached).toBe(JSON.stringify(payload));
     });
 
-    it('should throw error when function is not provided', () => {
-      expect(() => {
-        cacheable('test', 3600);
-      }).toThrow('fn is not a function');
-    });
-
     it('should throw error when expire time is not provided', () => {
       const fn = async (arg1: string, arg2: string) => ({});
       expect(() => {

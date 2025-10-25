@@ -12,12 +12,12 @@ export class ProfileBuffer extends BaseBuffer {
   private batchSize = process.env.PROFILE_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.PROFILE_BUFFER_BATCH_SIZE, 10)
     : 200;
-  private daysToKeep = process.env.PROFILE_BUFFER_DAYS_TO_KEEP
-    ? Number.parseInt(process.env.PROFILE_BUFFER_DAYS_TO_KEEP, 10)
-    : 7;
   private chunkSize = process.env.PROFILE_BUFFER_CHUNK_SIZE
     ? Number.parseInt(process.env.PROFILE_BUFFER_CHUNK_SIZE, 10)
     : 1000;
+  private ttlInSeconds = process.env.PROFILE_BUFFER_TTL_IN_SECONDS
+    ? Number.parseInt(process.env.PROFILE_BUFFER_TTL_IN_SECONDS, 10)
+    : 60 * 60;
 
   private readonly redisKey = 'profile-buffer';
   private readonly redisProfilePrefix = 'profile-cache:';
@@ -90,9 +90,6 @@ export class ProfileBuffer extends BaseBuffer {
         profile,
       });
 
-      const cacheTtl = profile.is_external
-        ? 60 * 60 * 24 * this.daysToKeep
-        : 60 * 60; // 1 hour for internal profiles
       const cacheKey = this.getProfileCacheKey({
         profileId: profile.id,
         projectId: profile.project_id,
@@ -100,7 +97,7 @@ export class ProfileBuffer extends BaseBuffer {
 
       const result = await this.redis
         .multi()
-        .set(cacheKey, JSON.stringify(mergedProfile), 'EX', cacheTtl)
+        .set(cacheKey, JSON.stringify(mergedProfile), 'EX', this.ttlInSeconds)
         .rpush(this.redisKey, JSON.stringify(mergedProfile))
         .incr(this.bufferCounterKey)
         .llen(this.redisKey)
@@ -137,16 +134,31 @@ export class ProfileBuffer extends BaseBuffer {
       projectId: profile.project_id,
     });
 
-    const existingProfile = await getRedisCache().get(cacheKey);
+    const existingProfile = await this.fetchFromCache(
+      profile.id,
+      profile.project_id,
+    );
     if (existingProfile) {
-      const parsedProfile = getSafeJson<IClickhouseProfile>(existingProfile);
-      if (parsedProfile) {
-        logger.debug('Profile found in Redis');
-        return parsedProfile;
-      }
+      logger.debug('Profile found in Redis');
+      return existingProfile;
     }
 
     return this.fetchFromClickhouse(profile, logger);
+  }
+
+  public async fetchFromCache(
+    profileId: string,
+    projectId: string,
+  ): Promise<IClickhouseProfile | null> {
+    const cacheKey = this.getProfileCacheKey({
+      profileId,
+      projectId,
+    });
+    const existingProfile = await getRedisCache().get(cacheKey);
+    if (!existingProfile) {
+      return null;
+    }
+    return getSafeJson<IClickhouseProfile>(existingProfile);
   }
 
   private async fetchFromClickhouse(

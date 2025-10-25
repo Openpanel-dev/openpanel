@@ -6,7 +6,6 @@ import { getSalts } from '@openpanel/db';
 import { eventsGroupQueue } from '@openpanel/queue';
 import type { PostEventPayload } from '@openpanel/sdk';
 
-import { checkDuplicatedEvent } from '@/utils/deduplicate';
 import { generateId } from '@openpanel/common';
 import { getGeoLocation } from '@openpanel/geo';
 import { getStringHeaders, getTimestamp } from './track.controller';
@@ -45,27 +44,21 @@ export async function postEvent(
     ua,
   });
 
-  if (
-    await checkDuplicatedEvent({
-      reply,
-      payload: {
-        ...request.body,
-        timestamp,
-        previousDeviceId,
-        currentDeviceId,
-      },
-      projectId,
-    })
-  ) {
-    return;
-  }
-
   const uaInfo = parseUserAgent(ua, request.body?.properties);
   const groupId = uaInfo.isServer
     ? request.body?.profileId
       ? `${projectId}:${request.body?.profileId}`
       : `${projectId}:${generateId()}`
     : currentDeviceId;
+  const jobId = [
+    request.body.name,
+    timestamp,
+    projectId,
+    currentDeviceId,
+    groupId,
+  ]
+    .filter(Boolean)
+    .join('-');
   await eventsGroupQueue.add({
     orderMs: new Date(timestamp).getTime(),
     data: {
@@ -76,11 +69,13 @@ export async function postEvent(
         timestamp,
         isTimestampFromThePast,
       },
+      uaInfo,
       geo,
       currentDeviceId,
       previousDeviceId,
     },
     groupId,
+    jobId,
   });
 
   reply.status(202).send('ok');
