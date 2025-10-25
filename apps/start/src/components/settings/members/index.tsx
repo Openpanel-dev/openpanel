@@ -26,7 +26,7 @@ export const MembersTable = ({ query }: Props) => {
   return (
     <>
       <DataTableToolbar table={table} />
-      <DataTable table={table} loading={isLoading} />;
+      <DataTable table={table} loading={isLoading} />
     </>
   );
 };
