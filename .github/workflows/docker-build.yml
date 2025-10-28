@@ -146,6 +146,7 @@ jobs:
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
       - name: Create/Update API tag
+        if: github.ref == 'refs/heads/main'
         run: |
           # Delete existing tag if it exists
           if git tag -l "api" | grep -q "api"; then
@@ -206,6 +207,7 @@ jobs:
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
       - name: Create/Update Worker tag
+        if: github.ref == 'refs/heads/main'
         run: |
           # Delete existing tag if it exists
           if git tag -l "worker" | grep -q "worker"; then
@@ -266,6 +268,7 @@ jobs:
             NO_CLOUDFLARE=1
 
       - name: Create/Update Dashboard tag
+        if: github.ref == 'refs/heads/main'
         run: |
           # Delete existing tag if it exists
           if git tag -l "dashboard" | grep -q "dashboard"; then
