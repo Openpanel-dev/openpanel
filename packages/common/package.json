@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "type": "module",
   "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./server": "./server/index.ts"
+  },
   "scripts": {
     "test": "vitest",
     "typecheck": "tsc --noEmit",

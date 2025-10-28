@@ -1,13 +1,11 @@
 import {
   type IClickhouseEvent,
-  type Prisma,
-  db,
-  formatClickhouseDate,
-} from '@openpanel/db';
-import {
   type ImportSteps,
+  type Prisma,
   backfillSessionsToProduction,
   createSessionsStartEndEvents,
+  db,
+  formatClickhouseDate,
   generateSessionIds,
   getImportDateBounds,
   getImportProgress,
@@ -15,7 +13,7 @@ import {
   markImportComplete,
   moveImportsToProduction,
   updateImportStatus,
-} from '@openpanel/db/src/services/import.service';
+} from '@openpanel/db';
 import { MixpanelProvider, UmamiProvider } from '@openpanel/importer';
 import type { ILogger } from '@openpanel/logger';
 import type { ImportQueuePayload } from '@openpanel/queue';
