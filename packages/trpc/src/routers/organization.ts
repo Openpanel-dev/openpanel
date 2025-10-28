@@ -11,7 +11,7 @@ import {
 } from '@openpanel/db';
 import { zEditOrganization, zInviteUser } from '@openpanel/validation';
 
-import { generateSecureId } from '@openpanel/common/server/id';
+import { generateSecureId } from '@openpanel/common/server';
 import { sendEmail } from '@openpanel/email';
 import { addDays } from 'date-fns';
 import { getOrganizationAccess } from '../access';

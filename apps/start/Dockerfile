@@ -29,6 +29,7 @@ COPY apps/start/package.json ./apps/start/
 COPY packages/trpc/package.json packages/trpc/
 COPY packages/json/package.json packages/json/
 COPY packages/common/package.json packages/common/
+COPY packages/importer/package.json packages/importer/
 COPY packages/payments/package.json packages/payments/
 COPY packages/constants/package.json packages/constants/
 COPY packages/validation/package.json packages/validation/
@@ -85,6 +86,7 @@ COPY --from=build /app/packages/trpc/package.json ./packages/trpc/
 COPY --from=build /app/packages/auth/package.json ./packages/auth/
 COPY --from=build /app/packages/json/package.json ./packages/json/
 COPY --from=build /app/packages/common/package.json ./packages/common/
+COPY --from=build /app/packages/importer/package.json ./packages/importer/
 COPY --from=build /app/packages/payments/package.json ./packages/payments/
 COPY --from=build /app/packages/constants/package.json ./packages/constants/
 COPY --from=build /app/packages/validation/package.json ./packages/validation/

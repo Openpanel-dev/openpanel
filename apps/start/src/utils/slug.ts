@@ -1,1 +1,1 @@
-export * from '@openpanel/common/src/slug';
+export * from '@openpanel/common';

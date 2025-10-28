@@ -1,4 +1,4 @@
-import { generateSecureId } from '@openpanel/common/server/id';
+import { generateSecureId } from '@openpanel/common/server';
 import { type ILogger, createLogger } from '@openpanel/logger';
 import { getRedisCache, runEvery } from '@openpanel/redis';
 
