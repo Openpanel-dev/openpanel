@@ -170,10 +170,10 @@ function ImportsSettings() {
             <TableBody>
               {!importsQuery.isLoading && imports.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5}>
+                  <TableCell colSpan={6}>
                     <FullPageEmptyState
                       title="No imports yet"
-                      description="No imports yet"
+                      description="Your import history will appear here."
                     />
                   </TableCell>
                 </TableRow>
