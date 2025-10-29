@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { TABLE_NAMES } from '../src/clickhouse/client';
 import {
-  chMigrationClient,
   createTable,
+  modifyTTL,
   runClickhouseMigrationCommands,
 } from '../src/clickhouse/migration';
 import { getIsCluster } from './helpers';
@@ -63,10 +63,13 @@ export async function up() {
   ];
 
   // Add TTL policy for auto-cleanup after 7 days
-  sqls.push(`
-    ALTER TABLE events_imports 
-    MODIFY TTL imported_at_meta + INTERVAL 7 DAY
-  `);
+  sqls.push(
+    modifyTTL({
+      tableName: 'events_imports',
+      isClustered,
+      ttl: 'imported_at_meta + INTERVAL 7 DAY',
+    }),
+  );
 
   fs.writeFileSync(
     path.join(__filename.replace('.ts', '.sql')),
