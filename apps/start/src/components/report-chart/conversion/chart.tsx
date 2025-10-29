@@ -18,7 +18,6 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { average, getPreviousMetric, round } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';
 import { useQuery } from '@tanstack/react-query';
-import { Fragment } from 'react';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
 import { useReportChartContext } from '../context';
@@ -69,11 +68,18 @@ export function Chart({ data }: Props) {
     }, 0),
   );
 
+  const rechartData = data.current[0].data.map((item) => {
+    return {
+      ...item,
+      timestamp: new Date(item.date).getTime(),
+    };
+  });
+
   return (
     <TooltipProvider conversion={data} interval={interval}>
       <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
         <ResponsiveContainer>
-          <LineChart>
+          <LineChart data={rechartData}>
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}
@@ -98,34 +104,23 @@ export function Chart({ data }: Props) {
             <YAxis {...yAxisProps} domain={[0, 100]} />
             <XAxis {...xAxisProps} allowDuplicatedCategory={false} />
             <Tooltip />
-            {data.current.map((serie, index) => {
-              const color = getChartColor(index);
-              return (
-                <Fragment key={serie.id}>
-                  <Line
-                    data={serie.data}
-                    dot={false}
-                    name={`rate_${index}`}
-                    dataKey="rate"
-                    stroke={color}
-                    type={lineType}
-                    isAnimationActive={false}
-                    strokeWidth={2}
-                  />
-                  <Line
-                    data={serie.data}
-                    dot={false}
-                    name={`prev_rate_${index}`}
-                    dataKey="previousRate"
-                    stroke={color}
-                    type={lineType}
-                    isAnimationActive={false}
-                    strokeWidth={1}
-                    strokeOpacity={0.5}
-                  />
-                </Fragment>
-              );
-            })}
+            <Line
+              dot={false}
+              dataKey="previousRate"
+              stroke={getChartColor(0)}
+              type={lineType}
+              isAnimationActive={false}
+              strokeWidth={1}
+              strokeOpacity={0.5}
+            />
+            <Line
+              dot={false}
+              dataKey="rate"
+              stroke={getChartColor(0)}
+              type={lineType}
+              isAnimationActive={false}
+              strokeWidth={2}
+            />
             {typeof averageConversionRate === 'number' &&
               averageConversionRate && (
                 <ReferenceLine
@@ -176,8 +171,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
         if (!item) {
           return null;
         }
-        const prevItem =
-          context.conversion?.previous?.[item.serieIndex]?.data[item.index];
+        const prevItem = context.conversion?.previous?.[0]?.data[item.index];
 
         const title =
           serie.breakdowns.length > 0
@@ -194,14 +188,17 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
               <div className="flex justify-between gap-8 font-mono font-medium">
                 <div className="col gap-1">
                   <span>{number.formatWithUnit(item.rate / 100, '%')}</span>
-                  <span className="text-muted-foreground">
-                    ({number.format(item.total)})
-                  </span>
+                  <span>{item.total}</span>
                 </div>
 
-                <PreviousDiffIndicatorPure
-                  {...getPreviousMetric(item.rate, prevItem?.rate)}
-                />
+                <div className="col gap-1">
+                  <PreviousDiffIndicatorPure
+                    {...getPreviousMetric(item.rate, prevItem?.rate)}
+                  />
+                  <span className="text-muted-foreground">
+                    ({prevItem?.total})
+                  </span>
+                </div>
               </div>
             </div>
           </div>
