@@ -250,6 +250,8 @@ model Client {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
 
+  ignoreCorsAndSecret Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 

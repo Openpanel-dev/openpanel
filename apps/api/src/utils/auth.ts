@@ -104,6 +104,10 @@ export async function validateSdkRequest(
     throw createError('Ingestion: Profile id is blocked by project filter');
   }
 
+  if (client.ignoreCorsAndSecret) {
+    return client;
+  }
+
   if (client.project.cors) {
     const domainAllowed = client.project.cors.find((domain) => {
       const cleanedDomain = cleanDomain(domain);
