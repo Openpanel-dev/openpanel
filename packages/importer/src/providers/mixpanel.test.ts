@@ -124,4 +124,55 @@ describe('mixpanel', () => {
       sdk_version: '1.0.0',
     });
   });
+
+  it('should parse stringified JSON in properties and flatten them', async () => {
+    const provider = new MixpanelProvider('pid', {
+      from: '2025-01-01',
+      to: '2025-01-02',
+      serviceAccount: 'sa',
+      serviceSecret: 'ss',
+      projectId: '123',
+      provider: 'mixpanel',
+      type: 'api',
+      mapScreenViewProperty: undefined,
+    });
+
+    const rawEvent = {
+      event: 'custom_event',
+      properties: {
+        time: 1746097970,
+        distinct_id: '$device:123',
+        $device_id: '123',
+        $user_id: 'user123',
+        mp_lib: 'web',
+        // Stringified JSON object - should be parsed and flattened
+        area: '{"displayText":"Malab, Nuh, Mewat","id":1189005}',
+        // Stringified JSON array - should be parsed and flattened
+        tags: '["tag1","tag2","tag3"]',
+        // Regular string - should remain as is
+        regularString: 'just a string',
+        // Number - should be converted to string
+        count: 42,
+        // Object - should be flattened
+        nested: { level1: { level2: 'value' } },
+      },
+    };
+
+    const res = provider.transformEvent(rawEvent);
+
+    expect(res.properties).toMatchObject({
+      // Parsed JSON object should be flattened with dot notation
+      'area.displayText': 'Malab, Nuh, Mewat',
+      'area.id': '1189005',
+      // Parsed JSON array should be flattened with numeric indices
+      'tags.0': 'tag1',
+      'tags.1': 'tag2',
+      'tags.2': 'tag3',
+      // Regular values
+      regularString: 'just a string',
+      count: '42',
+      // Nested object flattened
+      'nested.level1.level2': 'value',
+    });
+  });
 });

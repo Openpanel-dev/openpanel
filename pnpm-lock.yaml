@@ -1002,8 +1002,8 @@ importers:
   packages/db:
     dependencies:
       '@clickhouse/client':
-        specifier: ^1.2.0
-        version: 1.2.0
+        specifier: ^1.12.1
+        version: 1.12.1
       '@openpanel/common':
         specifier: workspace:*
         version: link:../common
@@ -2716,8 +2716,15 @@ packages:
   '@capsizecss/unpack@2.4.0':
     resolution: {integrity: sha512-GrSU71meACqcmIUxPYOJvGKF0yryjN/L1aCuE9DViCTJI7bfkjgYDPD1zbNDcINJwSSP6UaBZY9GAbYDO7re0Q==}
 
+  '@clickhouse/client-common@1.12.1':
+    resolution: {integrity: sha512-ccw1N6hB4+MyaAHIaWBwGZ6O2GgMlO99FlMj0B0UEGfjxM9v5dYVYql6FpP19rMwrVAroYs/IgX2vyZEBvzQLg==}
+
   '@clickhouse/client-common@1.2.0':
     resolution: {integrity: sha512-VfA/C/tVJ2eNe72CaQ7eXmai+yqFEvZjQZiNtvJoOMLP+Vtb6DzqH9nfkgsiHHMhUhhclvt2mFh6+euk1Ea5wA==}
+
+  '@clickhouse/client@1.12.1':
+    resolution: {integrity: sha512-7ORY85rphRazqHzImNXMrh4vsaPrpetFoTWpZYueCO2bbO6PXYDXp/GQ4DgxnGIqbWB/Di1Ai+Xuwq2o7DJ36A==}
+    engines: {node: '>=16'}
 
   '@clickhouse/client@1.2.0':
     resolution: {integrity: sha512-zMp2EhMfp1IrFKr/NjDwNiLsf7nq68nW8lGKszwFe7Iglc6Z5PY9ZA9Hd0XqAk75Q1NmFrkGCP1r3JCM1Nm1Bw==}
@@ -18185,7 +18192,13 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
+  '@clickhouse/client-common@1.12.1': {}
+
   '@clickhouse/client-common@1.2.0': {}
+
+  '@clickhouse/client@1.12.1':
+    dependencies:
+      '@clickhouse/client-common': 1.12.1
 
   '@clickhouse/client@1.2.0':
     dependencies:

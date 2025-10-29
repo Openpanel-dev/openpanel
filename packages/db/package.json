@@ -13,7 +13,7 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
-    "@clickhouse/client": "^1.2.0",
+    "@clickhouse/client": "^1.12.1",
     "@openpanel/common": "workspace:*",
     "@openpanel/constants": "workspace:*",
     "@openpanel/json": "workspace:*",

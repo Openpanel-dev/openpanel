@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import sqlstring from 'sqlstring';
@@ -196,6 +197,34 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   });
 
   return response;
+}
+
+export async function chInsertCSV(tableName: string, rows: string[]) {
+  try {
+    const now = performance.now();
+    // Create a readable stream in binary mode for CSV (similar to EventBuffer)
+    const csvStream = Readable.from(rows.join('\n'), {
+      objectMode: false,
+    });
+
+    await ch.insert({
+      table: tableName,
+      values: csvStream,
+      format: 'CSV',
+      clickhouse_settings: {
+        format_csv_allow_double_quotes: 1,
+        format_csv_allow_single_quotes: 0,
+      },
+    });
+
+    logger.info('CSV Insert successful', {
+      elapsed: performance.now() - now,
+      rows: rows.length,
+    });
+  } catch (error) {
+    logger.error('CSV Insert failed:', error);
+    throw error;
+  }
 }
 
 export async function chQuery<T extends Record<string, any>>(
