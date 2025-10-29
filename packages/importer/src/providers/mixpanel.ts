@@ -278,7 +278,7 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       profile_id: profileId,
       project_id: projectId,
       session_id: '', // Will be generated in SQL after import
-      properties: toDots(properties),
+      properties: toDots(properties), // Flatten nested objects/arrays to Map(String, String)
       created_at: new Date(props.time * 1000).toISOString(),
       country,
       city,
@@ -418,24 +418,23 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       ),
     );
 
-    // Coerce all values to strings to satisfy Map(String, String)
-    const stringProperties: Record<string, string> = {};
+    // Parse JSON strings back to objects/arrays so toDots() can flatten them
+    const parsed: Record<string, any> = {};
     for (const [key, value] of Object.entries(filtered)) {
-      if (value === null || value === undefined) {
-        stringProperties[key] = '';
-        continue;
-      }
-      if (typeof value === 'object') {
+      if (
+        typeof value === 'string' &&
+        (value.startsWith('{') || value.startsWith('['))
+      ) {
         try {
-          stringProperties[key] = JSON.stringify(value);
+          parsed[key] = JSON.parse(value);
         } catch {
-          stringProperties[key] = String(value);
+          parsed[key] = value; // Keep as string if parsing fails
         }
       } else {
-        stringProperties[key] = String(value);
+        parsed[key] = value;
       }
     }
 
-    return stringProperties;
+    return parsed;
   }
 }

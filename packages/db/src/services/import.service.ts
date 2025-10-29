@@ -3,9 +3,11 @@ import sqlstring from 'sqlstring';
 import {
   TABLE_NAMES,
   ch,
+  chInsertCSV,
   convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../clickhouse/client';
+import { csvEscapeField, csvEscapeJson } from '../clickhouse/csv';
 import { type Prisma, db } from '../prisma-client';
 import type { IClickhouseEvent } from './event.service';
 
@@ -33,19 +35,53 @@ export async function insertImportBatch(
     return { importId, totalEvents: 0, insertedEvents: 0 };
   }
 
-  // Add import metadata to each event
-  const eventsWithMetadata = events.map((event) => ({
-    ...event,
-    import_id: importId,
-    import_status: 'pending',
-    imported_at_meta: new Date(),
-  }));
-
-  await ch.insert({
-    table: TABLE_NAMES.events_imports,
-    values: eventsWithMetadata,
-    format: 'JSONEachRow',
+  // Important to have same order as events_imports table
+  // CSV format: properly quotes fields that need it
+  const csvRows = events.map((event) => {
+    // Properties need to be converted to JSON for Map(String, String)
+    // All fields must be CSV-escaped when joining with commas
+    const fields = [
+      csvEscapeField(event.id || ''),
+      csvEscapeField(event.name),
+      csvEscapeField(event.sdk_name || ''),
+      csvEscapeField(event.sdk_version || ''),
+      csvEscapeField(event.device_id || ''),
+      csvEscapeField(event.profile_id || ''),
+      csvEscapeField(event.project_id || ''),
+      csvEscapeField(event.session_id || ''),
+      csvEscapeField(event.path),
+      csvEscapeField(event.origin || ''),
+      csvEscapeField(event.referrer || ''),
+      csvEscapeField(event.referrer_name || ''),
+      csvEscapeField(event.referrer_type || ''),
+      csvEscapeField(event.duration ?? 0),
+      csvEscapeJson(event.properties),
+      csvEscapeField(
+        event.created_at
+          ? formatClickhouseDate(event.created_at)
+          : formatClickhouseDate(new Date()),
+      ),
+      csvEscapeField(event.country || ''),
+      csvEscapeField(event.city || ''),
+      csvEscapeField(event.region || ''),
+      csvEscapeField(event.longitude != null ? event.longitude : '\\N'),
+      csvEscapeField(event.latitude != null ? event.latitude : '\\N'),
+      csvEscapeField(event.os || ''),
+      csvEscapeField(event.os_version || ''),
+      csvEscapeField(event.browser || ''),
+      csvEscapeField(event.browser_version || ''),
+      csvEscapeField(event.device || ''),
+      csvEscapeField(event.brand || ''),
+      csvEscapeField(event.model || ''),
+      csvEscapeField('\\N'), // imported_at (Nullable)
+      csvEscapeField(importId),
+      csvEscapeField('pending'), // import_status
+      csvEscapeField(formatClickhouseDate(new Date()).replace(/\.\d{3}$/, '')), // imported_at_meta (DateTime, not DateTime64, so no milliseconds)
+    ];
+    return fields.join(',');
   });
+
+  await chInsertCSV(TABLE_NAMES.events_imports, csvRows);
 
   return {
     importId,
