@@ -15,6 +15,7 @@ import { generateSecureId } from '@openpanel/common/server/id';
 import {
   connectUserToOrganization,
   db,
+  getShareDashboardById,
   getShareOverviewById,
   getUserAccount,
 } from '@openpanel/db';
@@ -359,6 +360,44 @@ export const authRouter = createTRPCRouter({
       }
 
       ctx.setCookie(`shared-overview-${shareId}`, '1', {
+        maxAge: 60 * 60 * 24 * 7,
+        ...COOKIE_OPTIONS,
+      });
+
+      return true;
+    }),
+
+  signInShareDashboard: publicProcedure
+    .use(
+      rateLimitMiddleware({
+        max: 3,
+        windowMs: 30_000,
+      }),
+    )
+    .input(zSignInShare)
+    .mutation(async ({ input, ctx }) => {
+      const { password, shareId } = input;
+      const share = await getShareDashboardById(shareId);
+
+      if (!share) {
+        throw TRPCNotFoundError('Share not found');
+      }
+
+      if (!share.public) {
+        throw TRPCNotFoundError('Share is not public');
+      }
+
+      if (!share.password) {
+        throw TRPCNotFoundError('Share is not password protected');
+      }
+
+      const validPassword = await verifyPasswordHash(share.password, password);
+
+      if (!validPassword) {
+        throw TRPCAccessError('Incorrect password');
+      }
+
+      ctx.setCookie(`shared-dashboard-${shareId}`, '1', {
         maxAge: 60 * 60 * 24 * 7,
         ...COOKIE_OPTIONS,
       });

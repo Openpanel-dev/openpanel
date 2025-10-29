@@ -1,7 +1,11 @@
 import { Padding } from '@/components/ui/padding';
 import { notFound } from 'next/navigation';
 
-import { getDashboardById, getReportsByDashboardId } from '@openpanel/db';
+import {
+  getDashboardById,
+  getReportsByDashboardId,
+  getShareByDashboardId,
+} from '@openpanel/db';
 
 import { ListReports } from './list-reports';
 
@@ -15,9 +19,10 @@ interface PageProps {
 export default async function Page({
   params: { projectId, dashboardId },
 }: PageProps) {
-  const [dashboard, reports] = await Promise.all([
+  const [dashboard, reports, shareDashboard] = await Promise.all([
     getDashboardById(dashboardId, projectId),
     getReportsByDashboardId(dashboardId),
+    getShareByDashboardId(dashboardId),
   ]);
 
   if (!dashboard) {
@@ -26,7 +31,11 @@ export default async function Page({
 
   return (
     <Padding>
-      <ListReports reports={reports} dashboard={dashboard} />
+      <ListReports
+        reports={reports}
+        dashboard={dashboard}
+        shareDashboard={shareDashboard}
+      />
     </Padding>
   );
 }

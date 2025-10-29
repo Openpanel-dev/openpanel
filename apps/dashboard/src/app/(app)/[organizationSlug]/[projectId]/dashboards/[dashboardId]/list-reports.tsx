@@ -30,17 +30,27 @@ import {
   getDefaultIntervalByRange,
   timeWindows,
 } from '@openpanel/constants';
-import type { IServiceDashboard, getReportsByDashboardId } from '@openpanel/db';
+import type {
+  IServiceDashboard,
+  ShareDashboard,
+  getReportsByDashboardId,
+} from '@openpanel/db';
 
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
+import { DashboardShare } from '@/components/dashboard/dashboard-share';
 
 interface ListReportsProps {
   reports: Awaited<ReturnType<typeof getReportsByDashboardId>>;
   dashboard: IServiceDashboard;
+  shareDashboard: ShareDashboard | null;
 }
 
-export function ListReports({ reports, dashboard }: ListReportsProps) {
+export function ListReports({
+  reports,
+  dashboard,
+  shareDashboard,
+}: ListReportsProps) {
   const router = useRouter();
   const params = useAppParams<{ dashboardId: string }>();
   const { range, startDate, endDate, interval } = useOverviewOptions();
@@ -58,6 +68,7 @@ export function ListReports({ reports, dashboard }: ListReportsProps) {
         <div className="flex items-center justify-end gap-2">
           <OverviewRange />
           <OverviewInterval />
+          <DashboardShare data={shareDashboard} />
           <Button
             icon={PlusIcon}
             onClick={() => {

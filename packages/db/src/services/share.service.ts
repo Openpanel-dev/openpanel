@@ -18,3 +18,22 @@ export function getShareByProjectId(projectId: string) {
     },
   });
 }
+
+export function getShareDashboardById(id: string) {
+  return db.shareDashboard.findFirst({
+    where: {
+      id,
+    },
+    include: {
+      dashboard: true,
+    },
+  });
+}
+
+export function getShareByDashboardId(dashboardId: string) {
+  return db.shareDashboard.findUnique({
+    where: {
+      dashboardId,
+    },
+  });
+}

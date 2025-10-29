@@ -181,6 +181,13 @@ export const zShareOverview = z.object({
   public: z.boolean(),
 });
 
+export const zShareDashboard = z.object({
+  organizationId: z.string(),
+  dashboardId: z.string(),
+  password: z.string().nullable(),
+  public: z.boolean(),
+});
+
 export const zCreateReference = z.object({
   title: z.string(),
   description: z.string().nullish(),

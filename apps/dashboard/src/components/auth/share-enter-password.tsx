@@ -11,16 +11,33 @@ import { LogoSquare } from '../logo';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
-export function ShareEnterPassword({ shareId }: { shareId: string }) {
+export function ShareEnterPassword({
+  shareId,
+  type = 'overview',
+}: {
+  shareId: string;
+  type?: 'overview' | 'dashboard';
+}) {
   const router = useRouter();
-  const mutation = api.auth.signInShare.useMutation({
-    onSuccess() {
-      router.refresh();
-    },
-    onError() {
-      toast.error('Incorrect password');
-    },
-  });
+  const mutation =
+    type === 'dashboard'
+      ? api.auth.signInShareDashboard.useMutation({
+          onSuccess() {
+            router.refresh();
+          },
+          onError() {
+            toast.error('Incorrect password');
+          },
+        })
+      : api.auth.signInShare.useMutation({
+          onSuccess() {
+            router.refresh();
+          },
+          onError() {
+            toast.error('Incorrect password');
+          },
+        });
+
   const form = useForm<ISignInShare>({
     resolver: zodResolver(zSignInShare),
     defaultValues: {
@@ -36,14 +53,20 @@ export function ShareEnterPassword({ shareId }: { shareId: string }) {
     });
   });
 
+  const title = type === 'dashboard' ? 'Dashboard is locked' : 'Overview is locked';
+  const description =
+    type === 'dashboard'
+      ? 'Please enter correct password to access this dashboard'
+      : 'Please enter correct password to access this overview';
+
   return (
     <div className="center-center h-screen w-screen p-4 col">
       <div className="bg-background p-6 rounded-lg max-w-md w-full text-left">
         <div className="col mt-1 flex-1 gap-2">
           <LogoSquare className="size-12 mb-4" />
-          <div className="text-xl font-semibold">Overview is locked</div>
+          <div className="text-xl font-semibold">{title}</div>
           <div className="text-lg text-muted-foreground leading-normal">
-            Please enter correct password to access this overview
+            {description}
           </div>
         </div>
         <form onSubmit={onSubmit} className="col gap-4 mt-6">

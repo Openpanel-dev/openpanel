@@ -62,6 +62,9 @@ const modals = {
   ShareOverviewModal: dynamic(() => import('./ShareOverviewModal'), {
     loading: Loading,
   }),
+  ShareDashboardModal: dynamic(() => import('./ShareDashboardModal'), {
+    loading: Loading,
+  }),
   AddReference: dynamic(() => import('./AddReference'), {
     loading: Loading,
   }),
