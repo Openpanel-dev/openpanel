@@ -19,16 +19,9 @@ interface OverviewShareProps {
 export function OverviewShare({ projectId }: OverviewShareProps) {
   const trpc = useTRPC();
   const query = useQuery(
-    trpc.share.overview.queryOptions(
-      {
-        projectId,
-      },
-      {
-        retry(failureCount, error) {
-          return error.message !== 'Share not found' && failureCount < 3;
-        },
-      },
-    ),
+    trpc.share.overview.queryOptions({
+      projectId,
+    }),
   );
   const data = query.data;
   const mutation = useMutation(

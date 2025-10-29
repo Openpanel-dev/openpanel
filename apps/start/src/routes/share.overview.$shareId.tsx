@@ -1,4 +1,5 @@
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
+import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { LiveCounter } from '@/components/overview/live-counter';
@@ -10,8 +11,9 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
+import { EyeClosedIcon, FrownIcon } from 'lucide-react';
 import { z } from 'zod';
 
 const shareSearchSchema = z.object({
@@ -29,13 +31,20 @@ export const Route = createFileRoute('/share/overview/$shareId')({
     );
   },
   pendingComponent: FullPageLoadingState,
+  errorComponent: () => (
+    <FullPageEmptyState
+      title="Share not found"
+      description="The overview you are looking for does not exist."
+      className="min-h-[calc(100vh-theme(spacing.16))]"
+    />
+  ),
 });
 
 function RouteComponent() {
   const { shareId } = Route.useParams();
   const { header } = useSearch({ from: '/share/overview/$shareId' });
   const trpc = useTRPC();
-  const shareQuery = useQuery(
+  const shareQuery = useSuspenseQuery(
     trpc.share.overview.queryOptions({
       shareId,
     }),
@@ -69,7 +78,7 @@ function RouteComponent() {
   return (
     <div>
       {isHeaderVisible && (
-        <div className="flex items-center justify-between border-b border-border bg-background p-4">
+        <div className="mx-auto max-w-7xl justify-between row gap-4 p-4 pb-0">
           <div className="col gap-1">
             <span className="text-sm">{share.organization?.name}</span>
             <h1 className="text-xl font-medium">{share.project?.name}</h1>
@@ -77,6 +86,7 @@ function RouteComponent() {
           <a
             href="https://openpanel.dev?utm_source=openpanel.dev&utm_medium=share"
             className="col gap-1 items-end"
+            title="OpenPanel"
           >
             <span className="text-xs">POWERED BY</span>
             <span className="text-xl font-medium">openpanel.dev</span>

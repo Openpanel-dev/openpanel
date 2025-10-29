@@ -11,14 +11,13 @@ const FullPageLoadingState = ({
     <FullPageEmptyState
       className="min-h-[calc(100vh-theme(spacing.16))]"
       title={title}
+      description={description}
       icon={
         ((props) => (
           <Loader2Icon {...props} className="animate-spin" />
         )) as LucideIcon
       }
-    >
-      {description}
-    </FullPageEmptyState>
+    />
   );
 };
 

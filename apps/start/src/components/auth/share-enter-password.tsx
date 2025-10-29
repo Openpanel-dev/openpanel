@@ -12,7 +12,9 @@ export function ShareEnterPassword({ shareId }: { shareId: string }) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInShare.mutationOptions({
-      onSuccess() {},
+      onSuccess() {
+        window.location.reload();
+      },
       onError() {
         toast.error('Incorrect password');
       },

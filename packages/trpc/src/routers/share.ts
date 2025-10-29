@@ -6,12 +6,12 @@ import { zShareOverview } from '@openpanel/validation';
 import { hashPassword } from '@openpanel/auth';
 import { z } from 'zod';
 import { TRPCNotFoundError } from '../errors';
-import { createTRPCRouter, protectedProcedure } from '../trpc';
+import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 const uid = new ShortUniqueId({ length: 6 });
 
 export const shareRouter = createTRPCRouter({
-  overview: protectedProcedure
+  overview: publicProcedure
     .input(
       z
         .object({
