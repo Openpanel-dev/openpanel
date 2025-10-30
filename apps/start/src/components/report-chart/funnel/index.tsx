@@ -44,7 +44,7 @@ export function ReportFunnelChart() {
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.funnel.queryOptions(input, {
-      enabled: !isLazyLoading,
+      enabled: !isLazyLoading && input.events.length > 0,
     }),
   );
 

@@ -92,11 +92,10 @@ export const ProfileMetrics = ({ data }: Props) => {
             label={metric.title}
             metric={{
               current:
-                metric.unit === 'timeAgo' &&
-                typeof data[metric.key] === 'string'
-                  ? new Date(data[metric.key] as string).getTime()
+                metric.unit === 'timeAgo'
+                  ? new Date(data[metric.key]).getTime()
                   : (data[metric.key] as number) || 0,
-              previous: null, // Profile metrics don't have previous period comparison
+              previous: null,
             }}
             unit={metric.unit}
             data={[]}

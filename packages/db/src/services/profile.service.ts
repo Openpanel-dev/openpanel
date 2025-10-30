@@ -10,13 +10,14 @@ import {
   TABLE_NAMES,
   ch,
   chQuery,
+  convertClickhouseDateToJs,
   formatClickhouseDate,
 } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
 
 export type IProfileMetrics = {
-  lastSeen: string;
-  firstSeen: string;
+  lastSeen: Date;
+  firstSeen: Date;
   screenViews: number;
   sessions: number;
   durationAvg: number;
@@ -29,7 +30,12 @@ export type IProfileMetrics = {
   avgTimeBetweenSessions: number;
 };
 export function getProfileMetrics(profileId: string, projectId: string) {
-  return chQuery<IProfileMetrics>(`
+  return chQuery<
+    Omit<IProfileMetrics, 'lastSeen' | 'firstSeen'> & {
+      lastSeen: string;
+      firstSeen: string;
+    }
+  >(`
     WITH lastSeen AS (
       SELECT max(created_at) as lastSeen FROM ${TABLE_NAMES.events} WHERE profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     ),
@@ -84,7 +90,15 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       (SELECT avgEventsPerSession FROM avgEventsPerSession) as avgEventsPerSession,
       (SELECT conversionEvents FROM conversionEvents) as conversionEvents,
       (SELECT avgTimeBetweenSessions FROM avgTimeBetweenSessions) as avgTimeBetweenSessions
-  `).then((data) => data[0]!);
+  `)
+    .then((data) => data[0]!)
+    .then((data) => {
+      return {
+        ...data,
+        lastSeen: convertClickhouseDateToJs(data.lastSeen),
+        firstSeen: convertClickhouseDateToJs(data.firstSeen),
+      };
+    });
 }
 
 export async function getProfileById(id: string, projectId: string) {
@@ -259,7 +273,7 @@ export function transformProfile({
     lastName: last_name,
     isExternal: profile.is_external,
     properties: toObject(profile.properties),
-    createdAt: new Date(created_at),
+    createdAt: convertClickhouseDateToJs(created_at),
     projectId: profile.project_id,
     id: profile.id,
     email: profile.email,

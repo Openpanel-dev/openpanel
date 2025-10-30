@@ -12,7 +12,6 @@ import {
 import { cn } from '@/utils/cn';
 import { createProjectTitle } from '@/utils/title';
 import {
-  ChevronRight,
   LayoutPanelTopIcon,
   MoreHorizontal,
   PlusIcon,
@@ -30,16 +29,13 @@ import { OverviewRange } from '@/components/overview/overview-range';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
+import { showConfirm } from '@/modals';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-// @ts-ignore - types will be installed separately
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { ReportChartLoading } from '@/components/report-chart/common/loading';
-import { ReportChartProvider } from '@/components/report-chart/context';
-import { showConfirm } from '@/modals';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 

@@ -191,14 +191,16 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
                   <span>{item.total}</span>
                 </div>
 
-                <div className="col gap-1">
-                  <PreviousDiffIndicatorPure
-                    {...getPreviousMetric(item.rate, prevItem?.rate)}
-                  />
-                  <span className="text-muted-foreground">
-                    ({prevItem?.total})
-                  </span>
-                </div>
+                {!!prevItem && (
+                  <div className="col gap-1">
+                    <PreviousDiffIndicatorPure
+                      {...getPreviousMetric(item.rate, prevItem?.rate)}
+                    />
+                    <span className="text-muted-foreground">
+                      ({prevItem?.total})
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

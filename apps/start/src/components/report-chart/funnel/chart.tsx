@@ -6,15 +6,17 @@ import { ChevronRightIcon, InfoIcon } from 'lucide-react';
 import { alphabetIds } from '@openpanel/constants';
 
 import { createChartTooltip } from '@/components/charts/chart-tooltip';
+import { BarShapeBlue } from '@/components/charts/common-bar';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { WidgetTable } from '@/components/widget-table';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
-  Line,
-  LineChart,
+  Cell,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -205,8 +207,10 @@ export function Tables({
             {
               name: 'Event',
               render: (item, index) => (
-                <div className="row items-center gap-2 row min-w-0 relative">
-                  <ColorSquare>{alphabetIds[index]}</ColorSquare>
+                <div className="row items-center gap-2 min-w-0 relative">
+                  <ColorSquare color={getChartColor(index)}>
+                    {alphabetIds[index]}
+                  </ColorSquare>
                   <span className="truncate">{item.event.displayName}</span>
                 </div>
               ),
@@ -265,6 +269,7 @@ const useRechartData = ({
   return (
     firstFunnel?.steps.map((step, stepIndex) => {
       return {
+        id: step?.event.id ?? '',
         name: step?.event.displayName ?? '',
         ...current.reduce((acc, item, index) => {
           const diff = previous?.[index];
@@ -299,7 +304,7 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
     <TooltipProvider data={data.current}>
       <div className="aspect-video max-h-[250px] w-full p-4 card pb-1">
         <ResponsiveContainer>
-          <LineChart data={rechartData}>
+          <BarChart data={rechartData}>
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}
@@ -308,7 +313,7 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
             />
             <XAxis
               {...xAxisProps}
-              dataKey="name"
+              dataKey="id"
               allowDuplicatedCategory={false}
               type={'category'}
               scale="auto"
@@ -316,19 +321,19 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
               interval="preserveStartEnd"
               tickSize={0}
               tickMargin={4}
+              tickFormatter={(id) =>
+                data.current[0].steps.find((step) => step.event.id === id)
+                  ?.event.displayName ?? ''
+              }
             />
             <YAxis {...yAxisProps} />
-            {data.current.map((item, index) => (
-              <Line
-                stroke={getChartColor(index)}
-                key={`step:percent:${item.id}`}
-                dataKey={`step:percent:${index}`}
-                type="linear"
-                strokeWidth={2}
-              />
-            ))}
+            <Bar data={rechartData} dataKey="step:percent:0">
+              {rechartData.map((item, index) => (
+                <Cell key={item.name} fill={getChartColor(index)} />
+              ))}
+            </Bar>
             <Tooltip />
-          </LineChart>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </TooltipProvider>

@@ -85,12 +85,15 @@ export function WidgetTable<T>({
               )}
             >
               {eachRow?.(item, index)}
-              <div className="grid" style={{ gridTemplateColumns }}>
+              <div
+                className="grid h-8 items-center"
+                style={{ gridTemplateColumns }}
+              >
                 {columns.map((column) => (
                   <div
                     key={column.name?.toString()}
                     className={cn(
-                      'p-2 relative cell',
+                      'px-2 relative cell',
                       columns.length > 1 && column !== columns[0]
                         ? 'text-right'
                         : 'text-left',

@@ -1,6 +1,6 @@
 import { ifNaN } from '@openpanel/common';
 import type { IChartEvent, IChartInput } from '@openpanel/validation';
-import { last, reverse } from 'ramda';
+import { last, reverse, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { ch } from '../clickhouse/client';
 import { TABLE_NAMES } from '../clickhouse/client';
@@ -98,6 +98,14 @@ export class FunnelService {
     return Object.values(series);
   }
 
+  getProfileFilters(events: IChartEvent[]) {
+    return events.flatMap((e) =>
+      e.filters
+        ?.filter((f) => f.name.startsWith('profile.'))
+        .map((f) => f.name.replace('profile.', '')),
+    );
+  }
+
   async getFunnel({
     projectId,
     startDate,
@@ -106,7 +114,8 @@ export class FunnelService {
     funnelWindow = 24,
     funnelGroup,
     breakdowns = [],
-  }: IChartInput) {
+    timezone = 'UTC',
+  }: IChartInput & { timezone: string }) {
     if (!startDate || !endDate) {
       throw new Error('startDate and endDate are required');
     }
@@ -118,9 +127,14 @@ export class FunnelService {
     const funnelWindowSeconds = funnelWindow * 3600;
     const group = this.getFunnelGroup(funnelGroup);
     const funnels = this.getFunnelConditions(events);
+    const profileFilters = this.getProfileFilters(events);
+    const anyFilterOnProfile = profileFilters.length > 0;
+    const anyBreakdownOnProfile = breakdowns.some((b) =>
+      b.name.startsWith('profile.'),
+    );
 
     // Create the funnel CTE
-    const funnelCte = clix(this.client)
+    const funnelCte = clix(this.client, timezone)
       .select([
         `${group[0]} AS ${group[1]}`,
         ...breakdowns.map(
@@ -131,8 +145,8 @@ export class FunnelService {
       .from(TABLE_NAMES.events, false)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ])
       .where(
         'name',
@@ -141,21 +155,29 @@ export class FunnelService {
       )
       .groupBy([group[1], ...breakdowns.map((b, index) => `b_${index}`)]);
 
+    if (anyFilterOnProfile || anyBreakdownOnProfile) {
+      funnelCte.leftJoin(
+        `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0]))} FROM ${TABLE_NAMES.profiles} FINAL
+          WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
+        'profile.id = profile_id',
+      );
+    }
+
     // Create the sessions CTE if needed
     const sessionsCte =
       group[0] !== 'session_id'
-        ? clix(this.client)
+        ? clix(this.client, timezone)
             .select(['profile_id', 'id'])
             .from(TABLE_NAMES.sessions)
             .where('project_id', '=', projectId)
             .where('created_at', 'BETWEEN', [
-              clix.datetime(startDate),
-              clix.datetime(endDate),
+              clix.datetime(startDate, 'toDateTime'),
+              clix.datetime(endDate, 'toDateTime'),
             ])
         : null;
 
     // Base funnel query with CTEs
-    const funnelQuery = clix(this.client);
+    const funnelQuery = clix(this.client, timezone);
 
     if (sessionsCte) {
       funnelCte.leftJoin('sessions s', 's.id = session_id');
@@ -202,7 +224,7 @@ export class FunnelService {
                 {
                   event: {
                     ...event,
-                    displayName: event.displayName ?? event.name,
+                    displayName: event.displayName || event.name,
                   },
                   count: item.count,
                   percent: (item.count / totalSessions) * 100,

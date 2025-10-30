@@ -20,7 +20,10 @@ export class ConversionService {
     events,
     breakdowns = [],
     interval,
-  }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'>) {
+    timezone,
+  }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
+    timezone: string;
+  }) {
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
     const breakdownColumns = breakdowns.map(
       (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
@@ -44,7 +47,7 @@ export class ConversionService {
       getEventFiltersWhereClause(eventB.filters),
     ).join(' AND ');
 
-    const eventACte = clix(this.client)
+    const eventACte = clix(this.client, timezone)
       .select([
         `DISTINCT ${group}`,
         'created_at AS a_time',
@@ -56,22 +59,22 @@ export class ConversionService {
       .where('name', '=', eventA.name)
       .rawWhere(whereA)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ]);
 
-    const eventBCte = clix(this.client)
+    const eventBCte = clix(this.client, timezone)
       .select([group, 'created_at AS b_time'])
       .from(TABLE_NAMES.events)
       .where('project_id', '=', projectId)
       .where('name', '=', eventB.name)
       .rawWhere(whereB)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ]);
 
-    const query = clix(this.client)
+    const query = clix(this.client, timezone)
       .with('event_a', eventACte)
       .with('event_b', eventBCte)
       .select<{
