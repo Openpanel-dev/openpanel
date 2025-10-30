@@ -8,6 +8,7 @@ import {
   clix,
   db,
   formatClickhouseDate,
+  getDurationSql,
   getEventList,
 } from '@openpanel/db';
 
@@ -66,7 +67,7 @@ export const realtimeRouter = createTRPCRouter({
           'origin',
           'path',
           'COUNT(*) as count',
-          'round(avg(duration)/1000, 2) as avg_duration',
+          `round(avg(${getDurationSql()})/1000, 2) as avg_duration`,
         ])
         .from(TABLE_NAMES.events)
         .where('project_id', '=', input.projectId)
@@ -94,7 +95,7 @@ export const realtimeRouter = createTRPCRouter({
         }>([
           'referrer_name',
           'COUNT(*) as count',
-          'round(avg(duration)/1000, 2) as avg_duration',
+          `round(avg(${getDurationSql()})/1000, 2) as avg_duration`,
         ])
         .from(TABLE_NAMES.events)
         .where('project_id', '=', input.projectId)
@@ -124,7 +125,7 @@ export const realtimeRouter = createTRPCRouter({
           'country',
           'city',
           'COUNT(*) as count',
-          'round(avg(duration)/1000, 2) as avg_duration',
+          `round(avg(${getDurationSql()})/1000, 2) as avg_duration`,
         ])
         .from(TABLE_NAMES.events)
         .where('project_id', '=', input.projectId)

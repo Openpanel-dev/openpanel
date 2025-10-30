@@ -212,7 +212,6 @@ export const chartRouter = createTRPCRouter({
         'origin',
         'referrer',
         'referrer_name',
-        'duration',
         'created_at',
         'country',
         'city',
