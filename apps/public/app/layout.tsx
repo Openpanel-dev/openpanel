@@ -8,6 +8,7 @@ import { cn } from 'fumadocs-ui/components/api';
 import { GeistMono } from 'geist/font/mono';
 import { GeistSans } from 'geist/font/sans';
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { url, baseUrl, siteName } from './layout.config';
 
 export const viewport: Viewport = {
@@ -60,6 +61,11 @@ export default async function Layout({ children }: { children: ReactNode }) {
         <RootProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
+        <Script
+          defer
+          src="http://localhost:3000/script.js"
+          data-website-id="44d65df1-e9cb-4c2c-917d-4bf1c7850948"
+        />
         <OpenPanelComponent
           clientId="301c6dc1-424c-4bc3-9886-a8beab09b615"
           trackAttributes

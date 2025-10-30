@@ -1,3 +1,4 @@
+'use client';
 import DottedMap from 'dotted-map/without-countries';
 import { useEffect, useMemo, useState } from 'react';
 import { mapJsonString } from './world-map-string';

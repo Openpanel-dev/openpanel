@@ -1,3 +1,4 @@
+'use client';
 import { baseOptions } from '@/app/layout.config';
 import { cn } from '@/lib/utils';
 import { AnimatePresence, motion } from 'framer-motion';
