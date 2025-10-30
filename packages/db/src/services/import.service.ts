@@ -56,11 +56,7 @@ export async function insertImportBatch(
       csvEscapeField(event.referrer_type || ''),
       csvEscapeField(event.duration ?? 0),
       csvEscapeJson(event.properties),
-      csvEscapeField(
-        event.created_at
-          ? formatClickhouseDate(event.created_at)
-          : formatClickhouseDate(new Date()),
-      ),
+      csvEscapeField(event.created_at),
       csvEscapeField(event.country || ''),
       csvEscapeField(event.city || ''),
       csvEscapeField(event.region || ''),
@@ -76,7 +72,7 @@ export async function insertImportBatch(
       csvEscapeField('\\N'), // imported_at (Nullable)
       csvEscapeField(importId),
       csvEscapeField('pending'), // import_status
-      csvEscapeField(formatClickhouseDate(new Date()).replace(/\.\d{3}$/, '')), // imported_at_meta (DateTime, not DateTime64, so no milliseconds)
+      csvEscapeField(formatClickhouseDate(new Date())), // imported_at_meta (DateTime, not DateTime64, so no milliseconds)
     ];
     return fields.join(',');
   });
@@ -326,7 +322,7 @@ export async function createSessionsStartEndEvents(
         string,
         string | number | boolean | null | undefined
       >, // From last event
-      created_at: adjustTimestamp(session.last_timestamp, 1000), // 1 second after last event
+      created_at: adjustTimestamp(session.last_timestamp, 500), // 1 second after last event
       country: firstCountry, // Same as session_start
       city: firstCity, // Same as session_start
       region: firstRegion, // Same as session_start
@@ -499,7 +495,15 @@ export async function backfillSessionsToProduction(
       os_version,
       sign,
       version,
-      properties
+      properties,
+      utm_medium,
+      utm_source,
+      utm_campaign,
+      utm_content,
+      utm_term,
+      referrer,
+      referrer_name,
+      referrer_type
     )
     SELECT 
       any(e.session_id) as id,
@@ -535,11 +539,19 @@ export async function backfillSessionsToProduction(
       argMinIf(e.os_version, e.created_at, e.name = 'session_start') as os_version,
       1 as sign,
       1 as version,
-      argMinIf(e.properties, e.created_at, e.name = 'session_start') as properties
+      argMinIf(e.properties, e.created_at, e.name = 'session_start') as properties,
+      argMinIf(e.properties['__query.utm_medium'], e.created_at, e.name = 'session_start') as utm_medium,
+      argMinIf(e.properties['__query.utm_source'], e.created_at, e.name = 'session_start') as utm_source,
+      argMinIf(e.properties['__query.utm_campaign'], e.created_at, e.name = 'session_start') as utm_campaign,
+      argMinIf(e.properties['__query.utm_content'], e.created_at, e.name = 'session_start') as utm_content,
+      argMinIf(e.properties['__query.utm_term'], e.created_at, e.name = 'session_start') as utm_term,
+      argMinIf(e.referrer, e.created_at, e.name = 'session_start') as referrer,
+      argMinIf(e.referrer_name, e.created_at, e.name = 'session_start') as referrer_name,
+      argMinIf(e.referrer_type, e.created_at, e.name = 'session_start') as referrer_type
     FROM ${TABLE_NAMES.events_imports} e
     WHERE 
       e.import_id = ${sqlstring.escape(importId)}
-      AND toDate(e.created_at) >= ${sqlstring.escape(from)}
+      AND toDate(e.created_at) = ${sqlstring.escape(from)}
       AND e.session_id != ''
     GROUP BY e.session_id
   `;
@@ -746,7 +758,7 @@ export async function updateImportStatus(
     case 'backfilling_sessions':
       data.currentStep = 'backfilling_sessions';
       data.currentBatch = options.batch;
-      data.statusMessage = `Backfilling sessions for ${options.batch}`;
+      data.statusMessage = `Aggregating sessions for ${options.batch}`;
       break;
     case 'completed':
       data.status = 'completed';
