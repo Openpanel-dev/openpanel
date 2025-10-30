@@ -89,13 +89,19 @@ export async function importJob(job: Job<ImportQueuePayload>) {
       (record.currentStep === 'backfilling_sessions' && record.currentBatch) ||
       undefined;
 
+    // Example:
+    // shouldRunStep(0) // currStep = 2 (should not run)
+    // shouldRunStep(1) // currStep = 2 (should not run)
+    // shouldRunStep(2) // currStep = 2 (should run)
+    // shouldRunStep(3) // currStep = 2 (should run)
     const shouldRunStep = (step: ValidStep) => {
       if (isNewImport) {
         return true;
       }
 
-      const currentStepIndex = steps[step];
-      return currentStepIndex > steps[record.currentStep as ValidStep];
+      const stepToRunIndex = steps[step];
+      const currentStepIndex = steps[record.currentStep as ValidStep];
+      return stepToRunIndex >= currentStepIndex;
     };
 
     async function whileBounds(

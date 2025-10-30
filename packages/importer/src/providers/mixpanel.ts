@@ -242,24 +242,9 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     if (hash) {
       properties.__hash = hash;
     }
-    properties.__query = query || {};
-    if (props.utm_source) {
-      properties.__query.utm_source = props.utm_source;
-    }
-    if (props.utm_medium) {
-      properties.__query.utm_medium = props.utm_medium;
-    }
-    if (props.utm_campaign) {
-      properties.__query.utm_campaign = props.utm_campaign;
-    }
-    if (props.utm_term) {
-      properties.__query.utm_term = props.utm_term;
-    }
-    if (props.utm_content) {
-      properties.__query.utm_content = props.utm_content;
-    }
-    if (Object.keys(properties.__query).length === 0) {
-      properties.__query = null;
+
+    if (Object.keys(query).length > 0) {
+      properties.__query = query;
     }
 
     if (props.current_page_title) {
@@ -302,15 +287,36 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       referrer_name: utmReferrer?.name || referrer?.name || '',
       referrer_type: referrer?.type || utmReferrer?.type || '',
       imported_at: new Date().toISOString(),
-      sdk_name: this.provider,
+      sdk_name: props.mp_lib
+        ? `${this.provider} (${props.mp_lib})`
+        : this.provider,
       sdk_version: this.version,
     };
 
     // TODO: Remove this
+    // Temporary fix for a client
     const isMightBeScreenView = this.getMightBeScreenView(rawEvent);
     if (isMightBeScreenView && event.name === 'Loaded a Screen') {
       event.name = 'screen_view';
       event.path = isMightBeScreenView;
+    }
+
+    // TODO: Remove this
+    // This is a hack to get utm tags (not sure if this is just the testing project or all mixpanel projects)
+    if (props.utm_source && !properties.__query?.utm_source) {
+      const split = decodeURIComponent(props.utm_source).split('&');
+      const query = Object.fromEntries(split.map((item) => item.split('=')));
+      for (const [key, value] of Object.entries(query)) {
+        if (key && value) {
+          event.properties[`__query.${key}`] = String(value);
+        } else if (
+          value === undefined &&
+          key &&
+          props.utm_source.startsWith(key)
+        ) {
+          event.properties['__query.utm_source'] = String(key);
+        }
+      }
     }
 
     return event;
@@ -321,49 +327,51 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
     uaInfo: UserAgentInfo,
     props: Record<string, any>,
   ) {
-    if (this.isServerEvent(mp_lib)) {
-      return 'server';
+    // Normalize lib/os/browser data
+    const lib = (mp_lib || '').toLowerCase();
+    const os = String(props.$os || uaInfo.os || '').toLowerCase();
+    const browser = String(
+      props.$browser || uaInfo.browser || '',
+    ).toLowerCase();
+
+    const isTabletOs = os === 'ipados' || os === 'ipad os' || os === 'ipad';
+
+    // Strong hint from SDK library
+    if (['android', 'iphone', 'react-native', 'swift', 'unity'].includes(lib)) {
+      return isTabletOs ? 'tablet' : 'mobile';
     }
 
-    if (uaInfo.device !== 'server') {
-      return uaInfo.device;
-    }
-
-    // Use browser and OS to determine device type
-    const browser = (props.$browser || '').toLowerCase();
-    const os = (props.$os || '').toLowerCase();
-
-    // Mobile browsers
-    if (
+    // Web or unknown SDKs: infer from OS/Browser
+    const isMobileSignal =
+      os === 'ios' ||
+      os === 'android' ||
       browser.includes('mobile safari') ||
       browser.includes('chrome ios') ||
       browser.includes('android mobile') ||
       browser.includes('samsung internet') ||
-      os === 'ios' ||
-      os === 'android'
-    ) {
+      browser.includes('mobile');
+
+    if (isMobileSignal) {
       return 'mobile';
     }
 
-    // Tablet indicators (iPad, Android tablets)
-    if (
-      (browser.includes('mobile safari') && os === 'mac os x') ||
-      (browser.includes('samsung internet') && os === 'linux') ||
-      os === 'chrome os'
-    ) {
+    const isTabletSignal =
+      isTabletOs ||
+      browser.includes('tablet') ||
+      // iPad often reports as Mac OS X with Mobile Safari
+      (browser.includes('mobile safari') &&
+        (os === 'mac os x' || os === 'macos'));
+
+    if (isTabletSignal) {
       return 'tablet';
     }
 
-    // Everything else is desktop
-    return uaInfo.device;
+    // Default to desktop
+    return this.isServerEvent(mp_lib) ? 'server' : 'desktop';
   }
 
   private isWebEvent(mp_lib: string) {
-    return mp_lib === 'web';
-  }
-
-  private isServerEvent(mp_lib: string) {
-    return ![
+    return [
       'web',
       'android',
       'iphone',
@@ -371,6 +379,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
       'unity',
       'react-native',
     ].includes(mp_lib);
+  }
+
+  private isServerEvent(mp_lib: string) {
+    return !this.isWebEvent(mp_lib);
   }
 
   private getMightBeScreenView(rawEvent: MixpanelRawEvent) {
