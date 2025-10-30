@@ -24,13 +24,10 @@ type WarnLogParams = LogParams & { err?: Error };
 
 class CustomLogger implements Logger {
   trace({ message, args }: LogParams) {
-    logger.debug(message, args);
+    logger.info(message, args);
   }
   debug({ message, args }: LogParams) {
-    if (message.includes('Query:') && args?.response_status === 200) {
-      return;
-    }
-    logger.debug(message, args);
+    logger.info(message, args);
   }
   info({ message, args }: LogParams) {
     logger.info(message, args);
@@ -89,7 +86,7 @@ const cleanQuery = (query?: string) =>
     ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
     : undefined;
 
-async function withRetry<T>(
+export async function withRetry<T>(
   operation: () => Promise<T>,
   maxRetries = 3,
   baseDelay = 500,
@@ -153,6 +150,13 @@ export const ch = new Proxy(originalCh, {
             wait_end_of_query: 1,
             ...args[0].clickhouse_settings,
           };
+          return value.apply(target, args);
+        });
+    }
+
+    if (property === 'command') {
+      return (...args: any[]) =>
+        withRetry(() => {
           return value.apply(target, args);
         });
     }
