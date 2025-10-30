@@ -20,7 +20,7 @@ import type { ImportQueuePayload } from '@openpanel/queue';
 import type { Job } from 'bullmq';
 import { logger } from '../utils/logger';
 
-const BATCH_SIZE = 100_000;
+const BATCH_SIZE = Number.parseInt(process.env.IMPORT_BATCH_SIZE || '5000', 10);
 
 export async function importJob(job: Job<ImportQueuePayload>) {
   const { importId } = job.data.payload;
