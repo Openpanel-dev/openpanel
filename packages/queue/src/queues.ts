@@ -1,5 +1,6 @@
 import { Queue, QueueEvents } from 'bullmq';
 
+import { createHash } from 'node:crypto';
 import type {
   IServiceCreateEventPayload,
   IServiceEvent,
@@ -10,6 +11,18 @@ import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
 import type { TrackPayload } from '@openpanel/sdk';
 import { Queue as GroupQueue } from 'groupmq';
 
+export const EVENTS_GROUP_QUEUES_SHARDS = Number.parseInt(
+  process.env.EVENTS_GROUP_QUEUES_SHARDS || '3',
+  10,
+);
+
+function pickShard(projectId: string) {
+  const h = createHash('sha1').update(projectId).digest(); // 20 bytes
+  // take first 4 bytes as unsigned int
+  const x = h.readUInt32BE(0);
+  return x % EVENTS_GROUP_QUEUES_SHARDS; // 0..n-1
+}
+
 export const queueLogger = createLogger({ name: 'queue' });
 
 export interface EventsQueuePayloadIncomingEvent {
@@ -17,9 +30,30 @@ export interface EventsQueuePayloadIncomingEvent {
   payload: {
     projectId: string;
     event: TrackPayload & {
-      timestamp: string;
+      timestamp: string | number;
       isTimestampFromThePast: boolean;
     };
+    uaInfo:
+      | {
+          readonly isServer: true;
+          readonly device: 'server';
+          readonly os: '';
+          readonly osVersion: '';
+          readonly browser: '';
+          readonly browserVersion: '';
+          readonly brand: '';
+          readonly model: '';
+        }
+      | {
+          readonly os: string | undefined;
+          readonly osVersion: string | undefined;
+          readonly browser: string | undefined;
+          readonly browserVersion: string | undefined;
+          readonly device: string;
+          readonly brand: string | undefined;
+          readonly model: string | undefined;
+          readonly isServer: false;
+        };
     geo: {
       country: string | undefined;
       city: string | undefined;
@@ -93,46 +127,61 @@ export type MiscQueuePayload = MiscQueuePayloadTrialEndingSoon;
 
 export type CronQueueType = CronQueuePayload['type'];
 
-const orderingWindowMs = Number.parseInt(
-  process.env.ORDERING_WINDOW_MS || '50',
-  10,
-);
-const orderingGracePeriodDecay = Number.parseFloat(
-  process.env.ORDERING_GRACE_PERIOD_DECAY || '0.9',
-);
-const orderingMaxWaitMultiplier = Number.parseInt(
-  process.env.ORDERING_MAX_WAIT_MULTIPLIER || '8',
+const orderingDelayMs = Number.parseInt(
+  process.env.ORDERING_DELAY_MS || '100',
   10,
 );
 
-export const eventsGroupQueue = new GroupQueue<
-  EventsQueuePayloadIncomingEvent['payload']
->({
-  logger: queueLogger,
-  namespace: 'group_events',
-  // @ts-expect-error - TODO: Fix this in groupmq
-  redis: getRedisGroupQueue(),
-  orderingMethod: 'in-memory',
-  orderingWindowMs,
-  orderingGracePeriodDecay,
-  orderingMaxWaitMultiplier,
-  keepCompleted: 10,
-  keepFailed: 10_000,
-});
+const autoBatchMaxWaitMs = Number.parseInt(
+  process.env.AUTO_BATCH_MAX_WAIT_MS || '0',
+  10,
+);
+const autoBatchSize = Number.parseInt(process.env.AUTO_BATCH_SIZE || '0', 10);
 
-export const sessionsQueue = new Queue<SessionsQueuePayload>('sessions', {
+export const eventsGroupQueues = Array.from({
+  length: EVENTS_GROUP_QUEUES_SHARDS,
+}).map(
+  (_, index) =>
+    new GroupQueue<EventsQueuePayloadIncomingEvent['payload']>({
+      logger: queueLogger,
+      namespace: `{group_events_${index}}`,
+      // @ts-expect-error - TODO: Fix this in groupmq
+      redis: getRedisGroupQueue(),
+      keepCompleted: 1_000,
+      keepFailed: 10_000,
+      orderingDelayMs: orderingDelayMs,
+      autoBatch:
+        autoBatchMaxWaitMs && autoBatchSize
+          ? {
+              maxWaitMs: autoBatchMaxWaitMs,
+              size: autoBatchSize,
+            }
+          : undefined,
+    }),
+);
+
+export const getEventsGroupQueueShard = (groupId: string) => {
+  const shard = pickShard(groupId);
+  const queue = eventsGroupQueues[shard];
+  if (!queue) {
+    throw new Error(`Queue not found for group ${groupId}`);
+  }
+  return queue;
+};
+
+export const sessionsQueue = new Queue<SessionsQueuePayload>('{sessions}', {
   // @ts-ignore
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
   },
 });
-export const sessionsQueueEvents = new QueueEvents('sessions', {
+export const sessionsQueueEvents = new QueueEvents('{sessions}', {
   // @ts-ignore
   connection: getRedisQueue(),
 });
 
-export const cronQueue = new Queue<CronQueuePayload>('cron', {
+export const cronQueue = new Queue<CronQueuePayload>('{cron}', {
   // @ts-ignore
   connection: getRedisQueue(),
   defaultJobOptions: {
@@ -140,7 +189,7 @@ export const cronQueue = new Queue<CronQueuePayload>('cron', {
   },
 });
 
-export const miscQueue = new Queue<MiscQueuePayload>('misc', {
+export const miscQueue = new Queue<MiscQueuePayload>('{misc}', {
   // @ts-ignore
   connection: getRedisQueue(),
   defaultJobOptions: {
@@ -156,7 +205,7 @@ export type NotificationQueuePayload = {
 };
 
 export const notificationQueue = new Queue<NotificationQueuePayload>(
-  'notification',
+  '{notification}',
   {
     // @ts-ignore
     connection: getRedisQueue(),

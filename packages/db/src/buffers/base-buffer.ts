@@ -8,18 +8,21 @@ export class BaseBuffer {
   lockKey: string;
   lockTimeout = 60;
   onFlush: () => void;
+  enableParallelProcessing: boolean;
 
   protected bufferCounterKey: string;
 
   constructor(options: {
     name: string;
     onFlush: () => Promise<void>;
+    enableParallelProcessing?: boolean;
   }) {
     this.logger = createLogger({ name: options.name });
     this.name = options.name;
     this.lockKey = `lock:${this.name}`;
     this.onFlush = options.onFlush;
     this.bufferCounterKey = `${this.name}:buffer:count`;
+    this.enableParallelProcessing = options.enableParallelProcessing ?? false;
   }
 
   protected chunks<T>(items: T[], size: number) {
@@ -91,6 +94,26 @@ export class BaseBuffer {
 
   async tryFlush() {
     const now = performance.now();
+
+    // Parallel mode: No locking, multiple workers can process simultaneously
+    if (this.enableParallelProcessing) {
+      try {
+        this.logger.debug('Processing buffer (parallel mode)...');
+        await this.onFlush();
+        this.logger.debug('Flush completed (parallel mode)', {
+          elapsed: performance.now() - now,
+        });
+      } catch (error) {
+        this.logger.error('Failed to process buffer (parallel mode)', {
+          error,
+        });
+        // In parallel mode, we can't safely reset counter as other workers might be active
+        // Counter will be resynced automatically by the periodic job
+      }
+      return;
+    }
+
+    // Sequential mode: Use lock to ensure only one worker processes at a time
     const lockId = generateSecureId('lock');
     const acquired = await getRedisCache().set(
       this.lockKey,
@@ -101,7 +124,7 @@ export class BaseBuffer {
     );
     if (acquired === 'OK') {
       try {
-        this.logger.info('Acquired lock. Processing buffer...', {
+        this.logger.debug('Acquired lock. Processing buffer...', {
           lockId,
         });
         await this.onFlush();
@@ -117,7 +140,7 @@ export class BaseBuffer {
         }
       } finally {
         await this.releaseLock(lockId);
-        this.logger.info('Flush completed', {
+        this.logger.debug('Flush completed', {
           elapsed: performance.now() - now,
           lockId,
         });

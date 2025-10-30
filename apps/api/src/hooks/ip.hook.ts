@@ -1,9 +1,5 @@
 import { getClientIp } from '@/utils/get-client-ip';
-import type {
-  FastifyReply,
-  FastifyRequest,
-  HookHandlerDoneFunction,
-} from 'fastify';
+import type { FastifyRequest } from 'fastify';
 
 export async function ipHook(request: FastifyRequest) {
   const ip = getClientIp(request);

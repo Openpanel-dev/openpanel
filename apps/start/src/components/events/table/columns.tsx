@@ -54,18 +54,6 @@ export function useColumns() {
           return name.replace(/_/g, ' ');
         };
 
-        const renderDuration = () => {
-          if (name === 'screen_view') {
-            return (
-              <span className="text-muted-foreground">
-                {number.shortWithUnit(duration / 1000, 'min')}
-              </span>
-            );
-          }
-
-          return null;
-        };
-
         return (
           <div className="flex items-center gap-2">
             <button
@@ -97,7 +85,6 @@ export function useColumns() {
               >
                 {renderName()}
               </button>
-              {renderDuration()}
             </span>
           </div>
         );

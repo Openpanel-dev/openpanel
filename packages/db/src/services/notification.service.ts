@@ -13,7 +13,7 @@ import type {
   IServiceCreateEventPayload,
   IServiceEvent,
 } from './event.service';
-import { getProfileById, getProfileByIdCached } from './profile.service';
+import { getProfileById } from './profile.service';
 import { getProjectByIdCached } from './project.service';
 
 type ICreateNotification = Pick<
@@ -264,10 +264,7 @@ export async function checkNotificationRulesForEvent(
     payload.profileId &&
     rules.some((rule) => rule.template?.match(/{{profile\.[^}]*}}/))
   ) {
-    const profile = await getProfileByIdCached(
-      payload.profileId,
-      payload.projectId,
-    );
+    const profile = await getProfileById(payload.profileId, payload.projectId);
     if (profile) {
       (payload as any).profile = profile;
     }

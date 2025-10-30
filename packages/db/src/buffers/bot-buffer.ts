@@ -71,7 +71,7 @@ export class BotBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, events.length)
         .exec();
 
-      this.logger.info('Processed bot events', {
+      this.logger.debug('Processed bot events', {
         count: events.length,
       });
     } catch (error) {

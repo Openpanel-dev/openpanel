@@ -6,7 +6,7 @@ import {
   TABLE_NAMES,
   chQuery,
   createSqlBuilder,
-  getProfileByIdCached,
+  getProfileById,
   getProfileList,
   getProfileListCount,
   getProfileMetrics,
@@ -19,7 +19,7 @@ export const profileRouter = createTRPCRouter({
   byId: protectedProcedure
     .input(z.object({ profileId: z.string(), projectId: z.string() }))
     .query(async ({ input: { profileId, projectId } }) => {
-      return getProfileByIdCached(profileId, projectId);
+      return getProfileById(profileId, projectId);
     }),
 
   metrics: protectedProcedure

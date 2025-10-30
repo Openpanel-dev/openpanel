@@ -15,7 +15,7 @@ import {
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
-import { getLock } from '@openpanel/redis';
+import { getLock, getRedisCache } from '@openpanel/redis';
 import { DelayedError, type Job } from 'bullmq';
 import { omit } from 'ramda';
 import * as R from 'ramda';
@@ -54,6 +54,7 @@ export async function incomingEventPure(
   job?: Job<EventsQueuePayloadIncomingEvent>,
   token?: string,
 ) {
+  await getRedisCache().incr('queue:counter');
   const {
     geo,
     event: body,
@@ -61,6 +62,7 @@ export async function incomingEventPure(
     projectId,
     currentDeviceId,
     previousDeviceId,
+    uaInfo: _uaInfo,
   } = jobPayload;
   const properties = body.properties ?? {};
   const reqId = headers['request-id'] ?? 'unknown';
@@ -91,7 +93,8 @@ export async function incomingEventPure(
   const userAgent = headers['user-agent'];
   const sdkName = headers['openpanel-sdk-name'];
   const sdkVersion = headers['openpanel-sdk-version'];
-  const uaInfo = parseUserAgent(userAgent, properties);
+  // TODO: Remove both user-agent and parseUserAgent
+  const uaInfo = _uaInfo ?? parseUserAgent(userAgent, properties);
 
   const baseEvent = {
     name: body.name,

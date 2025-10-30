@@ -54,7 +54,7 @@ export async function deleteProjects(job: Job<CronQueuePayload>) {
     await ch.command({
       query,
       clickhouse_settings: {
-        lightweight_deletes_sync: 0,
+        lightweight_deletes_sync: '0',
       },
     });
   }

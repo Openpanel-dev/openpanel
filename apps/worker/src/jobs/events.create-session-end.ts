@@ -68,7 +68,7 @@ export async function createSessionEnd(
     reqId: payload.properties?.__reqId ?? 'unknown',
   });
 
-  logger.info('Processing session end job');
+  logger.debug('Processing session end job');
 
   const session = await sessionBuffer.getExistingSession(payload.sessionId);
 
