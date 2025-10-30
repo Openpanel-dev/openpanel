@@ -22,6 +22,15 @@ import { logger } from '../utils/logger';
 
 const BATCH_SIZE = Number.parseInt(process.env.IMPORT_BATCH_SIZE || '5000', 10);
 
+/**
+ * Yields control back to the event loop to prevent stalled jobs
+ */
+async function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, 100);
+  });
+}
+
 export async function importJob(job: Job<ImportQueuePayload>) {
   const { importId } = job.data.payload;
 
@@ -121,6 +130,9 @@ export async function importJob(job: Job<ImportQueuePayload>) {
             formatClickhouseDate(next, true),
           );
           cursor = next;
+
+          // Yield control back to event loop after processing each day
+          await yieldToEventLoop();
         }
       }
     }
@@ -170,6 +182,9 @@ export async function importJob(job: Job<ImportQueuePayload>) {
             totalEvents,
             processedEvents,
           });
+
+          // Yield control back to event loop after processing each batch
+          await yieldToEventLoop();
         }
       }
 
@@ -195,6 +210,9 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           step: 'loading',
           batch: createdAt,
         });
+
+        // Yield control back to event loop after processing final batch
+        await yieldToEventLoop();
       }
     }
 
@@ -210,6 +228,9 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           step: 'generating_session_ids',
           batch: from,
         });
+
+        // Yield control back to event loop after processing each day
+        await yieldToEventLoop();
       });
 
       jobLogger.info('Session ID generation complete');
@@ -224,6 +245,9 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           step: 'creating_sessions',
           batch: from,
         });
+
+        // Yield control back to event loop after processing each day
+        await yieldToEventLoop();
       });
     }
 
@@ -234,6 +258,9 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           step: 'moving',
           batch: from,
         });
+
+        // Yield control back to event loop after processing each day
+        await yieldToEventLoop();
       });
     }
 
@@ -244,6 +271,9 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           step: 'backfilling_sessions',
           batch: from,
         });
+
+        // Yield control back to event loop after processing each day
+        await yieldToEventLoop();
       });
     }
 
