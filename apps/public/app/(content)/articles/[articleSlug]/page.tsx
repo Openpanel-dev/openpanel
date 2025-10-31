@@ -161,8 +161,8 @@ export default async function Page({
         </div>
         <div className="relative">
           <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-0">
-            <div>
-              <div className="prose [&_table]:w-auto">
+            <div className="min-w-0">
+              <div className="prose [&_table]:w-auto [&_img]:max-w-full [&_img]:h-auto">
                 <Body />
               </div>
             </div>
