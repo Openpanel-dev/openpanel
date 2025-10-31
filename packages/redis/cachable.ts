@@ -1,5 +1,9 @@
 import { getRedisCache } from './redis';
 
+export const deleteCache = async (key: string) => {
+  return getRedisCache().del(key);
+};
+
 export async function getCache<T>(
   key: string,
   expireInSec: number,

@@ -9,7 +9,7 @@ import {
 } from '@/utils/ai-tools';
 import { HttpError } from '@/utils/errors';
 import { db, getOrganizationByProjectIdCached } from '@openpanel/db';
-import { getProjectAccessCached } from '@openpanel/trpc/src/access';
+import { getProjectAccess } from '@openpanel/trpc/src/access';
 import { type Message, appendResponseMessages, streamText } from 'ai';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
@@ -37,7 +37,7 @@ export async function chat(
   }
 
   const organization = await getOrganizationByProjectIdCached(projectId);
-  const access = await getProjectAccessCached({
+  const access = await getProjectAccess({
     projectId,
     userId: session.userId,
   });

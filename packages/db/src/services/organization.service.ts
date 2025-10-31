@@ -5,7 +5,8 @@ import { chQuery, formatClickhouseDate } from '../clickhouse/client';
 import type { Invite, Prisma, ProjectAccess, User } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
-import type { IServiceProject } from './project.service';
+import { getOrganizationAccess, getProjectAccess } from './access.service';
+import { type IServiceProject, getProjectById } from './project.service';
 export type IServiceOrganization = Awaited<
   ReturnType<typeof db.organization.findUniqueOrThrow>
 >;
@@ -61,7 +62,7 @@ export async function getOrganizationByProjectId(projectId: string) {
 
 export const getOrganizationByProjectIdCached = cacheable(
   getOrganizationByProjectId,
-  60 * 60 * 24,
+  60 * 5,
 );
 
 export async function getInvites(organizationId: string) {
@@ -168,8 +169,14 @@ export async function connectUserToOrganization({
     },
   });
 
+  await getOrganizationAccess.clear({
+    userId: user.id,
+    organizationId: invite.organizationId,
+  });
+
   if (invite.projectAccess.length > 0) {
     for (const projectId of invite.projectAccess) {
+      await getProjectAccess.clear({ userId: user.id, projectId });
       await db.projectAccess.create({
         data: {
           projectId,

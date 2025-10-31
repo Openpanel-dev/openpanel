@@ -113,6 +113,17 @@ export async function slackWebhook(
   }
 }
 
+async function clearOrganizationCache(organizationId: string) {
+  const projects = await db.project.findMany({
+    where: {
+      organizationId,
+    },
+  });
+  for (const project of projects) {
+    await getOrganizationByProjectIdCached.clear(project.id);
+  }
+}
+
 export async function polarWebhook(
   request: FastifyRequest<{
     Querystring: unknown;
@@ -141,8 +152,11 @@ export async function polarWebhook(
             },
             data: {
               subscriptionPeriodEventsCount: 0,
+              subscriptionPeriodEventsCountExceededAt: null,
             },
           });
+
+          await clearOrganizationCache(metadata.organizationId);
         }
         break;
       }
@@ -205,15 +219,7 @@ export async function polarWebhook(
           },
         });
 
-        const projects = await db.project.findMany({
-          where: {
-            organizationId: metadata.organizationId,
-          },
-        });
-
-        for (const project of projects) {
-          await getOrganizationByProjectIdCached.clear(project.id);
-        }
+        await clearOrganizationCache(metadata.organizationId);
 
         await publishEvent('organization', 'subscription_updated', {
           organizationId: metadata.organizationId,
