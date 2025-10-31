@@ -124,8 +124,8 @@ export const overviewRouter = createTRPCRouter({
         .groupBy(['minute'])
         .orderBy('minute', 'ASC')
         .fill(
-          clix.exp('now() - INTERVAL 30 MINUTE'),
-          clix.exp('now()'),
+          clix.exp('toStartOfMinute(now() - INTERVAL 30 MINUTE)'),
+          clix.exp('toStartOfMinute(now())'),
           clix.exp('INTERVAL 1 MINUTE'),
         );
 
