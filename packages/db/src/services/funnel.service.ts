@@ -16,7 +16,7 @@ export class FunnelService {
 
   private getFunnelGroup(group?: string) {
     return group === 'profile_id'
-      ? [`COALESCE(nullIf(s.profile_id, ''), profile_id)`, 'profile_id']
+      ? [`COALESCE(nullIf(s.pid, ''), profile_id)`, 'profile_id']
       : ['session_id', 'session_id'];
   }
 
@@ -159,7 +159,7 @@ export class FunnelService {
       funnelCte.leftJoin(
         `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0]))} FROM ${TABLE_NAMES.profiles} FINAL
           WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
-        'profile.id = profile_id',
+        'profile.id = events.profile_id',
       );
     }
 
@@ -167,7 +167,8 @@ export class FunnelService {
     const sessionsCte =
       group[0] !== 'session_id'
         ? clix(this.client, timezone)
-            .select(['profile_id', 'id'])
+            // Important to have unique field names to avoid ambiguity in the main query
+            .select(['profile_id as pid', 'id as sid'])
             .from(TABLE_NAMES.sessions)
             .where('project_id', '=', projectId)
             .where('created_at', 'BETWEEN', [
@@ -180,7 +181,7 @@ export class FunnelService {
     const funnelQuery = clix(this.client, timezone);
 
     if (sessionsCte) {
-      funnelCte.leftJoin('sessions s', 's.id = session_id');
+      funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
       funnelQuery.with('sessions', sessionsCte);
     }
 
