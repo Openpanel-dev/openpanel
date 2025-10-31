@@ -94,6 +94,8 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Method not used for now,
+// Need a way to check LSN on the actual replica that will be used for the read.
 async function waitForReplicaCatchup(
   prismaClient: BarePrismaClient,
   sessionId: string,
@@ -203,17 +205,16 @@ export function sessionConsistency() {
             return result;
           }
 
-          // For read operations with session: try replica first, fallback to primary
-          if (isReadOperation(operation) && sessionId) {
-            const replicaCaughtUp = await waitForReplicaCatchup(
-              client,
-              sessionId,
-            );
-
-            if (!replicaCaughtUp) {
-              // This will force readReplicas extension to use primary
-              __internalParams.transaction = true;
-            }
+          // For now, we just force the read to the primary without checking the replica
+          // Since the check probably goes to the primary anyways it will always be true,
+          // Not sure how to check LSN on the actual replica that will be used for the read.
+          if (
+            isReadOperation(operation) &&
+            sessionId &&
+            (await getCachedWalLsn(sessionId))
+          ) {
+            // This will force readReplicas extension to use primary
+            __internalParams.transaction = true;
           }
 
           return query(args);
