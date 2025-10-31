@@ -1,0 +1,335 @@
+---
+title: Solving read-after-write consistency with replicas
+description: Learn how we solved the read-after-write consistency problem in OpenPanel using WAL LSN tracking and AsyncLocalStorage, ensuring users always see their latest changes.
+tag: Engineering
+date: 2025-10-31
+team: OpenPanel Team
+cover: /content/read-after-write.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+When you scale your database with read replicas, you gain performance but introduce a subtle problem: users might not see the data they just created. In this article, we'll walk through how we solved the read-after-write consistency challenge at OpenPanel, including the ideal solution we built and the practical compromise we had to make.
+
+## The Read-After-Write Problem
+
+Picture this: A user creates a new dashboard in OpenPanel. The write goes to your primary database, and they're immediately redirected to view their creation. But the read request hits a replica that hasn't caught up yet. Result? A confusing 404 error for something they just created.
+
+This happens because database replication has inherent lag. PostgreSQL replication is fast, often just milliseconds, but even small delays create a poor user experience when they happen at the wrong moment.
+
+For OpenPanel, where users constantly create and modify dashboards, charts, and reports, this inconsistency was unacceptable. We needed to guarantee that users always see their own writes immediately.
+
+## WAL LSN: The Perfect Solution (In Theory)
+
+PostgreSQL maintains a Write-Ahead Log (WAL) with Log Sequence Numbers (LSN) that increment with each database change. Think of LSN as a precise timestamp for your database state. By comparing LSN values between primary and replicas, you can determine exactly whether a replica has received specific changes.
+
+Here's how LSN tracking works:
+
+```sql
+-- After a write on primary
+SELECT pg_current_wal_lsn() AS lsn;
+-- Returns something like: 0/3000148
+
+-- On a replica, check its position
+SELECT pg_last_wal_receive_lsn() AS lsn;
+-- Returns something like: 0/3000140
+```
+
+If the replica's LSN is equal or greater than the write's LSN, it's safe to read. Otherwise, you need to wait or route to the primary.
+
+We built a complete implementation of this approach, including:
+- Capturing LSN after each write
+- Caching it per session
+- Comparing LSN values with proper BigInt handling
+- Exponential backoff retry logic
+
+Here's the LSN comparison logic we implemented:
+
+```typescript
+function compareWalLsn(lsn1: string, lsn2: string): number {
+  // LSN format is "X/Y" where X and Y are hexadecimal
+  const [x1, y1] = lsn1.split('/').map((x) => BigInt(`0x${x}`));
+  const [x2, y2] = lsn2.split('/').map((x) => BigInt(`0x${x}`));
+
+  // Combine into single 64-bit value for comparison
+  const v1 = ((x1 ?? 0n) << 32n) + (y1 ?? 0n);
+  const v2 = ((x2 ?? 0n) << 32n) + (y2 ?? 0n);
+
+  if (v1 < v2) return -1;
+  if (v1 > v2) return 1;
+  return 0;
+}
+```
+
+## The Prisma Limitation
+
+Here's where theory meets reality. Our implementation hit a fundamental limitation: Prisma's `readReplicas` extension doesn't expose which replica will be used before executing a query.
+
+The ideal flow would be:
+1. User writes to primary, we capture the LSN
+2. User makes a read request
+3. In our middleware: "Prisma is about to route this to replica X"
+4. Check replica X's current LSN
+5. If replica X has caught up, proceed with the query
+6. If not, retry with exponential backoff or route to primary
+
+But Prisma's extension doesn't provide this granular control. When our extension's middleware runs, we can check *a* replica's LSN, but we have no way to know if that's the same replica Prisma will route the actual query to. With multiple replicas, each at potentially different replication positions, checking one doesn't tell us about the others.
+
+We built all the LSN comparison logic, caching, and retry mechanisms. But without knowing which replica Prisma will use, we can't make intelligent routing decisions based on that specific replica's state.
+
+If you have full control over your database connection routing and implement custom replica selection, LSN tracking is absolutely the way to go. But working within Prisma's constraints, we needed a simpler approach.
+
+## Our Practical Solution (For Now): Session-Based Primary Routing
+
+Instead of checking exact replication positions, we simplified: if a session has written recently, route all their reads to the primary. Here's how it works:
+
+1. After any write operation, capture the current WAL LSN
+2. Cache this LSN with the session ID (5-second TTL)
+3. For read operations, check if the session has a cached LSN
+4. If yes, force that read to the primary database
+
+This approach is conservative but effective. We're not checking if replicas have caught up; we're assuming they haven't and playing it safe. For now, we skip the LSN checking entirely and just route to primary. Our end goal is to implement proper LSN checking against the actual replica once we have more control over Prisma's routing, or move to a custom connection pool that exposes which replica will be used.
+
+```typescript
+// After writes: cache the LSN
+if (isWriteOperation(operation) && sessionId) {
+  const result = await query(args);
+  const lsn = await getCurrentWalLsn(client);
+  if (lsn) {
+    await cacheWalLsnForSession(sessionId, lsn);
+  }
+  return result;
+}
+
+// Before reads: check for cached LSN
+if (isReadOperation(operation) && sessionId) {
+  const cachedLsn = await getCachedWalLsn(sessionId);
+  if (cachedLsn) {
+    // Force primary - we know this session wrote recently
+    __internalParams.transaction = true;
+  }
+}
+```
+
+The 5-second TTL is our safety margin. In our testing, replicas typically catch up within 100-500ms, but we prefer being conservative. This window could likely be reduced, but the current setting has proven reliable.
+
+## AsyncLocalStorage: Avoiding Prop Drilling
+
+The biggest implementation challenge wasn't the consistency logic; it was making session information available throughout our application stack. We needed the session ID deep in our Prisma extension without modifying every function signature.
+
+AsyncLocalStorage solves this elegantly. Think of it as React Context for your backend - it creates an invisible context that follows your code through asynchronous operations.
+
+Without AsyncLocalStorage, you'd face "prop drilling" everywhere:
+
+```typescript
+// The painful way - passing sessionId through every layer
+async function getUser(userId: string, sessionId: string) {
+  return db.user.findUnique({ 
+    where: { id: userId },
+    // Somehow pass sessionId to Prisma... 
+  });
+}
+
+async function getDashboard(id: string, userId: string, sessionId: string) {
+  const user = await getUser(userId, sessionId); // Pass it down
+  // More sessionId passing...
+}
+```
+
+With AsyncLocalStorage, the context is implicit:
+
+```typescript
+// In your middleware
+runWithAlsSession(sessionId, async () => {
+  // All code in this async chain has access to sessionId
+  await handleRequest();
+});
+
+// Deep in your Prisma extension
+const sessionId = getAlsSessionId(); // Magic! No prop drilling
+```
+
+This works reliably as long as you maintain the async chain. Loose promises (ones that aren't awaited) will lose the context, so always await your async operations.
+
+## The Complete Implementation
+
+Let me walk through the key components of our solution.
+
+### AsyncLocalStorage Setup
+
+```typescript
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+type Ctx = { sessionId: string | null };
+const als = new AsyncLocalStorage<Ctx>();
+
+export const runWithAlsSession = <T>(
+  sessionId: string | null | undefined,
+  fn: () => Promise<T>,
+) => als.run({ sessionId: sessionId || null }, fn);
+
+export const getAlsSessionId = () => als.getStore()?.sessionId ?? null;
+```
+
+### TRPC Middleware Integration
+
+```typescript
+const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
+  const sessionId = ctx.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
+    return next();
+  });
+});
+```
+
+### The Prisma Extension
+
+Here's our complete session consistency extension:
+
+```typescript
+export function sessionConsistency() {
+  return Prisma.defineExtension((client) =>
+    client.$extends({
+      name: 'session-consistency',
+      query: {
+        $allOperations: async ({
+          operation,
+          model,
+          args,
+          query,
+          __internalParams, // Undocumented but necessary
+        }) => {
+          const sessionId = getAlsSessionId();
+
+          // Handle write operations
+          if (isWriteOperation(operation)) {
+            const result = await query(args);
+
+            if (sessionId) {
+              const lsn = await getCurrentWalLsn(client);
+              if (lsn) {
+                await cacheWalLsnForSession(sessionId, lsn);
+                logger.debug('Cached WAL LSN after write', {
+                  sessionId,
+                  lsn,
+                  operation,
+                  model,
+                });
+              }
+            }
+
+            return result;
+          }
+
+          // Handle read operations
+          if (
+            isReadOperation(operation) &&
+            sessionId &&
+            (await getCachedWalLsn(sessionId))
+          ) {
+            // Force primary by pretending we're in a transaction
+            // The readReplicas extension always routes transactions to primary
+            __internalParams.transaction = true;
+          }
+
+          return query(args);
+        },
+      },
+    }),
+  );
+}
+```
+
+### Applying the Extensions
+
+Order matters when applying Prisma extensions:
+
+```typescript
+export const prisma = new PrismaClient()
+  .$extends(sessionConsistency()) // Must come first!
+  .$extends(readReplicas({
+    url: process.env.DATABASE_REPLICA_URL,
+  }));
+```
+
+## Why This Works Well
+
+Our solution might seem like a compromise, but it has several advantages:
+
+**Pragmatic**: The ideal approach would be checking each replica's LSN to route only when necessary. We built that logic, but Prisma's `readReplicas` extension doesn't expose which replica will be used. So we route conservatively to the primary after writes - simpler to implement within Prisma's constraints, though it means some reads that could safely use replicas hit the primary instead.
+
+**Reliability**: We don't guess about replication lag or rely on timing. The cached LSN is proof that a write occurred, and we know those reads need careful handling.
+
+**Performance**: Only sessions that actually write are affected. Read-heavy users automatically use replicas. The 5-second window is conservative but means most traffic still benefits from replicas.
+
+**Maintainability**: The logic is contained in one Prisma extension. No changes needed elsewhere in the codebase. If Prisma adds replica selection APIs in the future, we can upgrade to true LSN checking without touching application code.
+
+## Monitoring and Insights
+
+We track several metrics to ensure our system performs well:
+
+- Cache hit rate for session LSNs
+- Percentage of reads routed to primary vs replicas
+- Distribution of time between write and next read per session
+
+These metrics confirm that most reads still go to replicas. Only active users who just performed writes hit the primary, which is exactly what we want.
+
+## Future Improvements
+
+While our current solution works well, we see opportunities for enhancement:
+
+**Dynamic TTL**: Adjust the cache TTL based on measured replication lag. If replicas are consistently fast, reduce the window.
+
+**Per-operation consistency**: Some reads don't need immediate consistency. We could add hints to skip consistency checks for specific queries.
+
+**Replica health tracking**: Monitor actual replication lag and adjust routing dynamically.
+
+If Prisma eventually supports custom replica selection logic, we'd love to implement proper LSN checking. Until then, our approach provides excellent consistency guarantees with minimal complexity.
+
+## Key Takeaways
+
+Building read-after-write consistency taught us valuable lessons:
+
+**Start with the ideal, settle for the practical.** We built full LSN tracking before realizing Prisma's limitations. The simpler solution works just as well for users.
+
+**AsyncLocalStorage is a superpower.** It eliminates prop drilling and keeps your code clean. Just remember to maintain the async chain.
+
+**Conservative defaults are good defaults.** A 5-second primary routing window might be overkill, but it's never caused issues.
+
+**Measure everything.** Without metrics, you're guessing. Track your primary/replica distribution to ensure you're not overloading the primary.
+
+Have you solved similar consistency challenges? We'd love to hear about your approach. And if you're looking for an analytics platform that sweats the details on data consistency, check out [OpenPanel](https://openpanel.dev).
+
+<Faqs>
+<FaqItem question="Why not just use the primary database for everything?">
+While that would solve consistency issues, it defeats the purpose of read replicas. In a read-heavy application like OpenPanel, replicas dramatically reduce load on the primary database and improve overall performance. Our solution gives you the best of both worlds: consistency when needed, and replica performance for the majority of read operations.
+</FaqItem>
+
+<FaqItem question="What happens if my cache (Redis) goes down?">
+If the cache is unavailable, the system fails open - reads will go to replicas. This means you might temporarily see read-after-write inconsistencies, but your application continues functioning. Since replication lag is typically under 500ms, most users won't notice. This is a deliberate trade-off for system resilience.
+</FaqItem>
+
+<FaqItem question="Does this work with multiple read replicas?">
+Yes! The beauty of our approach is that it doesn't matter which replica Prisma chooses. When a session has a cached LSN, all reads are forced to the primary regardless of how many replicas you have or their individual lag states.
+</FaqItem>
+
+<FaqItem question="Can I use this approach with ORMs other than Prisma?">
+Absolutely! The core concepts - AsyncLocalStorage for context, LSN caching, and routing logic - work with any ORM or database client. You'll need to adapt the implementation to your specific tool's middleware/plugin system, but the strategy remains the same.
+</FaqItem>
+
+<FaqItem question="Why 5 seconds? Isn't that too conservative?">
+It is conservative! We measured typical replication lag at 100-500ms in our infrastructure. The 5-second TTL provides a comfortable safety margin for occasional network hiccups or spikes in replication lag. You can absolutely tune this down based on your own measurements - just monitor your actual lag patterns first.
+</FaqItem>
+
+<FaqItem question="What about write operations from external sources (background jobs, webhooks, etc.)?">
+External writes don't have a user session, so they won't trigger the consistency mechanism. This is usually fine - background operations typically don't need immediate read-after-write consistency. If they do, you can either explicitly query the primary or implement a similar LSN caching mechanism with a different context identifier.
+</FaqItem>
+
+<FaqItem question="Does AsyncLocalStorage have performance overhead?">
+The overhead is negligible - AsyncLocalStorage is highly optimized in Node.js. The real performance consideration is the extra primary database queries after writes (the LSN check) and routing more reads to primary. In practice, this affects only actively writing sessions, which is a small percentage of total traffic.
+</FaqItem>
+
+<FaqItem question="Can I implement per-query consistency hints?">
+Yes! You could extend the AsyncLocalStorage context to include a `skipConsistencyCheck` flag, or check for specific patterns in the query. For example, analytics queries that aggregate historical data don't need immediate consistency. This is one of our planned future improvements.
+</FaqItem>
+</Faqs>
+
