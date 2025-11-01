@@ -196,7 +196,7 @@ export async function getSessionList({
     organization?.subscriptionPeriodEventsLimit &&
     organization?.subscriptionPeriodEventsLimit > 1_000_000
       ? 1
-      : 7;
+      : 360;
 
   if (cursor) {
     const cAt = sqlstring.escape(cursor.createdAt);

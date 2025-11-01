@@ -1,12 +1,15 @@
 import { logger as baseLogger } from '@/utils/logger';
-import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
 import {
   createSessionEndJob,
   createSessionStart,
   getSessionEnd,
 } from '@/utils/session-handler';
 import { isSameDomain, parsePath } from '@openpanel/common';
-import { parseUserAgent } from '@openpanel/common/server';
+import {
+  getReferrerWithQuery,
+  parseReferrer,
+  parseUserAgent,
+} from '@openpanel/common/server';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
@@ -15,10 +18,9 @@ import {
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
-import { getLock } from '@openpanel/redis';
-import { DelayedError, type Job } from 'bullmq';
-import { omit } from 'ramda';
+import type { Job } from 'bullmq';
 import * as R from 'ramda';
+import { omit } from 'ramda';
 import { v4 as uuid } from 'uuid';
 
 const GLOBAL_PROPERTIES = ['__path', '__referrer'];
@@ -115,9 +117,9 @@ export async function incomingEventPure(
     latitude: geo.latitude,
     path,
     origin,
-    referrer: utmReferrer?.url || referrer?.url || '',
+    referrer: referrer?.url || '',
     referrerName: utmReferrer?.name || referrer?.name || '',
-    referrerType: utmReferrer?.type || referrer?.type || '',
+    referrerType: referrer?.type || utmReferrer?.type || '',
     os: uaInfo.os,
     osVersion: uaInfo.osVersion,
     browser: uaInfo.browser,

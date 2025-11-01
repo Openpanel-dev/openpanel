@@ -115,6 +115,22 @@ ENGINE = Distributed('{cluster}', currentDatabase(), ${replicated(tableName)}, $
   ];
 }
 
+export const modifyTTL = ({
+  tableName,
+  isClustered,
+  ttl,
+}: {
+  tableName: string;
+  isClustered: boolean;
+  ttl: string;
+}) => {
+  if (isClustered) {
+    return `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' MODIFY TTL ${ttl}`;
+  }
+
+  return `ALTER TABLE ${tableName} MODIFY TTL ${ttl}`;
+};
+
 /**
  * Generates ALTER TABLE statements for adding columns
  */

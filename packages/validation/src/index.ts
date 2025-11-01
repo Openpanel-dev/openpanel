@@ -435,3 +435,54 @@ export const zEditOrganization = z.object({
   name: z.string().min(2),
   timezone: z.string().min(1),
 });
+
+const zProjectMapper = z.object({
+  from: z.string().min(1),
+  to: z.string().min(1),
+});
+
+const createFileImportConfig = <T extends string>(provider: T) =>
+  z.object({
+    provider: z.literal(provider),
+    type: z.literal('file'),
+    fileUrl: z.string().url(),
+  });
+
+// Import configs
+export const zUmamiImportConfig = createFileImportConfig('umami').extend({
+  projectMapper: z.array(zProjectMapper),
+});
+
+export type IUmamiImportConfig = z.infer<typeof zUmamiImportConfig>;
+
+export const zPlausibleImportConfig = createFileImportConfig('plausible');
+export type IPlausibleImportConfig = z.infer<typeof zPlausibleImportConfig>;
+
+export const zMixpanelImportConfig = z.object({
+  provider: z.literal('mixpanel'),
+  type: z.literal('api'),
+  serviceAccount: z.string().min(1),
+  serviceSecret: z.string().min(1),
+  projectId: z.string().min(1),
+  from: z.string().min(1),
+  to: z.string().min(1),
+  mapScreenViewProperty: z.string().optional(),
+});
+export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
+
+export type IImportConfig =
+  | IUmamiImportConfig
+  | IPlausibleImportConfig
+  | IMixpanelImportConfig;
+
+export const zCreateImport = z.object({
+  projectId: z.string().min(1),
+  provider: z.enum(['umami', 'plausible', 'mixpanel']),
+  config: z.union([
+    zUmamiImportConfig,
+    zPlausibleImportConfig,
+    zMixpanelImportConfig,
+  ]),
+});
+
+export type ICreateImport = z.infer<typeof zCreateImport>;

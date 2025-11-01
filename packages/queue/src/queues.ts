@@ -110,7 +110,6 @@ export const eventsGroupQueue = new GroupQueue<
 >({
   logger: queueLogger,
   namespace: 'group_events',
-  // @ts-expect-error - TODO: Fix this in groupmq
   redis: getRedisGroupQueue(),
   orderingMethod: 'in-memory',
   orderingWindowMs,
@@ -165,6 +164,21 @@ export const notificationQueue = new Queue<NotificationQueuePayload>(
     },
   },
 );
+
+export type ImportQueuePayload = {
+  type: 'import';
+  payload: {
+    importId: string;
+  };
+};
+
+export const importQueue = new Queue<ImportQueuePayload>('import', {
+  connection: getRedisQueue(),
+  defaultJobOptions: {
+    removeOnComplete: 10,
+    removeOnFail: 50,
+  },
+});
 
 export function addTrialEndingSoonJob(organizationId: string, delay: number) {
   return miscQueue.add(

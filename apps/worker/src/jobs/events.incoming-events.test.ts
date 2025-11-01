@@ -99,7 +99,7 @@ describe('incomingEvent', () => {
       origin: 'https://example.com',
       referrer: '',
       referrerName: '',
-      referrerType: 'unknown',
+      referrerType: '',
       sdkName: jobData.payload.headers['openpanel-sdk-name'],
       sdkVersion: jobData.payload.headers['openpanel-sdk-version'],
     };
@@ -207,7 +207,7 @@ describe('incomingEvent', () => {
       origin: 'https://example.com',
       referrer: '',
       referrerName: '',
-      referrerType: 'unknown',
+      referrerType: '',
       sdkName: jobData.payload.headers['openpanel-sdk-name'],
       sdkVersion: jobData.payload.headers['openpanel-sdk-version'],
     };
