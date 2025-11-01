@@ -146,15 +146,9 @@ const startServer = async () => {
           try {
             const sessionId = decodeSessionToken(req.cookies.session);
             const session = await runWithAlsSession(sessionId, () =>
-              sessionId
-                ? getCache(`validateSession:${sessionId}`, 60 * 5, async () =>
-                    validateSessionToken(req.cookies.session),
-                  )
-                : validateSessionToken(req.cookies.session),
+              validateSessionToken(req.cookies.session),
             );
-            if (session.session) {
-              req.session = session;
-            }
+            req.session = session;
           } catch (e) {
             req.session = EMPTY_SESSION;
           }

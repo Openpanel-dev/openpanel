@@ -95,7 +95,8 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 
 // Only used on protected routes
 const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
-  return runWithAlsSession(ctx.session.session?.id, async () => {
+  const sessionId = ctx.session?.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
     const rawInput = await getRawInput();
     if (type === 'mutation' && process.env.DEMO_USER_ID) {
       throw new TRPCError({
@@ -153,7 +154,7 @@ const loggerMiddleware = t.middleware(
 );
 
 const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
-  const sessionId = ctx.session.session?.id ?? null;
+  const sessionId = ctx.session?.session?.id ?? null;
   return runWithAlsSession(sessionId, async () => {
     return next();
   });

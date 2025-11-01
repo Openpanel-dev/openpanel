@@ -75,7 +75,6 @@ export const authRouter = createTRPCRouter({
     deleteSessionTokenCookie(ctx.setCookie);
     if (ctx.session?.session?.id) {
       await invalidateSession(ctx.session.session.id);
-      await deleteCache(`validateSession:${ctx.session.session.id}`);
     }
   }),
   signInOAuth: publicProcedure
@@ -226,9 +225,7 @@ export const authRouter = createTRPCRouter({
 
       const token = generateSessionToken();
       const session = await createSession(token, user.id);
-      console.log('session', session);
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
-      console.log('ctx.setCookie', ctx.setCookie);
       return {
         type: 'email',
       };
@@ -335,7 +332,6 @@ export const authRouter = createTRPCRouter({
     const session = await validateSessionToken(token);
 
     if (session.session) {
-      await deleteCache(`validateSession:${session.session.id}`);
       // Re-set the cookie with updated expiration
       setSessionTokenCookie(ctx.setCookie, token, session.session.expiresAt);
       return {
