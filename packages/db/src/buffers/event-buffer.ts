@@ -61,54 +61,49 @@ export class EventBuffer extends BaseBuffer {
   }
 
   /**
-   * Lua script for handling screen_view addition:
-   * - Get previous screen_view from Redis (by session)
-   * - If exists, calculate duration and add to queue
-   * - Store new screen_view as "last" for both session and profile keys
+   * Lua script for handling screen_view addition - RACE-CONDITION SAFE without GroupMQ
    *
-   * KEYS[1] = last screen_view key (by session)
-   * KEYS[2] = last screen_view timestamp key (by session)
-   * KEYS[3] = last screen_view key (by profile, may be empty)
-   * KEYS[4] = last screen_view timestamp key (by profile, may be empty)
-   * KEYS[5] = queue key
-   * KEYS[6] = buffer counter key
-   * ARGV[1] = new event JSON
-   * ARGV[2] = new event timestamp (epoch ms)
-   * ARGV[3] = TTL for last screen_view (1 hour)
+   * Strategy: Use Redis GETDEL (atomic get-and-delete) to ensure only ONE thread
+   * can process the "last" screen_view at a time.
+   *
+   * KEYS[1] = last screen_view key (by session) - stores both event and timestamp as JSON
+   * KEYS[2] = last screen_view key (by profile, may be empty)
+   * KEYS[3] = queue key
+   * KEYS[4] = buffer counter key
+   * ARGV[1] = new event with timestamp as JSON: {"event": {...}, "ts": 123456}
+   * ARGV[2] = TTL for last screen_view (1 hour)
    */
   private readonly addScreenViewScript = `
 local sessionKey = KEYS[1]
-local sessionTsKey = KEYS[2]
-local profileKey = KEYS[3]
-local profileTsKey = KEYS[4]
-local queueKey = KEYS[5]
-local counterKey = KEYS[6]
-local newEventJson = ARGV[1]
-local newTimestamp = tonumber(ARGV[2])
-local ttl = tonumber(ARGV[3])
+local profileKey = KEYS[2]
+local queueKey = KEYS[3]
+local counterKey = KEYS[4]
+local newEventData = ARGV[1]
+local ttl = tonumber(ARGV[2])
 
--- Get previous event and its timestamp from session key
-local previousEventJson = redis.call("GET", sessionKey)
-local previousTimestamp = redis.call("GET", sessionTsKey)
+-- GETDEL is atomic: get previous and delete in one operation
+-- This ensures only ONE thread gets the previous event
+local previousEventData = redis.call("GETDEL", sessionKey)
 
 -- Store new screen_view as last for session
-redis.call("SET", sessionKey, newEventJson, "EX", ttl)
-redis.call("SET", sessionTsKey, newTimestamp, "EX", ttl)
+redis.call("SET", sessionKey, newEventData, "EX", ttl)
 
 -- Store new screen_view as last for profile (if key provided)
 if profileKey and profileKey ~= "" then
-  redis.call("SET", profileKey, newEventJson, "EX", ttl)
-  redis.call("SET", profileTsKey, newTimestamp, "EX", ttl)
+  redis.call("SET", profileKey, newEventData, "EX", ttl)
 end
 
 -- If there was a previous screen_view, add it to queue with calculated duration
-if previousEventJson and previousTimestamp then
-  local previousEvent = cjson.decode(previousEventJson)
-  local prevTs = tonumber(previousTimestamp)
-  if prevTs then
-    previousEvent.duration = newTimestamp - prevTs
+if previousEventData then
+  local prev = cjson.decode(previousEventData)
+  local curr = cjson.decode(newEventData)
+  
+  -- Calculate duration (ensure non-negative to handle clock skew)
+  if prev.ts and curr.ts then
+    prev.event.duration = math.max(0, curr.ts - prev.ts)
   end
-  redis.call("RPUSH", queueKey, cjson.encode(previousEvent))
+  
+  redis.call("RPUSH", queueKey, cjson.encode(prev.event))
   redis.call("INCR", counterKey)
   return 1
 end
@@ -117,36 +112,31 @@ return 0
 `;
 
   /**
-   * Lua script for handling session_end:
-   * - Get the last screen_view (by session)
-   * - Add screen_view to queue (if exists)
-   * - Add session_end to queue
-   * - Delete last screen_view keys (both session and profile)
+   * Lua script for handling session_end - RACE-CONDITION SAFE
+   *
+   * Uses GETDEL to atomically retrieve and delete the last screen_view
    *
    * KEYS[1] = last screen_view key (by session)
-   * KEYS[2] = last screen_view timestamp key (by session)
-   * KEYS[3] = last screen_view key (by profile, may be empty)
-   * KEYS[4] = last screen_view timestamp key (by profile, may be empty)
-   * KEYS[5] = queue key
-   * KEYS[6] = buffer counter key
+   * KEYS[2] = last screen_view key (by profile, may be empty)
+   * KEYS[3] = queue key
+   * KEYS[4] = buffer counter key
    * ARGV[1] = session_end event JSON
    */
   private readonly addSessionEndScript = `
 local sessionKey = KEYS[1]
-local sessionTsKey = KEYS[2]
-local profileKey = KEYS[3]
-local profileTsKey = KEYS[4]
-local queueKey = KEYS[5]
-local counterKey = KEYS[6]
+local profileKey = KEYS[2]
+local queueKey = KEYS[3]
+local counterKey = KEYS[4]
 local sessionEndJson = ARGV[1]
 
--- Get previous event from session key
-local previousEventJson = redis.call("GET", sessionKey)
+-- GETDEL is atomic: only ONE thread gets the last screen_view
+local previousEventData = redis.call("GETDEL", sessionKey)
 local added = 0
 
 -- If there was a previous screen_view, add it to queue
-if previousEventJson then
-  redis.call("RPUSH", queueKey, previousEventJson)
+if previousEventData then
+  local prev = cjson.decode(previousEventData)
+  redis.call("RPUSH", queueKey, cjson.encode(prev.event))
   redis.call("INCR", counterKey)
   added = added + 1
 end
@@ -156,10 +146,9 @@ redis.call("RPUSH", queueKey, sessionEndJson)
 redis.call("INCR", counterKey)
 added = added + 1
 
--- Delete last screen_view from both keys (event and timestamp)
-redis.call("DEL", sessionKey, sessionTsKey)
+-- Delete profile key
 if profileKey and profileKey ~= "" then
-  redis.call("DEL", profileKey, profileTsKey)
+  redis.call("DEL", profileKey)
 end
 
 return added
@@ -226,52 +215,49 @@ return added
       if (event.session_id && event.name === 'screen_view') {
         // Handle screen_view
         const sessionKey = this.getLastScreenViewKeyBySession(event.session_id);
-        const sessionTsKey = `${sessionKey}:ts`;
         const profileKey = event.profile_id
           ? this.getLastScreenViewKeyByProfile(
               event.project_id,
               event.profile_id,
             )
           : '';
-        const profileTsKey = profileKey ? `${profileKey}:ts` : '';
         const timestamp = new Date(event.created_at || Date.now()).getTime();
+
+        // Combine event and timestamp into single JSON for atomic operations
+        const eventWithTimestamp = JSON.stringify({
+          event: event,
+          ts: timestamp,
+        });
 
         this.evalScript(
           multi,
           'addScreenView',
           this.addScreenViewScript,
-          6,
+          4,
           sessionKey,
-          sessionTsKey,
           profileKey,
-          profileTsKey,
           this.queueKey,
           this.bufferCounterKey,
-          eventJson,
-          timestamp.toString(),
+          eventWithTimestamp,
           '3600', // 1 hour TTL
         );
       } else if (event.session_id && event.name === 'session_end') {
         // Handle session_end
         const sessionKey = this.getLastScreenViewKeyBySession(event.session_id);
-        const sessionTsKey = `${sessionKey}:ts`;
         const profileKey = event.profile_id
           ? this.getLastScreenViewKeyByProfile(
               event.project_id,
               event.profile_id,
             )
           : '';
-        const profileTsKey = profileKey ? `${profileKey}:ts` : '';
 
         this.evalScript(
           multi,
           'addSessionEnd',
           this.addSessionEndScript,
-          6,
+          4,
           sessionKey,
-          sessionTsKey,
           profileKey,
-          profileTsKey,
           this.queueKey,
           this.bufferCounterKey,
           eventJson,
@@ -433,12 +419,14 @@ return added
       );
     }
 
-    const eventStr = await redis.get(lastScreenViewKey);
+    const eventDataStr = await redis.get(lastScreenViewKey);
 
-    if (eventStr) {
-      const parsed = getSafeJson<IClickhouseEvent>(eventStr);
-      if (parsed) {
-        return transformEvent(parsed);
+    if (eventDataStr) {
+      const eventData = getSafeJson<{ event: IClickhouseEvent; ts: number }>(
+        eventDataStr,
+      );
+      if (eventData?.event) {
+        return transformEvent(eventData.event);
       }
     }
 
