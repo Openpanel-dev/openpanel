@@ -12,6 +12,7 @@ import {
 import { cn } from '@/utils/cn';
 import { createProjectTitle } from '@/utils/title';
 import {
+  CopyIcon,
   LayoutPanelTopIcon,
   MoreHorizontal,
   PlusIcon,
@@ -122,6 +123,7 @@ function ReportItem({
   endDate,
   interval,
   onDelete,
+  onDuplicate,
 }: {
   report: any;
   organizationId: string;
@@ -131,6 +133,7 @@ function ReportItem({
   endDate: any;
   interval: any;
   onDelete: (reportId: string) => void;
+  onDuplicate: (reportId: string) => void;
 }) {
   const router = useRouter();
   const chartRange = report.range;
@@ -218,6 +221,15 @@ function ReportItem({
               <MoreHorizontal size={16} />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[200px]">
+              <DropdownMenuItem
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDuplicate(report.id);
+                }}
+              >
+                <CopyIcon size={16} className="mr-2" />
+                Duplicate
+              </DropdownMenuItem>
               <DropdownMenuGroup>
                 <DropdownMenuItem
                   className="text-destructive"
@@ -316,6 +328,16 @@ function Component() {
       onSuccess() {
         reportsQuery.refetch();
         toast('Report deleted');
+      },
+    }),
+  );
+
+  const reportDuplicate = useMutation(
+    trpc.report.duplicate.mutationOptions({
+      onError: handleErrorToastOptions({}),
+      onSuccess() {
+        reportsQuery.refetch();
+        toast('Report duplicated');
       },
     }),
   );
@@ -564,6 +586,9 @@ function Component() {
                   interval={interval}
                   onDelete={(reportId) => {
                     reportDeletion.mutate({ reportId });
+                  }}
+                  onDuplicate={(reportId) => {
+                    reportDuplicate.mutate({ reportId });
                   }}
                 />
               </div>

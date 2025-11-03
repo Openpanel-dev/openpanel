@@ -135,6 +135,49 @@ export const reportRouter = createTRPCRouter({
         },
       });
     }),
+  duplicate: protectedProcedure
+    .input(
+      z.object({
+        reportId: z.string(),
+      }),
+    )
+    .mutation(async ({ input: { reportId }, ctx }) => {
+      const report = await db.report.findUniqueOrThrow({
+        where: {
+          id: reportId,
+        },
+      });
+
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: report.projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      return db.report.create({
+        data: {
+          projectId: report.projectId,
+          dashboardId: report.dashboardId,
+          name: `Copy of ${report.name}`,
+          events: report.events!,
+          interval: report.interval,
+          breakdowns: report.breakdowns!,
+          chartType: report.chartType,
+          lineType: report.lineType,
+          range: report.range,
+          formula: report.formula,
+          previous: report.previous,
+          unit: report.unit,
+          criteria: report.criteria,
+          metric: report.metric,
+          funnelGroup: report.funnelGroup,
+          funnelWindow: report.funnelWindow,
+        },
+      });
+    }),
   get: protectedProcedure
     .input(
       z.object({
