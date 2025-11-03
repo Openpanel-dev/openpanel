@@ -145,7 +145,6 @@ export const eventsGroupQueues = Array.from({
     new GroupQueue<EventsQueuePayloadIncomingEvent['payload']>({
       logger: queueLogger,
       namespace: `{group_events_${index}}`,
-      // @ts-expect-error - TODO: Fix this in groupmq
       redis: getRedisGroupQueue(),
       keepCompleted: 1_000,
       keepFailed: 10_000,
@@ -170,19 +169,16 @@ export const getEventsGroupQueueShard = (groupId: string) => {
 };
 
 export const sessionsQueue = new Queue<SessionsQueuePayload>('{sessions}', {
-  // @ts-ignore
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
   },
 });
 export const sessionsQueueEvents = new QueueEvents('{sessions}', {
-  // @ts-ignore
   connection: getRedisQueue(),
 });
 
 export const cronQueue = new Queue<CronQueuePayload>('{cron}', {
-  // @ts-ignore
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
@@ -190,7 +186,6 @@ export const cronQueue = new Queue<CronQueuePayload>('{cron}', {
 });
 
 export const miscQueue = new Queue<MiscQueuePayload>('{misc}', {
-  // @ts-ignore
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
@@ -207,7 +202,6 @@ export type NotificationQueuePayload = {
 export const notificationQueue = new Queue<NotificationQueuePayload>(
   '{notification}',
   {
-    // @ts-ignore
     connection: getRedisQueue(),
     defaultJobOptions: {
       removeOnComplete: 10,

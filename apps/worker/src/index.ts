@@ -31,7 +31,7 @@ async function start() {
   if (process.env.DISABLE_BULLBOARD === undefined) {
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath('/');
-    ({
+    createBullBoard({
       queues: [
         ...eventsGroupQueues.map(
           (queue) => new BullBoardGroupMQAdapter(queue) as any,
