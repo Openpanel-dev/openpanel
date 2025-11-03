@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { db } from '@openpanel/db';
 import { importQueue } from '@openpanel/queue';
-import { type IImportConfig, zCreateImport } from '@openpanel/validation';
+import { zCreateImport } from '@openpanel/validation';
 
-import { getProjectAccessCached } from '../access';
+import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -12,7 +12,7 @@ export const importRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
-      const access = await getProjectAccessCached({
+      const access = await getProjectAccess({
         projectId: input.projectId,
         userId: ctx.session.userId,
       });
@@ -43,7 +43,7 @@ export const importRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccessCached({
+      const access = await getProjectAccess({
         projectId: importRecord.projectId,
         userId: ctx.session.userId,
       });
@@ -58,7 +58,7 @@ export const importRouter = createTRPCRouter({
   create: protectedProcedure
     .input(zCreateImport)
     .mutation(async ({ input, ctx }) => {
-      const access = await getProjectAccessCached({
+      const access = await getProjectAccess({
         projectId: input.projectId,
         userId: ctx.session.userId,
       });
@@ -107,7 +107,7 @@ export const importRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccessCached({
+      const access = await getProjectAccess({
         projectId: importRecord.projectId,
         userId: ctx.session.userId,
       });
@@ -141,7 +141,7 @@ export const importRouter = createTRPCRouter({
         },
       });
 
-      const access = await getProjectAccessCached({
+      const access = await getProjectAccess({
         projectId: importRecord.projectId,
         userId: ctx.session.userId,
       });
