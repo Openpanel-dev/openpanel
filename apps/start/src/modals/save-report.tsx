@@ -1,15 +1,7 @@
 import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
-import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -58,6 +50,13 @@ export default function SaveReport({
     trpc.report.create.mutationOptions({
       onError: handleError,
       onSuccess(res) {
+        queryClient.invalidateQueries(
+          trpc.report.list.queryFilter({
+            dashboardId: res.dashboardId,
+            projectId,
+          }),
+        );
+
         const goToReport = () => {
           router.navigate({
             to: '/$organizationId/$projectId/reports/$reportId',
@@ -86,24 +85,6 @@ export default function SaveReport({
       },
     }),
   );
-  const dashboardMutation = useMutation(
-    trpc.dashboard.create.mutationOptions({
-      onError: handleError,
-      onSuccess(res) {
-        setValue('dashboardId', res.id);
-        dashboardQuery.refetch();
-        queryClient.invalidateQueries(trpc.report.list.pathFilter());
-        toast('Success', {
-          description: 'Dashboard created.',
-        });
-      },
-    }),
-  );
-  const dashboardQuery = useQuery(
-    trpc.dashboard.list.queryOptions({
-      projectId: projectId!,
-    }),
-  );
 
   const { register, handleSubmit, formState, control, setValue } =
     useForm<IForm>({
@@ -113,11 +94,6 @@ export default function SaveReport({
         dashboardId,
       },
     });
-
-  const dashboards = (dashboardQuery.data ?? []).map((item) => ({
-    value: item.id,
-    label: item.name,
-  }));
 
   return (
     <ModalContent>
