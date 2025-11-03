@@ -12,7 +12,7 @@ import type { TrackPayload } from '@openpanel/sdk';
 import { Queue as GroupQueue } from 'groupmq';
 
 export const EVENTS_GROUP_QUEUES_SHARDS = Number.parseInt(
-  process.env.EVENTS_GROUP_QUEUES_SHARDS || '3',
+  process.env.EVENTS_GROUP_QUEUES_SHARDS || '1',
   10,
 );
 
