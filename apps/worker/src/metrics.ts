@@ -20,7 +20,6 @@ export const eventsGroupJobDuration = new client.Histogram({
   help: 'Duration of job processing in eventsGroupQueues (in ms)',
   labelNames: ['queue_shard', 'status'],
   buckets: [10, 25, 50, 100, 250, 500, 750, 1000, 2000, 5000, 10000, 30000], // 10ms to 30s
-  registers: [register],
 });
 
 register.registerMetric(eventsGroupJobDuration);

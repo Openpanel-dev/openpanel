@@ -4,7 +4,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
-  eventsGroupQueue,
+  eventsGroupQueues,
   importQueue,
   miscQueue,
   notificationQueue,

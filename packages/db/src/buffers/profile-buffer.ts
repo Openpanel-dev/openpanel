@@ -49,7 +49,7 @@ export class ProfileBuffer extends BaseBuffer {
       profileId: profile.id,
       projectId: profile.project_id,
     });
-    return (await getRedisCache().exists(cacheKey)) === 1;
+    return (await this.redis.exists(cacheKey)) === 1;
   }
 
   async add(profile: IClickhouseProfile, isFromEvent = false) {
@@ -153,7 +153,7 @@ export class ProfileBuffer extends BaseBuffer {
       profileId,
       projectId,
     });
-    const existingProfile = await getRedisCache().get(cacheKey);
+    const existingProfile = await this.redis.get(cacheKey);
     if (!existingProfile) {
       return null;
     }

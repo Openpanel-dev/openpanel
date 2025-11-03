@@ -26,7 +26,6 @@ import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
 import { eventsGroupJobDuration } from './metrics';
 import { logger } from './utils/logger';
-import { requireSingleton } from './utils/singleton-lock';
 
 const workerOptions: WorkerOptions = {
   connection: getRedisQueue(),
@@ -85,15 +84,6 @@ function getConcurrencyFor(queueName: string, defaultValue = 1): number {
 
 export async function bootWorkers() {
   const enabledQueues = getEnabledQueues();
-  const enforceSingleton = process.env.ENFORCE_SINGLETON === '1';
-  let singletonCleanup: (() => void) | null = null;
-
-  // Enforce singleton lock if requested
-  if (enforceSingleton) {
-    const lockKey = enabledQueues.join(',');
-    logger.info('Enforcing singleton mode', { lockKey });
-    singletonCleanup = await requireSingleton(lockKey);
-  }
 
   const workers: (Worker | GroupWorker<any>)[] = [];
 
@@ -132,22 +122,7 @@ export async function bootWorkers() {
         process.env.EVENT_BLOCKING_TIMEOUT_SEC || '1',
       ),
       handler: async (job) => {
-        if (await getLock(job.id, '1', 10000)) {
-          logger.info('worker handler', {
-            jobId: job.id,
-            groupId: job.groupId,
-            timestamp: job.data.event.timestamp,
-            data: job.data,
-          });
-        } else {
-          logger.info('event already processed', {
-            jobId: job.id,
-            groupId: job.groupId,
-            timestamp: job.data.event.timestamp,
-            data: job.data,
-          });
-        }
-        await incomingEventPure(job.data);
+        return await incomingEventPure(job.data);
       },
     });
 
@@ -293,11 +268,6 @@ export async function bootWorkers() {
       }
 
       await Promise.all(workers.map((worker) => worker.close()));
-
-      // Release singleton lock if acquired
-      if (singletonCleanup) {
-        singletonCleanup();
-      }
 
       logger.info('workers closed successfully', {
         elapsed: performance.now() - time,
