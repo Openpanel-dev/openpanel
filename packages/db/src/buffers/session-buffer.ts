@@ -212,7 +212,7 @@ export class SessionBuffer extends BaseBuffer {
           };
         });
 
-      for (const chunk of this.chunks(sessions, 1000)) {
+      for (const chunk of this.chunks(sessions, this.chunkSize)) {
         // Insert to ClickHouse
         await ch.insert({
           table: TABLE_NAMES.sessions,

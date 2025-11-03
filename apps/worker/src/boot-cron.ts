@@ -45,7 +45,7 @@ export async function bootCron() {
     });
   }
 
-  const lock = await getLock('cron:lock', '1', 1000 * 60 * 60 * 5);
+  const lock = await getLock('cron:lock', '1', 1000 * 60 * 5);
 
   if (lock) {
     logger.info('Cron lock acquired');
