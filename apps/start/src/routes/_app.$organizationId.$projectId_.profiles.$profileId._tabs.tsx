@@ -6,12 +6,9 @@ import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { useTRPC } from '@/integrations/trpc/react';
-import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
-import { CheckIcon, CopyIcon } from 'lucide-react';
-import { useState } from 'react';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs',
@@ -62,7 +59,9 @@ function Component() {
           <div className="row items-center gap-4 min-w-0">
             <ProfileAvatar {...profile.data} />
             <span className="truncate">
-              {getProfileName(profile.data, false)}
+              {profile.data
+                ? getProfileName(profile.data, false)
+                : 'User not identified'}
             </span>
           </div>
         }

@@ -5,6 +5,7 @@ import { formatDateTime } from '@/utils/date';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 
 import type { IServiceEvent, IServiceProfile } from '@openpanel/db';
+import { FullPageEmptyState } from '../full-page-empty-state';
 import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 
 type Props = {
@@ -44,7 +45,7 @@ export const ProfileProperties = ({ profile }: Props) => {
         </WidgetButtons>
       </WidgetHead>
 
-      {tab === 'profile' && (
+      {tab === 'profile' && profile && (
         <KeyValueGrid
           copyable
           className="border-0"
@@ -92,7 +93,7 @@ export const ProfileProperties = ({ profile }: Props) => {
         />
       )}
 
-      {tab === 'properties' && (
+      {tab === 'properties' && profile && (
         <KeyValueGrid
           copyable
           className="border-0"
@@ -108,6 +109,9 @@ export const ProfileProperties = ({ profile }: Props) => {
               } as unknown as IServiceEvent,
             }))}
         />
+      )}
+      {(!profile || !profile.properties) && (
+        <FullPageEmptyState title="No properties found" />
       )}
     </Widget>
   );

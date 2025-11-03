@@ -41,12 +41,6 @@ export const Route = createFileRoute(
           projectId: params.projectId,
         }),
       ),
-      context.queryClient.prefetchQuery(
-        context.trpc.event.events.queryOptions({
-          profileId: params.profileId,
-          projectId: params.projectId,
-        }),
-      ),
     ]);
   },
   pendingComponent: FullPageLoadingState,
@@ -56,7 +50,6 @@ function Component() {
   const { profileId, projectId, organizationId } = Route.useParams();
   const trpc = useTRPC();
 
-  // Get profile data from parent route
   const profile = useSuspenseQuery(
     trpc.profile.byId.queryOptions({
       profileId,
