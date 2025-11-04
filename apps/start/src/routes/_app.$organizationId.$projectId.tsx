@@ -1,5 +1,7 @@
-import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
+import {
+  OverviewFilterButton,
+  OverviewFiltersButtons,
+} from '@/components/overview/filters/overview-filters-buttons';
 import { LiveCounter } from '@/components/overview/live-counter';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import OverviewMetrics from '@/components/overview/overview-metrics';
@@ -35,7 +37,7 @@ function ProjectDashboard() {
           <div className="flex gap-2">
             <OverviewRange />
             <OverviewInterval />
-            <OverviewFiltersDrawer projectId={projectId} mode="events" />
+            <OverviewFilterButton mode="events" />
           </div>
           <div className="flex gap-2">
             <LiveCounter projectId={projectId} />

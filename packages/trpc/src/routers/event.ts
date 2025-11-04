@@ -172,7 +172,7 @@ export const eventRouter = createTRPCRouter({
         data: items,
         meta: {
           next:
-            items.length === 50 && lastItem
+            items.length > 0 && lastItem
               ? lastItem.createdAt.toISOString()
               : null,
         },
@@ -190,12 +190,19 @@ export const eventRouter = createTRPCRouter({
         cursor: z.string().optional(),
         startDate: z.date().optional(),
         endDate: z.date().optional(),
+        events: z.array(z.string()).optional(),
       }),
     )
     .query(async ({ input }) => {
       const conversions = await getConversionEventNames(input.projectId);
+      const filteredConversions = conversions.filter((event) => {
+        if (input.events && input.events.length > 0) {
+          return input.events.includes(event.name);
+        }
+        return true;
+      });
 
-      if (conversions.length === 0) {
+      if (filteredConversions.length === 0) {
         return {
           data: [],
           meta: {
@@ -220,7 +227,7 @@ export const eventRouter = createTRPCRouter({
           origin: true,
         },
         custom: (sb) => {
-          sb.where.name = `name IN (${conversions.map((event) => sqlstring.escape(event.name)).join(',')})`;
+          sb.where.name = `name IN (${filteredConversions.map((event) => sqlstring.escape(event.name)).join(',')})`;
         },
       });
 
@@ -249,7 +256,7 @@ export const eventRouter = createTRPCRouter({
         data: items,
         meta: {
           next:
-            items.length === 50 && lastItem
+            items.length > 0 && lastItem
               ? lastItem.createdAt.toISOString()
               : null,
         },
@@ -354,15 +361,11 @@ export const eventRouter = createTRPCRouter({
     )
     .query(async ({ input }) => {
       const res = await chQuery<{ origin: string }>(
-        `SELECT DISTINCT origin FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(
+        `SELECT DISTINCT origin, count(id) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(
           input.projectId,
-        )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY ORDER BY origin ASC`,
+        )} AND origin IS NOT NULL AND origin != '' AND toDate(created_at) > now() - INTERVAL 30 DAY GROUP BY origin ORDER BY count DESC LIMIT 3`,
       );
 
-      return res.sort((a, b) =>
-        a.origin
-          .replace(/https?:\/\//, '')
-          .localeCompare(b.origin.replace(/https?:\/\//, '')),
-      );
+      return res;
     }),
 });

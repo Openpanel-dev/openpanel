@@ -680,12 +680,10 @@ clix.toStartOf = (node: string, interval: IInterval, timezone?: string) => {
       return `toStartOfDay(${node})`;
     }
     case 'week': {
-      // Does not respect timezone settings (session_timezone) so we need to pass it manually
-      return `toStartOfWeek(${node}${timezone ? `, 1, '${timezone}'` : ''})`;
+      return `toStartOfWeek(toDateTime(${node}))`;
     }
     case 'month': {
-      // Does not respect timezone settings (session_timezone) so we need to pass it manually
-      return `toStartOfMonth(${node}${timezone ? `, '${timezone}'` : ''})`;
+      return `toStartOfMonth(toDateTime(${node}))`;
     }
   }
 };

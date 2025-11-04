@@ -1,3 +1,4 @@
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
@@ -87,9 +88,10 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
   {
     accessorKey: 'createdAt',
     header: createHeaderColumn('Created at'),
-    cell({ row }) {
-      const date = row.original.createdAt;
-      return formatDate(date);
+    size: ColumnCreatedAt.size,
+    cell: ({ row }) => {
+      const item = row.original;
+      return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
     },
     filterFn: 'isWithinRange',
     sortingFn: 'datetime',

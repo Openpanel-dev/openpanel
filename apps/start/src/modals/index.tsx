@@ -23,6 +23,7 @@ import EditReport from './edit-report';
 import EventDetails from './event-details';
 import OnboardingTroubleshoot from './onboarding-troubleshoot';
 import OverviewChartDetails from './overview-chart-details';
+import OverviewFilters from './overview-filters';
 import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
 import ShareOverviewModal from './share-overview-modal';
@@ -52,6 +53,7 @@ const modals = {
   OverviewChartDetails: OverviewChartDetails,
   AddIntegration: AddIntegration,
   AddNotificationRule: AddNotificationRule,
+  OverviewFilters: OverviewFilters,
   CreateInvite: CreateInvite,
 };
 

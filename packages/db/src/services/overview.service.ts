@@ -200,6 +200,12 @@ export class OverviewService {
         ])
         .rawWhere(this.getRawWhereClause('events', filters));
 
+      // Use toDate for month/week intervals, toDateTime for others
+      const rollupDate =
+        interval === 'month' || interval === 'week'
+          ? clix.date('1970-01-01')
+          : clix.datetime('1970-01-01 00:00:00');
+
       return clix(this.client, timezone)
         .with('session_agg', sessionAggQuery)
         .with(
@@ -207,14 +213,14 @@ export class OverviewService {
           clix(this.client, timezone)
             .select(['bounce_rate'])
             .from('session_agg')
-            .where('date', '=', clix.datetime('1970-01-01 00:00:00')),
+            .where('date', '=', rollupDate),
         )
         .with(
           'daily_stats',
           clix(this.client, timezone)
             .select(['date', 'bounce_rate'])
             .from('session_agg')
-            .where('date', '!=', clix.datetime('1970-01-01 00:00:00')),
+            .where('date', '!=', rollupDate),
         )
         .with('overall_unique_visitors', overallUniqueVisitorsQuery)
         .select<{

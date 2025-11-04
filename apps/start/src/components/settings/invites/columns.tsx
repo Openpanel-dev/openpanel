@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef, Row } from '@tanstack/react-table';
 import { toast } from 'sonner';
 
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
 import type { RouterOutputs } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
@@ -39,13 +40,11 @@ export function useColumns(): ColumnDef<
     {
       accessorKey: 'createdAt',
       header: 'Created',
-      cell: ({ row }) => (
-        <TooltipComplete
-          content={new Date(row.original.createdAt).toLocaleString()}
-        >
-          {new Date(row.original.createdAt).toLocaleDateString()}
-        </TooltipComplete>
-      ),
+      size: ColumnCreatedAt.size,
+      cell: ({ row }) => {
+        const item = row.original;
+        return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
+      },
       meta: {
         label: 'Created',
       },

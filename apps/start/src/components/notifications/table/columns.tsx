@@ -2,6 +2,7 @@ import { formatDateTime, formatTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
 
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
@@ -162,14 +163,10 @@ export function useColumns() {
     {
       accessorKey: 'createdAt',
       header: 'Created at',
-      cell({ row }) {
-        const date = row.original.createdAt;
-        if (!date) {
-          return null;
-        }
-        return (
-          <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
-        );
+      size: ColumnCreatedAt.size,
+      cell: ({ row }) => {
+        const item = row.original;
+        return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
       },
       filterFn: 'isWithinRange',
       meta: {

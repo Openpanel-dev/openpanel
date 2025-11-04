@@ -6,11 +6,11 @@ import { ChevronRightIcon, InfoIcon } from 'lucide-react';
 import { alphabetIds } from '@openpanel/constants';
 
 import { createChartTooltip } from '@/components/charts/chart-tooltip';
-import { BarShapeBlue } from '@/components/charts/common-bar';
+import { BarShapeBlue, BarShapeProps } from '@/components/charts/common-bar';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { WidgetTable } from '@/components/widget-table';
 import { useNumber } from '@/hooks/use-numer-formatter';
-import { getChartColor } from '@/utils/theme';
+import { getChartColor, getChartTranslucentColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
 import {
   Bar,
@@ -327,9 +327,17 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
               }
             />
             <YAxis {...yAxisProps} />
-            <Bar data={rechartData} dataKey="step:percent:0">
+            <Bar
+              data={rechartData}
+              dataKey="step:percent:0"
+              shape={<BarShapeProps />}
+            >
               {rechartData.map((item, index) => (
-                <Cell key={item.name} fill={getChartColor(index)} />
+                <Cell
+                  key={item.name}
+                  fill={getChartTranslucentColor(index)}
+                  stroke={getChartColor(index)}
+                />
               ))}
             </Bar>
             <Tooltip />
@@ -340,22 +348,30 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
   );
 }
 
+type Hej = RouterOutputs['chart']['funnel']['current'];
+
 const { Tooltip, TooltipProvider } = createChartTooltip<
   RechartData,
-  Record<string, unknown>
->(({ data: dataArray }) => {
+  {
+    data: RouterOutputs['chart']['funnel']['current'];
+  }
+>(({ data: dataArray, context, ...props }) => {
   const data = dataArray[0]!;
   const number = useNumber();
   const variants = Object.keys(data).filter((key) =>
     key.startsWith('step:data:'),
   ) as `step:data:${number}`[];
 
+  const index = context.data[0].steps.findIndex(
+    (step) => step.event.id === (data as any).id,
+  );
+
   return (
     <>
       <div className="flex justify-between gap-8 text-muted-foreground">
         <div>{data.name}</div>
       </div>
-      {variants.map((key, index) => {
+      {variants.map((key) => {
         const variant = data[key];
         const prevVariant = data[`prev_${key}`];
         if (!variant?.step) {

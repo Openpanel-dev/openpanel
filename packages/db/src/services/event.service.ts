@@ -1,4 +1,4 @@
-import { path, assocPath, last, mergeDeepRight } from 'ramda';
+import { path, assocPath, last, mergeDeepRight, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import { v4 as uuid } from 'uuid';
 
@@ -561,6 +561,15 @@ export async function getEventList(options: GetEventListOptions) {
       ...sb.where,
       ...getEventFiltersWhereClause(filters),
     };
+
+    // Join profiles table if any filter uses profile fields
+    const profileFilters = filters
+      .filter((f) => f.name.startsWith('profile.'))
+      .map((f) => f.name.replace('profile.', ''));
+
+    if (profileFilters.length > 0) {
+      sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+    }
   }
 
   sb.orderBy.created_at =
@@ -622,6 +631,15 @@ export async function getEventsCount({
       ...sb.where,
       ...getEventFiltersWhereClause(filters),
     };
+
+    // Join profiles table if any filter uses profile fields
+    const profileFilters = filters
+      .filter((f) => f.name.startsWith('profile.'))
+      .map((f) => f.name.replace('profile.', ''));
+
+    if (profileFilters.length > 0) {
+      sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+    }
   }
 
   const res = await chQuery<{ count: number }>(
@@ -701,6 +719,7 @@ class EventService {
     select,
     limit,
     orderBy,
+    filters,
   }: {
     projectId: string;
     profileId?: string;
@@ -715,7 +734,14 @@ class EventService {
     };
     limit?: number;
     orderBy?: keyof IClickhouseEvent;
+    filters?: IChartEventFilter[];
   }) {
+    // Extract profile filters if any
+    const profileFilters =
+      filters
+        ?.filter((f) => f.name.startsWith('profile.'))
+        .map((f) => f.name.replace('profile.', '')) ?? [];
+
     const events = clix(this.client)
       .select<
         Partial<IClickhouseEvent> & {
@@ -744,6 +770,12 @@ class EventService {
       ])
       .from('events e')
       .where('project_id', '=', projectId)
+      .when(profileFilters.length > 0, (q) => {
+        q.leftJoin(
+          `(SELECT id, ${uniq(profileFilters.map((f) => f.split('.')[0])).join(', ')} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
+          'profile.id = e.profile_id',
+        );
+      })
       .when(!!where?.event, where?.event)
       // Do not limit if profileId, we will limit later since we need the "correct" profileId
       .when(!!limit && !profileId, (q) => q.limit(limit!))
@@ -941,6 +973,7 @@ class EventService {
       profileId,
       limit,
       orderBy: 'created_at',
+      filters,
       select: {
         event: {
           deviceId: true,

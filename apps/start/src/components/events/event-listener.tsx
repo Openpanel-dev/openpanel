@@ -8,7 +8,8 @@ import { useDebounceState } from '@/hooks/use-debounce-state';
 import useWS from '@/hooks/use-ws';
 import { cn } from '@/utils/cn';
 
-import type { IServiceEventMinimal } from '@openpanel/db';
+import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/db';
+import { useParams } from '@tanstack/react-router';
 import { AnimatedNumber } from '../animated-number';
 
 export default function EventListener({
@@ -16,13 +17,24 @@ export default function EventListener({
 }: {
   onRefresh: () => void;
 }) {
+  const params = useParams({
+    strict: false,
+  });
   const { projectId } = useAppParams();
   const counter = useDebounceState(0, 1000);
-
-  useWS<IServiceEventMinimal>(
+  useWS<IServiceEventMinimal | IServiceEvent>(
     `/live/events/${projectId}`,
     (event) => {
-      if (event?.name) {
+      if (event) {
+        const isProfilePage = !!params?.profileId;
+        if (isProfilePage) {
+          const profile = 'profile' in event ? event.profile : null;
+          if (profile?.id === params?.profileId) {
+            counter.set((prev) => prev + 1);
+          }
+          return;
+        }
+
         counter.set((prev) => prev + 1);
       }
     },

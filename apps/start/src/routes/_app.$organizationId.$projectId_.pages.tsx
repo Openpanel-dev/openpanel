@@ -1,5 +1,5 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
+import { OverviewFilterButton } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
@@ -79,7 +79,7 @@ function Component() {
       <TableButtons>
         <OverviewRange />
         <OverviewInterval />
-        <OverviewFiltersDrawer projectId={projectId} mode="events" />
+        <OverviewFilterButton enableEventsFilter />
         <Input
           className="self-auto"
           placeholder="Search path"

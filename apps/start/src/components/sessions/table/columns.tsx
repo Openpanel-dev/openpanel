@@ -3,6 +3,7 @@ import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { getProfileName } from '@/utils/getters';
 import { round } from '@openpanel/common';
 import type { IServiceSession } from '@openpanel/db';
@@ -29,19 +30,10 @@ export function useColumns() {
     {
       accessorKey: 'createdAt',
       header: 'Started',
-      size: 140,
+      size: ColumnCreatedAt.size,
       cell: ({ row }) => {
-        const session = row.original;
-        return (
-          <div className="relative">
-            <div className="absolute inset-0 opacity-0 group-hover/row:opacity-100 transition-opacity duration-100">
-              {formatDateTime(session.createdAt)}
-            </div>
-            <div className="text-muted-foreground group-hover/row:opacity-0 transition-opacity duration-100">
-              {formatTimeAgoOrDateTime(session.createdAt)}
-            </div>
-          </div>
-        );
+        const item = row.original;
+        return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
       },
     },
     {

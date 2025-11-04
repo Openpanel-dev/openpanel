@@ -1,6 +1,8 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
+import {
+  OverviewFilterButton,
+  OverviewFiltersButtons,
+} from '@/components/overview/filters/overview-filters-buttons';
 import { Skeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
 import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
@@ -9,24 +11,19 @@ import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view
 import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
-import { arePropsEqual } from '@/utils/are-props-equal';
 import { cn } from '@/utils/cn';
 import type { IServiceEvent } from '@openpanel/db';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 import type { Table } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { Updater } from '@tanstack/react-table';
-import { ColumnOrderState } from '@tanstack/react-table';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
 import { format } from 'date-fns';
-import throttle from 'lodash.throttle';
-import { CalendarIcon, Loader2Icon } from 'lucide-react';
+import { CalendarIcon, FilterIcon, Loader2Icon } from 'lucide-react';
 import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 import { last } from 'ramda';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
-import { useLocalStorage } from 'usehooks-ts';
 import EventListener from '../event-listener';
 import { useColumns } from './columns';
 
@@ -328,11 +325,7 @@ function EventsTableToolbar({
             ? `${format(startDate, 'MMM d')} - ${format(endDate, 'MMM d')}`
             : 'Date range'}
         </Button>
-        <OverviewFiltersDrawer
-          mode="events"
-          projectId={projectId}
-          enableEventsFilter
-        />
+        <OverviewFilterButton enableEventsFilter />
         <OverviewFiltersButtons className="justify-end p-0" />
       </div>
       <DataTableViewOptions table={table} />

@@ -3,15 +3,34 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
+import { pushModal } from '@/modals';
+import type { OverviewFiltersProps } from '@/modals/overview-filters';
 import { getPropertyLabel } from '@/translations/properties';
 import { cn } from '@/utils/cn';
 import { operators } from '@openpanel/constants';
-import { X } from 'lucide-react';
+import { FilterIcon, X } from 'lucide-react';
 import type { Options as NuqsOptions } from 'nuqs';
 
 interface OverviewFiltersButtonsProps {
   className?: string;
   nuqsOptions?: NuqsOptions;
+}
+
+export function OverviewFilterButton(props: OverviewFiltersProps) {
+  return (
+    <Button
+      variant="outline"
+      responsive
+      icon={FilterIcon}
+      onClick={() =>
+        pushModal('OverviewFilters', {
+          ...props,
+        })
+      }
+    >
+      Filters
+    </Button>
+  );
 }
 
 export function OverviewFiltersButtons({

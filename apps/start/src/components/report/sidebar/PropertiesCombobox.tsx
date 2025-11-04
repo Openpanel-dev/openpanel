@@ -24,6 +24,8 @@ interface PropertiesComboboxProps {
     label: string;
     description: string;
   }) => void;
+  exclude?: string[];
+  mode?: 'events' | 'profile';
 }
 
 function SearchHeader({
@@ -56,6 +58,8 @@ export function PropertiesCombobox({
   event,
   children,
   onSelect,
+  mode,
+  exclude = [],
 }: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const [open, setOpen] = useState(false);
@@ -69,20 +73,35 @@ export function PropertiesCombobox({
 
   useEffect(() => {
     if (!open) {
-      setState('index');
+      setState(!mode ? 'index' : mode === 'events' ? 'event' : 'profile');
     }
-  }, [open]);
+  }, [open, mode]);
+
+  const shouldShowProperty = (property: string) => {
+    return !exclude.find((ex) => {
+      if (ex.endsWith('*')) {
+        return property.startsWith(ex.slice(0, -1));
+      }
+      return property === ex;
+    });
+  };
 
   // Mock data for the lists
   const profileActions = properties
-    .filter((property) => property.startsWith('profile'))
+    .filter(
+      (property) =>
+        property.startsWith('profile') && shouldShowProperty(property),
+    )
     .map((property) => ({
       value: property,
       label: property.split('.').pop() ?? property,
       description: property.split('.').slice(0, -1).join('.'),
     }));
   const eventActions = properties
-    .filter((property) => !property.startsWith('profile'))
+    .filter(
+      (property) =>
+        !property.startsWith('profile') && shouldShowProperty(property),
+    )
     .map((property) => ({
       value: property,
       label: property.split('.').pop() ?? property,
@@ -142,7 +161,9 @@ export function PropertiesCombobox({
     return (
       <div className="col">
         <SearchHeader
-          onBack={() => handleStateChange('index')}
+          onBack={
+            mode === undefined ? () => handleStateChange('index') : undefined
+          }
           onSearch={setSearch}
           value={search}
         />

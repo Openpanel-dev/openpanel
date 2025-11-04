@@ -4,46 +4,21 @@ import {
   isMinuteIntervalEnabledByRange,
 } from '@openpanel/constants';
 import { ClockIcon } from 'lucide-react';
+import { ReportInterval } from '../report/ReportInterval';
 import { Combobox } from '../ui/combobox';
 
 export function OverviewInterval() {
-  const { interval, setInterval, range } = useOverviewOptions();
+  const { interval, setInterval, range, startDate, endDate } =
+    useOverviewOptions();
 
   return (
-    <Combobox
-      className="hidden md:flex"
-      icon={ClockIcon}
-      placeholder="Interval"
-      onChange={(value) => {
-        setInterval(value);
-      }}
-      value={interval}
-      items={[
-        {
-          value: 'minute',
-          label: 'Minute',
-          disabled: !isMinuteIntervalEnabledByRange(range),
-        },
-        {
-          value: 'hour',
-          label: 'Hour',
-          disabled: !isHourIntervalEnabledByRange(range),
-        },
-        {
-          value: 'day',
-          label: 'Day',
-        },
-        {
-          value: 'week',
-          label: 'Week',
-        },
-        {
-          value: 'month',
-          label: 'Month',
-          disabled:
-            range === 'today' || range === 'lastHour' || range === '30min',
-        },
-      ]}
+    <ReportInterval
+      interval={interval}
+      onChange={setInterval}
+      range={range}
+      chartType="linear"
+      startDate={startDate}
+      endDate={endDate}
     />
   );
 }

@@ -1,5 +1,7 @@
-import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
-import { OverviewFiltersDrawer } from '@/components/overview/filters/overview-filters-drawer';
+import {
+  OverviewFilterButton,
+  OverviewFiltersButtons,
+} from '@/components/overview/filters/overview-filters-buttons';
 import { ReportChartShortcut } from '@/components/report-chart/shortcut';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import {
@@ -34,11 +36,7 @@ function Component() {
   return (
     <div>
       <div className="mb-2 flex items-center gap-2">
-        <OverviewFiltersDrawer
-          mode="events"
-          projectId={projectId}
-          enableEventsFilter
-        />
+        <OverviewFilterButton enableEventsFilter />
         <OverviewFiltersButtons className="justify-end p-0" />
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">

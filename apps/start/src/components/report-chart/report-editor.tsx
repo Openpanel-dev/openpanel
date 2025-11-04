@@ -96,6 +96,8 @@ export default function ReportEditor({
             onChange={(newInterval) => dispatch(changeInterval(newInterval))}
             range={report.range}
             chartType={report.chartType}
+            startDate={report.startDate}
+            endDate={report.endDate}
           />
           <ReportLineType className="min-w-0 flex-1" />
         </div>

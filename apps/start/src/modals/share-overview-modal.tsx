@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from '@tanstack/react-router';
+import { useNavigate } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -22,6 +22,7 @@ type IForm = z.infer<typeof validator>;
 
 export default function ShareOverviewModal() {
   const { projectId, organizationId } = useAppParams();
+  const navigate = useNavigate();
 
   const { register, handleSubmit } = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -44,6 +45,16 @@ export default function ShareOverviewModal() {
           description: `Your overview is now ${
             res.public ? 'public' : 'private'
           }`,
+          action: {
+            label: 'View',
+            onClick: () =>
+              navigate({
+                to: '/share/overview/$shareId',
+                params: {
+                  shareId: res.id,
+                },
+              }),
+          },
         });
         popModal();
       },

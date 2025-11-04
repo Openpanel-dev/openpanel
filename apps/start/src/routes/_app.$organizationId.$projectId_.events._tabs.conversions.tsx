@@ -1,4 +1,5 @@
 import { EventsTable } from '@/components/events/table';
+import { useEventQueryNamesFilter } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -18,12 +19,14 @@ function Component() {
     parseAsIsoDateTime,
   );
   const [endDate, setEndDate] = useQueryState('endDate', parseAsIsoDateTime);
+  const [eventNames] = useEventQueryNamesFilter();
   const query = useInfiniteQuery(
     trpc.event.conversions.infiniteQueryOptions(
       {
         projectId,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        events: eventNames,
       },
       {
         getNextPageParam: (lastPage) => lastPage.meta.next,

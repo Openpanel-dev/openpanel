@@ -1,4 +1,3 @@
-import { useDispatch, useSelector } from '@/redux';
 import { ClockIcon } from 'lucide-react';
 
 import {
@@ -8,6 +7,7 @@ import {
 
 import { cn } from '@/utils/cn';
 import type { IChartRange, IChartType, IInterval } from '@openpanel/validation';
+import { differenceInDays, isSameDay } from 'date-fns';
 import { Button } from '../ui/button';
 import { CommandShortcut } from '../ui/command';
 import {
@@ -20,7 +20,6 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
-import { changeInterval } from './reportSlice';
 
 interface ReportIntervalProps {
   className?: string;
@@ -28,6 +27,8 @@ interface ReportIntervalProps {
   onChange: (range: IInterval) => void;
   chartType: IChartType;
   range: IChartRange;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 export function ReportInterval({
   className,
@@ -35,6 +36,8 @@ export function ReportInterval({
   onChange,
   chartType,
   range,
+  startDate,
+  endDate,
 }: ReportIntervalProps) {
   if (
     chartType !== 'linear' &&
@@ -47,6 +50,11 @@ export function ReportInterval({
     return null;
   }
 
+  let isHourIntervalEnabled = isHourIntervalEnabledByRange(range);
+  if (startDate && endDate && range === 'custom') {
+    isHourIntervalEnabled = differenceInDays(endDate, startDate) <= 4;
+  }
+
   const items = [
     {
       value: 'minute',
@@ -56,7 +64,7 @@ export function ReportInterval({
     {
       value: 'hour',
       label: 'Hour',
-      disabled: !isHourIntervalEnabledByRange(range),
+      disabled: !isHourIntervalEnabled,
     },
     {
       value: 'day',

@@ -149,7 +149,7 @@ export function Chart({ data }: Props) {
               <ReferenceLine
                 key={ref.id}
                 x={ref.date.getTime()}
-                stroke={'#94a3b8'}
+                stroke={'oklch(from var(--foreground) l c h / 0.1)'}
                 strokeDasharray={'3 3'}
                 label={{
                   value: ref.title,

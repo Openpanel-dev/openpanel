@@ -8,6 +8,7 @@ import { isToday } from 'date-fns';
 
 import type { IServiceProfile } from '@openpanel/db';
 
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProfileAvatar } from '../profile-avatar';
 
 export function useColumns(type: 'profiles' | 'power-users') {
@@ -100,17 +101,10 @@ export function useColumns(type: 'profiles' | 'power-users') {
     {
       accessorKey: 'createdAt',
       header: 'Last seen',
+      size: ColumnCreatedAt.size,
       cell: ({ row }) => {
-        const profile = row.original;
-        return (
-          <Tooltiper asChild content={formatDateTime(profile.createdAt)}>
-            <div className="text-muted-foreground">
-              {isToday(profile.createdAt)
-                ? formatTime(profile.createdAt)
-                : formatDateTime(profile.createdAt)}
-            </div>
-          </Tooltiper>
-        );
+        const item = row.original;
+        return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
       },
     },
   ];

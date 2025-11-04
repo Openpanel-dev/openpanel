@@ -32,6 +32,8 @@ export function formatDateTime(date: Date) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
+    year:
+      date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
   }).format(date);
 
   return `${datePart}, ${timePart}`;

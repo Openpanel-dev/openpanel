@@ -3,10 +3,11 @@ import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
-import { formatDateTime, formatTimeAgoOrDateTime } from '@/utils/date';
+import { formatDateTime, formatTimeAgoOrDateTime, timeAgo } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import type { IServiceEvent } from '@openpanel/db';
 
@@ -16,19 +17,10 @@ export function useColumns() {
     {
       accessorKey: 'createdAt',
       header: 'Created at',
-      size: 140,
+      size: ColumnCreatedAt.size,
       cell: ({ row }) => {
         const session = row.original;
-        return (
-          <div className="relative">
-            <div className="absolute inset-0 opacity-0 group-hover/row:opacity-100 transition-opacity duration-100">
-              {formatDateTime(session.createdAt)}
-            </div>
-            <div className="text-muted-foreground group-hover/row:opacity-0 transition-opacity duration-100">
-              {formatTimeAgoOrDateTime(session.createdAt)}
-            </div>
-          </div>
-        );
+        return <ColumnCreatedAt>{session.createdAt}</ColumnCreatedAt>;
       },
     },
     {

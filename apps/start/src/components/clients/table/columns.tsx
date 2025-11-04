@@ -2,6 +2,7 @@ import { formatDateTime, formatTime } from '@/utils/date';
 import type { ColumnDef } from '@tanstack/react-table';
 import { isToday } from 'date-fns';
 
+import { ColumnCreatedAt } from '@/components/column-created-at';
 import CopyInput from '@/components/forms/copy-input';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
@@ -30,11 +31,10 @@ export function useColumns() {
     {
       accessorKey: 'createdAt',
       header: 'Created at',
-      cell({ row }) {
-        const date = row.original.createdAt;
-        return (
-          <div>{isToday(date) ? formatTime(date) : formatDateTime(date)}</div>
-        );
+      size: ColumnCreatedAt.size,
+      cell: ({ row }) => {
+        const item = row.original;
+        return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
       },
     },
     createActionColumn(({ row }) => {
