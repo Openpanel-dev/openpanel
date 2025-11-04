@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "deploy": "npx wrangler deploy",
     "cf-typegen": "wrangler types",
-    "build": "vite build",
+    "build": "pnpm with-env vite build",
     "serve": "vite preview",
     "test": "vitest run",
     "format": "biome format",
