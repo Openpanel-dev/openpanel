@@ -209,6 +209,8 @@ export async function importJob(job: Job<ImportQueuePayload>) {
         await updateImportStatus(jobLogger, job, importId, {
           step: 'loading',
           batch: createdAt,
+          totalEvents,
+          processedEvents,
         });
 
         // Yield control back to event loop after processing final batch

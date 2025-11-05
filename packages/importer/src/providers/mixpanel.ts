@@ -52,18 +52,54 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
   ): AsyncGenerator<MixpanelRawEvent, void, unknown> {
     const { serviceAccount, serviceSecret, projectId, from, to } = this.config;
 
-    // Split the date range into monthly chunks for reliability
+    // Split the date range into daily chunks for reliability
     // Uses base class utility to avoid timeout issues with large date ranges
-    const dateChunks = this.getDateChunks(overrideFrom ?? from, to); // 1 month per chunk
+    const dateChunks = this.getDateChunks(overrideFrom ?? from, to); // 1 day per chunk (default)
 
     for (const [chunkFrom, chunkTo] of dateChunks) {
-      yield* this.fetchEventsForDateRange(
-        serviceAccount,
-        serviceSecret,
-        projectId,
-        chunkFrom,
-        chunkTo,
-      );
+      let retries = 0;
+      const maxRetries = 3;
+
+      while (retries <= maxRetries) {
+        try {
+          yield* this.fetchEventsForDateRange(
+            serviceAccount,
+            serviceSecret,
+            projectId,
+            chunkFrom,
+            chunkTo,
+          );
+          break; // Success, move to next chunk
+        } catch (error) {
+          retries++;
+          const isLastRetry = retries > maxRetries;
+
+          this.logger?.warn('Failed to fetch events for date range', {
+            chunkFrom,
+            chunkTo,
+            attempt: retries,
+            maxRetries,
+            error: (error as Error).message,
+            willRetry: !isLastRetry,
+          });
+
+          if (isLastRetry) {
+            // Final attempt failed, re-throw
+            throw new Error(
+              `Failed to fetch Mixpanel events for ${chunkFrom} to ${chunkTo} after ${maxRetries} retries: ${(error as Error).message}`,
+            );
+          }
+
+          // Exponential backoff: wait before retrying
+          const delay = Math.min(1000 * 2 ** (retries - 1), 60_000); // Cap at 1 minute
+          this.logger?.info('Retrying after delay', {
+            delayMs: delay,
+            chunkFrom,
+            chunkTo,
+          });
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
     }
   }
 
@@ -131,7 +167,10 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
               const event = JSON.parse(line);
               yield event;
             } catch (error) {
-              console.warn('Failed to parse Mixpanel event:', line);
+              this.logger?.warn('Failed to parse Mixpanel event', {
+                line: line.substring(0, 100),
+                error,
+              });
             }
           }
         }
@@ -143,7 +182,13 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
           const event = JSON.parse(buffer);
           yield event;
         } catch (error) {
-          console.warn('Failed to parse final Mixpanel event:', buffer);
+          this.logger?.warn(
+            'Failed to parse Mixpanel event (remaining buffer)',
+            {
+              line: buffer.substring(0, 100),
+              error,
+            },
+          );
         }
       }
     } finally {

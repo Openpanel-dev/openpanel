@@ -259,7 +259,7 @@ export async function createSessionsStartEndEvents(
     // Parse timestamps as Date objects to calculate duration
     const firstTime = new Date(session.first_timestamp).getTime();
     const lastTime = new Date(session.last_timestamp).getTime();
-    const durationMs = lastTime - firstTime;
+    const durationMs = Math.max(0, lastTime - firstTime); // Ensure non-negative duration
 
     // Helper function to adjust timestamp by milliseconds without timezone conversion
     const adjustTimestamp = (timestamp: string, offsetMs: number): string => {
@@ -517,7 +517,7 @@ export async function backfillSessionsToProduction(
       argMax(e.created_at, e.created_at) as ended_at,
       if(
         argMaxIf(e.properties['__bounce'], e.created_at, e.name = 'session_end') = '',
-        if(countIf(e.name = 'screen_view') > 1, true, false),
+        if(countIf(e.name = 'screen_view') > 1, false, true),
         argMaxIf(e.properties['__bounce'], e.created_at, e.name = 'session_end') = 'true'
       ) as is_bounce,
       argMinIf(e.origin, e.created_at, e.name = 'session_start') as entry_origin,
