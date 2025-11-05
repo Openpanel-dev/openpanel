@@ -34,7 +34,7 @@ async function yieldToEventLoop(): Promise<void> {
 export async function importJob(job: Job<ImportQueuePayload>) {
   const { importId } = job.data.payload;
 
-  const record = await db.import.findUniqueOrThrow({
+  const record = await db.$primary().import.findUniqueOrThrow({
     where: { id: importId },
     include: {
       project: true,
