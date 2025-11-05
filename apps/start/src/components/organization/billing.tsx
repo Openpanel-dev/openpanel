@@ -1,42 +1,52 @@
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Tooltiper } from '@/components/ui/tooltip';
-import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
-import { useAppParams } from '@/hooks/use-app-params';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
-import { showConfirm } from '@/modals';
-import { op } from '@/utils/op';
+import { pushModal, useOnPushModal } from '@/modals';
+import { formatDate } from '@/utils/date';
 import type { IServiceOrganization } from '@openpanel/db';
-import type { IPolarPrice } from '@openpanel/payments';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2Icon } from 'lucide-react';
+import { differenceInDays } from 'date-fns';
 import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { Progress } from '../ui/progress';
+import { Widget, WidgetBody, WidgetHead } from '../widget';
+import { BillingFaq } from './billing-faq';
+import BillingUsage from './billing-usage';
 
 type Props = {
   organization: IServiceOrganization;
 };
 
 export default function Billing({ organization }: Props) {
+  const [success, setSuccess] = useQueryState('customer_session_token');
   const queryClient = useQueryClient();
   const trpc = useTRPC();
-  const [customerSessionToken, setCustomerSessionToken] = useQueryState(
-    'customer_session_token',
-  );
+  const number = useNumber();
+
   const productsQuery = useQuery(
     trpc.subscription.products.queryOptions({
       organizationId: organization.id,
+    }),
+  );
+
+  const currentProductQuery = useQuery(
+    trpc.subscription.getCurrent.queryOptions({
+      organizationId: organization.id,
+    }),
+  );
+
+  const portalMutation = useMutation(
+    trpc.subscription.portal.mutationOptions({
+      onSuccess(data) {
+        if (data?.url) {
+          window.location.href = data.url;
+        }
+      },
+      onError(error) {
+        toast.error(error.message);
+      },
     }),
   );
 
@@ -54,378 +64,228 @@ export default function Billing({ organization }: Props) {
       .filter((product) => product.prices.some((p) => p.amountType !== 'free'));
   }, [productsQuery.data, recurringInterval]);
 
-  useEffect(() => {
-    if (organization.subscriptionInterval) {
-      setRecurringInterval(
-        organization.subscriptionInterval as 'year' | 'month',
-      );
-    }
-  }, [organization.subscriptionInterval]);
+  const currentProduct = currentProductQuery.data ?? null;
+  const currentPrice = currentProduct?.prices.flatMap((p) =>
+    p.type === 'recurring' && p.amountType === 'fixed' ? [p] : [],
+  )[0];
 
-  useEffect(() => {
-    if (customerSessionToken) {
-      op.track('subscription_created');
-    }
-  }, [customerSessionToken]);
-
-  const [selectedProductIndex, setSelectedProductIndex] = useState<number>(0);
-
-  // Check if organization has a custom product
-  const hasCustomProduct = useMemo(() => {
-    return products.some((product) => product.metadata?.custom === true);
-  }, [products]);
-
-  // Preferred default selection when there is no active subscription
-  const defaultSelectedIndex = useMemo(() => {
-    const defaultIndex = products.findIndex(
-      (product) => product.metadata?.eventsLimit === 100_000,
-    );
-    return defaultIndex >= 0 ? defaultIndex : 0;
-  }, [products]);
-
-  // Find current subscription index (-1 when no subscription)
-  const currentSubscriptionIndex = useMemo(() => {
-    if (!organization.subscriptionProductId) {
-      return -1;
-    }
-    return products.findIndex(
-      (product) => product.id === organization.subscriptionProductId,
-    );
-  }, [products, organization.subscriptionProductId]);
-
-  // Check if selected index is the "custom" option (beyond available products)
-  const isCustomOption = selectedProductIndex >= products.length;
-
-  // Find the highest event limit to make the custom option dynamic
-  const highestEventLimit = useMemo(() => {
-    const limits = products
-      .map((product) => product.metadata?.eventsLimit)
-      .filter((limit): limit is number => typeof limit === 'number');
-    return Math.max(...limits, 0);
-  }, [products]);
-
-  // Format the custom option label dynamically
-  const customOptionLabel = useMemo(() => {
-    if (highestEventLimit >= 1_000_000) {
-      return `+${(highestEventLimit / 1_000_000).toFixed(0)}M`;
-    }
-    if (highestEventLimit >= 1_000) {
-      return `+${(highestEventLimit / 1_000).toFixed(0)}K`;
-    }
-    return `+${highestEventLimit}`;
-  }, [highestEventLimit]);
-
-  // Set initial slider position to current subscription or default plan when none
-  useEffect(() => {
-    if (currentSubscriptionIndex >= 0) {
-      setSelectedProductIndex(currentSubscriptionIndex);
-    } else {
-      setSelectedProductIndex(defaultSelectedIndex);
-    }
-  }, [currentSubscriptionIndex, defaultSelectedIndex]);
-
-  const selectedProduct = products[selectedProductIndex];
-  const isUpgrade = selectedProductIndex > currentSubscriptionIndex;
-  const isDowngrade = selectedProductIndex < currentSubscriptionIndex;
-  const isCurrentPlan = selectedProductIndex === currentSubscriptionIndex;
-
-  function renderBillingSlider() {
-    if (productsQuery.isLoading) {
+  const renderStatus = () => {
+    if (organization.isActive && organization.subscriptionCurrentPeriodEnd) {
       return (
-        <div className="center-center p-8">
-          <Loader2Icon className="animate-spin" />
-        </div>
+        <p>
+          Your subscription will be renewed on{' '}
+          {formatDate(organization.subscriptionCurrentPeriodEnd)}
+        </p>
       );
     }
-    if (productsQuery.isError) {
+
+    if (organization.isCanceled && organization.subscriptionCanceledAt) {
       return (
-        <div className="center-center p-8 font-medium">
-          Issues loading all tiers
-        </div>
+        <p>
+          Your subscription was canceled on{' '}
+          {formatDate(organization.subscriptionCanceledAt)}
+        </p>
       );
     }
-
-    if (hasCustomProduct) {
+    if (
+      organization.isWillBeCanceled &&
+      organization.subscriptionCurrentPeriodEnd
+    ) {
       return (
-        <div className="p-8 text-center">
-          <div className="text-muted-foreground">
-            Not applicable since custom product
-          </div>
-        </div>
+        <p>
+          Your subscription will be canceled on{' '}
+          {formatDate(organization.subscriptionCurrentPeriodEnd)}
+        </p>
       );
     }
 
-    return (
-      <div className="p-6 space-y-6">
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Select your plan</span>
-            <span className="text-sm text-muted-foreground">
-              {selectedProduct?.name || 'No plan selected'}
-            </span>
-          </div>
+    if (
+      organization.subscriptionStatus === 'expired' &&
+      organization.subscriptionCurrentPeriodEnd
+    ) {
+      return (
+        <p>
+          Your subscription expired on{' '}
+          {formatDate(organization.subscriptionCurrentPeriodEnd)}
+        </p>
+      );
+    }
+    if (
+      organization.subscriptionStatus === 'trialing' &&
+      organization.subscriptionEndsAt
+    ) {
+      return (
+        <p>
+          Your trial will end on {formatDate(organization.subscriptionEndsAt)}
+        </p>
+      );
+    }
 
-          <Slider
-            value={[selectedProductIndex]}
-            onValueChange={([value]) => setSelectedProductIndex(value)}
-            min={0}
-            max={products.length} // +1 for the custom option
-            step={1}
-            className="w-full"
-            disabled={hasCustomProduct}
-          />
+    return null;
+  };
 
-          <div className="flex justify-between text-xs text-muted-foreground">
-            {products.map((product, index) => {
-              const eventsLimit = product.metadata?.eventsLimit;
-              return (
-                <div key={product.id} className="text-center">
-                  <div className="font-medium">
-                    {eventsLimit && typeof eventsLimit === 'number'
-                      ? `${(eventsLimit / 1000).toFixed(0)}K`
-                      : 'Free'}
-                  </div>
-                  <div className="text-xs">events</div>
+  useEffect(() => {
+    if (success) {
+      pushModal('BillingSuccess');
+    }
+  }, [success]);
+
+  // Clear query state when modal is closed
+  useOnPushModal('BillingSuccess', (open) => {
+    if (!open) {
+      setSuccess(null);
+    }
+  });
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="col gap-8">
+        {currentProduct && currentPrice ? (
+          <Widget className="w-full">
+            <WidgetHead className="flex items-center justify-between gap-4">
+              <div className="flex-1 title truncate">{currentProduct.name}</div>
+              <div className="text-lg">
+                <span className="font-bold">
+                  {number.currency(currentPrice.priceAmount / 100)}
+                </span>
+                <span className="text-muted-foreground">
+                  {' / '}
+                  {recurringInterval === 'year' ? 'year' : 'month'}
+                </span>
+              </div>
+            </WidgetHead>
+            <WidgetBody>
+              {renderStatus()}
+              <div className="col mt-4">
+                <div className="font-semibold mb-2">
+                  {number.format(organization.subscriptionPeriodEventsCount)} /{' '}
+                  {number.format(Number(currentProduct.metadata.eventsLimit))}
                 </div>
-              );
-            })}
-            {/* Add the custom option label */}
-            <div className="text-center">
-              <div className="font-medium">{customOptionLabel}</div>
-              <div className="text-xs">events</div>
-            </div>
-          </div>
-        </div>
-
-        {(selectedProduct || isCustomOption) && (
-          <div className="border rounded-lg p-4 space-y-4">
-            {isCustomOption ? (
-              // Custom option content
-              <>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">Custom Plan</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {customOptionLabel} events per {recurringInterval}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-lg font-semibold">
-                      Custom Pricing
-                    </span>
-                  </div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Need higher limits?
-                  </p>
-                  <p className="text-sm">
-                    Reach out to{' '}
-                    <a
-                      className="underline font-medium"
-                      href="mailto:hello@openpanel.dev"
+                <Progress
+                  value={
+                    (organization.subscriptionPeriodEventsCount /
+                      Number(currentProduct.metadata.eventsLimit)) *
+                    100
+                  }
+                  size="sm"
+                />
+                <div className="row justify-between mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      portalMutation.mutate({ organizationId: organization.id })
+                    }
+                  >
+                    <svg
+                      className="size-4 mr-2"
+                      width="300"
+                      height="300"
+                      viewBox="0 0 300 300"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      hello@openpanel.dev
-                    </a>{' '}
-                    and we'll help you with a custom quota.
-                  </p>
+                      <g clip-path="url(#clip0_1_4)">
+                        <path
+                          fill-rule="evenodd"
+                          clip-rule="evenodd"
+                          d="M66.4284 274.26C134.876 320.593 227.925 302.666 274.258 234.219C320.593 165.771 302.666 72.7222 234.218 26.3885C165.77 -19.9451 72.721 -2.0181 26.3873 66.4297C-19.9465 134.877 -2.01938 227.927 66.4284 274.26ZM47.9555 116.67C30.8375 169.263 36.5445 221.893 59.2454 256.373C18.0412 217.361 7.27564 150.307 36.9437 92.318C55.9152 55.2362 87.5665 29.3937 122.5 18.3483C90.5911 36.7105 62.5549 71.8144 47.9555 116.67ZM175.347 283.137C211.377 272.606 244.211 246.385 263.685 208.322C293.101 150.825 282.768 84.4172 242.427 45.2673C264.22 79.7626 269.473 131.542 252.631 183.287C237.615 229.421 208.385 265.239 175.347 283.137ZM183.627 266.229C207.945 245.418 228.016 210.604 236.936 168.79C251.033 102.693 232.551 41.1978 195.112 20.6768C214.97 47.3945 225.022 99.2902 218.824 157.333C214.085 201.724 200.814 240.593 183.627 266.229ZM63.7178 131.844C49.5155 198.43 68.377 260.345 106.374 280.405C85.9962 254.009 75.5969 201.514 81.8758 142.711C86.5375 99.0536 99.4504 60.737 116.225 35.0969C92.2678 55.983 72.5384 90.4892 63.7178 131.844ZM199.834 149.561C200.908 217.473 179.59 272.878 152.222 273.309C124.853 273.742 101.797 219.039 100.724 151.127C99.6511 83.2138 120.968 27.8094 148.337 27.377C175.705 26.9446 198.762 81.648 199.834 149.561Z"
+                          fill="currentColor"
+                        />
+                      </g>
+                      <defs>
+                        <clipPath id="clip0_1_4">
+                          <rect width="300" height="300" fill="white" />
+                        </clipPath>
+                      </defs>
+                    </svg>
+                    Customer portal
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      pushModal('SelectBillingPlan', {
+                        organization,
+                        currentProduct,
+                      })
+                    }
+                  >
+                    {organization.isWillBeCanceled
+                      ? 'Reactivate subscription'
+                      : 'Change subscription'}
+                  </Button>
                 </div>
-              </>
-            ) : (
-              // Regular product content
-              <>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold">{selectedProduct.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedProduct.metadata?.eventsLimit
-                        ? `${selectedProduct.metadata.eventsLimit.toLocaleString()} events per ${recurringInterval}`
-                        : 'Free tier'}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    {selectedProduct.prices[0]?.amountType === 'free' ? (
-                      <span className="text-lg font-semibold">Free</span>
-                    ) : (
-                      <span className="text-lg font-semibold">
-                        {new Intl.NumberFormat('en-US', {
-                          style: 'currency',
-                          currency:
-                            selectedProduct.prices[0]?.priceCurrency || 'USD',
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 1,
-                        }).format(
-                          (selectedProduct.prices[0] &&
-                          'priceAmount' in selectedProduct.prices[0]
-                            ? selectedProduct.prices[0].priceAmount
-                            : 0) / 100,
-                        )}
-                        <span className="text-sm text-muted-foreground">
-                          {' / '}
-                          {recurringInterval === 'year' ? 'year' : 'month'}
-                        </span>
-                      </span>
-                    )}
-                  </div>
+              </div>
+            </WidgetBody>
+          </Widget>
+        ) : (
+          <Widget className="w-full">
+            <WidgetHead className="flex items-center justify-between">
+              <div className="font-bold text-lg flex-1">
+                {organization.isTrial
+                  ? 'Get started'
+                  : 'No active subscription'}
+              </div>
+              <div className="text-lg">
+                <span className="">
+                  {organization.isTrial ? '30 days free trial' : ''}
+                </span>
+              </div>
+            </WidgetHead>
+            <WidgetBody>
+              {organization.isTrial && organization.subscriptionEndsAt ? (
+                <p>
+                  Your trial will end on{' '}
+                  {formatDate(organization.subscriptionEndsAt)} (
+                  {differenceInDays(
+                    organization.subscriptionEndsAt,
+                    new Date(),
+                  ) + 1}{' '}
+                  days left)
+                </p>
+              ) : (
+                <p>
+                  Your trial has expired. Please upgrade your account to
+                  continue using Openpanel.
+                </p>
+              )}
+              <div className="col mt-4">
+                <div className="font-semibold mb-2">
+                  {number.format(organization.subscriptionPeriodEventsCount)} /{' '}
+                  {number.format(
+                    Number(organization.subscriptionPeriodEventsLimit),
+                  )}
                 </div>
-
-                {!isCurrentPlan && selectedProduct.prices[0] && (
-                  <div className="flex justify-end">
-                    <CheckoutButton
-                      disabled={selectedProduct.disabled}
-                      key={selectedProduct.prices[0].id}
-                      price={selectedProduct.prices[0]}
-                      organization={organization}
-                      buttonText={
-                        isUpgrade
-                          ? 'Upgrade'
-                          : isDowngrade
-                            ? 'Downgrade'
-                            : 'Activate'
-                      }
-                    />
-                  </div>
-                )}
-
-                {isCurrentPlan && (
-                  <div className="flex justify-end">
-                    <Button variant="outline" disabled>
-                      Current Plan
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+                <Progress
+                  value={
+                    (organization.subscriptionPeriodEventsCount /
+                      Number(organization.subscriptionPeriodEventsLimit)) *
+                    100
+                  }
+                  size="sm"
+                />
+                <div className="row justify-end mt-4">
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      pushModal('SelectBillingPlan', {
+                        organization,
+                        currentProduct,
+                      })
+                    }
+                  >
+                    Upgrade
+                  </Button>
+                </div>
+              </div>
+            </WidgetBody>
+          </Widget>
         )}
+
+        <BillingUsage organization={organization} />
       </div>
-    );
-  }
 
-  return (
-    <>
-      <Widget className="w-full">
-        <WidgetHead className="flex items-center justify-between">
-          <span className="title">Billing</span>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {recurringInterval === 'year'
-                ? 'Yearly (2 months free)'
-                : 'Monthly'}
-            </span>
-            <Switch
-              checked={recurringInterval === 'year'}
-              onCheckedChange={(checked) =>
-                setRecurringInterval(checked ? 'year' : 'month')
-              }
-            />
-          </div>
-        </WidgetHead>
-        <WidgetBody>
-          <div className="-m-4">{renderBillingSlider()}</div>
-        </WidgetBody>
-      </Widget>
-      <Dialog
-        open={!!customerSessionToken}
-        onOpenChange={(open) => {
-          setCustomerSessionToken(null);
-          if (!open) {
-            queryClient.invalidateQueries(trpc.organization.pathFilter());
-          }
-        }}
-      >
-        <DialogContent>
-          <DialogTitle>Subscription created</DialogTitle>
-          <DialogDescription>
-            We have registered your subscription. It'll be activated within a
-            couple of seconds.
-          </DialogDescription>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button>OK</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
-
-function CheckoutButton({
-  price,
-  organization,
-  disabled,
-  buttonText,
-}: {
-  price: IPolarPrice;
-  organization: IServiceOrganization;
-  disabled?: string | null;
-  buttonText?: string;
-}) {
-  const trpc = useTRPC();
-  const isCurrentPrice = organization.subscriptionPriceId === price.id;
-  const checkout = useMutation(
-    trpc.subscription.checkout.mutationOptions({
-      onSuccess(data) {
-        if (data?.url) {
-          window.location.href = data.url;
-        } else {
-          toast.success('Subscription updated', {
-            description: 'It might take a few seconds to update',
-          });
-        }
-      },
-    }),
-  );
-
-  const isCanceled =
-    organization.subscriptionStatus === 'active' &&
-    isCurrentPrice &&
-    organization.subscriptionCanceledAt;
-  const isActive =
-    organization.subscriptionStatus === 'active' && isCurrentPrice;
-
-  return (
-    <Tooltiper
-      content={disabled}
-      tooltipClassName="max-w-xs"
-      side="left"
-      disabled={!disabled}
-    >
-      <Button
-        disabled={disabled !== null || (isActive && !isCanceled)}
-        key={price.id}
-        onClick={() => {
-          const createCheckout = () =>
-            checkout.mutate({
-              organizationId: organization.id,
-              productPriceId: price!.id,
-              productId: price.productId,
-            });
-
-          if (organization.subscriptionStatus === 'active') {
-            showConfirm({
-              title: 'Are you sure?',
-              text: `You're about the change your subscription.`,
-              onConfirm: () => {
-                op.track('subscription_change');
-                createCheckout();
-              },
-            });
-          } else {
-            op.track('subscription_checkout', {
-              product: price.productId,
-            });
-            createCheckout();
-          }
-        }}
-        loading={checkout.isPending}
-        className="w-28"
-        variant={isActive ? 'outline' : 'default'}
-      >
-        {buttonText ||
-          (isCanceled ? 'Reactivate' : isActive ? 'Active' : 'Activate')}
-      </Button>
-    </Tooltiper>
+      <BillingFaq />
+    </div>
   );
 }

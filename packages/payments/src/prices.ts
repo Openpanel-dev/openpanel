@@ -1,3 +1,5 @@
+export type { ProductPrice } from '@polar-sh/sdk/models/components/productprice.js';
+
 export type IPrice = {
   price: number;
   events: number;

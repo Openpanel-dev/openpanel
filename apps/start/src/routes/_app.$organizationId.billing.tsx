@@ -1,9 +1,6 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import Billing from '@/components/organization/billing';
-import { BillingFaq } from '@/components/organization/billing-faq';
-import CurrentSubscription from '@/components/organization/current-subscription';
-import Usage from '@/components/organization/usage';
 import { PageHeader } from '@/components/page-header';
 import { useTRPC } from '@/integrations/trpc/react';
 import { PAGE_TITLES, createOrganizationTitle } from '@/utils/title';
@@ -21,6 +18,20 @@ export const Route = createFileRoute('/_app/$organizationId/billing')({
         },
       ],
     };
+  },
+  beforeLoad: async ({ params, context }) => {
+    await Promise.all([
+      context.queryClient.prefetchQuery(
+        context.trpc.subscription.products.queryOptions({
+          organizationId: params.organizationId,
+        }),
+      ),
+      context.queryClient.prefetchQuery(
+        context.trpc.subscription.getCurrent.queryOptions({
+          organizationId: params.organizationId,
+        }),
+      ),
+    ]);
   },
 });
 
@@ -51,14 +62,7 @@ function OrganizationPage() {
         className="mb-8"
       />
 
-      <div className="flex flex-col-reverse md:flex-row gap-8 max-w-screen-lg">
-        <div className="col gap-8 w-full">
-          <Billing organization={organization} />
-          <Usage organization={organization} />
-          <BillingFaq />
-        </div>
-        <CurrentSubscription organization={organization} />
-      </div>
+      <Billing organization={organization} />
     </div>
   );
 }

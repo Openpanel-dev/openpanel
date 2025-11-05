@@ -261,7 +261,7 @@ export class OverviewService {
         .rawWhere(this.getRawWhereClause('events', filters))
         .groupBy(['date', 'ds.bounce_rate'])
         .orderBy('date', 'ASC')
-        .fill(
+        .safeFill(
           clix.toStartOf(
             clix.datetime(
               startDate,
@@ -342,7 +342,7 @@ export class OverviewService {
       .having('sum(sign)', '>', 0)
       .rollup()
       .orderBy('date', 'ASC')
-      .fill(
+      .safeFill(
         clix.toStartOf(
           clix.datetime(
             startDate,

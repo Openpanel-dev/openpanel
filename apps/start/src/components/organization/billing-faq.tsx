@@ -10,7 +10,7 @@ const questions = [
   {
     question: 'Does OpenPanel have a free tier?',
     answer: [
-      'For our Cloud plan we offer a 14 days free trial, this is mostly for you to be able to try out OpenPanel before committing to a paid plan.',
+      'For our Cloud plan we offer a 30 days free trial, this is mostly for you to be able to try out OpenPanel before committing to a paid plan.',
       'OpenPanel is also open-source and you can self-host it for free!',
       '',
       'Why does OpenPanel not have a free tier?',
@@ -37,13 +37,19 @@ const questions = [
       'You can change your billing information by clicking the "Manage your subscription" button in the billing section.',
     ],
   },
+  {
+    question: 'We need a custom plan, can you help us?',
+    answer: [
+      'Yes, we can help you with that. Please contact us at hello@openpanel.com to request a quote.',
+    ],
+  },
 ];
 
 export function BillingFaq() {
   return (
     <Widget className="w-full">
       <WidgetHead className="flex items-center justify-between">
-        <span className="title">Usage</span>
+        <span className="title">Frequently asked questions</span>
       </WidgetHead>
       <Accordion
         type="single"

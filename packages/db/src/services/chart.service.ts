@@ -11,6 +11,21 @@ import type {
 import { TABLE_NAMES, formatClickhouseDate } from '../clickhouse/client';
 import { createSqlBuilder } from '../sql-builder';
 
+/**
+ * Helper function to check if endDate is after startDate
+ * This prevents ClickHouse errors when WITH FILL TO value is less than FROM value
+ */
+function isValidDateRange(startDate: string, endDate: string): boolean {
+  try {
+    const start = DateTime.fromFormat(startDate, 'yyyy-MM-dd HH:mm:ss');
+    const end = DateTime.fromFormat(endDate, 'yyyy-MM-dd HH:mm:ss');
+    return end > start;
+  } catch {
+    // If date parsing fails, assume invalid range
+    return false;
+  }
+}
+
 export function transformPropertyKey(property: string) {
   const propertyPatterns = ['properties', 'profile.properties'];
   const match = propertyPatterns.find((pattern) =>
@@ -103,29 +118,43 @@ export function getChartSql({
   }
 
   sb.select.count = 'count(*) as count';
+
+  // Only apply WITH FILL if the date range is valid (endDate > startDate)
+  const hasValidDateRange = isValidDateRange(startDate, endDate);
+
   switch (interval) {
     case 'minute': {
-      sb.fill = `FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
+      if (hasValidDateRange) {
+        sb.fill = `FROM toStartOfMinute(toDateTime('${startDate}')) TO toStartOfMinute(toDateTime('${endDate}')) STEP toIntervalMinute(1)`;
+      }
       sb.select.date = 'toStartOfMinute(created_at) as date';
       break;
     }
     case 'hour': {
-      sb.fill = `FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
+      if (hasValidDateRange) {
+        sb.fill = `FROM toStartOfHour(toDateTime('${startDate}')) TO toStartOfHour(toDateTime('${endDate}')) STEP toIntervalHour(1)`;
+      }
       sb.select.date = 'toStartOfHour(created_at) as date';
       break;
     }
     case 'day': {
-      sb.fill = `FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
+      if (hasValidDateRange) {
+        sb.fill = `FROM toStartOfDay(toDateTime('${startDate}')) TO toStartOfDay(toDateTime('${endDate}')) STEP toIntervalDay(1)`;
+      }
       sb.select.date = 'toStartOfDay(created_at) as date';
       break;
     }
     case 'week': {
-      sb.fill = `FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
+      if (hasValidDateRange) {
+        sb.fill = `FROM toStartOfWeek(toDateTime('${startDate}'), 1, '${timezone}') TO toStartOfWeek(toDateTime('${endDate}'), 1, '${timezone}') STEP toIntervalWeek(1)`;
+      }
       sb.select.date = `toStartOfWeek(created_at, 1, '${timezone}') as date`;
       break;
     }
     case 'month': {
-      sb.fill = `FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
+      if (hasValidDateRange) {
+        sb.fill = `FROM toStartOfMonth(toDateTime('${startDate}'), '${timezone}') TO toStartOfMonth(toDateTime('${endDate}'), '${timezone}') STEP toIntervalMonth(1)`;
+      }
       sb.select.date = `toStartOfMonth(created_at, '${timezone}') as date`;
       break;
     }
