@@ -1,6 +1,6 @@
-import { stripTrailingSlash } from '@openpanel/common';
+import { stripTrailingSlash } from '../src/string';
 
-import referrers from '../referrers';
+import referrers from './referrers';
 
 function getHostname(url: string | undefined) {
   if (!url) {
@@ -20,7 +20,7 @@ export function parseReferrer(url: string | undefined) {
 
   return {
     name: match?.name ?? '',
-    type: match?.type ?? 'unknown',
+    type: match?.type ?? '',
     url: stripTrailingSlash(url ?? ''),
   };
 }
@@ -32,16 +32,23 @@ export function getReferrerWithQuery(
     return null;
   }
 
-  const source = query.utm_source ?? query.ref ?? query.utm_referrer ?? '';
+  const source = (
+    query.utm_source ??
+    query.ref ??
+    query.utm_referrer ??
+    ''
+  ).toLowerCase();
 
   if (source === '') {
     return null;
   }
 
   const match =
+    referrers[source] ||
+    referrers[`${source}.com`] ||
     Object.values(referrers).find(
-      (referrer) => referrer.name.toLowerCase() === source.toLowerCase(),
-    ) || referrers[source];
+      (referrer) => referrer.name.toLowerCase() === source,
+    );
 
   if (match) {
     return {
@@ -53,7 +60,7 @@ export function getReferrerWithQuery(
 
   return {
     name: source,
-    type: 'unknown',
+    type: '',
     url: '',
   };
 }

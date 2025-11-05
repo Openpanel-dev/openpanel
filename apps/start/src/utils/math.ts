@@ -1,1 +1,1 @@
-export * from '@openpanel/common/src/math';
+export * from '@openpanel/common';

@@ -27,6 +27,7 @@ export default function DateRangerPicker({
   return (
     <ModalContent className="p-4 md:p-8 min-w-fit">
       <Calendar
+        captionLayout="dropdown"
         initialFocus
         mode="range"
         defaultMonth={subMonths(

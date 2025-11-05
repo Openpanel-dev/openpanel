@@ -1,5 +1,18 @@
 import { anyPass, assocPath, isEmpty, isNil, reject } from 'ramda';
 
+function isValidJsonString(value: string): boolean {
+  return (
+    (value.startsWith('{') && value.endsWith('}')) ||
+    (value.startsWith('[') && value.endsWith(']'))
+  );
+}
+function isMalformedJsonString(value: string): boolean {
+  return (
+    (value.startsWith('{') && !value.endsWith('}')) ||
+    (value.startsWith('[') && !value.endsWith(']'))
+  );
+}
+
 export function toDots(
   obj: Record<string, unknown>,
   path = '',
@@ -19,8 +32,26 @@ export function toDots(
       };
     }
 
-    if (value === undefined || value === null) {
+    if (value === undefined || value === null || value === '') {
       return acc;
+    }
+
+    if (typeof value === 'string' && isMalformedJsonString(value)) {
+      // Skip it
+      return acc;
+    }
+
+    // Fix nested json strings - but catch parse errors for malformed JSON
+    if (typeof value === 'string' && isValidJsonString(value)) {
+      try {
+        return {
+          ...acc,
+          ...toDots(JSON.parse(value), `${path}${key}.`),
+        };
+      } catch {
+        // Skip it
+        return acc;
+      }
     }
 
     const cleanedValue =

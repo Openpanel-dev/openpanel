@@ -4,6 +4,7 @@ import { chatRouter } from './routers/chat';
 import { clientRouter } from './routers/client';
 import { dashboardRouter } from './routers/dashboard';
 import { eventRouter } from './routers/event';
+import { importRouter } from './routers/import';
 import { integrationRouter } from './routers/integration';
 import { notificationRouter } from './routers/notification';
 import { onboardingRouter } from './routers/onboarding';
@@ -40,6 +41,7 @@ export const appRouter = createTRPCRouter({
   reference: referenceRouter,
   notification: notificationRouter,
   integration: integrationRouter,
+  import: importRouter,
   auth: authRouter,
   subscription: subscriptionRouter,
   overview: overviewRouter,

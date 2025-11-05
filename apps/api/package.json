@@ -64,7 +64,7 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.5.14",
     "js-yaml": "^4.1.0",
-    "tsdown": "^0.14.2",
+    "tsdown": "0.14.2",
     "typescript": "catalog:"
   }
 }
