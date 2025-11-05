@@ -1,5 +1,5 @@
 import { logger } from '@/utils/logger';
-import { TABLE_NAMES, ch, db } from '@openpanel/db';
+import { TABLE_NAMES, ch, db, getReplicatedTableName } from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
 import type { Job } from 'bullmq';
 import sqlstring from 'sqlstring';
@@ -46,10 +46,7 @@ export async function deleteProjects(job: Job<CronQueuePayload>) {
   ];
 
   for (const table of tables) {
-    const query =
-      process.env.SELF_HOSTED === 'true'
-        ? `ALTER TABLE ${table} DELETE WHERE ${where};`
-        : `ALTER TABLE ${table}_replicated ON CLUSTER '{cluster}' DELETE WHERE ${where};`;
+    const query = `ALTER TABLE ${getReplicatedTableName(table)} DELETE WHERE ${where};`;
 
     await ch.command({
       query,

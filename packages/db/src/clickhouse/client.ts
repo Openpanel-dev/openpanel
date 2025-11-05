@@ -57,6 +57,29 @@ export const TABLE_NAMES = {
   events_imports: 'events_imports',
 };
 
+/**
+ * Check if ClickHouse is running in clustered mode
+ * Clustered mode = production (not self-hosted)
+ * Non-clustered mode = self-hosted environments
+ */
+export function isClickhouseClustered(): boolean {
+  return !(
+    process.env.SELF_HOSTED === 'true' || process.env.SELF_HOSTED === '1'
+  );
+}
+
+/**
+ * Get the replicated table name for mutations
+ * In clustered mode, returns table_name_replicated
+ * In non-clustered mode, returns the original table name
+ */
+export function getReplicatedTableName(tableName: string): string {
+  if (isClickhouseClustered()) {
+    return `${tableName}_replicated ON CLUSTER '{cluster}'`;
+  }
+  return tableName;
+}
+
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: 30,
   request_timeout: 300000,

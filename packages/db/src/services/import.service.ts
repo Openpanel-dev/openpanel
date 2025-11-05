@@ -6,6 +6,7 @@ import {
   chInsertCSV,
   convertClickhouseDateToJs,
   formatClickhouseDate,
+  getReplicatedTableName,
 } from '../clickhouse/client';
 import { csvEscapeField, csvEscapeJson } from '../clickhouse/csv';
 import { type Prisma, db } from '../prisma-client';
@@ -107,8 +108,10 @@ export async function generateSessionIds(
 
   // Use SQL to generate deterministic session IDs based on device_id + 30-min time windows
   // This ensures same events always get same session IDs regardless of import order
+  // In clustered mode, we must use the replicated table for mutations
+  const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   const updateQuery = `
-    ALTER TABLE ${TABLE_NAMES.events_imports}
+    ALTER TABLE ${mutationTableName}
     UPDATE session_id = lower(hex(MD5(concat(
       device_id,
       '-',
@@ -572,8 +575,10 @@ export async function backfillSessionsToProduction(
  * Mark import as complete by updating status
  */
 export async function markImportComplete(importId: string): Promise<void> {
+  // In clustered mode, we must use the replicated table for mutations
+  const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   const updateQuery = `
-    ALTER TABLE ${TABLE_NAMES.events_imports} 
+    ALTER TABLE ${mutationTableName}
     UPDATE import_status = 'processed'
     WHERE import_id = {importId:String}
   `;
