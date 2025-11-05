@@ -48,7 +48,12 @@ export const shareRouter = createTRPCRouter({
       });
 
       if (!share) {
-        throw TRPCNotFoundError('Share not found');
+        // Throw error if shareId is provided, otherwise return null
+        if ('shareId' in input) {
+          throw TRPCNotFoundError('Share not found');
+        }
+
+        return null;
       }
 
       return {
