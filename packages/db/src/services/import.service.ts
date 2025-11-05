@@ -554,8 +554,20 @@ export async function backfillSessionsToProduction(
     FROM ${TABLE_NAMES.events_imports} e
     WHERE 
       e.import_id = ${sqlstring.escape(importId)}
-      AND toDate(e.created_at) = ${sqlstring.escape(from)}
       AND e.session_id != ''
+      AND (
+        (toDate(e.created_at) = ${sqlstring.escape(from)}) OR
+        (
+          e.name IN ('session_start', 'session_end') AND
+          e.session_id IN (
+            SELECT DISTINCT session_id 
+            FROM ${TABLE_NAMES.events_imports}
+            WHERE import_id = ${sqlstring.escape(importId)}
+              AND toDate(created_at) = ${sqlstring.escape(from)}
+              AND name NOT IN ('session_start', 'session_end')
+          )
+        )
+      )
     GROUP BY e.session_id
   `;
 
@@ -669,6 +681,7 @@ export async function getImportDateBounds(
       SELECT min(created_at) AS min, max(created_at) AS max
       FROM ${TABLE_NAMES.events_imports}
       WHERE import_id = {importId:String}
+      AND name NOT IN ('session_start', 'session_end')
       ${fromCreatedAt ? 'AND created_at >= {fromCreatedAt:String}' : ''}
     `,
     query_params: { importId, fromCreatedAt },
