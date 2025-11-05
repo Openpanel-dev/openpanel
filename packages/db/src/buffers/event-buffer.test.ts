@@ -11,7 +11,6 @@ import {
 import { ch } from '../clickhouse/client';
 
 const clickhouseSettings = {
-  async_insert: 1,
   http_headers_progress_interval_ms: '50000',
   input_format_parallel_parsing: 1,
   max_execution_time: 300,
