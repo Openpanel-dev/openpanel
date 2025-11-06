@@ -357,7 +357,8 @@ export class MixpanelProvider extends BaseImportProvider<MixpanelRawEvent> {
         } else if (
           value === undefined &&
           key &&
-          props.utm_source.startsWith(key)
+          props.utm_source &&
+          String(props.utm_source).startsWith(key)
         ) {
           event.properties['__query.utm_source'] = String(key);
         }
