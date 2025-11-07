@@ -112,6 +112,51 @@ Features that require e-mail:
 - Invitations
 - more will be added over time
 
+### AI integration
+
+OpenPanel includes an AI-powered analytics assistant that can help you analyze data, create reports, and answer questions about your analytics. To enable this feature, you need to configure an API key for either OpenAI or Anthropic.
+
+#### Supported Models
+
+- **OpenAI** (default)
+  - `gpt-4o` - More powerful but higher cost
+  - `gpt-4o-mini` - Default model, good balance of performance and cost
+- **Anthropic**
+  - `claude-3-5-haiku-latest` - Fast and cost-effective
+
+#### Configuration
+
+Add the following environment variables to your `.env` file in the `self-hosting` directory:
+
+**For OpenAI (default):**
+
+```bash title=".env"
+OPENAI_API_KEY=sk-your-openai-api-key-here
+AI_MODEL=gpt-4o-mini  # Optional: defaults to gpt-4o-mini
+```
+
+**For Anthropic:**
+
+```bash title=".env"
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+AI_MODEL=claude-3-5
+```
+
+#### Getting API Keys
+
+- **OpenAI**: Get your API key from [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- **Anthropic**: Get your API key from [console.anthropic.com](https://console.anthropic.com)
+
+<Callout type="info">
+The AI assistant is optional. Without an API key configured, the AI chat feature will not be available, but all other OpenPanel features will continue to work normally.
+</Callout>
+
+<Callout type="warn">
+AI features will incur costs based on your usage and the model you choose. Monitor your API usage through your provider's dashboard to avoid unexpected charges.
+</Callout>
+
+
+
 ### Managed Redis
 
 If you use a managed Redis service, you may need to set the `notify-keyspace-events` manually.

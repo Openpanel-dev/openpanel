@@ -3,7 +3,7 @@
   "defaultOpen": true,
   "pages": [
     "[Get started](/docs/self-hosting/self-hosting)",
-    "changelog",
-    "migrating-from-clerk"
+    "supporter-access-latest-docker-images",
+    "changelog"
   ]
 }
