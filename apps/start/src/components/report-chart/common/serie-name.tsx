@@ -40,5 +40,5 @@ export function SerieName({ name, className }: SerieNameProps) {
     return renderSerieName([name]);
   }
 
-  return <>{name}</>;
+  return <span className={className}>{name}</span>;
 }

@@ -4,16 +4,65 @@ import { cn } from '@/utils/cn';
 import { round } from '@/utils/math';
 import { getChartColor } from '@/utils/theme';
 import { truncate } from '@/utils/truncate';
+import { Fragment } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
+import { useNumber } from '@/hooks/use-numer-formatter';
+import { formatDate } from '@/utils/date';
 import { AXIS_FONT_PROPS } from '../common/axis';
+import { PreviousDiffIndicator } from '../common/previous-diff-indicator';
 import { ReportChartTooltip } from '../common/report-chart-tooltip';
 import { ReportTable } from '../common/report-table';
+import { SerieIcon } from '../common/serie-icon';
+import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
 
 interface Props {
   data: IChartData;
 }
+
+const PieTooltip = (props: { payload?: any[] }) => {
+  const number = useNumber();
+  return (
+    <div className="bg-background/80 p-2 rounded-md backdrop-blur-md border min-w-[180px]">
+      {props.payload?.map((serie, index) => {
+        const item = serie.payload;
+        return (
+          <Fragment key={item.id}>
+            {index === 0 && item.date && (
+              <div className="flex justify-between gap-8">
+                <div>{formatDate(new Date(item.date))}</div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <div
+                className="w-[3px] rounded-full"
+                style={{ background: item.color }}
+              />
+              <div className="col flex-1 gap-1">
+                <div className="flex items-center gap-1">
+                  <SerieIcon name={item.name} />
+                  <SerieName name={item.names} className="font-medium" />
+                </div>
+                <div className="flex justify-between gap-8 font-mono font-medium">
+                  <div className="row gap-1">
+                    {number.formatWithUnit(item.count)}
+                    {!!item.previous && (
+                      <span className="text-muted-foreground">
+                        ({number.formatWithUnit(item.previous.sum.value)})
+                      </span>
+                    )}
+                  </div>
+                  <PreviousDiffIndicator {...item.previous?.sum} />
+                </div>
+              </div>
+            </div>
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+};
 
 export function Chart({ data }: Props) {
   const { isEditMode } = useReportChartContext();
@@ -25,8 +74,10 @@ export function Chart({ data }: Props) {
     color: getChartColor(serie.index),
     index: serie.index,
     name: serie.names.join(' > '),
+    names: serie.names,
     count: serie.metrics.sum,
     percent: serie.metrics.sum / sum,
+    previous: serie.metrics.previous ? serie.metrics.previous : undefined,
   }));
 
   return (
@@ -36,11 +87,11 @@ export function Chart({ data }: Props) {
       >
         <ResponsiveContainer>
           <PieChart>
-            <Tooltip content={<ReportChartTooltip />} />
+            <Tooltip content={<PieTooltip />} />
             <Pie
               dataKey={'count'}
               data={pieData}
-              innerRadius={'50%'}
+              innerRadius={'30%'}
               outerRadius={'80%'}
               isAnimationActive={false}
               label={renderLabel}
@@ -50,7 +101,7 @@ export function Chart({ data }: Props) {
                   <Cell
                     key={item.id}
                     strokeWidth={2}
-                    stroke={item.color}
+                    stroke={'#fff'}
                     fill={item.color}
                   />
                 );
@@ -105,9 +156,10 @@ const renderLabel = ({
         fill="white"
         textAnchor="middle"
         dominantBaseline="central"
-        fontWeight={700}
         pointerEvents={'none'}
         {...AXIS_FONT_PROPS}
+        fontSize={12}
+        fontWeight={700}
       >
         {percent}%
       </text>
@@ -118,6 +170,8 @@ const renderLabel = ({
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         {...AXIS_FONT_PROPS}
+        fontSize={10}
+        fontWeight={700}
       >
         {truncate(name, 20)}
       </text>
