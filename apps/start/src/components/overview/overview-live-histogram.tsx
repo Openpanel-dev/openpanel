@@ -4,6 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { getChartColor } from '@/utils/theme';
+import * as Portal from '@radix-ui/react-portal';
+import { bind } from 'bind-event-listener';
+import throttle from 'lodash.throttle';
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -18,7 +21,6 @@ import {
 } from 'recharts';
 import { BarShapeBlue } from '../charts/common-bar';
 import { SerieIcon } from '../report-chart/common/serie-icon';
-
 interface OverviewLiveHistogramProps {
   projectId: string;
 }
@@ -120,26 +122,38 @@ function Wrapper({ children, count, icons }: WrapperProps) {
 
 // Custom tooltip component that uses portals to escape overflow hidden
 const CustomTooltip = ({ active, payload, coordinate }: any) => {
-  const [tooltipContainer] = useState(() => document.createElement('div'));
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const number = useNumber();
+  const [position, setPosition] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
+  const inactive = !active || !payload?.length;
   useEffect(() => {
-    document.body.appendChild(tooltipContainer);
-
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
+    const setPositionThrottled = throttle(setPosition, 50);
+    const unsubMouseMove = bind(window, {
+      type: 'mousemove',
+      listener(event) {
+        if (!inactive) {
+          setPositionThrottled({ x: event.clientX, y: event.clientY + 20 });
+        }
+      },
+    });
+    const unsubDragEnter = bind(window, {
+      type: 'pointerdown',
+      listener() {
+        setPosition(null);
+      },
+    });
 
     return () => {
-      if (document.body.contains(tooltipContainer)) {
-        document.body.removeChild(tooltipContainer);
-      }
-      document.removeEventListener('mousemove', handleMouseMove);
+      unsubMouseMove();
+      unsubDragEnter();
     };
-  }, [tooltipContainer]);
+  }, [inactive]);
+
+  if (inactive) {
+    return null;
+  }
 
   if (!active || !payload || !payload.length) {
     return null;
@@ -147,44 +161,31 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
 
   const data = payload[0].payload;
 
-  // Smart positioning to avoid going out of bounds
-  const tooltipWidth = 220; // min-w-[220px] to accommodate referrers
-  const tooltipHeight = 120; // approximate height with referrers
-  const offset = 10;
+  const tooltipWidth = 200;
+  const correctXPosition = (x: number | undefined) => {
+    if (!x) {
+      return undefined;
+    }
 
-  let left = mousePosition.x + offset;
-  let top = mousePosition.y - offset;
+    const screenWidth = window.innerWidth;
+    const newX = x;
 
-  // Check if tooltip would go off the right edge
-  if (left + tooltipWidth > window.innerWidth) {
-    left = mousePosition.x - tooltipWidth - offset;
-  }
+    if (newX + tooltipWidth > screenWidth) {
+      return screenWidth - tooltipWidth;
+    }
+    return newX;
+  };
 
-  // Check if tooltip would go off the left edge
-  if (left < 0) {
-    left = offset;
-  }
-
-  // Check if tooltip would go off the top edge
-  if (top < 0) {
-    top = mousePosition.y + offset;
-  }
-
-  // Check if tooltip would go off the bottom edge
-  if (top + tooltipHeight > window.innerHeight) {
-    top = window.innerHeight - tooltipHeight - offset;
-  }
-
-  const tooltipContent = (
-    <div
-      className="flex min-w-[220px] flex-col gap-2 rounded-xl border bg-background/80 p-3 shadow-xl backdrop-blur-sm"
+  return (
+    <Portal.Portal
       style={{
         position: 'fixed',
-        top,
-        left,
-        pointerEvents: 'none',
+        top: position?.y,
+        left: correctXPosition(position?.x),
         zIndex: 1000,
+        width: tooltipWidth,
       }}
+      className="bg-background/80 p-3 rounded-md border shadow-xl backdrop-blur-sm"
     >
       <div className="flex justify-between gap-8 text-muted-foreground">
         <div>{data.time}</div>
@@ -234,8 +235,6 @@ const CustomTooltip = ({ active, payload, coordinate }: any) => {
           </div>
         )}
       </React.Fragment>
-    </div>
+    </Portal.Portal>
   );
-
-  return createPortal(tooltipContent, tooltipContainer);
 };

@@ -8,7 +8,7 @@ export function FeedbackButton() {
   return (
     <Button
       variant={'outline'}
-      className="w-full text-left justify-start [&_svg]:mx-2"
+      className="text-left justify-start"
       icon={SparklesIcon}
       onClick={() => {
         op.track('feedback_button_clicked');

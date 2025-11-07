@@ -111,7 +111,7 @@ export function SidebarContainer({
             {active ? <XIcon size={16} /> : <MenuIcon size={16} />}
           </Button>
         </div>
-        <div className="flex h-16 shrink-0 items-center gap-4 border-b border-border px-4">
+        <div className="flex h-16 shrink-0 items-center gap-2 border-b border-border px-4">
           <Link to="/">
             <LogoSquare className="max-h-8" />
           </Link>
@@ -120,7 +120,6 @@ export function SidebarContainer({
             projects={projects}
             organizations={organizations}
           />
-          <ProfileToggle />
         </div>
         <div
           className={cn([
@@ -131,7 +130,10 @@ export function SidebarContainer({
           {children}
 
           <div className="mt-auto w-full pt-6">
-            <FeedbackButton />
+            <div className="row gap-2 justify-between">
+              <FeedbackButton />
+              <ProfileToggle />
+            </div>
             {isSelfHosted && (
               <div className={cn('text-sm w-full text-left mt-2')}>
                 Self-hosted instance

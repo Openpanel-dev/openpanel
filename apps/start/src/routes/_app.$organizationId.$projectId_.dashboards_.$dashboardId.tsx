@@ -460,63 +460,63 @@ function Component() {
 
   return (
     <PageContainer>
-      <div className="row mb-4 items-center justify-between">
-        <PageHeader
-          title={dashboard.name}
-          description="View and manage your reports"
-          className="mb-0"
-        />
-        <div className="flex items-center justify-end gap-2">
-          <OverviewRange />
-          <OverviewInterval />
-          <LinkButton
-            from={Route.fullPath}
-            to={'/$organizationId/$projectId/reports'}
-            icon={PlusIcon}
-          >
-            <span className="max-sm:hidden">Create report</span>
-            <span className="sm:hidden">Report</span>
-          </LinkButton>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
-              <DropdownMenuGroup>
-                <DropdownMenuItem
-                  onClick={() =>
-                    showConfirm({
-                      title: 'Reset layout',
-                      text: 'Are you sure you want to reset the layout to default? This will clear all custom positioning and sizing.',
-                      onConfirm: () =>
-                        resetLayout.mutate({ dashboardId, projectId }),
-                    })
-                  }
-                >
-                  <RotateCcw className="mr-2 size-4" />
-                  Reset layout
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() =>
-                    showConfirm({
-                      title: 'Delete dashboard',
-                      text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
-                      onConfirm: () =>
-                        dashboardDeletion.mutate({ id: dashboardId }),
-                    })
-                  }
-                >
-                  <TrashIcon className="mr-2 size-4" />
-                  Delete dashboard
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <PageHeader
+        title={dashboard.name}
+        description="View and manage your reports"
+        className="mb-0"
+        actions={
+          <>
+            <OverviewRange />
+            <OverviewInterval />
+            <LinkButton
+              from={Route.fullPath}
+              to={'/$organizationId/$projectId/reports'}
+              icon={PlusIcon}
+            >
+              <span className="max-sm:hidden">Create report</span>
+              <span className="sm:hidden">Report</span>
+            </LinkButton>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[200px]">
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() =>
+                      showConfirm({
+                        title: 'Reset layout',
+                        text: 'Are you sure you want to reset the layout to default? This will clear all custom positioning and sizing.',
+                        onConfirm: () =>
+                          resetLayout.mutate({ dashboardId, projectId }),
+                      })
+                    }
+                  >
+                    <RotateCcw className="mr-2 size-4" />
+                    Reset layout
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={() =>
+                      showConfirm({
+                        title: 'Delete dashboard',
+                        text: 'Are you sure you want to delete this dashboard? All your reports will be deleted!',
+                        onConfirm: () =>
+                          dashboardDeletion.mutate({ id: dashboardId }),
+                      })
+                    }
+                  >
+                    <TrashIcon className="mr-2 size-4" />
+                    Delete dashboard
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
+        }
+      />
 
       {reports.length === 0 ? (
         <FullPageEmptyState title="No reports" icon={LayoutPanelTopIcon}>

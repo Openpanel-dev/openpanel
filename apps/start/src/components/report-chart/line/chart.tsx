@@ -1,15 +1,15 @@
 import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal } from '@/modals';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
 import { last } from 'ramda';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import {
-  Area,
   CartesianGrid,
   ComposedChart,
   Customized,
@@ -127,11 +127,23 @@ export function Chart({ data }: Props) {
   const yAxisProps = useYAxisProps({
     hide: hideYAxis,
   });
+
+  const handleChartClick = useCallback((e: any) => {
+    if (e?.activePayload?.[0]) {
+      const clickedData = e.activePayload[0].payload;
+      if (clickedData.date) {
+        pushModal('AddReference', {
+          datetime: new Date(clickedData.date).toISOString(),
+        });
+      }
+    }
+  }, []);
+
   return (
-    <>
+    <ReportChartTooltip.TooltipProvider references={references.data}>
       <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
         <ResponsiveContainer>
-          <ComposedChart data={rechartData}>
+          <ComposedChart data={rechartData} onClick={handleChartClick}>
             <Customized component={calcStrokeDasharray} />
             <Line
               dataKey="calcStrokeDasharray"
@@ -166,7 +178,7 @@ export function Chart({ data }: Props) {
             />
             <XAxis {...xAxisProps} />
             {series.length > 1 && <Legend content={<CustomLegend />} />}
-            <Tooltip content={<ReportChartTooltip />} />
+            <Tooltip content={<ReportChartTooltip.Tooltip />} />
             {/* {series.map((serie) => {
               const color = getChartColor(serie.index);
               return (
@@ -261,7 +273,9 @@ export function Chart({ data }: Props) {
                   }
                   // Use for legend
                   fill={color}
-                  filter="url(#rainbow-line-glow)"
+                  filter={
+                    series.length === 1 ? 'url(#rainbow-line-glow)' : undefined
+                  }
                 />
               );
             })}
@@ -296,6 +310,6 @@ export function Chart({ data }: Props) {
           setVisibleSeries={setVisibleSeries}
         />
       )}
-    </>
+    </ReportChartTooltip.TooltipProvider>
   );
 }

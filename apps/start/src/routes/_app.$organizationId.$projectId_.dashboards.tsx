@@ -108,6 +108,12 @@ function Component() {
         title="Dashboards"
         description="Access all your dashboards here"
         className="mb-8"
+        actions={
+          <Button icon={PlusIcon} onClick={() => pushModal('AddDashboard')}>
+            <span className="max-sm:hidden">Create dashboard</span>
+            <span className="sm:hidden">Dashboard</span>
+          </Button>
+        }
       />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {dashboards.map((item) => {

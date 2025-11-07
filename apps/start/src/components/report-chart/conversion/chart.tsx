@@ -10,6 +10,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
+import { pushModal } from '@/modals';
+import { useCallback } from 'react';
 
 import { createChartTooltip } from '@/components/charts/chart-tooltip';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
@@ -75,11 +77,22 @@ export function Chart({ data }: Props) {
     };
   });
 
+  const handleChartClick = useCallback((e: any) => {
+    if (e?.activePayload?.[0]) {
+      const clickedData = e.activePayload[0].payload;
+      if (clickedData.date) {
+        pushModal('AddReference', {
+          datetime: new Date(clickedData.date).toISOString(),
+        });
+      }
+    }
+  }, []);
+
   return (
     <TooltipProvider conversion={data} interval={interval}>
       <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
         <ResponsiveContainer>
-          <LineChart data={rechartData}>
+          <LineChart data={rechartData} onClick={handleChartClick}>
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}

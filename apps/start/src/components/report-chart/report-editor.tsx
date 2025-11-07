@@ -25,6 +25,7 @@ import { GanttChartSquareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
 import type { IServiceReport } from '@openpanel/db';
+import EditReportName from '../report/edit-report-name';
 
 interface ReportEditorProps {
   report: IServiceReport | null;
@@ -50,65 +51,61 @@ export default function ReportEditor({
     };
   }, [initialReport, dispatch]);
 
-  useEffect(() => {
-    return bind(window, {
-      type: 'report-name-change',
-      listener: (event) => {
-        if (event instanceof CustomEvent && typeof event.detail === 'string') {
-          dispatch(setName(event.detail));
-        }
-      },
-    });
-  }, [dispatch]);
-
   return (
     <Sheet>
-      <div className="grid grid-cols-2 gap-2 p-4 md:grid-cols-6">
-        <SheetTrigger asChild>
-          <div>
-            <Button icon={GanttChartSquareIcon} variant="cta">
+      <div>
+        <div className="p-4">
+          <EditReportName />
+        </div>
+        <div className="grid grid-cols-2 gap-2 p-4 pt-0 md:grid-cols-6">
+          <SheetTrigger asChild>
+            <Button
+              icon={GanttChartSquareIcon}
+              variant="cta"
+              className="self-start"
+            >
               Pick events
             </Button>
+          </SheetTrigger>
+          <div className="col-span-4 grid grid-cols-2 gap-2 md:grid-cols-4">
+            <ReportChartType
+              className="min-w-0 flex-1"
+              onChange={(type) => {
+                dispatch(changeChartType(type));
+              }}
+              value={report.chartType}
+            />
+            <TimeWindowPicker
+              className="min-w-0 flex-1"
+              onChange={(value) => {
+                dispatch(changeDateRanges(value));
+              }}
+              value={report.range}
+              onStartDateChange={(date) => dispatch(changeStartDate(date))}
+              onEndDateChange={(date) => dispatch(changeEndDate(date))}
+              endDate={report.endDate}
+              startDate={report.startDate}
+            />
+            <ReportInterval
+              className="min-w-0 flex-1"
+              interval={report.interval}
+              onChange={(newInterval) => dispatch(changeInterval(newInterval))}
+              range={report.range}
+              chartType={report.chartType}
+              startDate={report.startDate}
+              endDate={report.endDate}
+            />
+            <ReportLineType className="min-w-0 flex-1" />
           </div>
-        </SheetTrigger>
-        <div className="col-span-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-          <ReportChartType
-            className="min-w-0 flex-1"
-            onChange={(type) => {
-              dispatch(changeChartType(type));
-            }}
-            value={report.chartType}
-          />
-          <TimeWindowPicker
-            className="min-w-0 flex-1"
-            onChange={(value) => {
-              dispatch(changeDateRanges(value));
-            }}
-            value={report.range}
-            onStartDateChange={(date) => dispatch(changeStartDate(date))}
-            onEndDateChange={(date) => dispatch(changeEndDate(date))}
-            endDate={report.endDate}
-            startDate={report.startDate}
-          />
-          <ReportInterval
-            className="min-w-0 flex-1"
-            interval={report.interval}
-            onChange={(newInterval) => dispatch(changeInterval(newInterval))}
-            range={report.range}
-            chartType={report.chartType}
-            startDate={report.startDate}
-            endDate={report.endDate}
-          />
-          <ReportLineType className="min-w-0 flex-1" />
+          <div className="col-start-2 row-start-1 text-right md:col-start-6">
+            <ReportSaveButton />
+          </div>
         </div>
-        <div className="col-start-2 row-start-1 text-right md:col-start-6">
-          <ReportSaveButton />
+        <div className="flex flex-col gap-4 p-4" id="report-editor">
+          {report.ready && (
+            <ReportChart report={{ ...report, projectId }} isEditMode />
+          )}
         </div>
-      </div>
-      <div className="flex flex-col gap-4 p-4" id="report-editor">
-        {report.ready && (
-          <ReportChart report={{ ...report, projectId }} isEditMode />
-        )}
       </div>
       <SheetContent className="!max-w-lg" side="left">
         <ReportSidebar />

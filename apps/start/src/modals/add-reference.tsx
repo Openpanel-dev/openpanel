@@ -18,7 +18,11 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 
 type IForm = z.infer<typeof zCreateReference>;
 
-export default function AddReference() {
+interface AddReferenceProps {
+  datetime?: string;
+}
+
+export default function AddReference({ datetime }: AddReferenceProps = {}) {
   const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const { register, handleSubmit, formState, control } = useForm<IForm>({
@@ -27,7 +31,7 @@ export default function AddReference() {
       title: '',
       description: '',
       projectId,
-      datetime: new Date().toISOString(),
+      datetime: datetime || new Date().toISOString(),
     },
   });
 
@@ -52,7 +56,7 @@ export default function AddReference() {
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
-        <InputWithLabel label="Title" {...register('title')} />
+        <InputWithLabel label="Title" {...register('title')} autoFocus />
         <InputWithLabel label="Description" {...register('description')} />
         <Controller
           control={control}

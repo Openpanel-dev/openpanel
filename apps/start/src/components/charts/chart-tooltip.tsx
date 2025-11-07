@@ -3,7 +3,7 @@ import { createContext, useContext as useBaseContext } from 'react';
 import { Tooltip as RechartsTooltip, type TooltipProps } from 'recharts';
 
 export function createChartTooltip<
-  PropsFromTooltip extends Record<string, unknown>,
+  PropsFromTooltip,
   PropsFromContext extends Record<string, unknown>,
 >(
   Tooltip: React.ComponentType<

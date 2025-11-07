@@ -17,11 +17,13 @@ import { last, omit } from 'ramda';
 import React, { useState } from 'react';
 import {
   Bar,
+  BarChart,
   CartesianGrid,
   ComposedChart,
   Customized,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -128,6 +130,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               }))}
               active={metric === index}
               isLoading={overviewQuery.isLoading}
+              inverted={title.inverted}
             />
           ))}
 
@@ -179,6 +182,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               interval={interval}
               data={data}
               chartType={chartType}
+              projectId={projectId}
             />
           </div>
         </div>
@@ -244,15 +248,33 @@ function Chart({
   interval,
   data,
   chartType,
+  projectId,
 }: {
   activeMetric: (typeof TITLES)[number];
   interval: IInterval;
   data: RouterOutputs['overview']['stats']['series'];
   chartType: 'bars' | 'lines';
+  projectId: string;
 }) {
   const xAxisProps = useXAxisProps({ interval });
   const yAxisProps = useYAxisProps();
   const [activeBar, setActiveBar] = useState(-1);
+  const { range, startDate, endDate } = useOverviewOptions();
+
+  const trpc = useTRPC();
+  const references = useQuery(
+    trpc.reference.getChartReferences.queryOptions(
+      {
+        projectId,
+        startDate,
+        endDate,
+        range,
+      },
+      {
+        staleTime: 1000 * 60 * 10,
+      },
+    ),
+  );
 
   // Line chart specific logic
   let dotIndex = undefined;
@@ -372,6 +394,22 @@ function Chart({
                 r: 4,
               }}
             />
+
+            {references.data?.map((ref) => (
+              <ReferenceLine
+                key={ref.id}
+                x={ref.date.getTime()}
+                stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+                strokeDasharray={'3 3'}
+                label={{
+                  value: ref.title,
+                  position: 'centerTop',
+                  fill: '#334155',
+                  fontSize: 12,
+                }}
+                fontSize={10}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </TooltipProvider>
@@ -382,7 +420,7 @@ function Chart({
   return (
     <TooltipProvider metric={activeMetric} interval={interval}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart
+        <BarChart
           data={data}
           margin={{ top: 0, right: 0, left: 0, bottom: 10 }}
           onMouseMove={(e) => {
@@ -426,7 +464,23 @@ function Chart({
               <BarShapeBlue isActive={activeBar === props.index} {...props} />
             )}
           />
-        </ComposedChart>
+
+          {references.data?.map((ref) => (
+            <ReferenceLine
+              key={ref.id}
+              x={ref.date.getTime()}
+              stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+              strokeDasharray={'3 3'}
+              label={{
+                value: ref.title,
+                position: 'centerTop',
+                fill: '#334155',
+                fontSize: 12,
+              }}
+              fontSize={10}
+            />
+          ))}
+        </BarChart>
       </ResponsiveContainer>
     </TooltipProvider>
   );

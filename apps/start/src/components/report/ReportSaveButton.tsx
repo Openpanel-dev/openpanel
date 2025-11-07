@@ -6,7 +6,11 @@ import { SaveIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { useTRPC } from '@/integrations/trpc/react';
-import { useIsFetching, useMutation } from '@tanstack/react-query';
+import {
+  useIsFetching,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 
 import { useParams } from '@tanstack/react-router';
 import { resetDirty } from './reportSlice';
@@ -22,13 +26,20 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
   ];
   const { reportId } = useParams({ strict: false });
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const update = useMutation(
     trpc.report.update.mutationOptions({
-      onSuccess() {
+      onSuccess(res) {
         dispatch(resetDirty());
         toast('Success', {
           description: 'Report updated.',
         });
+        queryClient.invalidateQueries(
+          trpc.report.list.queryFilter({
+            dashboardId: res.dashboardId,
+            projectId: res.projectId,
+          }),
+        );
       },
       onError: handleError,
     }),

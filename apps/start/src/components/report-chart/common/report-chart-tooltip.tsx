@@ -1,149 +1,148 @@
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { IRechartPayloadItem } from '@/hooks/use-rechart-data-model';
-import type { IToolTipProps } from '@/types';
-import * as Portal from '@radix-ui/react-portal';
-import { bind } from 'bind-event-listener';
-import throttle from 'lodash.throttle';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
+import { createChartTooltip } from '@/components/charts/chart-tooltip';
+import type { RouterOutputs } from '@/trpc/client';
+import type { IInterval } from '@openpanel/validation';
+import {
+  format,
+  isSameDay,
+  isSameHour,
+  isSameMinute,
+  isSameMonth,
+  isSameWeek,
+} from 'date-fns';
 import { useReportChartContext } from '../context';
 import { PreviousDiffIndicator } from './previous-diff-indicator';
 import { SerieIcon } from './serie-icon';
 import { SerieName } from './serie-name';
 
-type ReportLineChartTooltipProps = IToolTipProps<{
-  value: number;
-  name: string;
-  dataKey: string;
-  payload: Record<string, unknown>;
-}>;
+const getMatchingReferences = (
+  interval: IInterval,
+  references: RouterOutputs['reference']['getChartReferences'],
+  date: Date,
+) => {
+  return references.filter((reference) => {
+    if (interval === 'minute') {
+      return isSameMinute(reference.date, date);
+    }
+    if (interval === 'hour') {
+      return isSameHour(reference.date, date);
+    }
+    if (interval === 'day') {
+      return isSameDay(reference.date, date);
+    }
+    if (interval === 'week') {
+      return isSameWeek(reference.date, date);
+    }
+    if (interval === 'month') {
+      return isSameMonth(reference.date, date);
+    }
+    return false;
+  });
+};
 
-export function ReportChartTooltip({
-  active,
-  payload,
-}: ReportLineChartTooltipProps) {
-  const {
-    report: { interval, unit },
-  } = useReportChartContext();
-  const formatDate = useFormatDateInterval(interval);
-  const number = useNumber();
-  const [position, setPosition] = useState<{ x: number; y: number } | null>(
-    null,
-  );
+type Context = {
+  references?: RouterOutputs['reference']['getChartReferences'];
+};
+type Data = {
+  date: string;
+  timestamp: number;
+  [key: `${string}:count`]: number;
+  [key: `${string}:payload`]: IRechartPayloadItem;
+};
+export const ReportChartTooltip = createChartTooltip<Data, Context>(
+  ({ context: { references }, data }) => {
+    const {
+      report: { interval, unit },
+    } = useReportChartContext();
+    const formatDate = useFormatDateInterval(interval);
+    const number = useNumber();
 
-  const inactive = !active || !payload?.length;
-  useEffect(() => {
-    const setPositionThrottled = throttle(setPosition, 50);
-    const unsubMouseMove = bind(window, {
-      type: 'mousemove',
-      listener(event) {
-        if (!inactive) {
-          setPositionThrottled({ x: event.clientX, y: event.clientY + 20 });
-        }
-      },
-    });
-    const unsubDragEnter = bind(window, {
-      type: 'pointerdown',
-      listener() {
-        setPosition(null);
-      },
-    });
-
-    return () => {
-      unsubMouseMove();
-      unsubDragEnter();
-    };
-  }, [inactive]);
-
-  if (inactive) {
-    return null;
-  }
-
-  const limit = 3;
-  const sorted = payload
-    .slice(0)
-    .filter((item) => !item.dataKey.includes(':prev:count'))
-    .filter((item) => !item.name.includes(':noTooltip'))
-    .sort((a, b) => b.value - a.value);
-  const visible = sorted.slice(0, limit);
-  const hidden = sorted.slice(limit);
-
-  const correctXPosition = (x: number | undefined) => {
-    if (!x) {
-      return undefined;
+    if (!data || data.length === 0) {
+      return null;
     }
 
-    const tooltipWidth = 300;
-    const screenWidth = window.innerWidth;
-    const newX = x;
+    const firstItem = data[0];
+    const matchingReferences = getMatchingReferences(
+      interval,
+      references ?? [],
+      new Date(firstItem.date),
+    );
 
-    if (newX + tooltipWidth > screenWidth) {
-      return screenWidth - tooltipWidth;
-    }
-    return newX;
-  };
+    // Get all payload items from the first data point
+    const payloadItems = Object.keys(firstItem)
+      .filter((key) => key.endsWith(':payload'))
+      .map(
+        (key) =>
+          firstItem[key as keyof typeof firstItem] as IRechartPayloadItem,
+      )
+      .filter((item) => item && typeof item === 'object' && 'id' in item);
 
-  return (
-    <Portal.Portal
-      style={{
-        position: 'fixed',
-        top: position?.y,
-        left: correctXPosition(position?.x),
-        zIndex: 1000,
-      }}
-    >
-      <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3  shadow-xl">
-        {visible.map((item, index) => {
-          // If we have a <Cell /> component, payload can be nested
-          const payload = item.payload.payload ?? item.payload;
-          const data = (
-            item.dataKey.includes(':')
-              ? // @ts-expect-error
-                payload[`${item.dataKey.split(':')[0]}:payload`]
-              : payload
-          ) as IRechartPayloadItem;
+    // Sort by count
+    const sorted = payloadItems.sort((a, b) => (b.count || 0) - (a.count || 0));
+    const limit = 3;
+    const visible = sorted.slice(0, limit);
+    const hidden = sorted.slice(limit);
 
-          return (
-            <React.Fragment key={data.id}>
-              {index === 0 && data.date && (
-                <div className="flex justify-between gap-8">
-                  <div>{formatDate(new Date(data.date))}</div>
+    return (
+      <div className="flex min-w-[180px] flex-col gap-2">
+        {visible.map((item, index) => (
+          <React.Fragment key={item.id}>
+            {index === 0 && item.date && (
+              <div className="flex justify-between gap-8">
+                <div>{formatDate(new Date(item.date))}</div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <div
+                className="w-[3px] rounded-full"
+                style={{ background: item.color }}
+              />
+              <div className="col flex-1 gap-1">
+                <div className="flex items-center gap-1">
+                  <SerieIcon name={item.names} />
+                  <SerieName name={item.names} />
                 </div>
-              )}
-              <div className="flex gap-2">
-                <div
-                  className="w-[3px] rounded-full"
-                  style={{ background: data.color }}
-                />
-                <div className="col flex-1 gap-1">
-                  <div className="flex items-center gap-1">
-                    <SerieIcon name={data.names} />
-                    <SerieName name={data.names} />
+                <div className="flex justify-between gap-8 font-mono font-medium">
+                  <div className="row gap-1">
+                    {number.formatWithUnit(item.count, unit)}
+                    {!!item.previous && (
+                      <span className="text-muted-foreground">
+                        ({number.formatWithUnit(item.previous.value, unit)})
+                      </span>
+                    )}
                   </div>
-                  <div className="flex justify-between gap-8 font-mono font-medium">
-                    <div className="row gap-1">
-                      {number.formatWithUnit(data.count, unit)}
-                      {!!data.previous && (
-                        <span className="text-muted-foreground">
-                          ({number.formatWithUnit(data.previous.value, unit)})
-                        </span>
-                      )}
-                    </div>
-
-                    <PreviousDiffIndicator {...data.previous} />
-                  </div>
+                  <PreviousDiffIndicator {...item.previous} />
                 </div>
               </div>
-            </React.Fragment>
-          );
-        })}
+            </div>
+          </React.Fragment>
+        ))}
         {hidden.length > 0 && (
           <div className="text-muted-foreground">
             and {hidden.length} more...
           </div>
         )}
+        {matchingReferences.length > 0 && (
+          <>
+            <hr className="border-border" />
+            {matchingReferences.map((reference) => (
+              <div
+                key={reference.id}
+                className="row justify-between items-center"
+              >
+                <div className="font-medium text-sm">{reference.title}</div>
+                <div className="font-medium text-sm shrink-0 text-muted-foreground">
+                  {format(reference.date, 'HH:mm')}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
       </div>
-    </Portal.Portal>
-  );
-}
+    );
+  },
+);

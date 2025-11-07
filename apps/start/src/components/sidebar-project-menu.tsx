@@ -117,7 +117,14 @@ export function ActionCTAButton() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentActionIndex((prevIndex) => (prevIndex + 1) % ACTIONS.length);
+      setCurrentActionIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % ACTIONS.length;
+        if (nextIndex === 0 && prevIndex !== 0) {
+          clearInterval(interval);
+          return 0;
+        }
+        return nextIndex;
+      });
     }, 2000);
 
     return () => clearInterval(interval);
