@@ -100,8 +100,8 @@ export function Chart({ data }: Props) {
                 return (
                   <Cell
                     key={item.id}
-                    strokeWidth={2}
-                    stroke={'#fff'}
+                    strokeWidth={4}
+                    className="stroke-background"
                     fill={item.color}
                   />
                 );

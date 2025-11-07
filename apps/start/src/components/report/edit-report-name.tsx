@@ -65,7 +65,7 @@ const EditReportName = ({ name }: Props) => {
       className="flex cursor-pointer select-none items-center gap-2 text-xl font-medium h-8 group"
       onClick={() => setIsEditing(true)}
     >
-      {newName ?? 'Unnamed Report'}
+      {newName || 'Unnamed Report'}
       <PencilIcon
         size={16}
         className="opacity-0 group-hover:opacity-100 transition-opacity"
