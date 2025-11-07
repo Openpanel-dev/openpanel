@@ -18,6 +18,14 @@ import {
 type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
 
+const sanitize = (value: string) => {
+  return encodeURIComponent(value.replaceAll('"', '&quot;'));
+};
+
+const desanitize = (value: string) => {
+  return decodeURIComponent(value).replaceAll('&quot;', '"');
+};
+
 interface ComboboxAdvancedProps {
   value: IValue[];
   onChange: (value: IValue[]) => void;
@@ -51,7 +59,7 @@ export function ComboboxAdvanced({
     );
 
   const renderItem = (item: IItem) => {
-    const checked = !!value.find((s) => s === item.value);
+    const checked = !!value.find((s) => s === desanitize(item.value));
     return (
       <CommandItem
         onMouseDown={(e) => {
@@ -61,15 +69,16 @@ export function ComboboxAdvanced({
         onSelect={() => {
           setInputValue('');
           onChange(
-            value.includes(item.value)
-              ? value.filter((s) => s !== item.value)
-              : [...value, item.value],
+            value.includes(desanitize(item.value))
+              ? value.filter((s) => s !== desanitize(item.value))
+              : [...value, desanitize(item.value)],
           );
         }}
         className={'flex cursor-pointer items-center gap-2'}
+        value={item.value}
       >
         <DumpCheckbox checked={checked} />
-        {item?.label ?? item?.value}
+        {desanitize(item?.label ?? item?.value)}
       </CommandItem>
     );
   };
@@ -133,7 +142,11 @@ export function ComboboxAdvanced({
             />
             <VirtualList
               height={Math.min(items.length * 32, 300)}
-              data={data}
+              data={data.map((item) => ({
+                ...item,
+                label: sanitize(item.label),
+                value: sanitize(item.value),
+              }))}
               itemHeight={32}
               itemKey="value"
             >
