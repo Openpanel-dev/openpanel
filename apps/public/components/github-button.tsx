@@ -12,7 +12,7 @@ function formatStars(stars: number) {
 }
 
 export function GithubButton() {
-  const [stars, setStars] = useState(3_700);
+  const [stars, setStars] = useState(4_800);
   useEffect(() => {
     getGithubRepoInfo().then((res) => {
       if (res?.stargazers_count) {

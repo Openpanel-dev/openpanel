@@ -30,6 +30,12 @@ export const baseOptions: BaseLayoutProps = {
     },
     {
       type: 'main',
+      text: 'Supporter',
+      url: '/supporter',
+      active: 'nested-url',
+    },
+    {
+      type: 'main',
       text: 'Documentation',
       url: '/docs',
       active: 'nested-url',

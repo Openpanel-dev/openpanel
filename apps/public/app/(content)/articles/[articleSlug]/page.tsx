@@ -148,15 +148,6 @@ export default async function Page({
                 </div>
               </div>
             </div>
-            <div className="col">
-              <Image
-                src={article?.data.cover}
-                alt={article?.data.title}
-                width={323}
-                height={181}
-                className="rounded-lg w-full md:w-auto"
-              />
-            </div>
           </div>
         </div>
         <div className="relative">
@@ -166,8 +157,24 @@ export default async function Page({
                 <Body />
               </div>
             </div>
-            <aside className="hidden md:block pl-12 pb-12">
+            <aside className="pl-12 pb-12 gap-8 col">
               <Toc toc={article?.data.toc} />
+              <section className="overflow-hidden relative bg-foreground dark:bg-background-dark text-background dark:text-foreground rounded-xl py-16">
+                <SingleSwirl className="pointer-events-none absolute top-0 bottom-0 left-0 size-[300px]" />
+                <SingleSwirl className="pointer-events-none rotate-180 absolute top-0 bottom-0 -right-0 opacity-50 size-[300px]" />
+                <div className="container center-center col">
+                  <SectionHeader
+                    className="mb-8"
+                    title="Try it"
+                    description="Give it a spin for free. No credit card required."
+                  />
+                  <Button size="lg" variant="secondary" asChild>
+                    <Link href="https://dashboard.openpanel.dev/onboarding">
+                      Get started today!
+                    </Link>
+                  </Button>
+                </div>
+              </section>
             </aside>
           </div>
 
@@ -189,29 +196,6 @@ export default async function Page({
               </div>
             </div>
           )}
-
-          <div className="absolute top-0 -right-[300px] w-[300px] pl-12 h-full article:block hidden">
-            <div className="sticky top-32 col gap-8">
-              <Toc toc={article?.data.toc} />
-
-              <section className="overflow-hidden relative bg-foreground dark:bg-background-dark text-background dark:text-foreground rounded-xl py-16">
-                <SingleSwirl className="pointer-events-none absolute top-0 bottom-0 left-0 size-[300px]" />
-                <SingleSwirl className="pointer-events-none rotate-180 absolute top-0 bottom-0 -right-0 opacity-50 size-[300px]" />
-                <div className="container center-center col">
-                  <SectionHeader
-                    className="mb-8"
-                    title="Try it"
-                    description="Give it a spin for free. No credit card required."
-                  />
-                  <Button size="lg" variant="secondary" asChild>
-                    <Link href="https://dashboard.openpanel.dev/onboarding">
-                      Get started today!
-                    </Link>
-                  </Button>
-                </div>
-              </section>
-            </div>
-          </div>
         </div>
       </article>
     </div>
