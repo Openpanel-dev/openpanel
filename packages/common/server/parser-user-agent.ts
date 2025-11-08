@@ -90,7 +90,7 @@ const parse = (ua: string): UAParser.IResult => {
         ...res,
         os: {
           ...res.os,
-          version: osVersion[1]!.replace('_', '.'),
+          version: osVersion[1]!.replace(/_/g, '.'),
         },
       };
       parseCache.set(ua, result);

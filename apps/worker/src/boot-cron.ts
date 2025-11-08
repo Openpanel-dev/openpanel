@@ -58,7 +58,7 @@ export async function bootCron() {
     // TODO: Switch to getJobSchedulers
     const repeatableJobs = await cronQueue.getRepeatableJobs();
     for (const repeatableJob of repeatableJobs) {
-      cronQueue.removeRepeatableByKey(repeatableJob.key);
+      await cronQueue.removeRepeatableByKey(repeatableJob.key);
     }
 
     // Add repeatable jobs

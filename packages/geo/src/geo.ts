@@ -2,12 +2,12 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 import type { ReaderModel } from '@maxmind/geoip2-node';
 import { Reader } from '@maxmind/geoip2-node';
 import { LRUCache } from 'lru-cache';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const filename = 'GeoLite2-City.mmdb';
 // From api or worker package
@@ -73,13 +73,15 @@ export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
 
   try {
     const response = await reader?.city(ip);
-    return {
+    const res = {
       city: response?.city?.names.en,
       country: response?.country?.isoCode,
       region: response?.subdivisions?.[0]?.names.en,
       longitude: response?.location?.longitude,
       latitude: response?.location?.latitude,
     };
+    cache.set(ip, res);
+    return res;
   } catch (error) {
     return DEFAULT_GEO;
   }

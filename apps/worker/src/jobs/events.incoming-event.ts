@@ -45,18 +45,8 @@ async function createEventAndNotify(
 }
 
 export async function incomingEvent(
-  job: Job<EventsQueuePayloadIncomingEvent>,
-  token?: string,
-) {
-  return incomingEventPure(job.data.payload, job, token);
-}
-
-export async function incomingEventPure(
   jobPayload: EventsQueuePayloadIncomingEvent['payload'],
-  job?: Job<EventsQueuePayloadIncomingEvent>,
-  token?: string,
 ) {
-  await getRedisCache().incr('queue:counter');
   const {
     geo,
     event: body,

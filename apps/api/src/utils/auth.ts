@@ -137,7 +137,7 @@ export async function validateSdkRequest(
 
   if (client.secret && clientSecret) {
     const isVerified = await getCache(
-      `client:auth:${clientId}:${clientSecret.slice(0, 5)}`,
+      `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`,
       60 * 5,
       async () => await verifyPassword(clientSecret, client.secret!),
       true,

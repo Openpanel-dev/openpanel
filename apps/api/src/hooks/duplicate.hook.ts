@@ -8,12 +8,19 @@ export async function duplicateHook(
   }>,
   reply: FastifyReply,
 ) {
-  const isDuplicate = await isDuplicatedEvent({
-    ip: req.clientIp ?? '',
-    origin: req.headers.origin ?? '',
-    payload: req.body,
-    projectId: (req.headers['openpanel-client-id'] as string) || '',
-  });
+  const ip = req.clientIp;
+  const origin = req.headers.origin;
+  const clientId = req.headers['openpanel-client-id'];
+  const shouldCheck = ip && origin && clientId;
+
+  const isDuplicate = shouldCheck
+    ? await isDuplicatedEvent({
+        ip,
+        origin,
+        payload: req.body,
+        projectId: clientId as string,
+      })
+    : false;
 
   if (isDuplicate) {
     return reply.status(200).send('Duplicate event');

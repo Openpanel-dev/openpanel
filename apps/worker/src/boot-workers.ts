@@ -19,7 +19,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { Worker as GroupWorker } from 'groupmq';
 
 import { cronJob } from './jobs/cron';
-import { incomingEventPure } from './jobs/events.incoming-event';
+import { incomingEvent } from './jobs/events.incoming-event';
 import { importJob } from './jobs/import';
 import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
@@ -122,7 +122,7 @@ export async function bootWorkers() {
         process.env.EVENT_BLOCKING_TIMEOUT_SEC || '1',
       ),
       handler: async (job) => {
-        return await incomingEventPure(job.data);
+        return await incomingEvent(job.data);
       },
     });
 
@@ -184,7 +184,7 @@ export async function bootWorkers() {
       concurrency,
     });
     workers.push(importWorker);
-    logger.info('Started worker for misc', { concurrency });
+    logger.info('Started worker for import', { concurrency });
   }
 
   if (workers.length === 0) {

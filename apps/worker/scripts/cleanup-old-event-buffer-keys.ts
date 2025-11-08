@@ -104,8 +104,12 @@ async function cleanupOldEventBufferKeys(): Promise<CleanupStats> {
           const events = await redis.lrange(sessionKey, 0, -1);
 
           if (events.length > 0) {
-            // Move events to new queue
-            await redis.rpush(newQueueKey, ...events);
+            // Move events to new queue in safe batches to avoid exceeding V8 arg limits
+            const chunkSize = 1000;
+            for (let offset = 0; offset < events.length; offset = chunkSize) {
+              const chunk = events.slice(offset, offset + chunkSize);
+              await redis.rpush(newQueueKey, ...chunk);
+            }
             // Update buffer counter
             await redis.incrby('event_buffer:total_count', events.length);
             totalEventsMigrated += events.length;
