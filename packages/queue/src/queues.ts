@@ -216,7 +216,7 @@ export type ImportQueuePayload = {
   };
 };
 
-export const importQueue = new Queue<ImportQueuePayload>('import', {
+export const importQueue = new Queue<ImportQueuePayload>('{import}', {
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,

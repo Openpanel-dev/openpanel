@@ -412,15 +412,22 @@ export async function getEventList(options: GetEventListOptions) {
   } = options;
   const { sb, getSql, join } = createSqlBuilder();
 
+  const MAX_DATE_INTERVAL_IN_DAYS = 365;
+  // Cap the date interval to prevent infinity
+  const safeDateIntervalInDays = Math.min(
+    dateIntervalInDays,
+    MAX_DATE_INTERVAL_IN_DAYS,
+  );
+
   if (typeof cursor === 'number') {
     sb.offset = Math.max(0, (cursor ?? 0) * take);
   } else if (cursor instanceof Date) {
-    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(cursor))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(cursor))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
     sb.where.cursor = `created_at <= ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
   if (!cursor) {
-    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
 
   sb.limit = take;
@@ -580,7 +587,11 @@ export async function getEventList(options: GetEventListOptions) {
   });
 
   // If we dont get any events, try without the cursor window
-  if (data.length === 0 && sb.where.cursorWindow) {
+  if (
+    data.length === 0 &&
+    sb.where.cursorWindow &&
+    safeDateIntervalInDays < MAX_DATE_INTERVAL_IN_DAYS
+  ) {
     return getEventList({
       ...options,
       dateIntervalInDays: dateIntervalInDays * 2,
