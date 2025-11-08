@@ -1,5 +1,5 @@
 {
   "title": "SDKs",
-  "pages": ["script", "web", "javascript", "node", "nextjs", "..."],
+  "pages": ["script", "web", "javascript", "nextjs", "react", "vue", "astro", "remix", "express", "python", "react-native", "swift", "kotlin"],
   "defaultOpen": true
 }
