@@ -190,8 +190,8 @@ importers:
         specifier: ^5.0.0
         version: 5.0.0
       groupmq:
-        specifier: 1.1.0-next.5
-        version: 1.1.0-next.5(ioredis@5.8.2)
+        specifier: 1.1.0-next.6
+        version: 1.1.0-next.6(ioredis@5.8.2)
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -874,8 +874,8 @@ importers:
         specifier: ^4.18.2
         version: 4.18.2
       groupmq:
-        specifier: 1.1.0-next.5
-        version: 1.1.0-next.5(ioredis@5.8.2)
+        specifier: 1.1.0-next.6
+        version: 1.1.0-next.6(ioredis@5.8.2)
       prom-client:
         specifier: ^15.1.3
         version: 15.1.3
@@ -1338,8 +1338,8 @@ importers:
         specifier: ^5.63.0
         version: 5.63.0
       groupmq:
-        specifier: 1.1.0-next.5
-        version: 1.1.0-next.5(ioredis@5.8.2)
+        specifier: 1.1.0-next.6
+        version: 1.1.0-next.6(ioredis@5.8.2)
     devDependencies:
       '@openpanel/sdk':
         specifier: workspace:*
@@ -11475,8 +11475,8 @@ packages:
     resolution: {integrity: sha512-5v6yZd4JK3eMI3FqqCouswVqwugaA9r4dNZB1wwcmrD02QkV5H0y7XBQW8QwQqEaZY1pM9aqORSORhJRdNK44Q==}
     engines: {node: '>=6.0'}
 
-  groupmq@1.1.0-next.5:
-    resolution: {integrity: sha512-bUsphvHY3tznr9+izuFpTdeLPUYY4tMl4cbg3zWYDa8HeyOggHETzeyN3Ox7ox5/asI8VYyzpU+PV+w7/UIcXA==}
+  groupmq@1.1.0-next.6:
+    resolution: {integrity: sha512-SvnnzMOqcLr/vXYHFGnq5xoFGnM1Uf2wv+YtHE+wEDeRKFh4AdH0s0vyWBihnXzZkK9HxanKcBbVUUh46OX2ig==}
     engines: {node: '>=18'}
     peerDependencies:
       ioredis: '>=5'
@@ -28017,7 +28017,7 @@ snapshots:
       section-matter: 1.0.0
       strip-bom-string: 1.0.0
 
-  groupmq@1.1.0-next.5(ioredis@5.8.2):
+  groupmq@1.1.0-next.6(ioredis@5.8.2):
     dependencies:
       cron-parser: 4.9.0
       ioredis: 5.8.2

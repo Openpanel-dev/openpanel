@@ -11,7 +11,7 @@
     "@openpanel/logger": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "bullmq": "^5.63.0",
-    "groupmq": "1.1.0-next.5"
+    "groupmq": "1.1.0-next.6"
   },
   "devDependencies": {
     "@openpanel/sdk": "workspace:*",
