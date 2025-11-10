@@ -32,6 +32,8 @@ export class OpenPanel extends OpenPanelBase {
     });
 
     if (!this.isServer()) {
+      console.log('OpenPanel.dev - Initialized', this.options);
+
       this.setGlobalProperties({
         __referrer: document.referrer,
       });
@@ -71,14 +73,22 @@ export class OpenPanel extends OpenPanelBase {
       if (link && target) {
         const href = link.getAttribute('href');
         if (href?.startsWith('http')) {
-          super.track('link_out', {
-            href,
-            text:
-              link.innerText ||
-              link.getAttribute('title') ||
-              target.getAttribute('alt') ||
-              target.getAttribute('title'),
-          });
+          try {
+            const linkUrl = new URL(href);
+            const currentHostname = window.location.hostname;
+            if (linkUrl.hostname !== currentHostname) {
+              super.track('link_out', {
+                href,
+                text:
+                  link.innerText ||
+                  link.getAttribute('title') ||
+                  target.getAttribute('alt') ||
+                  target.getAttribute('title'),
+              });
+            }
+          } catch {
+            // Invalid URL, skip tracking
+          }
         }
       }
     });
@@ -174,6 +184,7 @@ export class OpenPanel extends OpenPanelBase {
     }
 
     this.lastPath = path;
+    console.log('OpenPanel.dev - Track page view');
     super.track('screen_view', {
       ...(properties ?? {}),
       __path: path,
