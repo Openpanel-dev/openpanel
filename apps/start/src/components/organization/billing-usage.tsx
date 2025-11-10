@@ -215,34 +215,36 @@ export default function BillingUsage({ organization }: Props) {
           </>
         )}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Events Chart */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            {useWeeklyIntervals ? 'Weekly Events' : 'Daily Events'}
-          </h3>
-          <div className="max-h-[300px] h-[250px] w-full p-4">
-            <ResponsiveContainer>
-              <BarChart data={chartData} barSize={useWeeklyIntervals ? 20 : 8}>
-                <RechartTooltip
-                  content={<EventsTooltip useWeekly={useWeeklyIntervals} />}
-                />
-                <Bar
-                  dataKey="count"
-                  isAnimationActive={false}
-                  shape={BarShapeBlue}
-                />
-                <XAxis {...xAxisProps} dataKey="date" />
-                <YAxis {...yAxisProps} domain={[0, 'dataMax']} />
-                <CartesianGrid
-                  horizontal={true}
-                  vertical={false}
-                  strokeDasharray="3 3"
-                  strokeOpacity={0.5}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Events Chart */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-medium text-muted-foreground">
+          {useWeeklyIntervals ? 'Weekly Events' : 'Daily Events'}
+        </h3>
+        <div className="max-h-[300px] h-[250px] w-full p-4">
+          <ResponsiveContainer>
+            <BarChart data={chartData} barSize={useWeeklyIntervals ? 20 : 8}>
+              <RechartTooltip
+                content={<EventsTooltip useWeekly={useWeeklyIntervals} />}
+                cursor={{
+                  fill: 'var(--def-200)',
+                  stroke: 'var(--def-200)',
+                }}
+              />
+              <Bar
+                dataKey="count"
+                isAnimationActive={false}
+                shape={BarShapeBlue}
+              />
+              <XAxis {...xAxisProps} dataKey="date" />
+              <YAxis {...yAxisProps} domain={[0, 'dataMax']} />
+              <CartesianGrid
+                horizontal={true}
+                vertical={false}
+                strokeDasharray="3 3"
+                strokeOpacity={0.5}
+              />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
     </>,
