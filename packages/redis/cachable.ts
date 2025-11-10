@@ -128,13 +128,17 @@ function hasResult(result: unknown): boolean {
   return true;
 }
 
-type CacheMode = 'lru' | 'redis' | 'both';
+export interface CacheableLruOptions {
+  /** TTL in seconds for LRU cache */
+  ttl: number;
+  /** Maximum number of entries in LRU cache */
+  maxSize?: number;
+}
 
-// Overload 1: cacheable(fn, expireInSec, lruCache?)
+// Overload 1: cacheable(fn, expireInSec)
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
   expireInSec: number,
-  cacheMode?: CacheMode,
 ): T & {
   getKey: (...args: Parameters<T>) => string;
   clear: (...args: Parameters<T>) => Promise<number>;
@@ -143,12 +147,11 @@ export function cacheable<T extends (...args: any) => any>(
   ) => (payload: Awaited<ReturnType<T>>) => Promise<'OK'>;
 };
 
-// Overload 2: cacheable(name, fn, expireInSec, lruCache?)
+// Overload 2: cacheable(name, fn, expireInSec)
 export function cacheable<T extends (...args: any) => any>(
   name: string,
   fn: T,
   expireInSec: number,
-  cacheMode?: CacheMode,
 ): T & {
   getKey: (...args: Parameters<T>) => string;
   clear: (...args: Parameters<T>) => Promise<number>;
@@ -157,12 +160,11 @@ export function cacheable<T extends (...args: any) => any>(
   ) => (payload: Awaited<ReturnType<T>>) => Promise<'OK'>;
 };
 
-// Implementation
+// Implementation for cacheable (Redis-only - async)
 export function cacheable<T extends (...args: any) => any>(
   fnOrName: T | string,
   fnOrExpireInSec: number | T,
-  _expireInSecOrCacheMode?: number | CacheMode,
-  _cacheMode?: CacheMode,
+  _expireInSec?: number,
 ) {
   const name = typeof fnOrName === 'string' ? fnOrName : fnOrName.name;
   const fn =
@@ -173,23 +175,14 @@ export function cacheable<T extends (...args: any) => any>(
         : null;
 
   let expireInSec: number | null = null;
-  let cacheMode = 'redis';
 
   // Parse parameters based on function signature
   if (typeof fnOrName === 'function') {
-    // Overload 1: cacheable(fn, expireInSec, lruCache?)
+    // Overload 1: cacheable(fn, expireInSec)
     expireInSec = typeof fnOrExpireInSec === 'number' ? fnOrExpireInSec : null;
-    cacheMode =
-      typeof _expireInSecOrCacheMode === 'boolean'
-        ? _expireInSecOrCacheMode
-        : 'redis';
   } else {
-    // Overload 2: cacheable(name, fn, expireInSec, lruCache?)
-    expireInSec =
-      typeof _expireInSecOrCacheMode === 'number'
-        ? _expireInSecOrCacheMode
-        : null;
-    cacheMode = typeof _cacheMode === 'string' ? _cacheMode : 'redis';
+    // Overload 2: cacheable(name, fn, expireInSec)
+    expireInSec = typeof _expireInSec === 'number' ? _expireInSec : null;
   }
 
   if (typeof fn !== 'function') {
@@ -204,33 +197,13 @@ export function cacheable<T extends (...args: any) => any>(
   const getKey = (...args: Parameters<T>) =>
     `${cachePrefix}:${stringify(args)}`;
 
-  // Create function-specific LRU cache if enabled
-  const functionLruCache =
-    cacheMode === 'lru' || cacheMode === 'both'
-      ? new LRUCache<string, any>({
-          max: 1000,
-          ttl: expireInSec * 1000, // Convert seconds to milliseconds for LRU
-        })
-      : null;
-
+  // Redis-only mode: asynchronous implementation
   const cachedFn = async (
     ...args: Parameters<T>
   ): Promise<Awaited<ReturnType<T>>> => {
     const key = getKey(...args);
 
-    // L1 Cache: Check LRU cache first (in-memory, instant)
-    if (functionLruCache) {
-      const lruHit = functionLruCache.get(key);
-      if (lruHit !== undefined && hasResult(lruHit)) {
-        return lruHit;
-      }
-
-      if (cacheMode === 'lru') {
-        return null as any;
-      }
-    }
-
-    // L2 Cache: Check Redis cache (shared across instances)
+    // Check Redis cache (shared across instances)
     const cached = await getRedisCache().get(key);
     if (cached) {
       try {
@@ -244,10 +217,6 @@ export function cacheable<T extends (...args: any) => any>(
           return value;
         });
         if (hasResult(parsed)) {
-          // Store in LRU cache for next time
-          if (functionLruCache) {
-            functionLruCache.set(key, parsed);
-          }
           return parsed;
         }
       } catch (e) {
@@ -259,12 +228,10 @@ export function cacheable<T extends (...args: any) => any>(
     const result = await fn(...(args as any));
 
     if (hasResult(result)) {
-      // Store in both caches
-      if (functionLruCache) {
-        functionLruCache.set(key, result);
-      }
       // Don't await Redis write - fire and forget for better performance
-      getRedisCache().setex(key, expireInSec, JSON.stringify(result));
+      getRedisCache()
+        .setex(key, expireInSec, JSON.stringify(result))
+        .catch(() => {});
     }
 
     return result;
@@ -273,21 +240,140 @@ export function cacheable<T extends (...args: any) => any>(
   cachedFn.getKey = getKey;
   cachedFn.clear = async (...args: Parameters<T>) => {
     const key = getKey(...args);
-    // Clear both LRU and Redis caches
-    if (functionLruCache) {
-      functionLruCache.delete(key);
-    }
     return getRedisCache().del(key);
   };
   cachedFn.set =
     (...args: Parameters<T>) =>
     async (payload: Awaited<ReturnType<T>>) => {
       const key = getKey(...args);
-      // Set in both caches
-      if (functionLruCache) {
+      return getRedisCache()
+        .setex(key, expireInSec, JSON.stringify(payload))
+        .catch(() => {});
+    };
+
+  return cachedFn;
+}
+
+// Overload 1: cacheableLru(fn, options)
+export function cacheableLru<T extends (...args: any) => any>(
+  fn: T,
+  options: CacheableLruOptions,
+): T & {
+  getKey: (...args: Parameters<T>) => string;
+  clear: (...args: Parameters<T>) => boolean;
+  set: (...args: Parameters<T>) => (payload: ReturnType<T>) => void;
+};
+
+// Overload 2: cacheableLru(name, fn, options)
+export function cacheableLru<T extends (...args: any) => any>(
+  name: string,
+  fn: T,
+  options: CacheableLruOptions,
+): T & {
+  getKey: (...args: Parameters<T>) => string;
+  clear: (...args: Parameters<T>) => boolean;
+  set: (...args: Parameters<T>) => (payload: ReturnType<T>) => void;
+};
+
+// Implementation for cacheableLru (LRU-only - synchronous)
+export function cacheableLru<T extends (...args: any) => any>(
+  fnOrName: T | string,
+  fnOrOptions: T | CacheableLruOptions,
+  _options?: CacheableLruOptions,
+) {
+  const name = typeof fnOrName === 'string' ? fnOrName : fnOrName.name;
+  const fn =
+    typeof fnOrName === 'function'
+      ? fnOrName
+      : typeof fnOrOptions === 'function'
+        ? fnOrOptions
+        : null;
+
+  let options: CacheableLruOptions;
+
+  // Parse parameters based on function signature
+  if (typeof fnOrName === 'function') {
+    // Overload 1: cacheableLru(fn, options)
+    options =
+      typeof fnOrOptions === 'object' && fnOrOptions !== null
+        ? fnOrOptions
+        : ({} as CacheableLruOptions);
+  } else {
+    // Overload 2: cacheableLru(name, fn, options)
+    options =
+      typeof _options === 'object' && _options !== null
+        ? _options
+        : ({} as CacheableLruOptions);
+  }
+
+  if (typeof fn !== 'function') {
+    throw new Error('fn is not a function');
+  }
+
+  if (typeof options.ttl !== 'number') {
+    throw new Error('options.ttl is required and must be a number');
+  }
+
+  const cachePrefix = `cachable:${name}`;
+  const getKey = (...args: Parameters<T>) =>
+    `${cachePrefix}:${stringify(args)}`;
+
+  const maxSize = options.maxSize ?? 1000;
+  const ttl = options.ttl;
+
+  // Create function-specific LRU cache
+  const functionLruCache = new LRUCache<string, any>({
+    max: maxSize,
+    ttl: ttl * 1000, // Convert seconds to milliseconds for LRU
+  });
+
+  // LRU-only mode: synchronous implementation (or returns promise if fn is async)
+  const cachedFn = ((...args: Parameters<T>): ReturnType<T> => {
+    const key = getKey(...args);
+
+    // Check LRU cache
+    const lruHit = functionLruCache.get(key);
+    if (lruHit !== undefined && hasResult(lruHit)) {
+      return lruHit as ReturnType<T>;
+    }
+
+    // Cache miss: Execute function
+    const result = fn(...(args as any)) as ReturnType<T>;
+
+    // If result is a Promise, handle it asynchronously but cache the resolved value
+    if (result && typeof (result as any).then === 'function') {
+      return (result as Promise<any>).then((resolved: any) => {
+        if (hasResult(resolved)) {
+          functionLruCache.set(key, resolved);
+        }
+        return resolved;
+      }) as ReturnType<T>;
+    }
+
+    // Synchronous result: cache and return
+    if (hasResult(result)) {
+      functionLruCache.set(key, result);
+    }
+
+    return result;
+  }) as T & {
+    getKey: (...args: Parameters<T>) => string;
+    clear: (...args: Parameters<T>) => boolean;
+    set: (...args: Parameters<T>) => (payload: ReturnType<T>) => void;
+  };
+
+  cachedFn.getKey = getKey;
+  cachedFn.clear = (...args: Parameters<T>) => {
+    const key = getKey(...args);
+    return functionLruCache.delete(key);
+  };
+  cachedFn.set =
+    (...args: Parameters<T>) =>
+    (payload: ReturnType<T>) => {
+      const key = getKey(...args);
+      if (hasResult(payload)) {
         functionLruCache.set(key, payload);
       }
-      return getRedisCache().setex(key, expireInSec, JSON.stringify(payload));
     };
 
   return cachedFn;
