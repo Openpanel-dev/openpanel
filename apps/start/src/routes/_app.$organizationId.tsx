@@ -1,4 +1,5 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import SupporterPrompt from '@/components/organization/supporter-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
@@ -136,6 +137,7 @@ function Component() {
         </Alert>
       )}
       <Outlet />
+      <SupporterPrompt />
     </>
   );
 }

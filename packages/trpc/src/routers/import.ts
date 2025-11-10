@@ -5,7 +5,11 @@ import { importQueue } from '@openpanel/queue';
 import { zCreateImport } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import {
+  TRPCAccessError,
+  TRPCBadRequestError,
+  TRPCNotFoundError,
+} from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const importRouter = createTRPCRouter({
@@ -66,6 +70,28 @@ export const importRouter = createTRPCRouter({
       if (!access || (typeof access !== 'boolean' && access.level === 'read')) {
         throw TRPCAccessError(
           'You do not have permission to create imports for this project',
+        );
+      }
+
+      const organization = await db.organization.findFirst({
+        where: {
+          projects: {
+            some: {
+              id: input.projectId,
+            },
+          },
+        },
+      });
+
+      if (!organization) {
+        throw TRPCNotFoundError(
+          'Could not start import, organization not found',
+        );
+      }
+
+      if (!organization.isActive) {
+        throw TRPCBadRequestError(
+          'You cannot start an import without an active subscription!',
         );
       }
 

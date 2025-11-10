@@ -33,7 +33,7 @@ import {
 import { toast } from 'sonner';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId_/settings/_tabs/imports',
+  '/_app/$organizationId/$projectId/settings/_tabs/imports',
 )({
   component: ImportsSettings,
 });

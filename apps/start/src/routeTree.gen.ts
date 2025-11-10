@@ -57,7 +57,7 @@ import { Route as AppOrganizationIdProjectIdSettingsTabsIndexRouteImport } from 
 import { Route as AppOrganizationIdProjectIdProfilesTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.index'
 import { Route as AppOrganizationIdProjectIdNotificationsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.notifications._tabs.index'
 import { Route as AppOrganizationIdProjectIdEventsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.index'
-import { Route as AppOrganizationIdProjectIdSettingsTabsImportsRouteImport } from './routes/_app.$organizationId.$projectId_.settings._tabs.imports'
+import { Route as AppOrganizationIdProjectIdSettingsTabsImportsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.imports'
 import { Route as AppOrganizationIdProjectIdSettingsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.events'
 import { Route as AppOrganizationIdProjectIdSettingsTabsDetailsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.details'
 import { Route as AppOrganizationIdProjectIdSettingsTabsClientsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.clients'
@@ -391,9 +391,9 @@ const AppOrganizationIdProjectIdEventsTabsIndexRoute =
   } as any)
 const AppOrganizationIdProjectIdSettingsTabsImportsRoute =
   AppOrganizationIdProjectIdSettingsTabsImportsRouteImport.update({
-    id: '/$projectId_/settings/_tabs/imports',
-    path: '/$projectId/settings/imports',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/imports',
+    path: '/imports',
+    getParentRoute: () => AppOrganizationIdProjectIdSettingsTabsRoute,
   } as any)
 const AppOrganizationIdProjectIdSettingsTabsEventsRoute =
   AppOrganizationIdProjectIdSettingsTabsEventsRouteImport.update({
@@ -651,7 +651,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/$projectId/settings/_tabs/clients': typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
   '/_app/$organizationId/$projectId/settings/_tabs/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   '/_app/$organizationId/$projectId/settings/_tabs/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
-  '/_app/$organizationId/$projectId_/settings/_tabs/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
   '/_app/$organizationId/$projectId/events/_tabs/': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
   '/_app/$organizationId/$projectId/notifications/_tabs/': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
   '/_app/$organizationId/$projectId/profiles/_tabs/': typeof AppOrganizationIdProjectIdProfilesTabsIndexRoute
@@ -832,7 +832,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/$projectId/settings/_tabs/clients'
     | '/_app/$organizationId/$projectId/settings/_tabs/details'
     | '/_app/$organizationId/$projectId/settings/_tabs/events'
-    | '/_app/$organizationId/$projectId_/settings/_tabs/imports'
+    | '/_app/$organizationId/$projectId/settings/_tabs/imports'
     | '/_app/$organizationId/$projectId/events/_tabs/'
     | '/_app/$organizationId/$projectId/notifications/_tabs/'
     | '/_app/$organizationId/$projectId/profiles/_tabs/'
@@ -1225,12 +1225,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/settings/_tabs/imports': {
-      id: '/_app/$organizationId/$projectId_/settings/_tabs/imports'
-      path: '/$projectId/settings/imports'
+    '/_app/$organizationId/$projectId/settings/_tabs/imports': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/imports'
+      path: '/imports'
       fullPath: '/$organizationId/$projectId/settings/imports'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsImportsRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
     '/_app/$organizationId/$projectId/settings/_tabs/events': {
       id: '/_app/$organizationId/$projectId/settings/_tabs/events'
@@ -1487,6 +1487,7 @@ interface AppOrganizationIdProjectIdSettingsTabsRouteChildren {
   AppOrganizationIdProjectIdSettingsTabsClientsRoute: typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
   AppOrganizationIdProjectIdSettingsTabsDetailsRoute: typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   AppOrganizationIdProjectIdSettingsTabsEventsRoute: typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
+  AppOrganizationIdProjectIdSettingsTabsImportsRoute: typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
   AppOrganizationIdProjectIdSettingsTabsIndexRoute: typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
 }
 
@@ -1498,6 +1499,8 @@ const AppOrganizationIdProjectIdSettingsTabsRouteChildren: AppOrganizationIdProj
       AppOrganizationIdProjectIdSettingsTabsDetailsRoute,
     AppOrganizationIdProjectIdSettingsTabsEventsRoute:
       AppOrganizationIdProjectIdSettingsTabsEventsRoute,
+    AppOrganizationIdProjectIdSettingsTabsImportsRoute:
+      AppOrganizationIdProjectIdSettingsTabsImportsRoute,
     AppOrganizationIdProjectIdSettingsTabsIndexRoute:
       AppOrganizationIdProjectIdSettingsTabsIndexRoute,
   }
@@ -1655,7 +1658,6 @@ interface AppOrganizationIdRouteChildren {
   AppOrganizationIdIndexRoute: typeof AppOrganizationIdIndexRoute
   AppOrganizationIdIntegrationsRoute: typeof AppOrganizationIdIntegrationsRouteWithChildren
   AppOrganizationIdMembersRoute: typeof AppOrganizationIdMembersRouteWithChildren
-  AppOrganizationIdProjectIdSettingsTabsImportsRoute: typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
 }
 
 const AppOrganizationIdRouteChildren: AppOrganizationIdRouteChildren = {
@@ -1666,8 +1668,6 @@ const AppOrganizationIdRouteChildren: AppOrganizationIdRouteChildren = {
   AppOrganizationIdIntegrationsRoute:
     AppOrganizationIdIntegrationsRouteWithChildren,
   AppOrganizationIdMembersRoute: AppOrganizationIdMembersRouteWithChildren,
-  AppOrganizationIdProjectIdSettingsTabsImportsRoute:
-    AppOrganizationIdProjectIdSettingsTabsImportsRoute,
 }
 
 const AppOrganizationIdRouteWithChildren =
