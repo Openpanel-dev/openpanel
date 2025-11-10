@@ -340,7 +340,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_version: payload.sdkVersion ?? '',
   };
 
-  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
+  const promises = [sessionBuffer.add(event), eventBuffer.add(event)];
 
   if (payload.profileId) {
     const profile: IServiceUpsertProfile = {
@@ -371,9 +371,11 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
       profile.isExternal ||
       (profile.isExternal === false && payload.name === 'session_start')
     ) {
-      await upsertProfile(profile, true);
+      promises.push(upsertProfile(profile, true));
     }
   }
+
+  await Promise.all(promises);
 
   return {
     document: event,

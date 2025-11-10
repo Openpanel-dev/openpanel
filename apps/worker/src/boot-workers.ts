@@ -216,10 +216,10 @@ export async function bootWorkers() {
     (worker as Worker).on('failed', (job) => {
       if (job) {
         if (job.processedOn && job.finishedOn) {
-          const duration = job.finishedOn - job.processedOn;
+          const elapsed = job.finishedOn - job.processedOn;
           eventsGroupJobDuration.observe(
-            { queue_shard: worker.name, status: 'failed' },
-            duration,
+            { name: worker.name, status: 'failed' },
+            elapsed,
           );
         }
         logger.error('job failed', {
@@ -235,10 +235,15 @@ export async function bootWorkers() {
     (worker as Worker).on('completed', (job) => {
       if (job) {
         if (job.processedOn && job.finishedOn) {
-          const duration = job.finishedOn - job.processedOn;
+          const elapsed = job.finishedOn - job.processedOn;
+          logger.info('job completed', {
+            jobId: job.id,
+            worker: worker.name,
+            elapsed,
+          });
           eventsGroupJobDuration.observe(
-            { queue_shard: worker.name, status: 'success' },
-            duration,
+            { name: worker.name, status: 'success' },
+            elapsed,
           );
         }
       }

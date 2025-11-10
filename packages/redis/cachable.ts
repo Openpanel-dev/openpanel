@@ -128,11 +128,13 @@ function hasResult(result: unknown): boolean {
   return true;
 }
 
+type CacheMode = 'lru' | 'redis' | 'both';
+
 // Overload 1: cacheable(fn, expireInSec, lruCache?)
 export function cacheable<T extends (...args: any) => any>(
   fn: T,
   expireInSec: number,
-  lruCache?: boolean,
+  cacheMode?: CacheMode,
 ): T & {
   getKey: (...args: Parameters<T>) => string;
   clear: (...args: Parameters<T>) => Promise<number>;
@@ -146,7 +148,7 @@ export function cacheable<T extends (...args: any) => any>(
   name: string,
   fn: T,
   expireInSec: number,
-  lruCache?: boolean,
+  cacheMode?: CacheMode,
 ): T & {
   getKey: (...args: Parameters<T>) => string;
   clear: (...args: Parameters<T>) => Promise<number>;
@@ -159,8 +161,8 @@ export function cacheable<T extends (...args: any) => any>(
 export function cacheable<T extends (...args: any) => any>(
   fnOrName: T | string,
   fnOrExpireInSec: number | T,
-  _expireInSecOrLruCache?: number | boolean,
-  _lruCache?: boolean,
+  _expireInSecOrCacheMode?: number | CacheMode,
+  _cacheMode?: CacheMode,
 ) {
   const name = typeof fnOrName === 'string' ? fnOrName : fnOrName.name;
   const fn =
@@ -171,23 +173,23 @@ export function cacheable<T extends (...args: any) => any>(
         : null;
 
   let expireInSec: number | null = null;
-  let useLruCache = false;
+  let cacheMode = 'redis';
 
   // Parse parameters based on function signature
   if (typeof fnOrName === 'function') {
     // Overload 1: cacheable(fn, expireInSec, lruCache?)
     expireInSec = typeof fnOrExpireInSec === 'number' ? fnOrExpireInSec : null;
-    useLruCache =
-      typeof _expireInSecOrLruCache === 'boolean'
-        ? _expireInSecOrLruCache
-        : false;
+    cacheMode =
+      typeof _expireInSecOrCacheMode === 'boolean'
+        ? _expireInSecOrCacheMode
+        : 'redis';
   } else {
     // Overload 2: cacheable(name, fn, expireInSec, lruCache?)
     expireInSec =
-      typeof _expireInSecOrLruCache === 'number'
-        ? _expireInSecOrLruCache
+      typeof _expireInSecOrCacheMode === 'number'
+        ? _expireInSecOrCacheMode
         : null;
-    useLruCache = typeof _lruCache === 'boolean' ? _lruCache : false;
+    cacheMode = typeof _cacheMode === 'string' ? _cacheMode : 'redis';
   }
 
   if (typeof fn !== 'function') {
@@ -203,12 +205,13 @@ export function cacheable<T extends (...args: any) => any>(
     `${cachePrefix}:${stringify(args)}`;
 
   // Create function-specific LRU cache if enabled
-  const functionLruCache = useLruCache
-    ? new LRUCache<string, any>({
-        max: 1000,
-        ttl: expireInSec * 1000, // Convert seconds to milliseconds for LRU
-      })
-    : null;
+  const functionLruCache =
+    cacheMode === 'lru' || cacheMode === 'both'
+      ? new LRUCache<string, any>({
+          max: 1000,
+          ttl: expireInSec * 1000, // Convert seconds to milliseconds for LRU
+        })
+      : null;
 
   const cachedFn = async (
     ...args: Parameters<T>
@@ -220,6 +223,10 @@ export function cacheable<T extends (...args: any) => any>(
       const lruHit = functionLruCache.get(key);
       if (lruHit !== undefined && hasResult(lruHit)) {
         return lruHit;
+      }
+
+      if (cacheMode === 'lru') {
+        return null as any;
       }
     }
 

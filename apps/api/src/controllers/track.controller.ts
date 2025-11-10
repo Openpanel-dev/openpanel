@@ -1,14 +1,11 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';
 
-import { logger } from '@/utils/logger';
 import { generateId } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import type { ILogger } from '@openpanel/logger';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -241,25 +238,6 @@ async function track({
   const jobId = [payload.name, timestamp, projectId, currentDeviceId, groupId]
     .filter(Boolean)
     .join('-');
-  await getRedisCache().incr('track:counter');
-  log('track handler', {
-    jobId: jobId,
-    groupId: groupId,
-    timestamp: timestamp,
-    data: {
-      projectId,
-      headers,
-      event: {
-        ...payload,
-        timestamp,
-        isTimestampFromThePast,
-      },
-      uaInfo,
-      geo,
-      currentDeviceId,
-      previousDeviceId,
-    },
-  });
   await getEventsGroupQueueShard(groupId).add({
     orderMs: timestamp,
     data: {

@@ -6,9 +6,9 @@ import { duplicateHook } from '@/hooks/duplicate.hook';
 import { isBotHook } from '@/hooks/is-bot.hook';
 
 const trackRouter: FastifyPluginCallback = async (fastify) => {
-  fastify.addHook('preHandler', isBotHook);
   fastify.addHook('preValidation', duplicateHook);
   fastify.addHook('preHandler', clientHook);
+  fastify.addHook('preHandler', isBotHook);
 
   fastify.route({
     method: 'POST',

@@ -1,6 +1,6 @@
 import { generateSalt } from '@openpanel/common/server';
 
-import { cacheable, getRedisCache } from '@openpanel/redis';
+import { cacheable } from '@openpanel/redis';
 import { db } from '../prisma-client';
 
 export async function getCurrentSalt() {
@@ -43,7 +43,7 @@ export const getSalts = cacheable(
     return salts;
   },
   60 * 10,
-  true,
+  'both',
 );
 
 export async function createInitialSalts() {
