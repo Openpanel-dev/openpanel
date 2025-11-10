@@ -12,13 +12,36 @@ import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
+import {
+  ScriptOnce,
+  createFileRoute,
+  notFound,
+  useSearch,
+} from '@tanstack/react-router';
 import { EyeClosedIcon, FrownIcon } from 'lucide-react';
 import { z } from 'zod';
+import '@iframe-resizer/child';
 
 const shareSearchSchema = z.object({
   header: z.optional(z.number().or(z.string().or(z.boolean()))),
 });
+
+const iframeResizerScript = `
+(function() {
+  if (typeof window !== 'undefined' && window.iFrameResizer) {
+    window.iFrameResizer.onMessage = function(message) {
+      if (message && message.type === 'load-custom-styles') {
+        var css = (message.opts && message.opts.styles) || '';
+        if (!css) return;
+        var style = document.createElement('style');
+        style.type = 'text/css';
+        style.appendChild(document.createTextNode(css));
+        document.head.appendChild(style);
+      }
+    };
+  }
+})();
+`;
 
 export const Route = createFileRoute('/share/overview/$shareId')({
   component: RouteComponent,
@@ -76,7 +99,8 @@ function RouteComponent() {
     header !== '0' && header !== 0 && header !== 'false' && header !== false;
 
   return (
-    <div>
+    <div style={{ minHeight: '100vh' }}>
+      <ScriptOnce>{iframeResizerScript}</ScriptOnce>
       {isHeaderVisible && (
         <div className="mx-auto max-w-7xl justify-between row gap-4 p-4 pb-0">
           <div className="col gap-1">

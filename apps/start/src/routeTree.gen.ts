@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as IframeTestRouteImport } from './routes/iframe-test'
 import { Route as StepsRouteImport } from './routes/_steps'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as LoginRouteImport } from './routes/_login'
@@ -94,6 +95,11 @@ const AppOrganizationIdProjectIdProfilesProfileIdRouteImport = createFileRoute(
   '/_app/$organizationId/$projectId_/profiles/$profileId',
 )()
 
+const IframeTestRoute = IframeTestRouteImport.update({
+  id: '/iframe-test',
+  path: '/iframe-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StepsRoute = StepsRouteImport.update({
   id: '/_steps',
   getParentRoute: () => rootRouteImport,
@@ -474,6 +480,7 @@ const AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/iframe-test': typeof IframeTestRoute
   '/$organizationId': typeof AppOrganizationIdRouteWithChildren
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
@@ -532,6 +539,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/iframe-test': typeof IframeTestRoute
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
   '/onboarding': typeof PublicOnboardingRoute
@@ -587,6 +595,7 @@ export interface FileRoutesById {
   '/_login': typeof LoginRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_steps': typeof StepsRouteWithChildren
+  '/iframe-test': typeof IframeTestRoute
   '/_app/$organizationId': typeof AppOrganizationIdRouteWithChildren
   '/_login/login': typeof LoginLoginRoute
   '/_login/reset-password': typeof LoginResetPasswordRoute
@@ -654,6 +663,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/iframe-test'
     | '/$organizationId'
     | '/login'
     | '/reset-password'
@@ -712,6 +722,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/iframe-test'
     | '/login'
     | '/reset-password'
     | '/onboarding'
@@ -766,6 +777,7 @@ export interface FileRouteTypes {
     | '/_login'
     | '/_public'
     | '/_steps'
+    | '/iframe-test'
     | '/_app/$organizationId'
     | '/_login/login'
     | '/_login/reset-password'
@@ -836,6 +848,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   StepsRoute: typeof StepsRouteWithChildren
+  IframeTestRoute: typeof IframeTestRoute
   ApiConfigRoute: typeof ApiConfigRoute
   ApiHealthcheckRoute: typeof ApiHealthcheckRoute
   ShareOverviewShareIdRoute: typeof ShareOverviewShareIdRoute
@@ -843,6 +856,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/iframe-test': {
+      id: '/iframe-test'
+      path: '/iframe-test'
+      fullPath: '/iframe-test'
+      preLoaderRoute: typeof IframeTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_steps': {
       id: '/_steps'
       path: ''
@@ -1694,6 +1714,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   StepsRoute: StepsRouteWithChildren,
+  IframeTestRoute: IframeTestRoute,
   ApiConfigRoute: ApiConfigRoute,
   ApiHealthcheckRoute: ApiHealthcheckRoute,
   ShareOverviewShareIdRoute: ShareOverviewShareIdRoute,
