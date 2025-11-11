@@ -5,12 +5,20 @@ import { pick } from 'ramda';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
-const VALID_COOKIES = ['ui-theme', 'chartType', 'range'] as const;
+const VALID_COOKIES = [
+  'ui-theme',
+  'chartType',
+  'range',
+  'supporter-prompt-closed',
+] as const;
 const COOKIE_EVENT_NAME = '__cookie-change';
 
 const setCookieFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ key: z.enum(VALID_COOKIES), value: z.string() }))
   .handler(({ data: { key, value } }) => {
+    if (!VALID_COOKIES.includes(key)) {
+      return;
+    }
     setCookie(key, value);
   });
 

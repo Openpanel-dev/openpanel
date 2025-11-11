@@ -28,49 +28,50 @@ import { Route as StepsOnboardingProjectRouteImport } from './routes/_steps.onbo
 import { Route as AppOrganizationIdSettingsRouteImport } from './routes/_app.$organizationId.settings'
 import { Route as AppOrganizationIdBillingRouteImport } from './routes/_app.$organizationId.billing'
 import { Route as AppOrganizationIdProjectIdRouteImport } from './routes/_app.$organizationId.$projectId'
+import { Route as AppOrganizationIdProjectIdIndexRouteImport } from './routes/_app.$organizationId.$projectId.index'
 import { Route as StepsOnboardingProjectIdVerifyRouteImport } from './routes/_steps.onboarding.$projectId.verify'
 import { Route as StepsOnboardingProjectIdConnectRouteImport } from './routes/_steps.onboarding.$projectId.connect'
 import { Route as AppOrganizationIdMembersTabsRouteImport } from './routes/_app.$organizationId.members._tabs'
 import { Route as AppOrganizationIdIntegrationsTabsRouteImport } from './routes/_app.$organizationId.integrations._tabs'
-import { Route as AppOrganizationIdProjectIdSessionsRouteImport } from './routes/_app.$organizationId.$projectId_.sessions'
-import { Route as AppOrganizationIdProjectIdReportsRouteImport } from './routes/_app.$organizationId.$projectId_.reports'
-import { Route as AppOrganizationIdProjectIdReferencesRouteImport } from './routes/_app.$organizationId.$projectId_.references'
-import { Route as AppOrganizationIdProjectIdRealtimeRouteImport } from './routes/_app.$organizationId.$projectId_.realtime'
-import { Route as AppOrganizationIdProjectIdPagesRouteImport } from './routes/_app.$organizationId.$projectId_.pages'
-import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId.$projectId_.dashboards'
-import { Route as AppOrganizationIdProjectIdChatRouteImport } from './routes/_app.$organizationId.$projectId_.chat'
+import { Route as AppOrganizationIdProjectIdSessionsRouteImport } from './routes/_app.$organizationId.$projectId.sessions'
+import { Route as AppOrganizationIdProjectIdReportsRouteImport } from './routes/_app.$organizationId.$projectId.reports'
+import { Route as AppOrganizationIdProjectIdReferencesRouteImport } from './routes/_app.$organizationId.$projectId.references'
+import { Route as AppOrganizationIdProjectIdRealtimeRouteImport } from './routes/_app.$organizationId.$projectId.realtime'
+import { Route as AppOrganizationIdProjectIdPagesRouteImport } from './routes/_app.$organizationId.$projectId.pages'
+import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId.$projectId.dashboards'
+import { Route as AppOrganizationIdProjectIdChatRouteImport } from './routes/_app.$organizationId.$projectId.chat'
 import { Route as AppOrganizationIdMembersTabsIndexRouteImport } from './routes/_app.$organizationId.members._tabs.index'
 import { Route as AppOrganizationIdIntegrationsTabsIndexRouteImport } from './routes/_app.$organizationId.integrations._tabs.index'
 import { Route as AppOrganizationIdMembersTabsMembersRouteImport } from './routes/_app.$organizationId.members._tabs.members'
 import { Route as AppOrganizationIdMembersTabsInvitationsRouteImport } from './routes/_app.$organizationId.members._tabs.invitations'
 import { Route as AppOrganizationIdIntegrationsTabsInstalledRouteImport } from './routes/_app.$organizationId.integrations._tabs.installed'
 import { Route as AppOrganizationIdIntegrationsTabsAvailableRouteImport } from './routes/_app.$organizationId.integrations._tabs.available'
-import { Route as AppOrganizationIdProjectIdSettingsTabsRouteImport } from './routes/_app.$organizationId.$projectId_.settings._tabs'
-import { Route as AppOrganizationIdProjectIdSessionsSessionIdRouteImport } from './routes/_app.$organizationId.$projectId_.sessions_.$sessionId'
-import { Route as AppOrganizationIdProjectIdReportsReportIdRouteImport } from './routes/_app.$organizationId.$projectId_.reports_.$reportId'
-import { Route as AppOrganizationIdProjectIdProfilesTabsRouteImport } from './routes/_app.$organizationId.$projectId_.profiles._tabs'
-import { Route as AppOrganizationIdProjectIdNotificationsTabsRouteImport } from './routes/_app.$organizationId.$projectId_.notifications._tabs'
-import { Route as AppOrganizationIdProjectIdEventsTabsRouteImport } from './routes/_app.$organizationId.$projectId_.events._tabs'
-import { Route as AppOrganizationIdProjectIdDashboardsDashboardIdRouteImport } from './routes/_app.$organizationId.$projectId_.dashboards_.$dashboardId'
-import { Route as AppOrganizationIdProjectIdSettingsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId_.settings._tabs.index'
-import { Route as AppOrganizationIdProjectIdProfilesTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId_.profiles._tabs.index'
-import { Route as AppOrganizationIdProjectIdNotificationsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId_.notifications._tabs.index'
-import { Route as AppOrganizationIdProjectIdEventsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId_.events._tabs.index'
-import { Route as AppOrganizationIdProjectIdSettingsTabsImportsRouteImport } from './routes/_app.$organizationId.$projectId_.settings._tabs.imports'
-import { Route as AppOrganizationIdProjectIdSettingsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId_.settings._tabs.events'
-import { Route as AppOrganizationIdProjectIdSettingsTabsDetailsRouteImport } from './routes/_app.$organizationId.$projectId_.settings._tabs.details'
-import { Route as AppOrganizationIdProjectIdSettingsTabsClientsRouteImport } from './routes/_app.$organizationId.$projectId_.settings._tabs.clients'
-import { Route as AppOrganizationIdProjectIdProfilesTabsPowerUsersRouteImport } from './routes/_app.$organizationId.$projectId_.profiles._tabs.power-users'
-import { Route as AppOrganizationIdProjectIdProfilesTabsIdentifiedRouteImport } from './routes/_app.$organizationId.$projectId_.profiles._tabs.identified'
-import { Route as AppOrganizationIdProjectIdProfilesTabsAnonymousRouteImport } from './routes/_app.$organizationId.$projectId_.profiles._tabs.anonymous'
-import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsRouteImport } from './routes/_app.$organizationId.$projectId_.profiles.$profileId._tabs'
-import { Route as AppOrganizationIdProjectIdNotificationsTabsRulesRouteImport } from './routes/_app.$organizationId.$projectId_.notifications._tabs.rules'
-import { Route as AppOrganizationIdProjectIdNotificationsTabsNotificationsRouteImport } from './routes/_app.$organizationId.$projectId_.notifications._tabs.notifications'
-import { Route as AppOrganizationIdProjectIdEventsTabsStatsRouteImport } from './routes/_app.$organizationId.$projectId_.events._tabs.stats'
-import { Route as AppOrganizationIdProjectIdEventsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId_.events._tabs.events'
-import { Route as AppOrganizationIdProjectIdEventsTabsConversionsRouteImport } from './routes/_app.$organizationId.$projectId_.events._tabs.conversions'
-import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId_.profiles.$profileId._tabs.index'
-import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId_.profiles.$profileId._tabs.events'
+import { Route as AppOrganizationIdProjectIdSettingsTabsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs'
+import { Route as AppOrganizationIdProjectIdSessionsSessionIdRouteImport } from './routes/_app.$organizationId.$projectId.sessions_.$sessionId'
+import { Route as AppOrganizationIdProjectIdReportsReportIdRouteImport } from './routes/_app.$organizationId.$projectId.reports_.$reportId'
+import { Route as AppOrganizationIdProjectIdProfilesTabsRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs'
+import { Route as AppOrganizationIdProjectIdNotificationsTabsRouteImport } from './routes/_app.$organizationId.$projectId.notifications._tabs'
+import { Route as AppOrganizationIdProjectIdEventsTabsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs'
+import { Route as AppOrganizationIdProjectIdDashboardsDashboardIdRouteImport } from './routes/_app.$organizationId.$projectId.dashboards_.$dashboardId'
+import { Route as AppOrganizationIdProjectIdSettingsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.index'
+import { Route as AppOrganizationIdProjectIdProfilesTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.index'
+import { Route as AppOrganizationIdProjectIdNotificationsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.notifications._tabs.index'
+import { Route as AppOrganizationIdProjectIdEventsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.index'
+import { Route as AppOrganizationIdProjectIdSettingsTabsImportsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.imports'
+import { Route as AppOrganizationIdProjectIdSettingsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.events'
+import { Route as AppOrganizationIdProjectIdSettingsTabsDetailsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.details'
+import { Route as AppOrganizationIdProjectIdSettingsTabsClientsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.clients'
+import { Route as AppOrganizationIdProjectIdProfilesTabsPowerUsersRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.power-users'
+import { Route as AppOrganizationIdProjectIdProfilesTabsIdentifiedRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.identified'
+import { Route as AppOrganizationIdProjectIdProfilesTabsAnonymousRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.anonymous'
+import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs'
+import { Route as AppOrganizationIdProjectIdNotificationsTabsRulesRouteImport } from './routes/_app.$organizationId.$projectId.notifications._tabs.rules'
+import { Route as AppOrganizationIdProjectIdNotificationsTabsNotificationsRouteImport } from './routes/_app.$organizationId.$projectId.notifications._tabs.notifications'
+import { Route as AppOrganizationIdProjectIdEventsTabsStatsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.stats'
+import { Route as AppOrganizationIdProjectIdEventsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.events'
+import { Route as AppOrganizationIdProjectIdEventsTabsConversionsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.conversions'
+import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.index'
+import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.events'
 
 const AppOrganizationIdMembersRouteImport = createFileRoute(
   '/_app/$organizationId/members',
@@ -79,19 +80,19 @@ const AppOrganizationIdIntegrationsRouteImport = createFileRoute(
   '/_app/$organizationId/integrations',
 )()
 const AppOrganizationIdProjectIdSettingsRouteImport = createFileRoute(
-  '/_app/$organizationId/$projectId_/settings',
+  '/_app/$organizationId/$projectId/settings',
 )()
 const AppOrganizationIdProjectIdProfilesRouteImport = createFileRoute(
-  '/_app/$organizationId/$projectId_/profiles',
+  '/_app/$organizationId/$projectId/profiles',
 )()
 const AppOrganizationIdProjectIdNotificationsRouteImport = createFileRoute(
-  '/_app/$organizationId/$projectId_/notifications',
+  '/_app/$organizationId/$projectId/notifications',
 )()
 const AppOrganizationIdProjectIdEventsRouteImport = createFileRoute(
-  '/_app/$organizationId/$projectId_/events',
+  '/_app/$organizationId/$projectId/events',
 )()
 const AppOrganizationIdProjectIdProfilesProfileIdRouteImport = createFileRoute(
-  '/_app/$organizationId/$projectId_/profiles/$profileId',
+  '/_app/$organizationId/$projectId/profiles/$profileId',
 )()
 
 const StepsRoute = StepsRouteImport.update({
@@ -192,27 +193,33 @@ const AppOrganizationIdProjectIdRoute =
   } as any)
 const AppOrganizationIdProjectIdSettingsRoute =
   AppOrganizationIdProjectIdSettingsRouteImport.update({
-    id: '/$projectId_/settings',
-    path: '/$projectId/settings',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdProfilesRoute =
   AppOrganizationIdProjectIdProfilesRouteImport.update({
-    id: '/$projectId_/profiles',
-    path: '/$projectId/profiles',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/profiles',
+    path: '/profiles',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdNotificationsRoute =
   AppOrganizationIdProjectIdNotificationsRouteImport.update({
-    id: '/$projectId_/notifications',
-    path: '/$projectId/notifications',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdEventsRoute =
   AppOrganizationIdProjectIdEventsRouteImport.update({
-    id: '/$projectId_/events',
-    path: '/$projectId/events',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
+  } as any)
+const AppOrganizationIdProjectIdIndexRoute =
+  AppOrganizationIdProjectIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const StepsOnboardingProjectIdVerifyRoute =
   StepsOnboardingProjectIdVerifyRouteImport.update({
@@ -238,45 +245,45 @@ const AppOrganizationIdIntegrationsTabsRoute =
   } as any)
 const AppOrganizationIdProjectIdSessionsRoute =
   AppOrganizationIdProjectIdSessionsRouteImport.update({
-    id: '/$projectId_/sessions',
-    path: '/$projectId/sessions',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/sessions',
+    path: '/sessions',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdReportsRoute =
   AppOrganizationIdProjectIdReportsRouteImport.update({
-    id: '/$projectId_/reports',
-    path: '/$projectId/reports',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/reports',
+    path: '/reports',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdReferencesRoute =
   AppOrganizationIdProjectIdReferencesRouteImport.update({
-    id: '/$projectId_/references',
-    path: '/$projectId/references',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/references',
+    path: '/references',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdRealtimeRoute =
   AppOrganizationIdProjectIdRealtimeRouteImport.update({
-    id: '/$projectId_/realtime',
-    path: '/$projectId/realtime',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/realtime',
+    path: '/realtime',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdPagesRoute =
   AppOrganizationIdProjectIdPagesRouteImport.update({
-    id: '/$projectId_/pages',
-    path: '/$projectId/pages',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/pages',
+    path: '/pages',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdDashboardsRoute =
   AppOrganizationIdProjectIdDashboardsRouteImport.update({
-    id: '/$projectId_/dashboards',
-    path: '/$projectId/dashboards',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/dashboards',
+    path: '/dashboards',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdChatRoute =
   AppOrganizationIdProjectIdChatRouteImport.update({
-    id: '/$projectId_/chat',
-    path: '/$projectId/chat',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/chat',
+    path: '/chat',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdProfilesProfileIdRoute =
   AppOrganizationIdProjectIdProfilesProfileIdRouteImport.update({
@@ -327,15 +334,15 @@ const AppOrganizationIdProjectIdSettingsTabsRoute =
   } as any)
 const AppOrganizationIdProjectIdSessionsSessionIdRoute =
   AppOrganizationIdProjectIdSessionsSessionIdRouteImport.update({
-    id: '/$projectId_/sessions_/$sessionId',
-    path: '/$projectId/sessions/$sessionId',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/sessions_/$sessionId',
+    path: '/sessions/$sessionId',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdReportsReportIdRoute =
   AppOrganizationIdProjectIdReportsReportIdRouteImport.update({
-    id: '/$projectId_/reports_/$reportId',
-    path: '/$projectId/reports/$reportId',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/reports_/$reportId',
+    path: '/reports/$reportId',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdProfilesTabsRoute =
   AppOrganizationIdProjectIdProfilesTabsRouteImport.update({
@@ -354,9 +361,9 @@ const AppOrganizationIdProjectIdEventsTabsRoute =
   } as any)
 const AppOrganizationIdProjectIdDashboardsDashboardIdRoute =
   AppOrganizationIdProjectIdDashboardsDashboardIdRouteImport.update({
-    id: '/$projectId_/dashboards_/$dashboardId',
-    path: '/$projectId/dashboards/$dashboardId',
-    getParentRoute: () => AppOrganizationIdRoute,
+    id: '/dashboards_/$dashboardId',
+    path: '/dashboards/$dashboardId',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdSettingsTabsIndexRoute =
   AppOrganizationIdProjectIdSettingsTabsIndexRouteImport.update({
@@ -480,7 +487,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
-  '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
+  '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/onboarding/project': typeof StepsOnboardingProjectRoute
@@ -497,6 +504,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/members': typeof AppOrganizationIdMembersTabsRouteWithChildren
   '/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
+  '/$organizationId/$projectId/': typeof AppOrganizationIdProjectIdIndexRoute
   '/$organizationId/$projectId/dashboards/$dashboardId': typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
   '/$organizationId/$projectId/events': typeof AppOrganizationIdProjectIdEventsTabsRouteWithChildren
   '/$organizationId/$projectId/notifications': typeof AppOrganizationIdProjectIdNotificationsTabsRouteWithChildren
@@ -537,7 +545,6 @@ export interface FileRoutesByTo {
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
-  '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/onboarding/project': typeof StepsOnboardingProjectRoute
@@ -554,6 +561,7 @@ export interface FileRoutesByTo {
   '/$organizationId/members': typeof AppOrganizationIdMembersTabsIndexRoute
   '/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
+  '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdIndexRoute
   '/$organizationId/$projectId/dashboards/$dashboardId': typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
   '/$organizationId/$projectId/events': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
   '/$organizationId/$projectId/notifications': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
@@ -593,62 +601,63 @@ export interface FileRoutesById {
   '/_public/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
-  '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRoute
+  '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/_app/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/_steps/onboarding/project': typeof StepsOnboardingProjectRoute
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
   '/_app/$organizationId/': typeof AppOrganizationIdIndexRoute
-  '/_app/$organizationId/$projectId_/chat': typeof AppOrganizationIdProjectIdChatRoute
-  '/_app/$organizationId/$projectId_/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
-  '/_app/$organizationId/$projectId_/pages': typeof AppOrganizationIdProjectIdPagesRoute
-  '/_app/$organizationId/$projectId_/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
-  '/_app/$organizationId/$projectId_/references': typeof AppOrganizationIdProjectIdReferencesRoute
-  '/_app/$organizationId/$projectId_/reports': typeof AppOrganizationIdProjectIdReportsRoute
-  '/_app/$organizationId/$projectId_/sessions': typeof AppOrganizationIdProjectIdSessionsRoute
+  '/_app/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
+  '/_app/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
+  '/_app/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
+  '/_app/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
+  '/_app/$organizationId/$projectId/references': typeof AppOrganizationIdProjectIdReferencesRoute
+  '/_app/$organizationId/$projectId/reports': typeof AppOrganizationIdProjectIdReportsRoute
+  '/_app/$organizationId/$projectId/sessions': typeof AppOrganizationIdProjectIdSessionsRoute
   '/_app/$organizationId/integrations': typeof AppOrganizationIdIntegrationsRouteWithChildren
   '/_app/$organizationId/integrations/_tabs': typeof AppOrganizationIdIntegrationsTabsRouteWithChildren
   '/_app/$organizationId/members': typeof AppOrganizationIdMembersRouteWithChildren
   '/_app/$organizationId/members/_tabs': typeof AppOrganizationIdMembersTabsRouteWithChildren
   '/_steps/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/_steps/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
-  '/_app/$organizationId/$projectId_/dashboards_/$dashboardId': typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
-  '/_app/$organizationId/$projectId_/events': typeof AppOrganizationIdProjectIdEventsRouteWithChildren
-  '/_app/$organizationId/$projectId_/events/_tabs': typeof AppOrganizationIdProjectIdEventsTabsRouteWithChildren
-  '/_app/$organizationId/$projectId_/notifications': typeof AppOrganizationIdProjectIdNotificationsRouteWithChildren
-  '/_app/$organizationId/$projectId_/notifications/_tabs': typeof AppOrganizationIdProjectIdNotificationsTabsRouteWithChildren
-  '/_app/$organizationId/$projectId_/profiles': typeof AppOrganizationIdProjectIdProfilesRouteWithChildren
-  '/_app/$organizationId/$projectId_/profiles/_tabs': typeof AppOrganizationIdProjectIdProfilesTabsRouteWithChildren
-  '/_app/$organizationId/$projectId_/reports_/$reportId': typeof AppOrganizationIdProjectIdReportsReportIdRoute
-  '/_app/$organizationId/$projectId_/sessions_/$sessionId': typeof AppOrganizationIdProjectIdSessionsSessionIdRoute
-  '/_app/$organizationId/$projectId_/settings': typeof AppOrganizationIdProjectIdSettingsRouteWithChildren
-  '/_app/$organizationId/$projectId_/settings/_tabs': typeof AppOrganizationIdProjectIdSettingsTabsRouteWithChildren
+  '/_app/$organizationId/$projectId/': typeof AppOrganizationIdProjectIdIndexRoute
+  '/_app/$organizationId/$projectId/dashboards_/$dashboardId': typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
+  '/_app/$organizationId/$projectId/events': typeof AppOrganizationIdProjectIdEventsRouteWithChildren
+  '/_app/$organizationId/$projectId/events/_tabs': typeof AppOrganizationIdProjectIdEventsTabsRouteWithChildren
+  '/_app/$organizationId/$projectId/notifications': typeof AppOrganizationIdProjectIdNotificationsRouteWithChildren
+  '/_app/$organizationId/$projectId/notifications/_tabs': typeof AppOrganizationIdProjectIdNotificationsTabsRouteWithChildren
+  '/_app/$organizationId/$projectId/profiles': typeof AppOrganizationIdProjectIdProfilesRouteWithChildren
+  '/_app/$organizationId/$projectId/profiles/_tabs': typeof AppOrganizationIdProjectIdProfilesTabsRouteWithChildren
+  '/_app/$organizationId/$projectId/reports_/$reportId': typeof AppOrganizationIdProjectIdReportsReportIdRoute
+  '/_app/$organizationId/$projectId/sessions_/$sessionId': typeof AppOrganizationIdProjectIdSessionsSessionIdRoute
+  '/_app/$organizationId/$projectId/settings': typeof AppOrganizationIdProjectIdSettingsRouteWithChildren
+  '/_app/$organizationId/$projectId/settings/_tabs': typeof AppOrganizationIdProjectIdSettingsTabsRouteWithChildren
   '/_app/$organizationId/integrations/_tabs/available': typeof AppOrganizationIdIntegrationsTabsAvailableRoute
   '/_app/$organizationId/integrations/_tabs/installed': typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   '/_app/$organizationId/members/_tabs/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
   '/_app/$organizationId/members/_tabs/members': typeof AppOrganizationIdMembersTabsMembersRoute
   '/_app/$organizationId/integrations/_tabs/': typeof AppOrganizationIdIntegrationsTabsIndexRoute
   '/_app/$organizationId/members/_tabs/': typeof AppOrganizationIdMembersTabsIndexRoute
-  '/_app/$organizationId/$projectId_/events/_tabs/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
-  '/_app/$organizationId/$projectId_/events/_tabs/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
-  '/_app/$organizationId/$projectId_/events/_tabs/stats': typeof AppOrganizationIdProjectIdEventsTabsStatsRoute
-  '/_app/$organizationId/$projectId_/notifications/_tabs/notifications': typeof AppOrganizationIdProjectIdNotificationsTabsNotificationsRoute
-  '/_app/$organizationId/$projectId_/notifications/_tabs/rules': typeof AppOrganizationIdProjectIdNotificationsTabsRulesRoute
-  '/_app/$organizationId/$projectId_/profiles/$profileId': typeof AppOrganizationIdProjectIdProfilesProfileIdRouteWithChildren
-  '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsRouteWithChildren
-  '/_app/$organizationId/$projectId_/profiles/_tabs/anonymous': typeof AppOrganizationIdProjectIdProfilesTabsAnonymousRoute
-  '/_app/$organizationId/$projectId_/profiles/_tabs/identified': typeof AppOrganizationIdProjectIdProfilesTabsIdentifiedRoute
-  '/_app/$organizationId/$projectId_/profiles/_tabs/power-users': typeof AppOrganizationIdProjectIdProfilesTabsPowerUsersRoute
-  '/_app/$organizationId/$projectId_/settings/_tabs/clients': typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
-  '/_app/$organizationId/$projectId_/settings/_tabs/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
-  '/_app/$organizationId/$projectId_/settings/_tabs/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
-  '/_app/$organizationId/$projectId_/settings/_tabs/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
-  '/_app/$organizationId/$projectId_/events/_tabs/': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
-  '/_app/$organizationId/$projectId_/notifications/_tabs/': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
-  '/_app/$organizationId/$projectId_/profiles/_tabs/': typeof AppOrganizationIdProjectIdProfilesTabsIndexRoute
-  '/_app/$organizationId/$projectId_/settings/_tabs/': typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
-  '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/events': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute
-  '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute
+  '/_app/$organizationId/$projectId/events/_tabs/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
+  '/_app/$organizationId/$projectId/events/_tabs/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
+  '/_app/$organizationId/$projectId/events/_tabs/stats': typeof AppOrganizationIdProjectIdEventsTabsStatsRoute
+  '/_app/$organizationId/$projectId/notifications/_tabs/notifications': typeof AppOrganizationIdProjectIdNotificationsTabsNotificationsRoute
+  '/_app/$organizationId/$projectId/notifications/_tabs/rules': typeof AppOrganizationIdProjectIdNotificationsTabsRulesRoute
+  '/_app/$organizationId/$projectId/profiles/$profileId': typeof AppOrganizationIdProjectIdProfilesProfileIdRouteWithChildren
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsRouteWithChildren
+  '/_app/$organizationId/$projectId/profiles/_tabs/anonymous': typeof AppOrganizationIdProjectIdProfilesTabsAnonymousRoute
+  '/_app/$organizationId/$projectId/profiles/_tabs/identified': typeof AppOrganizationIdProjectIdProfilesTabsIdentifiedRoute
+  '/_app/$organizationId/$projectId/profiles/_tabs/power-users': typeof AppOrganizationIdProjectIdProfilesTabsPowerUsersRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/clients': typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
+  '/_app/$organizationId/$projectId/events/_tabs/': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
+  '/_app/$organizationId/$projectId/notifications/_tabs/': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
+  '/_app/$organizationId/$projectId/profiles/_tabs/': typeof AppOrganizationIdProjectIdProfilesTabsIndexRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/': typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute
+  '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -677,6 +686,7 @@ export interface FileRouteTypes {
     | '/$organizationId/members'
     | '/onboarding/$projectId/connect'
     | '/onboarding/$projectId/verify'
+    | '/$organizationId/$projectId/'
     | '/$organizationId/$projectId/dashboards/$dashboardId'
     | '/$organizationId/$projectId/events'
     | '/$organizationId/$projectId/notifications'
@@ -717,7 +727,6 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/config'
     | '/api/healthcheck'
-    | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
     | '/onboarding/project'
@@ -734,6 +743,7 @@ export interface FileRouteTypes {
     | '/$organizationId/members'
     | '/onboarding/$projectId/connect'
     | '/onboarding/$projectId/verify'
+    | '/$organizationId/$projectId'
     | '/$organizationId/$projectId/dashboards/$dashboardId'
     | '/$organizationId/$projectId/events'
     | '/$organizationId/$projectId/notifications'
@@ -778,56 +788,57 @@ export interface FileRouteTypes {
     | '/_steps/onboarding/project'
     | '/share/overview/$shareId'
     | '/_app/$organizationId/'
-    | '/_app/$organizationId/$projectId_/chat'
-    | '/_app/$organizationId/$projectId_/dashboards'
-    | '/_app/$organizationId/$projectId_/pages'
-    | '/_app/$organizationId/$projectId_/realtime'
-    | '/_app/$organizationId/$projectId_/references'
-    | '/_app/$organizationId/$projectId_/reports'
-    | '/_app/$organizationId/$projectId_/sessions'
+    | '/_app/$organizationId/$projectId/chat'
+    | '/_app/$organizationId/$projectId/dashboards'
+    | '/_app/$organizationId/$projectId/pages'
+    | '/_app/$organizationId/$projectId/realtime'
+    | '/_app/$organizationId/$projectId/references'
+    | '/_app/$organizationId/$projectId/reports'
+    | '/_app/$organizationId/$projectId/sessions'
     | '/_app/$organizationId/integrations'
     | '/_app/$organizationId/integrations/_tabs'
     | '/_app/$organizationId/members'
     | '/_app/$organizationId/members/_tabs'
     | '/_steps/onboarding/$projectId/connect'
     | '/_steps/onboarding/$projectId/verify'
-    | '/_app/$organizationId/$projectId_/dashboards_/$dashboardId'
-    | '/_app/$organizationId/$projectId_/events'
-    | '/_app/$organizationId/$projectId_/events/_tabs'
-    | '/_app/$organizationId/$projectId_/notifications'
-    | '/_app/$organizationId/$projectId_/notifications/_tabs'
-    | '/_app/$organizationId/$projectId_/profiles'
-    | '/_app/$organizationId/$projectId_/profiles/_tabs'
-    | '/_app/$organizationId/$projectId_/reports_/$reportId'
-    | '/_app/$organizationId/$projectId_/sessions_/$sessionId'
-    | '/_app/$organizationId/$projectId_/settings'
-    | '/_app/$organizationId/$projectId_/settings/_tabs'
+    | '/_app/$organizationId/$projectId/'
+    | '/_app/$organizationId/$projectId/dashboards_/$dashboardId'
+    | '/_app/$organizationId/$projectId/events'
+    | '/_app/$organizationId/$projectId/events/_tabs'
+    | '/_app/$organizationId/$projectId/notifications'
+    | '/_app/$organizationId/$projectId/notifications/_tabs'
+    | '/_app/$organizationId/$projectId/profiles'
+    | '/_app/$organizationId/$projectId/profiles/_tabs'
+    | '/_app/$organizationId/$projectId/reports_/$reportId'
+    | '/_app/$organizationId/$projectId/sessions_/$sessionId'
+    | '/_app/$organizationId/$projectId/settings'
+    | '/_app/$organizationId/$projectId/settings/_tabs'
     | '/_app/$organizationId/integrations/_tabs/available'
     | '/_app/$organizationId/integrations/_tabs/installed'
     | '/_app/$organizationId/members/_tabs/invitations'
     | '/_app/$organizationId/members/_tabs/members'
     | '/_app/$organizationId/integrations/_tabs/'
     | '/_app/$organizationId/members/_tabs/'
-    | '/_app/$organizationId/$projectId_/events/_tabs/conversions'
-    | '/_app/$organizationId/$projectId_/events/_tabs/events'
-    | '/_app/$organizationId/$projectId_/events/_tabs/stats'
-    | '/_app/$organizationId/$projectId_/notifications/_tabs/notifications'
-    | '/_app/$organizationId/$projectId_/notifications/_tabs/rules'
-    | '/_app/$organizationId/$projectId_/profiles/$profileId'
-    | '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs'
-    | '/_app/$organizationId/$projectId_/profiles/_tabs/anonymous'
-    | '/_app/$organizationId/$projectId_/profiles/_tabs/identified'
-    | '/_app/$organizationId/$projectId_/profiles/_tabs/power-users'
-    | '/_app/$organizationId/$projectId_/settings/_tabs/clients'
-    | '/_app/$organizationId/$projectId_/settings/_tabs/details'
-    | '/_app/$organizationId/$projectId_/settings/_tabs/events'
-    | '/_app/$organizationId/$projectId_/settings/_tabs/imports'
-    | '/_app/$organizationId/$projectId_/events/_tabs/'
-    | '/_app/$organizationId/$projectId_/notifications/_tabs/'
-    | '/_app/$organizationId/$projectId_/profiles/_tabs/'
-    | '/_app/$organizationId/$projectId_/settings/_tabs/'
-    | '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/events'
-    | '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/'
+    | '/_app/$organizationId/$projectId/events/_tabs/conversions'
+    | '/_app/$organizationId/$projectId/events/_tabs/events'
+    | '/_app/$organizationId/$projectId/events/_tabs/stats'
+    | '/_app/$organizationId/$projectId/notifications/_tabs/notifications'
+    | '/_app/$organizationId/$projectId/notifications/_tabs/rules'
+    | '/_app/$organizationId/$projectId/profiles/$profileId'
+    | '/_app/$organizationId/$projectId/profiles/$profileId/_tabs'
+    | '/_app/$organizationId/$projectId/profiles/_tabs/anonymous'
+    | '/_app/$organizationId/$projectId/profiles/_tabs/identified'
+    | '/_app/$organizationId/$projectId/profiles/_tabs/power-users'
+    | '/_app/$organizationId/$projectId/settings/_tabs/clients'
+    | '/_app/$organizationId/$projectId/settings/_tabs/details'
+    | '/_app/$organizationId/$projectId/settings/_tabs/events'
+    | '/_app/$organizationId/$projectId/settings/_tabs/imports'
+    | '/_app/$organizationId/$projectId/events/_tabs/'
+    | '/_app/$organizationId/$projectId/notifications/_tabs/'
+    | '/_app/$organizationId/$projectId/profiles/_tabs/'
+    | '/_app/$organizationId/$projectId/settings/_tabs/'
+    | '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events'
+    | '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -976,33 +987,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdRouteImport
       parentRoute: typeof AppOrganizationIdRoute
     }
-    '/_app/$organizationId/$projectId_/settings': {
-      id: '/_app/$organizationId/$projectId_/settings'
-      path: '/$projectId/settings'
+    '/_app/$organizationId/$projectId/settings': {
+      id: '/_app/$organizationId/$projectId/settings'
+      path: '/settings'
       fullPath: '/$organizationId/$projectId/settings'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/profiles': {
-      id: '/_app/$organizationId/$projectId_/profiles'
-      path: '/$projectId/profiles'
+    '/_app/$organizationId/$projectId/profiles': {
+      id: '/_app/$organizationId/$projectId/profiles'
+      path: '/profiles'
       fullPath: '/$organizationId/$projectId/profiles'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/notifications': {
-      id: '/_app/$organizationId/$projectId_/notifications'
-      path: '/$projectId/notifications'
+    '/_app/$organizationId/$projectId/notifications': {
+      id: '/_app/$organizationId/$projectId/notifications'
+      path: '/notifications'
       fullPath: '/$organizationId/$projectId/notifications'
       preLoaderRoute: typeof AppOrganizationIdProjectIdNotificationsRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/events': {
-      id: '/_app/$organizationId/$projectId_/events'
-      path: '/$projectId/events'
+    '/_app/$organizationId/$projectId/events': {
+      id: '/_app/$organizationId/$projectId/events'
+      path: '/events'
       fullPath: '/$organizationId/$projectId/events'
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
+    }
+    '/_app/$organizationId/$projectId/': {
+      id: '/_app/$organizationId/$projectId/'
+      path: '/'
+      fullPath: '/$organizationId/$projectId/'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdIndexRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
     '/_steps/onboarding/$projectId/verify': {
       id: '/_steps/onboarding/$projectId/verify'
@@ -1032,57 +1050,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdIntegrationsTabsRouteImport
       parentRoute: typeof AppOrganizationIdIntegrationsRoute
     }
-    '/_app/$organizationId/$projectId_/sessions': {
-      id: '/_app/$organizationId/$projectId_/sessions'
-      path: '/$projectId/sessions'
+    '/_app/$organizationId/$projectId/sessions': {
+      id: '/_app/$organizationId/$projectId/sessions'
+      path: '/sessions'
       fullPath: '/$organizationId/$projectId/sessions'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSessionsRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/reports': {
-      id: '/_app/$organizationId/$projectId_/reports'
-      path: '/$projectId/reports'
+    '/_app/$organizationId/$projectId/reports': {
+      id: '/_app/$organizationId/$projectId/reports'
+      path: '/reports'
       fullPath: '/$organizationId/$projectId/reports'
       preLoaderRoute: typeof AppOrganizationIdProjectIdReportsRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/references': {
-      id: '/_app/$organizationId/$projectId_/references'
-      path: '/$projectId/references'
+    '/_app/$organizationId/$projectId/references': {
+      id: '/_app/$organizationId/$projectId/references'
+      path: '/references'
       fullPath: '/$organizationId/$projectId/references'
       preLoaderRoute: typeof AppOrganizationIdProjectIdReferencesRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/realtime': {
-      id: '/_app/$organizationId/$projectId_/realtime'
-      path: '/$projectId/realtime'
+    '/_app/$organizationId/$projectId/realtime': {
+      id: '/_app/$organizationId/$projectId/realtime'
+      path: '/realtime'
       fullPath: '/$organizationId/$projectId/realtime'
       preLoaderRoute: typeof AppOrganizationIdProjectIdRealtimeRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/pages': {
-      id: '/_app/$organizationId/$projectId_/pages'
-      path: '/$projectId/pages'
+    '/_app/$organizationId/$projectId/pages': {
+      id: '/_app/$organizationId/$projectId/pages'
+      path: '/pages'
       fullPath: '/$organizationId/$projectId/pages'
       preLoaderRoute: typeof AppOrganizationIdProjectIdPagesRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/dashboards': {
-      id: '/_app/$organizationId/$projectId_/dashboards'
-      path: '/$projectId/dashboards'
+    '/_app/$organizationId/$projectId/dashboards': {
+      id: '/_app/$organizationId/$projectId/dashboards'
+      path: '/dashboards'
       fullPath: '/$organizationId/$projectId/dashboards'
       preLoaderRoute: typeof AppOrganizationIdProjectIdDashboardsRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/chat': {
-      id: '/_app/$organizationId/$projectId_/chat'
-      path: '/$projectId/chat'
+    '/_app/$organizationId/$projectId/chat': {
+      id: '/_app/$organizationId/$projectId/chat'
+      path: '/chat'
       fullPath: '/$organizationId/$projectId/chat'
       preLoaderRoute: typeof AppOrganizationIdProjectIdChatRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/$profileId': {
-      id: '/_app/$organizationId/$projectId_/profiles/$profileId'
+    '/_app/$organizationId/$projectId/profiles/$profileId': {
+      id: '/_app/$organizationId/$projectId/profiles/$profileId'
       path: '/$profileId'
       fullPath: '/$organizationId/$projectId/profiles/$profileId'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdRouteImport
@@ -1130,183 +1148,183 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdIntegrationsTabsAvailableRouteImport
       parentRoute: typeof AppOrganizationIdIntegrationsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/settings/_tabs': {
-      id: '/_app/$organizationId/$projectId_/settings/_tabs'
-      path: '/$projectId/settings'
+    '/_app/$organizationId/$projectId/settings/_tabs': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs'
+      path: '/settings'
       fullPath: '/$organizationId/$projectId/settings'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsRoute
     }
-    '/_app/$organizationId/$projectId_/sessions_/$sessionId': {
-      id: '/_app/$organizationId/$projectId_/sessions_/$sessionId'
-      path: '/$projectId/sessions/$sessionId'
+    '/_app/$organizationId/$projectId/sessions_/$sessionId': {
+      id: '/_app/$organizationId/$projectId/sessions_/$sessionId'
+      path: '/sessions/$sessionId'
       fullPath: '/$organizationId/$projectId/sessions/$sessionId'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSessionsSessionIdRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/reports_/$reportId': {
-      id: '/_app/$organizationId/$projectId_/reports_/$reportId'
-      path: '/$projectId/reports/$reportId'
+    '/_app/$organizationId/$projectId/reports_/$reportId': {
+      id: '/_app/$organizationId/$projectId/reports_/$reportId'
+      path: '/reports/$reportId'
       fullPath: '/$organizationId/$projectId/reports/$reportId'
       preLoaderRoute: typeof AppOrganizationIdProjectIdReportsReportIdRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/_tabs': {
-      id: '/_app/$organizationId/$projectId_/profiles/_tabs'
-      path: '/$projectId/profiles'
+    '/_app/$organizationId/$projectId/profiles/_tabs': {
+      id: '/_app/$organizationId/$projectId/profiles/_tabs'
+      path: '/profiles'
       fullPath: '/$organizationId/$projectId/profiles'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesTabsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesRoute
     }
-    '/_app/$organizationId/$projectId_/notifications/_tabs': {
-      id: '/_app/$organizationId/$projectId_/notifications/_tabs'
-      path: '/$projectId/notifications'
+    '/_app/$organizationId/$projectId/notifications/_tabs': {
+      id: '/_app/$organizationId/$projectId/notifications/_tabs'
+      path: '/notifications'
       fullPath: '/$organizationId/$projectId/notifications'
       preLoaderRoute: typeof AppOrganizationIdProjectIdNotificationsTabsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdNotificationsRoute
     }
-    '/_app/$organizationId/$projectId_/events/_tabs': {
-      id: '/_app/$organizationId/$projectId_/events/_tabs'
-      path: '/$projectId/events'
+    '/_app/$organizationId/$projectId/events/_tabs': {
+      id: '/_app/$organizationId/$projectId/events/_tabs'
+      path: '/events'
       fullPath: '/$organizationId/$projectId/events'
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsRoute
     }
-    '/_app/$organizationId/$projectId_/dashboards_/$dashboardId': {
-      id: '/_app/$organizationId/$projectId_/dashboards_/$dashboardId'
-      path: '/$projectId/dashboards/$dashboardId'
+    '/_app/$organizationId/$projectId/dashboards_/$dashboardId': {
+      id: '/_app/$organizationId/$projectId/dashboards_/$dashboardId'
+      path: '/dashboards/$dashboardId'
       fullPath: '/$organizationId/$projectId/dashboards/$dashboardId'
       preLoaderRoute: typeof AppOrganizationIdProjectIdDashboardsDashboardIdRouteImport
-      parentRoute: typeof AppOrganizationIdRoute
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
-    '/_app/$organizationId/$projectId_/settings/_tabs/': {
-      id: '/_app/$organizationId/$projectId_/settings/_tabs/'
+    '/_app/$organizationId/$projectId/settings/_tabs/': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/'
       path: '/'
       fullPath: '/$organizationId/$projectId/settings/'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/_tabs/': {
-      id: '/_app/$organizationId/$projectId_/profiles/_tabs/'
+    '/_app/$organizationId/$projectId/profiles/_tabs/': {
+      id: '/_app/$organizationId/$projectId/profiles/_tabs/'
       path: '/'
       fullPath: '/$organizationId/$projectId/profiles/'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesTabsRoute
     }
-    '/_app/$organizationId/$projectId_/notifications/_tabs/': {
-      id: '/_app/$organizationId/$projectId_/notifications/_tabs/'
+    '/_app/$organizationId/$projectId/notifications/_tabs/': {
+      id: '/_app/$organizationId/$projectId/notifications/_tabs/'
       path: '/'
       fullPath: '/$organizationId/$projectId/notifications/'
       preLoaderRoute: typeof AppOrganizationIdProjectIdNotificationsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdNotificationsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/events/_tabs/': {
-      id: '/_app/$organizationId/$projectId_/events/_tabs/'
+    '/_app/$organizationId/$projectId/events/_tabs/': {
+      id: '/_app/$organizationId/$projectId/events/_tabs/'
       path: '/'
       fullPath: '/$organizationId/$projectId/events/'
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/settings/_tabs/imports': {
-      id: '/_app/$organizationId/$projectId_/settings/_tabs/imports'
+    '/_app/$organizationId/$projectId/settings/_tabs/imports': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/imports'
       path: '/imports'
       fullPath: '/$organizationId/$projectId/settings/imports'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsImportsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/settings/_tabs/events': {
-      id: '/_app/$organizationId/$projectId_/settings/_tabs/events'
+    '/_app/$organizationId/$projectId/settings/_tabs/events': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/events'
       path: '/events'
       fullPath: '/$organizationId/$projectId/settings/events'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsEventsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/settings/_tabs/details': {
-      id: '/_app/$organizationId/$projectId_/settings/_tabs/details'
+    '/_app/$organizationId/$projectId/settings/_tabs/details': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/details'
       path: '/details'
       fullPath: '/$organizationId/$projectId/settings/details'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsDetailsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/settings/_tabs/clients': {
-      id: '/_app/$organizationId/$projectId_/settings/_tabs/clients'
+    '/_app/$organizationId/$projectId/settings/_tabs/clients': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/clients'
       path: '/clients'
       fullPath: '/$organizationId/$projectId/settings/clients'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsClientsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/_tabs/power-users': {
-      id: '/_app/$organizationId/$projectId_/profiles/_tabs/power-users'
+    '/_app/$organizationId/$projectId/profiles/_tabs/power-users': {
+      id: '/_app/$organizationId/$projectId/profiles/_tabs/power-users'
       path: '/power-users'
       fullPath: '/$organizationId/$projectId/profiles/power-users'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesTabsPowerUsersRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesTabsRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/_tabs/identified': {
-      id: '/_app/$organizationId/$projectId_/profiles/_tabs/identified'
+    '/_app/$organizationId/$projectId/profiles/_tabs/identified': {
+      id: '/_app/$organizationId/$projectId/profiles/_tabs/identified'
       path: '/identified'
       fullPath: '/$organizationId/$projectId/profiles/identified'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesTabsIdentifiedRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesTabsRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/_tabs/anonymous': {
-      id: '/_app/$organizationId/$projectId_/profiles/_tabs/anonymous'
+    '/_app/$organizationId/$projectId/profiles/_tabs/anonymous': {
+      id: '/_app/$organizationId/$projectId/profiles/_tabs/anonymous'
       path: '/anonymous'
       fullPath: '/$organizationId/$projectId/profiles/anonymous'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesTabsAnonymousRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesTabsRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs': {
-      id: '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs'
+    '/_app/$organizationId/$projectId/profiles/$profileId/_tabs': {
+      id: '/_app/$organizationId/$projectId/profiles/$profileId/_tabs'
       path: '/$profileId'
       fullPath: '/$organizationId/$projectId/profiles/$profileId'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdRoute
     }
-    '/_app/$organizationId/$projectId_/notifications/_tabs/rules': {
-      id: '/_app/$organizationId/$projectId_/notifications/_tabs/rules'
+    '/_app/$organizationId/$projectId/notifications/_tabs/rules': {
+      id: '/_app/$organizationId/$projectId/notifications/_tabs/rules'
       path: '/rules'
       fullPath: '/$organizationId/$projectId/notifications/rules'
       preLoaderRoute: typeof AppOrganizationIdProjectIdNotificationsTabsRulesRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdNotificationsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/notifications/_tabs/notifications': {
-      id: '/_app/$organizationId/$projectId_/notifications/_tabs/notifications'
+    '/_app/$organizationId/$projectId/notifications/_tabs/notifications': {
+      id: '/_app/$organizationId/$projectId/notifications/_tabs/notifications'
       path: '/notifications'
       fullPath: '/$organizationId/$projectId/notifications/notifications'
       preLoaderRoute: typeof AppOrganizationIdProjectIdNotificationsTabsNotificationsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdNotificationsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/events/_tabs/stats': {
-      id: '/_app/$organizationId/$projectId_/events/_tabs/stats'
+    '/_app/$organizationId/$projectId/events/_tabs/stats': {
+      id: '/_app/$organizationId/$projectId/events/_tabs/stats'
       path: '/stats'
       fullPath: '/$organizationId/$projectId/events/stats'
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsStatsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/events/_tabs/events': {
-      id: '/_app/$organizationId/$projectId_/events/_tabs/events'
+    '/_app/$organizationId/$projectId/events/_tabs/events': {
+      id: '/_app/$organizationId/$projectId/events/_tabs/events'
       path: '/events'
       fullPath: '/$organizationId/$projectId/events/events'
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsEventsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/events/_tabs/conversions': {
-      id: '/_app/$organizationId/$projectId_/events/_tabs/conversions'
+    '/_app/$organizationId/$projectId/events/_tabs/conversions': {
+      id: '/_app/$organizationId/$projectId/events/_tabs/conversions'
       path: '/conversions'
       fullPath: '/$organizationId/$projectId/events/conversions'
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsConversionsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsTabsRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/': {
-      id: '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/'
+    '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/': {
+      id: '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/'
       path: '/'
       fullPath: '/$organizationId/$projectId/profiles/$profileId/'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsRoute
     }
-    '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/events': {
-      id: '/_app/$organizationId/$projectId_/profiles/$profileId/_tabs/events'
+    '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events': {
+      id: '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/events'
       path: '/events'
       fullPath: '/$organizationId/$projectId/profiles/$profileId/events'
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRouteImport
@@ -1314,78 +1332,6 @@ declare module '@tanstack/react-router' {
     }
   }
 }
-
-interface AppOrganizationIdIntegrationsTabsRouteChildren {
-  AppOrganizationIdIntegrationsTabsAvailableRoute: typeof AppOrganizationIdIntegrationsTabsAvailableRoute
-  AppOrganizationIdIntegrationsTabsInstalledRoute: typeof AppOrganizationIdIntegrationsTabsInstalledRoute
-  AppOrganizationIdIntegrationsTabsIndexRoute: typeof AppOrganizationIdIntegrationsTabsIndexRoute
-}
-
-const AppOrganizationIdIntegrationsTabsRouteChildren: AppOrganizationIdIntegrationsTabsRouteChildren =
-  {
-    AppOrganizationIdIntegrationsTabsAvailableRoute:
-      AppOrganizationIdIntegrationsTabsAvailableRoute,
-    AppOrganizationIdIntegrationsTabsInstalledRoute:
-      AppOrganizationIdIntegrationsTabsInstalledRoute,
-    AppOrganizationIdIntegrationsTabsIndexRoute:
-      AppOrganizationIdIntegrationsTabsIndexRoute,
-  }
-
-const AppOrganizationIdIntegrationsTabsRouteWithChildren =
-  AppOrganizationIdIntegrationsTabsRoute._addFileChildren(
-    AppOrganizationIdIntegrationsTabsRouteChildren,
-  )
-
-interface AppOrganizationIdIntegrationsRouteChildren {
-  AppOrganizationIdIntegrationsTabsRoute: typeof AppOrganizationIdIntegrationsTabsRouteWithChildren
-}
-
-const AppOrganizationIdIntegrationsRouteChildren: AppOrganizationIdIntegrationsRouteChildren =
-  {
-    AppOrganizationIdIntegrationsTabsRoute:
-      AppOrganizationIdIntegrationsTabsRouteWithChildren,
-  }
-
-const AppOrganizationIdIntegrationsRouteWithChildren =
-  AppOrganizationIdIntegrationsRoute._addFileChildren(
-    AppOrganizationIdIntegrationsRouteChildren,
-  )
-
-interface AppOrganizationIdMembersTabsRouteChildren {
-  AppOrganizationIdMembersTabsInvitationsRoute: typeof AppOrganizationIdMembersTabsInvitationsRoute
-  AppOrganizationIdMembersTabsMembersRoute: typeof AppOrganizationIdMembersTabsMembersRoute
-  AppOrganizationIdMembersTabsIndexRoute: typeof AppOrganizationIdMembersTabsIndexRoute
-}
-
-const AppOrganizationIdMembersTabsRouteChildren: AppOrganizationIdMembersTabsRouteChildren =
-  {
-    AppOrganizationIdMembersTabsInvitationsRoute:
-      AppOrganizationIdMembersTabsInvitationsRoute,
-    AppOrganizationIdMembersTabsMembersRoute:
-      AppOrganizationIdMembersTabsMembersRoute,
-    AppOrganizationIdMembersTabsIndexRoute:
-      AppOrganizationIdMembersTabsIndexRoute,
-  }
-
-const AppOrganizationIdMembersTabsRouteWithChildren =
-  AppOrganizationIdMembersTabsRoute._addFileChildren(
-    AppOrganizationIdMembersTabsRouteChildren,
-  )
-
-interface AppOrganizationIdMembersRouteChildren {
-  AppOrganizationIdMembersTabsRoute: typeof AppOrganizationIdMembersTabsRouteWithChildren
-}
-
-const AppOrganizationIdMembersRouteChildren: AppOrganizationIdMembersRouteChildren =
-  {
-    AppOrganizationIdMembersTabsRoute:
-      AppOrganizationIdMembersTabsRouteWithChildren,
-  }
-
-const AppOrganizationIdMembersRouteWithChildren =
-  AppOrganizationIdMembersRoute._addFileChildren(
-    AppOrganizationIdMembersRouteChildren,
-  )
 
 interface AppOrganizationIdProjectIdEventsTabsRouteChildren {
   AppOrganizationIdProjectIdEventsTabsConversionsRoute: typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
@@ -1579,11 +1525,7 @@ const AppOrganizationIdProjectIdSettingsRouteWithChildren =
     AppOrganizationIdProjectIdSettingsRouteChildren,
   )
 
-interface AppOrganizationIdRouteChildren {
-  AppOrganizationIdProjectIdRoute: typeof AppOrganizationIdProjectIdRoute
-  AppOrganizationIdBillingRoute: typeof AppOrganizationIdBillingRoute
-  AppOrganizationIdSettingsRoute: typeof AppOrganizationIdSettingsRoute
-  AppOrganizationIdIndexRoute: typeof AppOrganizationIdIndexRoute
+interface AppOrganizationIdProjectIdRouteChildren {
   AppOrganizationIdProjectIdChatRoute: typeof AppOrganizationIdProjectIdChatRoute
   AppOrganizationIdProjectIdDashboardsRoute: typeof AppOrganizationIdProjectIdDashboardsRoute
   AppOrganizationIdProjectIdPagesRoute: typeof AppOrganizationIdProjectIdPagesRoute
@@ -1591,8 +1533,7 @@ interface AppOrganizationIdRouteChildren {
   AppOrganizationIdProjectIdReferencesRoute: typeof AppOrganizationIdProjectIdReferencesRoute
   AppOrganizationIdProjectIdReportsRoute: typeof AppOrganizationIdProjectIdReportsRoute
   AppOrganizationIdProjectIdSessionsRoute: typeof AppOrganizationIdProjectIdSessionsRoute
-  AppOrganizationIdIntegrationsRoute: typeof AppOrganizationIdIntegrationsRouteWithChildren
-  AppOrganizationIdMembersRoute: typeof AppOrganizationIdMembersRouteWithChildren
+  AppOrganizationIdProjectIdIndexRoute: typeof AppOrganizationIdProjectIdIndexRoute
   AppOrganizationIdProjectIdDashboardsDashboardIdRoute: typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
   AppOrganizationIdProjectIdEventsRoute: typeof AppOrganizationIdProjectIdEventsRouteWithChildren
   AppOrganizationIdProjectIdNotificationsRoute: typeof AppOrganizationIdProjectIdNotificationsRouteWithChildren
@@ -1602,40 +1543,131 @@ interface AppOrganizationIdRouteChildren {
   AppOrganizationIdProjectIdSettingsRoute: typeof AppOrganizationIdProjectIdSettingsRouteWithChildren
 }
 
+const AppOrganizationIdProjectIdRouteChildren: AppOrganizationIdProjectIdRouteChildren =
+  {
+    AppOrganizationIdProjectIdChatRoute: AppOrganizationIdProjectIdChatRoute,
+    AppOrganizationIdProjectIdDashboardsRoute:
+      AppOrganizationIdProjectIdDashboardsRoute,
+    AppOrganizationIdProjectIdPagesRoute: AppOrganizationIdProjectIdPagesRoute,
+    AppOrganizationIdProjectIdRealtimeRoute:
+      AppOrganizationIdProjectIdRealtimeRoute,
+    AppOrganizationIdProjectIdReferencesRoute:
+      AppOrganizationIdProjectIdReferencesRoute,
+    AppOrganizationIdProjectIdReportsRoute:
+      AppOrganizationIdProjectIdReportsRoute,
+    AppOrganizationIdProjectIdSessionsRoute:
+      AppOrganizationIdProjectIdSessionsRoute,
+    AppOrganizationIdProjectIdIndexRoute: AppOrganizationIdProjectIdIndexRoute,
+    AppOrganizationIdProjectIdDashboardsDashboardIdRoute:
+      AppOrganizationIdProjectIdDashboardsDashboardIdRoute,
+    AppOrganizationIdProjectIdEventsRoute:
+      AppOrganizationIdProjectIdEventsRouteWithChildren,
+    AppOrganizationIdProjectIdNotificationsRoute:
+      AppOrganizationIdProjectIdNotificationsRouteWithChildren,
+    AppOrganizationIdProjectIdProfilesRoute:
+      AppOrganizationIdProjectIdProfilesRouteWithChildren,
+    AppOrganizationIdProjectIdReportsReportIdRoute:
+      AppOrganizationIdProjectIdReportsReportIdRoute,
+    AppOrganizationIdProjectIdSessionsSessionIdRoute:
+      AppOrganizationIdProjectIdSessionsSessionIdRoute,
+    AppOrganizationIdProjectIdSettingsRoute:
+      AppOrganizationIdProjectIdSettingsRouteWithChildren,
+  }
+
+const AppOrganizationIdProjectIdRouteWithChildren =
+  AppOrganizationIdProjectIdRoute._addFileChildren(
+    AppOrganizationIdProjectIdRouteChildren,
+  )
+
+interface AppOrganizationIdIntegrationsTabsRouteChildren {
+  AppOrganizationIdIntegrationsTabsAvailableRoute: typeof AppOrganizationIdIntegrationsTabsAvailableRoute
+  AppOrganizationIdIntegrationsTabsInstalledRoute: typeof AppOrganizationIdIntegrationsTabsInstalledRoute
+  AppOrganizationIdIntegrationsTabsIndexRoute: typeof AppOrganizationIdIntegrationsTabsIndexRoute
+}
+
+const AppOrganizationIdIntegrationsTabsRouteChildren: AppOrganizationIdIntegrationsTabsRouteChildren =
+  {
+    AppOrganizationIdIntegrationsTabsAvailableRoute:
+      AppOrganizationIdIntegrationsTabsAvailableRoute,
+    AppOrganizationIdIntegrationsTabsInstalledRoute:
+      AppOrganizationIdIntegrationsTabsInstalledRoute,
+    AppOrganizationIdIntegrationsTabsIndexRoute:
+      AppOrganizationIdIntegrationsTabsIndexRoute,
+  }
+
+const AppOrganizationIdIntegrationsTabsRouteWithChildren =
+  AppOrganizationIdIntegrationsTabsRoute._addFileChildren(
+    AppOrganizationIdIntegrationsTabsRouteChildren,
+  )
+
+interface AppOrganizationIdIntegrationsRouteChildren {
+  AppOrganizationIdIntegrationsTabsRoute: typeof AppOrganizationIdIntegrationsTabsRouteWithChildren
+}
+
+const AppOrganizationIdIntegrationsRouteChildren: AppOrganizationIdIntegrationsRouteChildren =
+  {
+    AppOrganizationIdIntegrationsTabsRoute:
+      AppOrganizationIdIntegrationsTabsRouteWithChildren,
+  }
+
+const AppOrganizationIdIntegrationsRouteWithChildren =
+  AppOrganizationIdIntegrationsRoute._addFileChildren(
+    AppOrganizationIdIntegrationsRouteChildren,
+  )
+
+interface AppOrganizationIdMembersTabsRouteChildren {
+  AppOrganizationIdMembersTabsInvitationsRoute: typeof AppOrganizationIdMembersTabsInvitationsRoute
+  AppOrganizationIdMembersTabsMembersRoute: typeof AppOrganizationIdMembersTabsMembersRoute
+  AppOrganizationIdMembersTabsIndexRoute: typeof AppOrganizationIdMembersTabsIndexRoute
+}
+
+const AppOrganizationIdMembersTabsRouteChildren: AppOrganizationIdMembersTabsRouteChildren =
+  {
+    AppOrganizationIdMembersTabsInvitationsRoute:
+      AppOrganizationIdMembersTabsInvitationsRoute,
+    AppOrganizationIdMembersTabsMembersRoute:
+      AppOrganizationIdMembersTabsMembersRoute,
+    AppOrganizationIdMembersTabsIndexRoute:
+      AppOrganizationIdMembersTabsIndexRoute,
+  }
+
+const AppOrganizationIdMembersTabsRouteWithChildren =
+  AppOrganizationIdMembersTabsRoute._addFileChildren(
+    AppOrganizationIdMembersTabsRouteChildren,
+  )
+
+interface AppOrganizationIdMembersRouteChildren {
+  AppOrganizationIdMembersTabsRoute: typeof AppOrganizationIdMembersTabsRouteWithChildren
+}
+
+const AppOrganizationIdMembersRouteChildren: AppOrganizationIdMembersRouteChildren =
+  {
+    AppOrganizationIdMembersTabsRoute:
+      AppOrganizationIdMembersTabsRouteWithChildren,
+  }
+
+const AppOrganizationIdMembersRouteWithChildren =
+  AppOrganizationIdMembersRoute._addFileChildren(
+    AppOrganizationIdMembersRouteChildren,
+  )
+
+interface AppOrganizationIdRouteChildren {
+  AppOrganizationIdProjectIdRoute: typeof AppOrganizationIdProjectIdRouteWithChildren
+  AppOrganizationIdBillingRoute: typeof AppOrganizationIdBillingRoute
+  AppOrganizationIdSettingsRoute: typeof AppOrganizationIdSettingsRoute
+  AppOrganizationIdIndexRoute: typeof AppOrganizationIdIndexRoute
+  AppOrganizationIdIntegrationsRoute: typeof AppOrganizationIdIntegrationsRouteWithChildren
+  AppOrganizationIdMembersRoute: typeof AppOrganizationIdMembersRouteWithChildren
+}
+
 const AppOrganizationIdRouteChildren: AppOrganizationIdRouteChildren = {
-  AppOrganizationIdProjectIdRoute: AppOrganizationIdProjectIdRoute,
+  AppOrganizationIdProjectIdRoute: AppOrganizationIdProjectIdRouteWithChildren,
   AppOrganizationIdBillingRoute: AppOrganizationIdBillingRoute,
   AppOrganizationIdSettingsRoute: AppOrganizationIdSettingsRoute,
   AppOrganizationIdIndexRoute: AppOrganizationIdIndexRoute,
-  AppOrganizationIdProjectIdChatRoute: AppOrganizationIdProjectIdChatRoute,
-  AppOrganizationIdProjectIdDashboardsRoute:
-    AppOrganizationIdProjectIdDashboardsRoute,
-  AppOrganizationIdProjectIdPagesRoute: AppOrganizationIdProjectIdPagesRoute,
-  AppOrganizationIdProjectIdRealtimeRoute:
-    AppOrganizationIdProjectIdRealtimeRoute,
-  AppOrganizationIdProjectIdReferencesRoute:
-    AppOrganizationIdProjectIdReferencesRoute,
-  AppOrganizationIdProjectIdReportsRoute:
-    AppOrganizationIdProjectIdReportsRoute,
-  AppOrganizationIdProjectIdSessionsRoute:
-    AppOrganizationIdProjectIdSessionsRoute,
   AppOrganizationIdIntegrationsRoute:
     AppOrganizationIdIntegrationsRouteWithChildren,
   AppOrganizationIdMembersRoute: AppOrganizationIdMembersRouteWithChildren,
-  AppOrganizationIdProjectIdDashboardsDashboardIdRoute:
-    AppOrganizationIdProjectIdDashboardsDashboardIdRoute,
-  AppOrganizationIdProjectIdEventsRoute:
-    AppOrganizationIdProjectIdEventsRouteWithChildren,
-  AppOrganizationIdProjectIdNotificationsRoute:
-    AppOrganizationIdProjectIdNotificationsRouteWithChildren,
-  AppOrganizationIdProjectIdProfilesRoute:
-    AppOrganizationIdProjectIdProfilesRouteWithChildren,
-  AppOrganizationIdProjectIdReportsReportIdRoute:
-    AppOrganizationIdProjectIdReportsReportIdRoute,
-  AppOrganizationIdProjectIdSessionsSessionIdRoute:
-    AppOrganizationIdProjectIdSessionsSessionIdRoute,
-  AppOrganizationIdProjectIdSettingsRoute:
-    AppOrganizationIdProjectIdSettingsRouteWithChildren,
 }
 
 const AppOrganizationIdRouteWithChildren =

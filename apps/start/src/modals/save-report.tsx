@@ -40,7 +40,7 @@ export default function SaveReport({
   const queryClient = useQueryClient();
   const { organizationId, projectId } = useAppParams();
   const searchParams = useSearch({
-    from: '/_app/$organizationId/$projectId_/reports',
+    from: '/_app/$organizationId/$projectId/reports',
     shouldThrow: false,
   });
   const dashboardId = searchParams?.dashboardId;
