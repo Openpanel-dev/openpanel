@@ -87,7 +87,7 @@ export default function BillingPrompt({
     op.track('billing_prompt_viewed', {
       type,
     });
-  }, []);
+  }, [type]);
 
   const price = bestProductFit
     ? new Intl.NumberFormat('en-US', {

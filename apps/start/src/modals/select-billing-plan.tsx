@@ -272,8 +272,8 @@ export default function SelectBillingPlan({
               : 0;
 
             const isProductDisabled =
-              limit > 0 &&
-              organization.subscriptionPeriodEventsCount >= limit &&
+              (limit > 0 &&
+                organization.subscriptionPeriodEventsCount >= limit) ||
               !!product.disabled;
 
             return (
