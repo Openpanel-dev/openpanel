@@ -7,27 +7,6 @@ import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
 import { getOrganizationAccess, getProjectAccess } from './access.service';
 import { type IServiceProject, getProjectById } from './project.service';
-
-/**
- * Helper function to check if endDate is after startDate
- * This prevents ClickHouse errors when WITH FILL TO value is less than FROM value
- */
-function isValidDateRange(startDate: string, endDate: string): boolean {
-  try {
-    const start = DateTime.fromFormat(startDate, 'yyyy-MM-dd HH:mm:ss');
-    const end = DateTime.fromFormat(endDate, 'yyyy-MM-dd HH:mm:ss');
-    return end > start;
-  } catch {
-    // Try alternative format
-    try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      return !isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start;
-    } catch {
-      return false;
-    }
-  }
-}
 export type IServiceOrganization = Awaited<
   ReturnType<typeof db.organization.findUniqueOrThrow>
 >;
@@ -260,19 +239,7 @@ export async function getOrganizationBillingEventsCountSerie(
   sb.select.count = 'COUNT(*) AS count';
   sb.select.day = `toDate(toStartOf${interval.slice(0, 1).toUpperCase() + interval.slice(1)}(created_at)) AS ${interval}`;
   sb.groupBy.day = interval;
-  
-  // Only apply WITH FILL if the date range is valid (endDate > startDate)
-  const hasValidDateRange = isValidDateRange(
-    formatClickhouseDate(startDate, true),
-    formatClickhouseDate(endDate, true)
-  );
-  
-  if (hasValidDateRange) {
-    sb.orderBy.day = `${interval} WITH FILL FROM toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) TO toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
-  } else {
-    sb.orderBy.day = `${interval} ASC`;
-  }
-  
+  sb.orderBy.day = `${interval} WITH FILL FROM toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) TO toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
   sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
   sb.where.createdAt = `${interval} BETWEEN ${sqlstring.escape(formatClickhouseDate(startDate, true))} AND ${sqlstring.escape(formatClickhouseDate(endDate, true))}`;
 
