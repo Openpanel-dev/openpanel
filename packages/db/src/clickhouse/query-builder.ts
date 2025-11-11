@@ -261,62 +261,6 @@ export class Query<T = any> {
     return this;
   }
 
-  /**
-   * Safe version of fill that only applies WITH FILL if the date range is valid
-   * Prevents ClickHouse errors when TO value is less than FROM value
-   */
-  safeFill(
-    from: string | Date | Expression,
-    to: string | Date | Expression,
-    step: string | Expression,
-  ): this {
-    // Check if the date range is valid
-    const isValid = this.isValidDateRange(from, to);
-    if (isValid) {
-      return this.fill(from, to, step);
-    }
-    // Skip fill if date range is invalid
-    return this;
-  }
-
-  private isValidDateRange(
-    from: string | Date | Expression,
-    to: string | Date | Expression,
-  ): boolean {
-    try {
-      // If either is an Expression, assume it's valid (can't easily parse)
-      if (from instanceof Expression || to instanceof Expression) {
-        return true;
-      }
-
-      let fromDate: Date;
-      let toDate: Date;
-
-      if (from instanceof Date) {
-        fromDate = from;
-      } else if (typeof from === 'string') {
-        // Try parsing various date formats
-        fromDate = new Date(from);
-      } else {
-        return true; // Can't determine, assume valid
-      }
-
-      if (to instanceof Date) {
-        toDate = to;
-      } else if (typeof to === 'string') {
-        toDate = new Date(to);
-      } else {
-        return true; // Can't determine, assume valid
-      }
-
-      // Check if dates are valid and to is after from
-      return !isNaN(fromDate.getTime()) && !isNaN(toDate.getTime()) && toDate > fromDate;
-    } catch {
-      // If any error, assume valid to avoid breaking existing functionality
-      return true;
-    }
-  }
-
   private escapeDate(value: string | Date): string {
     if (value instanceof Date) {
       return sqlstring.escape(clix.datetime(value));
