@@ -1,7 +1,6 @@
 import type { CronQueueType } from '@openpanel/queue';
 import { cronQueue } from '@openpanel/queue';
 
-import { getLock } from '@openpanel/redis';
 import { logger } from './utils/logger';
 
 export async function bootCron() {
@@ -45,40 +44,30 @@ export async function bootCron() {
     });
   }
 
-  const lock = await getLock('cron:lock', '1', 1000 * 60 * 5);
+  logger.info('Updating cron jobs');
 
-  if (lock) {
-    logger.info('Cron lock acquired');
-  } else {
-    logger.info('Cron lock not acquired');
+  const jobSchedulers = await cronQueue.getJobSchedulers();
+  for (const jobScheduler of jobSchedulers) {
+    await cronQueue.removeJobScheduler(jobScheduler.key);
   }
 
-  if (lock) {
-    logger.info('Updating cron jobs');
-    // TODO: Switch to getJobSchedulers
-    const repeatableJobs = await cronQueue.getRepeatableJobs();
-    for (const repeatableJob of repeatableJobs) {
-      await cronQueue.removeRepeatableByKey(repeatableJob.key);
-    }
-
-    // Add repeatable jobs
-    for (const job of jobs) {
-      await cronQueue.upsertJobScheduler(
-        job.type,
-        typeof job.pattern === 'number'
-          ? {
-              every: job.pattern,
-            }
-          : {
-              pattern: job.pattern,
-            },
-        {
-          data: {
-            type: job.type,
-            payload: undefined,
+  // Add repeatable jobs
+  for (const job of jobs) {
+    await cronQueue.upsertJobScheduler(
+      job.type,
+      typeof job.pattern === 'number'
+        ? {
+            every: job.pattern,
+          }
+        : {
+            pattern: job.pattern,
           },
+      {
+        data: {
+          type: job.type,
+          payload: undefined,
         },
-      );
-    }
+      },
+    );
   }
 }

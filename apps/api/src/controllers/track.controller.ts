@@ -150,7 +150,6 @@ export async function handler(
 
       promises.push(
         track({
-          log: request.log.info,
           payload: request.body.payload,
           currentDeviceId,
           previousDeviceId,
@@ -217,7 +216,6 @@ async function track({
   headers,
   timestamp,
   isTimestampFromThePast,
-  log,
 }: {
   payload: TrackPayload;
   currentDeviceId: string;
@@ -227,7 +225,6 @@ async function track({
   headers: Record<string, string | undefined>;
   timestamp: number;
   isTimestampFromThePast: boolean;
-  log: any;
 }) {
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
   const groupId = uaInfo.isServer

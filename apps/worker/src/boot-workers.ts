@@ -12,7 +12,7 @@ import {
   queueLogger,
   sessionsQueue,
 } from '@openpanel/queue';
-import { getLock, getRedisQueue } from '@openpanel/redis';
+import { getRedisQueue } from '@openpanel/redis';
 
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';

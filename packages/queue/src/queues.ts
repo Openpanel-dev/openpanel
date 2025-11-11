@@ -16,6 +16,9 @@ export const EVENTS_GROUP_QUEUES_SHARDS = Number.parseInt(
   10,
 );
 
+export const getQueueName = (name: string) =>
+  process.env.QUEUE_CLUSTER ? `{${name}}` : name;
+
 function pickShard(projectId: string) {
   const h = createHash('sha1').update(projectId).digest(); // 20 bytes
   // take first 4 bytes as unsigned int
@@ -144,7 +147,9 @@ export const eventsGroupQueues = Array.from({
   (_, index) =>
     new GroupQueue<EventsQueuePayloadIncomingEvent['payload']>({
       logger: queueLogger,
-      namespace: `{group_events_${index}}`,
+      namespace: getQueueName(
+        index === 0 ? 'group_events' : `group_events_${index}`,
+      ),
       redis: getRedisGroupQueue(),
       keepCompleted: 1_000,
       keepFailed: 10_000,
@@ -168,24 +173,27 @@ export const getEventsGroupQueueShard = (groupId: string) => {
   return queue;
 };
 
-export const sessionsQueue = new Queue<SessionsQueuePayload>('{sessions}', {
+export const sessionsQueue = new Queue<SessionsQueuePayload>(
+  getQueueName('sessions'),
+  {
+    connection: getRedisQueue(),
+    defaultJobOptions: {
+      removeOnComplete: 10,
+    },
+  },
+);
+export const sessionsQueueEvents = new QueueEvents(getQueueName('sessions'), {
+  connection: getRedisQueue(),
+});
+
+export const cronQueue = new Queue<CronQueuePayload>(getQueueName('cron'), {
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
   },
 });
-export const sessionsQueueEvents = new QueueEvents('{sessions}', {
-  connection: getRedisQueue(),
-});
 
-export const cronQueue = new Queue<CronQueuePayload>('{cron}', {
-  connection: getRedisQueue(),
-  defaultJobOptions: {
-    removeOnComplete: 10,
-  },
-});
-
-export const miscQueue = new Queue<MiscQueuePayload>('{misc}', {
+export const miscQueue = new Queue<MiscQueuePayload>(getQueueName('misc'), {
   connection: getRedisQueue(),
   defaultJobOptions: {
     removeOnComplete: 10,
@@ -200,7 +208,7 @@ export type NotificationQueuePayload = {
 };
 
 export const notificationQueue = new Queue<NotificationQueuePayload>(
-  '{notification}',
+  getQueueName('notification'),
   {
     connection: getRedisQueue(),
     defaultJobOptions: {
@@ -216,13 +224,16 @@ export type ImportQueuePayload = {
   };
 };
 
-export const importQueue = new Queue<ImportQueuePayload>('{import}', {
-  connection: getRedisQueue(),
-  defaultJobOptions: {
-    removeOnComplete: 10,
-    removeOnFail: 50,
+export const importQueue = new Queue<ImportQueuePayload>(
+  getQueueName('import'),
+  {
+    connection: getRedisQueue(),
+    defaultJobOptions: {
+      removeOnComplete: 10,
+      removeOnFail: 50,
+    },
   },
-});
+);
 
 export function addTrialEndingSoonJob(organizationId: string, delay: number) {
   return miscQueue.add(
