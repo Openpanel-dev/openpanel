@@ -144,11 +144,11 @@ const autoBatchSize = Number.parseInt(process.env.AUTO_BATCH_SIZE || '0', 10);
 export const eventsGroupQueues = Array.from({
   length: EVENTS_GROUP_QUEUES_SHARDS,
 }).map(
-  (_, index) =>
+  (_, index, list) =>
     new GroupQueue<EventsQueuePayloadIncomingEvent['payload']>({
       logger: queueLogger,
       namespace: getQueueName(
-        index === 0 ? 'group_events' : `group_events_${index}`,
+        list.length === 1 ? 'group_events' : `group_events_${index}`,
       ),
       redis: getRedisGroupQueue(),
       keepCompleted: 1_000,
