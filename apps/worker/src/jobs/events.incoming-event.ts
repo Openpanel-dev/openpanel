@@ -18,8 +18,6 @@ import {
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
-import { getLock, getRedisCache } from '@openpanel/redis';
-import { DelayedError, type Job } from 'bullmq';
 import * as R from 'ramda';
 import { v4 as uuid } from 'uuid';
 
@@ -33,10 +31,9 @@ const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
 
 async function createEventAndNotify(
   payload: IServiceCreateEventPayload,
-  jobData: Job<EventsQueuePayloadIncomingEvent>['data']['payload'],
   logger: ILogger,
 ) {
-  logger.info('Creating event', { event: payload, jobData });
+  logger.info('Creating event', { event: payload });
   const [event] = await Promise.all([
     createEvent(payload),
     checkNotificationRulesForEvent(payload).catch(() => {}),
@@ -94,7 +91,6 @@ export async function incomingEvent(
     projectId,
     properties: R.omit(GLOBAL_PROPERTIES, {
       ...properties,
-      __user_agent: userAgent,
       __hash: hash,
       __query: query,
       __reqId: reqId,
@@ -154,7 +150,7 @@ export async function incomingEvent(
       origin: screenView?.origin ?? baseEvent.origin,
     };
 
-    return createEventAndNotify(payload as IServiceEvent, jobPayload, logger);
+    return createEventAndNotify(payload as IServiceEvent, logger);
   }
 
   const sessionEnd = await getSessionEnd({
@@ -190,7 +186,7 @@ export async function incomingEvent(
     });
   }
 
-  const event = await createEventAndNotify(payload, jobPayload, logger);
+  const event = await createEventAndNotify(payload, logger);
 
   if (!sessionEnd) {
     logger.info('Creating session end job', { event: payload });
