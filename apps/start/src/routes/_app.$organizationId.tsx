@@ -136,6 +136,22 @@ function Component() {
           </LinkButton>
         </Alert>
       )}
+      {organization.subscriptionPeriodEventsCountExceededAt &&
+        organization.isActive && (
+          <Alert
+            title="Events limit exceeded"
+            description={`Your subscription has exceeded the limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}`}
+          >
+            <LinkButton
+              to="/$organizationId/billing"
+              params={{
+                organizationId: organizationId,
+              }}
+            >
+              Upgrade now
+            </LinkButton>
+          </Alert>
+        )}
       <Outlet />
       <SupporterPrompt />
     </>
