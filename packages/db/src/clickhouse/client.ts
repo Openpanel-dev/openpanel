@@ -24,10 +24,13 @@ type WarnLogParams = LogParams & { err?: Error };
 
 class CustomLogger implements Logger {
   trace({ message, args }: LogParams) {
-    logger.info(message, args);
+    logger.debug(message, args);
   }
   debug({ message, args }: LogParams) {
-    logger.info(message, args);
+    if (message.includes('Query:') && args?.response_status === 200) {
+      return;
+    }
+    logger.debug(message, args);
   }
   info({ message, args }: LogParams) {
     logger.info(message, args);

@@ -67,18 +67,32 @@ export function createLogger({ name }: { name: string }): ILogger {
     return Object.assign({}, info, redactObject(info));
   });
 
-  const format = winston.format.combine(
-    errorFormatter(),
-    redactSensitiveInfo(),
-    winston.format.json(),
-  );
+  const transports: winston.transport[] = [];
+  let format: winston.Logform.Format;
 
-  const transports: winston.transport[] = [new winston.transports.Console()];
   if (process.env.HYPERDX_API_KEY) {
     transports.push(
       HyperDX.getWinstonTransport(logLevel, {
         detectResources: true,
         service,
+      }),
+    );
+    format = winston.format.combine(
+      errorFormatter(),
+      redactSensitiveInfo(),
+      winston.format.json(),
+    );
+  } else {
+    transports.push(new winston.transports.Console());
+    format = winston.format.combine(
+      errorFormatter(),
+      redactSensitiveInfo(),
+      winston.format.colorize(),
+      winston.format.printf((info) => {
+        const { level, message, service, ...meta } = info;
+        const metaStr =
+          Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+        return `${level} ${message}${metaStr}`;
       }),
     );
   }
