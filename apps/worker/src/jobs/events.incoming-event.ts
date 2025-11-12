@@ -23,7 +23,7 @@ import * as R from 'ramda';
 import { omit } from 'ramda';
 import { v4 as uuid } from 'uuid';
 
-const GLOBAL_PROPERTIES = ['__path', '__referrer'];
+const GLOBAL_PROPERTIES = ['__path', '__referrer', '__revenue'];
 
 // This function will merge two objects.
 // First it will strip '' and undefined/null from B
@@ -127,6 +127,10 @@ export async function incomingEventPure(
     device: uaInfo.device,
     brand: uaInfo.brand,
     model: uaInfo.model,
+    revenue:
+      body.name === 'revenue' && properties.__revenue
+        ? Number(properties.__revenue)
+        : undefined,
   } as const;
 
   // if timestamp is from the past we dont want to create a new session

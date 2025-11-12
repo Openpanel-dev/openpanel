@@ -77,6 +77,15 @@ export const BarShapeBlue = BarWithBorder({
     fill: 'rgba(59, 121, 255, 0.4)',
   },
 });
+export const BarShapeGreen = BarWithBorder({
+  borderHeight: 2,
+  border: 'rgba(59, 169, 116, 1)',
+  fill: 'rgba(59, 169, 116, 0.3)',
+  active: {
+    border: 'rgba(59, 169, 116, 1)',
+    fill: 'rgba(59, 169, 116, 0.4)',
+  },
+});
 export const BarShapeProps = BarWithBorder({
   borderHeight: 2,
   border: 'props',

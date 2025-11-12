@@ -29,7 +29,7 @@ interface MetricCardProps {
     current: number;
     previous?: number | null;
   };
-  unit?: '' | 'date' | 'timeAgo' | 'min' | '%';
+  unit?: '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
   label: string;
   onClick?: () => void;
   active?: boolean;
@@ -63,6 +63,11 @@ export function OverviewMetricCard({
 
     if (unit === 'min') {
       return <>{fancyMinutes(value)}</>;
+    }
+
+    if (unit === 'currency') {
+      // Revenue is stored in cents, convert to dollars
+      return <>{number.currency(value / 100)}</>;
     }
 
     return (

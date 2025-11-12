@@ -234,6 +234,7 @@ export const overviewRouter = createTRPCRouter({
             previous?.metrics.avg_session_duration || null,
           prev_views_per_session: previous?.metrics.views_per_session || null,
           prev_total_sessions: previous?.metrics.total_sessions || null,
+          prev_total_revenue: previous?.metrics.total_revenue || null,
         },
         series: current.series.map((item, index) => {
           const prev = previous?.series[index];
@@ -246,6 +247,7 @@ export const overviewRouter = createTRPCRouter({
             prev_avg_session_duration: prev?.avg_session_duration,
             prev_views_per_session: prev?.views_per_session,
             prev_total_sessions: prev?.total_sessions,
+            prev_total_revenue: prev?.total_revenue,
           };
         }),
       };

@@ -104,6 +104,7 @@ export class OverviewService {
       avg_session_duration: number;
       total_screen_views: number;
       views_per_session: number;
+      total_revenue: number;
     };
     series: {
       date: string;
@@ -113,6 +114,7 @@ export class OverviewService {
       avg_session_duration: number;
       total_screen_views: number;
       views_per_session: number;
+      total_revenue: number;
     }[];
   }> {
     const where = this.getRawWhereClause('sessions', filters);
@@ -122,6 +124,7 @@ export class OverviewService {
         .select([
           `${clix.toStartOf('created_at', interval, timezone)} AS date`,
           'round((countIf(is_bounce = 1 AND sign = 1) * 100.) / countIf(sign = 1), 2) AS bounce_rate',
+          'sum(revenue * sign) AS total_revenue',
         ])
         .from(TABLE_NAMES.sessions, true)
         .where('sign', '=', 1)
@@ -166,9 +169,16 @@ export class OverviewService {
             .where('date', '=', rollupDate),
         )
         .with(
+          'overall_total_revenue',
+          clix(this.client, timezone)
+            .select(['total_revenue'])
+            .from('session_agg')
+            .where('date', '=', rollupDate),
+        )
+        .with(
           'daily_stats',
           clix(this.client, timezone)
-            .select(['date', 'bounce_rate'])
+            .select(['date', 'bounce_rate', 'total_revenue'])
             .from('session_agg')
             .where('date', '!=', rollupDate),
         )
@@ -181,9 +191,11 @@ export class OverviewService {
           avg_session_duration: number;
           total_screen_views: number;
           views_per_session: number;
+          total_revenue: number;
           overall_unique_visitors: number;
           overall_total_sessions: number;
           overall_bounce_rate: number;
+          overall_total_revenue: number;
         }>([
           `${clix.toStartOf('e.created_at', interval)} AS date`,
           'ds.bounce_rate as bounce_rate',
@@ -193,9 +205,11 @@ export class OverviewService {
           'if(isNaN(_avg_session_duration), 0, _avg_session_duration) AS avg_session_duration',
           'count(*) AS total_screen_views',
           'round((count(*) * 1.) / uniq(e.session_id), 2) AS views_per_session',
+          'ds.total_revenue AS total_revenue',
           '(SELECT unique_visitors FROM overall_unique_visitors) AS overall_unique_visitors',
           '(SELECT total_sessions FROM overall_unique_visitors) AS overall_total_sessions',
           '(SELECT bounce_rate FROM overall_bounce_rate) AS overall_bounce_rate',
+          '(SELECT total_revenue FROM overall_total_revenue) AS overall_total_revenue',
         ])
         .from(`${TABLE_NAMES.events} AS e`)
         .leftJoin(
@@ -209,7 +223,7 @@ export class OverviewService {
           clix.datetime(endDate, 'toDateTime'),
         ])
         .rawWhere(this.getRawWhereClause('events', filters))
-        .groupBy(['date', 'ds.bounce_rate'])
+        .groupBy(['date', 'ds.bounce_rate', 'ds.total_revenue'])
         .orderBy('date', 'ASC')
         .fill(
           clix.toStartOf(
@@ -234,7 +248,8 @@ export class OverviewService {
             (item) =>
               item.overall_bounce_rate !== null ||
               item.overall_total_sessions !== null ||
-              item.overall_unique_visitors !== null,
+              item.overall_unique_visitors !== null ||
+              item.overall_total_revenue !== null,
           );
           return {
             metrics: {
@@ -250,12 +265,14 @@ export class OverviewService {
               views_per_session: average(
                 res.map((item) => item.views_per_session),
               ),
+              total_revenue: anyRowWithData?.overall_total_revenue ?? 0,
             },
             series: res.map(
               omit([
                 'overall_bounce_rate',
                 'overall_unique_visitors',
                 'overall_total_sessions',
+                'overall_total_revenue',
               ]),
             ),
           };
@@ -271,6 +288,7 @@ export class OverviewService {
         avg_session_duration: number;
         total_screen_views: number;
         views_per_session: number;
+        total_revenue: number;
       }>([
         `${clix.toStartOf('created_at', interval, timezone)} AS date`,
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) as bounce_rate',
@@ -280,6 +298,7 @@ export class OverviewService {
         'if(isNaN(_avg_session_duration), 0, _avg_session_duration) AS avg_session_duration',
         'sum(sign * screen_view_count) AS total_screen_views',
         'round(sum(sign * screen_view_count) * 1.0 / sum(sign), 2) AS views_per_session',
+        'sum(revenue * sign) AS total_revenue',
       ])
       .from('sessions')
       .where('created_at', 'BETWEEN', [
@@ -320,6 +339,7 @@ export class OverviewService {
           avg_session_duration: res[0]?.avg_session_duration ?? 0,
           total_screen_views: res[0]?.total_screen_views ?? 0,
           views_per_session: res[0]?.views_per_session ?? 0,
+          total_revenue: res[0]?.total_revenue ?? 0,
         },
         series: res
           .slice(1)
