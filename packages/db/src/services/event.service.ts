@@ -25,6 +25,7 @@ import {
   getProfilesCached,
   upsertProfile,
 } from './profile.service';
+import type { IClickhouseSession } from './session.service';
 
 export type IImportedEvent = Omit<
   IClickhouseEvent,
@@ -97,6 +98,55 @@ export interface IClickhouseEvent {
   // They do not exist here. Just make ts happy for now
   profile?: IServiceProfile;
   meta?: EventMeta;
+}
+
+export function transformSessionToEvent(
+  session: IClickhouseSession,
+): IServiceEvent {
+  return {
+    id: '', // Not used
+    name: 'screen_view',
+    sessionId: session.id,
+    profileId: session.profile_id,
+    path: session.exit_path,
+    origin: session.exit_origin,
+    createdAt: convertClickhouseDateToJs(session.ended_at),
+    referrer: session.referrer,
+    referrerName: session.referrer_name,
+    referrerType: session.referrer_type,
+    os: session.os,
+    osVersion: session.os_version,
+    browser: session.browser,
+    browserVersion: session.browser_version,
+    device: session.device,
+    brand: session.brand,
+    model: session.model,
+    country: session.country,
+    region: session.region,
+    city: session.city,
+    longitude: session.longitude,
+    latitude: session.latitude,
+    projectId: session.project_id,
+    deviceId: session.device_id,
+    duration: 0,
+    revenue: session.revenue,
+    properties: {
+      ...session.properties,
+      is_bounce: session.is_bounce,
+      __query: {
+        utm_medium: session.utm_medium,
+        utm_source: session.utm_source,
+        utm_campaign: session.utm_campaign,
+        utm_content: session.utm_content,
+        utm_term: session.utm_term,
+      },
+    },
+    profile: undefined,
+    meta: undefined,
+    importedAt: undefined,
+    sdkName: undefined,
+    sdkVersion: undefined,
+  };
 }
 
 export function transformEvent(event: IClickhouseEvent): IServiceEvent {

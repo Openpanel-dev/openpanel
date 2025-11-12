@@ -1,4 +1,11 @@
-import { type IServiceEvent, createEvent } from '@openpanel/db';
+import {
+  type IClickhouseSession,
+  type IServiceEvent,
+  type IServiceSession,
+  createEvent,
+  formatClickhouseDate,
+  sessionBuffer,
+} from '@openpanel/db';
 import { eventBuffer } from '@openpanel/db';
 import {
   type EventsQueuePayloadIncomingEvent,
@@ -14,10 +21,9 @@ vi.mock('@openpanel/db', async () => {
   return {
     ...actual,
     createEvent: vi.fn(),
-    getLastScreenView: vi.fn(),
     checkNotificationRulesForEvent: vi.fn().mockResolvedValue(true),
-    eventBuffer: {
-      getLastScreenView: vi.fn(),
+    sessionBuffer: {
+      getExistingSession: vi.fn(),
     },
   };
 });
@@ -106,6 +112,7 @@ describe('incomingEvent', () => {
       country: 'US',
       city: 'New York',
       region: 'NY',
+      revenue: undefined,
       longitude: 0,
       latitude: 0,
       os: 'Windows',
@@ -210,6 +217,7 @@ describe('incomingEvent', () => {
       country: 'US',
       city: 'New York',
       region: 'NY',
+      revenue: undefined,
       longitude: 0,
       latitude: 0,
       os: 'Windows',
@@ -278,10 +286,47 @@ describe('incomingEvent', () => {
       referrerType: 'search',
     };
 
-    // Mock the eventBuffer.getLastScreenView method
-    vi.mocked(eventBuffer.getLastScreenView).mockResolvedValueOnce(
-      mockLastScreenView as IServiceEvent,
-    );
+    vi.mocked(sessionBuffer.getExistingSession).mockResolvedValueOnce({
+      id: 'last-session-456',
+      event_count: 0,
+      screen_view_count: 0,
+      entry_path: '/last-path',
+      entry_origin: 'https://example.com',
+      exit_path: '/last-path',
+      exit_origin: 'https://example.com',
+      created_at: formatClickhouseDate(timestamp),
+      ended_at: formatClickhouseDate(timestamp),
+      os: 'iOS',
+      os_version: '15.0',
+      browser: 'Safari',
+      browser_version: '15.0',
+      device: 'mobile',
+      brand: 'Apple',
+      model: 'iPhone',
+      country: 'CA',
+      region: 'ON',
+      city: 'Toronto',
+      longitude: 0,
+      latitude: 0,
+      duration: 0,
+      referrer: 'https://google.com',
+      referrer_name: 'Google',
+      referrer_type: 'search',
+      is_bounce: false,
+      utm_term: '',
+      utm_source: '',
+      utm_campaign: '',
+      utm_content: '',
+      utm_medium: '',
+      revenue: 0,
+      properties: {},
+      project_id: projectId,
+      device_id: 'last-device-123',
+      profile_id: 'profile-123',
+      screen_views: [],
+      sign: 1,
+      version: 1,
+    } satisfies IClickhouseSession);
 
     await incomingEvent(jobData);
 
@@ -317,6 +362,7 @@ describe('incomingEvent', () => {
       referrerType: 'search',
       sdkName: 'server',
       sdkVersion: '1.0.0',
+      revenue: undefined,
     });
 
     expect(sessionsQueue.add).not.toHaveBeenCalled();
@@ -345,9 +391,6 @@ describe('incomingEvent', () => {
       uaInfo: uaInfoServer,
     };
 
-    // Mock getLastScreenView to return null
-    vi.mocked(eventBuffer.getLastScreenView).mockResolvedValueOnce(null);
-
     await incomingEvent(jobData);
 
     expect((createEvent as Mock).mock.calls[0]![0]).toStrictEqual({
@@ -365,6 +408,7 @@ describe('incomingEvent', () => {
       country: 'US',
       city: 'New York',
       region: 'NY',
+      revenue: undefined,
       longitude: 0,
       latitude: 0,
       os: '',
