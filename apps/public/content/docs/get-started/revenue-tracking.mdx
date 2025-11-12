@@ -31,7 +31,7 @@ This is the most common flow and most secure one. Your backend receives webhooks
 <FlowStep step={2} actor="Visitor" description="Makes a purchase" icon="visitor" />
 
 <FlowStep step={3} actor="Your website" description="Does a POST request to get the checkout URL" icon="website">
-When you create the checkout, you should first call `op.getDeviceId()`, which will return your visitor's current `deviceId`. Pass this to your checkout endpoint.
+When you create the checkout, you should first call `op.fetchDeviceId()`, which will return your visitor's current `deviceId`. Pass this to your checkout endpoint.
 
 ```javascript
 fetch('https://domain.com/api/checkout', {
@@ -40,7 +40,7 @@ fetch('https://domain.com/api/checkout', {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    deviceId: await op.getDeviceId(), // ✅ since deviceId is here we can link the payment now
+    deviceId: await op.fetchDeviceId(), // ✅ since deviceId is here we can link the payment now
     // ... other checkout data
   }),
 })
@@ -199,4 +199,10 @@ This method will clear all pending revenues from memory and sessionStorage witho
 
 ```javascript
 op.clearRevenue(): void
+```
+
+### Fetch your current users device id
+
+```javascript
+op.fetchDeviceId(): Promise<string>
 ```

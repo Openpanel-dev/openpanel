@@ -15,6 +15,7 @@ import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
 import { last } from 'ramda';
 import React, { useState } from 'react';
 import {
+  Area,
   Bar,
   CartesianGrid,
   Cell,
@@ -298,6 +299,8 @@ function Chart({
     });
   }
 
+  console.log('data', dotIndex);
+
   const { calcStrokeDasharray, handleAnimationEnd, getStrokeDasharray } =
     useDashedStroke({
       dotIndex,
@@ -305,6 +308,10 @@ function Chart({
 
   const lastSerieDataItem = last(data)?.date || new Date();
   const useDashedLastLine = (() => {
+    if (range === 'today') {
+      return true;
+    }
+
     if (interval === 'hour') {
       return isSameHour(lastSerieDataItem, new Date());
     }
@@ -350,7 +357,13 @@ function Chart({
             {...revenueYAxisProps}
             yAxisId="right"
             orientation="right"
-            domain={[0, 'dataMax']}
+            domain={[
+              0,
+              data.reduce(
+                (max, item) => Math.max(max, item.total_revenue ?? 0),
+                0,
+              ) * 2,
+            ]}
             width={25}
           />
           <XAxis {...xAxisProps} />
@@ -382,61 +395,6 @@ function Chart({
             </filter>
           </defs>
 
-          <Bar
-            key="total_revenue"
-            dataKey="total_revenue"
-            yAxisId="right"
-            stackId="revenue"
-            isAnimationActive={false}
-            radius={5}
-            maxBarSize={20}
-          >
-            {data.map((item, index) => {
-              console.log(
-                'index === data.length - 1',
-                index === data.length - 1,
-              );
-
-              return (
-                <Cell
-                  key={item.date}
-                  className={cn(
-                    index === activeBar
-                      ? 'fill-emerald-500/80'
-                      : 'fill-emerald-500/30',
-                  )}
-                />
-              );
-            })}
-          </Bar>
-          <Bar
-            key="total_refund"
-            dataKey="total_refund"
-            yAxisId="right"
-            stackId="revenue"
-            isAnimationActive={false}
-            radius={5}
-            maxBarSize={20}
-          >
-            {data.map((item, index) => {
-              console.log(
-                'index === data.length - 1',
-                index === data.length - 1,
-              );
-
-              return (
-                <Cell
-                  key={item.date}
-                  className={cn(
-                    index === activeBar
-                      ? 'fill-rose-500/80'
-                      : 'fill-rose-500/30',
-                  )}
-                />
-              );
-            })}
-          </Bar>
-
           <Line
             key={`prev_${activeMetric.key}`}
             type="monotone"
@@ -461,12 +419,35 @@ function Chart({
               r: 3,
             }}
           />
-
-          <Line
+          <Bar
+            key="total_revenue"
+            dataKey="total_revenue"
+            yAxisId="right"
+            stackId="revenue"
+            isAnimationActive={false}
+            radius={5}
+            maxBarSize={20}
+          >
+            {data.map((item, index) => {
+              return (
+                <Cell
+                  key={item.date}
+                  className={cn(
+                    index === activeBar
+                      ? 'fill-emerald-700/100'
+                      : 'fill-emerald-700/80',
+                  )}
+                />
+              );
+            })}
+          </Bar>
+          <Area
             key={activeMetric.key}
             type="monotone"
             dataKey={activeMetric.key}
             stroke={getChartColor(0)}
+            fill={getChartColor(0)}
+            fillOpacity={0.05}
             strokeWidth={2}
             strokeDasharray={
               useDashedLastLine

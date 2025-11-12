@@ -6,6 +6,7 @@ import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
+import { getRedisCache } from '@openpanel/redis';
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -369,4 +370,63 @@ async function decrement({
     properties: profile.properties,
     isExternal: true,
   });
+}
+
+export async function fetchDeviceId(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  const salts = await getSalts();
+  const projectId = request.client!.projectId;
+  if (!projectId) {
+    return reply.status(400).send('No projectId');
+  }
+
+  const ip = request.clientIp;
+  if (!ip) {
+    return reply.status(400).send('Missing ip address');
+  }
+
+  const ua = request.headers['user-agent']!;
+  if (!ua) {
+    return reply.status(400).send('Missing header: user-agent');
+  }
+
+  const currentDeviceId = generateDeviceId({
+    salt: salts.current,
+    origin: projectId,
+    ip,
+    ua,
+  });
+  const previousDeviceId = generateDeviceId({
+    salt: salts.previous,
+    origin: projectId,
+    ip,
+    ua,
+  });
+
+  try {
+    const multi = getRedisCache().multi();
+    multi.exists(`bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`);
+    multi.exists(`bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`);
+    const res = await multi.exec();
+
+    if (res?.[0]?.[1]) {
+      return {
+        deviceId: currentDeviceId,
+      };
+    }
+
+    if (res?.[1]?.[1]) {
+      return {
+        deviceId: previousDeviceId,
+      };
+    }
+  } catch (error) {
+    request.log.error('Error getting session end GET /profile', error);
+  }
+
+  return {
+    deviceId: '',
+  };
 }

@@ -190,6 +190,15 @@ export class OpenPanel {
     });
   }
 
+  async fetchDeviceId(): Promise<string | null> {
+    const result = await this.api.fetch<undefined, { deviceId: string }>(
+      '/track/device-id',
+      undefined,
+      { method: 'GET', keepalive: false },
+    );
+    return result?.deviceId ?? null;
+  }
+
   clear() {
     this.profileId = undefined;
     // should we force a session end here?

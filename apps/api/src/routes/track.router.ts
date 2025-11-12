@@ -1,4 +1,4 @@
-import { handler } from '@/controllers/track.controller';
+import { fetchDeviceId, handler } from '@/controllers/track.controller';
 import type { FastifyPluginCallback } from 'fastify';
 
 import { clientHook } from '@/hooks/client.hook';
@@ -26,6 +26,22 @@ const trackRouter: FastifyPluginCallback = async (fastify) => {
           payload: {
             type: 'object',
             additionalProperties: true,
+          },
+        },
+      },
+    },
+  });
+
+  fastify.route({
+    method: 'GET',
+    url: '/device-id',
+    handler: fetchDeviceId,
+    schema: {
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            deviceId: { type: 'string' },
           },
         },
       },
