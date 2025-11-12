@@ -104,7 +104,7 @@ export async function getProjects({
 
 export const getProjectEventsCount = async (projectId: string) => {
   const res = await chQuery<{ count: number }>(
-    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)}`,
+    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`,
   );
   return res[0]?.count;
 };
