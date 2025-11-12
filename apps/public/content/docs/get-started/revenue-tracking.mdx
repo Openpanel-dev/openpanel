@@ -128,8 +128,11 @@ When the visitor clicks the checkout button, track the revenue with the amount.
 async function handleCheckout() {
   const amount = 2000; // Amount in cents
 
-  // Create a pending revenue
-  op.revenue.pending(amount)
+  // Create a pending revenue (stored in sessionStorage)
+  op.pendingRevenue(amount, {
+    productId: '123',
+    // ... other properties
+  });
    
   // Redirect to Stripe checkout
   window.location.href = 'https://checkout.stripe.com/...';
@@ -144,10 +147,14 @@ async function handleCheckout() {
 <FlowStep step={6} actor="Visitor" description="Redirected back to your success page" icon="visitor" />
 
 <FlowStep step={7} actor="Your website" description="Confirm/flush the revenue on success page" icon="website" isLast>
-On your success page, you just flush the pending revenue events
+On your success page, flush all pending revenue events. This will send all pending revenues tracked during checkout and clear them from sessionStorage.
 
 ```javascript
-op.revenue.flush()
+// Flush all pending revenues
+await op.flushRevenue();
+
+// Or if you want to clear without sending (e.g., payment was cancelled)
+op.clearRevenue();
 ```
 </FlowStep>
 
@@ -172,24 +179,24 @@ op.revenue(amount: number, properties: Record<string, unknown>): Promise<void>
 
 ### Add a pending revenue
 
-This method will create a pending revenue item and will not be sent to us until your have called [flush](#send-all-pending-revenues)
+This method will create a pending revenue item and store it in sessionStorage. It will not be sent to OpenPanel until you call `flushRevenue()`. Pending revenues are automatically restored from sessionStorage when the SDK initializes.
 
 ```javascript
-op.revenue.pending(amount: number, properties: Record<string, unknown>): void
+op.pendingRevenue(amount: number, properties?: Record<string, unknown>): void
 ```
 
 ### Send all pending revenues
 
-This method will send all pending revenues to OpenPanel to be stored
+This method will send all pending revenues to OpenPanel and then clear them from sessionStorage. Returns a Promise that resolves when all revenues have been sent.
 
 ```javascript
-op.revenue.flush(): Promise<void>
+await op.flushRevenue(): Promise<void>
 ```
 
 ### Clear any pending revenue
 
-This method will just clear any pending revenues.
+This method will clear all pending revenues from memory and sessionStorage without sending them to OpenPanel. Useful if a payment was cancelled or you want to discard pending revenues.
 
 ```javascript
-op.revenue.clear(): void
+op.clearRevenue(): void
 ```
