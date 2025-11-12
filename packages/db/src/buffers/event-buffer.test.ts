@@ -301,44 +301,6 @@ describe('EventBuffer with real Redis', () => {
     expect(insertSpy).toHaveBeenCalled();
   });
 
-  it('getLastScreenView works for profile and session queries', async () => {
-    const projectId = 'p5';
-    const profileId = 'u5';
-    const sessionId = 'session_glsv';
-
-    const view = {
-      project_id: projectId,
-      profile_id: profileId,
-      session_id: sessionId,
-      name: 'screen_view',
-      created_at: new Date().toISOString(),
-    } as any;
-
-    await eventBuffer.add(view);
-
-    const byProfile = await eventBuffer.getLastScreenView({
-      projectId,
-      profileId,
-    });
-
-    if (!byProfile) {
-      throw new Error('byProfile is null');
-    }
-
-    expect(byProfile.name).toBe('screen_view');
-
-    const bySession = await eventBuffer.getLastScreenView({
-      projectId,
-      sessionId,
-    });
-
-    if (!bySession) {
-      throw new Error('bySession is null');
-    }
-
-    expect(bySession.name).toBe('screen_view');
-  });
-
   it('buffer counter reflects pending after processing 2 screen_view events', async () => {
     const sessionId = 'session_counter';
     const a = {

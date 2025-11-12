@@ -24,6 +24,12 @@ const eventRouter: FastifyPluginCallback = async (fastify) => {
     url: '/decrement',
     handler: controller.decrementProfileProperty,
   });
+
+  fastify.route({
+    method: 'GET',
+    url: '/',
+    handler: controller.info,
+  });
 };
 
 export default eventRouter;
