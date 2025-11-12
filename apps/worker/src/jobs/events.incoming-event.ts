@@ -93,7 +93,6 @@ export async function incomingEvent(
       ...properties,
       __hash: hash,
       __query: query,
-      __reqId: reqId,
     }),
     createdAt,
     duration: 0,

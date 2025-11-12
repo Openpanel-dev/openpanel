@@ -65,7 +65,6 @@ export async function createSessionEnd(
   const logger = baseLogger.child({
     payload,
     jobId: job.id,
-    reqId: payload.properties?.__reqId ?? 'unknown',
   });
 
   logger.debug('Processing session end job');

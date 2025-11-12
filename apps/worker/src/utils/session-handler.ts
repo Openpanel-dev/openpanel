@@ -119,7 +119,6 @@ export async function getSessionEndJob(args: {
         jobTimestamp: new Date(job.timestamp).toISOString(),
         jobDelta: Date.now() - job.timestamp,
         jobId: job.id,
-        reqId: job.data.payload.properties?.__reqId ?? 'unknown',
         payload: job.data.payload,
       });
     }

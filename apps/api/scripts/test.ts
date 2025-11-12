@@ -40,8 +40,6 @@ async function main() {
         properties: {
           hash: 'test-hash',
           'query.utm_source': 'test',
-          __reqId: `req_${Math.floor(Math.random() * 1000)}`,
-          __user_agent: 'Mozilla/5.0 (Test)',
         },
         created_at: formatClickhouseDate(eventTime),
         country: 'US',

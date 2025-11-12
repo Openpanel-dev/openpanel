@@ -101,8 +101,6 @@ describe('incomingEvent', () => {
       properties: {
         __hash: undefined,
         __query: undefined,
-        __user_agent: jobData.headers['user-agent'],
-        __reqId: jobData.headers['request-id'],
       },
       createdAt: timestamp,
       country: 'US',
@@ -207,8 +205,6 @@ describe('incomingEvent', () => {
       properties: {
         __hash: undefined,
         __query: undefined,
-        __user_agent: jobData.headers['user-agent'],
-        __reqId: jobData.headers['request-id'],
       },
       createdAt: timestamp,
       country: 'US',
@@ -297,8 +293,6 @@ describe('incomingEvent', () => {
       projectId,
       properties: {
         custom_property: 'test_value',
-        __user_agent: 'OpenPanel Server/1.0',
-        __reqId: '123',
         __hash: undefined,
         __query: undefined,
       },
@@ -364,8 +358,6 @@ describe('incomingEvent', () => {
       projectId,
       properties: {
         custom_property: 'test_value',
-        __user_agent: 'OpenPanel Server/1.0',
-        __reqId: '123',
         __hash: undefined,
         __query: undefined,
       },
