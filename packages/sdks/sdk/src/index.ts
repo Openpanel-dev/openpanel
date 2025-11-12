@@ -183,6 +183,13 @@ export class OpenPanel {
     });
   }
 
+  async revenue(amount: number, properties?: TrackProperties) {
+    return this.track('revenue', {
+      ...(properties ?? {}),
+      __revenue: amount,
+    });
+  }
+
   clear() {
     this.profileId = undefined;
     // should we force a session end here?
