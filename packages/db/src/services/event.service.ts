@@ -92,6 +92,7 @@ export interface IClickhouseEvent {
   imported_at: string | null;
   sdk_name: string;
   sdk_version: string;
+  revenue?: number;
 
   // They do not exist here. Just make ts happy for now
   profile?: IServiceProfile;
@@ -131,6 +132,7 @@ export function transformEvent(event: IClickhouseEvent): IServiceEvent {
     sdkName: event.sdk_name,
     sdkVersion: event.sdk_version,
     profile: event.profile,
+    revenue: event.revenue,
   };
 }
 
@@ -178,6 +180,7 @@ export interface IServiceEvent {
   meta: EventMeta | undefined;
   sdkName: string | undefined;
   sdkVersion: string | undefined;
+  revenue?: number;
 }
 
 type SelectHelper<T> = {
@@ -336,6 +339,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     imported_at: null,
     sdk_name: payload.sdkName ?? '',
     sdk_version: payload.sdkVersion ?? '',
+    revenue: payload.revenue,
   };
 
   const promises = [sessionBuffer.add(event), eventBuffer.add(event)];

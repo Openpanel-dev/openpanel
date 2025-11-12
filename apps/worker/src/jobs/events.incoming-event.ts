@@ -21,7 +21,7 @@ import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import * as R from 'ramda';
 import { v4 as uuid } from 'uuid';
 
-const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp'];
+const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 
 // This function will merge two objects.
 // First it will strip '' and undefined/null from B
@@ -115,6 +115,10 @@ export async function incomingEvent(
     device: uaInfo.device,
     brand: uaInfo.brand,
     model: uaInfo.model,
+    revenue:
+      body.name === 'revenue' && properties.__revenue
+        ? Number(properties.__revenue)
+        : undefined,
   } as const;
 
   // if timestamp is from the past we dont want to create a new session

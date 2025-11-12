@@ -77,7 +77,7 @@ export class SessionBuffer extends BaseBuffer {
         ...(event.properties || {}),
         ...(newSession.properties || {}),
       });
-      // newSession.revenue += event.properties?.__revenue ?? 0;
+      newSession.revenue += (event.name === 'revenue' ? (event.revenue ?? 0) : 0);
 
       if (event.name === 'screen_view' && event.path) {
         newSession.screen_views.push(event.path);

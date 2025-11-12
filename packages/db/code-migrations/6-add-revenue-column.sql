@@ -1,0 +1,1 @@
+ALTER TABLE events ADD COLUMN IF NOT EXISTS `revenue` UInt64 CODEC(Delta(4), LZ4);
