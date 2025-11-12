@@ -19,7 +19,12 @@ const setCookieFn = createServerFn({ method: 'POST' })
     if (!VALID_COOKIES.includes(key)) {
       return;
     }
-    setCookie(key, value);
+    const maxAge = 60 * 60 * 24 * 365 * 10;
+    setCookie(key, value, {
+      maxAge,
+      path: '/',
+      expires: new Date(Date.now() + maxAge),
+    });
   });
 
 // Called in __root.tsx beforeLoad hook to get cookies from the server
