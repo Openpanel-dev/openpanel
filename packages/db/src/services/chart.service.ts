@@ -62,6 +62,7 @@ export function getChartSql({
   projectId,
   limit,
   timezone,
+  chartType,
 }: IGetChartDataInput & { timezone: string }) {
   const {
     sb,
@@ -207,6 +208,17 @@ export function getChartSql({
     console.log(sql.replaceAll(/[\n\r]/g, ' '));
     console.log('-- End --');
     return sql;
+  }
+
+  // Add total unique count for user segment using a scalar subquery
+  if (event.segment === 'user') {
+    const totalUniqueSubquery = `(
+      SELECT ${sb.select.count}
+      FROM ${sb.from}
+      ${getJoins()}
+      ${getWhere()}
+    )`;
+    sb.select.total_unique_count = `${totalUniqueSubquery} as total_count`;
   }
 
   const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;

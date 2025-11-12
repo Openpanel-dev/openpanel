@@ -83,60 +83,10 @@ export type IGetTopGenericInput = z.infer<typeof zGetTopGenericInput> & {
 };
 
 export class OverviewService {
-  private pendingQueries: Map<string, Promise<number | null>> = new Map();
-
   constructor(private client: typeof ch) {}
 
   isPageFilter(filters: IChartEventFilter[]) {
     return filters.some((filter) => filter.name === 'path' && filter.value);
-  }
-
-  getTotalSessions({
-    projectId,
-    startDate,
-    endDate,
-    filters,
-    timezone,
-  }: {
-    projectId: string;
-    startDate: string;
-    endDate: string;
-    filters: IChartEventFilter[];
-    timezone: string;
-  }) {
-    const where = this.getRawWhereClause('sessions', filters);
-    const key = `total_sessions_${projectId}_${startDate}_${endDate}_${JSON.stringify(filters)}`;
-
-    // Check if there's already a pending query for this key
-    const pendingQuery = this.pendingQueries.get(key);
-    if (pendingQuery) {
-      return pendingQuery.then((res) => res ?? 0);
-    }
-
-    // Create new query promise and store it
-    const queryPromise = getCache(key, 15, async () => {
-      try {
-        const result = await clix(this.client, timezone)
-          .select<{
-            total_sessions: number;
-          }>(['sum(sign) as total_sessions'])
-          .from(TABLE_NAMES.sessions, true)
-          .where('project_id', '=', projectId)
-          .where('created_at', 'BETWEEN', [
-            clix.datetime(startDate, 'toDateTime'),
-            clix.datetime(endDate, 'toDateTime'),
-          ])
-          .rawWhere(where)
-          .having('sum(sign)', '>', 0)
-          .execute();
-        return result?.[0]?.total_sessions ?? 0;
-      } catch (error) {
-        return 0;
-      }
-    });
-
-    this.pendingQueries.set(key, queryPromise);
-    return queryPromise;
   }
 
   getMetrics({
@@ -483,14 +433,6 @@ export class OverviewService {
       .orderBy('sessions', 'DESC')
       .limit(limit);
 
-    const totalSessions = await this.getTotalSessions({
-      projectId,
-      startDate,
-      endDate,
-      filters,
-      timezone,
-    });
-
     return mainQuery.execute();
   }
 
@@ -555,14 +497,6 @@ export class OverviewService {
           clix.exp('(SELECT session_id FROM distinct_sessions)'),
         );
     }
-
-    const totalSessions = await this.getTotalSessions({
-      projectId,
-      startDate,
-      endDate,
-      filters,
-      timezone,
-    });
 
     return mainQuery.execute();
   }
@@ -666,16 +600,7 @@ export class OverviewService {
       mainQuery.rawWhere(this.getRawWhereClause('sessions', filters));
     }
 
-    const [res, totalSessions] = await Promise.all([
-      mainQuery.execute(),
-      this.getTotalSessions({
-        projectId,
-        startDate,
-        endDate,
-        filters,
-        timezone,
-      }),
-    ]);
+    const res = await mainQuery.execute();
 
     return res;
   }

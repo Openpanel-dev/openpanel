@@ -7,6 +7,11 @@ import { truncate } from '@/utils/truncate';
 import { Fragment } from 'react';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
+import {
+  ChartTooltipContainer,
+  ChartTooltipHeader,
+  ChartTooltipItem,
+} from '@/components/charts/chart-tooltip';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { formatDate } from '@/utils/date';
 import { AXIS_FONT_PROPS } from '../common/axis';
@@ -24,43 +29,37 @@ interface Props {
 const PieTooltip = (props: { payload?: any[] }) => {
   const number = useNumber();
   return (
-    <div className="bg-background/80 p-2 rounded-md backdrop-blur-md border min-w-[180px]">
+    <ChartTooltipContainer>
       {props.payload?.map((serie, index) => {
         const item = serie.payload;
         return (
           <Fragment key={item.id}>
             {index === 0 && item.date && (
-              <div className="flex justify-between gap-8">
+              <ChartTooltipHeader>
                 <div>{formatDate(new Date(item.date))}</div>
-              </div>
+              </ChartTooltipHeader>
             )}
-            <div className="flex gap-2">
-              <div
-                className="w-[3px] rounded-full"
-                style={{ background: item.color }}
-              />
-              <div className="col flex-1 gap-1">
-                <div className="flex items-center gap-1">
-                  <SerieIcon name={item.name} />
-                  <SerieName name={item.names} className="font-medium" />
-                </div>
-                <div className="flex justify-between gap-8 font-mono font-medium">
-                  <div className="row gap-1">
-                    {number.formatWithUnit(item.count)}
-                    {!!item.previous && (
-                      <span className="text-muted-foreground">
-                        ({number.formatWithUnit(item.previous.sum.value)})
-                      </span>
-                    )}
-                  </div>
-                  <PreviousDiffIndicator {...item.previous?.sum} />
-                </div>
+            <ChartTooltipItem color={item.color}>
+              <div className="flex items-center gap-1">
+                <SerieIcon name={item.name} />
+                <SerieName name={item.names} className="font-medium" />
               </div>
-            </div>
+              <div className="flex justify-between gap-8 font-mono font-medium">
+                <div className="row gap-1">
+                  {number.formatWithUnit(item.count)}
+                  {!!item.previous && (
+                    <span className="text-muted-foreground">
+                      ({number.formatWithUnit(item.previous.sum.value)})
+                    </span>
+                  )}
+                </div>
+                <PreviousDiffIndicator {...item.previous?.sum} />
+              </div>
+            </ChartTooltipItem>
           </Fragment>
         );
       })}
-    </div>
+    </ChartTooltipContainer>
   );
 };
 

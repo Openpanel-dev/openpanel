@@ -180,6 +180,7 @@ export const deprecated_timeRanges = {
 };
 
 export const metrics = {
+  count: 'count',
   sum: 'sum',
   average: 'average',
   min: 'min',

@@ -22,7 +22,7 @@ export function Chart({ data }: Props) {
     () =>
       series.map((s) => ({
         country: s.names[0]?.toLowerCase() ?? '',
-        value: s.metrics[metric],
+        value: s.metrics[metric] ?? 0,
       })),
     [series, metric],
   );

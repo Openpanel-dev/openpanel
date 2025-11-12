@@ -1,10 +1,17 @@
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { Area, AreaChart } from 'recharts';
+import { Area, AreaChart, Tooltip } from 'recharts';
 
 import { formatDate, timeAgo } from '@/utils/date';
+import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
+import { useState } from 'react';
+import {
+  ChartTooltipContainer,
+  ChartTooltipHeader,
+  ChartTooltipItem,
+} from '../charts/chart-tooltip';
 import {
   PreviousDiffIndicatorPure,
   getDiffIndicator,
@@ -41,6 +48,7 @@ export function OverviewMetricCard({
   inverted = false,
   isLoading = false,
 }: MetricCardProps) {
+  const [value, setValue] = useState(metric.current);
   const number = useNumber();
   const { current, previous } = metric;
 
@@ -79,7 +87,7 @@ export function OverviewMetricCard({
         <span>
           {label}:{' '}
           <span className="font-semibold">
-            {renderValue(current, 'ml-1 font-light text-xl', false)}
+            {renderValue(value, 'ml-1 font-light text-xl', false)}
           </span>
         </span>
       }
@@ -97,7 +105,7 @@ export function OverviewMetricCard({
         <div className={cn('group relative p-4')}>
           <div
             className={cn(
-              'pointer-events-none absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
+              'absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
             )}
           >
             <AutoSizer>
@@ -107,6 +115,11 @@ export function OverviewMetricCard({
                   height={height / 4}
                   data={data}
                   style={{ marginTop: (height / 4) * 3 }}
+                  onMouseMove={(event) => {
+                    setValue(
+                      event.activePayload?.[0]?.payload?.current ?? current,
+                    );
+                  }}
                 >
                   <defs>
                     <linearGradient
@@ -128,6 +141,7 @@ export function OverviewMetricCard({
                       />
                     </linearGradient>
                   </defs>
+                  <Tooltip content={() => null} />
                   <Area
                     dataKey={'current'}
                     type="step"

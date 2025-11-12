@@ -8,7 +8,7 @@ import { getChartColor } from '@/utils/theme';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
 import { last } from 'ramda';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import {
   Area,
   CartesianGrid,
@@ -25,7 +25,6 @@ import {
 
 import { useDashedStroke } from '@/hooks/use-dashed-stroke';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
-import { SolidToDashedGradient } from '../common/linear-gradient';
 import { ReportChartTooltip } from '../common/report-chart-tooltip';
 import { ReportTable } from '../common/report-table';
 import { SerieIcon } from '../common/serie-icon';

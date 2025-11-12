@@ -2,10 +2,17 @@ import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { Area, AreaChart } from 'recharts';
+import { Area, AreaChart, Tooltip } from 'recharts';
 
 import type { IChartMetric } from '@openpanel/validation';
 
+import {
+  ChartTooltipContainer,
+  ChartTooltipHeader,
+  ChartTooltipItem,
+} from '@/components/charts/chart-tooltip';
+import { formatDate } from '@/utils/date';
+import { getChartColor } from '@/utils/theme';
 import {
   PreviousDiffIndicator,
   getDiffIndicator,
@@ -20,6 +27,27 @@ interface MetricCardProps {
   unit?: string;
 }
 
+const TooltipContent = (props: { payload?: any[] }) => {
+  const number = useNumber();
+  return (
+    <ChartTooltipContainer>
+      {props.payload?.map((item) => {
+        const { date, count } = item.payload;
+        return (
+          <div key={item.id} className="col gap-2">
+            <ChartTooltipHeader>
+              <div>{formatDate(new Date(date))}</div>
+            </ChartTooltipHeader>
+            <ChartTooltipItem color={getChartColor(0)}>
+              <div>{number.format(count)}</div>
+            </ChartTooltipItem>
+          </div>
+        );
+      })}
+    </ChartTooltipContainer>
+  );
+};
+
 export function MetricCard({
   serie,
   color: _color,
@@ -32,7 +60,11 @@ export function MetricCard({
   } = useReportChartContext();
   const number = useNumber();
 
-  const renderValue = (value: number, unitClassName?: string) => {
+  const renderValue = (value: number | undefined, unitClassName?: string) => {
+    if (!value) {
+      return <div className="text-muted-foreground">N/A</div>;
+    }
+
     if (unit === 'min') {
       return <>{fancyMinutes(value)}</>;
     }
@@ -62,7 +94,7 @@ export function MetricCard({
     >
       <div
         className={cn(
-          'pointer-events-none absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
+          'absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-100 transition-opacity duration-300 group-hover:opacity-100',
         )}
       >
         <AutoSizer>
@@ -89,6 +121,7 @@ export function MetricCard({
                   />
                 </linearGradient>
               </defs>
+              <Tooltip content={TooltipContent} />
               <Area
                 dataKey="count"
                 type="step"

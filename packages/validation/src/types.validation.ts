@@ -61,11 +61,13 @@ export type Metrics = {
   average: number;
   min: number;
   max: number;
+  count: number | undefined;
   previous?: {
     sum: PreviousValue;
     average: PreviousValue;
     min: PreviousValue;
     max: PreviousValue;
+    count: PreviousValue;
   };
 };
 

@@ -12,7 +12,7 @@ interface Props {
 export function Chart({ data }: Props) {
   const {
     isEditMode,
-    report: { metric, unit },
+    report: { unit },
   } = useReportChartContext();
   const { series } = useVisibleSeries(data, isEditMode ? 20 : 4);
   return (
@@ -27,7 +27,7 @@ export function Chart({ data }: Props) {
           <MetricCard
             key={serie.id}
             serie={serie}
-            metric={metric}
+            metric={'count'}
             unit={unit}
           />
         );

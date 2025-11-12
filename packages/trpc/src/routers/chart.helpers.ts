@@ -4,7 +4,6 @@ import sqlstring from 'sqlstring';
 
 import type { ISerieDataItem } from '@openpanel/common';
 import {
-  DateTime,
   average,
   getPreviousMetric,
   groupByLabels,
@@ -226,39 +225,32 @@ export async function getChartSerie(
   payload: IGetChartDataInput,
   timezone: string,
 ) {
-  async function getSeries() {
-    const result = await chQuery<ISerieDataItem>(
-      getChartSql({ ...payload, timezone }),
+  let result = await chQuery<ISerieDataItem>(
+    getChartSql({ ...payload, timezone }),
+    {
+      session_timezone: timezone,
+    },
+  );
+
+  if (result.length === 0 && payload.breakdowns.length > 0) {
+    result = await chQuery<ISerieDataItem>(
+      getChartSql({
+        ...payload,
+        breakdowns: [],
+        timezone,
+      }),
       {
         session_timezone: timezone,
       },
     );
-
-    if (result.length === 0 && payload.breakdowns.length > 0) {
-      return await chQuery<ISerieDataItem>(
-        getChartSql({
-          ...payload,
-          breakdowns: [],
-          timezone,
-        }),
-        {
-          session_timezone: timezone,
-        },
-      );
-    }
-    return result;
   }
 
-  return getSeries()
-    .then(groupByLabels)
-    .then((series) => {
-      return series.map((serie) => {
-        return {
-          ...serie,
-          event: payload.event,
-        };
-      });
-    });
+  return groupByLabels(result).map((serie) => {
+    return {
+      ...serie,
+      event: payload.event,
+    };
+  });
 }
 
 export type IGetChartSerie = Awaited<ReturnType<typeof getChartSeries>>[number];
@@ -339,6 +331,7 @@ export async function getChart(input: IChartInput) {
         average: round(average(serie.data.map((item) => item.count)), 2),
         min: min(serie.data.map((item) => item.count)),
         max: max(serie.data.map((item) => item.count)),
+        count: serie.data[0]?.total_count, // We can grab any since all are the same
       };
       const event = {
         id: serie.event.id,
@@ -388,6 +381,10 @@ export async function getChart(input: IChartInput) {
                       ? max(previousSerie?.data.map((item) => item.count))
                       : null,
                   ),
+                  count: getPreviousMetric(
+                    metrics.count ?? 0,
+                    previousSerie?.data[0]?.total_count ?? null,
+                  ),
                 },
               }
             : {}),
@@ -409,6 +406,7 @@ export async function getChart(input: IChartInput) {
       average: 0,
       min: 0,
       max: 0,
+      count: undefined,
     },
   };
 
@@ -420,7 +418,7 @@ export async function getChart(input: IChartInput) {
         const sumB = b.data.reduce((acc, item) => acc + (item.count ?? 0), 0);
         return sumB - sumA;
       }
-      return b.metrics[input.metric] - a.metrics[input.metric];
+      return (b.metrics[input.metric] ?? 0) - (a.metrics[input.metric] ?? 0);
     })
     .slice(offset, limit ? offset + limit : series.length);
 
@@ -456,6 +454,7 @@ export async function getChart(input: IChartInput) {
         final.metrics.max,
         max(final.series.map((item) => item.metrics.previous?.max?.value ?? 0)),
       ),
+      count: undefined,
     };
   }
 

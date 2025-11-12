@@ -35,7 +35,9 @@ export function Chart({ data }: Props) {
     () => (isEditMode ? data.series : data.series.slice(0, limit || 10)),
     [data, isEditMode, limit],
   );
-  const maxCount = Math.max(...series.map((serie) => serie.metrics[metric]));
+  const maxCount = Math.max(
+    ...series.map((serie) => serie.metrics[metric] ?? 0),
+  );
 
   const tableColumns = [
     {
