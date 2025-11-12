@@ -21,6 +21,7 @@ export * from './src/services/id.service';
 export * from './src/services/retention.service';
 export * from './src/services/notification.service';
 export * from './src/services/access.service';
+export * from './src/services/delete.service';
 export * from './src/buffers';
 export * from './src/types';
 export * from './src/clickhouse/query-builder';

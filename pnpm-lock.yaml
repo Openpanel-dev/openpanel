@@ -69,6 +69,43 @@ importers:
         specifier: ^3.0.4
         version: 3.1.3(@types/debug@4.1.12)(@types/node@24.7.1)(jiti@2.6.1)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.27.1)(tsx@4.20.5)
 
+  admin:
+    dependencies:
+      '@openpanel/common':
+        specifier: workspace:*
+        version: link:../packages/common
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../packages/db
+      chalk:
+        specifier: ^5.3.0
+        version: 5.4.1
+      fuzzy:
+        specifier: ^0.1.3
+        version: 0.1.3
+      inquirer:
+        specifier: ^9.3.5
+        version: 9.3.6
+      inquirer-autocomplete-prompt:
+        specifier: ^3.0.1
+        version: 3.0.1(inquirer@9.3.6)
+      jiti:
+        specifier: ^2.4.2
+        version: 2.6.1
+    devDependencies:
+      '@types/inquirer':
+        specifier: ^9.0.7
+        version: 9.0.7
+      '@types/inquirer-autocomplete-prompt':
+        specifier: ^3.0.3
+        version: 3.0.3
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.7.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
   apps/api:
     dependencies:
       '@ai-sdk/anthropic':
@@ -11272,6 +11309,10 @@ packages:
   functions-have-names@1.2.3:
     resolution: {integrity: sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==}
 
+  fuzzy@0.1.3:
+    resolution: {integrity: sha512-/gZffu4ykarLrCiP3Ygsa86UAo1E5vEVlvTrpkKywXSbP9Xhln3oSp9QSV57gEq3JFFpGJ4GZ+5zdEp3FcUh4w==}
+    engines: {node: '>= 0.6.0'}
+
   gaxios@6.7.1:
     resolution: {integrity: sha512-LDODD4TMYx7XXdpwxAVRAIAuB0bzv0s+ywFonY46k126qzQHT9ygyoa9tncmOiQmmDrik65UYsEkv3lbfqQ3yQ==}
     engines: {node: '>=14'}
@@ -12141,10 +12182,6 @@ packages:
 
   jiti@2.4.1:
     resolution: {integrity: sha512-yPBThwecp1wS9DmoA4x4KR2h3QoslacnDR8ypuFM962kI4/456Iy1oHx2RAgh4jfZNdn0bctsdadceiBUgpU1g==}
-    hasBin: true
-
-  jiti@2.5.1:
-    resolution: {integrity: sha512-twQoecYPiVA5K/h6SxtORw/Bs3ar+mLUtoPSc7iMXzQzK8d7eJ/R09wmTwAjiamETn1cXYPGfNnu7DMoHgu12w==}
     hasBin: true
 
   jiti@2.6.1:
@@ -23512,7 +23549,7 @@ snapshots:
     dependencies:
       '@jridgewell/remapping': 2.3.5
       enhanced-resolve: 5.18.3
-      jiti: 2.5.1
+      jiti: 2.6.1
       lightningcss: 1.30.1
       magic-string: 0.30.17
       source-map-js: 1.2.1
@@ -25463,7 +25500,7 @@ snapshots:
       dotenv: 16.6.1
       exsolve: 1.0.7
       giget: 2.0.0
-      jiti: 2.5.1
+      jiti: 2.6.1
       ohash: 2.0.11
       pathe: 2.0.3
       perfect-debounce: 1.0.0
@@ -27813,6 +27850,8 @@ snapshots:
 
   functions-have-names@1.2.3: {}
 
+  fuzzy@0.1.3: {}
+
   gaxios@6.7.1:
     dependencies:
       extend: 3.0.2
@@ -28833,8 +28872,6 @@ snapshots:
   jiti@1.21.7: {}
 
   jiti@2.4.1: {}
-
-  jiti@2.5.1: {}
 
   jiti@2.6.1: {}
 
@@ -33445,7 +33482,7 @@ snapshots:
     dependencies:
       '@quansync/fs': 0.1.5
       defu: 6.1.4
-      jiti: 2.5.1
+      jiti: 2.6.1
       quansync: 0.2.11
 
   uncrypto@0.1.3: {}
