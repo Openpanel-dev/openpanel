@@ -116,6 +116,10 @@ export async function handler(
 
   const identity = getIdentity(request.body);
   const profileId = identity?.profileId;
+  const overrideDeviceId =
+    'properties' in request.body.payload
+      ? request.body.payload.properties?.__deviceId
+      : undefined;
 
   // We might get a profileId from the alias table
   // If we do, we should use that instead of the one from the payload
@@ -126,14 +130,15 @@ export async function handler(
   switch (request.body.type) {
     case 'track': {
       const [salts, geo] = await Promise.all([getSalts(), getGeoLocation(ip)]);
-      const currentDeviceId = ua
-        ? generateDeviceId({
-            salt: salts.current,
-            origin: projectId,
-            ip,
-            ua,
-          })
-        : '';
+      const currentDeviceId =
+        overrideDeviceId || ua
+          ? generateDeviceId({
+              salt: salts.current,
+              origin: projectId,
+              ip,
+              ua,
+            })
+          : '';
       const previousDeviceId = ua
         ? generateDeviceId({
             salt: salts.previous,

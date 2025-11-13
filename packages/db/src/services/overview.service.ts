@@ -414,6 +414,7 @@ export class OverviewService {
         'entry_path',
         'entry_origin',
         'coalesce(round(countIf(is_bounce = 1 AND sign = 1) * 100.0 / countIf(sign = 1), 2), 0) as bounce_rate',
+        'sum(revenue * sign) as revenue',
       ])
       .from(TABLE_NAMES.sessions, true)
       .where('sign', '=', 1)
@@ -437,6 +438,7 @@ export class OverviewService {
         avg_duration: number;
         bounce_rate: number;
         sessions: number;
+        revenue: number;
       }>([
         'p.title',
         'p.origin',
@@ -444,6 +446,7 @@ export class OverviewService {
         'p.avg_duration',
         'p.count as sessions',
         'b.bounce_rate',
+        'coalesce(b.revenue, 0) as revenue',
       ])
       .from('page_stats p', false)
       .leftJoin(
@@ -485,12 +488,14 @@ export class OverviewService {
         avg_duration: number;
         bounce_rate: number;
         sessions: number;
+        revenue: number;
       }>([
         `${mode}_origin AS origin`,
         `${mode}_path AS path`,
         'round(avg(duration * sign)/1000, 2) as avg_duration',
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) as bounce_rate',
         'sum(sign) as sessions',
+        'sum(revenue * sign) as revenue',
       ])
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
@@ -586,12 +591,14 @@ export class OverviewService {
         sessions: number;
         bounce_rate: number;
         avg_session_duration: number;
+        revenue: number;
       }>([
         prefixColumn && `${prefixColumn} as prefix`,
         `nullIf(${column}, '') as name`,
         'sum(sign) as sessions',
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) AS bounce_rate',
         'round(avgIf(duration, duration > 0 AND sign > 0), 2)/1000 AS avg_session_duration',
+        'sum(revenue * sign) as revenue',
       ])
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)

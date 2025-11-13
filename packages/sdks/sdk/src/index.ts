@@ -183,9 +183,15 @@ export class OpenPanel {
     });
   }
 
-  async revenue(amount: number, properties?: TrackProperties) {
+  async revenue(
+    amount: number,
+    properties?: TrackProperties & { deviceId?: string },
+  ) {
+    const deviceId = properties?.deviceId;
+    delete properties?.deviceId;
     return this.track('revenue', {
       ...(properties ?? {}),
+      ...(deviceId ? { __deviceId: deviceId } : {}),
       __revenue: amount,
     });
   }
