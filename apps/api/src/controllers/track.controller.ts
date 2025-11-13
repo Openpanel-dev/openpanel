@@ -1,4 +1,3 @@
-import { getClientIp } from '@/utils/get-client-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, assocPath, pathOr, pick } from 'ramda';
 
@@ -91,7 +90,7 @@ export async function handler(
   const timestamp = getTimestamp(request.timestamp, request.body.payload);
   const ip =
     path<string>(['properties', '__ip'], request.body.payload) ||
-    getClientIp(request)!;
+    request.clientIp;
   const ua = request.headers['user-agent']!;
   const projectId = request.client?.projectId;
 

@@ -1,4 +1,3 @@
-import { getClientIp } from '@/utils/get-client-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr } from 'ramda';
 
@@ -22,7 +21,7 @@ export async function updateProfile(
   if (!projectId) {
     return reply.status(400).send('No projectId');
   }
-  const ip = getClientIp(request)!;
+  const ip = request.clientIp;
   const ua = request.headers['user-agent']!;
   const uaInfo = parseUserAgent(ua, properties);
   const geo = await getGeoLocation(ip);

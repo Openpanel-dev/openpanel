@@ -1,4 +1,3 @@
-import { getClientIp } from '@/utils/get-client-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
@@ -21,7 +20,7 @@ export async function postEvent(
     request.timestamp,
     request.body,
   );
-  const ip = getClientIp(request)!;
+  const ip = request.clientIp;
   const ua = request.headers['user-agent']!;
   const projectId = request.client?.projectId;
   const headers = getStringHeaders(request.headers);

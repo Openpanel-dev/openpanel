@@ -4,9 +4,12 @@ import { parseUrlMeta } from '@/utils/parseUrlMeta';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 
-import { getClientIp } from '@/utils/get-client-ip';
+import {
+  DEFAULT_HEADER_ORDER,
+  getClientIpFromHeaders,
+} from '@openpanel/common/server/get-client-ip';
 import { TABLE_NAMES, ch, chQuery, formatClickhouseDate } from '@openpanel/db';
-import { getGeoLocation } from '@openpanel/geo';
+import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getCache, getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
@@ -394,12 +397,35 @@ export async function stats(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
-  const ip = getClientIp(request);
+  const ip = getClientIpFromHeaders(request.headers);
+  const others = await Promise.all(
+    DEFAULT_HEADER_ORDER.map(async (header) => {
+      const ip = getClientIpFromHeaders(request.headers, header);
+      return {
+        header,
+        ip,
+        geo: await getGeoLocation(ip),
+      };
+    }),
+  );
+
   if (!ip) {
     return reply.status(400).send('Bad Request');
   }
   const geo = await getGeoLocation(ip);
-  return reply.status(200).send(geo);
+  return reply.status(200).send({
+    selected: {
+      geo,
+      ip,
+    },
+    ...others.reduce(
+      (acc, other) => {
+        acc[other.header] = other;
+        return acc;
+      },
+      {} as Record<string, { ip: string; geo: GeoLocation }>,
+    ),
+  });
 }
 
 export async function getOgImage(

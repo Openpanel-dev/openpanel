@@ -13,6 +13,7 @@
   "dependencies": {
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "@number-flow/react": "0.3.5",
+    "@openpanel/common": "workspace:*",
     "@openpanel/nextjs": "^1.0.5",
     "@openpanel/payments": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",

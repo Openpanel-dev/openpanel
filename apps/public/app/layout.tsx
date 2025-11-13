@@ -61,12 +61,9 @@ export default async function Layout({ children }: { children: ReactNode }) {
         <RootProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
-        <Script
-          defer
-          src="http://localhost:3000/script.js"
-          data-website-id="44d65df1-e9cb-4c2c-917d-4bf1c7850948"
-        />
         <OpenPanelComponent
+          apiUrl="/api/op"
+          cdnUrl="/api/op/op1.js"
           clientId="301c6dc1-424c-4bc3-9886-a8beab09b615"
           trackAttributes
           trackScreenViews

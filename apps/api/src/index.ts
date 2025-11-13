@@ -55,7 +55,7 @@ process.env.TZ = 'UTC';
 declare module 'fastify' {
   interface FastifyRequest {
     client: IServiceClientWithProject | null;
-    clientIp?: string;
+    clientIp: string;
     timestamp?: number;
     session: SessionValidationResult;
   }

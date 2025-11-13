@@ -1,5 +1,5 @@
+import { getClientIpFromHeaders } from '@openpanel/common/server/get-client-ip';
 import type { NextFunction, Request, Response } from 'express';
-import { getClientIp } from 'request-ip';
 
 import type { OpenPanelOptions } from '@openpanel/sdk';
 import { OpenPanel } from '@openpanel/sdk';
@@ -22,7 +22,7 @@ export type OpenpanelOptions = OpenPanelOptions & {
 export default function createMiddleware(options: OpenpanelOptions) {
   return function middleware(req: Request, res: Response, next: NextFunction) {
     const sdk = new OpenPanel(options);
-    const ip = getClientIp(req);
+    const ip = getClientIpFromHeaders(req.headers);
     if (ip) {
       sdk.api.addHeader('x-client-ip', ip);
     }
@@ -30,20 +30,15 @@ export default function createMiddleware(options: OpenpanelOptions) {
       sdk.api.addHeader('x-user-agent', req.headers['user-agent'] as string);
     }
 
-    if (options.getProfileId) {
-      const profileId = options.getProfileId(req);
-      if (profileId) {
-        sdk.identify({
-          profileId,
-        });
-      }
-    }
-
     if (options.trackRequest?.(req.url)) {
+      const profileId = options.getProfileId
+        ? options.getProfileId(req)
+        : undefined;
       sdk.track('request', {
         url: req.url,
         method: req.method,
         query: req.query,
+        profileId,
       });
     }
 

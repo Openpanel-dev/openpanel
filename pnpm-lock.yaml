@@ -198,9 +198,6 @@ importers:
       ramda:
         specifier: ^0.29.1
         version: 0.29.1
-      request-ip:
-        specifier: ^3.3.0
-        version: 3.3.0
       sharp:
         specifier: ^0.33.5
         version: 0.33.5
@@ -277,6 +274,9 @@ importers:
       '@number-flow/react':
         specifier: 0.3.5
         version: 0.3.5(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      '@openpanel/common':
+        specifier: workspace:*
+        version: link:../../packages/common
       '@openpanel/nextjs':
         specifier: ^1.0.5
         version: 1.0.5(next@15.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -1410,15 +1410,15 @@ importers:
 
   packages/sdks/express:
     dependencies:
+      '@openpanel/common':
+        specifier: workspace:*
+        version: link:../../common
       '@openpanel/sdk':
         specifier: workspace:1.0.0-local
         version: link:../sdk
       express:
         specifier: ^4.17.0 || ^5.0.0
         version: 4.19.2
-      request-ip:
-        specifier: ^3.3.0
-        version: 3.3.0
     devDependencies:
       '@openpanel/tsconfig':
         specifier: workspace:*
@@ -14603,9 +14603,6 @@ packages:
 
   remove-trailing-slash@0.1.1:
     resolution: {integrity: sha512-o4S4Qh6L2jpnCy83ysZDau+VORNvnFw07CKSAymkd6ICNVEPisMyzlc00KlvvicsxKck94SEwhDnMNdICzO+tA==}
-
-  request-ip@3.3.0:
-    resolution: {integrity: sha512-cA6Xh6e0fDBBBwH77SLJaJPBmD3nWVAcF9/XAcsrIHdjhFzFiB5aNQFytdjCGPezU3ROwrR11IddKAM08vohxA==}
 
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
@@ -32007,8 +32004,6 @@ snapshots:
   remove-accents@0.5.0: {}
 
   remove-trailing-slash@0.1.1: {}
-
-  request-ip@3.3.0: {}
 
   require-directory@2.1.1: {}
 
