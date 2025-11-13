@@ -14,7 +14,6 @@ import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
   createEvent,
-  eventBuffer,
   sessionBuffer,
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';

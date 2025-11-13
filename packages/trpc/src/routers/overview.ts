@@ -103,7 +103,6 @@ export const overviewRouter = createTRPCRouter({
         ])
         .from(TABLE_NAMES.events)
         .where('project_id', '=', input.projectId)
-        .where('name', '=', 'session_start')
         .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'));
 
       // Get counts per minute for the last 30 minutes
@@ -119,7 +118,6 @@ export const overviewRouter = createTRPCRouter({
         ])
         .from(TABLE_NAMES.events)
         .where('project_id', '=', input.projectId)
-        .where('name', 'IN', ['session_start', 'screen_view'])
         .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'))
         .groupBy(['minute'])
         .orderBy('minute', 'ASC')
@@ -138,11 +136,10 @@ export const overviewRouter = createTRPCRouter({
         }>([
           `${clix.toStartOf('created_at', 'minute')} as minute`,
           'referrer_name',
-          'count(*) as count',
+          'uniq(session_id) as count',
         ])
         .from(TABLE_NAMES.events)
         .where('project_id', '=', input.projectId)
-        .where('name', '=', 'session_start')
         .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'))
         .where('referrer_name', '!=', '')
         .where('referrer_name', 'IS NOT NULL')
@@ -154,11 +151,10 @@ export const overviewRouter = createTRPCRouter({
       const referrersQuery = clix(ch, timezone)
         .select<{ referrer: string; count: number }>([
           'referrer_name as referrer',
-          'count(*) as count',
+          'uniq(session_id) as count',
         ])
         .from(TABLE_NAMES.events)
         .where('project_id', '=', input.projectId)
-        .where('name', '=', 'session_start')
         .where('created_at', '>=', clix.exp('now() - INTERVAL 30 MINUTE'))
         .where('referrer_name', '!=', '')
         .where('referrer_name', 'IS NOT NULL')
