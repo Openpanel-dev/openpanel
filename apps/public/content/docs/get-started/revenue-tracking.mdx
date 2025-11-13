@@ -22,6 +22,7 @@ OpenPanel is a cookieless analytics tool that identifies visitors using a `devic
 - [Revenue tracking from your backend (not identified)](#revenue-tracking-from-your-backend-webhook)
 - [Revenue tracking from your backend (identified)](#revenue-tracking-from-your-backend-webhook-identified)
 - [Revenue tracking from your frontend](#revenue-tracking-from-your-frontend)
+- [Revenue tracking without linking it to a identity or device](#revenue-tracking-without-linking-it-to-an-identity-or-device)
 
 ### Revenue tracking from your backend (webhook)
 
@@ -282,6 +283,45 @@ op.clearRevenue();
 #### Cons:
 - Less accurate (visitor might not complete payment)
 - Less "secure" meaning anyone could post revenue data
+
+---
+
+### Revenue tracking without linking it to an identity or device
+
+If you simply want to track revenue totals without linking payments to specific visitors or devices, you can call `op.revenue()` directly from your backend without providing a `deviceId` or `profileId`. This is the simplest approach and works well when you only need aggregate revenue data.
+
+<FlowStep step={1} actor="Visitor" description="Makes a purchase" icon="visitor" />
+
+<FlowStep step={2} actor="Visitor" description="Pays on your payment provider" icon="payment" />
+
+<FlowStep step={3} actor="Your backend" description="Receives a webhook for a successful payment" icon="backend" isLast>
+Simply call `op.revenue()` with the amount. No `deviceId` or `profileId` is needed.
+
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+  
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const amount = session.amount_total;
+    
+    op.revenue(amount); // ✅ Simple revenue tracking without linking to a visitor
+  }
+  
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+#### Pros:
+- Simplest implementation
+- No need to capture or pass device IDs
+- Works well for aggregate revenue tracking
+
+#### Cons:
+- **You can't dive deeper into where this revenue came from. **For instance, you won't be able to see which source generates the best revenue, which campaigns are most profitable, or which visitors are your highest-value customers.
+- Revenue events won't be linked to specific user journeys or sessions
 
 ## Available methods
 
