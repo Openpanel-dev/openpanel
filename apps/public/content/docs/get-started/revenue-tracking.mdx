@@ -19,7 +19,8 @@ OpenPanel is a cookieless analytics tool that identifies visitors using a `devic
 
 ## Some typical flows
 
-- [Revenue tracking from your backend (webhook)](#revenue-tracking-from-your-backend-webhook)
+- [Revenue tracking from your backend (not identified)](#revenue-tracking-from-your-backend-webhook)
+- [Revenue tracking from your backend (identified)](#revenue-tracking-from-your-backend-webhook-identified)
 - [Revenue tracking from your frontend](#revenue-tracking-from-your-frontend)
 
 ### Revenue tracking from your backend (webhook)
@@ -112,6 +113,121 @@ export async function POST(req: Request) {
 </FlowStep>
 
 <FlowStep step={8} actor="Visitor" description="Redirected to your website with payment confirmation" icon="success" isLast />
+
+---
+
+### Revenue tracking from your backend (webhook) - Identified users
+
+If your visitors are identified (meaning you have called `identify` with a `profileId`), this process gets a bit easier. You don't need to pass the `deviceId` when creating your checkout, and you only need to provide the `profileId` (in backend) to the revenue call.
+
+<FlowStep step={1} actor="Visitor" description="Visits your website" icon="visitor" />
+
+<FlowStep step={2} actor="Your website" description="Identifies the visitor" icon="website">
+When a visitor logs in or is identified, call `op.identify()` with their unique `profileId`.
+
+```javascript
+op.identify({
+  profileId: 'user-123', // Unique identifier for this user
+  email: 'user@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+});
+```
+</FlowStep>
+
+<FlowStep step={3} actor="Visitor" description="Makes a purchase" icon="visitor" />
+
+<FlowStep step={4} actor="Your website" description="Does a POST request to get the checkout URL" icon="website">
+Since the visitor is already identified, you don't need to fetch or pass the `deviceId`. Just send the checkout data.
+
+```javascript
+fetch('https://domain.com/api/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    // ✅ No deviceId needed - user is already identified
+    // ... other checkout data
+  }),
+})
+  .then(response => response.json())
+  .then(data => {
+    // Handle checkout response, e.g., redirect to payment link
+    window.location.href = data.paymentUrl;
+  })
+```
+</FlowStep>
+
+<FlowStep step={5} actor="Your backend" description="Will generate and return the checkout URL" icon="backend">
+Since the user is authenticated, you can get their `profileId` from the session and store it in metadata for easy retrieval in the webhook.
+
+```javascript
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(req: Request) {
+  const { amount, currency } = await req.json();
+  
+  // Get profileId from authenticated session
+  const profileId = req.session.userId; // or however you get the user ID
+  
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: currency,
+          product_data: { name: 'Product Name' },
+          unit_amount: amount * 100, // Convert to cents
+        },
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    metadata: {
+      profileId: profileId, // ✅ Store profileId instead of deviceId
+    },
+    success_url: 'https://domain.com/success',
+    cancel_url: 'https://domain.com/cancel',
+  });
+  
+  return Response.json({
+    paymentUrl: session.url,
+  });
+} 
+```
+</FlowStep>
+
+<FlowStep step={6} actor="Visitor" description="Gets redirected to payment link" icon="visitor" />
+
+<FlowStep step={7} actor="Visitor" description="Pays on your payment provider" icon="payment" />
+
+<FlowStep step={8} actor="Your backend" description="Receives a webhook for a successful payment" icon="backend">
+In the webhook handler, retrieve the `profileId` from the session metadata.
+
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+  
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const profileId = session.metadata.profileId;
+    const amount = session.amount_total;
+    
+    op.revenue(amount, { profileId }); // ✅ Use profileId instead of deviceId
+  }
+  
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+<FlowStep step={9} actor="Visitor" description="Redirected to your website with payment confirmation" icon="success" isLast />
+
+---
 
 ### Revenue tracking from your frontend
 
