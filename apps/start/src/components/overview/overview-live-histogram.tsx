@@ -108,8 +108,8 @@ function Wrapper({ children, count, icons }: WrapperProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="row gap-2 justify-between">
-        <div className="relative mb-1 text-sm font-medium text-muted-foreground">
-          {count} sessions last 30 minutes
+        <div className="relative mb-1 text-xs font-medium text-muted-foreground">
+          {count} sessions last 30 min
         </div>
         <div>{icons}</div>
       </div>

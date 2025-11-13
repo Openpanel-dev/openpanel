@@ -54,7 +54,7 @@ export const EventItem = memo<EventItemProps>(
           }}
           data-slot="inner"
           className={cn(
-            'col gap-2 flex-1 p-2',
+            'col gap-1 flex-1 p-2',
             // Desktop
             '@lg:row @lg:items-center',
             'cursor-pointer',
@@ -63,7 +63,7 @@ export const EventItem = memo<EventItemProps>(
               : 'hover:bg-def-200',
           )}
         >
-          <div className="min-w-0 flex-1 row items-center gap-4">
+          <div className="min-w-0 flex-1 row items-center gap-2">
             <button
               type="button"
               className="transition-transform hover:scale-105"
@@ -77,7 +77,7 @@ export const EventItem = memo<EventItemProps>(
             >
               <EventIcon name={event.name} size="sm" meta={event.meta} />
             </button>
-            <span className="min-w-0 whitespace-break-spaces wrap-break-word break-all">
+            <span className="min-w-0 whitespace-break-spaces wrap-break-word break-all text-sm leading-normal">
               {event.name === 'screen_view' ? (
                 <>
                   <span className="text-muted-foreground mr-2">Visit:</span>
@@ -87,13 +87,12 @@ export const EventItem = memo<EventItemProps>(
                 </>
               ) : (
                 <>
-                  <span className="text-muted-foreground mr-2">Event:</span>
                   <span className="font-medium">{event.name}</span>
                 </>
               )}
             </span>
           </div>
-          <div className="row gap-2 items-center @max-lg:pl-10">
+          <div className="row gap-2 items-center @max-lg:pl-8">
             {event.referrerName && viewOptions.referrerName !== false && (
               <Pill
                 icon={<SerieIcon className="mr-2" name={event.referrerName} />}
