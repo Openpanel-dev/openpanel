@@ -8,14 +8,14 @@
 export const DEFAULT_HEADER_ORDER = [
   'cf-connecting-ip',
   'true-client-ip',
-  'x-real-ip',
+  'x-forwarded-for',
   'x-client-ip',
+  'x-real-ip',
   'fastly-client-ip',
   'x-cluster-client-ip',
   'x-appengine-user-ip',
   'do-connecting-ip',
   'x-nf-client-connection-ip',
-  'x-forwarded-for',
   'x-forwarded',
   'forwarded',
 ];
