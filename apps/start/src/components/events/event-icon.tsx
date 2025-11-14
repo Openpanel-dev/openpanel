@@ -48,6 +48,10 @@ export const EventIconRecords: Record<
     icon: 'ExternalLinkIcon',
     color: 'indigo',
   },
+  revenue: {
+    icon: 'DollarSignIcon',
+    color: 'green',
+  },
 };
 
 export const EventIconMapper: Record<string, LucideIcon> = {

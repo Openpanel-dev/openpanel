@@ -15,6 +15,7 @@ import {
   getHasFunnelRules,
   getNotificationRulesByProjectId,
   sessionBuffer,
+  transformSessionToEvent,
 } from '@openpanel/db';
 import type { EventsQueuePayloadCreateSessionEnd } from '@openpanel/queue';
 
@@ -31,7 +32,7 @@ async function getSessionEvents({
   sessionId: string;
   startAt: Date;
   endAt: Date;
-}): Promise<ReturnType<typeof getEvents>> {
+}): Promise<IServiceEvent[]> {
   const sql = `
     SELECT * FROM ${TABLE_NAMES.events} 
     WHERE 
@@ -42,7 +43,7 @@ async function getSessionEvents({
   `;
 
   const [lastScreenView, eventsInDb] = await Promise.all([
-    eventBuffer.getLastScreenView({
+    sessionBuffer.getExistingSession({
       projectId,
       sessionId,
     }),
@@ -50,8 +51,11 @@ async function getSessionEvents({
   ]);
 
   // sort last inserted first
-  return [lastScreenView, ...eventsInDb]
-    .filter((event): event is IServiceEvent => !!event)
+  return [
+    lastScreenView ? transformSessionToEvent(lastScreenView) : null,
+    ...eventsInDb,
+  ]
+    .flatMap((event) => (event ? [event] : []))
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
@@ -70,7 +74,9 @@ export async function createSessionEnd(
 
   logger.info('Processing session end job');
 
-  const session = await sessionBuffer.getExistingSession(payload.sessionId);
+  const session = await sessionBuffer.getExistingSession({
+    sessionId: payload.sessionId,
+  });
 
   if (!session) {
     throw new Error('Session not found');
@@ -87,24 +93,19 @@ export async function createSessionEnd(
     });
   }
 
-  const lastScreenView = await eventBuffer.getLastScreenView({
-    projectId: payload.projectId,
-    sessionId: payload.sessionId,
-  });
-
   // Create session end event
   return createEvent({
     ...payload,
     properties: {
       ...payload.properties,
-      ...(lastScreenView?.properties ?? {}),
+      ...(session?.properties ?? {}),
       __bounce: session.is_bounce,
     },
     name: 'session_end',
     duration: session.duration ?? 0,
-    path: lastScreenView?.path ?? '',
+    path: session.exit_path ?? '',
     createdAt: new Date(getTime(session.ended_at) + 1000),
-    profileId: lastScreenView?.profileId || payload.profileId,
+    profileId: session.profile_id || payload.profileId,
   });
 }
 

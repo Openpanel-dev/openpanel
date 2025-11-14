@@ -14,7 +14,7 @@ import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
   createEvent,
-  eventBuffer,
+  sessionBuffer,
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
@@ -23,7 +23,7 @@ import * as R from 'ramda';
 import { omit } from 'ramda';
 import { v4 as uuid } from 'uuid';
 
-const GLOBAL_PROPERTIES = ['__path', '__referrer'];
+const GLOBAL_PROPERTIES = ['__path', '__referrer', '__revenue'];
 
 // This function will merge two objects.
 // First it will strip '' and undefined/null from B
@@ -127,12 +127,16 @@ export async function incomingEventPure(
     device: uaInfo.device,
     brand: uaInfo.brand,
     model: uaInfo.model,
+    revenue:
+      body.name === 'revenue' && properties.__revenue
+        ? Number(properties.__revenue)
+        : undefined,
   } as const;
 
   // if timestamp is from the past we dont want to create a new session
   if (uaInfo.isServer || isTimestampFromThePast) {
-    const screenView = profileId
-      ? await eventBuffer.getLastScreenView({
+    const session = profileId
+      ? await sessionBuffer.getExistingSession({
           profileId,
           projectId,
         })
@@ -140,25 +144,25 @@ export async function incomingEventPure(
 
     const payload = {
       ...baseEvent,
-      deviceId: screenView?.deviceId ?? '',
-      sessionId: screenView?.sessionId ?? '',
-      referrer: screenView?.referrer ?? undefined,
-      referrerName: screenView?.referrerName ?? undefined,
-      referrerType: screenView?.referrerType ?? undefined,
-      path: screenView?.path ?? baseEvent.path,
-      os: screenView?.os ?? baseEvent.os,
-      osVersion: screenView?.osVersion ?? baseEvent.osVersion,
-      browserVersion: screenView?.browserVersion ?? baseEvent.browserVersion,
-      browser: screenView?.browser ?? baseEvent.browser,
-      device: screenView?.device ?? baseEvent.device,
-      brand: screenView?.brand ?? baseEvent.brand,
-      model: screenView?.model ?? baseEvent.model,
-      city: screenView?.city ?? baseEvent.city,
-      country: screenView?.country ?? baseEvent.country,
-      region: screenView?.region ?? baseEvent.region,
-      longitude: screenView?.longitude ?? baseEvent.longitude,
-      latitude: screenView?.latitude ?? baseEvent.latitude,
-      origin: screenView?.origin ?? baseEvent.origin,
+      deviceId: session?.device_id ?? '',
+      sessionId: session?.id ?? '',
+      referrer: session?.referrer ?? undefined,
+      referrerName: session?.referrer_name ?? undefined,
+      referrerType: session?.referrer_type ?? undefined,
+      path: session?.exit_path ?? baseEvent.path,
+      origin: session?.exit_origin ?? baseEvent.origin,
+      os: session?.os ?? baseEvent.os,
+      osVersion: session?.os_version ?? baseEvent.osVersion,
+      browserVersion: session?.browser_version ?? baseEvent.browserVersion,
+      browser: session?.browser ?? baseEvent.browser,
+      device: session?.device ?? baseEvent.device,
+      brand: session?.brand ?? baseEvent.brand,
+      model: session?.model ?? baseEvent.model,
+      city: session?.city ?? baseEvent.city,
+      country: session?.country ?? baseEvent.country,
+      region: session?.region ?? baseEvent.region,
+      longitude: session?.longitude ?? baseEvent.longitude,
+      latitude: session?.latitude ?? baseEvent.latitude,
     };
 
     return createEventAndNotify(payload as IServiceEvent, jobPayload, logger);
@@ -172,8 +176,7 @@ export async function incomingEventPure(
   });
 
   const lastScreenView = sessionEnd
-    ? await eventBuffer.getLastScreenView({
-        projectId,
+    ? await sessionBuffer.getExistingSession({
         sessionId: sessionEnd.sessionId,
       })
     : null;
@@ -185,8 +188,8 @@ export async function incomingEventPure(
     referrerName: sessionEnd?.referrerName ?? baseEvent.referrerName,
     referrerType: sessionEnd?.referrerType ?? baseEvent.referrerType,
     // if the path is not set, use the last screen view path
-    path: baseEvent.path || lastScreenView?.path || '',
-    origin: baseEvent.origin || lastScreenView?.origin || '',
+    path: baseEvent.path || lastScreenView?.exit_path || '',
+    origin: baseEvent.origin || lastScreenView?.exit_origin || '',
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
 
   if (!sessionEnd) {

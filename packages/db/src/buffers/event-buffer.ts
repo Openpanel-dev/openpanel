@@ -308,14 +308,12 @@ local regularQueueKey = KEYS[2]
 local sessionsSortedKey = KEYS[3]
 local readySessionsKey = KEYS[4]
 local bufferCounterKey = KEYS[5]
-local lastEventKey = KEYS[6]
 
 local eventJson = ARGV[1]
 local sessionId = ARGV[2]
 local eventName = ARGV[3]
 local score = tonumber(ARGV[4])
 local minEventsInSession = tonumber(ARGV[5])
-local lastEventTTL = tonumber(ARGV[6] or 0)
 
 local counterIncrement = 1
 
@@ -328,13 +326,6 @@ if sessionId and sessionId ~= "" and (eventName == "screen_view" or eventName ==
   local sessionLength = redis.call("LLEN", sessionKey)
   if sessionLength >= minEventsInSession or eventName == "session_end" then
     redis.call("ZADD", readySessionsKey, score, sessionId)
-  end
-  
-  -- Handle screen_view specific logic
-  if eventName == "screen_view" and lastEventKey ~= "" then
-    redis.call("SET", lastEventKey, eventJson, "EX", lastEventTTL)
-  elseif eventName == "session_end" and lastEventKey ~= "" then
-    redis.call("DEL", lastEventKey)
   end
 else
   -- Add to regular queue
@@ -363,34 +354,20 @@ return "OK"
       if (isSessionEvent) {
         const sessionKey = this.getSessionKey(event.session_id);
         const score = new Date(event.created_at || Date.now()).getTime();
-        const lastEventKey =
-          event.name === 'screen_view'
-            ? this.getLastEventKey({
-                projectId: event.project_id,
-                profileId: event.profile_id,
-              })
-            : event.name === 'session_end'
-              ? this.getLastEventKey({
-                  projectId: event.project_id,
-                  profileId: event.profile_id,
-                })
-              : '';
 
         multi.eval(
           this.addEventScript,
-          6,
+          5,
           sessionKey,
           this.regularQueueKey,
           this.sessionSortedKey,
           this.readySessionsKey,
           this.bufferCounterKey,
-          lastEventKey,
           eventJson,
           event.session_id,
           event.name,
           score.toString(),
           this.minEventsInSession.toString(),
-          '3600', // 1 hour TTL for last event
         );
       } else {
         // Non-session events go to regular queue
@@ -780,59 +757,6 @@ return "OK"
     } catch (error) {
       this.logger.error('Failed to cleanup stale sessions', { error });
     }
-  }
-
-  /**
-   * Retrieve the latest screen_view event for a given project/profile or project/session
-   */
-  public async getLastScreenView({
-    projectId,
-    ...rest
-  }:
-    | {
-        projectId: string;
-        profileId: string;
-      }
-    | {
-        projectId: string;
-        sessionId: string;
-      }): Promise<IServiceEvent | null> {
-    if ('profileId' in rest) {
-      const redis = getRedisCache();
-      const eventStr = await redis.get(
-        this.getLastEventKey({ projectId, profileId: rest.profileId }),
-      );
-      if (eventStr) {
-        const parsed = getSafeJson<IClickhouseEvent>(eventStr);
-        if (parsed) {
-          return transformEvent(parsed);
-        }
-      }
-    }
-
-    if ('sessionId' in rest) {
-      const redis = getRedisCache();
-      const sessionKey = this.getSessionKey(rest.sessionId);
-      const lastEvent = await redis.lindex(sessionKey, -1);
-      if (lastEvent) {
-        const parsed = getSafeJson<IClickhouseEvent>(lastEvent);
-        if (parsed) {
-          return transformEvent(parsed);
-        }
-      }
-    }
-
-    return null;
-  }
-
-  private getLastEventKey({
-    projectId,
-    profileId,
-  }: {
-    projectId: string;
-    profileId: string;
-  }) {
-    return `session:last_screen_view:${projectId}:${profileId}`;
   }
 
   private async processPendingSessionsInBatches(

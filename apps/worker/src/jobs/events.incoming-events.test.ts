@@ -1,5 +1,4 @@
-import { type IServiceEvent, createEvent } from '@openpanel/db';
-import { eventBuffer } from '@openpanel/db';
+import { createEvent } from '@openpanel/db';
 import { sessionsQueue } from '@openpanel/queue';
 import type { Job } from 'bullmq';
 import { type Mock, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -11,11 +10,7 @@ vi.mock('@openpanel/db', async () => {
   return {
     ...actual,
     createEvent: vi.fn(),
-    getLastScreenView: vi.fn(),
     checkNotificationRulesForEvent: vi.fn().mockResolvedValue(true),
-    eventBuffer: {
-      getLastScreenView: vi.fn(),
-    },
   };
 });
 
@@ -263,11 +258,6 @@ describe('incomingEvent', () => {
       referrerType: 'search',
     };
 
-    // Mock the eventBuffer.getLastScreenView method
-    vi.mocked(eventBuffer.getLastScreenView).mockResolvedValueOnce(
-      mockLastScreenView as IServiceEvent,
-    );
-
     await incomingEvent(job);
 
     expect((createEvent as Mock).mock.calls[0]![0]).toStrictEqual({
@@ -333,9 +323,6 @@ describe('incomingEvent', () => {
     };
 
     const job = { data: jobData } as Job;
-
-    // Mock getLastScreenView to return null
-    vi.mocked(eventBuffer.getLastScreenView).mockResolvedValueOnce(null);
 
     await incomingEvent(job);
 

@@ -33,7 +33,35 @@ export const shortNumber =
 
 export const formatCurrency =
   (locale: string) =>
-  (amount: number, currency = 'USD') => {
+  (
+    amount: number,
+    options?: {
+      currency?: string;
+      short?: boolean;
+    },
+  ) => {
+    const short = options?.short ?? false;
+    const currency = options?.currency ?? 'USD';
+    if (short) {
+      // Use compact notation for short format (e.g., "73K $")
+      const formatter = new Intl.NumberFormat(locale, {
+        notation: 'compact',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1,
+      });
+      const formatted = formatter.format(amount);
+      // Get currency symbol
+      const currencyFormatter = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+      const parts = currencyFormatter.formatToParts(0);
+      const symbol =
+        parts.find((part) => part.type === 'currency')?.value || '$';
+      return `${formatted} ${symbol}`;
+    }
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,

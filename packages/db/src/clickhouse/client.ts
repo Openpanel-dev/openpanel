@@ -27,7 +27,7 @@ class CustomLogger implements Logger {
     logger.info(message, args);
   }
   debug({ message, args }: LogParams) {
-    logger.info(message, args);
+    // logger.info(message, args);
   }
   info({ message, args }: LogParams) {
     logger.info(message, args);
