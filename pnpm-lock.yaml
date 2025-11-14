@@ -241,9 +241,6 @@ importers:
       '@types/ramda':
         specifier: ^0.30.2
         version: 0.30.2
-      '@types/request-ip':
-        specifier: ^0.0.41
-        version: 0.0.41
       '@types/source-map-support':
         specifier: ^0.5.10
         version: 0.5.10
