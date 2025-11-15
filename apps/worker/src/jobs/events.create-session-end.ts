@@ -1,13 +1,13 @@
 import type { Job } from 'bullmq';
 
 import { logger as baseLogger } from '@/utils/logger';
-import { getTime } from '@openpanel/common';
 import {
   type IClickhouseSession,
   type IServiceCreateEventPayload,
   type IServiceEvent,
   TABLE_NAMES,
   checkNotificationRulesForSessionEnd,
+  convertClickhouseDateToJs,
   createEvent,
   eventBuffer,
   formatClickhouseDate,
@@ -65,10 +65,9 @@ export async function createSessionEnd(
   const logger = baseLogger.child({
     payload,
     jobId: job.id,
-    reqId: payload.properties?.__reqId ?? 'unknown',
   });
 
-  logger.info('Processing session end job');
+  logger.debug('Processing session end job');
 
   const session = await sessionBuffer.getExistingSession(payload.sessionId);
 
@@ -77,7 +76,7 @@ export async function createSessionEnd(
   }
 
   try {
-    handleSessionEndNotifications({
+    await handleSessionEndNotifications({
       session,
       payload,
     });
@@ -103,7 +102,9 @@ export async function createSessionEnd(
     name: 'session_end',
     duration: session.duration ?? 0,
     path: lastScreenView?.path ?? '',
-    createdAt: new Date(getTime(session.ended_at) + 1000),
+    createdAt: new Date(
+      convertClickhouseDateToJs(session.ended_at).getTime() + 100,
+    ),
     profileId: lastScreenView?.profileId || payload.profileId,
   });
 }

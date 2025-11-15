@@ -106,6 +106,11 @@ export async function getProfileById(id: string, projectId: string) {
     return null;
   }
 
+  const cachedProfile = await profileBuffer.fetchFromCache(id, projectId);
+  if (cachedProfile) {
+    return transformProfile(cachedProfile);
+  }
+
   const [profile] = await chQuery<IClickhouseProfile>(
     `SELECT 
       id, 
@@ -126,8 +131,6 @@ export async function getProfileById(id: string, projectId: string) {
 
   return transformProfile(profile);
 }
-
-export const getProfileByIdCached = cacheable(getProfileById, 60 * 30);
 
 interface GetProfileListOptions {
   projectId: string;
@@ -305,11 +308,6 @@ export async function upsertProfile(
     created_at: formatClickhouseDate(new Date()),
     is_external: isExternal,
   };
-
-  if (!isFromEvent) {
-    // Save to cache directly since the profile might be used before its saved in clickhouse
-    getProfileByIdCached.set(id, projectId)(transformProfile(profile));
-  }
 
   return profileBuffer.add(profile, isFromEvent);
 }

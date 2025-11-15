@@ -7,12 +7,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import yaml from 'js-yaml';
 
+// Regex special characters that indicate we need actual regex
+const regexSpecialChars = /[|^$.*+?(){}\[\]\\]/;
+
+function transformBots(bots: any[]): any[] {
+  return bots.map((bot) => {
+    const { regex, ...rest } = bot;
+    const hasRegexChars = regexSpecialChars.test(regex);
+
+    if (hasRegexChars) {
+      // Keep as regex
+      return { regex, ...rest };
+    }
+    // Convert to includes
+    return { includes: regex, ...rest };
+  });
+}
+
 async function main() {
   // Get document, or throw exception on error
   try {
     const data = await fetch(
       'https://raw.githubusercontent.com/matomo-org/device-detector/master/regexes/bots.yml',
     ).then((res) => res.text());
+
+    const parsedData = yaml.load(data) as any[];
+    const transformedBots = transformBots(parsedData);
 
     fs.writeFileSync(
       path.resolve(__dirname, '../src/bots/bots.ts'),
@@ -21,11 +41,20 @@ async function main() {
         '',
         '// The data is fetch from device-detector https://raw.githubusercontent.com/matomo-org/device-detector/master/regexes/bots.yml',
         '',
-        `const bots = ${JSON.stringify(yaml.load(data))} as const;`,
+        `const bots = ${JSON.stringify(transformedBots, null, 2)} as const;`,
         'export default bots;',
+        '',
       ].join('\n'),
       'utf-8',
     );
+
+    console.log(
+      `✅ Generated bots.ts with ${transformedBots.length} bot entries`,
+    );
+    const regexCount = transformedBots.filter((b) => 'regex' in b).length;
+    const includesCount = transformedBots.filter((b) => 'includes' in b).length;
+    console.log(`   - ${includesCount} simple string matches (includes)`);
+    console.log(`   - ${regexCount} regex patterns`);
   } catch (e) {
     console.log(e);
   }

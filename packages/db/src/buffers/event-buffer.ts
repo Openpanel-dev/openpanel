@@ -4,7 +4,6 @@ import {
   getRedisCache,
   getRedisPub,
   publishEvent,
-  runEvery,
 } from '@openpanel/redis';
 import { ch } from '../clickhouse/client';
 import {
@@ -15,257 +14,144 @@ import {
 import { BaseBuffer } from './base-buffer';
 
 /**
+ * Simplified Event Buffer
  *
- * Usuful redis commands:
- * ---------------------
- *
- * Add empty session
- * ZADD event_buffer:sessions_sorted 1710831600000 "test_empty_session"
- *
- * Get session events
- * LRANGE event_buffer:session:test_empty_session 0 -1
- *
- * Get session events count
- * LLEN event_buffer:session:test_empty_session
- *
- * Get regular queue events
- * LRANGE event_buffer:regular_queue 0 -1
- *
- * Get regular queue count
- * LLEN event_buffer:regular_queue
- *
+ * Rules:
+ * 1. All events go into a single list buffer (event_buffer:queue)
+ * 2. screen_view events are handled specially:
+ *    - Store current screen_view as "last" for the session
+ *    - When a new screen_view arrives, flush the previous one with calculated duration
+ * 3. session_end events:
+ *    - Retrieve the last screen_view (don't modify it)
+ *    - Push both screen_view and session_end to buffer
+ * 4. Flush: Simply process all events from the list buffer
  */
 
 export class EventBuffer extends BaseBuffer {
   // Configurable limits
-  // How many days to keep buffered session metadata before cleanup
-  private daysToKeep = process.env.EVENT_BUFFER_DAYS_TO_KEEP
-    ? Number.parseFloat(process.env.EVENT_BUFFER_DAYS_TO_KEEP)
-    : 3;
-  // How many events we attempt to FETCH per flush cycle (split across sessions/non-sessions)
-  // Prefer new env EVENT_BUFFER_BATCH_SIZE; fallback to legacy EVENT_BUFFER_BATCH_SIZE
   private batchSize = process.env.EVENT_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.EVENT_BUFFER_BATCH_SIZE, 10)
     : 4000;
-  // How many events per insert chunk we send to ClickHouse (insert batch size)
   private chunkSize = process.env.EVENT_BUFFER_CHUNK_SIZE
     ? Number.parseInt(process.env.EVENT_BUFFER_CHUNK_SIZE, 10)
     : 1000;
-  private updatePendingSessionsBatchSize = process.env
-    .EVENT_BUFFER_UPDATE_PENDING_SESSIONS_BATCH_SIZE
-    ? Number.parseInt(
-        process.env.EVENT_BUFFER_UPDATE_PENDING_SESSIONS_BATCH_SIZE,
-        10,
-      )
-    : 300;
-
-  // Cap of how many ready sessions to scan per flush cycle (configurable via env)
-  private maxSessionsPerFlush = process.env.EVENT_BUFFER_MAX_SESSIONS_PER_FLUSH
-    ? Number.parseInt(process.env.EVENT_BUFFER_MAX_SESSIONS_PER_FLUSH, 10)
-    : 500;
-
-  // Soft time budget per flush (ms) to avoid long lock holds
-  private flushTimeBudgetMs = process.env.EVENT_BUFFER_FLUSH_TIME_BUDGET_MS
-    ? Number.parseInt(process.env.EVENT_BUFFER_FLUSH_TIME_BUDGET_MS, 10)
-    : 1000;
-
-  private minEventsInSession = 2;
 
   private activeVisitorsExpiration = 60 * 5; // 5 minutes
 
-  private sessionEvents = ['screen_view', 'session_end'];
-
-  // LIST - Stores events without sessions
-  private regularQueueKey = 'event_buffer:regular_queue';
-
-  // SORTED SET - Tracks all active session IDs with their timestamps
-  private sessionSortedKey = 'event_buffer:sessions_sorted'; // sorted set of session IDs
-
-  // SORTED SET - Tracks sessions that are ready for processing (have >= minEvents)
-  private readySessionsKey = 'event_buffer:ready_sessions';
+  // LIST - Stores all events ready to be flushed
+  private queueKey = 'event_buffer:queue';
 
   // STRING - Tracks total buffer size incrementally
   protected bufferCounterKey = 'event_buffer:total_count';
 
-  private readonly sessionKeyPrefix = 'event_buffer:session:';
-  // LIST - Stores events for a given session
-  private getSessionKey(sessionId: string) {
-    return `${this.sessionKeyPrefix}${sessionId}`;
+  // Script SHAs for loaded Lua scripts
+  private scriptShas: {
+    addScreenView?: string;
+    addSessionEnd?: string;
+  } = {};
+
+  // Hash key for storing last screen_view per session
+  private getLastScreenViewKeyBySession(sessionId: string) {
+    return `event_buffer:last_screen_view:session:${sessionId}`;
   }
-  /**
-   * Optimized Lua script that processes ready sessions efficiently.
-   * Only fetches from sessions known to have >= minEvents.
-   * Limits the number of events fetched per session to avoid huge payloads.
-   */
-  private readonly processReadySessionsScript = `
-local readySessionsKey = KEYS[1]
-local sessionPrefix = KEYS[2]
-local sessionsSortedKey = KEYS[3]
-local maxSessions = tonumber(ARGV[1])
-local maxEventsPerSession = tonumber(ARGV[2])
-local startOffset = tonumber(ARGV[3]) or 0
 
-local result = {}
-local sessionsToRemove = {}
-
--- Get up to maxSessions ready sessions from window [startOffset, startOffset+maxSessions-1]
-local stopIndex = startOffset + maxSessions - 1
-local sessionIds = redis.call('ZRANGE', readySessionsKey, startOffset, stopIndex)
-local resultIndex = 1
-
-for i, sessionId in ipairs(sessionIds) do
-  local sessionKey = sessionPrefix .. sessionId
-  local eventCount = redis.call('LLEN', sessionKey)
-  
-  if eventCount == 0 then
-    -- Session is empty, remove from both sets
-    table.insert(sessionsToRemove, sessionId)
-  else
-    -- Fetch limited number of events to avoid huge payloads
-    local eventsToFetch = math.min(eventCount, maxEventsPerSession)
-    local events = redis.call('LRANGE', sessionKey, 0, eventsToFetch - 1)
-    
-    result[resultIndex] = { 
-      sessionId = sessionId, 
-      events = events,
-      totalEventCount = eventCount
-    }
-    resultIndex = resultIndex + 1
-  end
-end
-
--- Clean up empty sessions from both ready set and sorted set
-if #sessionsToRemove > 0 then
-  redis.call('ZREM', readySessionsKey, unpack(sessionsToRemove))
-  redis.call('ZREM', sessionsSortedKey, unpack(sessionsToRemove))
-  -- Also delete the empty session keys
-  for i, sessionId in ipairs(sessionsToRemove) do
-    redis.call('DEL', sessionPrefix .. sessionId)
-  end
-end
-
-return cjson.encode(result)
-`;
+  // Hash key for storing last screen_view per profile
+  private getLastScreenViewKeyByProfile(projectId: string, profileId: string) {
+    return `event_buffer:last_screen_view:profile:${projectId}:${profileId}`;
+  }
 
   /**
-   * Optimized atomic Lua script to update a session's list with pending events.
-   * Also manages the ready_sessions set and buffer counter.
+   * Lua script for handling screen_view addition - RACE-CONDITION SAFE without GroupMQ
    *
-   * KEYS[1] = session key
-   * KEYS[2] = ready sessions key
-   * KEYS[3] = sessions sorted key
+   * Strategy: Use Redis GETDEL (atomic get-and-delete) to ensure only ONE thread
+   * can process the "last" screen_view at a time.
+   *
+   * KEYS[1] = last screen_view key (by session) - stores both event and timestamp as JSON
+   * KEYS[2] = last screen_view key (by profile, may be empty)
+   * KEYS[3] = queue key
    * KEYS[4] = buffer counter key
-   * ARGV[1] = sessionId
-   * ARGV[2] = snapshotCount (number of events that were present in our snapshot)
-   * ARGV[3] = pendingCount (number of pending events)
-   * ARGV[4] = minEventsInSession
-   * ARGV[5..(4+pendingCount)] = the pending event strings
+   * ARGV[1] = new event with timestamp as JSON: {"event": {...}, "ts": 123456}
+   * ARGV[2] = TTL for last screen_view (1 hour)
    */
-  private readonly updateSessionScript = `
+  private readonly addScreenViewScript = `
 local sessionKey = KEYS[1]
-local readySessionsKey = KEYS[2]
-local sessionsSortedKey = KEYS[3]
-local bufferCounterKey = KEYS[4]
-local sessionId = ARGV[1]
-local snapshotCount = tonumber(ARGV[2])
-local pendingCount = tonumber(ARGV[3])
-local minEventsInSession = tonumber(ARGV[4])
+local profileKey = KEYS[2]
+local queueKey = KEYS[3]
+local counterKey = KEYS[4]
+local newEventData = ARGV[1]
+local ttl = tonumber(ARGV[2])
 
--- Trim the list to remove the processed (snapshot) events.
-redis.call("LTRIM", sessionKey, snapshotCount, -1)
+-- GETDEL is atomic: get previous and delete in one operation
+-- This ensures only ONE thread gets the previous event
+local previousEventData = redis.call("GETDEL", sessionKey)
 
--- Re-insert the pending events at the head in their original order.
-for i = pendingCount, 1, -1 do
-  redis.call("LPUSH", sessionKey, ARGV[i+4])
+-- Store new screen_view as last for session
+redis.call("SET", sessionKey, newEventData, "EX", ttl)
+
+-- Store new screen_view as last for profile (if key provided)
+if profileKey and profileKey ~= "" then
+  redis.call("SET", profileKey, newEventData, "EX", ttl)
 end
 
-local newLength = redis.call("LLEN", sessionKey)
-
--- Update ready sessions set based on new length
-if newLength == 0 then
-  -- Session is now empty, remove from both sets and delete key
-  redis.call("ZREM", readySessionsKey, sessionId)
-  redis.call("ZREM", sessionsSortedKey, sessionId)
-  redis.call("DEL", sessionKey)
-elseif newLength >= minEventsInSession then
-  -- Session has enough events, keep/add it in ready_sessions
-  redis.call("ZADD", readySessionsKey, redis.call("TIME")[1], sessionId)
-else
-  -- Session has events but < minEvents, remove from ready_sessions
-  -- It will be re-added when a new event arrives (via addEventScript)
-  redis.call("ZREM", readySessionsKey, sessionId)
+-- If there was a previous screen_view, add it to queue with calculated duration
+if previousEventData then
+  local prev = cjson.decode(previousEventData)
+  local curr = cjson.decode(newEventData)
+  
+  -- Calculate duration (ensure non-negative to handle clock skew)
+  if prev.ts and curr.ts then
+    prev.event.duration = math.max(0, curr.ts - prev.ts)
+  end
+  
+  redis.call("RPUSH", queueKey, cjson.encode(prev.event))
+  redis.call("INCR", counterKey)
+  return 1
 end
 
--- Update buffer counter (decrement by processed events, increment by pending)
-local counterChange = pendingCount - snapshotCount
-if counterChange ~= 0 then
-  redis.call("INCRBY", bufferCounterKey, counterChange)
-end
-
-return newLength
+return 0
 `;
 
   /**
-   * Optimized batch update script with counter and ready sessions management.
-   * KEYS[1] = ready sessions key
-   * KEYS[2] = sessions sorted key
-   * KEYS[3] = buffer counter key
-   * ARGV format: [minEventsInSession, sessionKey1, sessionId1, snapshotCount1, pendingCount1, pending1...., sessionKey2, ...]
+   * Lua script for handling session_end - RACE-CONDITION SAFE
+   *
+   * Uses GETDEL to atomically retrieve and delete the last screen_view
+   *
+   * KEYS[1] = last screen_view key (by session)
+   * KEYS[2] = last screen_view key (by profile, may be empty)
+   * KEYS[3] = queue key
+   * KEYS[4] = buffer counter key
+   * ARGV[1] = session_end event JSON
    */
-  private readonly batchUpdateSessionsScript = `
-local readySessionsKey = KEYS[1]
-local sessionsSortedKey = KEYS[2]
-local bufferCounterKey = KEYS[3]
-local minEventsInSession = tonumber(ARGV[1])
-local totalCounterChange = 0
+  private readonly addSessionEndScript = `
+local sessionKey = KEYS[1]
+local profileKey = KEYS[2]
+local queueKey = KEYS[3]
+local counterKey = KEYS[4]
+local sessionEndJson = ARGV[1]
 
-local i = 2
-while i <= #ARGV do
-  local sessionKey = ARGV[i]
-  local sessionId = ARGV[i + 1]
-  local snapshotCount = tonumber(ARGV[i + 2])
-  local pendingCount = tonumber(ARGV[i + 3])
-  
-  -- Trim the list to remove processed events
-  redis.call("LTRIM", sessionKey, snapshotCount, -1)
-  
-  -- Re-insert pending events at the head in original order
-  if pendingCount > 0 then
-    -- Reinsert in original order: LPUSH requires reverse iteration
-    for j = pendingCount, 1, -1 do
-      redis.call("LPUSH", sessionKey, ARGV[i + 3 + j])
-    end
-  end
-  
-  local newLength = redis.call("LLEN", sessionKey)
-  
-  -- Update ready sessions set based on new length
-  if newLength == 0 then
-    -- Session is now empty, remove from both sets and delete key
-    redis.call("ZREM", readySessionsKey, sessionId)
-    redis.call("ZREM", sessionsSortedKey, sessionId)
-    redis.call("DEL", sessionKey)
-  elseif newLength >= minEventsInSession then
-    -- Session has enough events, keep/add it in ready_sessions
-    redis.call("ZADD", readySessionsKey, redis.call("TIME")[1], sessionId)
-  else
-    -- Session has events but < minEvents, remove from ready_sessions
-    -- It will be re-added when a new event arrives (via addEventScript)
-    redis.call("ZREM", readySessionsKey, sessionId)
-  end
-  
-  -- Track counter change
-  totalCounterChange = totalCounterChange + (pendingCount - snapshotCount)
-  
-  i = i + 4 + pendingCount
+-- GETDEL is atomic: only ONE thread gets the last screen_view
+local previousEventData = redis.call("GETDEL", sessionKey)
+local added = 0
+
+-- If there was a previous screen_view, add it to queue
+if previousEventData then
+  local prev = cjson.decode(previousEventData)
+  redis.call("RPUSH", queueKey, cjson.encode(prev.event))
+  redis.call("INCR", counterKey)
+  added = added + 1
 end
 
--- Update buffer counter once
-if totalCounterChange ~= 0 then
-  redis.call("INCRBY", bufferCounterKey, totalCounterChange)
+-- Add session_end to queue
+redis.call("RPUSH", queueKey, sessionEndJson)
+redis.call("INCR", counterKey)
+added = added + 1
+
+-- Delete profile key
+if profileKey and profileKey ~= "" then
+  redis.call("DEL", profileKey)
 end
 
-return "OK"
+return added
 `;
 
   constructor() {
@@ -273,9 +159,34 @@ return "OK"
       name: 'event',
       onFlush: async () => {
         await this.processBuffer();
-        await this.tryCleanup();
       },
     });
+    // Load Lua scripts into Redis on startup
+    this.loadScripts();
+  }
+
+  /**
+   * Load Lua scripts into Redis and cache their SHAs.
+   * This avoids sending the entire script on every call.
+   */
+  private async loadScripts() {
+    try {
+      const redis = getRedisCache();
+      const [screenViewSha, sessionEndSha] = await Promise.all([
+        redis.script('LOAD', this.addScreenViewScript),
+        redis.script('LOAD', this.addSessionEndScript),
+      ]);
+
+      this.scriptShas.addScreenView = screenViewSha as string;
+      this.scriptShas.addSessionEnd = sessionEndSha as string;
+
+      this.logger.info('Loaded Lua scripts into Redis', {
+        addScreenView: this.scriptShas.addScreenView,
+        addSessionEnd: this.scriptShas.addSessionEnd,
+      });
+    } catch (error) {
+      this.logger.error('Failed to load Lua scripts', { error });
+    }
   }
 
   bulkAdd(events: IClickhouseEvent[]) {
@@ -288,68 +199,12 @@ return "OK"
   }
 
   /**
-   * Optimized Lua script for adding events with counter management.
-   * KEYS[1] = session key (if session event)
-   * KEYS[2] = regular queue key
-   * KEYS[3] = sessions sorted key
-   * KEYS[4] = ready sessions key
-   * KEYS[5] = buffer counter key
-   * KEYS[6] = last event key (if screen_view)
-   * ARGV[1] = event JSON
-   * ARGV[2] = session_id
-   * ARGV[3] = event_name
-   * ARGV[4] = score (timestamp)
-   * ARGV[5] = minEventsInSession
-   * ARGV[6] = last event TTL (if screen_view)
-   */
-  private readonly addEventScript = `
-local sessionKey = KEYS[1]
-local regularQueueKey = KEYS[2]
-local sessionsSortedKey = KEYS[3]
-local readySessionsKey = KEYS[4]
-local bufferCounterKey = KEYS[5]
-local lastEventKey = KEYS[6]
-
-local eventJson = ARGV[1]
-local sessionId = ARGV[2]
-local eventName = ARGV[3]
-local score = tonumber(ARGV[4])
-local minEventsInSession = tonumber(ARGV[5])
-local lastEventTTL = tonumber(ARGV[6] or 0)
-
-local counterIncrement = 1
-
-if sessionId and sessionId ~= "" and (eventName == "screen_view" or eventName == "session_end") then
-  -- Add to session
-  redis.call("RPUSH", sessionKey, eventJson)
-  redis.call("ZADD", sessionsSortedKey, "NX", score, sessionId)
-  
-  -- Check if session is now ready for processing
-  local sessionLength = redis.call("LLEN", sessionKey)
-  if sessionLength >= minEventsInSession or eventName == "session_end" then
-    redis.call("ZADD", readySessionsKey, score, sessionId)
-  end
-  
-  -- Handle screen_view specific logic
-  if eventName == "screen_view" and lastEventKey ~= "" then
-    redis.call("SET", lastEventKey, eventJson, "EX", lastEventTTL)
-  elseif eventName == "session_end" and lastEventKey ~= "" then
-    redis.call("DEL", lastEventKey)
-  end
-else
-  -- Add to regular queue
-  redis.call("RPUSH", regularQueueKey, eventJson)
-end
-
--- Increment buffer counter
-redis.call("INCR", bufferCounterKey)
-
-return "OK"
-`;
-
-  /**
-   * Add an event into Redis.
-   * Uses optimized Lua script to reduce round trips and manage counters.
+   * Add an event into Redis buffer.
+   *
+   * Logic:
+   * - screen_view: Store as "last" for session, flush previous if exists
+   * - session_end: Flush last screen_view + session_end
+   * - Other events: Add directly to queue
    */
   async add(event: IClickhouseEvent, _multi?: ReturnType<Redis['multi']>) {
     try {
@@ -357,46 +212,59 @@ return "OK"
       const eventJson = JSON.stringify(event);
       const multi = _multi || redis.multi();
 
-      const isSessionEvent =
-        event.session_id && this.sessionEvents.includes(event.name);
+      if (event.session_id && event.name === 'screen_view') {
+        // Handle screen_view
+        const sessionKey = this.getLastScreenViewKeyBySession(event.session_id);
+        const profileKey = event.profile_id
+          ? this.getLastScreenViewKeyByProfile(
+              event.project_id,
+              event.profile_id,
+            )
+          : '';
+        const timestamp = new Date(event.created_at || Date.now()).getTime();
 
-      if (isSessionEvent) {
-        const sessionKey = this.getSessionKey(event.session_id);
-        const score = new Date(event.created_at || Date.now()).getTime();
-        const lastEventKey =
-          event.name === 'screen_view'
-            ? this.getLastEventKey({
-                projectId: event.project_id,
-                profileId: event.profile_id,
-              })
-            : event.name === 'session_end'
-              ? this.getLastEventKey({
-                  projectId: event.project_id,
-                  profileId: event.profile_id,
-                })
-              : '';
+        // Combine event and timestamp into single JSON for atomic operations
+        const eventWithTimestamp = JSON.stringify({
+          event: event,
+          ts: timestamp,
+        });
 
-        multi.eval(
-          this.addEventScript,
-          6,
+        this.evalScript(
+          multi,
+          'addScreenView',
+          this.addScreenViewScript,
+          4,
           sessionKey,
-          this.regularQueueKey,
-          this.sessionSortedKey,
-          this.readySessionsKey,
+          profileKey,
+          this.queueKey,
           this.bufferCounterKey,
-          lastEventKey,
+          eventWithTimestamp,
+          '3600', // 1 hour TTL
+        );
+      } else if (event.session_id && event.name === 'session_end') {
+        // Handle session_end
+        const sessionKey = this.getLastScreenViewKeyBySession(event.session_id);
+        const profileKey = event.profile_id
+          ? this.getLastScreenViewKeyByProfile(
+              event.project_id,
+              event.profile_id,
+            )
+          : '';
+
+        this.evalScript(
+          multi,
+          'addSessionEnd',
+          this.addSessionEndScript,
+          4,
+          sessionKey,
+          profileKey,
+          this.queueKey,
+          this.bufferCounterKey,
           eventJson,
-          event.session_id,
-          event.name,
-          score.toString(),
-          this.minEventsInSession.toString(),
-          '3600', // 1 hour TTL for last event
         );
       } else {
-        // Non-session events go to regular queue
-        multi
-          .rpush(this.regularQueueKey, eventJson)
-          .incr(this.bufferCounterKey);
+        // All other events go directly to queue
+        multi.rpush(this.queueKey, eventJson).incr(this.bufferCounterKey);
       }
 
       if (event.profile_id) {
@@ -417,185 +285,79 @@ return "OK"
     }
   }
 
-  private async getEligibleSessions(
-    startOffset: number,
-    maxEventsPerSession: number,
-    sessionsPerPage: number,
+  /**
+   * Execute a Lua script using EVALSHA (cached) or fallback to EVAL.
+   * This avoids sending the entire script on every call.
+   */
+  private evalScript(
+    multi: ReturnType<Redis['multi']>,
+    scriptName: keyof typeof this.scriptShas,
+    scriptContent: string,
+    numKeys: number,
+    ...args: (string | number)[]
   ) {
-    const sessionsSorted = await getRedisCache().eval(
-      this.processReadySessionsScript,
-      3, // number of KEYS
-      this.readySessionsKey,
-      this.sessionKeyPrefix,
-      this.sessionSortedKey,
-      sessionsPerPage.toString(),
-      maxEventsPerSession.toString(),
-      startOffset.toString(),
-    );
+    const sha = this.scriptShas[scriptName];
 
-    const parsed = getSafeJson<
-      Array<{
-        sessionId: string;
-        events: string[];
-        totalEventCount: number;
-      }>
-    >(sessionsSorted as string);
-
-    const sessions: Record<
-      string,
-      {
-        events: IClickhouseEvent[];
-        totalEventCount: number;
-      }
-    > = {};
-
-    if (!parsed || !Array.isArray(parsed)) {
-      return sessions;
+    if (sha) {
+      // Use EVALSHA with cached SHA
+      multi.evalsha(sha, numKeys, ...args);
+    } else {
+      // Fallback to EVAL and try to reload script
+      multi.eval(scriptContent, numKeys, ...args);
+      this.logger.warn(`Script ${scriptName} not loaded, using EVAL fallback`);
+      // Attempt to reload scripts in background
+      this.loadScripts();
     }
-
-    for (const session of parsed) {
-      const events = session.events
-        .map((e) => getSafeJson<IClickhouseEvent>(e))
-        .filter((e): e is IClickhouseEvent => e !== null);
-
-      sessions[session.sessionId] = {
-        events,
-        totalEventCount: session.totalEventCount,
-      };
-    }
-
-    return sessions;
   }
 
   /**
-   * Process the Redis buffer.
+   * Process the Redis buffer - simplified version.
    *
-   * 1. Fetch events from two sources in parallel:
-   *    - Pick events from regular queue (batchSize / 2)
-   *    - Pick events from sessions (batchSize / 2).
-   *      This only have screen_view and session_end events
-   *
-   * 2. Process session events:
-   *    - For screen_view events, calculate duration if next event exists
-   *    - Last screen_view of each session remains pending
-   *    - All other events are marked for flushing
-   *
-   * 3. Process regular queue events:
-   *    - Inherit path/origin from last screen_view of same session if exists
-   *
-   * 4. Insert all flushable events into ClickHouse in chunks and publish notifications
-   *
-   * 5. Clean up processed events:
-   *    - For regular queue: LTRIM processed events
-   *    - For sessions: Update lists atomically via Lua script, preserving pending events
+   * Simply:
+   * 1. Fetch events from the queue (up to batchSize)
+   * 2. Parse and sort them
+   * 3. Insert into ClickHouse in chunks
+   * 4. Publish saved events
+   * 5. Clean up processed events from queue
    */
   async processBuffer() {
     const redis = getRedisCache();
-    const eventsToClickhouse: IClickhouseEvent[] = [];
-    const pendingUpdates: Array<{
-      sessionId: string;
-      snapshotCount: number;
-      pending: IClickhouseEvent[];
-    }> = [];
-    const timer = {
-      fetchUnprocessedEvents: 0,
-      processSessionEvents: 0,
-      processRegularQueueEvents: 0,
-      insertEvents: 0,
-      updatePendingSessions: 0,
-    };
 
     try {
-      let now = performance.now();
-      // (A) Fetch no-session events once per run
-      const regularQueueEvents = await redis.lrange(
-        this.regularQueueKey,
+      // Fetch events from queue
+      const queueEvents = await redis.lrange(
+        this.queueKey,
         0,
-        Math.floor(this.batchSize / 2) - 1,
+        this.batchSize - 1,
       );
 
-      // (A2) Page through ready sessions within time and budget
-      let sessionBudget = Math.floor(this.batchSize / 2);
-      let startOffset = 0;
-      let totalSessionEventsFetched = 0;
-      while (sessionBudget > 0) {
-        if (performance.now() - now > this.flushTimeBudgetMs) {
-          this.logger.debug('Stopping session paging due to time budget');
-          break;
-        }
-
-        const sessionsPerPage = Math.min(
-          this.maxSessionsPerFlush,
-          Math.max(1, Math.floor(sessionBudget / 2)),
-        );
-        const perSessionBudget = Math.max(
-          2,
-          Math.floor(sessionBudget / sessionsPerPage),
-        );
-
-        const sessionsPage = await this.getEligibleSessions(
-          startOffset,
-          perSessionBudget,
-          sessionsPerPage,
-        );
-        const sessionIds = Object.keys(sessionsPage);
-        if (sessionIds.length === 0) {
-          break;
-        }
-
-        for (const sessionId of sessionIds) {
-          const sessionData = sessionsPage[sessionId]!;
-          const { flush, pending } = this.processSessionEvents(
-            sessionData.events,
-          );
-
-          if (flush.length > 0) {
-            eventsToClickhouse.push(...flush);
-          }
-
-          pendingUpdates.push({
-            sessionId,
-            snapshotCount: sessionData.events.length,
-            pending,
-          });
-
-          // Decrease budget by fetched events for this session window
-          sessionBudget -= sessionData.events.length;
-          totalSessionEventsFetched += sessionData.events.length;
-          if (sessionBudget <= 0) {
-            break;
-          }
-        }
-        startOffset += sessionsPerPage;
+      if (queueEvents.length === 0) {
+        this.logger.debug('No events to process');
+        return;
       }
 
-      timer.processSessionEvents = performance.now() - now;
-      now = performance.now();
-
-      // (B) Process no-session events
-      for (const eventStr of regularQueueEvents) {
+      // Parse events
+      const eventsToClickhouse: IClickhouseEvent[] = [];
+      for (const eventStr of queueEvents) {
         const event = getSafeJson<IClickhouseEvent>(eventStr);
         if (event) {
           eventsToClickhouse.push(event);
         }
       }
 
-      timer.processRegularQueueEvents = performance.now() - now;
-      now = performance.now();
-
       if (eventsToClickhouse.length === 0) {
-        this.logger.debug('No events to process');
+        this.logger.debug('No valid events to process');
         return;
       }
 
-      // (C) Sort events by creation time.
+      // Sort events by creation time
       eventsToClickhouse.sort(
         (a, b) =>
           new Date(a.created_at || 0).getTime() -
           new Date(b.created_at || 0).getTime(),
       );
 
-      // (D) Insert events into ClickHouse in chunks
+      // Insert events into ClickHouse in chunks
       this.logger.info('Inserting events into ClickHouse', {
         totalEvents: eventsToClickhouse.length,
         chunks: Math.ceil(eventsToClickhouse.length / this.chunkSize),
@@ -609,40 +371,23 @@ return "OK"
         });
       }
 
-      timer.insertEvents = performance.now() - now;
-      now = performance.now();
-
-      // (E) Publish "saved" events.
+      // Publish "saved" events
       const pubMulti = getRedisPub().multi();
       for (const event of eventsToClickhouse) {
         await publishEvent('events', 'saved', transformEvent(event), pubMulti);
       }
       await pubMulti.exec();
 
-      // (F) Only after successful processing, update Redis
-      const multi = redis.multi();
-
-      // Clean up no-session events and update counter
-      if (regularQueueEvents.length > 0) {
-        multi
-          .ltrim(this.regularQueueKey, regularQueueEvents.length, -1)
-          .decrby(this.bufferCounterKey, regularQueueEvents.length);
-      }
-
-      await multi.exec();
-
-      // Process pending sessions in batches
-      await this.processPendingSessionsInBatches(redis, pendingUpdates);
-
-      timer.updatePendingSessions = performance.now() - now;
+      // Clean up processed events from queue
+      await redis
+        .multi()
+        .ltrim(this.queueKey, queueEvents.length, -1)
+        .decrby(this.bufferCounterKey, queueEvents.length)
+        .exec();
 
       this.logger.info('Processed events from Redis buffer', {
         batchSize: this.batchSize,
-        eventsToClickhouse: eventsToClickhouse.length,
-        pendingSessionUpdates: pendingUpdates.length,
-        sessionEventsFetched: totalSessionEventsFetched,
-        regularEvents: regularQueueEvents.length,
-        timer,
+        eventsProcessed: eventsToClickhouse.length,
       });
     } catch (error) {
       this.logger.error('Error processing Redis buffer', { error });
@@ -650,280 +395,49 @@ return "OK"
   }
 
   /**
-   * Process a session's events.
-   *
-   * For each event in the session (in order):
-   * - If it is a screen_view, look for a subsequent event (screen_view or session_end)
-   *   to calculate its duration. If found, flush it; if not, leave it pending.
-   *
-   * Returns an object with two arrays:
-   *   flush: events to be sent to ClickHouse.
-   *   pending: events that remain in the Redis session list.
+   * Retrieve the latest screen_view event for a given session or profile
    */
-  private processSessionEvents(events: IClickhouseEvent[]): {
-    flush: IClickhouseEvent[];
-    pending: IClickhouseEvent[];
-  } {
-    // Ensure events are sorted by created_at
-    events.sort(
-      (a, b) =>
-        new Date(a.created_at || 0).getTime() -
-        new Date(b.created_at || 0).getTime(),
-    );
-
-    const flush: IClickhouseEvent[] = [];
-    const pending: IClickhouseEvent[] = [];
-
-    // Check if session has ended - if so, flush everything
-    const hasSessionEnd = events.some((e) => e.name === 'session_end');
-
-    if (hasSessionEnd) {
-      flush.push(...events);
-      return { flush, pending: [] };
-    }
-
-    const findNextScreenView = (events: IClickhouseEvent[]) => {
-      return events.find((e) => e.name === 'screen_view');
-    };
-
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i]!;
-      // For screen_view events, look for next event
-      const next = findNextScreenView(events.slice(i + 1));
-      if (next) {
-        event.duration =
-          new Date(next.created_at).getTime() -
-          new Date(event.created_at).getTime();
-        flush.push(event);
-      } else {
-        // Last screen_view with no next event - keep pending
-        pending.push(event);
-      }
-    }
-
-    return { flush, pending };
-  }
-
-  async tryCleanup() {
-    try {
-      await runEvery({
-        interval: 60 * 60 * 24,
-        fn: this.cleanup.bind(this),
-        key: `${this.name}-cleanup`,
-      });
-    } catch (error) {
-      this.logger.error('Failed to run cleanup', { error });
-    }
-  }
-
-  /**
-   * Cleanup old events from Redis.
-   * For each key (no-session and per-session), remove events older than the cutoff date.
-   */
-  async cleanup() {
+  public async getLastScreenView(
+    params:
+      | {
+          sessionId: string;
+        }
+      | {
+          projectId: string;
+          profileId: string;
+        },
+  ): Promise<IServiceEvent | null> {
     const redis = getRedisCache();
-    const cutoffTime = Date.now() - 1000 * 60 * 60 * 24 * this.daysToKeep;
 
-    try {
-      const sessionCount = await redis.zcard(this.sessionSortedKey);
-      const batchSize = 1000;
-      let offset = 0;
-      let totalCleaned = 0;
-
-      this.logger.info('Starting cleanup of stale sessions', {
-        cutoffTime: new Date(cutoffTime),
-        totalSessions: sessionCount,
-      });
-
-      while (offset < sessionCount) {
-        // Get batch of session IDs with scores
-        const sessionIdsWithScores = await redis.zrange(
-          this.sessionSortedKey,
-          offset,
-          offset + batchSize - 1,
-          'WITHSCORES',
-        );
-
-        if (sessionIdsWithScores.length === 0) break;
-
-        const pipeline = redis.pipeline();
-        let staleSessions = 0;
-
-        // Process pairs of [sessionId, score]
-        for (let i = 0; i < sessionIdsWithScores.length; i += 2) {
-          const sessionId = sessionIdsWithScores[i];
-          const score = Number.parseInt(sessionIdsWithScores[i + 1] || '0', 10);
-
-          if (sessionId && score < cutoffTime) {
-            staleSessions++;
-            // Remove from both sorted sets and delete the session key
-            pipeline.zrem(this.sessionSortedKey, sessionId);
-            pipeline.zrem(this.readySessionsKey, sessionId);
-            pipeline.del(this.getSessionKey(sessionId));
-          }
-        }
-
-        if (staleSessions > 0) {
-          await pipeline.exec();
-          totalCleaned += staleSessions;
-          this.logger.info('Cleaned batch of stale sessions', {
-            batch: Math.floor(offset / batchSize) + 1,
-            cleanedInBatch: staleSessions,
-            totalCleaned,
-          });
-        }
-
-        offset += batchSize;
-      }
-
-      this.logger.info('Cleanup completed', { totalCleaned });
-    } catch (error) {
-      this.logger.error('Failed to cleanup stale sessions', { error });
-    }
-  }
-
-  /**
-   * Retrieve the latest screen_view event for a given project/profile or project/session
-   */
-  public async getLastScreenView({
-    projectId,
-    ...rest
-  }:
-    | {
-        projectId: string;
-        profileId: string;
-      }
-    | {
-        projectId: string;
-        sessionId: string;
-      }): Promise<IServiceEvent | null> {
-    if ('profileId' in rest) {
-      const redis = getRedisCache();
-      const eventStr = await redis.get(
-        this.getLastEventKey({ projectId, profileId: rest.profileId }),
+    let lastScreenViewKey: string;
+    if ('sessionId' in params) {
+      lastScreenViewKey = this.getLastScreenViewKeyBySession(params.sessionId);
+    } else {
+      lastScreenViewKey = this.getLastScreenViewKeyByProfile(
+        params.projectId,
+        params.profileId,
       );
-      if (eventStr) {
-        const parsed = getSafeJson<IClickhouseEvent>(eventStr);
-        if (parsed) {
-          return transformEvent(parsed);
-        }
-      }
     }
 
-    if ('sessionId' in rest) {
-      const redis = getRedisCache();
-      const sessionKey = this.getSessionKey(rest.sessionId);
-      const lastEvent = await redis.lindex(sessionKey, -1);
-      if (lastEvent) {
-        const parsed = getSafeJson<IClickhouseEvent>(lastEvent);
-        if (parsed) {
-          return transformEvent(parsed);
-        }
+    const eventDataStr = await redis.get(lastScreenViewKey);
+
+    if (eventDataStr) {
+      const eventData = getSafeJson<{ event: IClickhouseEvent; ts: number }>(
+        eventDataStr,
+      );
+      if (eventData?.event) {
+        return transformEvent(eventData.event);
       }
     }
 
     return null;
   }
 
-  private getLastEventKey({
-    projectId,
-    profileId,
-  }: {
-    projectId: string;
-    profileId: string;
-  }) {
-    return `session:last_screen_view:${projectId}:${profileId}`;
-  }
-
-  private async processPendingSessionsInBatches(
-    redis: ReturnType<typeof getRedisCache>,
-    pendingUpdates: Array<{
-      sessionId: string;
-      snapshotCount: number;
-      pending: IClickhouseEvent[];
-    }>,
-  ) {
-    for (const batch of this.chunks(
-      pendingUpdates,
-      this.updatePendingSessionsBatchSize,
-    )) {
-      const batchArgs: string[] = [this.minEventsInSession.toString()];
-
-      for (const { sessionId, snapshotCount, pending } of batch) {
-        const sessionKey = this.getSessionKey(sessionId);
-        batchArgs.push(
-          sessionKey,
-          sessionId,
-          snapshotCount.toString(),
-          pending.length.toString(),
-          ...pending.map((e) => JSON.stringify(e)),
-        );
-      }
-
-      await redis.eval(
-        this.batchUpdateSessionsScript,
-        3, // KEYS: ready sessions, sessions sorted, buffer counter
-        this.readySessionsKey,
-        this.sessionSortedKey,
-        this.bufferCounterKey,
-        ...batchArgs,
-      );
-    }
-  }
-
-  public async getBufferSizeHeavy() {
-    // Fallback method for when counter is not available
-    const redis = getRedisCache();
-
-    // Get regular queue count
-    const regularQueueCount = await redis.llen(this.regularQueueKey);
-
-    // Get total number of sessions
-    const sessionCount = await redis.zcard(this.sessionSortedKey);
-
-    if (sessionCount === 0) {
-      return regularQueueCount;
-    }
-
-    // Process sessions in batches to avoid memory spikes
-    const batchSize = 1000;
-    let totalSessionEvents = 0;
-    let offset = 0;
-
-    while (offset < sessionCount) {
-      // Get batch of session IDs
-      const sessionIds = await redis.zrange(
-        this.sessionSortedKey,
-        offset,
-        offset + batchSize - 1,
-      );
-
-      if (sessionIds.length === 0) break;
-
-      // Queue up LLEN commands for this batch
-      const sessionPipeline = redis.pipeline();
-      for (const sessionId of sessionIds) {
-        sessionPipeline.llen(this.getSessionKey(sessionId));
-      }
-
-      // Execute pipeline for this batch
-      const sessionCounts = (await sessionPipeline.exec()) as [any, any][];
-
-      // Sum up counts from this batch
-      for (const [err, count] of sessionCounts) {
-        if (!err) {
-          totalSessionEvents += count;
-        }
-      }
-
-      offset += batchSize;
-    }
-
-    return regularQueueCount + totalSessionEvents;
-  }
-
   public async getBufferSize() {
-    return this.getBufferSizeWithCounter(() => this.getBufferSizeHeavy());
+    return this.getBufferSizeWithCounter(async () => {
+      const redis = getRedisCache();
+      return await redis.llen(this.queueKey);
+    });
   }
 
   private async incrementActiveVisitorCount(

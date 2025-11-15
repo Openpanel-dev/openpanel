@@ -4,7 +4,7 @@ import { ExpressAdapter } from '@bull-board/express';
 import { createInitialSalts } from '@openpanel/db';
 import {
   cronQueue,
-  eventsGroupQueue,
+  eventsGroupQueues,
   importQueue,
   miscQueue,
   notificationQueue,
@@ -34,7 +34,9 @@ async function start() {
     serverAdapter.setBasePath('/');
     createBullBoard({
       queues: [
-        new BullBoardGroupMQAdapter(eventsGroupQueue) as any,
+        ...eventsGroupQueues.map(
+          (queue) => new BullBoardGroupMQAdapter(queue) as any,
+        ),
         new BullMQAdapter(sessionsQueue),
         new BullMQAdapter(cronQueue),
         new BullMQAdapter(notificationQueue),

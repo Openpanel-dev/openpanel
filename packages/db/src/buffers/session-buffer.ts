@@ -12,6 +12,9 @@ export class SessionBuffer extends BaseBuffer {
   private batchSize = process.env.SESSION_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.SESSION_BUFFER_BATCH_SIZE, 10)
     : 1000;
+  private chunkSize = process.env.SESSION_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.SESSION_BUFFER_CHUNK_SIZE, 10)
+    : 1000;
 
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
@@ -209,7 +212,7 @@ export class SessionBuffer extends BaseBuffer {
           };
         });
 
-      for (const chunk of this.chunks(sessions, 1000)) {
+      for (const chunk of this.chunks(sessions, this.chunkSize)) {
         // Insert to ClickHouse
         await ch.insert({
           table: TABLE_NAMES.sessions,
@@ -225,7 +228,7 @@ export class SessionBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, events.length);
       await multi.exec();
 
-      this.logger.info('Processed sessions', {
+      this.logger.debug('Processed sessions', {
         count: events.length,
       });
     } catch (error) {

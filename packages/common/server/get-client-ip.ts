@@ -20,6 +20,14 @@ export const DEFAULT_HEADER_ORDER = [
   'forwarded',
 ];
 
+function isPublicIp(ip: string): boolean {
+  return (
+    !ip.startsWith('10.') &&
+    !ip.startsWith('172.16.') &&
+    !ip.startsWith('192.168.')
+  );
+}
+
 function getHeaderOrder(): string[] {
   if (typeof process !== 'undefined' && process.env?.IP_HEADER_ORDER) {
     return process.env.IP_HEADER_ORDER.split(',').map((h) => h.trim());
@@ -31,7 +39,7 @@ function isValidIp(ip: string): boolean {
   // Basic IP validation
   const ipv4 = /^(\d{1,3}\.){3}\d{1,3}$/;
   const ipv6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/;
-  return ipv4.test(ip) || ipv6.test(ip);
+  return isPublicIp(ip) && (ipv4.test(ip) || ipv6.test(ip));
 }
 
 export function getClientIpFromHeaders(

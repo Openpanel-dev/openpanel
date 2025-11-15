@@ -3,6 +3,7 @@ import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
 import { verifyPassword } from '@openpanel/common/server';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
+import { getCache } from '@openpanel/redis';
 import type { PostEventPayload, TrackHandlerPayload } from '@openpanel/sdk';
 import type {
   IProjectFilterIp,
@@ -135,7 +136,13 @@ export async function validateSdkRequest(
   }
 
   if (client.secret && clientSecret) {
-    if (await verifyPassword(clientSecret, client.secret)) {
+    const isVerified = await getCache(
+      `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`,
+      60 * 5,
+      async () => await verifyPassword(clientSecret, client.secret!),
+      true,
+    );
+    if (isVerified) {
       return client;
     }
   }

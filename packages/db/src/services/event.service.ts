@@ -19,12 +19,9 @@ import type { EventMeta, Prisma } from '../prisma-client';
 import { db } from '../prisma-client';
 import { type SqlBuilderObject, createSqlBuilder } from '../sql-builder';
 import { getEventFiltersWhereClause } from './chart.service';
-import { getOrganizationByProjectIdCached } from './organization.service';
 import type { IServiceProfile, IServiceUpsertProfile } from './profile.service';
 import {
   getProfileById,
-  getProfileByIdCached,
-  getProfiles,
   getProfilesCached,
   upsertProfile,
 } from './profile.service';
@@ -156,8 +153,6 @@ export interface IServiceEvent {
   properties: Record<string, unknown> & {
     hash?: string;
     query?: Record<string, unknown>;
-    __reqId?: string;
-    __user_agent?: string;
   };
   createdAt: Date;
   country?: string | undefined;
@@ -343,7 +338,7 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     sdk_version: payload.sdkVersion ?? '',
   };
 
-  await Promise.all([sessionBuffer.add(event), eventBuffer.add(event)]);
+  const promises = [sessionBuffer.add(event), eventBuffer.add(event)];
 
   if (payload.profileId) {
     const profile: IServiceUpsertProfile = {
@@ -374,9 +369,11 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
       profile.isExternal ||
       (profile.isExternal === false && payload.name === 'session_start')
     ) {
-      await upsertProfile(profile, true);
+      promises.push(upsertProfile(profile, true));
     }
   }
+
+  await Promise.all(promises);
 
   return {
     document: event,
@@ -395,6 +392,7 @@ export interface GetEventListOptions {
   endDate?: Date;
   select?: SelectHelper<IServiceEvent>;
   custom?: (sb: SqlBuilderObject) => void;
+  dateIntervalInDays?: number;
 }
 
 export async function getEventList(options: GetEventListOptions) {
@@ -408,28 +406,28 @@ export async function getEventList(options: GetEventListOptions) {
     filters,
     startDate,
     endDate,
-    select: incomingSelect,
     custom,
+    select: incomingSelect,
+    dateIntervalInDays = 0.5,
   } = options;
   const { sb, getSql, join } = createSqlBuilder();
 
-  const organization = await getOrganizationByProjectIdCached(projectId);
-  // This will speed up the query quite a lot for big organizations
-  const dateIntervalInDays =
-    organization?.subscriptionPeriodEventsLimit &&
-    organization?.subscriptionPeriodEventsLimit > 1_000_000
-      ? 1
-      : 7;
+  const MAX_DATE_INTERVAL_IN_DAYS = 365;
+  // Cap the date interval to prevent infinity
+  const safeDateIntervalInDays = Math.min(
+    dateIntervalInDays,
+    MAX_DATE_INTERVAL_IN_DAYS,
+  );
 
   if (typeof cursor === 'number') {
     sb.offset = Math.max(0, (cursor ?? 0) * take);
   } else if (cursor instanceof Date) {
-    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(cursor))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(cursor))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
     sb.where.cursor = `created_at <= ${sqlstring.escape(formatClickhouseDate(cursor))}`;
   }
 
   if (!cursor) {
-    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
+    sb.where.cursorWindow = `created_at >= toDateTime64(${sqlstring.escape(formatClickhouseDate(new Date()))}, 3) - INTERVAL ${safeDateIntervalInDays} DAY`;
   }
 
   sb.limit = take;
@@ -453,6 +451,9 @@ export async function getEventList(options: GetEventListOptions) {
     incomingSelect ?? {},
   );
 
+  sb.select.createdAt = 'created_at';
+  sb.select.projectId = 'project_id';
+
   if (select.id) {
     sb.select.id = 'id';
   }
@@ -473,9 +474,6 @@ export async function getEventList(options: GetEventListOptions) {
   }
   if (select.properties) {
     sb.select.properties = 'properties';
-  }
-  if (select.createdAt) {
-    sb.select.createdAt = 'created_at';
   }
   if (select.country) {
     sb.select.country = 'country';
@@ -583,21 +581,20 @@ export async function getEventList(options: GetEventListOptions) {
     custom(sb);
   }
 
-  console.log('getSql()', getSql());
-
   const data = await getEvents(getSql(), {
     profile: select.profile ?? true,
     meta: select.meta ?? true,
   });
 
   // If we dont get any events, try without the cursor window
-  if (data.length === 0 && sb.where.cursorWindow) {
+  if (
+    data.length === 0 &&
+    sb.where.cursorWindow &&
+    safeDateIntervalInDays < MAX_DATE_INTERVAL_IN_DAYS
+  ) {
     return getEventList({
       ...options,
-      custom(sb) {
-        options.custom?.(sb);
-        delete sb.where.cursorWindow;
-      },
+      dateIntervalInDays: dateIntervalInDays * 2,
     });
   }
 
@@ -945,7 +942,7 @@ class EventService {
     ]);
 
     if (event?.profileId) {
-      const profile = await getProfileByIdCached(event?.profileId, projectId);
+      const profile = await getProfileById(event?.profileId, projectId);
       if (profile) {
         event.profile = profile;
       }
