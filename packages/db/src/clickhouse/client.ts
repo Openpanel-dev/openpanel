@@ -160,8 +160,6 @@ export const ch = new Proxy(originalCh, {
       return (...args: any[]) =>
         withRetry(() => {
           args[0].clickhouse_settings = {
-            // Allow bigger HTTP payloads/time to stream rows
-            wait_for_async_insert: 1,
             // Increase insert timeouts and buffer sizes for large batches
             max_execution_time: 300,
             max_insert_block_size: '500000',
