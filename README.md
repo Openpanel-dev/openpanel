@@ -98,6 +98,10 @@ You can find the how to [here](https://openpanel.dev/docs/self-hosting/self-host
 ### Start
 
 ```bash
+pnpm install
+cp .env.example .env
+echo "API_URL=http://localhost:3333" > apps/start/.env
+
 pnpm dock:up
 pnpm codegen
 pnpm migrate:deploy # once to setup the db
