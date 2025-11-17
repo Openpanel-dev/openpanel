@@ -22,11 +22,56 @@ export const DEFAULT_IP_HEADER_ORDER = [
 ];
 
 function isPublicIp(ip: string): boolean {
-  return (
-    !ip.startsWith('10.') &&
-    !ip.startsWith('172.16.') &&
-    !ip.startsWith('192.168.')
-  );
+  // Handle IPv4-mapped IPv6 addresses (e.g., ::ffff:127.0.0.1)
+  if (ip.startsWith('::ffff:')) {
+    const ipv4Part = ip.substring(7); // Extract IPv4 part after "::ffff:"
+    return isPublicIp(ipv4Part); // Recursively check the IPv4 address
+  }
+
+  // IPv6 loopback
+  if (ip === '::1') {
+    return false;
+  }
+
+  // IPv6 private ranges (fc00::/7 and fe80::/10)
+  if (
+    ip.startsWith('fc00:') ||
+    ip.startsWith('fd00:') ||
+    ip.startsWith('fe80:')
+  ) {
+    return false;
+  }
+
+  // IPv4 loopback (127.0.0.0/8)
+  if (ip.startsWith('127.')) {
+    return false;
+  }
+
+  // IPv4 private ranges
+  // 10.0.0.0/8
+  if (ip.startsWith('10.')) {
+    return false;
+  }
+  // 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
+  if (ip.startsWith('172.')) {
+    const parts = ip.split('.');
+    if (parts.length >= 2) {
+      const secondOctet = Number.parseInt(parts[1] || '0', 10);
+      if (secondOctet >= 16 && secondOctet <= 31) {
+        return false;
+      }
+    }
+  }
+  // 192.168.0.0/16
+  if (ip.startsWith('192.168.')) {
+    return false;
+  }
+  // 169.254.0.0/16 (link-local)
+  if (ip.startsWith('169.254.')) {
+    return false;
+  }
+
+  return true;
 }
 
 function getHeaderOrder(): string[] {
