@@ -22,7 +22,7 @@ export type OpenpanelOptions = OpenPanelOptions & {
 export default function createMiddleware(options: OpenpanelOptions) {
   return function middleware(req: Request, res: Response, next: NextFunction) {
     const sdk = new OpenPanel(options);
-    const ip = getClientIpFromHeaders(req.headers);
+    const { ip } = getClientIpFromHeaders(req.headers);
     if (ip) {
       sdk.api.addHeader('x-client-ip', ip);
     }

@@ -55,6 +55,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     client: IServiceClientWithProject | null;
     clientIp: string;
+    clientIpHeader: string;
     timestamp?: number;
     session: SessionValidationResult;
   }

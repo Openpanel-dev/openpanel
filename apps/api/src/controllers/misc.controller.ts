@@ -5,7 +5,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 
 import {
-  DEFAULT_HEADER_ORDER,
+  DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,
 } from '@openpanel/common/server/get-client-ip';
 import { TABLE_NAMES, ch, chQuery, formatClickhouseDate } from '@openpanel/db';
@@ -397,10 +397,10 @@ export async function stats(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
-  const ip = getClientIpFromHeaders(request.headers);
+  const { ip, header } = getClientIpFromHeaders(request.headers);
   const others = await Promise.all(
-    DEFAULT_HEADER_ORDER.map(async (header) => {
-      const ip = getClientIpFromHeaders(request.headers, header);
+    DEFAULT_IP_HEADER_ORDER.map(async (header) => {
+      const { ip } = getClientIpFromHeaders(request.headers, header);
       return {
         header,
         ip,
@@ -417,13 +417,14 @@ export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
     selected: {
       geo,
       ip,
+      header,
     },
     ...others.reduce(
       (acc, other) => {
         acc[other.header] = other;
         return acc;
       },
-      {} as Record<string, { ip: string; geo: GeoLocation }>,
+      {} as Record<string, { ip: string; header: string; geo: GeoLocation }>,
     ),
   });
 }

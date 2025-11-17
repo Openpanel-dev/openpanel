@@ -5,7 +5,7 @@
  * Example: IP_HEADER_ORDER="cf-connecting-ip,x-real-ip,x-forwarded-for"
  */
 
-export const DEFAULT_HEADER_ORDER = [
+export const DEFAULT_IP_HEADER_ORDER = [
   'cf-connecting-ip',
   'true-client-ip',
   'x-forwarded-for',
@@ -32,7 +32,7 @@ function getHeaderOrder(): string[] {
   if (typeof process !== 'undefined' && process.env?.IP_HEADER_ORDER) {
     return process.env.IP_HEADER_ORDER.split(',').map((h) => h.trim());
   }
-  return DEFAULT_HEADER_ORDER;
+  return DEFAULT_IP_HEADER_ORDER;
 }
 
 function isValidIp(ip: string): boolean {
@@ -45,7 +45,10 @@ function isValidIp(ip: string): boolean {
 export function getClientIpFromHeaders(
   headers: Record<string, string | string[] | undefined> | Headers,
   overrideHeaderName?: string,
-): string {
+): {
+  ip: string;
+  header: string;
+} {
   let headerOrder = getHeaderOrder();
 
   if (overrideHeaderName) {
@@ -73,7 +76,7 @@ export function getClientIpFromHeaders(
     if (headerName === 'x-forwarded-for') {
       const firstIp = value.split(',')[0]?.trim();
       if (firstIp && isValidIp(firstIp)) {
-        return firstIp;
+        return { ip: firstIp, header: headerName };
       }
     }
     // Handle forwarded header (RFC 7239)
@@ -81,14 +84,14 @@ export function getClientIpFromHeaders(
       const match = value.match(/for=(?:"?\[?([^\]"]+)\]?"?)/i);
       const ip = match?.[1];
       if (ip && isValidIp(ip)) {
-        return ip;
+        return { ip, header: headerName };
       }
     }
     // Regular headers
     else if (isValidIp(value)) {
-      return value;
+      return { ip: value, header: headerName };
     }
   }
 
-  return '';
+  return { ip: '', header: '' };
 }
