@@ -6,10 +6,11 @@
  */
 
 export const DEFAULT_IP_HEADER_ORDER = [
+  'openpanel-client-ip',
   'cf-connecting-ip',
   'true-client-ip',
-  'x-forwarded-for',
   'x-client-ip',
+  'x-forwarded-for',
   'x-real-ip',
   'fastly-client-ip',
   'x-cluster-client-ip',

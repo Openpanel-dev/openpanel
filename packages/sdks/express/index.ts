@@ -24,10 +24,10 @@ export default function createMiddleware(options: OpenpanelOptions) {
     const sdk = new OpenPanel(options);
     const { ip } = getClientIpFromHeaders(req.headers);
     if (ip) {
-      sdk.api.addHeader('x-client-ip', ip);
+      sdk.api.addHeader('openpanel-client-ip', ip);
     }
     if (req.headers['user-agent']) {
-      sdk.api.addHeader('x-user-agent', req.headers['user-agent'] as string);
+      sdk.api.addHeader('user-agent', req.headers['user-agent'] as string);
     }
 
     if (options.trackRequest?.(req.url)) {
