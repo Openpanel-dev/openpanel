@@ -125,6 +125,7 @@ export class FunnelService {
     }
 
     const funnelWindowSeconds = funnelWindow * 3600;
+    const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
     const group = this.getFunnelGroup(funnelGroup);
     const funnels = this.getFunnelConditions(events);
     const profileFilters = this.getProfileFilters(events);
@@ -140,7 +141,7 @@ export class FunnelService {
         ...breakdowns.map(
           (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
         ),
-        `windowFunnel(${funnelWindowSeconds}, 'strict_increase')(toUnixTimestamp(created_at), ${funnels.join(', ')}) AS level`,
+        `windowFunnel(${funnelWindowMilliseconds}, 'strict_increase')(toUInt64(toUnixTimestamp64Milli(created_at)), ${funnels.join(', ')}) AS level`,
       ])
       .from(TABLE_NAMES.events, false)
       .where('project_id', '=', projectId)
