@@ -12,7 +12,18 @@ export function createNextRouteHandler(
 ) {
   return async function POST(req: Request) {
     const apiUrl = options?.apiUrl ?? 'https://api.openpanel.dev';
-    const headers = new Headers(req.headers);
+    const headers = new Headers();
+
+    const ip =
+      req.headers.get('cf-connecting-ip') ??
+      req.headers.get('x-forwarded-for')?.split(',')[0] ??
+      req.headers.get('x-vercel-forwarded-for');
+    headers.set('Content-Type', 'application/json');
+    headers.set('User-Agent', req.headers.get('user-agent') ?? '');
+    if (ip) {
+      headers.set('openpanel-client-ip', ip);
+    }
+
     try {
       const res = await fetch(`${apiUrl}/track`, {
         method: 'POST',
