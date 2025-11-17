@@ -68,16 +68,25 @@ export function getTimestamp(
   const clientTimestamp = new Date(userDefinedTimestamp);
   const clientTimestampNumber = clientTimestamp.getTime();
 
+  // Constants for time validation
+  const ONE_MINUTE_MS = 60 * 1000;
+  const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
+
+  // Use safeTimestamp if invalid or more than 1 minute in the future
   if (
     Number.isNaN(clientTimestampNumber) ||
-    clientTimestampNumber > safeTimestamp
+    clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS
   ) {
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
+  // isTimestampFromThePast is true only if timestamp is older than 1 hour
+  const isTimestampFromThePast =
+    clientTimestampNumber < safeTimestamp - FIFTEEN_MINUTES_MS;
+
   return {
     timestamp: clientTimestampNumber,
-    isTimestampFromThePast: true,
+    isTimestampFromThePast,
   };
 }
 

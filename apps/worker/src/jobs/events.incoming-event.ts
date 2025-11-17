@@ -21,7 +21,7 @@ import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
 import * as R from 'ramda';
 import { v4 as uuid } from 'uuid';
 
-const GLOBAL_PROPERTIES = ['__path', '__referrer'];
+const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp'];
 
 // This function will merge two objects.
 // First it will strip '' and undefined/null from B
