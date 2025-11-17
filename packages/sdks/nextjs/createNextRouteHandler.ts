@@ -19,6 +19,11 @@ export function createNextRouteHandler(
       req.headers.get('x-forwarded-for')?.split(',')[0] ??
       req.headers.get('x-vercel-forwarded-for');
     headers.set('Content-Type', 'application/json');
+    headers.set(
+      'openpanel-client-id',
+      req.headers.get('openpanel-client-id') ?? '',
+    );
+    headers.set('origin', req.headers.get('origin') ?? '');
     headers.set('User-Agent', req.headers.get('user-agent') ?? '');
     if (ip) {
       headers.set('openpanel-client-ip', ip);
