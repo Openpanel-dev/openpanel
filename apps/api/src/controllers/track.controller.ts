@@ -417,21 +417,24 @@ export async function fetchDeviceId(
     const res = await multi.exec();
 
     if (res?.[0]?.[1]) {
-      return {
+      return reply.status(200).send({
         deviceId: currentDeviceId,
-      };
+        message: 'current session exists for this device id',
+      });
     }
 
     if (res?.[1]?.[1]) {
-      return {
+      return reply.status(200).send({
         deviceId: previousDeviceId,
-      };
+        message: 'previous session exists for this device id',
+      });
     }
   } catch (error) {
     request.log.error('Error getting session end GET /profile', error);
   }
 
-  return {
-    deviceId: '',
-  };
+  return reply.status(200).send({
+    deviceId: currentDeviceId,
+    message: 'No session exists for this device id',
+  });
 }

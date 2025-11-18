@@ -42,6 +42,7 @@ const trackRouter: FastifyPluginCallback = async (fastify) => {
           type: 'object',
           properties: {
             deviceId: { type: 'string' },
+            message: { type: 'string', optional: true },
           },
         },
       },
