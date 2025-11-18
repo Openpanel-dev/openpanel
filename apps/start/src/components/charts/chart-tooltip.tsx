@@ -1,3 +1,4 @@
+import { cn } from '@/utils/cn';
 import { createContext, useContext as useBaseContext } from 'react';
 
 import { Tooltip as RechartsTooltip, type TooltipProps } from 'recharts';
@@ -21,11 +22,18 @@ export const ChartTooltipHeader = ({
 export const ChartTooltipItem = ({
   children,
   color,
-}: { children: React.ReactNode; color: string }) => {
+  className,
+  innerClassName,
+}: {
+  children: React.ReactNode;
+  color: string;
+  className?: string;
+  innerClassName?: string;
+}) => {
   return (
-    <div className="flex gap-2">
+    <div className={cn('flex gap-2', className)}>
       <div className="w-[3px] rounded-full" style={{ background: color }} />
-      <div className="col flex-1 gap-1">{children}</div>
+      <div className={cn('col flex-1 gap-1', innerClassName)}>{children}</div>
     </div>
   );
 };

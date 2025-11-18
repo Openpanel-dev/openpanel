@@ -60,13 +60,18 @@ export const chartRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input: { projectId } }) => {
-      const chartPromise = chQuery<{ value: number; date: Date }>(
+      const { timezone } = await getSettingsForProject(projectId);
+      const chartPromise = chQuery<{
+        value: number;
+        date: Date;
+        revenue: number;
+      }>(
         `SELECT
             uniqHLL12(profile_id) as value,
-            toStartOfDay(created_at) as date
+            toStartOfDay(created_at) as date,
+            sum(revenue * sign) as revenue
         FROM ${TABLE_NAMES.sessions}
         WHERE 
-            sign = 1 AND 
             project_id = ${sqlstring.escape(projectId)} AND 
             created_at >= now() - interval '3 month'
         GROUP BY date
@@ -74,22 +79,25 @@ export const chartRouter = createTRPCRouter({
         WITH FILL FROM toStartOfDay(now() - interval '1 month') 
         TO toStartOfDay(now()) 
         STEP INTERVAL 1 day
+        SETTINGS session_timezone = '${timezone}'
       `,
       );
 
-      const metricsPromise = clix(ch)
+      const metricsPromise = clix(ch, timezone)
         .select<{
           months_3: number;
           months_3_prev: number;
           month: number;
           day: number;
           day_prev: number;
+          revenue: number;
         }>([
           'uniqHLL12(if(created_at >= (now() - toIntervalMonth(3)), profile_id, null)) AS months_3',
           'uniqHLL12(if(created_at >= (now() - toIntervalMonth(6)) AND created_at < (now() - toIntervalMonth(3)), profile_id, null)) AS months_3_prev',
           'uniqHLL12(if(created_at >= (now() - toIntervalMonth(1)), profile_id, null)) AS month',
           'uniqHLL12(if(created_at >= (now() - toIntervalDay(1)), profile_id, null)) AS day',
           'uniqHLL12(if(created_at >= (now() - toIntervalDay(2)) AND created_at < (now() - toIntervalDay(1)), profile_id, null)) AS day_prev',
+          'sum(revenue * sign) as revenue',
         ])
         .from(TABLE_NAMES.sessions)
         .where('project_id', '=', projectId)

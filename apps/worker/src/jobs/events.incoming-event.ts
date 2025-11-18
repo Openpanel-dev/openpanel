@@ -41,6 +41,17 @@ async function createEventAndNotify(
   return event;
 }
 
+const parseRevenue = (revenue: unknown): number | undefined => {
+  if (!revenue) return undefined;
+  if (typeof revenue === 'number') return revenue;
+  if (typeof revenue === 'string') {
+    const parsed = Number.parseFloat(revenue);
+    if (Number.isNaN(parsed)) return undefined;
+    return parsed;
+  }
+  return undefined;
+};
+
 export async function incomingEvent(
   jobPayload: EventsQueuePayloadIncomingEvent['payload'],
 ) {
@@ -116,8 +127,8 @@ export async function incomingEvent(
     brand: uaInfo.brand,
     model: uaInfo.model,
     revenue:
-      body.name === 'revenue' && properties.__revenue
-        ? Number(properties.__revenue)
+      body.name === 'revenue' && '__revenue' in properties
+        ? parseRevenue(properties.__revenue)
         : undefined,
   } as const;
 

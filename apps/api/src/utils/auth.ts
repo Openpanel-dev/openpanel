@@ -105,6 +105,18 @@ export async function validateSdkRequest(
     throw createError('Ingestion: Profile id is blocked by project filter');
   }
 
+  // Only allow revenue tracking if it was sent with a client secret
+  // or if the project has allowUnsafeRevenueTracking enabled
+  if (
+    !client.project.allowUnsafeRevenueTracking &&
+    !clientSecret &&
+    path<string | undefined>(['payload', 'properties', '__revenue'], req.body)
+  ) {
+    throw createError(
+      'Ingestion: Revenue tracking is not allowed without a client secret',
+    );
+  }
+
   if (client.ignoreCorsAndSecret) {
     return client;
   }

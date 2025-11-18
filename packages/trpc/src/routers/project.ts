@@ -84,6 +84,7 @@ export const projectRouter = createTRPCRouter({
             input.cors === undefined
               ? undefined
               : input.cors.map((c) => stripTrailingSlash(c)) || [],
+          allowUnsafeRevenueTracking: input.allowUnsafeRevenueTracking,
         },
         include: {
           clients: {
@@ -123,6 +124,7 @@ export const projectRouter = createTRPCRouter({
           domain: input.domain,
           cors: input.cors,
           crossDomain: false,
+          allowUnsafeRevenueTracking: false,
           filters: [],
           clients: {
             create: data,
