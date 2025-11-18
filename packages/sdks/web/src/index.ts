@@ -40,9 +40,16 @@ export class OpenPanel extends OpenPanelBase {
     if (!this.isServer()) {
       console.log('OpenPanel.dev - Initialized', this.options);
 
-      const pending = sessionStorage.getItem('openpanel-pending-revenues');
-      if (pending) {
-        this.pendingRevenues = JSON.parse(pending);
+      try {
+        const pending = sessionStorage.getItem('openpanel-pending-revenues');
+        if (pending) {
+          const parsed = JSON.parse(pending);
+          if (Array.isArray(parsed)) {
+            this.pendingRevenues = parsed;
+          }
+        }
+      } catch {
+        this.pendingRevenues = [];
       }
 
       this.setGlobalProperties({
@@ -214,17 +221,21 @@ export class OpenPanel extends OpenPanelBase {
   clearRevenue() {
     this.pendingRevenues = [];
     if (!this.isServer()) {
-      sessionStorage.removeItem('openpanel-pending-revenues');
+      try {
+        sessionStorage.removeItem('openpanel-pending-revenues');
+      } catch {}
     }
   }
 
   pendingRevenue(amount: number, properties?: Record<string, unknown>) {
     this.pendingRevenues.push({ amount, properties });
     if (!this.isServer()) {
-      sessionStorage.setItem(
-        'openpanel-pending-revenues',
-        JSON.stringify(this.pendingRevenues),
-      );
+      try {
+        sessionStorage.setItem(
+          'openpanel-pending-revenues',
+          JSON.stringify(this.pendingRevenues),
+        );
+      } catch {}
     }
   }
 }

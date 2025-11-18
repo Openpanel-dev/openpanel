@@ -110,7 +110,11 @@ export async function validateSdkRequest(
   if (
     !client.project.allowUnsafeRevenueTracking &&
     !clientSecret &&
-    path<string | undefined>(['payload', 'properties', '__revenue'], req.body)
+    path<string | undefined>(
+      ['payload', 'properties', '__revenue'],
+      req.body,
+    ) &&
+    path<string | undefined>(['payload', 'name'], req.body) === 'revenue'
   ) {
     throw createError(
       'Ingestion: Revenue tracking is not allowed without a client secret',

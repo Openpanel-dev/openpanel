@@ -320,14 +320,14 @@ export async function POST(req: Request) {
 - Works well for aggregate revenue tracking
 
 #### Cons:
-- **You can't dive deeper into where this revenue came from. **For instance, you won't be able to see which source generates the best revenue, which campaigns are most profitable, or which visitors are your highest-value customers.
+- **You can't dive deeper into where this revenue came from.** For instance, you won't be able to see which source generates the best revenue, which campaigns are most profitable, or which visitors are your highest-value customers.
 - Revenue events won't be linked to specific user journeys or sessions
 
 ## Available methods
 
 ### Revenue 
 
-The revenue method will create a revenue event. It's important to know that this method will not work if your OpenPanel instance didn't recieve a client secret (for securuty reasons). You can enable frontend revenue tracking within your project settings.
+The revenue method will create a revenue event. It's important to know that this method will not work if your OpenPanel instance didn't receive a client secret (for security reasons). You can enable frontend revenue tracking within your project settings.
 
 ```javascript
 op.revenue(amount: number, properties: Record<string, unknown>): Promise<void>

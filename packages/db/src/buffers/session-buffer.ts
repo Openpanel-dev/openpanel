@@ -95,7 +95,9 @@ export class SessionBuffer extends BaseBuffer {
         ...(event.properties || {}),
         ...(newSession.properties || {}),
       });
-      newSession.revenue += event.name === 'revenue' ? (event.revenue ?? 0) : 0;
+
+      const addedRevenue = event.name === 'revenue' ? (event.revenue ?? 0) : 0;
+      newSession.revenue = (newSession.revenue ?? 0) + addedRevenue;
 
       if (event.name === 'screen_view' && event.path) {
         newSession.screen_views.push(event.path);
@@ -192,12 +194,14 @@ export class SessionBuffer extends BaseBuffer {
         'EX',
         60 * 60,
       );
-      multi.set(
-        `session:${newSession.project_id}:${newSession.profile_id}`,
-        JSON.stringify(newSession),
-        'EX',
-        60 * 60,
-      );
+      if (newSession.profile_id) {
+        multi.set(
+          `session:${newSession.project_id}:${newSession.profile_id}`,
+          JSON.stringify(newSession),
+          'EX',
+          60 * 60,
+        );
+      }
       for (const session of sessions) {
         multi.rpush(this.redisKey, JSON.stringify(session));
       }

@@ -196,13 +196,13 @@ export class OpenPanel {
     });
   }
 
-  async fetchDeviceId(): Promise<string | null> {
+  async fetchDeviceId(): Promise<string> {
     const result = await this.api.fetch<undefined, { deviceId: string }>(
       '/track/device-id',
       undefined,
       { method: 'GET', keepalive: false },
     );
-    return result?.deviceId ?? null;
+    return result?.deviceId ?? '';
   }
 
   clear() {

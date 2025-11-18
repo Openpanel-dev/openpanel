@@ -44,7 +44,6 @@ async function getSessionEvents({
 
   const [lastScreenView, eventsInDb] = await Promise.all([
     sessionBuffer.getExistingSession({
-      projectId,
       sessionId,
     }),
     getEvents(sql),
