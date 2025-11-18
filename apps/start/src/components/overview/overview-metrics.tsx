@@ -28,7 +28,6 @@ import {
   YAxis,
 } from 'recharts';
 import { createChartTooltip } from '../charts/chart-tooltip';
-import { BarShapeGreen } from '../charts/common-bar';
 import { useXAxisProps, useYAxisProps } from '../report-chart/common/axis';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
@@ -108,8 +107,6 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
       timestamp: new Date(item.date).getTime(),
     })) || [];
 
-  console.log('data', data);
-
   return (
     <>
       <div className="relative -top-0.5 col-span-6 mb-0 mt-0 md:m-0">
@@ -126,6 +123,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               }}
               unit={title.unit}
               data={data.map((item) => ({
+                date: item.date,
                 current: item[title.key],
                 previous: item[`prev_${title.key}`],
               }))}
@@ -168,12 +166,16 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 const { Tooltip, TooltipProvider } = createChartTooltip<
   RouterOutputs['overview']['stats']['series'][number],
   {
+    anyMetric?: boolean;
     metric: (typeof TITLES)[number];
     interval: IInterval;
   }
->(({ context: { metric, interval }, data: dataArray }) => {
+>(({ context: { metric, interval, anyMetric }, data: dataArray }) => {
   const data = dataArray[0];
-  const formatDate = useFormatDateInterval(interval);
+  const formatDate = useFormatDateInterval({
+    interval,
+    short: false,
+  });
   const number = useNumber();
 
   if (!data) {
@@ -192,7 +194,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
         <div className="flex gap-2">
           <div
             className="w-[3px] rounded-full"
-            style={{ background: getChartColor(0) }}
+            style={{ background: anyMetric ? getChartColor(0) : '#3ba974' }}
           />
           <div className="col flex-1 gap-1">
             <div className="flex items-center gap-1">{metric.title}</div>
@@ -224,7 +226,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
             </div>
           </div>
         </div>
-        {revenue > 0 && (
+        {anyMetric && revenue > 0 && (
           <div className="flex gap-2 mt-2">
             <div
               className="w-[3px] rounded-full"
@@ -299,8 +301,6 @@ function Chart({
     });
   }
 
-  console.log('data', dotIndex);
-
   const { calcStrokeDasharray, handleAnimationEnd, getStrokeDasharray } =
     useDashedStroke({
       dotIndex,
@@ -331,8 +331,129 @@ function Chart({
     return false;
   })();
 
+  if (activeMetric.key === 'total_revenue') {
+    return (
+      <TooltipProvider metric={activeMetric} interval={interval}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data}>
+            <Customized component={calcStrokeDasharray} />
+            <Line
+              dataKey="calcStrokeDasharray"
+              legendType="none"
+              animationDuration={0}
+              onAnimationEnd={handleAnimationEnd}
+            />
+            <Tooltip />
+            <YAxis {...yAxisProps} domain={[0, 'dataMax']} width={25} />
+            <XAxis {...xAxisProps} />
+            <CartesianGrid
+              strokeDasharray="3 3"
+              horizontal={true}
+              vertical={false}
+              className="stroke-border"
+            />
+
+            <defs>
+              <filter
+                id="rainbow-line-glow"
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feComponentTransfer in="blur" result="dimmedBlur">
+                  <feFuncA type="linear" slope="0.5" />
+                </feComponentTransfer>
+                <feComposite
+                  in="SourceGraphic"
+                  in2="dimmedBlur"
+                  operator="over"
+                />
+              </filter>
+            </defs>
+
+            <Line
+              key={'prev_total_revenue'}
+              type="monotone"
+              dataKey={'prev_total_revenue'}
+              stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+              strokeWidth={2}
+              isAnimationActive={false}
+              dot={
+                data.length > 90
+                  ? false
+                  : {
+                      stroke: 'oklch(from var(--foreground) l c h / 0.1)',
+                      fill: 'transparent',
+                      strokeWidth: 1.5,
+                      r: 2,
+                    }
+              }
+              activeDot={{
+                stroke: 'oklch(from var(--foreground) l c h / 0.2)',
+                fill: 'transparent',
+                strokeWidth: 1.5,
+                r: 3,
+              }}
+            />
+
+            <Area
+              key={'total_revenue'}
+              type="monotone"
+              dataKey={'total_revenue'}
+              stroke={'#3ba974'}
+              fill={'#3ba974'}
+              fillOpacity={0.05}
+              strokeWidth={2}
+              strokeDasharray={
+                useDashedLastLine
+                  ? getStrokeDasharray(activeMetric.key)
+                  : undefined
+              }
+              isAnimationActive={false}
+              dot={
+                data.length > 90
+                  ? false
+                  : {
+                      stroke: '#3ba974',
+                      fill: '#3ba974',
+                      strokeWidth: 1.5,
+                      r: 3,
+                    }
+              }
+              activeDot={{
+                stroke: '#3ba974',
+                fill: 'var(--def-100)',
+                strokeWidth: 2,
+                r: 4,
+              }}
+              filter="url(#rainbow-line-glow)"
+            />
+
+            {references.data?.map((ref) => (
+              <ReferenceLine
+                key={ref.id}
+                x={ref.date.getTime()}
+                stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+                strokeDasharray={'3 3'}
+                label={{
+                  value: ref.title,
+                  position: 'centerTop',
+                  fill: '#334155',
+                  fontSize: 12,
+                }}
+                fontSize={10}
+              />
+            ))}
+          </ComposedChart>
+        </ResponsiveContainer>
+      </TooltipProvider>
+    );
+  }
+
   return (
-    <TooltipProvider metric={activeMetric} interval={interval}>
+    <TooltipProvider metric={activeMetric} interval={interval} anyMetric={true}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart
           data={data}
@@ -364,7 +485,7 @@ function Chart({
                 0,
               ) * 2,
             ]}
-            width={25}
+            width={30}
           />
           <XAxis {...xAxisProps} />
 

@@ -28,6 +28,7 @@ export type IProfileMetrics = {
   avgEventsPerSession: number;
   conversionEvents: number;
   avgTimeBetweenSessions: number;
+  revenue: number;
 };
 export function getProfileMetrics(profileId: string, projectId: string) {
   return chQuery<
@@ -76,6 +77,9 @@ export function getProfileMetrics(profileId: string, projectId: string) {
           WHEN (SELECT sessions FROM sessions) <= 1 THEN 0
           ELSE round(dateDiff('second', (SELECT firstSeen FROM firstSeen), (SELECT lastSeen FROM lastSeen)) / nullIf((SELECT sessions FROM sessions) - 1, 0), 1)
         END as avgTimeBetweenSessions
+    ),
+    revenue AS (
+      SELECT sum(revenue) as revenue FROM ${TABLE_NAMES.events} WHERE name = 'revenue' AND profile_id = ${sqlstring.escape(profileId)} AND project_id = ${sqlstring.escape(projectId)}
     )
     SELECT 
       (SELECT lastSeen FROM lastSeen) as lastSeen, 
@@ -89,7 +93,8 @@ export function getProfileMetrics(profileId: string, projectId: string) {
       (SELECT bounceRate FROM bounceRate) as bounceRate,
       (SELECT avgEventsPerSession FROM avgEventsPerSession) as avgEventsPerSession,
       (SELECT conversionEvents FROM conversionEvents) as conversionEvents,
-      (SELECT avgTimeBetweenSessions FROM avgTimeBetweenSessions) as avgTimeBetweenSessions
+      (SELECT avgTimeBetweenSessions FROM avgTimeBetweenSessions) as avgTimeBetweenSessions,
+      (SELECT revenue FROM revenue) as revenue
   `)
     .then((data) => data[0]!)
     .then((data) => {

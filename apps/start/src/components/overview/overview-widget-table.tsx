@@ -377,7 +377,7 @@ export function OverviewWidgetTableGeneric({
     <OverviewWidgetTable
       className={className}
       data={data ?? []}
-      keyExtractor={(item) => item.name}
+      keyExtractor={(item) => item.prefix + item.name}
       getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {

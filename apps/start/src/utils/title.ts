@@ -80,7 +80,6 @@ export const PAGE_TITLES = {
   DASHBOARD: 'Dashboard',
   EVENTS: 'Events',
   SESSIONS: 'Sessions',
-  PROFILES: 'Profiles',
   PAGES: 'Pages',
   REPORTS: 'Reports',
   NOTIFICATIONS: 'Notifications',
@@ -91,6 +90,10 @@ export const PAGE_TITLES = {
   CHAT: 'AI Assistant',
   REALTIME: 'Realtime',
   REFERENCES: 'References',
+  // Profiles
+  PROFILES: 'Profiles',
+  PROFILE_EVENTS: 'Profile events',
+  PROFILE_DETAILS: 'Profile details',
 
   // Sub-sections
   CONVERSIONS: 'Conversions',

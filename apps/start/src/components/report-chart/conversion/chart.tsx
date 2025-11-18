@@ -1,6 +1,8 @@
+import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
+import { useCallback } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -10,8 +12,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { pushModal } from '@/modals';
-import { useCallback } from 'react';
 
 import { createChartTooltip } from '@/components/charts/chart-tooltip';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
@@ -171,7 +171,10 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
   }
 
   const { date } = data[0];
-  const formatDate = useFormatDateInterval(context.interval);
+  const formatDate = useFormatDateInterval({
+    interval: context.interval,
+    short: false,
+  });
   const number = useNumber();
   return (
     <>
