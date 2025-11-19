@@ -5,9 +5,7 @@ import { isNil } from 'ramda';
 import { useRef, useState } from 'react';
 import type { AxisDomain } from 'recharts/types/util/types';
 
-import { useBreakpoint } from '@/hooks/use-breakpoint';
 import type { IInterval } from '@openpanel/validation';
-
 export const AXIS_FONT_PROPS = {
   fontSize: 8,
   className: 'font-mono',

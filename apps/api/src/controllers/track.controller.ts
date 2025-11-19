@@ -103,7 +103,7 @@ export async function handler(
     request.body.payload.properties?.__ip
       ? (request.body.payload.properties.__ip as string)
       : request.clientIp;
-  const ua = request.headers['user-agent']!;
+  const ua = request.headers['user-agent'];
   const projectId = request.client?.projectId;
 
   if (!projectId) {
@@ -116,10 +116,16 @@ export async function handler(
 
   const identity = getIdentity(request.body);
   const profileId = identity?.profileId;
-  const overrideDeviceId =
-    'properties' in request.body.payload
-      ? request.body.payload.properties?.__deviceId
-      : undefined;
+  const overrideDeviceId = (() => {
+    const deviceId =
+      'properties' in request.body.payload
+        ? request.body.payload.properties?.__deviceId
+        : undefined;
+    if (typeof deviceId === 'string') {
+      return deviceId;
+    }
+    return undefined;
+  })();
 
   // We might get a profileId from the alias table
   // If we do, we should use that instead of the one from the payload
@@ -131,14 +137,15 @@ export async function handler(
     case 'track': {
       const [salts, geo] = await Promise.all([getSalts(), getGeoLocation(ip)]);
       const currentDeviceId =
-        overrideDeviceId || ua
+        overrideDeviceId ||
+        (ua
           ? generateDeviceId({
               salt: salts.current,
               origin: projectId,
               ip,
               ua,
             })
-          : '';
+          : '');
       const previousDeviceId = ua
         ? generateDeviceId({
             salt: salts.previous,
@@ -382,7 +389,7 @@ export async function fetchDeviceId(
   reply: FastifyReply,
 ) {
   const salts = await getSalts();
-  const projectId = request.client!.projectId;
+  const projectId = request.client?.projectId;
   if (!projectId) {
     return reply.status(400).send('No projectId');
   }
@@ -392,7 +399,7 @@ export async function fetchDeviceId(
     return reply.status(400).send('Missing ip address');
   }
 
-  const ua = request.headers['user-agent']!;
+  const ua = request.headers['user-agent'];
   if (!ua) {
     return reply.status(400).send('Missing header: user-agent');
   }

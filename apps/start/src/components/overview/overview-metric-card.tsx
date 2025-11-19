@@ -58,9 +58,18 @@ export function OverviewMetricCard({
     if (timer.current) {
       clearTimeout(timer.current);
     }
-    timer.current = setTimeout(() => {
-      setCurrentIndex(null);
-    }, 1000);
+
+    if (currentIndex) {
+      timer.current = setTimeout(() => {
+        setCurrentIndex(null);
+      }, 1000);
+    }
+
+    return () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    };
   }, [currentIndex]);
 
   const renderValue = (value: number, unitClassName?: string, short = true) => {

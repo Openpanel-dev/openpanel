@@ -160,10 +160,10 @@ export function dropColumns(
   isClustered: boolean,
 ): string[] {
   if (isClustered) {
-    return columnNames.map(
-      (colName) =>
-        `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' DROP COLUMN IF EXISTS ${colName}`,
-    );
+    return columnNames.flatMap((colName) => [
+      `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' DROP COLUMN IF EXISTS ${colName}`,
+      `ALTER TABLE ${tableName} ON CLUSTER '{cluster}' DROP COLUMN IF EXISTS ${colName}`,
+    ]);
   }
 
   return columnNames.map(

@@ -21,7 +21,7 @@ export async function updateProfile(
     return reply.status(400).send('No projectId');
   }
   const ip = request.clientIp;
-  const ua = request.headers['user-agent']!;
+  const ua = request.headers['user-agent'];
   const uaInfo = parseUserAgent(ua, payload.properties);
   const geo = await getGeoLocation(ip);
 

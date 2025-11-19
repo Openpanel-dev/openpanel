@@ -20,7 +20,7 @@ export async function postEvent(
     request.body,
   );
   const ip = request.clientIp;
-  const ua = request.headers['user-agent']!;
+  const ua = request.headers['user-agent'];
   const projectId = request.client?.projectId;
   const headers = getStringHeaders(request.headers);
 
@@ -30,18 +30,22 @@ export async function postEvent(
   }
 
   const [salts, geo] = await Promise.all([getSalts(), getGeoLocation(ip)]);
-  const currentDeviceId = generateDeviceId({
-    salt: salts.current,
-    origin: projectId,
-    ip,
-    ua,
-  });
-  const previousDeviceId = generateDeviceId({
-    salt: salts.previous,
-    origin: projectId,
-    ip,
-    ua,
-  });
+  const currentDeviceId = ua
+    ? generateDeviceId({
+        salt: salts.current,
+        origin: projectId,
+        ip,
+        ua,
+      })
+    : '';
+  const previousDeviceId = ua
+    ? generateDeviceId({
+        salt: salts.previous,
+        origin: projectId,
+        ip,
+        ua,
+      })
+    : '';
 
   const uaInfo = parseUserAgent(ua, request.body?.properties);
   const groupId = uaInfo.isServer
