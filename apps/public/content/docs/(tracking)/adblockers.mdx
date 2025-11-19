@@ -1,0 +1,104 @@
+---
+title: Avoid adblockers with proxy
+description: Learn why adblockers block analytics and how to avoid it by proxying events.
+---
+
+In this article we need to talk about adblockers, why they exist, how they work, and how to avoid them.
+
+Adblockers' main purpose was initially to block ads, but they have since started to block tracking scripts as well. This is primarily for privacy reasons, and while we respect that, there are legitimate use cases for understanding your visitors. OpenPanel is designed to be a privacy-friendly, cookieless analytics tool that doesn't track users across sites, but generic blocklists often catch all analytics tools indiscriminately.
+
+The best way to avoid adblockers is to proxy events via your own domain name. Adblockers generally cannot block requests to your own domain (first-party requests) without breaking the functionality of the site itself.
+
+## Built-in Support
+
+Today, our Next.js SDK and WordPress plugin have built-in support for proxying:
+- **WordPress**: Does it automatically.
+- **Next.js**: Easy to setup with a route handler.
+
+## Implementing Proxying for Any Framework
+
+If you are not using Next.js or WordPress, you can implement proxying in any backend framework. The key is to set up an API endpoint on your domain (e.g., `api.domain.com` or `domain.com/api`) that forwards requests to OpenPanel.
+
+Below is an example of how to set up a proxy using a [Hono](https://hono.dev/) server. This implementation mimics the logic used in our Next.js SDK.
+
+> You can always see how our Next.js implementation looks like in our [repository](https://github.com/Openpanel-dev/openpanel/blob/main/packages/sdks/nextjs/createNextRouteHandler.ts).
+
+### Hono Example
+
+```typescript
+import { Hono } from 'hono'
+
+const app = new Hono()
+
+// 1. Proxy the script file
+app.get('/op1.js', async (c) => {
+  const scriptUrl = 'https://openpanel.dev/op1.js'
+  try {
+    const res = await fetch(scriptUrl)
+    const text = await res.text()
+    
+    c.header('Content-Type', 'text/javascript')
+    // Optional caching for 24 hours
+    c.header('Cache-Control', 'public, max-age=86400, stale-while-revalidate=86400')
+    return c.body(text)
+  } catch (e) {
+     return c.json({ error: 'Failed to fetch script' }, 500)
+  }
+})
+
+// 2. Proxy the track event
+app.post('/track', async (c) => {
+  const body = await c.req.json()
+  
+  // Forward the client's IP address (be sure to pick correct IP based on your infra)
+  const ip = c.req.header('cf-connecting-ip') ?? 
+             c.req.header('x-forwarded-for')?.split(',')[0]
+
+  const headers = new Headers()
+  headers.set('Content-Type', 'application/json')
+  headers.set('Origin', c.req.header('origin') ?? '')
+  headers.set('User-Agent', c.req.header('user-agent') ?? '')
+  headers.set('openpanel-client-id', c.req.header('openpanel-client-id') ?? '')
+  
+  if (ip) {
+    headers.set('openpanel-client-ip', ip)
+  }
+
+  try {
+    const res = await fetch('https://api.openpanel.dev/track', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body),
+    })
+    return c.json(await res.text(), res.status)
+  } catch (e) {
+    return c.json(e, 500)
+  }
+})
+
+export default app
+```
+
+This script sets up two endpoints:
+1. `GET /op1.js`: Fetches the OpenPanel script and serves it from your domain.
+2. `POST /track`: Receives events from the frontend, adds necessary headers (User-Agent, Origin, Content-Type, openpanel-client-id, openpanel-client-ip), and forwards them to OpenPanel's API.
+
+## Frontend Configuration
+
+Once your proxy is running, you need to configure the OpenPanel script on your frontend to use your proxy endpoints instead of the default ones.
+
+```html
+<script>
+  window.op=window.op||function(){var n=[],o=new Proxy((function(){arguments.length>0&&n.push(Array.prototype.slice.call(arguments))}),{get:function(o,t){return"q"===t?n:function(){n.push([t].concat(Array.prototype.slice.call(arguments)))}}});return o}();
+  window.op('init', {
+    apiUrl: 'https://api.domain.com'
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://api.domain.com/op1.js" defer async></script>
+```
+
+By doing this, all requests are sent to your domain first, bypassing adblockers that look for third-party tracking domains.
