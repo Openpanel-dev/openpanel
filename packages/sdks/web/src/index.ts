@@ -20,9 +20,15 @@ function toCamelCase(str: string) {
   );
 }
 
+type PendingRevenue = {
+  amount: number;
+  properties?: Record<string, unknown>;
+};
+
 export class OpenPanel extends OpenPanelBase {
   private lastPath = '';
   private debounceTimer: any;
+  private pendingRevenues: PendingRevenue[] = [];
 
   constructor(public options: OpenPanelOptions) {
     super({
@@ -33,6 +39,18 @@ export class OpenPanel extends OpenPanelBase {
 
     if (!this.isServer()) {
       console.log('OpenPanel.dev - Initialized', this.options);
+
+      try {
+        const pending = sessionStorage.getItem('openpanel-pending-revenues');
+        if (pending) {
+          const parsed = JSON.parse(pending);
+          if (Array.isArray(parsed)) {
+            this.pendingRevenues = parsed;
+          }
+        }
+      } catch {
+        this.pendingRevenues = [];
+      }
 
       this.setGlobalProperties({
         __referrer: document.referrer,
@@ -190,5 +208,34 @@ export class OpenPanel extends OpenPanelBase {
       __path: path,
       __title: document.title,
     });
+  }
+
+  async flushRevenue() {
+    const promises = this.pendingRevenues.map((pending) =>
+      super.revenue(pending.amount, pending.properties),
+    );
+    await Promise.all(promises);
+    this.clearRevenue();
+  }
+
+  clearRevenue() {
+    this.pendingRevenues = [];
+    if (!this.isServer()) {
+      try {
+        sessionStorage.removeItem('openpanel-pending-revenues');
+      } catch {}
+    }
+  }
+
+  pendingRevenue(amount: number, properties?: Record<string, unknown>) {
+    this.pendingRevenues.push({ amount, properties });
+    if (!this.isServer()) {
+      try {
+        sessionStorage.setItem(
+          'openpanel-pending-revenues',
+          JSON.stringify(this.pendingRevenues),
+        );
+      } catch {}
+    }
   }
 }

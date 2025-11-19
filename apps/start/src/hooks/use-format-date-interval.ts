@@ -1,9 +1,20 @@
 import type { IInterval } from '@openpanel/validation';
 
-export function formatDateInterval(interval: IInterval, date: Date): string {
+export function formatDateInterval(options: {
+  interval: IInterval;
+  date: Date;
+  short: boolean;
+}): string {
+  const { interval, date, short } = options;
   try {
     if (interval === 'hour' || interval === 'minute') {
       return new Intl.DateTimeFormat('en-GB', {
+        ...(!short
+          ? {
+              month: '2-digit',
+              day: '2-digit',
+            }
+          : {}),
         hour: '2-digit',
         minute: '2-digit',
       }).format(date);
@@ -35,10 +46,13 @@ export function formatDateInterval(interval: IInterval, date: Date): string {
   }
 }
 
-export function useFormatDateInterval(interval: IInterval) {
+export function useFormatDateInterval(options: {
+  interval: IInterval;
+  short: boolean;
+}) {
   return (date: Date | string) =>
-    formatDateInterval(
-      interval,
-      typeof date === 'string' ? new Date(date) : date,
-    );
+    formatDateInterval({
+      ...options,
+      date: typeof date === 'string' ? new Date(date) : date,
+    });
 }

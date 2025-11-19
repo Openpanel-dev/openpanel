@@ -6,7 +6,7 @@ import { Area, AreaChart, Tooltip } from 'recharts';
 import { formatDate, timeAgo } from '@/utils/date';
 import { getChartColor } from '@/utils/theme';
 import { getPreviousMetric } from '@openpanel/common';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ChartTooltipContainer,
   ChartTooltipHeader,
@@ -24,12 +24,13 @@ interface MetricCardProps {
   data: {
     current: number;
     previous?: number;
+    date: string;
   }[];
   metric: {
     current: number;
     previous?: number | null;
   };
-  unit?: '' | 'date' | 'timeAgo' | 'min' | '%';
+  unit?: '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
   label: string;
   onClick?: () => void;
   active?: boolean;
@@ -48,9 +49,28 @@ export function OverviewMetricCard({
   inverted = false,
   isLoading = false,
 }: MetricCardProps) {
-  const [value, setValue] = useState(metric.current);
+  const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const number = useNumber();
   const { current, previous } = metric;
+  const timer = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+    }
+
+    if (currentIndex) {
+      timer.current = setTimeout(() => {
+        setCurrentIndex(null);
+      }, 1000);
+    }
+
+    return () => {
+      if (timer.current) {
+        clearTimeout(timer.current);
+      }
+    };
+  }, [currentIndex]);
 
   const renderValue = (value: number, unitClassName?: string, short = true) => {
     if (unit === 'date') {
@@ -63,6 +83,11 @@ export function OverviewMetricCard({
 
     if (unit === 'min') {
       return <>{fancyMinutes(value)}</>;
+    }
+
+    if (unit === 'currency') {
+      // Revenue is stored in cents, convert to dollars
+      return <>{number.currency(value / 100)}</>;
     }
 
     return (
@@ -81,19 +106,33 @@ export function OverviewMetricCard({
     '#93c5fd', // blue
   );
 
-  return (
-    <Tooltiper
-      content={
+  const renderTooltip = () => {
+    if (currentIndex) {
+      return (
         <span>
-          {label}:{' '}
+          {formatDate(new Date(data[currentIndex]?.date))}:{' '}
           <span className="font-semibold">
-            {renderValue(value, 'ml-1 font-light text-xl', false)}
+            {renderValue(
+              data[currentIndex].current,
+              'ml-1 font-light text-xl',
+              false,
+            )}
           </span>
         </span>
-      }
-      asChild
-      sideOffset={-20}
-    >
+      );
+    }
+
+    return (
+      <span>
+        {label}:{' '}
+        <span className="font-semibold">
+          {renderValue(metric.current, 'ml-1 font-light text-xl', false)}
+        </span>
+      </span>
+    );
+  };
+  return (
+    <Tooltiper content={renderTooltip()} asChild sideOffset={-20}>
       <button
         type="button"
         className={cn(
@@ -116,9 +155,7 @@ export function OverviewMetricCard({
                   data={data}
                   style={{ marginTop: (height / 4) * 3 }}
                   onMouseMove={(event) => {
-                    setValue(
-                      event.activePayload?.[0]?.payload?.current ?? current,
-                    );
+                    setCurrentIndex(event.activeTooltipIndex ?? null);
                   }}
                 >
                   <defs>

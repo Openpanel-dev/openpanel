@@ -26,6 +26,7 @@ const validator = zProject.pick({
   domain: true,
   cors: true,
   crossDomain: true,
+  allowUnsafeRevenueTracking: true,
 });
 type IForm = z.infer<typeof validator>;
 
@@ -39,6 +40,7 @@ export default function EditProjectDetails({ project }: Props) {
       domain: project.domain,
       cors: project.cors,
       crossDomain: project.crossDomain,
+      allowUnsafeRevenueTracking: project.allowUnsafeRevenueTracking,
     },
   });
   const trpc = useTRPC();
@@ -155,22 +157,45 @@ export default function EditProjectDetails({ project }: Props) {
               control={form.control}
               render={({ field }) => {
                 return (
+                  <WithLabel label="Cross domain support" className="mt-4">
+                    <CheckboxInput
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      defaultChecked={field.value}
+                      onCheckedChange={field.onChange}
+                    >
+                      <div>Enable cross domain support</div>
+                      <div className="font-normal text-muted-foreground">
+                        This will let you track users across multiple domains
+                      </div>
+                    </CheckboxInput>
+                  </WithLabel>
+                );
+              }}
+            />
+          </AnimateHeight>
+
+          <Controller
+            name="allowUnsafeRevenueTracking"
+            control={form.control}
+            render={({ field }) => {
+              return (
+                <WithLabel label="Revenue tracking">
                   <CheckboxInput
-                    className="mt-4"
                     ref={field.ref}
                     onBlur={field.onBlur}
                     defaultChecked={field.value}
                     onCheckedChange={field.onChange}
                   >
-                    <div>Enable cross domain support</div>
+                    <div>Allow "unsafe" revenue tracking</div>
                     <div className="font-normal text-muted-foreground">
-                      This will let you track users across multiple domains
+                      With this enabled, you can track revenue from client code.
                     </div>
                   </CheckboxInput>
-                );
-              }}
-            />
-          </AnimateHeight>
+                </WithLabel>
+              );
+            }}
+          />
 
           <Button
             loading={mutation.isPending}

@@ -191,7 +191,7 @@ export const cacheMiddleware = (
       key += JSON.stringify(rawInput).replace(/\"/g, "'");
     }
     const cache = await getRedisCache().getJson(key);
-    if (cache) {
+    if (cache && process.env.NODE_ENV === 'production') {
       return {
         ok: true,
         data: cache,

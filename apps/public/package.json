@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm with-env next dev",
+    "dev": "pnpm with-env next dev --port 3001",
     "build": "pnpm with-env next build",
     "start": "next start",
     "postinstall": "fumadocs-mdx",

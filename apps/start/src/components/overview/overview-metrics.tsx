@@ -2,7 +2,6 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { cn } from '@/utils/cn';
 
-import { useCookieStore } from '@/hooks/use-cookie-store';
 import { useDashedStroke } from '@/hooks/use-dashed-stroke';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -13,24 +12,22 @@ import { getPreviousMetric } from '@openpanel/common';
 import type { IInterval } from '@openpanel/validation';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
-import { last, omit } from 'ramda';
+import { last } from 'ramda';
 import React, { useState } from 'react';
 import {
+  Area,
   Bar,
-  BarChart,
   CartesianGrid,
+  Cell,
   ComposedChart,
   Customized,
   Line,
-  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   XAxis,
   YAxis,
 } from 'recharts';
-import { useLocalStorage } from 'usehooks-ts';
 import { createChartTooltip } from '../charts/chart-tooltip';
-import { BarShapeBlue, BarShapeGrey } from '../charts/common-bar';
 import { useXAxisProps, useYAxisProps } from '../report-chart/common/axis';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
@@ -78,6 +75,12 @@ const TITLES = [
     unit: 'min',
     inverted: false,
   },
+  {
+    title: 'Revenue',
+    key: 'total_revenue',
+    unit: 'currency',
+    inverted: false,
+  },
 ] as const;
 
 export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
@@ -85,11 +88,6 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
     useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const trpc = useTRPC();
-
-  const [chartType, setChartType] = useCookieStore<'bars' | 'lines'>(
-    'chartType',
-    'bars',
-  );
 
   const activeMetric = TITLES[metric]!;
   const overviewQuery = useQuery(
@@ -125,6 +123,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               }}
               unit={title.unit}
               data={data.map((item) => ({
+                date: item.date,
                 current: item[title.key],
                 previous: item[`prev_${title.key}`],
               }))}
@@ -136,7 +135,7 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 
           <div
             className={cn(
-              'col-span-4 min-h-16 flex-1 p-4 pb-0 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-2',
+              'col-span-4 min-h-16 flex-1 p-4 pb-0 shadow-[0_0_0_0.5px] shadow-border max-md:row-start-1 md:col-span-1',
             )}
           >
             <OverviewLiveHistogram projectId={projectId} />
@@ -148,32 +147,6 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
             <div className="text-sm font-medium text-muted-foreground">
               {activeMetric.title}
             </div>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setChartType('bars')}
-                className={cn(
-                  'px-2 py-1 text-xs rounded transition-colors',
-                  chartType === 'bars'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Bars
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartType('lines')}
-                className={cn(
-                  'px-2 py-1 text-xs rounded transition-colors',
-                  chartType === 'lines'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground',
-                )}
-              >
-                Lines
-              </button>
-            </div>
           </div>
           <div className="w-full h-[150px]">
             {overviewQuery.isLoading && <Skeleton className="h-full w-full" />}
@@ -181,7 +154,6 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
               activeMetric={activeMetric}
               interval={interval}
               data={data}
-              chartType={chartType}
               projectId={projectId}
             />
           </div>
@@ -194,17 +166,24 @@ export default function OverviewMetrics({ projectId }: OverviewMetricsProps) {
 const { Tooltip, TooltipProvider } = createChartTooltip<
   RouterOutputs['overview']['stats']['series'][number],
   {
+    anyMetric?: boolean;
     metric: (typeof TITLES)[number];
     interval: IInterval;
   }
->(({ context: { metric, interval }, data: dataArray }) => {
+>(({ context: { metric, interval, anyMetric }, data: dataArray }) => {
   const data = dataArray[0];
-  const formatDate = useFormatDateInterval(interval);
+  const formatDate = useFormatDateInterval({
+    interval,
+    short: false,
+  });
   const number = useNumber();
 
   if (!data) {
     return null;
   }
+
+  const revenue = data.total_revenue ?? 0;
+  const prevRevenue = data.prev_total_revenue ?? 0;
 
   return (
     <>
@@ -215,16 +194,25 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
         <div className="flex gap-2">
           <div
             className="w-[3px] rounded-full"
-            style={{ background: getChartColor(0) }}
+            style={{ background: anyMetric ? getChartColor(0) : '#3ba974' }}
           />
           <div className="col flex-1 gap-1">
             <div className="flex items-center gap-1">{metric.title}</div>
             <div className="flex justify-between gap-8 font-mono font-medium">
               <div className="row gap-1">
-                {number.formatWithUnit(data[metric.key])}
+                {metric.unit === 'currency'
+                  ? number.currency((data[metric.key] ?? 0) / 100)
+                  : number.formatWithUnit(data[metric.key], metric.unit)}
                 {!!data[`prev_${metric.key}`] && (
                   <span className="text-muted-foreground">
-                    ({number.formatWithUnit(data[`prev_${metric.key}`])})
+                    (
+                    {metric.unit === 'currency'
+                      ? number.currency((data[`prev_${metric.key}`] ?? 0) / 100)
+                      : number.formatWithUnit(
+                          data[`prev_${metric.key}`],
+                          metric.unit,
+                        )}
+                    )
                   </span>
                 )}
               </div>
@@ -238,6 +226,32 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
             </div>
           </div>
         </div>
+        {anyMetric && revenue > 0 && (
+          <div className="flex gap-2 mt-2">
+            <div
+              className="w-[3px] rounded-full"
+              style={{ background: '#3ba974' }}
+            />
+            <div className="col flex-1 gap-1">
+              <div className="flex items-center gap-1">Revenue</div>
+              <div className="flex justify-between gap-8 font-mono font-medium">
+                <div className="row gap-1">
+                  {number.currency(revenue / 100)}
+                  {prevRevenue > 0 && (
+                    <span className="text-muted-foreground">
+                      ({number.currency(prevRevenue / 100)})
+                    </span>
+                  )}
+                </div>
+                {prevRevenue > 0 && (
+                  <PreviousDiffIndicatorPure
+                    {...getPreviousMetric(revenue, prevRevenue)}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </React.Fragment>
     </>
   );
@@ -247,17 +261,19 @@ function Chart({
   activeMetric,
   interval,
   data,
-  chartType,
   projectId,
 }: {
   activeMetric: (typeof TITLES)[number];
   interval: IInterval;
   data: RouterOutputs['overview']['stats']['series'];
-  chartType: 'bars' | 'lines';
   projectId: string;
 }) {
   const xAxisProps = useXAxisProps({ interval });
   const yAxisProps = useYAxisProps();
+  const number = useNumber();
+  const revenueYAxisProps = useYAxisProps({
+    tickFormatter: (value) => number.short(value / 100),
+  });
   const [activeBar, setActiveBar] = useState(-1);
   const { range, startDate, endDate } = useOverviewOptions();
 
@@ -278,13 +294,11 @@ function Chart({
 
   // Line chart specific logic
   let dotIndex = undefined;
-  if (chartType === 'lines') {
-    if (interval === 'hour') {
-      // Find closest index based on times
-      dotIndex = data.findIndex((item) => {
-        return isSameHour(item.date, new Date());
-      });
-    }
+  if (interval === 'hour') {
+    // Find closest index based on times
+    dotIndex = data.findIndex((item) => {
+      return isSameHour(item.date, new Date());
+    });
   }
 
   const { calcStrokeDasharray, handleAnimationEnd, getStrokeDasharray } =
@@ -294,6 +308,10 @@ function Chart({
 
   const lastSerieDataItem = last(data)?.date || new Date();
   const useDashedLastLine = (() => {
+    if (range === 'today') {
+      return true;
+    }
+
     if (interval === 'hour') {
       return isSameHour(lastSerieDataItem, new Date());
     }
@@ -313,11 +331,11 @@ function Chart({
     return false;
   })();
 
-  if (chartType === 'lines') {
+  if (activeMetric.key === 'total_revenue') {
     return (
       <TooltipProvider metric={activeMetric} interval={interval}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <ComposedChart data={data}>
             <Customized component={calcStrokeDasharray} />
             <Line
               dataKey="calcStrokeDasharray"
@@ -326,13 +344,8 @@ function Chart({
               onAnimationEnd={handleAnimationEnd}
             />
             <Tooltip />
-            <YAxis
-              {...yAxisProps}
-              domain={[0, activeMetric.key === 'bounce_rate' ? 100 : 'dataMax']}
-              width={25}
-            />
+            <YAxis {...yAxisProps} domain={[0, 'dataMax']} width={25} />
             <XAxis {...xAxisProps} />
-
             <CartesianGrid
               strokeDasharray="3 3"
               horizontal={true}
@@ -340,10 +353,30 @@ function Chart({
               className="stroke-border"
             />
 
+            <defs>
+              <filter
+                id="rainbow-line-glow"
+                x="-20%"
+                y="-20%"
+                width="140%"
+                height="140%"
+              >
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feComponentTransfer in="blur" result="dimmedBlur">
+                  <feFuncA type="linear" slope="0.5" />
+                </feComponentTransfer>
+                <feComposite
+                  in="SourceGraphic"
+                  in2="dimmedBlur"
+                  operator="over"
+                />
+              </filter>
+            </defs>
+
             <Line
-              key={`prev_${activeMetric.key}`}
-              type="linear"
-              dataKey={`prev_${activeMetric.key}`}
+              key={'prev_total_revenue'}
+              type="monotone"
+              dataKey={'prev_total_revenue'}
               stroke={'oklch(from var(--foreground) l c h / 0.1)'}
               strokeWidth={2}
               isAnimationActive={false}
@@ -352,24 +385,26 @@ function Chart({
                   ? false
                   : {
                       stroke: 'oklch(from var(--foreground) l c h / 0.1)',
-                      fill: 'var(--def-100)',
+                      fill: 'transparent',
                       strokeWidth: 1.5,
                       r: 2,
                     }
               }
               activeDot={{
                 stroke: 'oklch(from var(--foreground) l c h / 0.2)',
-                fill: 'var(--def-100)',
+                fill: 'transparent',
                 strokeWidth: 1.5,
                 r: 3,
               }}
             />
 
-            <Line
-              key={activeMetric.key}
-              type="linear"
-              dataKey={activeMetric.key}
-              stroke={getChartColor(0)}
+            <Area
+              key={'total_revenue'}
+              type="monotone"
+              dataKey={'total_revenue'}
+              stroke={'#3ba974'}
+              fill={'#3ba974'}
+              fillOpacity={0.05}
               strokeWidth={2}
               strokeDasharray={
                 useDashedLastLine
@@ -381,18 +416,19 @@ function Chart({
                 data.length > 90
                   ? false
                   : {
-                      stroke: getChartColor(0),
-                      fill: 'var(--def-100)',
+                      stroke: '#3ba974',
+                      fill: '#3ba974',
                       strokeWidth: 1.5,
                       r: 3,
                     }
               }
               activeDot={{
-                stroke: getChartColor(0),
+                stroke: '#3ba974',
                 fill: 'var(--def-100)',
                 strokeWidth: 2,
                 r: 4,
               }}
+              filter="url(#rainbow-line-glow)"
             />
 
             {references.data?.map((ref) => (
@@ -410,36 +446,48 @@ function Chart({
                 fontSize={10}
               />
             ))}
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </TooltipProvider>
     );
   }
 
-  // Bar chart (default)
   return (
-    <TooltipProvider metric={activeMetric} interval={interval}>
+    <TooltipProvider metric={activeMetric} interval={interval} anyMetric={true}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart
+        <ComposedChart
           data={data}
-          margin={{ top: 0, right: 0, left: 0, bottom: 10 }}
           onMouseMove={(e) => {
             setActiveBar(e.activeTooltipIndex ?? -1);
           }}
-          barCategoryGap={2}
         >
-          <Tooltip
-            cursor={{
-              stroke: 'var(--def-200)',
-              fill: 'var(--def-200)',
-            }}
+          <Customized component={calcStrokeDasharray} />
+          <Line
+            dataKey="calcStrokeDasharray"
+            legendType="none"
+            animationDuration={0}
+            onAnimationEnd={handleAnimationEnd}
           />
+          <Tooltip />
           <YAxis
             {...yAxisProps}
-            domain={[0, activeMetric.key === 'bounce_rate' ? 100 : 'auto']}
+            domain={[0, activeMetric.key === 'bounce_rate' ? 100 : 'dataMax']}
             width={25}
           />
-          <XAxis {...omit(['scale', 'type'], xAxisProps)} />
+          <YAxis
+            {...revenueYAxisProps}
+            yAxisId="right"
+            orientation="right"
+            domain={[
+              0,
+              data.reduce(
+                (max, item) => Math.max(max, item.total_revenue ?? 0),
+                0,
+              ) * 2,
+            ]}
+            width={30}
+          />
+          <XAxis {...xAxisProps} />
 
           <CartesianGrid
             strokeDasharray="3 3"
@@ -448,21 +496,103 @@ function Chart({
             className="stroke-border"
           />
 
-          <Bar
+          <defs>
+            <filter
+              id="rainbow-line-glow"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feGaussianBlur stdDeviation="5" result="blur" />
+              <feComponentTransfer in="blur" result="dimmedBlur">
+                <feFuncA type="linear" slope="0.5" />
+              </feComponentTransfer>
+              <feComposite
+                in="SourceGraphic"
+                in2="dimmedBlur"
+                operator="over"
+              />
+            </filter>
+          </defs>
+
+          <Line
             key={`prev_${activeMetric.key}`}
+            type="monotone"
             dataKey={`prev_${activeMetric.key}`}
+            stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+            strokeWidth={2}
             isAnimationActive={false}
-            shape={(props: any) => (
-              <BarShapeGrey isActive={activeBar === props.index} {...props} />
-            )}
+            dot={
+              data.length > 90
+                ? false
+                : {
+                    stroke: 'oklch(from var(--foreground) l c h / 0.1)',
+                    fill: 'transparent',
+                    strokeWidth: 1.5,
+                    r: 2,
+                  }
+            }
+            activeDot={{
+              stroke: 'oklch(from var(--foreground) l c h / 0.2)',
+              fill: 'transparent',
+              strokeWidth: 1.5,
+              r: 3,
+            }}
           />
           <Bar
-            key={activeMetric.key}
-            dataKey={activeMetric.key}
+            key="total_revenue"
+            dataKey="total_revenue"
+            yAxisId="right"
+            stackId="revenue"
             isAnimationActive={false}
-            shape={(props: any) => (
-              <BarShapeBlue isActive={activeBar === props.index} {...props} />
-            )}
+            radius={5}
+            maxBarSize={20}
+          >
+            {data.map((item, index) => {
+              return (
+                <Cell
+                  key={item.date}
+                  className={cn(
+                    index === activeBar
+                      ? 'fill-emerald-700/100'
+                      : 'fill-emerald-700/80',
+                  )}
+                />
+              );
+            })}
+          </Bar>
+          <Area
+            key={activeMetric.key}
+            type="monotone"
+            dataKey={activeMetric.key}
+            stroke={getChartColor(0)}
+            fill={getChartColor(0)}
+            fillOpacity={0.05}
+            strokeWidth={2}
+            strokeDasharray={
+              useDashedLastLine
+                ? getStrokeDasharray(activeMetric.key)
+                : undefined
+            }
+            isAnimationActive={false}
+            dot={
+              data.length > 90
+                ? false
+                : {
+                    stroke: getChartColor(0),
+                    fill: 'transparent',
+                    strokeWidth: 1.5,
+                    r: 3,
+                  }
+            }
+            activeDot={{
+              stroke: getChartColor(0),
+              fill: 'var(--def-100)',
+              strokeWidth: 2,
+              r: 4,
+            }}
+            filter="url(#rainbow-line-glow)"
           />
 
           {references.data?.map((ref) => (
@@ -480,7 +610,7 @@ function Chart({
               fontSize={10}
             />
           ))}
-        </BarChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </TooltipProvider>
   );

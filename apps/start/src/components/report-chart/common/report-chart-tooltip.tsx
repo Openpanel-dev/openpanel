@@ -62,7 +62,10 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
     const {
       report: { interval, unit },
     } = useReportChartContext();
-    const formatDate = useFormatDateInterval(interval);
+    const formatDate = useFormatDateInterval({
+      interval,
+      short: false,
+    });
     const number = useNumber();
 
     if (!data || data.length === 0) {

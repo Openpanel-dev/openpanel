@@ -8,7 +8,11 @@ type ExposedMethodsNames =
   | 'alias'
   | 'increment'
   | 'decrement'
-  | 'clear';
+  | 'clear'
+  | 'revenue'
+  | 'flushRevenue'
+  | 'clearRevenue'
+  | 'pendingRevenue';
 
 export type ExposedMethods = {
   [K in ExposedMethodsNames]: OpenPanel[K] extends (...args: any[]) => any

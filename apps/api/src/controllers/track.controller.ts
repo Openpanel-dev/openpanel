@@ -6,6 +6,7 @@ import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
+import { getRedisCache } from '@openpanel/redis';
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -102,7 +103,7 @@ export async function handler(
     request.body.payload.properties?.__ip
       ? (request.body.payload.properties.__ip as string)
       : request.clientIp;
-  const ua = request.headers['user-agent']!;
+  const ua = request.headers['user-agent'];
   const projectId = request.client?.projectId;
 
   if (!projectId) {
@@ -115,6 +116,16 @@ export async function handler(
 
   const identity = getIdentity(request.body);
   const profileId = identity?.profileId;
+  const overrideDeviceId = (() => {
+    const deviceId =
+      'properties' in request.body.payload
+        ? request.body.payload.properties?.__deviceId
+        : undefined;
+    if (typeof deviceId === 'string') {
+      return deviceId;
+    }
+    return undefined;
+  })();
 
   // We might get a profileId from the alias table
   // If we do, we should use that instead of the one from the payload
@@ -125,14 +136,16 @@ export async function handler(
   switch (request.body.type) {
     case 'track': {
       const [salts, geo] = await Promise.all([getSalts(), getGeoLocation(ip)]);
-      const currentDeviceId = ua
-        ? generateDeviceId({
-            salt: salts.current,
-            origin: projectId,
-            ip,
-            ua,
-          })
-        : '';
+      const currentDeviceId =
+        overrideDeviceId ||
+        (ua
+          ? generateDeviceId({
+              salt: salts.current,
+              origin: projectId,
+              ip,
+              ua,
+            })
+          : '');
       const previousDeviceId = ua
         ? generateDeviceId({
             salt: salts.previous,
@@ -368,5 +381,67 @@ async function decrement({
     projectId,
     properties: profile.properties,
     isExternal: true,
+  });
+}
+
+export async function fetchDeviceId(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  const salts = await getSalts();
+  const projectId = request.client?.projectId;
+  if (!projectId) {
+    return reply.status(400).send('No projectId');
+  }
+
+  const ip = request.clientIp;
+  if (!ip) {
+    return reply.status(400).send('Missing ip address');
+  }
+
+  const ua = request.headers['user-agent'];
+  if (!ua) {
+    return reply.status(400).send('Missing header: user-agent');
+  }
+
+  const currentDeviceId = generateDeviceId({
+    salt: salts.current,
+    origin: projectId,
+    ip,
+    ua,
+  });
+  const previousDeviceId = generateDeviceId({
+    salt: salts.previous,
+    origin: projectId,
+    ip,
+    ua,
+  });
+
+  try {
+    const multi = getRedisCache().multi();
+    multi.exists(`bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`);
+    multi.exists(`bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`);
+    const res = await multi.exec();
+
+    if (res?.[0]?.[1]) {
+      return reply.status(200).send({
+        deviceId: currentDeviceId,
+        message: 'current session exists for this device id',
+      });
+    }
+
+    if (res?.[1]?.[1]) {
+      return reply.status(200).send({
+        deviceId: previousDeviceId,
+        message: 'previous session exists for this device id',
+      });
+    }
+  } catch (error) {
+    request.log.error('Error getting session end GET /track/device-id', error);
+  }
+
+  return reply.status(200).send({
+    deviceId: currentDeviceId,
+    message: 'No session exists for this device id',
   });
 }

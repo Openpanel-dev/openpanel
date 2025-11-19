@@ -379,6 +379,7 @@ export const zProject = z.object({
   domain: z.string().url().or(z.literal('').or(z.null())),
   cors: z.array(z.string()).default([]),
   crossDomain: z.boolean().default(false),
+  allowUnsafeRevenueTracking: z.boolean().default(false),
 });
 export type IProjectEdit = z.infer<typeof zProject>;
 

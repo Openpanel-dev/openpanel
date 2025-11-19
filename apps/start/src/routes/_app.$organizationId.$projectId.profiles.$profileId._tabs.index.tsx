@@ -7,6 +7,7 @@ import { ProfileCharts } from '@/components/profiles/profile-charts';
 import { ProfileMetrics } from '@/components/profiles/profile-metrics';
 import { ProfileProperties } from '@/components/profiles/profile-properties';
 import { useTRPC } from '@/integrations/trpc/react';
+import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -44,6 +45,15 @@ export const Route = createFileRoute(
     ]);
   },
   pendingComponent: FullPageLoadingState,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle(PAGE_TITLES.PROFILE_DETAILS),
+        },
+      ],
+    };
+  },
 });
 
 function Component() {

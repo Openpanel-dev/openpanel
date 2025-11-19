@@ -140,10 +140,10 @@ export function addColumns(
   isClustered: boolean,
 ): string[] {
   if (isClustered) {
-    return columns.map(
-      (col) =>
-        `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' ADD COLUMN IF NOT EXISTS ${col}`,
-    );
+    return columns.flatMap((col) => [
+      `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' ADD COLUMN IF NOT EXISTS ${col}`,
+      `ALTER TABLE ${tableName} ON CLUSTER '{cluster}' ADD COLUMN IF NOT EXISTS ${col}`,
+    ]);
   }
 
   return columns.map(
@@ -160,10 +160,10 @@ export function dropColumns(
   isClustered: boolean,
 ): string[] {
   if (isClustered) {
-    return columnNames.map(
-      (colName) =>
-        `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' DROP COLUMN IF EXISTS ${colName}`,
-    );
+    return columnNames.flatMap((colName) => [
+      `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' DROP COLUMN IF EXISTS ${colName}`,
+      `ALTER TABLE ${tableName} ON CLUSTER '{cluster}' DROP COLUMN IF EXISTS ${colName}`,
+    ]);
   }
 
   return columnNames.map(

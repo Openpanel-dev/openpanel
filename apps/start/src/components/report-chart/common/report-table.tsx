@@ -40,7 +40,10 @@ export function ReportTable({
   const number = useNumber();
   const interval = useSelector((state) => state.report.interval);
   const breakdowns = useSelector((state) => state.report.breakdowns);
-  const formatDate = useFormatDateInterval(interval);
+  const formatDate = useFormatDateInterval({
+    interval,
+    short: true,
+  });
 
   function handleChange(name: string, checked: boolean) {
     setVisibleSeries((prev) => {
