@@ -144,7 +144,7 @@ const updatePackageJsonForRelease = (
     newPkgJson = {
       ...newPkgJson,
       main: './dist/index.js',
-      module: './dist/index.mjs',
+      module: './dist/index.js',
       types: './dist/index.d.ts',
       files: ['dist'],
       exports: restPkgJson.exports ?? {

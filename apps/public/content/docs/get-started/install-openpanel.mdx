@@ -1,0 +1,81 @@
+---
+title: Install OpenPanel
+description: Get started with OpenPanel in less than 2 minutes.
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Code, Globe, Layout, Smartphone, FileJson } from 'lucide-react';
+
+The quickest way to get started with OpenPanel is to use our Web SDK. It works with any website.
+
+## Quick Start
+
+Simply add this script tag to your website's `<head>` section.
+
+```html title="index.html"
+<script>
+  window.op=window.op||function(){var n=[],o=new Proxy((function(){arguments.length>0&&n.push(Array.prototype.slice.call(arguments))}),{get:function(o,t){return"q"===t?n:function(){n.push([t].concat(Array.prototype.slice.call(arguments)))}}});return o}();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+That's it! OpenPanel will now automatically track:
+- Page views
+- Visit duration
+- Referrers
+- Device and browser information
+- Location
+
+## Using a Framework?
+
+If you are using a specific framework or platform, we have dedicated SDKs that provide a better developer experience.
+
+<Cards>
+  <Card
+    href="/docs/sdks/nextjs"
+    title="Next.js"
+    icon={<Globe />}
+    description="Optimized for App Router and Server Components"
+  />
+  <Card
+    href="/docs/sdks/react"
+    title="React"
+    icon={<Layout />}
+    description="Components and hooks for React applications"
+  />
+  <Card
+    href="/docs/sdks/vue"
+    title="Vue"
+    icon={<Layout />}
+    description="Integration for Vue.js applications"
+  />
+  <Card
+    href="/docs/sdks/javascript"
+    title="JavaScript"
+    icon={<FileJson />}
+    description="Universal JavaScript/TypeScript SDK"
+  />
+  <Card
+    href="/docs/sdks/react-native"
+    title="React Native"
+    icon={<Smartphone />}
+    description="Track mobile apps with React Native"
+  />
+  <Card
+    href="/docs/sdks/python"
+    title="Python"
+    icon={<Code />}
+    description="Server-side tracking for Python"
+  />
+</Cards>
+
+## Explore all SDKs
+
+We support many more platforms. Check out our [SDKs Overview](/docs/sdks) for the full list.
+

@@ -11,6 +11,7 @@ import type {
   OpenPanelOptions,
   TrackProperties,
 } from '@openpanel/web';
+import { getInitSnippet } from '@openpanel/web';
 
 export * from '@openpanel/web';
 
@@ -73,7 +74,7 @@ export function OpenPanelComponent({
       <Script
         strategy="beforeInteractive"
         dangerouslySetInnerHTML={{
-          __html: `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
+          __html: `${getInitSnippet()}
           ${methods
             .map((method) => {
               return `window.op('${method.name}', ${stringify(method.value)});`;

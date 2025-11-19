@@ -1,5 +1,5 @@
 {
-  "extends": "@openpanel/tsconfig/base.json",
+  "extends": "@openpanel/tsconfig/sdk.json",
   "compilerOptions": {
     "incremental": false,
     "outDir": "dist"

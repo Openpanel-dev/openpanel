@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "---Get started---",
+    "...get-started",
+    "---Tracking---",
+    "sdks",
+    "---API---",
+    "...api",
+    "---Self-hosting---",
+    "...self-hosting",
+    "---Migration---",
+    "...migration"
+  ]
+}

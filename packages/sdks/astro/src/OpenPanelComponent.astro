@@ -1,5 +1,6 @@
 ---
 import type { OpenPanelMethodNames, OpenPanelOptions } from '@openpanel/web';
+import { getInitSnippet } from '@openpanel/web';
 
 type Props = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
@@ -51,7 +52,7 @@ if (globalProperties) {
   });
 }
 
-const scriptContent = `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
+const scriptContent = `${getInitSnippet()}
 ${methods
   .map((method) => {
     return `window.op('${method.name}', ${stringify(method.value)});`;
