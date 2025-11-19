@@ -1,0 +1,23 @@
+{
+  "name": "@openpanel/react",
+  "version": "1.0.1-local",
+  "module": "index.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openpanel/sdk": "workspace:1.0.0-local"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "tsup": "^7.2.0",
+    "typescript": "catalog:"
+  }
+}

@@ -1,5 +1,325 @@
----
-title: React
----
 
-Use [script tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) for now. We'll add a dedicated react sdk soon.
+## About
+
+The React SDK provides a clean, idiomatic way to use OpenPanel in React applications. Built on `@openpanel/sdk`, it follows the same architecture as the React Native SDK and includes:
+
+- ✅ React Context API with `useOpenPanel()` hook
+- ✅ Full TypeScript support
+- ✅ SSR-safe (Next.js App Router & Pages Router)
+- ✅ Zero configuration with environment variables
+- ✅ Re-exports all SDK types and utilities
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+<Tabs items={['npm', 'pnpm', 'yarn']}>
+  <Tab value="npm">
+    ```bash
+    npm install @openpanel/react
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add @openpanel/react
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add @openpanel/react
+    ```
+  </Tab>
+</Tabs>
+
+This package requires React 18+ or React 19+.
+
+### Initialize
+
+Wrap your app with the `OpenPanelProvider` in your root component.
+
+<Tabs items={['Next.js App Router', 'Next.js Pages Router', 'React']}>
+  <Tab value="Next.js App Router">
+    ```tsx title="app/layout.tsx"
+    import { OpenPanelProvider } from '@openpanel/react';
+
+    export default function RootLayout({ 
+      children 
+    }: { 
+      children: React.ReactNode 
+    }) {
+      return (
+        <html lang="en">
+          <body>
+            <OpenPanelProvider 
+              clientId="your-client-id"
+              trackScreenViews={true}
+            >
+              {children}
+            </OpenPanelProvider>
+          </body>
+        </html>
+      );
+    }
+    ```
+  </Tab>
+  <Tab value="Next.js Pages Router">
+    ```tsx title="pages/_app.tsx"
+    import { OpenPanelProvider } from '@openpanel/react';
+    import type { AppProps } from 'next/app';
+
+    export default function App({ Component, pageProps }: AppProps) {
+      return (
+        <OpenPanelProvider 
+          clientId="your-client-id"
+          trackScreenViews={true}
+        >
+          <Component {...pageProps} />
+        </OpenPanelProvider>
+      );
+    }
+    ```
+  </Tab>
+  <Tab value="React">
+    ```tsx title="main.tsx"
+    import { OpenPanelProvider } from '@openpanel/react';
+    import { App } from './App';
+
+    export function Root() {
+      return (
+        <OpenPanelProvider 
+          clientId="your-client-id"
+          trackScreenViews={true}
+        >
+          <App />
+        </OpenPanelProvider>
+      );
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Using Environment Variables
+
+The provider automatically reads from environment variables if no `clientId` prop is provided:
+
+```tsx
+<OpenPanelProvider>
+  {children}
+</OpenPanelProvider>
+```
+
+Create a `.env.local` file (Next.js) or `.env` file:
+
+```bash title=".env.local"
+NEXT_PUBLIC_OPENPANEL_CLIENT_ID=your_client_id_here
+```
+
+The SDK checks for (in order):
+1. `NEXT_PUBLIC_OPENPANEL_CLIENT_ID` (Next.js client-side)
+2. `OPENPANEL_CLIENT_ID` (server-side or other environments)
+
+#### Options
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+</Steps>
+
+## Usage
+
+### Client Components
+
+Use the `useOpenPanel()` hook in any component wrapped by the provider:
+
+```tsx title="components/subscribe-button.tsx"
+'use client';
+
+import { useOpenPanel } from '@openpanel/react';
+
+export function SubscribeButton() {
+  const op = useOpenPanel();
+
+  const handleClick = () => {
+    op?.track('button_clicked', {
+      button_name: 'subscribe',
+      page: 'homepage'
+    });
+  };
+
+  return <button onClick={handleClick}>Subscribe</button>;
+}
+```
+
+### Tracking Events
+
+Track custom events with properties:
+
+```tsx
+const op = useOpenPanel();
+
+op?.track('purchase', {
+  product_id: 'prod-123',
+  amount: 99.99,
+  currency: 'USD'
+});
+```
+
+### Identifying Users
+
+Identify users to associate events with specific profiles:
+
+```tsx
+const op = useOpenPanel();
+
+op?.identify({
+  profileId: 'user-123',
+  email: 'user@example.com',
+  name: 'John Doe',
+  properties: {
+    plan: 'premium',
+    company: 'Acme Inc'
+  }
+});
+```
+
+### Setting Global Properties
+
+Set properties that will be sent with every event:
+
+```tsx
+const op = useOpenPanel();
+
+op?.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production'
+});
+```
+
+### Incrementing Properties
+
+Increment a numeric property on a user profile:
+
+```tsx
+const op = useOpenPanel();
+
+op?.increment({
+  profileId: 'user-123',
+  property: 'page_views',
+  value: 1
+});
+```
+
+### Decrementing Properties
+
+Decrement a numeric property on a user profile:
+
+```tsx
+const op = useOpenPanel();
+
+op?.decrement({
+  profileId: 'user-123',
+  property: 'credits',
+  value: 5
+});
+```
+
+### Clearing User Data
+
+Clear the current user's data (useful for logout):
+
+```tsx
+const op = useOpenPanel();
+
+op?.clear();
+```
+
+## Server-Side Rendering (SSR)
+
+The provider is SSR-safe and works seamlessly with Next.js:
+
+- ✅ OpenPanel client only initializes in the browser
+- ✅ No hydration errors
+- ✅ Safe to use in Server Components (wrap client components that use the hook)
+
+### Example with Server Component
+
+```tsx title="app/page.tsx"
+import { AnalyticsButton } from './analytics-button';
+
+export default function Page() {
+  return (
+    <div>
+      <h1>My Page</h1>
+      <AnalyticsButton />
+    </div>
+  );
+}
+```
+
+```tsx title="app/analytics-button.tsx"
+'use client';
+
+import { useOpenPanel } from '@openpanel/react';
+
+export function AnalyticsButton() {
+  const op = useOpenPanel();
+  
+  return (
+    <button onClick={() => op?.track('button_click')}>
+      Click Me
+    </button>
+  );
+}
+```
+
+## TypeScript Support
+
+All types from `@openpanel/sdk` are re-exported for your convenience:
+
+```tsx
+import { 
+  useOpenPanel,
+  type OpenPanelOptions,
+  type TrackProperties
+} from '@openpanel/react';
+
+const properties: TrackProperties = {
+  product_id: 'prod-123',
+  amount: 99.99
+};
+
+const op = useOpenPanel();
+op?.track('purchase', properties);
+```
+
+## Advanced Usage
+
+### Server-Side Tracking (Next.js)
+
+For server-side event tracking in Next.js, use the JavaScript SDK directly:
+
+```tsx title="utils/op.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const opServer = new OpenPanel({
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+});
+```
+
+Then use it in server components or API routes:
+
+```tsx title="app/api/subscribe/route.ts"
+import { opServer } from '@/utils/op';
+
+export async function POST() {
+  await opServer.track('user_subscribed', {
+    plan: 'premium'
+  });
+  
+  return Response.json({ success: true });
+}
+```
+
+For more information on server-side tracking, refer to the [Next.js SDK](/docs/sdks/nextjs#server-side) documentation.
