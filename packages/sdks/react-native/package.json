@@ -1,13 +1,13 @@
 {
   "name": "@openpanel/react-native",
-  "version": "1.0.1-local",
+  "version": "1.0.2-local",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "workspace:1.0.0-local"
+    "@openpanel/sdk": "workspace:1.0.1-local"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
