@@ -10,7 +10,11 @@ export async function up() {
   const isClustered = getIsCluster();
 
   const sqls: string[] = [
-    ...addColumns('events', ['`revenue` UInt64 CODEC(Delta(4), LZ4)'], isClustered),
+    ...addColumns(
+      'events',
+      ['`revenue` UInt64 AFTER `referrer_type`'],
+      isClustered,
+    ),
   ];
 
   fs.writeFileSync(
@@ -30,4 +34,3 @@ export async function up() {
     await runClickhouseMigrationCommands(sqls);
   }
 }
-

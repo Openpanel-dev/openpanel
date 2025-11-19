@@ -140,10 +140,10 @@ export function addColumns(
   isClustered: boolean,
 ): string[] {
   if (isClustered) {
-    return columns.map(
-      (col) =>
-        `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' ADD COLUMN IF NOT EXISTS ${col}`,
-    );
+    return columns.flatMap((col) => [
+      `ALTER TABLE ${replicated(tableName)} ON CLUSTER '{cluster}' ADD COLUMN IF NOT EXISTS ${col}`,
+      `ALTER TABLE ${tableName} ON CLUSTER '{cluster}' ADD COLUMN IF NOT EXISTS ${col}`,
+    ]);
   }
 
   return columns.map(
