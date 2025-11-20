@@ -3,7 +3,9 @@ import type { z } from 'zod';
 import type {
   zChartBreakdown,
   zChartEvent,
+  zChartEventItem,
   zChartEventSegment,
+  zChartFormula,
   zChartInput,
   zChartInputAI,
   zChartType,
@@ -24,6 +26,8 @@ export type IChartProps = z.infer<typeof zReportInput> & {
   previousIndicatorInverted?: boolean;
 };
 export type IChartEvent = z.infer<typeof zChartEvent>;
+export type IChartFormula = z.infer<typeof zChartFormula>;
+export type IChartEventItem = z.infer<typeof zChartEventItem>;
 export type IChartEventSegment = z.infer<typeof zChartEventSegment>;
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =

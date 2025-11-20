@@ -57,12 +57,51 @@ export const zChartEvent = z.object({
     .default([])
     .describe('Filters applied specifically to this event'),
 });
+
+export const zChartFormula = z.object({
+  id: z
+    .string()
+    .optional()
+    .describe('Unique identifier for the formula configuration'),
+  type: z.literal('formula'),
+  formula: z.string().describe('The formula expression (e.g., A+B, A/B)'),
+  displayName: z
+    .string()
+    .optional()
+    .describe('A user-friendly name for display purposes'),
+});
+
+// Event with type field for discriminated union
+export const zChartEventWithType = zChartEvent.extend({
+  type: z.literal('event'),
+});
+
+export const zChartEventItem = z.discriminatedUnion('type', [
+  zChartEventWithType,
+  zChartFormula,
+]);
+
 export const zChartBreakdown = z.object({
   id: z.string().optional(),
   name: z.string(),
 });
 
-export const zChartEvents = z.array(zChartEvent);
+// Support both old format (array of events without type) and new format (array of event/formula items)
+// Preprocess to normalize: if item has 'type' field, use discriminated union; otherwise, add type: 'event'
+export const zChartEvents = z.preprocess((val) => {
+  if (!Array.isArray(val)) return val;
+  return val.map((item: any) => {
+    // If item already has type field, return as-is
+    if (item && typeof item === 'object' && 'type' in item) {
+      return item;
+    }
+    // Otherwise, add type: 'event' for backward compatibility
+    if (item && typeof item === 'object' && 'name' in item) {
+      return { ...item, type: 'event' };
+    }
+    return item;
+  });
+}, z.array(zChartEventItem));
 export const zChartBreakdowns = z.array(zChartBreakdown);
 
 export const zChartType = z.enum(objectToZodEnums(chartTypes));

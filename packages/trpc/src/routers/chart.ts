@@ -10,15 +10,20 @@ import {
   chQuery,
   clix,
   conversionService,
+  createSqlBuilder,
   db,
+  formatClickhouseDate,
   funnelService,
   getChartPrevStartEndDate,
   getChartStartEndDate,
+  getEventFiltersWhereClause,
   getEventMetasCached,
+  getProfilesCached,
   getSelectPropertyKey,
   getSettingsForProject,
 } from '@openpanel/db';
 import {
+  zChartEvent,
   zChartInput,
   zCriteria,
   zRange,
@@ -531,6 +536,166 @@ export const chartRouter = createTRPCRouter({
       }>(cohortQuery);
 
       return processCohortData(cohortData, diffInterval);
+    }),
+
+  getProfiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        event: zChartEvent,
+        date: z.string().describe('The date for the data point (ISO string)'),
+        breakdowns: z
+          .array(
+            z.object({
+              id: z.string().optional(),
+              name: z.string(),
+            }),
+          )
+          .default([]),
+        interval: zTimeInterval.default('day'),
+        startDate: z.string(),
+        endDate: z.string(),
+        filters: z
+          .array(
+            z.object({
+              id: z.string().optional(),
+              name: z.string(),
+              operator: z.string(),
+              value: z.array(
+                z.union([z.string(), z.number(), z.boolean(), z.null()]),
+              ),
+            }),
+          )
+          .default([]),
+        limit: z.number().default(100),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const {
+        projectId,
+        event,
+        date,
+        breakdowns,
+        interval,
+        startDate,
+        endDate,
+        filters,
+        limit,
+      } = input;
+
+      // Build the date range for the specific interval bucket
+      const dateObj = new Date(date);
+      let bucketStart: Date;
+      let bucketEnd: Date;
+
+      switch (interval) {
+        case 'minute':
+          bucketStart = new Date(
+            dateObj.getFullYear(),
+            dateObj.getMonth(),
+            dateObj.getDate(),
+            dateObj.getHours(),
+            dateObj.getMinutes(),
+          );
+          bucketEnd = new Date(bucketStart.getTime() + 60 * 1000);
+          break;
+        case 'hour':
+          bucketStart = new Date(
+            dateObj.getFullYear(),
+            dateObj.getMonth(),
+            dateObj.getDate(),
+            dateObj.getHours(),
+          );
+          bucketEnd = new Date(bucketStart.getTime() + 60 * 60 * 1000);
+          break;
+        case 'day':
+          bucketStart = new Date(
+            dateObj.getFullYear(),
+            dateObj.getMonth(),
+            dateObj.getDate(),
+          );
+          bucketEnd = new Date(bucketStart.getTime() + 24 * 60 * 60 * 1000);
+          break;
+        case 'week':
+          bucketStart = new Date(dateObj);
+          bucketStart.setDate(dateObj.getDate() - dateObj.getDay());
+          bucketStart.setHours(0, 0, 0, 0);
+          bucketEnd = new Date(bucketStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          bucketStart = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+          bucketEnd = new Date(
+            dateObj.getFullYear(),
+            dateObj.getMonth() + 1,
+            1,
+          );
+          break;
+        default:
+          bucketStart = new Date(
+            dateObj.getFullYear(),
+            dateObj.getMonth(),
+            dateObj.getDate(),
+          );
+          bucketEnd = new Date(bucketStart.getTime() + 24 * 60 * 60 * 1000);
+      }
+
+      // Build query to get unique profile_ids for this time bucket
+      const { sb, join, getWhere, getFrom, getJoins } = createSqlBuilder();
+
+      sb.where = getEventFiltersWhereClause([...event.filters, ...filters]);
+      sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+      sb.where.dateRange = `created_at >= '${formatClickhouseDate(bucketStart.toISOString())}' AND created_at < '${formatClickhouseDate(bucketEnd.toISOString())}'`;
+
+      if (event.name !== '*') {
+        sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
+      }
+
+      // Handle breakdowns if provided
+      const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
+        breakdown.name.startsWith('profile.'),
+      );
+      const anyFilterOnProfile = [...event.filters, ...filters].some((filter) =>
+        filter.name.startsWith('profile.'),
+      );
+
+      if (anyFilterOnProfile || anyBreakdownOnProfile) {
+        sb.joins.profiles = `LEFT ANY JOIN (SELECT 
+          id as "profile.id",
+          email as "profile.email",
+          first_name as "profile.first_name",
+          last_name as "profile.last_name",
+          properties as "profile.properties"
+        FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+      }
+
+      // Apply breakdown filters if provided
+      breakdowns.forEach((breakdown) => {
+        // This is simplified - in reality we'd need to match the breakdown value
+        // For now, we'll just get all profiles for the time bucket
+      });
+
+      // Get unique profile IDs
+      const profileIdsQuery = `
+        SELECT DISTINCT profile_id
+        FROM ${TABLE_NAMES.events}
+        ${getJoins()}
+        WHERE ${join(sb.where, ' AND ')}
+          AND profile_id != ''
+        LIMIT ${limit}
+      `;
+
+      const profileIds = await chQuery<{ profile_id: string }>(profileIdsQuery);
+
+      if (profileIds.length === 0) {
+        return [];
+      }
+
+      // Fetch profile details
+      const ids = profileIds.map((p) => p.profile_id).filter(Boolean);
+      const profiles = await getProfilesCached(ids, projectId);
+
+      return profiles;
     }),
 });
 

@@ -175,8 +175,8 @@ export function getChartSql({
 
   if (event.segment === 'property_sum' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `sum(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'sum(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -185,8 +185,8 @@ export function getChartSql({
 
   if (event.segment === 'property_average' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `avg(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'avg(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -195,8 +195,8 @@ export function getChartSql({
 
   if (event.segment === 'property_max' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `max(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'max(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `max(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -205,8 +205,8 @@ export function getChartSql({
 
   if (event.segment === 'property_min' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `min(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'min(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `min(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -230,16 +230,13 @@ export function getChartSql({
     return sql;
   }
 
-  // Add total unique count for user segment using a scalar subquery
-  if (event.segment === 'user') {
-    const totalUniqueSubquery = `(
+  const totalUniqueSubquery = `(
       SELECT ${sb.select.count}
       FROM ${sb.from}
       ${getJoins()}
       ${getWhere()}
     )`;
-    sb.select.total_unique_count = `${totalUniqueSubquery} as total_count`;
-  }
+  sb.select.total_unique_count = `${totalUniqueSubquery} as total_count`;
 
   const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
   console.log('-- Report --');

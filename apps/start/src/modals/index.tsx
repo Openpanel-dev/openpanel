@@ -31,6 +31,7 @@ import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
 import SelectBillingPlan from './select-billing-plan';
 import ShareOverviewModal from './share-overview-modal';
+import ViewChartUsers from './view-chart-users';
 
 const modals = {
   OverviewTopPagesModal: OverviewTopPagesModal,
@@ -51,6 +52,7 @@ const modals = {
   EditReference: EditReference,
   ShareOverviewModal: ShareOverviewModal,
   AddReference: AddReference,
+  ViewChartUsers: ViewChartUsers,
   Instructions: Instructions,
   OnboardingTroubleshoot: OnboardingTroubleshoot,
   DateRangerPicker: DateRangerPicker,

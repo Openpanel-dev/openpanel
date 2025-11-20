@@ -8,7 +8,14 @@ import { getChartColor } from '@/utils/theme';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
 import { last } from 'ramda';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { UsersIcon, BookmarkIcon } from 'lucide-react';
 import {
   CartesianGrid,
   ComposedChart,
@@ -44,10 +51,14 @@ export function Chart({ data }: Props) {
       endDate,
       range,
       lineType,
+      events,
+      breakdowns,
     },
     isEditMode,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
+  const [clickPosition, setClickPosition] = useState<{ x: number; y: number } | null>(null);
+  const [clickedData, setClickedData] = useState<{ date: string; serieId?: string } | null>(null);
   const dataLength = data.series[0]?.data?.length || 0;
   const trpc = useTRPC();
   const references = useQuery(
@@ -130,18 +141,95 @@ export function Chart({ data }: Props) {
 
   const handleChartClick = useCallback((e: any) => {
     if (e?.activePayload?.[0]) {
-      const clickedData = e.activePayload[0].payload;
-      if (clickedData.date) {
-        pushModal('AddReference', {
-          datetime: new Date(clickedData.date).toISOString(),
+      const payload = e.activePayload[0].payload;
+      const activeCoordinate = e.activeCoordinate;
+      if (payload.date) {
+        setClickedData({
+          date: payload.date,
+          serieId: e.activePayload[0].dataKey?.toString().replace(':count', ''),
+        });
+        setClickPosition({
+          x: activeCoordinate?.x ?? 0,
+          y: activeCoordinate?.y ?? 0,
         });
       }
     }
   }, []);
 
+  const handleViewUsers = useCallback(() => {
+    if (!clickedData || !projectId || !startDate || !endDate) return;
+    
+    // Find the event for the clicked serie
+    const serie = series.find((s) => s.id === clickedData.serieId);
+    const event = events.find((e) => {
+      const normalized = 'type' in e ? e : { ...e, type: 'event' as const };
+      if (normalized.type === 'event') {
+        return serie?.event.id === normalized.id || serie?.event.name === normalized.name;
+      }
+      return false;
+    });
+
+    if (event) {
+      const normalized = 'type' in event ? event : { ...event, type: 'event' as const };
+      if (normalized.type === 'event') {
+        pushModal('ViewChartUsers', {
+          projectId,
+          event: normalized,
+          date: clickedData.date,
+          breakdowns: breakdowns || [],
+          interval,
+          startDate,
+          endDate,
+          filters: normalized.filters || [],
+        });
+      }
+    }
+    setClickPosition(null);
+    setClickedData(null);
+  }, [clickedData, projectId, startDate, endDate, events, series, breakdowns, interval]);
+
+  const handleAddReference = useCallback(() => {
+    if (!clickedData) return;
+    pushModal('AddReference', {
+      datetime: new Date(clickedData.date).toISOString(),
+    });
+    setClickPosition(null);
+    setClickedData(null);
+  }, [clickedData]);
+
   return (
     <ReportChartTooltip.TooltipProvider references={references.data}>
       <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
+        <DropdownMenu
+          open={clickPosition !== null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setClickPosition(null);
+              setClickedData(null);
+            }
+          }}
+        >
+          <DropdownMenuTrigger asChild>
+            <div
+              style={{
+                position: 'absolute',
+                left: clickPosition?.x ?? -9999,
+                top: clickPosition?.y ?? -9999,
+                pointerEvents: 'none',
+              }}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={handleViewUsers}>
+              <UsersIcon size={16} className="mr-2" />
+              View Users
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleAddReference}>
+              <BookmarkIcon size={16} className="mr-2" />
+              Add Reference
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <ResponsiveContainer>
           <ComposedChart data={rechartData} onClick={handleChartClick}>
             <Customized component={calcStrokeDasharray} />

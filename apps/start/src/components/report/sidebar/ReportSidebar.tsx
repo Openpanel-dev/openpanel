@@ -9,17 +9,12 @@ import { ReportSettings } from './ReportSettings';
 
 export function ReportSidebar() {
   const { chartType } = useSelector((state) => state.report);
-  const showFormula =
-    chartType !== 'conversion' &&
-    chartType !== 'funnel' &&
-    chartType !== 'retention';
   const showBreakdown = chartType !== 'retention';
   return (
     <>
       <div className="flex flex-col gap-8">
         <ReportEvents />
         {showBreakdown && <ReportBreakdowns />}
-        {showFormula && <ReportFormula />}
         <ReportSettings />
       </div>
       <SheetFooter>

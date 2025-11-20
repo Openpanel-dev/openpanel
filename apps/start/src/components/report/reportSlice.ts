@@ -12,6 +12,8 @@ import {
 import type {
   IChartBreakdown,
   IChartEvent,
+  IChartEventItem,
+  IChartFormula,
   IChartLineType,
   IChartProps,
   IChartRange,
@@ -86,24 +88,45 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.name = action.payload;
     },
-    // Events
+    // Events and Formulas
     addEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
       state.dirty = true;
       state.events.push({
         id: shortId(),
+        type: 'event',
         ...action.payload,
-      });
+      } as IChartEventItem);
     },
-    duplicateEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
+    addFormula: (
+      state,
+      action: PayloadAction<Omit<IChartFormula, 'id'>>,
+    ) => {
       state.dirty = true;
       state.events.push({
-        ...action.payload,
-        filters: action.payload.filters.map((filter) => ({
-          ...filter,
-          id: shortId(),
-        })),
         id: shortId(),
-      });
+        ...action.payload,
+      } as IChartEventItem);
+    },
+    duplicateEvent: (
+      state,
+      action: PayloadAction<IChartEventItem>,
+    ) => {
+      state.dirty = true;
+      if (action.payload.type === 'event') {
+        state.events.push({
+          ...action.payload,
+          filters: action.payload.filters.map((filter) => ({
+            ...filter,
+            id: shortId(),
+          })),
+          id: shortId(),
+        } as IChartEventItem);
+      } else {
+        state.events.push({
+          ...action.payload,
+          id: shortId(),
+        } as IChartEventItem);
+      }
     },
     removeEvent: (
       state,
@@ -113,13 +136,18 @@ export const reportSlice = createSlice({
     ) => {
       state.dirty = true;
       state.events = state.events.filter(
-        (event) => event.id !== action.payload.id,
+        (event) => {
+          // Handle both old format (no type) and new format
+          const eventId = 'type' in event ? event.id : (event as IChartEvent).id;
+          return eventId !== action.payload.id;
+        },
       );
     },
-    changeEvent: (state, action: PayloadAction<IChartEvent>) => {
+    changeEvent: (state, action: PayloadAction<IChartEventItem>) => {
       state.dirty = true;
       state.events = state.events.map((event) => {
-        if (event.id === action.payload.id) {
+        const eventId = 'type' in event ? event.id : (event as IChartEvent).id;
+        if (eventId === action.payload.id) {
           return action.payload;
         }
         return event;
@@ -280,6 +308,7 @@ export const {
   setReport,
   setName,
   addEvent,
+  addFormula,
   removeEvent,
   duplicateEvent,
   changeEvent,
