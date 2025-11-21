@@ -19,5 +19,5 @@
 // })();
 
 export function getInitSnippet(): string {
-  return `window.op=window.op||function(){var n=[],o=new Proxy((function(){arguments.length>0&&n.push(Array.prototype.slice.call(arguments))}),{get:function(o,t){return"q"===t?n:function(){n.push([t].concat(Array.prototype.slice.call(arguments)))}}});return o}();`;
+  return `window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();`;
 }
