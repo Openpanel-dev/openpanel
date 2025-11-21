@@ -99,7 +99,7 @@ export function transformReport(
   return {
     id: report.id,
     projectId: report.projectId,
-    events: eventsData.map(transformReportEventItem),
+    series: eventsData.map(transformReportEventItem),
     breakdowns: report.breakdowns as IChartBreakdown[],
     chartType: report.chartType,
     lineType: (report.lineType as IChartLineType) ?? lineTypes.monotone,

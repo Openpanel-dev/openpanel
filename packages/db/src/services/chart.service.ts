@@ -155,7 +155,8 @@ export function getChartSql({
   }
 
   breakdowns.forEach((breakdown, index) => {
-    const key = `label_${index}`;
+    // Breakdowns start at label_1 (label_0 is reserved for event name)
+    const key = `label_${index + 1}`;
     sb.select[key] = `${getSelectPropertyKey(breakdown.name)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });

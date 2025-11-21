@@ -41,7 +41,7 @@ const initialState: InitialState = {
   lineType: 'monotone',
   interval: 'day',
   breakdowns: [],
-  events: [],
+  series: [],
   range: '30d',
   startDate: null,
   endDate: null,
@@ -88,10 +88,10 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.name = action.payload;
     },
-    // Events and Formulas
+    // Series (Events and Formulas)
     addEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
       state.dirty = true;
-      state.events.push({
+      state.series.push({
         id: shortId(),
         type: 'event',
         ...action.payload,
@@ -102,7 +102,7 @@ export const reportSlice = createSlice({
       action: PayloadAction<Omit<IChartFormula, 'id'>>,
     ) => {
       state.dirty = true;
-      state.events.push({
+      state.series.push({
         id: shortId(),
         ...action.payload,
       } as IChartEventItem);
@@ -113,16 +113,16 @@ export const reportSlice = createSlice({
     ) => {
       state.dirty = true;
       if (action.payload.type === 'event') {
-        state.events.push({
-          ...action.payload,
-          filters: action.payload.filters.map((filter) => ({
-            ...filter,
-            id: shortId(),
-          })),
+        state.series.push({
+        ...action.payload,
+        filters: action.payload.filters.map((filter) => ({
+          ...filter,
           id: shortId(),
+        })),
+        id: shortId(),
         } as IChartEventItem);
       } else {
-        state.events.push({
+        state.series.push({
           ...action.payload,
           id: shortId(),
         } as IChartEventItem);
@@ -135,7 +135,7 @@ export const reportSlice = createSlice({
       }>,
     ) => {
       state.dirty = true;
-      state.events = state.events.filter(
+      state.series = state.series.filter(
         (event) => {
           // Handle both old format (no type) and new format
           const eventId = 'type' in event ? event.id : (event as IChartEvent).id;
@@ -145,7 +145,7 @@ export const reportSlice = createSlice({
     },
     changeEvent: (state, action: PayloadAction<IChartEventItem>) => {
       state.dirty = true;
-      state.events = state.events.map((event) => {
+      state.series = state.series.map((event) => {
         const eventId = 'type' in event ? event.id : (event as IChartEvent).id;
         if (eventId === action.payload.id) {
           return action.payload;
@@ -293,9 +293,9 @@ export const reportSlice = createSlice({
     ) {
       state.dirty = true;
       const { fromIndex, toIndex } = action.payload;
-      const [movedEvent] = state.events.splice(fromIndex, 1);
+      const [movedEvent] = state.series.splice(fromIndex, 1);
       if (movedEvent) {
-        state.events.splice(toIndex, 0, movedEvent);
+        state.series.splice(toIndex, 0, movedEvent);
       }
     },
   },

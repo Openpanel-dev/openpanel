@@ -3,6 +3,7 @@ export * from './src/clickhouse/client';
 export * from './src/clickhouse/csv';
 export * from './src/sql-builder';
 export * from './src/services/chart.service';
+export * from './src/engine';
 export * from './src/services/clients.service';
 export * from './src/services/dashboard.service';
 export * from './src/services/event.service';

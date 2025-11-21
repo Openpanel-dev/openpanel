@@ -20,7 +20,7 @@ export class FunnelService {
       : ['session_id', 'session_id'];
   }
 
-  private getFunnelConditions(events: IChartEvent[]) {
+  private getFunnelConditions(events: IChartEvent[] = []) {
     return events.map((event) => {
       const { sb, getWhere } = createSqlBuilder();
       sb.where = getEventFiltersWhereClause(event.filters);
@@ -110,7 +110,8 @@ export class FunnelService {
     projectId,
     startDate,
     endDate,
-    events,
+    series,
+    events, // Backward compatibility - use series if available
     funnelWindow = 24,
     funnelGroup,
     breakdowns = [],
@@ -120,15 +121,20 @@ export class FunnelService {
       throw new Error('startDate and endDate are required');
     }
 
-    if (events.length === 0) {
+    // Use series if available, otherwise fall back to events (backward compat)
+    const eventSeries = (series ?? events ?? []).filter(
+      (item): item is IChartEvent => item.type === 'event',
+    ) as IChartEvent[];
+
+    if (eventSeries.length === 0) {
       throw new Error('events are required');
     }
 
     const funnelWindowSeconds = funnelWindow * 3600;
     const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
     const group = this.getFunnelGroup(funnelGroup);
-    const funnels = this.getFunnelConditions(events);
-    const profileFilters = this.getProfileFilters(events);
+    const funnels = this.getFunnelConditions(eventSeries);
+    const profileFilters = this.getProfileFilters(eventSeries);
     const anyFilterOnProfile = profileFilters.length > 0;
     const anyBreakdownOnProfile = breakdowns.some((b) =>
       b.name.startsWith('profile.'),
@@ -152,7 +158,7 @@ export class FunnelService {
       .where(
         'name',
         'IN',
-        events.map((e) => e.name),
+        eventSeries.map((e) => e.name),
       )
       .groupBy([group[1], ...breakdowns.map((b, index) => `b_${index}`)]);
 
@@ -208,7 +214,7 @@ export class FunnelService {
 
     return funnelSeries
       .map((data) => {
-        const maxLevel = events.length;
+        const maxLevel = eventSeries.length;
         const filledFunnelRes = this.fillFunnel(
           data.map((d) => ({ level: d.level, count: d.count })),
           maxLevel,
@@ -220,7 +226,7 @@ export class FunnelService {
             (acc, item, index, list) => {
               const prev = list[index - 1] ?? { count: totalSessions };
               const next = list[index + 1];
-              const event = events[item.level - 1]!;
+              const event = eventSeries[item.level - 1]!;
               return [
                 ...acc,
                 {

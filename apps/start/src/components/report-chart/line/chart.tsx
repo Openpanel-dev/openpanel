@@ -1,3 +1,9 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -5,17 +11,12 @@ import { pushModal } from '@/modals';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
+import type { IChartEvent } from '@openpanel/validation';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
+import { BookmarkIcon, UsersIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { useCallback, useState } from 'react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { UsersIcon, BookmarkIcon } from 'lucide-react';
 import {
   CartesianGrid,
   ComposedChart,
@@ -51,14 +52,20 @@ export function Chart({ data }: Props) {
       endDate,
       range,
       lineType,
-      events,
+      series: reportSeries,
       breakdowns,
     },
     isEditMode,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
-  const [clickPosition, setClickPosition] = useState<{ x: number; y: number } | null>(null);
-  const [clickedData, setClickedData] = useState<{ date: string; serieId?: string } | null>(null);
+  const [clickPosition, setClickPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [clickedData, setClickedData] = useState<{
+    date: string;
+    serieId?: string;
+  } | null>(null);
   const dataLength = data.series[0]?.data?.length || 0;
   const trpc = useTRPC();
   const references = useQuery(
@@ -144,9 +151,19 @@ export function Chart({ data }: Props) {
       const payload = e.activePayload[0].payload;
       const activeCoordinate = e.activeCoordinate;
       if (payload.date) {
+        // Find the first valid serie ID from activePayload (skip calcStrokeDasharray)
+        const validPayload = e.activePayload.find(
+          (p: any) =>
+            p.dataKey &&
+            p.dataKey !== 'calcStrokeDasharray' &&
+            typeof p.dataKey === 'string' &&
+            p.dataKey.includes(':count'),
+        );
+        const serieId = validPayload?.dataKey?.toString().replace(':count', '');
+
         setClickedData({
           date: payload.date,
-          serieId: e.activePayload[0].dataKey?.toString().replace(':count', ''),
+          serieId,
         });
         setClickPosition({
           x: activeCoordinate?.x ?? 0,
@@ -157,36 +174,39 @@ export function Chart({ data }: Props) {
   }, []);
 
   const handleViewUsers = useCallback(() => {
-    if (!clickedData || !projectId || !startDate || !endDate) return;
-    
-    // Find the event for the clicked serie
-    const serie = series.find((s) => s.id === clickedData.serieId);
-    const event = events.find((e) => {
-      const normalized = 'type' in e ? e : { ...e, type: 'event' as const };
-      if (normalized.type === 'event') {
-        return serie?.event.id === normalized.id || serie?.event.name === normalized.name;
-      }
-      return false;
-    });
+    if (!clickedData || !projectId) return;
 
-    if (event) {
-      const normalized = 'type' in event ? event : { ...event, type: 'event' as const };
-      if (normalized.type === 'event') {
-        pushModal('ViewChartUsers', {
-          projectId,
-          event: normalized,
-          date: clickedData.date,
-          breakdowns: breakdowns || [],
-          interval,
-          startDate,
-          endDate,
-          filters: normalized.filters || [],
-        });
-      }
-    }
+    // Pass the chart data (which we already have) and the report config
+    pushModal('ViewChartUsers', {
+      chartData: data,
+      report: {
+        projectId,
+        series: reportSeries,
+        breakdowns: breakdowns || [],
+        interval,
+        startDate,
+        endDate,
+        range,
+        previous,
+        chartType: 'linear',
+        metric: 'sum',
+      },
+      date: clickedData.date,
+    });
     setClickPosition(null);
     setClickedData(null);
-  }, [clickedData, projectId, startDate, endDate, events, series, breakdowns, interval]);
+  }, [
+    clickedData,
+    projectId,
+    data,
+    reportSeries,
+    breakdowns,
+    interval,
+    startDate,
+    endDate,
+    range,
+    previous,
+  ]);
 
   const handleAddReference = useCallback(() => {
     if (!clickedData) return;

@@ -1,5 +1,5 @@
 import { NOT_SET_VALUE } from '@openpanel/constants';
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartEvent, IChartInput } from '@openpanel/validation';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -17,7 +17,8 @@ export class ConversionService {
     endDate,
     funnelGroup,
     funnelWindow = 24,
-    events,
+    series,
+    events, // Backward compatibility - use series if available
     breakdowns = [],
     interval,
     timezone,
@@ -30,7 +31,12 @@ export class ConversionService {
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
-    if (events.length !== 2) {
+    // Use series if available, otherwise fall back to events (backward compat)
+    const eventSeries = (series ?? events ?? []).filter(
+      (item): item is IChartEvent => item.type === 'event',
+    ) as IChartEvent[];
+
+    if (eventSeries.length !== 2) {
       throw new Error('events must be an array of two events');
     }
 
@@ -38,8 +44,8 @@ export class ConversionService {
       throw new Error('startDate and endDate are required');
     }
 
-    const eventA = events[0]!;
-    const eventB = events[1]!;
+    const eventA = eventSeries[0]!;
+    const eventB = eventSeries[1]!;
     const whereA = Object.values(
       getEventFiltersWhereClause(eventA.filters),
     ).join(' AND ');

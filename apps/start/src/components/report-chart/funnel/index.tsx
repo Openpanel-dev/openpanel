@@ -14,7 +14,7 @@ import { Chart, Summary, Tables } from './chart';
 export function ReportFunnelChart() {
   const {
     report: {
-      events,
+      series,
       range,
       projectId,
       funnelWindow,
@@ -28,7 +28,7 @@ export function ReportFunnelChart() {
   } = useReportChartContext();
 
   const input: IChartInput = {
-    events,
+    series,
     range,
     projectId,
     interval: 'day',
@@ -44,7 +44,7 @@ export function ReportFunnelChart() {
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.funnel.queryOptions(input, {
-      enabled: !isLazyLoading && input.events.length > 0,
+      enabled: !isLazyLoading && input.series.length > 0,
     }),
   );
 

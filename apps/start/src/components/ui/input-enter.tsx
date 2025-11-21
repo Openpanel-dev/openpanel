@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { RefreshCcwIcon } from 'lucide-react';
 import { type InputHTMLAttributes, useEffect, useState } from 'react';
 import { Badge } from './badge';
-import { Input } from './input';
+import { Input, type InputProps } from './input';
 
 export function InputEnter({
   value,
@@ -13,7 +13,7 @@ export function InputEnter({
 }: {
   value: string | undefined;
   onChangeValue: (value: string) => void;
-} & InputHTMLAttributes<HTMLInputElement>) {
+} & InputProps) {
   const [internalValue, setInternalValue] = useState(value ?? '');
 
   useEffect(() => {
@@ -33,7 +33,6 @@ export function InputEnter({
             onChangeValue(internalValue);
           }
         }}
-        size="default"
       />
       <div className="absolute right-2 top-1/2 -translate-y-1/2">
         <AnimatePresence>

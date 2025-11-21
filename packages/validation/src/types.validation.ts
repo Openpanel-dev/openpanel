@@ -8,6 +8,7 @@ import type {
   zChartFormula,
   zChartInput,
   zChartInputAI,
+  zChartSeries,
   zChartType,
   zCriteria,
   zLineType,
@@ -28,6 +29,9 @@ export type IChartProps = z.infer<typeof zReportInput> & {
 export type IChartEvent = z.infer<typeof zChartEvent>;
 export type IChartFormula = z.infer<typeof zChartFormula>;
 export type IChartEventItem = z.infer<typeof zChartEventItem>;
+export type IChartSeries = z.infer<typeof zChartSeries>;
+// Backward compatibility alias
+export type IChartEvents = IChartSeries;
 export type IChartEventSegment = z.infer<typeof zChartEventSegment>;
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =
@@ -49,7 +53,7 @@ export type IGetChartDataInput = {
   projectId: string;
   startDate: string;
   endDate: string;
-} & Omit<IChartInput, 'events' | 'name' | 'startDate' | 'endDate' | 'range'>;
+} & Omit<IChartInput, 'series' | 'name' | 'startDate' | 'endDate' | 'range'>;
 export type ICriteria = z.infer<typeof zCriteria>;
 
 export type PreviousValue =
@@ -81,6 +85,7 @@ export type IChartSerie = {
   event: {
     id?: string;
     name: string;
+    breakdowns?: Record<string, string>;
   };
   metrics: Metrics;
   data: {
