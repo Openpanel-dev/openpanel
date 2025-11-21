@@ -275,8 +275,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/common
       '@openpanel/nextjs':
-        specifier: ^1.0.15
-        version: 1.0.15(next@15.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        specifier: ^1.0.17
+        version: 1.0.17(next@15.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       '@openpanel/payments':
         specifier: workspace:^
         version: link:../../packages/payments
@@ -1404,7 +1404,7 @@ importers:
   packages/sdks/astro:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.3-local
+        specifier: workspace:1.0.4-local
         version: link:../web
     devDependencies:
       astro:
@@ -1442,7 +1442,7 @@ importers:
   packages/sdks/nextjs:
     dependencies:
       '@openpanel/web':
-        specifier: workspace:1.0.3-local
+        specifier: workspace:1.0.4-local
         version: link:../web
       next:
         specifier: ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
@@ -4796,8 +4796,8 @@ packages:
     resolution: {integrity: sha512-T8TbSnGsxo6TDBJx/Sgv/BlVJL3tshxZP7Aq5R1mSnM5OcHY2dQaxLMu2+E8u3gN0MLOzdjurqN4ZRVuzQycOQ==}
     engines: {node: '>=8.0'}
 
-  '@openpanel/nextjs@1.0.15':
-    resolution: {integrity: sha512-qc8CKcQ5i7+EANDBZ7yRixDZHd2S7C379UcplH7b58gcLexkp3LRlhw3Y/ujPX1hnE28QkoPY5As+n7H6OBZ7g==}
+  '@openpanel/nextjs@1.0.17':
+    resolution: {integrity: sha512-vH1PHlO43WJq2wOpQ36kxvWqsht6S26HHC/NyjA9uPVGAptYlXqVJi4fx5MI79azTaGMZzuxmW2yXAJhy9gjhQ==}
     peerDependencies:
       next: ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -4806,11 +4806,14 @@ packages:
   '@openpanel/sdk@1.0.0':
     resolution: {integrity: sha512-FNmmfjdXoC/VHEjA+WkrQ4lyM5lxEmV7xDd57uj4E+lIS0sU3DLG2mV/dpS8AscnZbUvuMn3kPhiLCqYzuv/gg==}
 
+  '@openpanel/sdk@1.0.1':
+    resolution: {integrity: sha512-9YQlrEnmqyr5u+y+MRE/pHYnrtV/oInPJZclVqVDiiQyEL4GmpaU/ZAbJPNVln7ZPw4i5Voj7vrlVY3rlbWfyw==}
+
   '@openpanel/web@1.0.1':
     resolution: {integrity: sha512-cVZ7Kr9SicczJ/RDIfEtZs8+1iGDzwkabVA/j3NqSl8VSucsC8m1+LVbjmCDzCJNnK4yVn6tEcc9PJRi2rtllw==}
 
-  '@openpanel/web@1.0.2':
-    resolution: {integrity: sha512-vU9Z9Kc0dxyE4abTi9KAu2zDE2/z4RDcHDLk9NwNRgrZGDlYereOatwKNnvrwfU96066bjfOrSd+vbjmkmsOoA==}
+  '@openpanel/web@1.0.4':
+    resolution: {integrity: sha512-wEmVXAk6K5hRO/2KJc7GSrt6V8YhzmzntyLkEPshysnFMsWLNFDYUdu11sNy+Wn0cEb4HKDv/Nn34wNLJX0ydw==}
 
   '@openstatus/react@0.0.3':
     resolution: {integrity: sha512-uDiegz7e3H67pG8lTT+op+6w5keTT7XpcENrREaqlWl5j53TYyO8nheOG1PeNw2/Qgd5KaGeRJJFn1crhTUSYw==}
@@ -5300,6 +5303,7 @@ packages:
   '@opentelemetry/otlp-proto-exporter-base@0.51.1':
     resolution: {integrity: sha512-gxxxwfk0inDMb5DLeuxQ3L8TtptxSiTNHE4nnAJH34IQXAVRhXSXW1rK8PmDKDngRPIZ6J7ncUCjjIn8b+AgqQ==}
     engines: {node: '>=14'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
     peerDependencies:
       '@opentelemetry/api': ^1.0.0
 
@@ -13470,6 +13474,7 @@ packages:
 
   oniguruma-to-js@0.4.3:
     resolution: {integrity: sha512-X0jWUcAlxORhOqqBREgPMgnshB7ZGYszBNspP+tS9hPD3l13CdaXcHbgImoHUHlrvGx/7AvFEkTRhAGYh+jzjQ==}
+    deprecated: use oniguruma-to-es instead
 
   open@6.4.0:
     resolution: {integrity: sha512-IFenVPgF70fSm1keSd2iDBIDIBZkroLeuffXq+wKTzTJlBpesFWojV9lb8mzOfaAzM1sr7HQHuO0vtV0zYekGg==}
@@ -19879,22 +19884,24 @@ snapshots:
 
   '@oozcitak/util@8.3.8': {}
 
-  '@openpanel/nextjs@1.0.15(next@15.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
+  '@openpanel/nextjs@1.0.17(next@15.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)':
     dependencies:
-      '@openpanel/web': 1.0.2
+      '@openpanel/web': 1.0.4
       next: 15.0.3(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       react: 19.1.1
       react-dom: 19.1.1(react@19.1.1)
 
   '@openpanel/sdk@1.0.0': {}
 
+  '@openpanel/sdk@1.0.1': {}
+
   '@openpanel/web@1.0.1':
     dependencies:
       '@openpanel/sdk': 1.0.0
 
-  '@openpanel/web@1.0.2':
+  '@openpanel/web@1.0.4':
     dependencies:
-      '@openpanel/sdk': 1.0.0
+      '@openpanel/sdk': 1.0.1
 
   '@openstatus/react@0.0.3(react@19.1.1)':
     dependencies:
