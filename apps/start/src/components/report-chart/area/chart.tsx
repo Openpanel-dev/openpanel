@@ -7,6 +7,7 @@ import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
+import { BookmarkIcon, UsersIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { useCallback } from 'react';
 import {
@@ -25,6 +26,10 @@ import {
 
 import { useDashedStroke } from '@/hooks/use-dashed-stroke';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
+import {
+  ChartClickMenu,
+  type ChartClickMenuItem,
+} from '../common/chart-click-menu';
 import { ReportChartTooltip } from '../common/report-chart-tooltip';
 import { ReportTable } from '../common/report-table';
 import { SerieIcon } from '../common/serie-icon';
@@ -45,6 +50,8 @@ export function Chart({ data }: Props) {
       endDate,
       range,
       lineType,
+      series: reportSeries,
+      breakdowns,
     },
     isEditMode,
     options: { hideXAxis, hideYAxis },
@@ -126,16 +133,66 @@ export function Chart({ data }: Props) {
     interval,
   });
 
-  const handleChartClick = useCallback((e: any) => {
-    if (e?.activePayload?.[0]) {
-      const clickedData = e.activePayload[0].payload;
-      if (clickedData.date) {
-        pushModal('AddReference', {
-          datetime: new Date(clickedData.date).toISOString(),
+  const getMenuItems = useCallback(
+    (e: any, clickedData: any): ChartClickMenuItem[] => {
+      const items: ChartClickMenuItem[] = [];
+
+      if (!clickedData?.date) {
+        return items;
+      }
+
+      // View Users - only show if we have projectId
+      if (projectId) {
+        items.push({
+          label: 'View Users',
+          icon: <UsersIcon size={16} />,
+          onClick: () => {
+            pushModal('ViewChartUsers', {
+              type: 'chart',
+              chartData: data,
+              report: {
+                projectId,
+                series: reportSeries,
+                breakdowns: breakdowns || [],
+                interval,
+                startDate,
+                endDate,
+                range,
+                previous,
+                chartType: 'area',
+                metric: 'sum',
+              },
+              date: clickedData.date,
+            });
+          },
         });
       }
-    }
-  }, []);
+
+      // Add Reference - always show
+      items.push({
+        label: 'Add Reference',
+        icon: <BookmarkIcon size={16} />,
+        onClick: () => {
+          pushModal('AddReference', {
+            datetime: new Date(clickedData.date).toISOString(),
+          });
+        },
+      });
+
+      return items;
+    },
+    [
+      projectId,
+      data,
+      reportSeries,
+      breakdowns,
+      interval,
+      startDate,
+      endDate,
+      range,
+      previous,
+    ],
+  );
 
   const { getStrokeDasharray, calcStrokeDasharray, handleAnimationEnd } =
     useDashedStroke({
@@ -144,9 +201,10 @@ export function Chart({ data }: Props) {
 
   return (
     <ReportChartTooltip.TooltipProvider references={references.data}>
-      <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
-        <ResponsiveContainer>
-          <ComposedChart data={rechartData} onClick={handleChartClick}>
+      <ChartClickMenu getMenuItems={getMenuItems}>
+        <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
+          <ResponsiveContainer>
+            <ComposedChart data={rechartData}>
             <Customized component={calcStrokeDasharray} />
             <Line
               dataKey="calcStrokeDasharray"
@@ -244,6 +302,7 @@ export function Chart({ data }: Props) {
           setVisibleSeries={setVisibleSeries}
         />
       )}
+      </ChartClickMenu>
     </ReportChartTooltip.TooltipProvider>
   );
 }

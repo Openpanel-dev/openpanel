@@ -1,7 +1,9 @@
 import { ColorSquare } from '@/components/color-square';
+import { Button } from '@/components/ui/button';
+import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { ChevronRightIcon, InfoIcon } from 'lucide-react';
+import { ChevronRightIcon, InfoIcon, UsersIcon } from 'lucide-react';
 
 import { alphabetIds } from '@openpanel/constants';
 
@@ -23,6 +25,7 @@ import {
 } from 'recharts';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
+import { useReportChartContext } from '../context';
 
 type Props = {
   data: {
@@ -113,11 +116,50 @@ function ChartName({
 export function Tables({
   data: {
     current: { steps, mostDropoffsStep, lastStep, breakdowns },
-    previous,
+    previous: previousData,
   },
 }: Props) {
   const number = useNumber();
   const hasHeader = breakdowns.length > 0;
+  const {
+    report: {
+      projectId,
+      startDate,
+      endDate,
+      range,
+      interval,
+      series: reportSeries,
+      breakdowns: reportBreakdowns,
+      previous,
+      funnelWindow,
+      funnelGroup,
+    },
+  } = useReportChartContext();
+
+  const handleInspectStep = (step: (typeof steps)[0], stepIndex: number) => {
+    if (!projectId || !step.event.id) return;
+
+    // For funnels, we need to pass the step index so the modal can query
+    // users who completed at least that step in the funnel sequence
+    pushModal('ViewChartUsers', {
+      type: 'funnel',
+      report: {
+        projectId,
+        series: reportSeries,
+        breakdowns: reportBreakdowns || [],
+        interval: interval || 'day',
+        startDate,
+        endDate,
+        range,
+        previous,
+        chartType: 'funnel',
+        metric: 'sum',
+        funnelWindow,
+        funnelGroup,
+      },
+      stepIndex, // Pass the step index for funnel queries
+    });
+  };
   return (
     <div className={cn('col @container divide-y divide-border card')}>
       {hasHeader && <ChartName breakdowns={breakdowns} className="p-4 py-3" />}
@@ -128,11 +170,11 @@ export function Tables({
             label="Conversion"
             value={number.formatWithUnit(lastStep?.percent / 100, '%')}
             enhancer={
-              previous && (
+              previousData && (
                 <PreviousDiffIndicatorPure
                   {...getPreviousMetric(
                     lastStep?.percent,
-                    previous.lastStep?.percent,
+                    previousData.lastStep?.percent,
                   )}
                 />
               )
@@ -143,11 +185,11 @@ export function Tables({
             label="Completed"
             value={number.format(lastStep?.count)}
             enhancer={
-              previous && (
+              previousData && (
                 <PreviousDiffIndicatorPure
                   {...getPreviousMetric(
                     lastStep?.count,
-                    previous.lastStep?.count,
+                    previousData.lastStep?.count,
                   )}
                 />
               )
@@ -237,6 +279,28 @@ export function Tables({
               render: (item) => number.formatWithUnit(item.percent / 100, '%'),
               className: 'text-right font-mono font-semibold',
               width: '90px',
+            },
+            {
+              name: '',
+              render: (item) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const stepIndex = steps.findIndex(
+                      (s) => s.event.id === item.event.id,
+                    );
+                    handleInspectStep(item, stepIndex);
+                  }}
+                  title="View users who completed this step"
+                >
+                  <UsersIcon size={16} />
+                </Button>
+              ),
+              className: 'text-right',
+              width: '48px',
             },
           ]}
         />

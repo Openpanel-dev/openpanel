@@ -7,6 +7,7 @@ import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import { useQuery } from '@tanstack/react-query';
+import { BookmarkIcon, UsersIcon } from 'lucide-react';
 import React, { useCallback } from 'react';
 import {
   Bar,
@@ -20,6 +21,10 @@ import {
 } from 'recharts';
 
 import { useXAxisProps, useYAxisProps } from '../common/axis';
+import {
+  ChartClickMenu,
+  type ChartClickMenuItem,
+} from '../common/chart-click-menu';
 import { ReportChartTooltip } from '../common/report-chart-tooltip';
 import { ReportTable } from '../common/report-table';
 import { useReportChartContext } from '../context';
@@ -47,7 +52,16 @@ function BarHover({ x, y, width, height, top, left, right, bottom }: any) {
 export function Chart({ data }: Props) {
   const {
     isEditMode,
-    report: { previous, interval, projectId, startDate, endDate, range },
+    report: {
+      previous,
+      interval,
+      projectId,
+      startDate,
+      endDate,
+      range,
+      series: reportSeries,
+      breakdowns,
+    },
     options: { hideXAxis, hideYAxis },
   } = useReportChartContext();
   const trpc = useTRPC();
@@ -74,22 +88,73 @@ export function Chart({ data }: Props) {
     interval,
   });
 
-  const handleChartClick = useCallback((e: any) => {
-    if (e?.activePayload?.[0]) {
-      const clickedData = e.activePayload[0].payload;
-      if (clickedData.date) {
-        pushModal('AddReference', {
-          datetime: new Date(clickedData.date).toISOString(),
+  const getMenuItems = useCallback(
+    (e: any, clickedData: any): ChartClickMenuItem[] => {
+      const items: ChartClickMenuItem[] = [];
+
+      if (!clickedData?.date) {
+        return items;
+      }
+
+      // View Users - only show if we have projectId
+      if (projectId) {
+        items.push({
+          label: 'View Users',
+          icon: <UsersIcon size={16} />,
+          onClick: () => {
+            pushModal('ViewChartUsers', {
+              type: 'chart',
+              chartData: data,
+              report: {
+                projectId,
+                series: reportSeries,
+                breakdowns: breakdowns || [],
+                interval,
+                startDate,
+                endDate,
+                range,
+                previous,
+                chartType: 'histogram',
+                metric: 'sum',
+              },
+              date: clickedData.date,
+            });
+          },
         });
       }
-    }
-  }, []);
+
+      // Add Reference - always show
+      items.push({
+        label: 'Add Reference',
+        icon: <BookmarkIcon size={16} />,
+        onClick: () => {
+          pushModal('AddReference', {
+            datetime: new Date(clickedData.date).toISOString(),
+          });
+        },
+      });
+
+      return items;
+    },
+    [
+      projectId,
+      data,
+      reportSeries,
+      breakdowns,
+      interval,
+      startDate,
+      endDate,
+      range,
+      previous,
+    ],
+  );
 
   return (
     <ReportChartTooltip.TooltipProvider references={references.data}>
-      <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
-        <ResponsiveContainer>
-          <BarChart data={rechartData} onClick={handleChartClick}>
+      <ChartClickMenu getMenuItems={getMenuItems}>
+        <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
+          <ResponsiveContainer>
+            <BarChart data={rechartData}>
             <CartesianGrid
               strokeDasharray="3 3"
               vertical={false}
@@ -152,6 +217,7 @@ export function Chart({ data }: Props) {
           setVisibleSeries={setVisibleSeries}
         />
       )}
+      </ChartClickMenu>
     </ReportChartTooltip.TooltipProvider>
   );
 }

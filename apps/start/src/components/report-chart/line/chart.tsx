@@ -1,9 +1,3 @@
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useRechartDataModel } from '@/hooks/use-rechart-data-model';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -11,12 +5,11 @@ import { pushModal } from '@/modals';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import type { IChartEvent } from '@openpanel/validation';
 import { useQuery } from '@tanstack/react-query';
 import { isSameDay, isSameHour, isSameMonth, isSameWeek } from 'date-fns';
 import { BookmarkIcon, UsersIcon } from 'lucide-react';
 import { last } from 'ramda';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import {
   CartesianGrid,
   ComposedChart,
@@ -32,6 +25,10 @@ import {
 
 import { useDashedStroke } from '@/hooks/use-dashed-stroke';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
+import {
+  ChartClickMenu,
+  type ChartClickMenuItem,
+} from '../common/chart-click-menu';
 import { ReportChartTooltip } from '../common/report-chart-tooltip';
 import { ReportTable } from '../common/report-table';
 import { SerieIcon } from '../common/serie-icon';
@@ -58,14 +55,6 @@ export function Chart({ data }: Props) {
     isEditMode,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();
-  const [clickPosition, setClickPosition] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [clickedData, setClickedData] = useState<{
-    date: string;
-    serieId?: string;
-  } | null>(null);
   const dataLength = data.series[0]?.data?.length || 0;
   const trpc = useTRPC();
   const references = useQuery(
@@ -146,171 +135,146 @@ export function Chart({ data }: Props) {
     hide: hideYAxis,
   });
 
-  const handleChartClick = useCallback((e: any) => {
-    if (e?.activePayload?.[0]) {
-      const payload = e.activePayload[0].payload;
-      const activeCoordinate = e.activeCoordinate;
-      if (payload.date) {
-        // Find the first valid serie ID from activePayload (skip calcStrokeDasharray)
-        const validPayload = e.activePayload.find(
-          (p: any) =>
-            p.dataKey &&
-            p.dataKey !== 'calcStrokeDasharray' &&
-            typeof p.dataKey === 'string' &&
-            p.dataKey.includes(':count'),
-        );
-        const serieId = validPayload?.dataKey?.toString().replace(':count', '');
+  const getMenuItems = useCallback(
+    (e: any, clickedData: any): ChartClickMenuItem[] => {
+      const items: ChartClickMenuItem[] = [];
 
-        setClickedData({
-          date: payload.date,
-          serieId,
-        });
-        setClickPosition({
-          x: activeCoordinate?.x ?? 0,
-          y: activeCoordinate?.y ?? 0,
+      if (!clickedData?.date) {
+        return items;
+      }
+
+      // Extract serie ID from the click event if needed
+      // activePayload is an array of payload objects
+      const validPayload = e.activePayload?.find(
+        (p: any) =>
+          p.dataKey &&
+          p.dataKey !== 'calcStrokeDasharray' &&
+          typeof p.dataKey === 'string' &&
+          p.dataKey.includes(':count'),
+      );
+      const serieId = validPayload?.dataKey?.toString().replace(':count', '');
+
+      // View Users - only show if we have projectId
+      if (projectId) {
+        items.push({
+          label: 'View Users',
+          icon: <UsersIcon size={16} />,
+          onClick: () => {
+            pushModal('ViewChartUsers', {
+              type: 'chart',
+              chartData: data,
+              report: {
+                projectId,
+                series: reportSeries,
+                breakdowns: breakdowns || [],
+                interval,
+                startDate,
+                endDate,
+                range,
+                previous,
+                chartType: 'linear',
+                metric: 'sum',
+              },
+              date: clickedData.date,
+            });
+          },
         });
       }
-    }
-  }, []);
 
-  const handleViewUsers = useCallback(() => {
-    if (!clickedData || !projectId) return;
+      // Add Reference - always show
+      items.push({
+        label: 'Add Reference',
+        icon: <BookmarkIcon size={16} />,
+        onClick: () => {
+          pushModal('AddReference', {
+            datetime: new Date(clickedData.date).toISOString(),
+          });
+        },
+      });
 
-    // Pass the chart data (which we already have) and the report config
-    pushModal('ViewChartUsers', {
-      chartData: data,
-      report: {
-        projectId,
-        series: reportSeries,
-        breakdowns: breakdowns || [],
-        interval,
-        startDate,
-        endDate,
-        range,
-        previous,
-        chartType: 'linear',
-        metric: 'sum',
-      },
-      date: clickedData.date,
-    });
-    setClickPosition(null);
-    setClickedData(null);
-  }, [
-    clickedData,
-    projectId,
-    data,
-    reportSeries,
-    breakdowns,
-    interval,
-    startDate,
-    endDate,
-    range,
-    previous,
-  ]);
-
-  const handleAddReference = useCallback(() => {
-    if (!clickedData) return;
-    pushModal('AddReference', {
-      datetime: new Date(clickedData.date).toISOString(),
-    });
-    setClickPosition(null);
-    setClickedData(null);
-  }, [clickedData]);
+      return items;
+    },
+    [
+      projectId,
+      data,
+      reportSeries,
+      breakdowns,
+      interval,
+      startDate,
+      endDate,
+      range,
+      previous,
+    ],
+  );
 
   return (
     <ReportChartTooltip.TooltipProvider references={references.data}>
-      <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
-        <DropdownMenu
-          open={clickPosition !== null}
-          onOpenChange={(open) => {
-            if (!open) {
-              setClickPosition(null);
-              setClickedData(null);
-            }
-          }}
-        >
-          <DropdownMenuTrigger asChild>
-            <div
-              style={{
-                position: 'absolute',
-                left: clickPosition?.x ?? -9999,
-                top: clickPosition?.y ?? -9999,
-                pointerEvents: 'none',
-              }}
-            />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={handleViewUsers}>
-              <UsersIcon size={16} className="mr-2" />
-              View Users
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleAddReference}>
-              <BookmarkIcon size={16} className="mr-2" />
-              Add Reference
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <ResponsiveContainer>
-          <ComposedChart data={rechartData} onClick={handleChartClick}>
-            <Customized component={calcStrokeDasharray} />
-            <Line
-              dataKey="calcStrokeDasharray"
-              legendType="none"
-              animationDuration={0}
-              onAnimationEnd={handleAnimationEnd}
-            />
-            <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={true}
-              vertical={false}
-              className="stroke-border"
-            />
-            {references.data?.map((ref) => (
-              <ReferenceLine
-                key={ref.id}
-                x={ref.date.getTime()}
-                stroke={'oklch(from var(--foreground) l c h / 0.1)'}
-                strokeDasharray={'3 3'}
-                label={{
-                  value: ref.title,
-                  position: 'centerTop',
-                  fill: '#334155',
-                  fontSize: 12,
-                }}
-                fontSize={10}
+      <ChartClickMenu getMenuItems={getMenuItems}>
+        <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
+          <ResponsiveContainer>
+            <ComposedChart data={rechartData}>
+              <Customized component={calcStrokeDasharray} />
+              <Line
+                dataKey="calcStrokeDasharray"
+                legendType="none"
+                animationDuration={0}
+                onAnimationEnd={handleAnimationEnd}
               />
-            ))}
-            <YAxis
-              {...yAxisProps}
-              domain={maxDomain ? [0, maxDomain] : undefined}
-            />
-            <XAxis {...xAxisProps} />
-            {series.length > 1 && <Legend content={<CustomLegend />} />}
-            <Tooltip content={<ReportChartTooltip.Tooltip />} />
-            {/* {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <React.Fragment key={serie.id}>
-                  <defs>
-                    {isAreaStyle && (
-                      <linearGradient
-                        id={`color${color}`}
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop offset="0%" stopColor={color} stopOpacity={0.8} />
-                        <stop
-                          offset="100%"
-                          stopColor={color}
-                          stopOpacity={0.1}
-                        />
-                      </linearGradient>
-                    )}
-                  </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={true}
+                vertical={false}
+                className="stroke-border"
+              />
+              {references.data?.map((ref) => (
+                <ReferenceLine
+                  key={ref.id}
+                  x={ref.date.getTime()}
+                  stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+                  strokeDasharray={'3 3'}
+                  label={{
+                    value: ref.title,
+                    position: 'centerTop',
+                    fill: '#334155',
+                    fontSize: 12,
+                  }}
+                  fontSize={10}
+                />
+              ))}
+              <YAxis
+                {...yAxisProps}
+                domain={maxDomain ? [0, maxDomain] : undefined}
+              />
+              <XAxis {...xAxisProps} />
+              {series.length > 1 && <Legend content={<CustomLegend />} />}
+              <Tooltip content={<ReportChartTooltip.Tooltip />} />
+
+              <defs>
+                <filter
+                  id="rainbow-line-glow"
+                  x="-20%"
+                  y="-20%"
+                  width="140%"
+                  height="140%"
+                >
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feComponentTransfer in="blur" result="dimmedBlur">
+                    <feFuncA type="linear" slope="0.5" />
+                  </feComponentTransfer>
+                  <feComposite
+                    in="SourceGraphic"
+                    in2="dimmedBlur"
+                    operator="over"
+                  />
+                </filter>
+              </defs>
+
+              {series.map((serie) => {
+                const color = getChartColor(serie.index);
+                return (
                   <Line
-                    dot={isAreaStyle && dataLength <= 8}
+                    key={serie.id}
+                    dot={dataLength <= 8}
                     type={lineType}
                     name={serie.id}
                     isAnimationActive={false}
@@ -324,100 +288,46 @@ export function Chart({ data }: Props) {
                     }
                     // Use for legend
                     fill={color}
+                    filter={
+                      series.length === 1
+                        ? 'url(#rainbow-line-glow)'
+                        : undefined
+                    }
                   />
-                  {previous && (
-                    <Line
-                      type={lineType}
-                      name={`${serie.id}:prev`}
-                      isAnimationActive
-                      dot={false}
-                      strokeOpacity={0.3}
-                      dataKey={`${serie.id}:prev:count`}
-                      stroke={color}
-                      // Use for legend
-                      fill={color}
-                    />
-                  )}
-                </React.Fragment>
-              );
-            })} */}
+                );
+              })}
 
-            <defs>
-              <filter
-                id="rainbow-line-glow"
-                x="-20%"
-                y="-20%"
-                width="140%"
-                height="140%"
-              >
-                <feGaussianBlur stdDeviation="5" result="blur" />
-                <feComponentTransfer in="blur" result="dimmedBlur">
-                  <feFuncA type="linear" slope="0.5" />
-                </feComponentTransfer>
-                <feComposite
-                  in="SourceGraphic"
-                  in2="dimmedBlur"
-                  operator="over"
-                />
-              </filter>
-            </defs>
-
-            {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <Line
-                  key={serie.id}
-                  dot={dataLength <= 8}
-                  type={lineType}
-                  name={serie.id}
-                  isAnimationActive={false}
-                  strokeWidth={2}
-                  dataKey={`${serie.id}:count`}
-                  stroke={color}
-                  strokeDasharray={
-                    useDashedLastLine
-                      ? getStrokeDasharray(`${serie.id}:count`)
-                      : undefined
-                  }
-                  // Use for legend
-                  fill={color}
-                  filter={
-                    series.length === 1 ? 'url(#rainbow-line-glow)' : undefined
-                  }
-                />
-              );
-            })}
-
-            {/* Previous */}
-            {previous
-              ? series.map((serie) => {
-                  const color = getChartColor(serie.index);
-                  return (
-                    <Line
-                      key={`${serie.id}:prev`}
-                      type={lineType}
-                      name={`${serie.id}:prev`}
-                      isAnimationActive
-                      dot={false}
-                      strokeOpacity={0.3}
-                      dataKey={`${serie.id}:prev:count`}
-                      stroke={color}
-                      // Use for legend
-                      fill={color}
-                    />
-                  );
-                })
-              : null}
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-      {isEditMode && (
-        <ReportTable
-          data={data}
-          visibleSeries={series}
-          setVisibleSeries={setVisibleSeries}
-        />
-      )}
+              {/* Previous */}
+              {previous
+                ? series.map((serie) => {
+                    const color = getChartColor(serie.index);
+                    return (
+                      <Line
+                        key={`${serie.id}:prev`}
+                        type={lineType}
+                        name={`${serie.id}:prev`}
+                        isAnimationActive
+                        dot={false}
+                        strokeOpacity={0.3}
+                        dataKey={`${serie.id}:prev:count`}
+                        stroke={color}
+                        // Use for legend
+                        fill={color}
+                      />
+                    );
+                  })
+                : null}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        {isEditMode && (
+          <ReportTable
+            data={data}
+            visibleSeries={series}
+            setVisibleSeries={setVisibleSeries}
+          />
+        )}
+      </ChartClickMenu>
     </ReportChartTooltip.TooltipProvider>
   );
 }

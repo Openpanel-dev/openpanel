@@ -23,6 +23,7 @@ import {
   getSettingsForProject,
 } from '@openpanel/db';
 import {
+  type IChartEvent,
   zChartEvent,
   zChartEventFilter,
   zChartInput,
@@ -619,6 +620,122 @@ export const chartRouter = createTRPCRouter({
 
       // Fetch profile details
       const ids = profileIds.map((p) => p.profile_id).filter(Boolean);
+      const profiles = await getProfilesCached(ids, projectId);
+
+      return profiles;
+    }),
+
+  getFunnelProfiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        startDate: z.string().nullish(),
+        endDate: z.string().nullish(),
+        series: zChartSeries,
+        stepIndex: z.number().describe('0-based index of the funnel step'),
+        showDropoffs: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            'If true, show users who dropped off at this step. If false, show users who completed at least this step.',
+          ),
+        funnelWindow: z.number().optional(),
+        funnelGroup: z.string().optional(),
+        breakdowns: z.array(z.object({ name: z.string() })).optional(),
+        range: zRange,
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const {
+        projectId,
+        series,
+        stepIndex,
+        showDropoffs = false,
+        funnelWindow,
+        funnelGroup,
+        breakdowns = [],
+      } = input;
+
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+
+      // stepIndex is 0-based, but level is 1-based, so we need level >= stepIndex + 1
+      const targetLevel = stepIndex + 1;
+
+      const eventSeries = series.filter(
+        (item): item is typeof item & { type: 'event' } =>
+          item.type === 'event',
+      );
+
+      if (eventSeries.length === 0) {
+        throw new Error('At least one event series is required');
+      }
+
+      const funnelWindowSeconds = (funnelWindow || 24) * 3600;
+      const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
+
+      // Use funnel service methods
+      const group = funnelService.getFunnelGroup(funnelGroup);
+
+      // Create sessions CTE if needed
+      const sessionsCte =
+        group[0] !== 'session_id'
+          ? funnelService.buildSessionsCte({
+              projectId,
+              startDate,
+              endDate,
+              timezone,
+            })
+          : null;
+
+      // Create funnel CTE using funnel service
+      const funnelCte = funnelService.buildFunnelCte({
+        projectId,
+        startDate,
+        endDate,
+        eventSeries: eventSeries as IChartEvent[],
+        funnelWindowMilliseconds,
+        group,
+        timezone,
+        additionalSelects: ['profile_id'],
+        additionalGroupBy: ['profile_id'],
+      });
+
+      // Build main query
+      const query = clix(ch, timezone);
+
+      if (sessionsCte) {
+        funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
+        query.with('sessions', sessionsCte);
+      }
+
+      query.with('funnel', funnelCte);
+
+      // Get distinct profile IDs
+      query
+        .select(['DISTINCT profile_id'])
+        .from('funnel')
+        .where('level', '!=', 0);
+
+      if (showDropoffs) {
+        // Show users who dropped off at this step (completed this step but not the next)
+        query.where('level', '=', targetLevel);
+      } else {
+        // Show users who completed at least this step
+        query.where('level', '>=', targetLevel);
+      }
+
+      const profileIdsResult = (await query.execute()) as {
+        profile_id: string;
+      }[];
+
+      if (profileIdsResult.length === 0) {
+        return [];
+      }
+
+      // Fetch profile details
+      const ids = profileIdsResult.map((p) => p.profile_id).filter(Boolean);
       const profiles = await getProfilesCached(ids, projectId);
 
       return profiles;

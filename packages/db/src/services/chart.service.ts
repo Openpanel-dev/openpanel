@@ -507,12 +507,11 @@ export function getChartStartEndDate(
   }: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>,
   timezone: string,
 ) {
-  const ranges = getDatesFromRange(range, timezone);
-
   if (startDate && endDate) {
     return { startDate: startDate, endDate: endDate };
   }
 
+  const ranges = getDatesFromRange(range, timezone);
   if (!startDate && endDate) {
     return { startDate: ranges.startDate, endDate: endDate };
   }
