@@ -1,12 +1,4 @@
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow as UITableRow,
-} from '@/components/ui/table';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useSelector } from '@/redux';
@@ -28,8 +20,8 @@ import {
 } from '@tanstack/react-virtual';
 import throttle from 'lodash.throttle';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type * as React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ReportTableToolbar } from './report-table-toolbar';
 import {

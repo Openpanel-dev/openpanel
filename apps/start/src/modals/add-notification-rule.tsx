@@ -56,9 +56,8 @@ export default function AddNotificationRule({ rule }: Props) {
       template: rule?.template ?? '',
       config: rule?.config ?? {
         type: 'events',
-        series: [
+        events: [
           {
-            type: 'event',
             name: '',
             segment: 'event',
             filters: [],

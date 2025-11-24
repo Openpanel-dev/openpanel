@@ -4,7 +4,6 @@ import { useSelector } from '@/redux';
 
 import { ReportBreakdowns } from './ReportBreakdowns';
 import { ReportSeries } from './ReportSeries';
-import { ReportFormula } from './ReportFormula';
 import { ReportSettings } from './ReportSettings';
 
 export function ReportSidebar() {

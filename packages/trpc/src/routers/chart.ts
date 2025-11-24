@@ -21,6 +21,7 @@ import {
   getProfilesCached,
   getSelectPropertyKey,
   getSettingsForProject,
+  onlyReportEvents,
 } from '@openpanel/db';
 import {
   type IChartEvent,
@@ -611,9 +612,7 @@ export const chartRouter = createTRPCRouter({
       // });
 
       // Get unique profile IDs
-      console.log('profileIdsQuery', getSql());
       const profileIds = await chQuery<{ profile_id: string }>(getSql());
-      console.log('profileIds', profileIds.length);
       if (profileIds.length === 0) {
         return [];
       }
@@ -663,10 +662,7 @@ export const chartRouter = createTRPCRouter({
       // stepIndex is 0-based, but level is 1-based, so we need level >= stepIndex + 1
       const targetLevel = stepIndex + 1;
 
-      const eventSeries = series.filter(
-        (item): item is typeof item & { type: 'event' } =>
-          item.type === 'event',
-      );
+      const eventSeries = onlyReportEvents(series);
 
       if (eventSeries.length === 0) {
         throw new Error('At least one event series is required');

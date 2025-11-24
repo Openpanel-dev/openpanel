@@ -11,7 +11,6 @@ import {
 } from '@openpanel/constants';
 import type {
   IChartBreakdown,
-  IChartEvent,
   IChartEventItem,
   IChartFormula,
   IChartLineType,
@@ -19,6 +18,7 @@ import type {
   IChartRange,
   IChartType,
   IInterval,
+  UnionOmit,
   zCriteria,
 } from '@openpanel/validation';
 import type { z } from 'zod';
@@ -89,37 +89,26 @@ export const reportSlice = createSlice({
       state.name = action.payload;
     },
     // Series (Events and Formulas)
-    addEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
-      state.dirty = true;
-      state.series.push({
-        id: shortId(),
-        type: 'event',
-        ...action.payload,
-      } as IChartEventItem);
-    },
-    addFormula: (
+    addSerie: (
       state,
-      action: PayloadAction<Omit<IChartFormula, 'id'>>,
+      action: PayloadAction<UnionOmit<IChartEventItem, 'id'>>,
     ) => {
       state.dirty = true;
       state.series.push({
         id: shortId(),
         ...action.payload,
-      } as IChartEventItem);
+      });
     },
-    duplicateEvent: (
-      state,
-      action: PayloadAction<IChartEventItem>,
-    ) => {
+    duplicateEvent: (state, action: PayloadAction<IChartEventItem>) => {
       state.dirty = true;
       if (action.payload.type === 'event') {
         state.series.push({
-        ...action.payload,
-        filters: action.payload.filters.map((filter) => ({
-          ...filter,
+          ...action.payload,
+          filters: action.payload.filters.map((filter) => ({
+            ...filter,
+            id: shortId(),
+          })),
           id: shortId(),
-        })),
-        id: shortId(),
         } as IChartEventItem);
       } else {
         state.series.push({
@@ -135,19 +124,14 @@ export const reportSlice = createSlice({
       }>,
     ) => {
       state.dirty = true;
-      state.series = state.series.filter(
-        (event) => {
-          // Handle both old format (no type) and new format
-          const eventId = 'type' in event ? event.id : (event as IChartEvent).id;
-          return eventId !== action.payload.id;
-        },
-      );
+      state.series = state.series.filter((event) => {
+        return event.id !== action.payload.id;
+      });
     },
     changeEvent: (state, action: PayloadAction<IChartEventItem>) => {
       state.dirty = true;
       state.series = state.series.map((event) => {
-        const eventId = 'type' in event ? event.id : (event as IChartEvent).id;
-        if (eventId === action.payload.id) {
+        if (event.id === action.payload.id) {
           return action.payload;
         }
         return event;
@@ -307,8 +291,7 @@ export const {
   ready,
   setReport,
   setName,
-  addEvent,
-  addFormula,
+  addSerie,
   removeEvent,
   duplicateEvent,
   changeEvent,

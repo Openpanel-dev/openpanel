@@ -14,6 +14,7 @@ import {
   getEventFiltersWhereClause,
   getSelectPropertyKey,
 } from './chart.service';
+import { onlyReportEvents } from './reports.service';
 
 export class FunnelService {
   constructor(private client: typeof ch) {}
@@ -179,7 +180,6 @@ export class FunnelService {
     startDate,
     endDate,
     series,
-    events, // Backward compatibility - use series if available
     funnelWindow = 24,
     funnelGroup,
     breakdowns = [],
@@ -189,12 +189,7 @@ export class FunnelService {
       throw new Error('startDate and endDate are required');
     }
 
-    // Use series if available, otherwise fall back to events (backward compat)
-    const rawSeries = (series ?? events ?? []) as IChartEventItem[];
-    const eventSeries = rawSeries.filter(
-      (item): item is IChartEventItem & { type: 'event' } =>
-        item.type === 'event',
-    ) as IChartEvent[];
+    const eventSeries = onlyReportEvents(series);
 
     if (eventSeries.length === 0) {
       throw new Error('events are required');

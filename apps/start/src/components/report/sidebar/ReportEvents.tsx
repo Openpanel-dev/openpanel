@@ -1,6 +1,8 @@
 import { ColorSquare } from '@/components/color-square';
+import { Button } from '@/components/ui/button';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
+import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useDebounceFn } from '@/hooks/use-debounce-fn';
 import { useEventNames } from '@/hooks/use-event-names';
@@ -23,19 +25,16 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { shortId } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
-import type { IChartEvent, IChartEventItem, IChartFormula } from '@openpanel/validation';
+import type { IChartEventItem, IChartFormula } from '@openpanel/validation';
 import { FilterIcon, HandIcon, PlusIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import {
-  addEvent,
-  addFormula,
+  addSerie,
   changeEvent,
   duplicateEvent,
   removeEvent,
   reorderEvents,
 } from '../reportSlice';
-import { InputEnter } from '@/components/ui/input-enter';
-import { Button } from '@/components/ui/button';
 import { EventPropertiesCombobox } from './EventPropertiesCombobox';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import type { ReportEventMoreProps } from './ReportEventMore';
@@ -50,28 +49,22 @@ function SortableEvent({
   isSelectManyEvents,
   ...props
 }: {
-  event: IChartEventItem | IChartEvent;
+  event: IChartEventItem;
   index: number;
   showSegment: boolean;
   showAddFilter: boolean;
   isSelectManyEvents: boolean;
 } & React.HTMLAttributes<HTMLDivElement>) {
   const dispatch = useDispatch();
-  const eventId = 'type' in event ? event.id : (event as IChartEvent).id;
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: eventId ?? '' });
+    useSortable({ id: event.id ?? '' });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  // Normalize event to have type field
-  const normalizedEvent: IChartEventItem =
-    'type' in event ? event : { ...event, type: 'event' as const };
-
-  const isFormula = normalizedEvent.type === 'formula';
-  const chartEvent = isFormula ? null : (normalizedEvent as IChartEventItem & { type: 'event' });
+  const isEvent = event.type === 'event';
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...props}>
@@ -88,15 +81,15 @@ function SortableEvent({
       </div>
 
       {/* Segment and Filter buttons - only for events */}
-      {chartEvent && (showSegment || showAddFilter) && (
+      {isEvent && (showSegment || showAddFilter) && (
         <div className="flex gap-2 p-2 pt-0">
           {showSegment && (
             <ReportSegment
-              value={chartEvent.segment}
+              value={event.segment}
               onChange={(segment) => {
                 dispatch(
                   changeEvent({
-                    ...chartEvent,
+                    ...event,
                     segment,
                   }),
                 );
@@ -105,13 +98,13 @@ function SortableEvent({
           )}
           {showAddFilter && (
             <PropertiesCombobox
-              event={chartEvent}
+              event={event}
               onSelect={(action) => {
                 dispatch(
                   changeEvent({
-                    ...chartEvent,
+                    ...event,
                     filters: [
-                      ...chartEvent.filters,
+                      ...event.filters,
                       {
                         id: shortId(),
                         name: action.value,
@@ -135,20 +128,20 @@ function SortableEvent({
             </PropertiesCombobox>
           )}
 
-          {showSegment && chartEvent.segment.startsWith('property_') && (
-            <EventPropertiesCombobox event={chartEvent} />
+          {showSegment && event.segment.startsWith('property_') && (
+            <EventPropertiesCombobox event={event} />
           )}
         </div>
       )}
 
       {/* Filters - only for events */}
-      {chartEvent && !isSelectManyEvents && <FiltersList event={chartEvent} />}
+      {isEvent && !isSelectManyEvents && <FiltersList event={event} />}
     </div>
   );
 }
 
 export function ReportEvents() {
-  const selectedEvents = useSelector((state) => state.report.events);
+  const selectedEvents = useSelector((state) => state.report.series);
   const chartType = useSelector((state) => state.report.chartType);
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
@@ -162,7 +155,7 @@ export function ReportEvents() {
   const isAddEventDisabled =
     (chartType === 'retention' || chartType === 'conversion') &&
     selectedEvents.length >= 2;
-  const dispatchChangeEvent = useDebounceFn((event: IChartEvent) => {
+  const dispatchChangeEvent = useDebounceFn((event: IChartEventItem) => {
     dispatch(changeEvent(event));
   });
   const isSelectManyEvents = chartType === 'retention';
@@ -185,15 +178,18 @@ export function ReportEvents() {
     }
   };
 
-  const handleMore = (event: IChartEventItem | IChartEvent) => {
+  const handleMore = (event: IChartEventItem) => {
     const callback: ReportEventMoreProps['onClick'] = (action) => {
       switch (action) {
         case 'remove': {
-          return dispatch(removeEvent({ id: 'type' in event ? event.id : (event as IChartEvent).id }));
+          return dispatch(
+            removeEvent({
+              id: event.id,
+            }),
+          );
         }
         case 'duplicate': {
-          const normalized = 'type' in event ? event : { ...event, type: 'event' as const };
-          return dispatch(duplicateEvent(normalized));
+          return dispatch(duplicateEvent(event));
         }
       }
     };
@@ -205,7 +201,10 @@ export function ReportEvents() {
     dispatch(changeEvent(formula));
   });
 
-  const showFormula = chartType !== 'conversion' && chartType !== 'funnel' && chartType !== 'retention';
+  const showFormula =
+    chartType !== 'conversion' &&
+    chartType !== 'funnel' &&
+    chartType !== 'retention';
 
   return (
     <div>
@@ -216,20 +215,17 @@ export function ReportEvents() {
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={selectedEvents.map((e) => ({ id: ('type' in e ? e.id : (e as IChartEvent).id) ?? '' }))}
+          items={selectedEvents.map((e) => ({ id: e.id! }))}
           strategy={verticalListSortingStrategy}
         >
           <div className="flex flex-col gap-4">
             {selectedEvents.map((event, index) => {
-              // Normalize event to have type field
-              const normalized: IChartEventItem =
-                'type' in event ? event : { ...event, type: 'event' as const };
-              const isFormula = normalized.type === 'formula';
+              const isFormula = event.type === 'formula';
 
               return (
                 <SortableEvent
-                  key={normalized.id}
-                  event={normalized}
+                  key={event.id}
+                  event={event}
                   index={index}
                   showSegment={showSegment}
                   showAddFilter={showAddFilter}
@@ -241,10 +237,10 @@ export function ReportEvents() {
                       <div className="flex-1 flex flex-col gap-2">
                         <InputEnter
                           placeholder="eg: A+B, A/B"
-                          value={normalized.formula}
+                          value={event.formula}
                           onChangeValue={(value) => {
                             dispatchChangeFormula({
-                              ...normalized,
+                              ...event,
                               formula: value,
                             });
                           }}
@@ -252,75 +248,75 @@ export function ReportEvents() {
                         {showDisplayNameInput && (
                           <Input
                             placeholder={`Formula (${alphabetIds[index]})`}
-                            defaultValue={normalized.displayName}
+                            defaultValue={event.displayName}
                             onChange={(e) => {
                               dispatchChangeFormula({
-                                ...normalized,
+                                ...event,
                                 displayName: e.target.value,
                               });
                             }}
                           />
                         )}
                       </div>
-                      <ReportEventMore onClick={handleMore(normalized)} />
+                      <ReportEventMore onClick={handleMore(event)} />
                     </>
                   ) : (
                     <>
-                  <ComboboxEvents
-                    className="flex-1"
-                    searchable
-                    multiple={isSelectManyEvents as false}
-                    value={
-                      (isSelectManyEvents
-                            ? ((normalized as IChartEventItem & { type: 'event' }).filters[0]?.value ?? [])
-                            : (normalized as IChartEventItem & { type: 'event' }).name) as any
-                    }
-                    onChange={(value) => {
-                      dispatch(
-                        changeEvent(
-                          Array.isArray(value)
-                            ? {
-                                    id: normalized.id,
+                      <ComboboxEvents
+                        className="flex-1"
+                        searchable
+                        multiple={isSelectManyEvents as false}
+                        value={
+                          isSelectManyEvents
+                            ? (event.filters[0]?.value ?? [])
+                            : (event.name as any)
+                        }
+                        onChange={(value) => {
+                          dispatch(
+                            changeEvent(
+                              Array.isArray(value)
+                                ? {
+                                    id: event.id,
                                     type: 'event',
-                                segment: 'user',
-                                filters: [
-                                  {
-                                    name: 'name',
-                                    operator: 'is',
-                                    value: value,
+                                    segment: 'user',
+                                    filters: [
+                                      {
+                                        name: 'name',
+                                        operator: 'is',
+                                        value: value,
+                                      },
+                                    ],
+                                    name: '*',
+                                  }
+                                : {
+                                    ...event,
+                                    type: 'event',
+                                    name: value,
+                                    filters: [],
                                   },
-                                ],
-                                name: '*',
-                              }
-                            : {
-                                    ...normalized,
-                                    type: 'event',
-                                name: value,
-                                filters: [],
-                              },
-                        ),
-                      );
-                    }}
-                    items={eventNames}
-                    placeholder="Select event"
-                  />
-                  {showDisplayNameInput && (
-                    <Input
-                      placeholder={
-                            (normalized as IChartEventItem & { type: 'event' }).name
-                              ? `${(normalized as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
-                          : 'Display name'
-                      }
-                          defaultValue={(normalized as IChartEventItem & { type: 'event' }).displayName}
-                      onChange={(e) => {
-                        dispatchChangeEvent({
-                              ...(normalized as IChartEventItem & { type: 'event' }),
-                          displayName: e.target.value,
-                        });
-                      }}
-                    />
-                  )}
-                      <ReportEventMore onClick={handleMore(normalized)} />
+                            ),
+                          );
+                        }}
+                        items={eventNames}
+                        placeholder="Select event"
+                      />
+                      {showDisplayNameInput && (
+                        <Input
+                          placeholder={
+                            event.name
+                              ? `${event.name} (${alphabetIds[index]})`
+                              : 'Display name'
+                          }
+                          defaultValue={event.displayName}
+                          onChange={(e) => {
+                            dispatchChangeEvent({
+                              ...event,
+                              displayName: e.target.value,
+                            });
+                          }}
+                        />
+                      )}
+                      <ReportEventMore onClick={handleMore(event)} />
                     </>
                   )}
                 </SortableEvent>
@@ -328,38 +324,40 @@ export function ReportEvents() {
             })}
 
             <div className="flex gap-2">
-            <ComboboxEvents
-              disabled={isAddEventDisabled}
-              value={''}
-              searchable
-              onChange={(value) => {
-                if (isSelectManyEvents) {
-                  dispatch(
-                    addEvent({
-                      segment: 'user',
-                      name: value,
-                      filters: [
-                        {
-                          name: 'name',
-                          operator: 'is',
-                          value: [value],
-                        },
-                      ],
-                    }),
-                  );
-                } else {
-                  dispatch(
-                    addEvent({
-                      name: value,
-                      segment: 'event',
-                      filters: [],
-                    }),
-                  );
-                }
-              }}
-              placeholder="Select event"
-              items={eventNames}
-            />
+              <ComboboxEvents
+                disabled={isAddEventDisabled}
+                value={''}
+                searchable
+                onChange={(value) => {
+                  if (isSelectManyEvents) {
+                    dispatch(
+                      addSerie({
+                        type: 'event',
+                        segment: 'user',
+                        name: value,
+                        filters: [
+                          {
+                            name: 'name',
+                            operator: 'is',
+                            value: [value],
+                          },
+                        ],
+                      }),
+                    );
+                  } else {
+                    dispatch(
+                      addSerie({
+                        type: 'event',
+                        name: value,
+                        segment: 'event',
+                        filters: [],
+                      }),
+                    );
+                  }
+                }}
+                placeholder="Select event"
+                items={eventNames}
+              />
               {showFormula && (
                 <Button
                   type="button"
@@ -367,7 +365,7 @@ export function ReportEvents() {
                   icon={PlusIcon}
                   onClick={() => {
                     dispatch(
-                      addFormula({
+                      addSerie({
                         type: 'formula',
                         formula: '',
                         displayName: '',

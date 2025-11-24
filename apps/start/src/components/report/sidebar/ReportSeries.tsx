@@ -30,11 +30,10 @@ import type {
   IChartEventItem,
   IChartFormula,
 } from '@openpanel/validation';
-import { FilterIcon, HandIcon, PiIcon, PlusIcon } from 'lucide-react';
+import { FilterIcon, HandIcon, PiIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import {
-  addEvent,
-  addFormula,
+  addSerie,
   changeEvent,
   duplicateEvent,
   removeEvent,
@@ -168,7 +167,7 @@ export function ReportSeries() {
   const isAddEventDisabled =
     (chartType === 'retention' || chartType === 'conversion') &&
     selectedSeries.length >= 2;
-  const dispatchChangeEvent = useDebounceFn((event: IChartEvent) => {
+  const dispatchChangeEvent = useDebounceFn((event: IChartEventItem) => {
     dispatch(changeEvent(event));
   });
   const isSelectManyEvents = chartType === 'retention';
@@ -361,7 +360,8 @@ export function ReportSeries() {
                 onChange={(value) => {
                   if (isSelectManyEvents) {
                     dispatch(
-                      addEvent({
+                      addSerie({
+                        type: 'event',
                         segment: 'user',
                         name: value,
                         filters: [
@@ -375,7 +375,8 @@ export function ReportSeries() {
                     );
                   } else {
                     dispatch(
-                      addEvent({
+                      addSerie({
+                        type: 'event',
                         name: value,
                         segment: 'event',
                         filters: [],
@@ -393,7 +394,7 @@ export function ReportSeries() {
                   icon={PiIcon}
                   onClick={() => {
                     dispatch(
-                      addFormula({
+                      addSerie({
                         type: 'formula',
                         formula: '',
                         displayName: '',

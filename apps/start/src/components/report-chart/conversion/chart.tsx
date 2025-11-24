@@ -30,16 +30,7 @@ interface Props {
 
 export function Chart({ data }: Props) {
   const {
-    report: {
-      previous,
-      interval,
-      projectId,
-      startDate,
-      endDate,
-      range,
-      lineType,
-      events,
-    },
+    report: { interval, projectId, startDate, endDate, range, lineType },
     isEditMode,
     options: { hideXAxis, hideYAxis, maxDomain },
   } = useReportChartContext();

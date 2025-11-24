@@ -7,6 +7,7 @@ import {
   getEventFiltersWhereClause,
   getSelectPropertyKey,
 } from './chart.service';
+import { onlyReportEvents } from './reports.service';
 
 export class ConversionService {
   constructor(private client: typeof ch) {}
@@ -18,7 +19,6 @@ export class ConversionService {
     funnelGroup,
     funnelWindow = 24,
     series,
-    events, // Backward compatibility - use series if available
     breakdowns = [],
     interval,
     timezone,
@@ -31,12 +31,9 @@ export class ConversionService {
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
 
-    // Use series if available, otherwise fall back to events (backward compat)
-    const eventSeries = (series ?? events ?? []).filter(
-      (item): item is IChartEvent => item.type === 'event',
-    ) as IChartEvent[];
+    const events = onlyReportEvents(series);
 
-    if (eventSeries.length !== 2) {
+    if (events.length !== 2) {
       throw new Error('events must be an array of two events');
     }
 
@@ -44,8 +41,8 @@ export class ConversionService {
       throw new Error('startDate and endDate are required');
     }
 
-    const eventA = eventSeries[0]!;
-    const eventB = eventSeries[1]!;
+    const eventA = events[0]!;
+    const eventB = events[1]!;
     const whereA = Object.values(
       getEventFiltersWhereClause(eventA.filters),
     ).join(' AND ');

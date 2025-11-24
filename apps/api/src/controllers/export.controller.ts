@@ -13,11 +13,7 @@ import {
   getSettingsForProject,
 } from '@openpanel/db';
 import { ChartEngine } from '@openpanel/db';
-import {
-  zChartEvent,
-  zChartInput,
-  zChartInputBase,
-} from '@openpanel/validation';
+import { zChartEvent, zChartInputBase } from '@openpanel/validation';
 import { omit } from 'ramda';
 
 async function getProjectId(
