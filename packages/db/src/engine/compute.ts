@@ -72,6 +72,58 @@ export function compute(
         (a, b) => new Date(a).getTime() - new Date(b).getTime(),
       );
 
+      // Calculate total_count for the formula using the same formula applied to input series' total_count values
+      // total_count is constant across all dates for a breakdown group, so compute it once
+      const totalCountScope: Record<string, number> = {};
+      definitions.slice(0, formulaIndex).forEach((depDef, depIndex) => {
+        const readableId = alphabetIds[depIndex];
+        if (!readableId) {
+          return;
+        }
+
+        // Find the series for this dependency in the current breakdown group
+        const depSeries = seriesByIndex.get(depIndex);
+        if (depSeries) {
+          // Get total_count from any data point (it's the same for all dates)
+          const totalCount = depSeries.data.find(
+            (d) => d.total_count != null,
+          )?.total_count;
+          totalCountScope[readableId] = totalCount ?? 0;
+        } else {
+          // Could be a formula from a previous breakdown group - find it in results
+          const formulaSerie = results.find(
+            (s) =>
+              s.definitionIndex === depIndex &&
+              'type' in s.definition &&
+              s.definition.type === 'formula' &&
+              s.name.slice(1).join(':::') === breakdownSignature,
+          );
+          if (formulaSerie) {
+            const totalCount = formulaSerie.data.find(
+              (d) => d.total_count != null,
+            )?.total_count;
+            totalCountScope[readableId] = totalCount ?? 0;
+          } else {
+            totalCountScope[readableId] = 0;
+          }
+        }
+      });
+
+      // Evaluate formula for total_count
+      let formulaTotalCount: number | undefined;
+      try {
+        const result = mathjs
+          .parse(formula.formula)
+          .compile()
+          .evaluate(totalCountScope) as number;
+        formulaTotalCount =
+          Number.isNaN(result) || !Number.isFinite(result)
+            ? undefined
+            : round(result, 2);
+      } catch (error) {
+        formulaTotalCount = undefined;
+      }
+
       // Calculate formula for each date
       const formulaData = sortedDates.map((date) => {
         const scope: Record<string, number> = {};
@@ -124,8 +176,7 @@ export function compute(
             Number.isNaN(count) || !Number.isFinite(count)
               ? 0
               : round(count, 2),
-          total_count: breakdownSeries[0]?.data.find((d) => d.date === date)
-            ?.total_count,
+          total_count: formulaTotalCount,
         };
       });
 

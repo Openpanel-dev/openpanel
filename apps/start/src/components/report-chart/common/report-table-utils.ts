@@ -5,6 +5,7 @@ export type TableRow = {
   id: string;
   serieName: string;
   breakdownValues: string[];
+  count: number;
   sum: number;
   average: number;
   min: number;
@@ -75,6 +76,7 @@ export function createFlatRows(
       id: serie.id,
       serieName: serie.names[0] ?? '',
       breakdownValues: serie.names.slice(1),
+      count: serie.metrics.count ?? 0,
       sum: serie.metrics.sum,
       average: serie.metrics.average,
       min: serie.metrics.min,
@@ -144,25 +146,16 @@ export function createGroupedRows(
     // For each row in the group
     groupRows.forEach((row, index) => {
       const breakdownDisplay: (string | null)[] = [];
+      const firstRow = groupRows[0]!;
 
       if (index === 0) {
         // First row shows all breakdown values
         breakdownDisplay.push(...row.breakdownValues);
       } else {
-        // Subsequent rows: compare with first row in group
-        const firstRow = groupRows[0]!;
-
+        // Subsequent rows: show all values, but mark duplicates for muted styling
         for (let i = 0; i < row.breakdownValues.length; i++) {
-          // Show empty if this breakdown matches the first row at this position
-          if (i < firstRow.breakdownValues.length) {
-            if (row.breakdownValues[i] === firstRow.breakdownValues[i]) {
-              breakdownDisplay.push(null);
-            } else {
-              breakdownDisplay.push(row.breakdownValues[i]!);
-            }
-          } else {
-            breakdownDisplay.push(row.breakdownValues[i]!);
-          }
+          // Always show the value, even if it matches the first row
+          breakdownDisplay.push(row.breakdownValues[i] ?? null);
         }
       }
 
@@ -187,6 +180,7 @@ export function createSummaryRow(
 ): GroupedTableRow {
   // Aggregate metrics from all rows in the group
   const totalSum = groupRows.reduce((sum, row) => sum + row.sum, 0);
+  const totalCount = groupRows.reduce((sum, row) => sum + row.count, 0);
   const totalAverage =
     groupRows.reduce((sum, row) => sum + row.average, 0) / groupRows.length;
   const totalMin = Math.min(...groupRows.map((row) => row.min));
@@ -215,6 +209,7 @@ export function createSummaryRow(
     id: `summary-${groupKey}`,
     serieName: firstRow.serieName,
     breakdownValues: firstRow.breakdownValues,
+    count: totalCount,
     sum: totalSum,
     average: totalAverage,
     min: totalMin,

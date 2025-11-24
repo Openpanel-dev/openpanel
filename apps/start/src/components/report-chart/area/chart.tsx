@@ -205,103 +205,109 @@ export function Chart({ data }: Props) {
         <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
           <ResponsiveContainer>
             <ComposedChart data={rechartData}>
-            <Customized component={calcStrokeDasharray} />
-            <Line
-              dataKey="calcStrokeDasharray"
-              legendType="none"
-              animationDuration={0}
-              onAnimationEnd={handleAnimationEnd}
-            />
-            <CartesianGrid
-              strokeDasharray="3 3"
-              horizontal={true}
-              vertical={false}
-              className="stroke-border"
-            />
-            {references.data?.map((ref) => (
-              <ReferenceLine
-                key={ref.id}
-                x={ref.date.getTime()}
-                stroke={'oklch(from var(--foreground) l c h / 0.1)'}
-                strokeDasharray={'3 3'}
-                label={{
-                  value: ref.title,
-                  position: 'centerTop',
-                  fill: '#334155',
-                  fontSize: 12,
-                }}
-                fontSize={10}
+              <Customized component={calcStrokeDasharray} />
+              <Line
+                dataKey="calcStrokeDasharray"
+                legendType="none"
+                animationDuration={0}
+                onAnimationEnd={handleAnimationEnd}
               />
-            ))}
-            <YAxis {...yAxisProps} />
-            <XAxis {...xAxisProps} />
-            <Legend content={<CustomLegend />} />
-            <Tooltip content={<ReportChartTooltip.Tooltip />} />
-            {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <defs key={`defs-${serie.id}`}>
-                  <linearGradient
-                    id={`color${color}`}
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor={color} stopOpacity={0.8} />
-                    <stop offset={'100%'} stopColor={color} stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
-              );
-            })}
-            {series.map((serie) => {
-              const color = getChartColor(serie.index);
-              return (
-                <Area
-                  key={serie.id}
-                  stackId="1"
-                  type={lineType}
-                  name={serie.id}
-                  dataKey={`${serie.id}:count`}
-                  strokeDasharray={
-                    useDashedLastLine
-                      ? getStrokeDasharray(`${serie.id}:count`)
-                      : undefined
-                  }
-                  fill={`url(#color${color})`}
-                  isAnimationActive={false}
-                  fillOpacity={0.7}
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal={true}
+                vertical={false}
+                className="stroke-border"
+              />
+              {references.data?.map((ref) => (
+                <ReferenceLine
+                  key={ref.id}
+                  x={ref.date.getTime()}
+                  stroke={'oklch(from var(--foreground) l c h / 0.1)'}
+                  strokeDasharray={'3 3'}
+                  label={{
+                    value: ref.title,
+                    position: 'centerTop',
+                    fill: '#334155',
+                    fontSize: 12,
+                  }}
+                  fontSize={10}
                 />
-              );
-            })}
-            {previous &&
-              series.map((serie) => {
+              ))}
+              <YAxis {...yAxisProps} />
+              <XAxis {...xAxisProps} />
+              <Legend content={<CustomLegend />} />
+              <Tooltip content={<ReportChartTooltip.Tooltip />} />
+              {series.map((serie) => {
+                const color = getChartColor(serie.index);
+                return (
+                  <defs key={`defs-${serie.id}`}>
+                    <linearGradient
+                      id={`color${color}`}
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor={color} stopOpacity={0.8} />
+                      <stop
+                        offset={'100%'}
+                        stopColor={color}
+                        stopOpacity={0.1}
+                      />
+                    </linearGradient>
+                  </defs>
+                );
+              })}
+              {series.map((serie) => {
                 const color = getChartColor(serie.index);
                 return (
                   <Area
-                    key={`${serie.id}:prev`}
-                    stackId="2"
+                    key={serie.id}
+                    stackId="1"
                     type={lineType}
-                    name={`${serie.id}:prev`}
-                    dataKey={`${serie.id}:prev:count`}
+                    name={serie.id}
+                    dataKey={`${serie.id}:count`}
+                    strokeDasharray={
+                      useDashedLastLine
+                        ? getStrokeDasharray(`${serie.id}:count`)
+                        : undefined
+                    }
+                    fill={`url(#color${color})`}
                     stroke={color}
-                    fill={color}
-                    fillOpacity={0.3}
-                    strokeOpacity={0.3}
+                    strokeWidth={2}
                     isAnimationActive={false}
+                    fillOpacity={0.7}
                   />
                 );
               })}
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-      {isEditMode && (
-        <ReportTable
-          data={data}
-          visibleSeries={series}
-          setVisibleSeries={setVisibleSeries}
-        />
-      )}
+              {previous &&
+                series.map((serie) => {
+                  const color = getChartColor(serie.index);
+                  return (
+                    <Area
+                      key={`${serie.id}:prev`}
+                      stackId="2"
+                      type={lineType}
+                      name={`${serie.id}:prev`}
+                      dataKey={`${serie.id}:prev:count`}
+                      stroke={color}
+                      fill={color}
+                      fillOpacity={0.3}
+                      strokeOpacity={0.3}
+                      isAnimationActive={false}
+                    />
+                  );
+                })}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
+        {isEditMode && (
+          <ReportTable
+            data={data}
+            visibleSeries={series}
+            setVisibleSeries={setVisibleSeries}
+          />
+        )}
       </ChartClickMenu>
     </ReportChartTooltip.TooltipProvider>
   );

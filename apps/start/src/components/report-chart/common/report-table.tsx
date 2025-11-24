@@ -13,7 +13,7 @@ import { useSelector } from '@/redux';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, Header, Row } from '@tanstack/react-table';
 import {
   type SortingState,
   flexRender,
@@ -28,7 +28,7 @@ import {
 } from '@tanstack/react-virtual';
 import throttle from 'lodash.throttle';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type * as React from 'react';
 
 import { ReportTableToolbar } from './report-table-toolbar';
@@ -57,6 +57,111 @@ interface ReportTableProps {
 const DEFAULT_COLUMN_WIDTH = 150;
 const ROW_HEIGHT = 48; // h-12
 
+interface VirtualRowProps {
+  row: Row<TableRow | GroupedTableRow>;
+  virtualRow: VirtualItem;
+  gridTemplateColumns: string;
+  pinningStylesMap: Map<string, React.CSSProperties>;
+  headers: Header<TableRow | GroupedTableRow, unknown>[];
+  isResizingRef: React.MutableRefObject<boolean>;
+  resizingColumnId: string | null;
+  setResizingColumnId: (id: string | null) => void;
+}
+
+const VirtualRow = function VirtualRow({
+  row,
+  virtualRow,
+  gridTemplateColumns,
+  pinningStylesMap,
+  headers,
+  isResizingRef,
+  resizingColumnId,
+  setResizingColumnId,
+}: VirtualRowProps) {
+  const cells = row.getVisibleCells();
+
+  return (
+    <div
+      key={virtualRow.key}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: `${virtualRow.size}px`,
+        transform: `translateY(${virtualRow.start}px)`,
+        display: 'grid',
+        gridTemplateColumns,
+        minWidth: 'fit-content',
+      }}
+      className="border-b hover:bg-muted/30 transition-colors"
+    >
+      {headers.map((header) => {
+        const column = header.column;
+        const cell = cells.find((c) => c.column.id === column.id);
+        if (!cell) return null;
+
+        const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
+        const pinningStyles = pinningStylesMap.get(column.id) ?? {};
+        const canResize = column.getCanResize();
+        const isPinned = column.columnDef.meta?.pinned === 'left';
+        const isResizing = resizingColumnId === column.id;
+
+        return (
+          <div
+            key={cell.id}
+            style={{
+              width: `${header.getSize()}px`,
+              minWidth: column.columnDef.minSize,
+              maxWidth: column.columnDef.maxSize,
+              ...pinningStyles,
+            }}
+            className={cn(
+              'border-r border-border relative overflow-hidden',
+              isBreakdown && 'border-r-2',
+            )}
+          >
+            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            {canResize && isPinned && (
+              <div
+                data-resize-handle
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  isResizingRef.current = true;
+                  setResizingColumnId(column.id);
+                  header.getResizeHandler()(e);
+                }}
+                onMouseUp={() => {
+                  setTimeout(() => {
+                    isResizingRef.current = false;
+                    setResizingColumnId(null);
+                  }, 0);
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  isResizingRef.current = true;
+                  setResizingColumnId(column.id);
+                  header.getResizeHandler()(e);
+                }}
+                onTouchEnd={() => {
+                  setTimeout(() => {
+                    isResizingRef.current = false;
+                    setResizingColumnId(null);
+                  }, 0);
+                }}
+                className={cn(
+                  'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
+                  isResizing && 'bg-primary',
+                )}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export function ReportTable({
   data,
   visibleSeries,
@@ -69,12 +174,14 @@ export function ReportTable({
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnSizing, setColumnSizing] = useState<Record<string, number>>({});
+  const [resizingColumnId, setResizingColumnId] = useState<string | null>(null);
   const isResizingRef = useRef(false);
   const parentRef = useRef<HTMLDivElement>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
   const number = useNumber();
   const interval = useSelector((state) => state.report.interval);
   const breakdowns = useSelector((state) => state.report.breakdowns);
+
   const formatDate = useFormatDateInterval({
     interval,
     short: true,
@@ -153,7 +260,7 @@ export function ReportTable({
         }
 
         // Search in metric values
-        const metrics = ['sum', 'average', 'min', 'max'] as const;
+        const metrics = ['count', 'sum', 'average', 'min', 'max'] as const;
         if (
           metrics.some((metric) =>
             String(row[metric]).toLowerCase().includes(searchLower),
@@ -253,6 +360,10 @@ export function ReportTable({
   // Calculate min/max values for color visualization
   const { metricRanges, dateRanges } = useMemo(() => {
     const metricRanges: Record<string, { min: number; max: number }> = {
+      count: {
+        min: Number.POSITIVE_INFINITY,
+        max: Number.NEGATIVE_INFINITY,
+      },
       sum: { min: Number.POSITIVE_INFINITY, max: Number.NEGATIVE_INFINITY },
       average: {
         min: Number.POSITIVE_INFINITY,
@@ -270,29 +381,60 @@ export function ReportTable({
       };
     });
 
-    rows.forEach((row) => {
-      // Calculate metric ranges
-      Object.keys(metricRanges).forEach((key) => {
-        const value = row[key as keyof typeof row] as number;
-        if (typeof value === 'number') {
-          metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
-          metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
-        }
+    // Check if we only have one series (excluding summary rows)
+    const nonSummaryRows = rows.filter((row) => !row.isSummaryRow);
+    const isSingleSeries = nonSummaryRows.length === 1;
+
+    if (isSingleSeries) {
+      // For single series, calculate ranges from date values
+      const singleRow = nonSummaryRows[0]!;
+      const allDateValues = dates.map(
+        (date) => singleRow.dateValues[date] ?? 0,
+      );
+      const dateMin = Math.min(...allDateValues);
+      const dateMax = Math.max(...allDateValues);
+
+      // For date columns, use the range across all dates
+      dates.forEach((date) => {
+        dateRanges[date] = {
+          min: dateMin,
+          max: dateMax,
+        };
       });
 
-      // Calculate date ranges
-      dates.forEach((date) => {
-        const value = row.dateValues[date] ?? 0;
-        if (!dateRanges[date]) {
-          dateRanges[date] = {
-            min: Number.POSITIVE_INFINITY,
-            max: Number.NEGATIVE_INFINITY,
-          };
-        }
-        dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
-        dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
+      // For metric columns, use date values to create meaningful ranges
+      // This ensures we can still show color variation even with one series
+      metricRanges.count = { min: dateMin, max: dateMax };
+      metricRanges.sum = { min: dateMin, max: dateMax };
+      metricRanges.average = { min: dateMin, max: dateMax };
+      metricRanges.min = { min: dateMin, max: dateMax };
+      metricRanges.max = { min: dateMin, max: dateMax };
+    } else {
+      // Multiple series: calculate ranges across rows
+      rows.forEach((row) => {
+        // Calculate metric ranges
+        Object.keys(metricRanges).forEach((key) => {
+          const value = row[key as keyof typeof row] as number;
+          if (typeof value === 'number') {
+            metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
+            metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
+          }
+        });
+
+        // Calculate date ranges
+        dates.forEach((date) => {
+          const value = row.dateValues[date] ?? 0;
+          if (!dateRanges[date]) {
+            dateRanges[date] = {
+              min: Number.POSITIVE_INFINITY,
+              max: Number.NEGATIVE_INFINITY,
+            };
+          }
+          dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
+          dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
+        });
       });
-    });
+    }
 
     return { metricRanges, dateRanges };
   }, [rows, dates]);
@@ -302,6 +444,7 @@ export function ReportTable({
     value: number,
     min: number,
     max: number,
+    className?: string,
   ): { opacity: number; className: string } => {
     if (value === 0 || max === min) {
       return { opacity: 0, className: '' };
@@ -312,7 +455,7 @@ export function ReportTable({
 
     return {
       opacity,
-      className: 'bg-highlight dark:bg-emerald-700',
+      className: cn('bg-highlight dark:bg-emerald-700', className),
     };
   };
 
@@ -324,6 +467,11 @@ export function ReportTable({
     }
     return (visibleSeries as IChartData['series']).map((s) => s.id);
   }, [visibleSeries]);
+
+  // Create a hash of visibleSeriesIds to track checkbox state changes
+  const visibleSeriesIdsHash = useMemo(() => {
+    return visibleSeriesIds.sort().join(',');
+  }, [visibleSeriesIds]);
 
   // Get serie index for color
   const getSerieIndex = (serieId: string): number => {
@@ -368,11 +516,41 @@ export function ReportTable({
         pinned: 'left',
       },
       cell: ({ row }) => {
-        const serieName = row.original.serieName;
-        const serieId = row.original.originalSerie.id;
+        const original = row.original;
+        const serieName = original.serieName;
+        const serieId = original.originalSerie.id;
         const isVisible = visibleSeriesIds.includes(serieId);
         const serieIndex = getSerieIndex(serieId);
         const color = getChartColor(serieIndex);
+
+        // Check if this serie name matches the first row in the group (for muted styling)
+        let isMuted = false;
+        let isFirstRowInGroup = false;
+        if (
+          grouped &&
+          'groupKey' in original &&
+          original.groupKey &&
+          !original.isSummaryRow
+        ) {
+          // Find all rows in this group and get the first one
+          const groupRows = (rawRows as GroupedTableRow[]).filter(
+            (r) => r.groupKey === original.groupKey && !r.isSummaryRow,
+          );
+
+          if (groupRows.length > 0) {
+            const firstRowInGroup = groupRows[0]!;
+
+            // Check if this is the first row in the group
+            if (firstRowInGroup.id === original.id) {
+              isFirstRowInGroup = true;
+            } else {
+              // Only mute if this is not the first row and the serie name matches
+              if (firstRowInGroup.serieName === serieName) {
+                isMuted = true;
+              }
+            }
+          }
+        }
 
         return (
           <div className="flex items-center gap-2 px-4 h-12">
@@ -385,7 +563,14 @@ export function ReportTable({
               }}
               className="h-4 w-4 shrink-0"
             />
-            <SerieName name={serieName} className="truncate" />
+            <SerieName
+              name={serieName}
+              className={cn(
+                'truncate',
+                isMuted && 'text-muted-foreground/50',
+                isFirstRowInGroup && 'font-semibold',
+              )}
+            />
           </div>
         );
       },
@@ -460,21 +645,50 @@ export function ReportTable({
         cell: ({ row }) => {
           const original = row.original;
           let value: string | null;
+          let isMuted = false;
+          let isFirstRowInGroup = false;
 
           if ('breakdownDisplay' in original && grouped) {
             value = original.breakdownDisplay[index] ?? null;
+
+            // Check if this is the first row in the group and if this breakdown should be bold
+            if (value && original.groupKey && !original.isSummaryRow) {
+              // Find all rows in this group and get the first one
+              const groupRows = (rawRows as GroupedTableRow[]).filter(
+                (r) => r.groupKey === original.groupKey && !r.isSummaryRow,
+              );
+
+              if (groupRows.length > 0) {
+                const firstRowInGroup = groupRows[0]!;
+
+                // Check if this is the first row in the group
+                if (firstRowInGroup.id === original.id) {
+                  isFirstRowInGroup = true;
+                } else {
+                  // Only mute if this is not the first row and the value matches
+                  const firstRowValue = firstRowInGroup.breakdownValues[index];
+                  if (firstRowValue === value) {
+                    isMuted = true;
+                  }
+                }
+              }
+            }
           } else {
             value = original.breakdownValues[index] ?? null;
           }
 
           const isSummary = original.isSummaryRow ?? false;
+          // Make bold if it's the first row in group and this is one of the first breakdown columns
+          // (all breakdowns except the last one)
+          const shouldBeBold =
+            isFirstRowInGroup && index < breakdownPropertyNames.length - 1;
 
           return (
             <span
               className={cn(
                 'truncate block leading-[48px] px-4',
-                !value && 'text-muted-foreground',
-                isSummary && 'font-semibold',
+                (!value || isMuted) && 'text-muted-foreground/50',
+                (isSummary || shouldBeBold) && 'font-semibold',
               )}
             >
               {value || ''}
@@ -486,6 +700,7 @@ export function ReportTable({
 
     // Metric columns
     const metrics = [
+      { key: 'count', label: 'Unique' },
       { key: 'sum', label: 'Sum' },
       { key: 'average', label: 'Average' },
       { key: 'min', label: 'Min' },
@@ -504,7 +719,12 @@ export function ReportTable({
           const isSummary = row.original.isSummaryRow ?? false;
           const range = metricRanges[metric.key];
           const { opacity, className } = range
-            ? getCellBackground(value, range.min, range.max)
+            ? getCellBackground(
+                value,
+                range.min,
+                range.max,
+                'bg-purple-400 dark:bg-purple-700',
+              )
             : { opacity: 0, className: '' };
 
           return (
@@ -582,6 +802,11 @@ export function ReportTable({
     columnSizing,
   ]);
 
+  // Create a hash of column IDs to track when columns change
+  const columnsHash = useMemo(() => {
+    return columns.map((col) => col.id).join(',');
+  }, [columns]);
+
   const table = useReactTable({
     data: filteredRows,
     columns,
@@ -628,6 +853,7 @@ export function ReportTable({
         // Small delay to ensure resize handlers complete
         setTimeout(() => {
           isResizingRef.current = false;
+          setResizingColumnId(null);
         }, 100);
       }
     };
@@ -665,40 +891,69 @@ export function ReportTable({
     .filter((col) => col.columnDef.meta?.pinned === 'right')
     .filter((col): col is NonNullable<typeof col> => col !== undefined);
 
-  // Helper to get pinning styles
+  // Pre-compute grid template columns string and headers
+  const { gridTemplateColumns, headers } = useMemo(() => {
+    const headerGroups = table.getHeaderGroups();
+    const firstGroupHeaders = headerGroups[0]?.headers ?? [];
+    return {
+      gridTemplateColumns:
+        firstGroupHeaders.map((h) => `${h.getSize()}px`).join(' ') ?? '',
+      headers: firstGroupHeaders,
+    };
+  }, [table, columnSizing, columnsHash]);
+
+  // Pre-compute pinning styles for all columns
+  const pinningStylesMap = useMemo(() => {
+    const stylesMap = new Map<string, React.CSSProperties>();
+    const headerGroups = table.getHeaderGroups();
+
+    headerGroups.forEach((group) => {
+      group.headers.forEach((header) => {
+        const column = header.column;
+        const isPinned = column.columnDef.meta?.pinned;
+        if (!isPinned) {
+          stylesMap.set(column.id, {});
+          return;
+        }
+
+        const pinnedColumns =
+          isPinned === 'left' ? leftPinnedColumns : rightPinnedColumns;
+        const columnIndex = pinnedColumns.findIndex((c) => c.id === column.id);
+        const isLastPinned =
+          columnIndex === pinnedColumns.length - 1 && isPinned === 'left';
+        const isFirstRightPinned = columnIndex === 0 && isPinned === 'right';
+
+        let left = 0;
+        if (isPinned === 'left') {
+          for (let i = 0; i < columnIndex; i++) {
+            left += pinnedColumns[i]!.getSize();
+          }
+        }
+
+        stylesMap.set(column.id, {
+          position: 'sticky' as const,
+          left: isPinned === 'left' ? `${left}px` : undefined,
+          right: isPinned === 'right' ? '0px' : undefined,
+          zIndex: 10,
+          backgroundColor: 'var(--card)',
+          boxShadow: isLastPinned
+            ? '-4px 0 4px -4px var(--border) inset'
+            : isFirstRightPinned
+              ? '4px 0 4px -4px var(--border) inset'
+              : undefined,
+        });
+      });
+    });
+
+    return stylesMap;
+  }, [table, leftPinnedColumns, rightPinnedColumns, columnSizing, columnsHash]);
+
+  // Helper to get pinning styles (for backward compatibility with header)
   const getPinningStyles = (
     column: ReturnType<typeof table.getColumn> | undefined,
   ) => {
     if (!column) return {};
-    const isPinned = column.columnDef.meta?.pinned;
-    if (!isPinned) return {};
-
-    const pinnedColumns =
-      isPinned === 'left' ? leftPinnedColumns : rightPinnedColumns;
-    const columnIndex = pinnedColumns.findIndex((c) => c.id === column.id);
-    const isLastPinned =
-      columnIndex === pinnedColumns.length - 1 && isPinned === 'left';
-    const isFirstRightPinned = columnIndex === 0 && isPinned === 'right';
-
-    let left = 0;
-    if (isPinned === 'left') {
-      for (let i = 0; i < columnIndex; i++) {
-        left += pinnedColumns[i]!.getSize();
-      }
-    }
-
-    return {
-      position: 'sticky' as const,
-      left: isPinned === 'left' ? `${left}px` : undefined,
-      right: isPinned === 'right' ? '0px' : undefined,
-      zIndex: 10,
-      backgroundColor: 'var(--card)',
-      boxShadow: isLastPinned
-        ? '-4px 0 4px -4px var(--border) inset'
-        : isFirstRightPinned
-          ? '4px 0 4px -4px var(--border) inset'
-          : undefined,
-    };
+    return pinningStylesMap.get(column.id) ?? {};
   };
 
   if (rows.length === 0) {
@@ -721,11 +976,7 @@ export function ReportTable({
             className="sticky top-0 z-20 bg-card border-b"
             style={{
               display: 'grid',
-              gridTemplateColumns:
-                table
-                  .getHeaderGroups()[0]
-                  ?.headers.map((h) => `${h.getSize()}px`)
-                  .join(' ') ?? '',
+              gridTemplateColumns,
               minWidth: 'fit-content',
             }}
           >
@@ -809,22 +1060,26 @@ export function ReportTable({
                       onMouseDown={(e) => {
                         e.stopPropagation();
                         isResizingRef.current = true;
+                        setResizingColumnId(column.id);
                         header.getResizeHandler()(e);
                       }}
                       onMouseUp={() => {
                         // Use setTimeout to allow the resize to complete before resetting
                         setTimeout(() => {
                           isResizingRef.current = false;
+                          setResizingColumnId(null);
                         }, 0);
                       }}
                       onTouchStart={(e) => {
                         e.stopPropagation();
                         isResizingRef.current = true;
+                        setResizingColumnId(column.id);
                         header.getResizeHandler()(e);
                       }}
                       onTouchEnd={() => {
                         setTimeout(() => {
                           isResizingRef.current = false;
+                          setResizingColumnId(null);
                         }, 0);
                       }}
                       className={cn(
@@ -850,95 +1105,20 @@ export function ReportTable({
               if (!tableRow) return null;
 
               return (
-                <div
-                  key={virtualRow.key}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${
-                      virtualRow.start - virtualizer.options.scrollMargin
-                    }px)`,
-                    display: 'grid',
-                    gridTemplateColumns:
-                      table
-                        .getHeaderGroups()[0]
-                        ?.headers.map((h) => `${h.getSize()}px`)
-                        .join(' ') ?? '',
-                    minWidth: 'fit-content',
+                <VirtualRow
+                  key={`${virtualRow.key}-${gridTemplateColumns}`}
+                  row={tableRow}
+                  virtualRow={{
+                    ...virtualRow,
+                    start: virtualRow.start - virtualizer.options.scrollMargin,
                   }}
-                  className="border-b hover:bg-muted/30 transition-colors"
-                >
-                  {table.getHeaderGroups()[0]?.headers.map((header) => {
-                    const column = header.column;
-                    const cell = tableRow
-                      .getVisibleCells()
-                      .find((c) => c.column.id === column.id);
-                    if (!cell) return null;
-
-                    const isBreakdown =
-                      column.columnDef.meta?.isBreakdown ?? false;
-                    const pinningStyles = getPinningStyles(column);
-                    const isMetricOrDate =
-                      column.id.startsWith('metric-') ||
-                      column.id.startsWith('date-');
-
-                    const canResize = column.getCanResize();
-                    const isPinned = column.columnDef.meta?.pinned === 'left';
-
-                    return (
-                      <div
-                        key={cell.id}
-                        style={{
-                          width: `${header.getSize()}px`,
-                          minWidth: column.columnDef.minSize,
-                          maxWidth: column.columnDef.maxSize,
-                          ...pinningStyles,
-                        }}
-                        className={cn(
-                          'border-r border-border relative overflow-hidden',
-                          isBreakdown && 'border-r-2',
-                        )}
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                        {canResize && isPinned && (
-                          <div
-                            data-resize-handle
-                            onMouseDown={(e) => {
-                              e.stopPropagation();
-                              isResizingRef.current = true;
-                              header.getResizeHandler()(e);
-                            }}
-                            onMouseUp={() => {
-                              setTimeout(() => {
-                                isResizingRef.current = false;
-                              }, 0);
-                            }}
-                            onTouchStart={(e) => {
-                              e.stopPropagation();
-                              isResizingRef.current = true;
-                              header.getResizeHandler()(e);
-                            }}
-                            onTouchEnd={() => {
-                              setTimeout(() => {
-                                isResizingRef.current = false;
-                              }, 0);
-                            }}
-                            className={cn(
-                              'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-                              column.getIsResizing() && 'bg-primary',
-                            )}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                  gridTemplateColumns={gridTemplateColumns}
+                  pinningStylesMap={pinningStylesMap}
+                  headers={headers}
+                  isResizingRef={isResizingRef}
+                  resizingColumnId={resizingColumnId}
+                  setResizingColumnId={setResizingColumnId}
+                />
               );
             })}
           </div>
