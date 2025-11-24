@@ -169,6 +169,11 @@ export async function polarWebhook(
           .parse(event.data.metadata);
 
         const product = await getProduct(event.data.productId);
+        const organization = await db.organization.findUniqueOrThrow({
+          where: {
+            id: metadata.organizationId,
+          },
+        });
         const eventsLimit = product.metadata?.eventsLimit;
         const subscriptionPeriodEventsLimit =
           typeof eventsLimit === 'number' ? eventsLimit : undefined;
@@ -216,6 +221,13 @@ export async function polarWebhook(
             subscriptionCreatedByUserId: metadata.userId,
             subscriptionInterval: event.data.recurringInterval,
             subscriptionPeriodEventsLimit,
+            subscriptionPeriodEventsCountExceededAt:
+              subscriptionPeriodEventsLimit &&
+              organization.subscriptionPeriodEventsCountExceededAt &&
+              organization.subscriptionPeriodEventsLimit <
+                subscriptionPeriodEventsLimit
+                ? null
+                : undefined,
           },
         });
 
