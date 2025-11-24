@@ -78,6 +78,7 @@ const VirtualRow = function VirtualRow({
   resizingColumnId,
   setResizingColumnId,
 }: VirtualRowProps) {
+  console.log('VirtualRow', row.original.id);
   const cells = row.getVisibleCells();
 
   return (

@@ -24,20 +24,18 @@ import { createFileRoute } from '@tanstack/react-router';
 import { parseAsInteger, useQueryState } from 'nuqs';
 import { memo } from 'react';
 
-export const Route = createFileRoute('/_app/$organizationId/$projectId/pages')(
-  {
-    component: Component,
-    head: () => {
-      return {
-        meta: [
-          {
-            title: createProjectTitle(PAGE_TITLES.PAGES),
-          },
-        ],
-      };
-    },
+export const Route = createFileRoute('/_app/$organizationId/$projectId/pages')({
+  component: Component,
+  head: () => {
+    return {
+      meta: [
+        {
+          title: createProjectTitle(PAGE_TITLES.PAGES),
+        },
+      ],
+    };
   },
-);
+});
 
 function Component() {
   const { projectId } = Route.useParams();
@@ -220,8 +218,9 @@ const PageCard = memo(
 
             chartType: 'linear',
             projectId,
-            events: [
+            series: [
               {
+                type: 'event',
                 id: 'A',
                 name: 'screen_view',
                 segment: 'event',

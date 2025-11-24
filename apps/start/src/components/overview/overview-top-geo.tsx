@@ -146,8 +146,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
               projectId,
               startDate,
               endDate,
-              events: [
+              series: [
                 {
+                  type: 'event',
                   segment: 'event',
                   filters,
                   id: 'A',

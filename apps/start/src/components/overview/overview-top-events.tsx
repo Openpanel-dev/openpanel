@@ -37,8 +37,9 @@ export default function OverviewTopEvents({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'event',
               filters: [
                 ...filters,
@@ -78,8 +79,9 @@ export default function OverviewTopEvents({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'event',
               filters: [...filters],
               id: 'A',
@@ -112,8 +114,9 @@ export default function OverviewTopEvents({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'event',
               filters: [
                 ...filters,
