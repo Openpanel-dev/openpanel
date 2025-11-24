@@ -7,9 +7,11 @@ import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 import type { ColumnDef, Header, Row } from '@tanstack/react-table';
 import {
+  type ExpandedState,
   type SortingState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
@@ -25,9 +27,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { ReportTableToolbar } from './report-table-toolbar';
 import {
+  type ExpandableTableRow,
+  type GroupedItem,
   type GroupedTableRow,
   type TableRow,
-  createSummaryRow,
+  groupsToExpandableRows,
+  groupsToTableRows,
+  transformToHierarchicalGroups,
   transformToTableData,
 } from './report-table-utils';
 import { SerieName } from './serie-name';
@@ -70,7 +76,6 @@ const VirtualRow = function VirtualRow({
   resizingColumnId,
   setResizingColumnId,
 }: VirtualRowProps) {
-  console.log('VirtualRow', row.original.id);
   const cells = row.getVisibleCells();
 
   return (
@@ -161,9 +166,7 @@ export function ReportTable({
   setVisibleSeries,
 }: ReportTableProps) {
   const [grouped, setGrouped] = useState(true);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-    new Set(),
-  );
+  const [expanded, setExpanded] = useState<ExpandedState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnSizing, setColumnSizing] = useState<Record<string, number>>({});
@@ -180,57 +183,45 @@ export function ReportTable({
     short: true,
   });
 
-  // Transform data to table format
+  // Transform data to hierarchical groups or flat rows
   const {
-    rows: rawRows,
+    groups: hierarchicalGroups,
+    rows: flatRows,
     dates,
     breakdownPropertyNames,
-  } = useMemo(
-    () => transformToTableData(data, breakdowns, grouped),
-    [data, breakdowns, grouped],
-  );
+  } = useMemo(() => {
+    if (grouped) {
+      const result = transformToHierarchicalGroups(data, breakdowns);
+      return {
+        groups: result.groups,
+        rows: null,
+        dates: result.dates,
+        breakdownPropertyNames: result.breakdownPropertyNames,
+      };
+    }
+    const result = transformToTableData(data, breakdowns, false);
+    return {
+      groups: null,
+      rows: result.rows as TableRow[],
+      dates: result.dates,
+      breakdownPropertyNames: result.breakdownPropertyNames,
+    };
+  }, [data, breakdowns, grouped]);
 
-  // Filter rows based on collapsed groups and create summary rows
-  const rows = useMemo(() => {
-    if (!grouped || collapsedGroups.size === 0) {
-      return rawRows;
+  // Convert hierarchical groups to expandable rows (for TanStack Table's expanding feature)
+  const expandableRows = useMemo(() => {
+    if (!grouped || !hierarchicalGroups || hierarchicalGroups.length === 0) {
+      return null;
     }
 
-    const processedRows: (TableRow | GroupedTableRow)[] = [];
-    const groupedRows = rawRows as GroupedTableRow[];
+    return groupsToExpandableRows(
+      hierarchicalGroups,
+      breakdownPropertyNames.length,
+    );
+  }, [grouped, hierarchicalGroups, breakdownPropertyNames.length]);
 
-    // Group rows by their groupKey
-    const rowsByGroup = new Map<string, GroupedTableRow[]>();
-    groupedRows.forEach((row) => {
-      if (row.groupKey) {
-        if (!rowsByGroup.has(row.groupKey)) {
-          rowsByGroup.set(row.groupKey, []);
-        }
-        rowsByGroup.get(row.groupKey)!.push(row);
-      } else {
-        // Rows without groupKey go directly to processed
-        processedRows.push(row);
-      }
-    });
-
-    // Process each group
-    rowsByGroup.forEach((groupRows, groupKey) => {
-      if (collapsedGroups.has(groupKey)) {
-        // Group is collapsed - show summary row
-        const summaryRow = createSummaryRow(
-          groupRows,
-          groupKey,
-          breakdownPropertyNames.length,
-        );
-        processedRows.push(summaryRow);
-      } else {
-        // Group is expanded - show all rows
-        processedRows.push(...groupRows);
-      }
-    });
-
-    return processedRows;
-  }, [rawRows, collapsedGroups, grouped, breakdownPropertyNames.length]);
+  // Use expandable rows if available, otherwise use flat rows
+  const rows = expandableRows ?? flatRows ?? [];
 
   // Filter rows based on global search and apply sorting
   const filteredRows = useMemo(() => {
@@ -275,43 +266,42 @@ export function ReportTable({
       });
     }
 
-    // Apply sorting - if grouped, sort within each group
-    if (grouped && sorting.length > 0 && result.length > 0) {
-      const groupedRows = result as GroupedTableRow[];
-
-      // Group rows by their groupKey
-      const rowsByGroup = new Map<string, GroupedTableRow[]>();
-      const ungroupedRows: GroupedTableRow[] = [];
-
-      groupedRows.forEach((row) => {
-        if (row.groupKey) {
-          if (!rowsByGroup.has(row.groupKey)) {
-            rowsByGroup.set(row.groupKey, []);
-          }
-          rowsByGroup.get(row.groupKey)!.push(row);
-        } else {
-          ungroupedRows.push(row);
-        }
-      });
+    // Apply sorting - if grouped, always sort groups by highest count, then sort within each group
+    if (grouped && result.length > 0) {
+      const groupedRows = result as ExpandableTableRow[] | GroupedTableRow[];
 
       // Sort function based on current sort state
-      const sortFn = (a: GroupedTableRow, b: GroupedTableRow) => {
+      const sortFn = (
+        a: ExpandableTableRow | GroupedTableRow | TableRow,
+        b: ExpandableTableRow | GroupedTableRow | TableRow,
+      ) => {
+        // If no sorting is selected, return 0 (no change)
+        if (sorting.length === 0) return 0;
+
         for (const sort of sorting) {
           const { id, desc } = sort;
           let aValue: any;
           let bValue: any;
 
           if (id === 'serie-name') {
-            aValue = a.serieName;
-            bValue = b.serieName;
+            aValue = a.serieName ?? '';
+            bValue = b.serieName ?? '';
           } else if (id.startsWith('breakdown-')) {
             const index = Number.parseInt(id.replace('breakdown-', ''), 10);
-            aValue = a.breakdownValues[index] ?? '';
-            bValue = b.breakdownValues[index] ?? '';
+            if ('breakdownDisplay' in a && a.breakdownDisplay) {
+              aValue = a.breakdownDisplay[index] ?? '';
+            } else {
+              aValue = a.breakdownValues[index] ?? '';
+            }
+            if ('breakdownDisplay' in b && b.breakdownDisplay) {
+              bValue = b.breakdownDisplay[index] ?? '';
+            } else {
+              bValue = b.breakdownValues[index] ?? '';
+            }
           } else if (id.startsWith('metric-')) {
             const metric = id.replace('metric-', '') as keyof TableRow;
-            aValue = a[metric];
-            bValue = b[metric];
+            aValue = a[metric] ?? 0;
+            bValue = b[metric] ?? 0;
           } else if (id.startsWith('date-')) {
             const date = id.replace('date-', '');
             aValue = a.dateValues[date] ?? 0;
@@ -320,31 +310,113 @@ export function ReportTable({
             continue;
           }
 
+          // Handle null/undefined values
+          if (aValue == null && bValue == null) continue;
+          if (aValue == null) return 1;
+          if (bValue == null) return -1;
+
           // Compare values
-          if (aValue < bValue) return desc ? 1 : -1;
-          if (aValue > bValue) return desc ? -1 : 1;
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            const comparison = aValue.localeCompare(bValue);
+            if (comparison !== 0) return desc ? -comparison : comparison;
+          } else {
+            if (aValue < bValue) return desc ? 1 : -1;
+            if (aValue > bValue) return desc ? -1 : 1;
+          }
         }
         return 0;
       };
 
-      // Sort groups themselves by their first row's sort value
-      const groupsArray = Array.from(rowsByGroup.entries());
-      groupsArray.sort((a, b) => {
-        const aFirst = a[1][0];
-        const bFirst = b[1][0];
-        if (!aFirst || !bFirst) return 0;
-        return sortFn(aFirst, bFirst);
-      });
+      // For expandable rows, we need to sort recursively
+      function sortExpandableRows(
+        rows: ExpandableTableRow[],
+        isTopLevel = true,
+      ): ExpandableTableRow[] {
+        // Sort rows: groups by count first (only at top level), then apply user sort
+        const sorted = [...rows].sort((a, b) => {
+          // At top level, sort groups by count first
+          if (isTopLevel) {
+            const aIsGroupHeader = 'isGroupHeader' in a && a.isGroupHeader;
+            const bIsGroupHeader = 'isGroupHeader' in b && b.isGroupHeader;
 
-      // Rebuild result with sorted groups
-      const finalResult: GroupedTableRow[] = [];
-      groupsArray.forEach(([, groupRows]) => {
-        const sorted = [...groupRows].sort(sortFn);
-        finalResult.push(...sorted);
-      });
-      finalResult.push(...ungroupedRows.sort(sortFn));
+            if (aIsGroupHeader && bIsGroupHeader) {
+              const aLevel = 'groupLevel' in a ? (a.groupLevel ?? -1) : -1;
+              const bLevel = 'groupLevel' in b ? (b.groupLevel ?? -1) : -1;
 
-      return finalResult;
+              // Same level groups: sort by count first (always, regardless of user sort)
+              if (aLevel === bLevel) {
+                const aCount = a.count ?? 0;
+                const bCount = b.count ?? 0;
+                if (aCount !== bCount) {
+                  return bCount - aCount; // Highest first
+                }
+                // If counts are equal, fall through to user sort
+              }
+            }
+          }
+
+          // Apply user's sort criteria (for all rows, including within groups)
+          return sortFn(a, b);
+        });
+
+        // Sort subRows recursively (within each group) - these are NOT top level
+        return sorted.map((row) => {
+          if ('subRows' in row && row.subRows) {
+            return {
+              ...row,
+              subRows: sortExpandableRows(row.subRows, false),
+            };
+          }
+          return row;
+        });
+      }
+
+      return sortExpandableRows(groupedRows as ExpandableTableRow[]);
+    }
+
+    // For flat mode, apply sorting
+    if (!grouped && result.length > 0 && sorting.length > 0) {
+      return [...result].sort((a, b) => {
+        for (const sort of sorting) {
+          const { id, desc } = sort;
+          let aValue: any;
+          let bValue: any;
+
+          if (id === 'serie-name') {
+            aValue = a.serieName ?? '';
+            bValue = b.serieName ?? '';
+          } else if (id.startsWith('breakdown-')) {
+            const index = Number.parseInt(id.replace('breakdown-', ''), 10);
+            aValue = a.breakdownValues[index] ?? '';
+            bValue = b.breakdownValues[index] ?? '';
+          } else if (id.startsWith('metric-')) {
+            const metric = id.replace('metric-', '') as keyof TableRow;
+            aValue = a[metric] ?? 0;
+            bValue = b[metric] ?? 0;
+          } else if (id.startsWith('date-')) {
+            const date = id.replace('date-', '');
+            aValue = a.dateValues[date] ?? 0;
+            bValue = b.dateValues[date] ?? 0;
+          } else {
+            continue;
+          }
+
+          // Handle null/undefined values
+          if (aValue == null && bValue == null) continue;
+          if (aValue == null) return 1;
+          if (bValue == null) return -1;
+
+          // Compare values
+          if (typeof aValue === 'string' && typeof bValue === 'string') {
+            const comparison = aValue.localeCompare(bValue);
+            if (comparison !== 0) return desc ? -comparison : comparison;
+          } else {
+            if (aValue < bValue) return desc ? 1 : -1;
+            if (aValue > bValue) return desc ? -1 : 1;
+          }
+        }
+        return 0;
+      });
     }
 
     return result;
@@ -374,13 +446,36 @@ export function ReportTable({
       };
     });
 
-    // Check if we only have one series (excluding summary rows)
-    const nonSummaryRows = rows.filter((row) => !row.isSummaryRow);
-    const isSingleSeries = nonSummaryRows.length === 1;
+    // Helper function to flatten expandable rows and get only individual rows
+    function getIndividualRows(
+      rows: (ExpandableTableRow | TableRow)[],
+    ): TableRow[] {
+      const individualRows: TableRow[] = [];
+      for (const row of rows) {
+        const isGroupHeader =
+          'isGroupHeader' in row && row.isGroupHeader === true;
+        const isSummary = 'isSummaryRow' in row && row.isSummaryRow === true;
+
+        if (!isGroupHeader && !isSummary) {
+          // It's an individual row - add it
+          individualRows.push(row as TableRow);
+        }
+
+        // Always recursively process subRows if they exist (regardless of whether this is a group header)
+        if ('subRows' in row && row.subRows && Array.isArray(row.subRows)) {
+          individualRows.push(...getIndividualRows(row.subRows));
+        }
+      }
+      return individualRows;
+    }
+
+    // Get only individual rows from all rows to ensure consistent ranges
+    const individualRows = getIndividualRows(rows);
+    const isSingleSeries = individualRows.length === 1;
 
     if (isSingleSeries) {
       // For single series, calculate ranges from date values
-      const singleRow = nonSummaryRows[0]!;
+      const singleRow = individualRows[0]!;
       const allDateValues = dates.map(
         (date) => singleRow.dateValues[date] ?? 0,
       );
@@ -403,30 +498,37 @@ export function ReportTable({
       metricRanges.min = { min: dateMin, max: dateMax };
       metricRanges.max = { min: dateMin, max: dateMax };
     } else {
-      // Multiple series: calculate ranges across rows
-      rows.forEach((row) => {
-        // Calculate metric ranges
-        Object.keys(metricRanges).forEach((key) => {
-          const value = row[key as keyof typeof row] as number;
-          if (typeof value === 'number') {
-            metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
-            metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
-          }
-        });
+      // Multiple series: calculate ranges across individual rows only
+      if (individualRows.length === 0) {
+        // No individual rows found - this shouldn't happen, but handle gracefully
+        console.warn('No individual rows found for range calculation');
+      } else {
+        individualRows.forEach((row) => {
+          // Calculate metric ranges
+          Object.keys(metricRanges).forEach((key) => {
+            const value = row[key as keyof typeof row] as number;
+            if (typeof value === 'number' && !Number.isNaN(value)) {
+              metricRanges[key]!.min = Math.min(metricRanges[key]!.min, value);
+              metricRanges[key]!.max = Math.max(metricRanges[key]!.max, value);
+            }
+          });
 
-        // Calculate date ranges
-        dates.forEach((date) => {
-          const value = row.dateValues[date] ?? 0;
-          if (!dateRanges[date]) {
-            dateRanges[date] = {
-              min: Number.POSITIVE_INFINITY,
-              max: Number.NEGATIVE_INFINITY,
-            };
-          }
-          dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
-          dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
+          // Calculate date ranges
+          dates.forEach((date) => {
+            const value = row.dateValues[date] ?? 0;
+            if (!dateRanges[date]) {
+              dateRanges[date] = {
+                min: Number.POSITIVE_INFINITY,
+                max: Number.NEGATIVE_INFINITY,
+              };
+            }
+            if (typeof value === 'number' && !Number.isNaN(value)) {
+              dateRanges[date]!.min = Math.min(dateRanges[date]!.min, value);
+              dateRanges[date]!.max = Math.max(dateRanges[date]!.max, value);
+            }
+          });
         });
-      });
+      }
     }
 
     return { metricRanges, dateRanges };
@@ -439,8 +541,16 @@ export function ReportTable({
     max: number,
     className?: string,
   ): { opacity: number; className: string } => {
-    if (value === 0 || max === min) {
+    if (value === 0) {
       return { opacity: 0, className: '' };
+    }
+
+    // If min equals max (e.g. single row or all values same), show moderate opacity
+    if (max === min) {
+      return {
+        opacity: 0.5,
+        className: cn('bg-highlight dark:bg-emerald-700', className),
+      };
     }
 
     const percentage = (value - min) / (max - min);
@@ -481,17 +591,12 @@ export function ReportTable({
     });
   };
 
-  // Toggle group collapse
+  // Toggle group collapse (now handled by TanStack Table's expanding feature)
+  // This is kept for backward compatibility with header click handlers
   const toggleGroupCollapse = (groupKey: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(groupKey)) {
-        next.delete(groupKey);
-      } else {
-        next.add(groupKey);
-      }
-      return next;
-    });
+    // This will be handled by TanStack Table's row expansion
+    // We can find the row by groupKey and toggle it
+    // For now, this is a no-op as TanStack Table handles it
   };
 
   // Define columns
@@ -525,9 +630,12 @@ export function ReportTable({
           original.groupKey &&
           !original.isSummaryRow
         ) {
-          // Find all rows in this group and get the first one
-          const groupRows = (rawRows as GroupedTableRow[]).filter(
-            (r) => r.groupKey === original.groupKey && !r.isSummaryRow,
+          // Find all rows in this group from the current rows array
+          const groupRows = rows.filter(
+            (r): r is GroupedTableRow =>
+              'groupKey' in r &&
+              r.groupKey === original.groupKey &&
+              !r.isSummaryRow,
           );
 
           if (groupRows.length > 0) {
@@ -545,8 +653,44 @@ export function ReportTable({
           }
         }
 
+        const originalRow = row.original as ExpandableTableRow | TableRow;
+        const isGroupHeader =
+          'isGroupHeader' in originalRow && originalRow.isGroupHeader === true;
+        const canExpand = grouped ? (row.getCanExpand?.() ?? false) : false;
+        const isExpanded = grouped ? (row.getIsExpanded?.() ?? false) : false;
+        const isSerieGroupHeader =
+          isGroupHeader &&
+          'groupLevel' in originalRow &&
+          originalRow.groupLevel === -1;
+        const hasSubRows =
+          'subRows' in originalRow && (originalRow.subRows?.length ?? 0) > 0;
+
         return (
           <div className="flex items-center gap-2 px-4 h-12">
+            {grouped && isSerieGroupHeader && hasSubRows && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  // Toggle expanded state manually
+                  setExpanded((prev) => {
+                    const newExpanded: ExpandedState =
+                      typeof prev === 'object' ? { ...prev } : {};
+                    const rowId = row.id;
+                    newExpanded[rowId] = !newExpanded[rowId];
+                    return newExpanded;
+                  });
+                }}
+                className="cursor-pointer hover:opacity-70"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+            )}
             <Checkbox
               checked={isVisible}
               onCheckedChange={() => toggleSerieVisibility(serieId)}
@@ -561,7 +705,7 @@ export function ReportTable({
               className={cn(
                 'truncate',
                 isMuted && 'text-muted-foreground/50',
-                isFirstRowInGroup && 'font-semibold',
+                (isFirstRowInGroup || isGroupHeader) && 'font-semibold',
               )}
             />
           </div>
@@ -592,39 +736,80 @@ export function ReportTable({
             return propertyName;
           }
 
-          // Find all unique group keys for this breakdown level
-          const groupKeys = new Set<string>();
-          (rawRows as GroupedTableRow[]).forEach((row) => {
-            if (row.groupKey) {
-              groupKeys.add(row.groupKey);
+          // Find all rows at this breakdown level that can be expanded
+          const rowsAtLevel: string[] = [];
+          if (grouped && expandableRows) {
+            function collectRowIdsAtLevel(
+              rows: ExpandableTableRow[],
+              targetLevel: number,
+              currentLevel = 0,
+            ): void {
+              for (const row of rows) {
+                if (
+                  row.isGroupHeader &&
+                  row.groupLevel === targetLevel &&
+                  (row.subRows?.length ?? 0) > 0
+                ) {
+                  rowsAtLevel.push(row.id);
+                }
+                // Recurse into subRows if we haven't reached target level yet
+                if (currentLevel < targetLevel && row.subRows) {
+                  collectRowIdsAtLevel(
+                    row.subRows,
+                    targetLevel,
+                    currentLevel + 1,
+                  );
+                }
+              }
             }
-          });
+            collectRowIdsAtLevel(expandableRows, index);
+          }
 
-          // Check if all groups at this level are collapsed
-          const allCollapsed = Array.from(groupKeys).every((key) =>
-            collapsedGroups.has(key),
-          );
+          // Check if all groups at this level are expanded
+          const allExpanded =
+            rowsAtLevel.length > 0 &&
+            rowsAtLevel.every(
+              (id) => typeof expanded === 'object' && expanded[id] === true,
+            );
 
           return (
             <div
               className="flex items-center gap-2 cursor-pointer hover:opacity-70"
               onClick={() => {
+                if (!grouped) return;
                 // Toggle all groups at this breakdown level
-                groupKeys.forEach((key) => toggleGroupCollapse(key));
+                setExpanded((prev) => {
+                  const newExpanded: ExpandedState =
+                    typeof prev === 'object' ? { ...prev } : {};
+                  const shouldExpand = !allExpanded;
+                  rowsAtLevel.forEach((id) => {
+                    newExpanded[id] = shouldExpand;
+                  });
+                  return newExpanded;
+                });
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  groupKeys.forEach((key) => toggleGroupCollapse(key));
+                  if (!grouped) return;
+                  setExpanded((prev) => {
+                    const newExpanded: ExpandedState =
+                      typeof prev === 'object' ? { ...prev } : {};
+                    const shouldExpand = !allExpanded;
+                    rowsAtLevel.forEach((id) => {
+                      newExpanded[id] = shouldExpand;
+                    });
+                    return newExpanded;
+                  });
                 }
               }}
               role="button"
               tabIndex={0}
             >
-              {allCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
+              {allExpanded ? (
                 <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
               )}
               <span>{propertyName}</span>
             </div>
@@ -636,19 +821,52 @@ export function ReportTable({
           breakdownIndex: index,
         },
         cell: ({ row }) => {
-          const original = row.original;
+          const original = row.original as ExpandableTableRow | TableRow;
+          const isGroupHeader =
+            'isGroupHeader' in original && original.isGroupHeader === true;
+          const canExpand = row.getCanExpand?.() ?? false;
+          const isExpanded = row.getIsExpanded?.() ?? false;
+
           let value: string | null;
           let isMuted = false;
           let isFirstRowInGroup = false;
 
-          if ('breakdownDisplay' in original && grouped) {
+          if (
+            'breakdownDisplay' in original &&
+            grouped &&
+            original.breakdownDisplay !== undefined
+          ) {
             value = original.breakdownDisplay[index] ?? null;
 
+            // For group headers, show the group value at the appropriate level
+            if (isGroupHeader && 'groupLevel' in original) {
+              const groupLevel = original.groupLevel ?? 0;
+              if (index === groupLevel) {
+                value = original.groupValue ?? null;
+              } else if (index < groupLevel) {
+                // Show parent group values from the path
+                // This would need to be calculated from the hierarchy
+                value = null; // Will be handled by breakdownDisplay
+              } else {
+                // For breakdowns deeper than the group level, don't show anything
+                // (e.g., if group is at COUNTRY level, don't show CITY)
+                value = null;
+              }
+            }
+
             // Check if this is the first row in the group and if this breakdown should be bold
-            if (value && original.groupKey && !original.isSummaryRow) {
-              // Find all rows in this group and get the first one
-              const groupRows = (rawRows as GroupedTableRow[]).filter(
-                (r) => r.groupKey === original.groupKey && !r.isSummaryRow,
+            if (
+              value &&
+              'groupKey' in original &&
+              original.groupKey &&
+              !original.isSummaryRow
+            ) {
+              // Find all rows in this group from the current rows array
+              const groupRows = rows.filter(
+                (r): r is GroupedTableRow | ExpandableTableRow =>
+                  'groupKey' in r &&
+                  r.groupKey === original.groupKey &&
+                  !('isSummaryRow' in r && r.isSummaryRow),
               );
 
               if (groupRows.length > 0) {
@@ -659,7 +877,10 @@ export function ReportTable({
                   isFirstRowInGroup = true;
                 } else {
                   // Only mute if this is not the first row and the value matches
-                  const firstRowValue = firstRowInGroup.breakdownValues[index];
+                  const firstRowValue =
+                    'breakdownValues' in firstRowInGroup
+                      ? firstRowInGroup.breakdownValues[index]
+                      : null;
                   if (firstRowValue === value) {
                     isMuted = true;
                   }
@@ -667,25 +888,52 @@ export function ReportTable({
               }
             }
           } else {
-            value = original.breakdownValues[index] ?? null;
+            value =
+              'breakdownValues' in original
+                ? (original.breakdownValues[index] ?? null)
+                : null;
           }
 
-          const isSummary = original.isSummaryRow ?? false;
+          const isSummary =
+            'isSummaryRow' in original && original.isSummaryRow === true;
           // Make bold if it's the first row in group and this is one of the first breakdown columns
           // (all breakdowns except the last one)
           const shouldBeBold =
             isFirstRowInGroup && index < breakdownPropertyNames.length - 1;
 
           return (
-            <span
-              className={cn(
-                'truncate block leading-[48px] px-4',
-                (!value || isMuted) && 'text-muted-foreground/50',
-                (isSummary || shouldBeBold) && 'font-semibold',
-              )}
-            >
-              {value || ''}
-            </span>
+            <div className="flex items-center gap-2 px-4 h-12">
+              {canExpand &&
+                index ===
+                  ('groupLevel' in original ? (original.groupLevel ?? 0) : 0) &&
+                index < breakdownPropertyNames.length - 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const handler = row.getToggleExpandedHandler();
+                      if (handler) handler();
+                    }}
+                    className="cursor-pointer hover:opacity-70"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
+                  </button>
+                )}
+              <span
+                className={cn(
+                  'truncate block leading-[48px]',
+                  (!value || isMuted) && 'text-muted-foreground/50',
+                  (isSummary || shouldBeBold || isGroupHeader) &&
+                    'font-semibold',
+                )}
+              >
+                {value || ''}
+              </span>
+            </div>
           );
         },
       });
@@ -709,16 +957,46 @@ export function ReportTable({
         size: 100,
         cell: ({ row }) => {
           const value = row.original[metric.key];
-          const isSummary = row.original.isSummaryRow ?? false;
+          const original = row.original as ExpandableTableRow | TableRow;
+          const hasIsSummaryRow = 'isSummaryRow' in original;
+          const hasIsGroupHeader = 'isGroupHeader' in original;
+          const isSummary = hasIsSummaryRow && original.isSummaryRow === true;
+          const isGroupHeader =
+            hasIsGroupHeader && original.isGroupHeader === true;
+          const isIndividualRow = !isSummary && !isGroupHeader;
           const range = metricRanges[metric.key];
-          const { opacity, className } = range
-            ? getCellBackground(
-                value,
-                range.min,
-                range.max,
-                'bg-purple-400 dark:bg-purple-700',
-              )
-            : { opacity: 0, className: '' };
+
+          // Debug: Check first few rows
+          if (metric.key === 'count' && row.index < 5) {
+            console.log(`[FIX CHECK] Row ${row.index}:`, {
+              isSummaryRowValue:
+                'isSummaryRow' in original ? original.isSummaryRow : 'NOT SET',
+              isGroupHeaderValue:
+                'isGroupHeader' in original
+                  ? original.isGroupHeader
+                  : 'NOT SET',
+              isSummary,
+              isGroupHeader,
+              isIndividualRow,
+            });
+          }
+
+          // Only apply colors to individual rows, not summary or group header rows
+          // Also check that range is valid (not still at initial values)
+          const hasValidRange =
+            range &&
+            range.min !== Number.POSITIVE_INFINITY &&
+            range.max !== Number.NEGATIVE_INFINITY;
+
+          const { opacity, className } =
+            isIndividualRow && hasValidRange
+              ? getCellBackground(
+                  value,
+                  range.min,
+                  range.max,
+                  'bg-purple-400 dark:bg-purple-700',
+                )
+              : { opacity: 0, className: '' };
 
           return (
             <div className="relative h-12 w-full">
@@ -729,7 +1007,7 @@ export function ReportTable({
               <div
                 className={cn(
                   'relative text-right font-mono text-sm px-4 h-full flex items-center justify-end',
-                  isSummary && 'font-semibold',
+                  (isSummary || isGroupHeader) && 'font-semibold',
                   opacity > 0.7 &&
                     'text-white [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
                 )}
@@ -753,10 +1031,21 @@ export function ReportTable({
         cell: ({ row }) => {
           const value = row.original.dateValues[date] ?? 0;
           const isSummary = row.original.isSummaryRow ?? false;
+          const isGroupHeader =
+            'isGroupHeader' in row.original &&
+            row.original.isGroupHeader === true;
+          const isIndividualRow = !isSummary && !isGroupHeader;
           const range = dateRanges[date];
-          const { opacity, className } = range
-            ? getCellBackground(value, range.min, range.max)
-            : { opacity: 0, className: '' };
+          // Only apply colors to individual rows, not summary or group header rows
+          // Also check that range is valid (not still at initial values)
+          const hasValidRange =
+            range &&
+            range.min !== Number.POSITIVE_INFINITY &&
+            range.max !== Number.NEGATIVE_INFINITY;
+          const { opacity, className } =
+            isIndividualRow && hasValidRange
+              ? getCellBackground(value, range.min, range.max)
+              : { opacity: 0, className: '' };
 
           return (
             <div className="relative h-12 w-full">
@@ -767,7 +1056,7 @@ export function ReportTable({
               <div
                 className={cn(
                   'relative text-right font-mono text-sm px-4 h-full flex items-center justify-end',
-                  isSummary && 'font-semibold',
+                  (isSummary || isGroupHeader) && 'font-semibold',
                   opacity > 0.7 &&
                     'text-white [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
                 )}
@@ -788,11 +1077,12 @@ export function ReportTable({
     number,
     grouped,
     visibleSeriesIds,
-    collapsedGroups,
-    rawRows,
+    expandableRows,
+    rows,
     metricRanges,
     dateRanges,
     columnSizing,
+    expanded,
   ]);
 
   // Create a hash of column IDs to track when columns change
@@ -800,26 +1090,63 @@ export function ReportTable({
     return columns.map((col) => col.id).join(',');
   }, [columns]);
 
-  const table = useReactTable({
-    data: filteredRows,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: grouped ? getCoreRowModel() : getSortedRowModel(), // Disable TanStack sorting when grouped
-    getFilteredRowModel: getFilteredRowModel(),
-    filterFns: {
-      isWithinRange: () => true,
-    },
-    enableColumnResizing: true,
-    columnResizeMode: 'onChange',
-    state: {
+  // Memoize table options to ensure table updates when filteredRows changes
+  const tableOptions = useMemo(
+    () => ({
+      data: filteredRows, // This is already sorted in filteredRows
+      columns,
+      getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: grouped ? getExpandedRowModel() : undefined,
+      getSubRows: grouped
+        ? (row: ExpandableTableRow | TableRow) =>
+            'subRows' in row ? row.subRows : undefined
+        : undefined,
+      // Sorting is handled manually in filteredRows, so we don't use getSortedRowModel
+      getFilteredRowModel: getFilteredRowModel(),
+      filterFns: {
+        isWithinRange: () => true,
+      },
+      enableColumnResizing: true,
+      columnResizeMode: 'onChange' as const,
+      getRowCanExpand: grouped
+        ? (row: any) => {
+            const r = row.original as ExpandableTableRow;
+            if (!('isGroupHeader' in r) || !r.isGroupHeader) return false;
+            // Don't allow expansion for the last breakdown level
+            const groupLevel = r.groupLevel ?? -1;
+            const isLastBreakdown =
+              groupLevel === breakdownPropertyNames.length - 1;
+            const hasSubRows = (r.subRows?.length ?? 0) > 0;
+            return !isLastBreakdown && hasSubRows;
+          }
+        : undefined,
+      state: {
+        sorting, // Keep sorting state for UI indicators
+        columnSizing,
+        expanded: grouped ? expanded : undefined,
+      },
+      onSortingChange: setSorting,
+      onColumnSizingChange: setColumnSizing,
+      onExpandedChange: grouped ? setExpanded : undefined,
+      globalFilterFn: () => true, // We handle filtering manually
+      manualSorting: true, // We handle sorting manually for both modes
+      manualFiltering: true, // We handle filtering manually
+    }),
+    [
+      filteredRows,
+      columns,
+      grouped,
+      breakdownPropertyNames.length,
       sorting,
       columnSizing,
-    },
-    onSortingChange: setSorting,
-    onColumnSizingChange: setColumnSizing,
-    globalFilterFn: () => true, // We handle filtering manually
-    manualSorting: grouped, // Manual sorting when grouped
-  });
+      expanded,
+      setSorting,
+      setColumnSizing,
+      setExpanded,
+    ],
+  );
+
+  const table = useReactTable(tableOptions);
 
   // Virtualization setup
   useEffect(() => {
@@ -860,8 +1187,18 @@ export function ReportTable({
     };
   }, []);
 
+  // Get the row model to use (expanded when grouped, regular otherwise)
+  // filteredRows is already sorted, so getExpandedRowModel/getRowModel should preserve that order
+  // We need to recalculate when filteredRows changes to ensure sorting is applied
+  const rowModelToUse = useMemo(() => {
+    if (grouped) {
+      return table.getExpandedRowModel();
+    }
+    return table.getRowModel();
+  }, [table, grouped, expanded, filteredRows.length, sorting]);
+
   const virtualizer = useWindowVirtualizer({
-    count: filteredRows.length,
+    count: rowModelToUse.rows.length,
     estimateSize: () => ROW_HEIGHT,
     overscan: 10,
     scrollMargin,
@@ -1094,7 +1431,7 @@ export function ReportTable({
             }}
           >
             {virtualRows.map((virtualRow) => {
-              const tableRow = table.getRowModel().rows[virtualRow.index];
+              const tableRow = rowModelToUse.rows[virtualRow.index];
               if (!tableRow) return null;
 
               return (
