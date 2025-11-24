@@ -56,7 +56,9 @@ async function migrate() {
 
   if (!getIsSelfHosting()) {
     printBoxMessage('🕒 Migrations starts in 10 seconds', []);
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    if (!getIsDry()) {
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+    }
   }
 
   if (migration) {
