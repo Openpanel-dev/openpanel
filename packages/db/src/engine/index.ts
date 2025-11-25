@@ -18,8 +18,6 @@ import type { ConcreteSeries } from './types';
  * Executes the pipeline: normalize -> plan -> fetch -> compute -> format
  */
 export async function executeChart(input: IChartInput): Promise<FinalChart> {
-  const { timezone } = await getSettingsForProject(input.projectId);
-
   // Stage 1: Normalize input
   const normalized = await normalize(input);
 

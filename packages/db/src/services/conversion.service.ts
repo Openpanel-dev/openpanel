@@ -20,6 +20,7 @@ export class ConversionService {
     funnelWindow = 24,
     series,
     breakdowns = [],
+    limit,
     interval,
     timezone,
   }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
@@ -114,18 +115,20 @@ export class ConversionService {
     }
 
     const results = await query.execute();
-    return this.toSeries(results, breakdowns).map((serie, serieIndex) => {
-      return {
-        ...serie,
-        data: serie.data.map((d, index) => ({
-          ...d,
-          timestamp: new Date(d.date).getTime(),
-          serieIndex,
-          index,
-          serie: omit(['data'], serie),
-        })),
-      };
-    });
+    return this.toSeries(results, breakdowns, limit).map(
+      (serie, serieIndex) => {
+        return {
+          ...serie,
+          data: serie.data.map((d, index) => ({
+            ...d,
+            timestamp: new Date(d.date).getTime(),
+            serieIndex,
+            index,
+            serie: omit(['data'], serie),
+          })),
+        };
+      },
+    );
   }
 
   private toSeries(
@@ -137,6 +140,7 @@ export class ConversionService {
       [key: string]: string | number;
     }[],
     breakdowns: { name: string }[] = [],
+    limit: number | undefined = undefined,
   ) {
     if (!breakdowns.length) {
       return [
@@ -156,6 +160,10 @@ export class ConversionService {
     // Group by breakdown values
     const series = data.reduce(
       (acc, d) => {
+        if (limit && Object.keys(acc).length >= limit) {
+          return acc;
+        }
+
         const key =
           breakdowns.map((b, index) => d[`b_${index}`]).join('|') ||
           NOT_SET_VALUE;

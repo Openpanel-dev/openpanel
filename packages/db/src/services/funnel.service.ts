@@ -126,6 +126,7 @@ export class FunnelService {
   toSeries(
     funnel: { level: number; count: number; [key: string]: any }[],
     breakdowns: { name: string }[] = [],
+    limit: number | undefined = undefined,
   ) {
     if (!breakdowns.length) {
       return [
@@ -141,6 +142,10 @@ export class FunnelService {
     // Group by breakdown values
     const series = funnel.reduce(
       (acc, f) => {
+        if (limit && Object.keys(acc).length >= limit) {
+          return acc;
+        }
+
         const key = breakdowns.map((b, index) => f[`b_${index}`]).join('|');
         if (!acc[key]) {
           acc[key] = [];
@@ -183,6 +188,7 @@ export class FunnelService {
     funnelWindow = 24,
     funnelGroup,
     breakdowns = [],
+    limit,
     timezone = 'UTC',
   }: IChartInput & { timezone: string; events?: IChartEvent[] }) {
     if (!startDate || !endDate) {
@@ -267,7 +273,7 @@ export class FunnelService {
       .orderBy('level', 'DESC');
 
     const funnelData = await funnelQuery.execute();
-    const funnelSeries = this.toSeries(funnelData, breakdowns);
+    const funnelSeries = this.toSeries(funnelData, breakdowns, limit);
 
     return funnelSeries
       .map((data) => {

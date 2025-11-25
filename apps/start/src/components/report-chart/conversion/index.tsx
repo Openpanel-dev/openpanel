@@ -13,7 +13,7 @@ import { Summary } from './summary';
 export function ReportConversionChart() {
   const { isLazyLoading, report } = useReportChartContext();
   const trpc = useTRPC();
-
+  console.log(report.limit);
   const res = useQuery(
     trpc.chart.conversion.queryOptions(report, {
       placeholderData: keepPreviousData,

@@ -26,6 +26,7 @@ export function format(
   }>,
   includeAlphaIds: boolean,
   previousSeries: ConcreteSeries[] | null = null,
+  limit: number | undefined = undefined,
 ): FinalChart {
   const series = concreteSeries.map((cs) => {
     // Find definition for this series
@@ -124,6 +125,9 @@ export function format(
     };
   });
 
+  // Sort series by sum (biggest first)
+  series.sort((a, b) => b.metrics.sum - a.metrics.sum);
+
   // Calculate global metrics
   const allValues = concreteSeries.flatMap((cs) => cs.data.map((d) => d.count));
   const globalMetrics = {
@@ -135,7 +139,7 @@ export function format(
   };
 
   return {
-    series,
+    series: limit ? series.slice(0, limit) : series,
     metrics: globalMetrics,
   };
 }

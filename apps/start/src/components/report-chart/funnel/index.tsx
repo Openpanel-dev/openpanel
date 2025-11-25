@@ -40,6 +40,7 @@ export function ReportFunnelChart() {
     metric: 'sum',
     startDate,
     endDate,
+    limit: 20,
   };
   const trpc = useTRPC();
   const res = useQuery(
