@@ -44,18 +44,23 @@ export function createNextRouteHandler(
 
 export function createScriptHandler() {
   return async function GET(req: Request) {
-    if (!req.url.endsWith('op1.js')) {
+    const url = new URL(req.url);
+    const query = url.searchParams.toString();
+
+    if (!url.pathname.endsWith('op1.js')) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
     const scriptUrl = 'https://openpanel.dev/op1.js';
     try {
       const res = await fetch(scriptUrl, {
-        // @ts-expect-error
+        // @ts-ignore
         next: { revalidate: 86400 },
       });
       const text = await res.text();
-      const etag = `"${createHash('md5').update(text).digest('hex')}"`;
+      const etag = `"${createHash('md5')
+        .update(text + query)
+        .digest('hex')}"`;
       return new NextResponse(text, {
         headers: {
           'Content-Type': 'text/javascript',
