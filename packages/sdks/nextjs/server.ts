@@ -1,4 +1,1 @@
-export {
-  createNextRouteHandler,
-  createScriptHandler,
-} from './createNextRouteHandler';
+export { createRouteHandler } from './createNextRouteHandler';

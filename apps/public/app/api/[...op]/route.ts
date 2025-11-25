@@ -1,7 +1,5 @@
-import {
-  createNextRouteHandler,
-  createScriptHandler,
-} from '@openpanel/nextjs/server';
+import { createRouteHandler } from '@openpanel/nextjs/server';
 
-export const POST = createNextRouteHandler();
-export const GET = createScriptHandler();
+const routeHandler = createRouteHandler();
+export const GET = routeHandler;
+export const POST = routeHandler;

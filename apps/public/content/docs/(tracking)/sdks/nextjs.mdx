@@ -273,13 +273,16 @@ export function GET() {
 
 ### Proxy events
 
-With `createNextRouteHandler` you can proxy your events through your server, this will ensure all events are tracked since there is a lot of adblockers that block requests to third party domains. You'll also need to either host our tracking script or you can use `createScriptHandler` function which proxies this as well.
+With `createRouteHandler` you can proxy your events through your server, this will ensure all events are tracked since there is a lot of adblockers that block requests to third party domains. The handler automatically routes requests based on the path, supporting both API endpoints (like `/track` and `/track/device-id`) and the tracking script (`/op1.js`).
 
 ```typescript title="/app/api/[...op]/route.ts"
-import { createNextRouteHandler, createScriptHandler } from '@openpanel/nextjs/server';
+import { createRouteHandler } from '@openpanel/nextjs/server';
 
-export const POST = createNextRouteHandler();
-export const GET = createScriptHandler()
+const routeHandler = createRouteHandler();
+
+// Export the same handler for all HTTP methods - it routes internally based on pathname
+export const GET = routeHandler;
+export const POST = routeHandler;
 ```
 
 Remember to change the `apiUrl` and `cdnUrl` in the `OpenPanelComponent` to your own server. 
