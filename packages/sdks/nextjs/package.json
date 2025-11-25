@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/nextjs",
-  "version": "1.0.17-local",
+  "version": "1.0.18-local",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
