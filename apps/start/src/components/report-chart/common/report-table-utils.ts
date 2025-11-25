@@ -3,6 +3,7 @@ import type { IChartData } from '@/trpc/client';
 
 export type TableRow = {
   id: string;
+  serieId: string; // Serie ID for visibility/color lookup
   serieName: string;
   breakdownValues: string[];
   count: number;
@@ -11,11 +12,10 @@ export type TableRow = {
   min: number;
   max: number;
   dateValues: Record<string, number>; // date -> count
-  originalSerie: IChartData['series'][0];
-  // Group metadata for collapse functionality
-  groupKey?: string; // Unique key for the group this row belongs to
-  parentGroupKey?: string; // Key of parent group (for nested groups)
-  isSummaryRow?: boolean; // True if this is a summary row for a collapsed group
+  // Group metadata
+  groupKey?: string;
+  parentGroupKey?: string;
+  isSummaryRow?: boolean;
 };
 
 export type GroupedTableRow = TableRow & {
@@ -166,7 +166,14 @@ export function findGroup<T>(
 
 /**
  * Convert hierarchical groups to TanStack Table's expandable row format
- * This creates rows with subRows that TanStack Table can expand/collapse natively
+ *
+ * Transforms nested GroupedItem structure into flat ExpandableTableRow array
+ * that TanStack Table can use with its native expanding feature.
+ *
+ * Key behaviors:
+ * - Serie level (level -1) and breakdown levels 0 to breakdownCount-2 create group headers
+ * - Last breakdown level (breakdownCount-1) does NOT create group headers (always individual rows)
+ * - Individual rows are explicitly marked as NOT group headers or summary rows
  */
 export function groupsToExpandableRows(
   groups: Array<GroupedItem<TableRow>>,
@@ -181,37 +188,35 @@ export function groupsToExpandableRows(
     const currentPath = [...parentPath, group.group];
     const subRows: ExpandableTableRow[] = [];
 
-    // Separate nested groups from actual items
+    // Separate nested groups from individual data items
     const nestedGroups: GroupedItem<TableRow>[] = [];
-    const actualItems: TableRow[] = [];
+    const individualItems: TableRow[] = [];
 
     for (const item of group.items) {
       if (item && typeof item === 'object' && 'items' in item) {
         nestedGroups.push(item);
       } else if (item) {
-        actualItems.push(item);
+        individualItems.push(item);
       }
     }
 
-    // Process nested groups (they become subRows)
+    // Process nested groups recursively (they become expandable group headers)
     for (const nestedGroup of nestedGroups) {
       subRows.push(...processGroup(nestedGroup, currentPath));
     }
 
-    // Process actual items
-    actualItems.forEach((item, index) => {
+    // Process individual data items (leaf nodes)
+    individualItems.forEach((item, index) => {
+      // Build breakdownDisplay: first row shows all values, subsequent rows show parent path + item values
       const breakdownDisplay: (string | null)[] = [];
       const breakdownValues = item.breakdownValues;
 
-      // Build breakdownDisplay based on hierarchy
-      if (index === 0) {
-        // First row shows all breakdown values
-        for (let i = 0; i < breakdownCount; i++) {
+      for (let i = 0; i < breakdownCount; i++) {
+        if (index === 0) {
+          // First row: show all breakdown values
           breakdownDisplay.push(breakdownValues[i] ?? null);
-        }
-      } else {
-        // Subsequent rows: show values from parent path, then item values
-        for (let i = 0; i < breakdownCount; i++) {
+        } else {
+          // Subsequent rows: show parent path values, then item values
           if (i < currentPath.length) {
             breakdownDisplay.push(currentPath[i] ?? null);
           } else if (i < breakdownValues.length) {
@@ -227,18 +232,20 @@ export function groupsToExpandableRows(
         breakdownDisplay,
         groupKey: group.groupKey,
         parentGroupKey: group.parentGroupKey,
-        // Explicitly mark as NOT a group header or summary row
         isGroupHeader: false,
         isSummaryRow: false,
       });
     });
 
     // If this group has subRows and is not the last breakdown level, create a group header row
-    // Don't create group headers for the last breakdown level (level === breakdownCount)
-    // because it would just duplicate the rows
+    // Don't create group headers for the last breakdown level (level === breakdownCount - 1)
+    // because the last breakdown should always be individual rows
+    // -1 is serie level (should be grouped)
+    // 0 to breakdownCount-2 are breakdown levels (should be grouped)
+    // breakdownCount-1 is the last breakdown level (should NOT be grouped, always individual)
     const shouldCreateGroupHeader =
       subRows.length > 0 &&
-      (group.level < breakdownCount || group.level === -1); // -1 is serie level
+      (group.level === -1 || group.level < breakdownCount - 1);
 
     if (shouldCreateGroupHeader) {
       // Create a summary row for the group
@@ -416,6 +423,7 @@ export function createFlatRows(
 
     return {
       id: serie.id,
+      serieId: serie.id,
       serieName: serie.names[0] ?? '',
       breakdownValues: serie.names.slice(1),
       count: serie.metrics.count ?? 0,
@@ -424,7 +432,6 @@ export function createFlatRows(
       min: serie.metrics.min,
       max: serie.metrics.max,
       dateValues,
-      originalSerie: serie,
     };
   });
 }
@@ -451,10 +458,11 @@ export function createGroupedRowsHierarchical(
   }
 
   // Create hierarchical groups using groupByNames
-  // Group by serie name first, then by breakdown values
+  // Note: groupByNames expects items with a `names` array, so we create a temporary array
+  // This is a minor inefficiency but keeps groupByNames generic and reusable
   const itemsWithNames = flatRows.map((row) => ({
     ...row,
-    names: [row.serieName, ...row.breakdownValues], // Serie name + breakdown values
+    names: [row.serieName, ...row.breakdownValues],
   }));
 
   return groupByNames(itemsWithNames);
@@ -552,6 +560,8 @@ export function createSummaryRow(
   groupKey: string,
   breakdownCount: number,
 ): GroupedTableRow {
+  const firstRow = groupRows[0]!;
+
   // Aggregate metrics from all rows in the group
   const totalSum = groupRows.reduce((sum, row) => sum + row.sum, 0);
   const totalCount = groupRows.reduce((sum, row) => sum + row.count, 0);
@@ -560,27 +570,23 @@ export function createSummaryRow(
   const totalMin = Math.min(...groupRows.map((row) => row.min));
   const totalMax = Math.max(...groupRows.map((row) => row.max));
 
-  // Aggregate date values
+  // Aggregate date values across all rows
   const dateValues: Record<string, number> = {};
-  const allDates = new Set<string>();
   groupRows.forEach((row) => {
     Object.keys(row.dateValues).forEach((date) => {
-      allDates.add(date);
       dateValues[date] = (dateValues[date] ?? 0) + row.dateValues[date];
     });
   });
 
-  // Get breakdown values from first row
-  const firstRow = groupRows[0]!;
-  const breakdownDisplay: (string | null)[] = [];
-  breakdownDisplay.push(firstRow.breakdownValues[0] ?? null);
-  // Fill remaining breakdowns with null (empty)
-  for (let i = 1; i < breakdownCount; i++) {
-    breakdownDisplay.push(null);
-  }
+  // Build breakdownDisplay: show first breakdown value, rest are null
+  const breakdownDisplay: (string | null)[] = [
+    firstRow.breakdownValues[0] ?? null,
+    ...Array(breakdownCount - 1).fill(null),
+  ];
 
   return {
     id: `summary-${groupKey}`,
+    serieId: firstRow.serieId,
     serieName: firstRow.serieName,
     breakdownValues: firstRow.breakdownValues,
     count: totalCount,
@@ -589,7 +595,6 @@ export function createSummaryRow(
     min: totalMin,
     max: totalMax,
     dateValues,
-    originalSerie: firstRow.originalSerie,
     groupKey,
     isSummaryRow: true,
     breakdownDisplay,

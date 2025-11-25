@@ -18,6 +18,7 @@ import {
 } from '@tanstack/react-table';
 import {
   type VirtualItem,
+  useVirtualizer,
   useWindowVirtualizer,
 } from '@tanstack/react-virtual';
 import throttle from 'lodash.throttle';
@@ -25,6 +26,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import { Tooltiper } from '@/components/ui/tooltip';
 import { ReportTableToolbar } from './report-table-toolbar';
 import {
   type ExpandableTableRow,
@@ -58,25 +60,100 @@ const ROW_HEIGHT = 48; // h-12
 interface VirtualRowProps {
   row: Row<TableRow | GroupedTableRow>;
   virtualRow: VirtualItem;
-  gridTemplateColumns: string;
   pinningStylesMap: Map<string, React.CSSProperties>;
   headers: Header<TableRow | GroupedTableRow, unknown>[];
   isResizingRef: React.MutableRefObject<boolean>;
   resizingColumnId: string | null;
   setResizingColumnId: (id: string | null) => void;
+  // Horizontal virtualization props
+  leftPinnedColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
+  scrollableColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
+  rightPinnedColumns: Header<TableRow | GroupedTableRow, unknown>['column'][];
+  virtualColumns: VirtualItem[];
+  leftPinnedWidth: number;
+  scrollableColumnsTotalWidth: number;
+  rightPinnedWidth: number;
 }
 
 const VirtualRow = function VirtualRow({
   row,
   virtualRow,
-  gridTemplateColumns,
   pinningStylesMap,
   headers,
   isResizingRef,
   resizingColumnId,
   setResizingColumnId,
+  leftPinnedColumns,
+  scrollableColumns,
+  rightPinnedColumns,
+  virtualColumns,
+  leftPinnedWidth,
+  scrollableColumnsTotalWidth,
+  rightPinnedWidth,
 }: VirtualRowProps) {
   const cells = row.getVisibleCells();
+
+  const renderCell = (
+    column: Header<TableRow | GroupedTableRow, unknown>['column'],
+    header: Header<TableRow | GroupedTableRow, unknown> | undefined,
+  ) => {
+    const cell = cells.find((c) => c.column.id === column.id);
+    if (!cell || !header) return null;
+
+    const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
+    const pinningStyles = pinningStylesMap.get(column.id) ?? {};
+    const canResize = column.getCanResize();
+    const isPinned = column.columnDef.meta?.pinned === 'left';
+    const isResizing = resizingColumnId === column.id;
+
+    return (
+      <div
+        key={cell.id}
+        style={{
+          width: `${header.getSize()}px`,
+          minWidth: column.columnDef.minSize,
+          maxWidth: column.columnDef.maxSize,
+          ...pinningStyles,
+        }}
+        className={cn('relative overflow-hidden border-r')}
+      >
+        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+        {canResize && isPinned && (
+          <div
+            data-resize-handle
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              isResizingRef.current = true;
+              setResizingColumnId(column.id);
+              header.getResizeHandler()(e);
+            }}
+            onMouseUp={() => {
+              setTimeout(() => {
+                isResizingRef.current = false;
+                setResizingColumnId(null);
+              }, 0);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              isResizingRef.current = true;
+              setResizingColumnId(column.id);
+              header.getResizeHandler()(e);
+            }}
+            onTouchEnd={() => {
+              setTimeout(() => {
+                isResizingRef.current = false;
+                setResizingColumnId(null);
+              }, 0);
+            }}
+            className={cn(
+              'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
+              isResizing && 'bg-primary',
+            )}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -85,76 +162,56 @@ const VirtualRow = function VirtualRow({
         position: 'absolute',
         top: 0,
         left: 0,
-        width: '100%',
+        width: leftPinnedWidth + scrollableColumnsTotalWidth + rightPinnedWidth,
         height: `${virtualRow.size}px`,
         transform: `translateY(${virtualRow.start}px)`,
-        display: 'grid',
-        gridTemplateColumns,
+        display: 'flex',
         minWidth: 'fit-content',
       }}
       className="border-b hover:bg-muted/30 transition-colors"
     >
-      {headers.map((header) => {
-        const column = header.column;
-        const cell = cells.find((c) => c.column.id === column.id);
-        if (!cell) return null;
+      {/* Left Pinned Columns */}
+      {leftPinnedColumns.map((column) => {
+        const header = headers.find((h) => h.column.id === column.id);
+        return renderCell(column, header);
+      })}
 
-        const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
-        const pinningStyles = pinningStylesMap.get(column.id) ?? {};
-        const canResize = column.getCanResize();
-        const isPinned = column.columnDef.meta?.pinned === 'left';
-        const isResizing = resizingColumnId === column.id;
+      {/* Scrollable Columns (Virtualized) */}
+      <div
+        style={{
+          position: 'relative',
+          width: scrollableColumnsTotalWidth,
+          height: `${virtualRow.size}px`,
+        }}
+      >
+        {virtualColumns.map((virtualCol) => {
+          const column = scrollableColumns[virtualCol.index];
+          if (!column) return null;
+          const header = headers.find((h) => h.column.id === column.id);
+          const cell = cells.find((c) => c.column.id === column.id);
+          if (!cell || !header) return null;
 
-        return (
-          <div
-            key={cell.id}
-            style={{
-              width: `${header.getSize()}px`,
-              minWidth: column.columnDef.minSize,
-              maxWidth: column.columnDef.maxSize,
-              ...pinningStyles,
-            }}
-            className={cn(
-              'border-r border-border relative overflow-hidden',
-              isBreakdown && 'border-r-2',
-            )}
-          >
-            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-            {canResize && isPinned && (
-              <div
-                data-resize-handle
-                onMouseDown={(e) => {
-                  e.stopPropagation();
-                  isResizingRef.current = true;
-                  setResizingColumnId(column.id);
-                  header.getResizeHandler()(e);
-                }}
-                onMouseUp={() => {
-                  setTimeout(() => {
-                    isResizingRef.current = false;
-                    setResizingColumnId(null);
-                  }, 0);
-                }}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  isResizingRef.current = true;
-                  setResizingColumnId(column.id);
-                  header.getResizeHandler()(e);
-                }}
-                onTouchEnd={() => {
-                  setTimeout(() => {
-                    isResizingRef.current = false;
-                    setResizingColumnId(null);
-                  }, 0);
-                }}
-                className={cn(
-                  'absolute right-0 top-0 h-full w-1 cursor-col-resize touch-none select-none bg-transparent hover:bg-primary/50 transition-colors',
-                  isResizing && 'bg-primary',
-                )}
-              />
-            )}
-          </div>
-        );
+          return (
+            <div
+              key={cell.id}
+              style={{
+                position: 'absolute',
+                left: `${virtualCol.start}px`,
+                width: `${virtualCol.size}px`,
+                height: `${virtualRow.size}px`,
+              }}
+              className={cn('relative overflow-hidden')}
+            >
+              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Right Pinned Columns */}
+      {rightPinnedColumns.map((column) => {
+        const header = headers.find((h) => h.column.id === column.id);
+        return renderCell(column, header);
       })}
     </div>
   );
@@ -165,7 +222,7 @@ export function ReportTable({
   visibleSeries,
   setVisibleSeries,
 }: ReportTableProps) {
-  const [grouped, setGrouped] = useState(true);
+  const [grouped, setGrouped] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedState>({});
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -501,7 +558,6 @@ export function ReportTable({
       // Multiple series: calculate ranges across individual rows only
       if (individualRows.length === 0) {
         // No individual rows found - this shouldn't happen, but handle gracefully
-        console.warn('No individual rows found for range calculation');
       } else {
         individualRows.forEach((row) => {
           // Calculate metric ranges
@@ -534,31 +590,36 @@ export function ReportTable({
     return { metricRanges, dateRanges };
   }, [rows, dates]);
 
-  // Helper to get background color and opacity for a value
-  const getCellBackground = (
+  // Helper to get background color style and opacity for a value
+  // Returns both style and opacity (for text color calculation) to avoid parsing
+  const getCellBackgroundStyle = (
     value: number,
     min: number,
     max: number,
-    className?: string,
-  ): { opacity: number; className: string } => {
+    colorClass: 'purple' | 'emerald' = 'emerald',
+  ): { style: React.CSSProperties; opacity: number } => {
     if (value === 0) {
-      return { opacity: 0, className: '' };
+      return { style: {}, opacity: 0 };
     }
 
     // If min equals max (e.g. single row or all values same), show moderate opacity
+    let opacity: number;
     if (max === min) {
-      return {
-        opacity: 0.5,
-        className: cn('bg-highlight dark:bg-emerald-700', className),
-      };
+      opacity = 0.5;
+    } else {
+      const percentage = (value - min) / (max - min);
+      opacity = Math.max(0.05, Math.min(1, percentage));
     }
 
-    const percentage = (value - min) / (max - min);
-    const opacity = Math.max(0.05, Math.min(1, percentage));
+    // Use rgba colors directly instead of opacity + background class
+    const backgroundColor =
+      colorClass === 'purple'
+        ? `rgba(168, 85, 247, ${opacity})` // purple-500
+        : `rgba(16, 185, 129, ${opacity})`; // emerald-500
 
     return {
+      style: { backgroundColor },
       opacity,
-      className: cn('bg-highlight dark:bg-emerald-700', className),
     };
   };
 
@@ -616,7 +677,7 @@ export function ReportTable({
       cell: ({ row }) => {
         const original = row.original;
         const serieName = original.serieName;
-        const serieId = original.originalSerie.id;
+        const serieId = original.serieId;
         const isVisible = visibleSeriesIds.includes(serieId);
         const serieIndex = getSerieIndex(serieId);
         const color = getChartColor(serieIndex);
@@ -645,10 +706,7 @@ export function ReportTable({
             if (firstRowInGroup.id === original.id) {
               isFirstRowInGroup = true;
             } else {
-              // Only mute if this is not the first row and the serie name matches
-              if (firstRowInGroup.serieName === serieName) {
-                isMuted = true;
-              }
+              isMuted = true;
             }
           }
         }
@@ -656,7 +714,6 @@ export function ReportTable({
         const originalRow = row.original as ExpandableTableRow | TableRow;
         const isGroupHeader =
           'isGroupHeader' in originalRow && originalRow.isGroupHeader === true;
-        const canExpand = grouped ? (row.getCanExpand?.() ?? false) : false;
         const isExpanded = grouped ? (row.getIsExpanded?.() ?? false) : false;
         const isSerieGroupHeader =
           isGroupHeader &&
@@ -664,10 +721,28 @@ export function ReportTable({
           originalRow.groupLevel === -1;
         const hasSubRows =
           'subRows' in originalRow && (originalRow.subRows?.length ?? 0) > 0;
+        const isExpandable = grouped && isSerieGroupHeader && hasSubRows;
 
         return (
           <div className="flex items-center gap-2 px-4 h-12">
-            {grouped && isSerieGroupHeader && hasSubRows && (
+            <Checkbox
+              checked={isVisible}
+              onCheckedChange={() => toggleSerieVisibility(serieId)}
+              style={{
+                borderColor: color,
+                backgroundColor: isVisible ? color : 'transparent',
+              }}
+              className="h-4 w-4 shrink-0"
+            />
+            <SerieName
+              name={serieName}
+              className={cn(
+                'truncate',
+                !isExpandable && grouped && 'text-muted-foreground/40',
+                isExpandable && 'font-semibold',
+              )}
+            />
+            {isExpandable && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -691,23 +766,6 @@ export function ReportTable({
                 )}
               </button>
             )}
-            <Checkbox
-              checked={isVisible}
-              onCheckedChange={() => toggleSerieVisibility(serieId)}
-              style={{
-                borderColor: color,
-                backgroundColor: isVisible ? color : 'transparent',
-              }}
-              className="h-4 w-4 shrink-0"
-            />
-            <SerieName
-              name={serieName}
-              className={cn(
-                'truncate',
-                isMuted && 'text-muted-foreground/50',
-                (isFirstRowInGroup || isGroupHeader) && 'font-semibold',
-              )}
-            />
           </div>
         );
       },
@@ -806,11 +864,6 @@ export function ReportTable({
               role="button"
               tabIndex={0}
             >
-              {allExpanded ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronRight className="h-4 w-4" />
-              )}
               <span>{propertyName}</span>
             </div>
           );
@@ -818,7 +871,6 @@ export function ReportTable({
         meta: {
           pinned: 'left',
           isBreakdown: true,
-          breakdownIndex: index,
         },
         cell: ({ row }) => {
           const original = row.original as ExpandableTableRow | TableRow;
@@ -827,82 +879,30 @@ export function ReportTable({
           const canExpand = row.getCanExpand?.() ?? false;
           const isExpanded = row.getIsExpanded?.() ?? false;
 
-          let value: string | null;
-          let isMuted = false;
-          let isFirstRowInGroup = false;
+          const value: string | number | null =
+            original.breakdownValues[index] ?? null;
+          const isLastBreakdown = index === breakdownPropertyNames.length - 1;
+          const isMuted = (!isLastBreakdown && !canExpand && grouped) || !value;
 
-          if (
-            'breakdownDisplay' in original &&
-            grouped &&
-            original.breakdownDisplay !== undefined
-          ) {
-            value = original.breakdownDisplay[index] ?? null;
-
-            // For group headers, show the group value at the appropriate level
-            if (isGroupHeader && 'groupLevel' in original) {
-              const groupLevel = original.groupLevel ?? 0;
-              if (index === groupLevel) {
-                value = original.groupValue ?? null;
-              } else if (index < groupLevel) {
-                // Show parent group values from the path
-                // This would need to be calculated from the hierarchy
-                value = null; // Will be handled by breakdownDisplay
-              } else {
-                // For breakdowns deeper than the group level, don't show anything
-                // (e.g., if group is at COUNTRY level, don't show CITY)
-                value = null;
-              }
+          // For group headers, only show value at the group level, hide deeper breakdowns
+          if (isGroupHeader && 'groupLevel' in original) {
+            const groupLevel = original.groupLevel ?? 0;
+            if (index !== groupLevel) {
+              return <div className="flex items-center gap-2 px-4 h-12" />;
             }
-
-            // Check if this is the first row in the group and if this breakdown should be bold
-            if (
-              value &&
-              'groupKey' in original &&
-              original.groupKey &&
-              !original.isSummaryRow
-            ) {
-              // Find all rows in this group from the current rows array
-              const groupRows = rows.filter(
-                (r): r is GroupedTableRow | ExpandableTableRow =>
-                  'groupKey' in r &&
-                  r.groupKey === original.groupKey &&
-                  !('isSummaryRow' in r && r.isSummaryRow),
-              );
-
-              if (groupRows.length > 0) {
-                const firstRowInGroup = groupRows[0]!;
-
-                // Check if this is the first row in the group
-                if (firstRowInGroup.id === original.id) {
-                  isFirstRowInGroup = true;
-                } else {
-                  // Only mute if this is not the first row and the value matches
-                  const firstRowValue =
-                    'breakdownValues' in firstRowInGroup
-                      ? firstRowInGroup.breakdownValues[index]
-                      : null;
-                  if (firstRowValue === value) {
-                    isMuted = true;
-                  }
-                }
-              }
-            }
-          } else {
-            value =
-              'breakdownValues' in original
-                ? (original.breakdownValues[index] ?? null)
-                : null;
           }
-
-          const isSummary =
-            'isSummaryRow' in original && original.isSummaryRow === true;
-          // Make bold if it's the first row in group and this is one of the first breakdown columns
-          // (all breakdowns except the last one)
-          const shouldBeBold =
-            isFirstRowInGroup && index < breakdownPropertyNames.length - 1;
 
           return (
             <div className="flex items-center gap-2 px-4 h-12">
+              <span
+                className={cn(
+                  'truncate block leading-[48px]',
+                  isMuted && 'text-muted-foreground/50',
+                  isGroupHeader && 'font-semibold',
+                )}
+              >
+                {value || '(Not set)'}
+              </span>
               {canExpand &&
                 index ===
                   ('groupLevel' in original ? (original.groupLevel ?? 0) : 0) &&
@@ -923,16 +923,6 @@ export function ReportTable({
                     )}
                   </button>
                 )}
-              <span
-                className={cn(
-                  'truncate block leading-[48px]',
-                  (!value || isMuted) && 'text-muted-foreground/50',
-                  (isSummary || shouldBeBold || isGroupHeader) &&
-                    'font-semibold',
-                )}
-              >
-                {value || ''}
-              </span>
             </div>
           );
         },
@@ -966,21 +956,6 @@ export function ReportTable({
           const isIndividualRow = !isSummary && !isGroupHeader;
           const range = metricRanges[metric.key];
 
-          // Debug: Check first few rows
-          if (metric.key === 'count' && row.index < 5) {
-            console.log(`[FIX CHECK] Row ${row.index}:`, {
-              isSummaryRowValue:
-                'isSummaryRow' in original ? original.isSummaryRow : 'NOT SET',
-              isGroupHeaderValue:
-                'isGroupHeader' in original
-                  ? original.isGroupHeader
-                  : 'NOT SET',
-              isSummary,
-              isGroupHeader,
-              isIndividualRow,
-            });
-          }
-
           // Only apply colors to individual rows, not summary or group header rows
           // Also check that range is valid (not still at initial values)
           const hasValidRange =
@@ -988,32 +963,21 @@ export function ReportTable({
             range.min !== Number.POSITIVE_INFINITY &&
             range.max !== Number.NEGATIVE_INFINITY;
 
-          const { opacity, className } =
+          const { style: backgroundStyle, opacity: bgOpacity } =
             isIndividualRow && hasValidRange
-              ? getCellBackground(
-                  value,
-                  range.min,
-                  range.max,
-                  'bg-purple-400 dark:bg-purple-700',
-                )
-              : { opacity: 0, className: '' };
+              ? getCellBackgroundStyle(value, range.min, range.max, 'purple')
+              : { style: {}, opacity: 0 };
 
           return (
-            <div className="relative h-12 w-full">
-              <div
-                className={cn(className, 'absolute inset-0 w-full h-full')}
-                style={{ opacity }}
-              />
-              <div
-                className={cn(
-                  'relative text-right font-mono text-sm px-4 h-full flex items-center justify-end',
-                  (isSummary || isGroupHeader) && 'font-semibold',
-                  opacity > 0.7 &&
-                    'text-white [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
-                )}
-              >
-                {number.format(value)}
-              </div>
+            <div
+              className={cn(
+                'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
+                '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
+                (isSummary || isGroupHeader) && 'font-semibold',
+              )}
+              style={backgroundStyle}
+            >
+              {number.format(value)}
             </div>
           );
         },
@@ -1042,27 +1006,23 @@ export function ReportTable({
             range &&
             range.min !== Number.POSITIVE_INFINITY &&
             range.max !== Number.NEGATIVE_INFINITY;
-          const { opacity, className } =
+          const { style: backgroundStyle, opacity: bgOpacity } =
             isIndividualRow && hasValidRange
-              ? getCellBackground(value, range.min, range.max)
-              : { opacity: 0, className: '' };
+              ? getCellBackgroundStyle(value, range.min, range.max, 'emerald')
+              : { style: {}, opacity: 0 };
+
+          const needsLightText = bgOpacity > 0.7;
 
           return (
-            <div className="relative h-12 w-full">
-              <div
-                className={cn(className, 'absolute inset-0 w-full h-full')}
-                style={{ opacity }}
-              />
-              <div
-                className={cn(
-                  'relative text-right font-mono text-sm px-4 h-full flex items-center justify-end',
-                  (isSummary || isGroupHeader) && 'font-semibold',
-                  opacity > 0.7 &&
-                    'text-white [text-shadow:_0_0_3px_rgb(0_0_0_/_20%)]',
-                )}
-              >
-                {number.format(value)}
-              </div>
+            <div
+              className={cn(
+                'h-12 w-full text-right font-mono text-sm px-4 flex items-center justify-end',
+                '[text-shadow:_0_0_3px_rgb(0_0_0_/_20%)] shadow-[inset_-1px_-1px_0_var(--border)]',
+                (isSummary || isGroupHeader) && 'font-semibold',
+              )}
+              style={backgroundStyle}
+            >
+              {number.format(value)}
             </div>
           );
         },
@@ -1211,15 +1171,57 @@ export function ReportTable({
     .getAllLeafColumns()
     .filter((col) => table.getState().columnVisibility[col.id] !== false);
 
-  // Get pinned columns
-  const leftPinnedColumns = table
-    .getAllColumns()
-    .filter((col) => col.columnDef.meta?.pinned === 'left')
-    .filter((col): col is NonNullable<typeof col> => col !== undefined);
-  const rightPinnedColumns = table
-    .getAllColumns()
-    .filter((col) => col.columnDef.meta?.pinned === 'right')
-    .filter((col): col is NonNullable<typeof col> => col !== undefined);
+  // Separate columns into pinned and scrollable
+  const leftPinnedColumns = headerColumns.filter(
+    (col) => col.columnDef.meta?.pinned === 'left',
+  );
+  const rightPinnedColumns = headerColumns.filter(
+    (col) => col.columnDef.meta?.pinned === 'right',
+  );
+  const scrollableColumns = headerColumns.filter(
+    (col) => !col.columnDef.meta?.pinned,
+  );
+
+  // Calculate widths for virtualization
+  const leftPinnedWidth = useMemo(
+    () => leftPinnedColumns.reduce((sum, col) => sum + col.getSize(), 0),
+    [leftPinnedColumns, columnSizing],
+  );
+  const rightPinnedWidth = useMemo(
+    () => rightPinnedColumns.reduce((sum, col) => sum + col.getSize(), 0),
+    [rightPinnedColumns, columnSizing],
+  );
+  const scrollableColumnsTotalWidth = useMemo(
+    () => scrollableColumns.reduce((sum, col) => sum + col.getSize(), 0),
+    [scrollableColumns, columnSizing],
+  );
+
+  // Horizontal virtualization for scrollable columns
+  // Only virtualize if we have enough columns to benefit from it
+  const shouldVirtualizeHorizontal = scrollableColumns.length > 10;
+
+  const horizontalVirtualizer = useVirtualizer({
+    count: scrollableColumns.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) =>
+      scrollableColumns[index]?.getSize() ?? DEFAULT_COLUMN_WIDTH,
+    horizontal: true,
+    overscan: shouldVirtualizeHorizontal ? 5 : scrollableColumns.length,
+  });
+
+  // Get virtual columns - if not virtualizing, return all columns
+  const virtualColumns = shouldVirtualizeHorizontal
+    ? horizontalVirtualizer.getVirtualItems()
+    : scrollableColumns.map((col, index) => ({
+        index,
+        start: scrollableColumns
+          .slice(0, index)
+          .reduce((sum, c) => sum + c.getSize(), 0),
+        size: col.getSize(),
+        key: col.id,
+        end: 0,
+        lane: 0,
+      }));
 
   // Pre-compute grid template columns string and headers
   const { gridTemplateColumns, headers } = useMemo(() => {
@@ -1299,19 +1301,37 @@ export function ReportTable({
         onSearchChange={setGlobalFilter}
         onUnselectAll={() => setVisibleSeries([])}
       />
-      <div ref={parentRef} className="overflow-x-auto">
-        <div className="relative" style={{ minWidth: 'fit-content' }}>
+      <div
+        ref={parentRef}
+        className="overflow-x-auto"
+        style={{
+          width: '100%',
+        }}
+      >
+        <div
+          className="relative"
+          style={{
+            width:
+              leftPinnedWidth + scrollableColumnsTotalWidth + rightPinnedWidth,
+            minWidth: 'fit-content',
+          }}
+        >
           {/* Header */}
           <div
             className="sticky top-0 z-20 bg-card border-b"
             style={{
-              display: 'grid',
-              gridTemplateColumns,
+              display: 'flex',
+              width:
+                leftPinnedWidth +
+                scrollableColumnsTotalWidth +
+                rightPinnedWidth,
               minWidth: 'fit-content',
             }}
           >
-            {table.getHeaderGroups()[0]?.headers.map((header) => {
-              const column = header.column;
+            {/* Left Pinned Columns */}
+            {leftPinnedColumns.map((column) => {
+              const header = headers.find((h) => h.column.id === column.id);
+              if (!header) return null;
               const headerContent = column.columnDef.header;
               const isBreakdown = column.columnDef.meta?.isBreakdown ?? false;
               const pinningStyles = getPinningStyles(column);
@@ -1421,6 +1441,172 @@ export function ReportTable({
                 </div>
               );
             })}
+
+            {/* Scrollable Columns (Virtualized) */}
+            <div
+              style={{
+                position: 'relative',
+                width: scrollableColumnsTotalWidth,
+                height: '40px',
+              }}
+            >
+              {virtualColumns.map((virtualCol) => {
+                const column = scrollableColumns[virtualCol.index];
+                if (!column) return null;
+                const header = headers.find((h) => h.column.id === column.id);
+                if (!header) return null;
+
+                const headerContent = header.column.columnDef.header;
+                const isBreakdown =
+                  header.column.columnDef.meta?.isBreakdown ?? false;
+                const isMetricOrDate =
+                  header.column.id.startsWith('metric-') ||
+                  header.column.id.startsWith('date-');
+                const canSort = header.column.getCanSort();
+                const isSorted = header.column.getIsSorted();
+
+                return (
+                  <div
+                    key={header.id}
+                    style={{
+                      position: 'absolute',
+                      left: `${virtualCol.start}px`,
+                      width: `${virtualCol.size}px`,
+                      height: '40px',
+                    }}
+                    className={cn(
+                      'px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap',
+                      isMetricOrDate && 'text-right',
+                      canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                    )}
+                    onClick={
+                      canSort
+                        ? (e) => {
+                            if (
+                              isResizingRef.current ||
+                              header.column.getIsResizing() ||
+                              (e.target as HTMLElement).closest(
+                                '[data-resize-handle]',
+                              )
+                            ) {
+                              return;
+                            }
+                            header.column.toggleSorting();
+                          }
+                        : undefined
+                    }
+                    onKeyDown={
+                      canSort
+                        ? (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              header.column.toggleSorting();
+                            }
+                          }
+                        : undefined
+                    }
+                    role={canSort ? 'button' : undefined}
+                    tabIndex={canSort ? 0 : undefined}
+                  >
+                    <div className="flex items-center gap-1.5 flex-1">
+                      {header.isPlaceholder
+                        ? null
+                        : typeof headerContent === 'function'
+                          ? flexRender(headerContent, header.getContext())
+                          : headerContent}
+                      {canSort && (
+                        <span className="text-muted-foreground">
+                          {isSorted === 'asc'
+                            ? '↑'
+                            : isSorted === 'desc'
+                              ? '↓'
+                              : '⇅'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Right Pinned Columns */}
+            {rightPinnedColumns.map((column) => {
+              const header = headers.find((h) => h.column.id === column.id);
+              if (!header) return null;
+
+              const headerContent = header.column.columnDef.header;
+              const isBreakdown =
+                header.column.columnDef.meta?.isBreakdown ?? false;
+              const pinningStyles = getPinningStyles(header.column);
+              const isMetricOrDate =
+                header.column.id.startsWith('metric-') ||
+                header.column.id.startsWith('date-');
+              const canSort = header.column.getCanSort();
+              const isSorted = header.column.getIsSorted();
+              const canResize = header.column.getCanResize();
+
+              return (
+                <div
+                  key={header.id}
+                  style={{
+                    width: `${header.getSize()}px`,
+                    minWidth: header.column.columnDef.minSize,
+                    maxWidth: header.column.columnDef.maxSize,
+                    ...pinningStyles,
+                  }}
+                  className={cn(
+                    'h-10 px-4 flex items-center text-[10px] uppercase font-semibold bg-muted/30 border-r border-border whitespace-nowrap relative',
+                    isMetricOrDate && 'text-right',
+                    canSort && 'cursor-pointer hover:bg-muted/50 select-none',
+                  )}
+                  onClick={
+                    canSort
+                      ? (e) => {
+                          if (
+                            isResizingRef.current ||
+                            header.column.getIsResizing() ||
+                            (e.target as HTMLElement).closest(
+                              '[data-resize-handle]',
+                            )
+                          ) {
+                            return;
+                          }
+                          header.column.toggleSorting();
+                        }
+                      : undefined
+                  }
+                  onKeyDown={
+                    canSort
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            header.column.toggleSorting();
+                          }
+                        }
+                      : undefined
+                  }
+                  role={canSort ? 'button' : undefined}
+                  tabIndex={canSort ? 0 : undefined}
+                >
+                  <div className="flex items-center gap-1.5 flex-1">
+                    {header.isPlaceholder
+                      ? null
+                      : typeof headerContent === 'function'
+                        ? flexRender(headerContent, header.getContext())
+                        : headerContent}
+                    {canSort && (
+                      <span className="text-muted-foreground">
+                        {isSorted === 'asc'
+                          ? '↑'
+                          : isSorted === 'desc'
+                            ? '↓'
+                            : '⇅'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Virtualized Body */}
@@ -1442,12 +1628,18 @@ export function ReportTable({
                     ...virtualRow,
                     start: virtualRow.start - virtualizer.options.scrollMargin,
                   }}
-                  gridTemplateColumns={gridTemplateColumns}
                   pinningStylesMap={pinningStylesMap}
                   headers={headers}
                   isResizingRef={isResizingRef}
                   resizingColumnId={resizingColumnId}
                   setResizingColumnId={setResizingColumnId}
+                  leftPinnedColumns={leftPinnedColumns}
+                  scrollableColumns={scrollableColumns}
+                  rightPinnedColumns={rightPinnedColumns}
+                  virtualColumns={virtualColumns}
+                  leftPinnedWidth={leftPinnedWidth}
+                  scrollableColumnsTotalWidth={scrollableColumnsTotalWidth}
+                  rightPinnedWidth={rightPinnedWidth}
                 />
               );
             })}
