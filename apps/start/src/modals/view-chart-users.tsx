@@ -22,7 +22,6 @@ import { ModalHeader } from './Modal/Container';
 import { ScrollableModal, useScrollableModal } from './Modal/scrollable-modal';
 
 const ProfileItem = ({ profile }: { profile: any }) => {
-  console.log('ProfileItem', profile.id);
   return (
     <ProjectLink
       preload={false}

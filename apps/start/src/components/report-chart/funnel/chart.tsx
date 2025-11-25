@@ -363,6 +363,7 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
   const rechartData = useRechartData(data);
   const xAxisProps = useXAxisProps();
   const yAxisProps = useYAxisProps();
+  const hasBreakdowns = data.current.length > 1;
 
   return (
     <TooltipProvider data={data.current}>
@@ -391,19 +392,37 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
               }
             />
             <YAxis {...yAxisProps} />
-            <Bar
-              data={rechartData}
-              dataKey="step:percent:0"
-              shape={<BarShapeProps />}
-            >
-              {rechartData.map((item, index) => (
-                <Cell
-                  key={item.name}
-                  fill={getChartTranslucentColor(index)}
-                  stroke={getChartColor(index)}
-                />
-              ))}
-            </Bar>
+            {hasBreakdowns ? (
+              data.current.map((item, breakdownIndex) => (
+                <Bar
+                  key={`step:percent:${item.id}`}
+                  dataKey={`step:percent:${breakdownIndex}`}
+                  shape={<BarShapeProps />}
+                >
+                  {rechartData.map((item, stepIndex) => (
+                    <Cell
+                      key={`${item.name}-${breakdownIndex}`}
+                      fill={getChartTranslucentColor(breakdownIndex)}
+                      stroke={getChartColor(breakdownIndex)}
+                    />
+                  ))}
+                </Bar>
+              ))
+            ) : (
+              <Bar
+                data={rechartData}
+                dataKey="step:percent:0"
+                shape={<BarShapeProps />}
+              >
+                {rechartData.map((item, index) => (
+                  <Cell
+                    key={item.name}
+                    fill={getChartTranslucentColor(index)}
+                    stroke={getChartColor(index)}
+                  />
+                ))}
+              </Bar>
+            )}
             <Tooltip />
           </BarChart>
         </ResponsiveContainer>
@@ -411,8 +430,6 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
     </TooltipProvider>
   );
 }
-
-type Hej = RouterOutputs['chart']['funnel']['current'];
 
 const { Tooltip, TooltipProvider } = createChartTooltip<
   RechartData,
@@ -435,7 +452,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
       <div className="flex justify-between gap-8 text-muted-foreground">
         <div>{data.name}</div>
       </div>
-      {variants.map((key) => {
+      {variants.map((key, breakdownIndex) => {
         const variant = data[key];
         const prevVariant = data[`prev_${key}`];
         if (!variant?.step) {
@@ -445,7 +462,11 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
           <div className="row gap-2" key={key}>
             <div
               className="w-[3px] rounded-full"
-              style={{ background: getChartColor(index) }}
+              style={{
+                background: getChartColor(
+                  variants.length > 1 ? breakdownIndex : index,
+                ),
+              }}
             />
             <div className="col flex-1 gap-1">
               <div className="flex items-center gap-1">
