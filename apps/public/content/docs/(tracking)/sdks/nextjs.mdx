@@ -278,11 +278,7 @@ With `createRouteHandler` you can proxy your events through your server, this wi
 ```typescript title="/app/api/[...op]/route.ts"
 import { createRouteHandler } from '@openpanel/nextjs/server';
 
-const routeHandler = createRouteHandler();
-
-// Export the same handler for all HTTP methods - it routes internally based on pathname
-export const GET = routeHandler;
-export const POST = routeHandler;
+export const { GET, POST } = createRouteHandler();
 ```
 
 Remember to change the `apiUrl` and `cdnUrl` in the `OpenPanelComponent` to your own server. 

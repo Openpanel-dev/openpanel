@@ -116,7 +116,7 @@ async function handleScriptProxyRoute(req: Request): Promise<NextResponse> {
 function createRouteHandler(options?: RouteHandlerOptions) {
   const apiUrl = options?.apiUrl ?? DEFAULT_API_URL;
 
-  return async function handler(req: Request): Promise<NextResponse> {
+  const handler = async function handler(req: Request): Promise<NextResponse> {
     const url = new URL(req.url);
     const pathname = url.pathname;
     const method = req.method;
@@ -134,6 +134,11 @@ function createRouteHandler(options?: RouteHandlerOptions) {
     const apiPath = pathname.substring(apiPathMatch);
     return handleApiRoute(req, apiUrl, apiPath);
   };
+
+  handler.GET = handler;
+  handler.POST = handler;
+
+  return handler;
 }
 
 export { createRouteHandler };
@@ -141,3 +146,5 @@ export { createRouteHandler };
 // const routeHandler = createRouteHandler();
 // export const GET = routeHandler;
 // export const POST = routeHandler;
+// Or
+// export const { GET, POST } = createRouteHandler();
