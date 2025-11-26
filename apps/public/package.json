@@ -14,7 +14,7 @@
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "@number-flow/react": "0.3.5",
     "@openpanel/common": "workspace:*",
-    "@openpanel/nextjs": "^1.1.0",
+    "@openpanel/nextjs": "^1.1.1",
     "@openpanel/payments": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",
     "@openstatus/react": "0.0.3",
