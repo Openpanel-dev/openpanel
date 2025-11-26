@@ -11,12 +11,14 @@ import {
 } from '@openpanel/constants';
 import type {
   IChartBreakdown,
-  IChartEvent,
+  IChartEventItem,
+  IChartFormula,
   IChartLineType,
   IChartProps,
   IChartRange,
   IChartType,
   IInterval,
+  UnionOmit,
   zCriteria,
 } from '@openpanel/validation';
 import type { z } from 'zod';
@@ -39,7 +41,7 @@ const initialState: InitialState = {
   lineType: 'monotone',
   interval: 'day',
   breakdowns: [],
-  events: [],
+  series: [],
   range: '30d',
   startDate: null,
   endDate: null,
@@ -86,24 +88,34 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.name = action.payload;
     },
-    // Events
-    addEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
+    // Series (Events and Formulas)
+    addSerie: (
+      state,
+      action: PayloadAction<UnionOmit<IChartEventItem, 'id'>>,
+    ) => {
       state.dirty = true;
-      state.events.push({
+      state.series.push({
         id: shortId(),
         ...action.payload,
       });
     },
-    duplicateEvent: (state, action: PayloadAction<Omit<IChartEvent, 'id'>>) => {
+    duplicateEvent: (state, action: PayloadAction<IChartEventItem>) => {
       state.dirty = true;
-      state.events.push({
-        ...action.payload,
-        filters: action.payload.filters.map((filter) => ({
-          ...filter,
+      if (action.payload.type === 'event') {
+        state.series.push({
+          ...action.payload,
+          filters: action.payload.filters.map((filter) => ({
+            ...filter,
+            id: shortId(),
+          })),
           id: shortId(),
-        })),
-        id: shortId(),
-      });
+        } as IChartEventItem);
+      } else {
+        state.series.push({
+          ...action.payload,
+          id: shortId(),
+        } as IChartEventItem);
+      }
     },
     removeEvent: (
       state,
@@ -112,13 +124,13 @@ export const reportSlice = createSlice({
       }>,
     ) => {
       state.dirty = true;
-      state.events = state.events.filter(
-        (event) => event.id !== action.payload.id,
-      );
+      state.series = state.series.filter((event) => {
+        return event.id !== action.payload.id;
+      });
     },
-    changeEvent: (state, action: PayloadAction<IChartEvent>) => {
+    changeEvent: (state, action: PayloadAction<IChartEventItem>) => {
       state.dirty = true;
-      state.events = state.events.map((event) => {
+      state.series = state.series.map((event) => {
         if (event.id === action.payload.id) {
           return action.payload;
         }
@@ -265,9 +277,9 @@ export const reportSlice = createSlice({
     ) {
       state.dirty = true;
       const { fromIndex, toIndex } = action.payload;
-      const [movedEvent] = state.events.splice(fromIndex, 1);
+      const [movedEvent] = state.series.splice(fromIndex, 1);
       if (movedEvent) {
-        state.events.splice(toIndex, 0, movedEvent);
+        state.series.splice(toIndex, 0, movedEvent);
       }
     },
   },
@@ -279,7 +291,7 @@ export const {
   ready,
   setReport,
   setName,
-  addEvent,
+  addSerie,
   removeEvent,
   duplicateEvent,
   changeEvent,

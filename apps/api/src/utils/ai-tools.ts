@@ -7,8 +7,8 @@ import {
   ch,
   clix,
 } from '@openpanel/db';
+import { ChartEngine } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
-import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
 import { zChartInputAI } from '@openpanel/validation';
 import { tool } from 'ai';
 import { z } from 'zod';

@@ -46,7 +46,7 @@ export const reportRouter = createTRPCRouter({
           projectId: dashboard.projectId,
           dashboardId,
           name: report.name,
-          events: report.events,
+          events: report.series,
           interval: report.interval,
           breakdowns: report.breakdowns,
           chartType: report.chartType,
@@ -91,7 +91,7 @@ export const reportRouter = createTRPCRouter({
         },
         data: {
           name: report.name,
-          events: report.events,
+          events: report.series,
           interval: report.interval,
           breakdowns: report.breakdowns,
           chartType: report.chartType,

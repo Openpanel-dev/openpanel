@@ -341,13 +341,14 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
               <ReportChartShortcut
                 projectId={event.projectId}
                 chartType="linear"
-                events={[
+                series={[
                   {
                     id: 'A',
                     name: event.name,
                     displayName: 'Similar events',
                     segment: 'event',
                     filters: [],
+                    type: 'event',
                   },
                 ]}
               />

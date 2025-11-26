@@ -10,22 +10,32 @@ import {
   chQuery,
   clix,
   conversionService,
+  createSqlBuilder,
   db,
+  formatClickhouseDate,
   funnelService,
   getChartPrevStartEndDate,
   getChartStartEndDate,
+  getEventFiltersWhereClause,
   getEventMetasCached,
+  getProfilesCached,
   getSelectPropertyKey,
   getSettingsForProject,
+  onlyReportEvents,
 } from '@openpanel/db';
 import {
+  type IChartEvent,
+  zChartEvent,
+  zChartEventFilter,
   zChartInput,
+  zChartSeries,
   zCriteria,
   zRange,
   zTimeInterval,
 } from '@openpanel/validation';
 
 import { round } from '@openpanel/common';
+import { ChartEngine } from '@openpanel/db';
 import {
   differenceInDays,
   differenceInMonths,
@@ -40,7 +50,6 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../trpc';
-import { getChart } from './chart.helpers';
 
 function utc(date: string | Date) {
   if (typeof date === 'string') {
@@ -402,7 +411,8 @@ export const chartRouter = createTRPCRouter({
         }
       }
 
-      return getChart(input);
+      // Use new chart engine
+      return ChartEngine.execute(input);
     }),
   cohort: protectedProcedure
     .input(
@@ -531,6 +541,200 @@ export const chartRouter = createTRPCRouter({
       }>(cohortQuery);
 
       return processCohortData(cohortData, diffInterval);
+    }),
+
+  getProfiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        date: z.string().describe('The date for the data point (ISO string)'),
+        interval: zTimeInterval.default('day'),
+        series: zChartSeries,
+        breakdowns: z.record(z.string(), z.string()).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { projectId, date, series } = input;
+      const limit = 100;
+      const serie = series[0];
+
+      if (!serie) {
+        throw new Error('Series not found');
+      }
+
+      if (serie.type !== 'event') {
+        throw new Error('Series must be an event');
+      }
+
+      // Build the date range for the specific interval bucket
+      const dateObj = new Date(date);
+      // Build query to get unique profile_ids for this time bucket
+      const { sb, getSql } = createSqlBuilder();
+
+      sb.select.profile_id = 'DISTINCT profile_id';
+      sb.where = getEventFiltersWhereClause(serie.filters);
+      sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+      sb.where.dateRange = `${clix.toStartOf('created_at', input.interval)} = ${clix.toDate(sqlstring.escape(formatClickhouseDate(dateObj)), input.interval)}`;
+      if (serie.name !== '*') {
+        sb.where.eventName = `name = ${sqlstring.escape(serie.name)}`;
+      }
+
+      console.log('> breakdowns', input.breakdowns);
+      if (input.breakdowns) {
+        Object.entries(input.breakdowns).forEach(([key, value]) => {
+          sb.where[`breakdown_${key}`] = `${key} = ${sqlstring.escape(value)}`;
+        });
+      }
+
+      // // Handle breakdowns if provided
+      // const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
+      //   breakdown.name.startsWith('profile.'),
+      // );
+      // const anyFilterOnProfile = [...event.filters, ...filters].some((filter) =>
+      //   filter.name.startsWith('profile.'),
+      // );
+
+      // if (anyFilterOnProfile || anyBreakdownOnProfile) {
+      //   sb.joins.profiles = `LEFT ANY JOIN (SELECT
+      //     id as "profile.id",
+      //     email as "profile.email",
+      //     first_name as "profile.first_name",
+      //     last_name as "profile.last_name",
+      //     properties as "profile.properties"
+      //   FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+      // }
+
+      // Apply breakdown filters if provided
+      // breakdowns.forEach((breakdown) => {
+      //   // This is simplified - in reality we'd need to match the breakdown value
+      //   // For now, we'll just get all profiles for the time bucket
+      // });
+
+      // Get unique profile IDs
+      const profileIds = await chQuery<{ profile_id: string }>(getSql());
+      if (profileIds.length === 0) {
+        return [];
+      }
+
+      // Fetch profile details
+      const ids = profileIds.map((p) => p.profile_id).filter(Boolean);
+      const profiles = await getProfilesCached(ids, projectId);
+
+      return profiles;
+    }),
+
+  getFunnelProfiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        startDate: z.string().nullish(),
+        endDate: z.string().nullish(),
+        series: zChartSeries,
+        stepIndex: z.number().describe('0-based index of the funnel step'),
+        showDropoffs: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            'If true, show users who dropped off at this step. If false, show users who completed at least this step.',
+          ),
+        funnelWindow: z.number().optional(),
+        funnelGroup: z.string().optional(),
+        breakdowns: z.array(z.object({ name: z.string() })).optional(),
+        range: zRange,
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const {
+        projectId,
+        series,
+        stepIndex,
+        showDropoffs = false,
+        funnelWindow,
+        funnelGroup,
+        breakdowns = [],
+      } = input;
+
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+
+      // stepIndex is 0-based, but level is 1-based, so we need level >= stepIndex + 1
+      const targetLevel = stepIndex + 1;
+
+      const eventSeries = onlyReportEvents(series);
+
+      if (eventSeries.length === 0) {
+        throw new Error('At least one event series is required');
+      }
+
+      const funnelWindowSeconds = (funnelWindow || 24) * 3600;
+      const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
+
+      // Use funnel service methods
+      const group = funnelService.getFunnelGroup(funnelGroup);
+
+      // Create sessions CTE if needed
+      const sessionsCte =
+        group[0] !== 'session_id'
+          ? funnelService.buildSessionsCte({
+              projectId,
+              startDate,
+              endDate,
+              timezone,
+            })
+          : null;
+
+      // Create funnel CTE using funnel service
+      const funnelCte = funnelService.buildFunnelCte({
+        projectId,
+        startDate,
+        endDate,
+        eventSeries: eventSeries as IChartEvent[],
+        funnelWindowMilliseconds,
+        group,
+        timezone,
+        additionalSelects: ['profile_id'],
+        additionalGroupBy: ['profile_id'],
+      });
+
+      // Build main query
+      const query = clix(ch, timezone);
+
+      if (sessionsCte) {
+        funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
+        query.with('sessions', sessionsCte);
+      }
+
+      query.with('funnel', funnelCte);
+
+      // Get distinct profile IDs
+      query
+        .select(['DISTINCT profile_id'])
+        .from('funnel')
+        .where('level', '!=', 0);
+
+      if (showDropoffs) {
+        // Show users who dropped off at this step (completed this step but not the next)
+        query.where('level', '=', targetLevel);
+      } else {
+        // Show users who completed at least this step
+        query.where('level', '>=', targetLevel);
+      }
+
+      const profileIdsResult = (await query.execute()) as {
+        profile_id: string;
+      }[];
+
+      if (profileIdsResult.length === 0) {
+        return [];
+      }
+
+      // Fetch profile details
+      const ids = profileIdsResult.map((p) => p.profile_id).filter(Boolean);
+      const profiles = await getProfilesCached(ids, projectId);
+
+      return profiles;
     }),
 });
 

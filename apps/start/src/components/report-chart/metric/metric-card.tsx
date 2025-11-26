@@ -89,7 +89,10 @@ export function MetricCard({
 
   return (
     <div
-      className={cn('group relative p-4', isEditMode && 'card h-auto')}
+      className={cn(
+        'group relative p-4 hover:z-10',
+        isEditMode && 'card h-auto',
+      )}
       key={serie.id}
     >
       <div

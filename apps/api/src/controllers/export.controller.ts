@@ -12,8 +12,8 @@ import {
   getEventsCountCached,
   getSettingsForProject,
 } from '@openpanel/db';
-import { getChart } from '@openpanel/trpc/src/routers/chart.helpers';
-import { zChartEvent, zChartInput } from '@openpanel/validation';
+import { ChartEngine } from '@openpanel/db';
+import { zChartEvent, zChartInputBase } from '@openpanel/validation';
 import { omit } from 'ramda';
 
 async function getProjectId(
@@ -139,7 +139,7 @@ export async function events(
   });
 }
 
-const chartSchemeFull = zChartInput
+const chartSchemeFull = zChartInputBase
   .pick({
     breakdowns: true,
     interval: true,
@@ -151,14 +151,27 @@ const chartSchemeFull = zChartInput
   .extend({
     project_id: z.string().optional(),
     projectId: z.string().optional(),
-    events: z.array(
-      z.object({
-        name: z.string(),
-        filters: zChartEvent.shape.filters.optional(),
-        segment: zChartEvent.shape.segment.optional(),
-        property: zChartEvent.shape.property.optional(),
-      }),
-    ),
+    series: z
+      .array(
+        z.object({
+          name: z.string(),
+          filters: zChartEvent.shape.filters.optional(),
+          segment: zChartEvent.shape.segment.optional(),
+          property: zChartEvent.shape.property.optional(),
+        }),
+      )
+      .optional(),
+    // Backward compatibility - events will be migrated to series via preprocessing
+    events: z
+      .array(
+        z.object({
+          name: z.string(),
+          filters: zChartEvent.shape.filters.optional(),
+          segment: zChartEvent.shape.segment.optional(),
+          property: zChartEvent.shape.property.optional(),
+        }),
+      )
+      .optional(),
   });
 
 export async function charts(
@@ -179,9 +192,17 @@ export async function charts(
 
   const projectId = await getProjectId(request, reply);
   const { timezone } = await getSettingsForProject(projectId);
-  const { events, ...rest } = query.data;
+  const { events, series, ...rest } = query.data;
 
-  return getChart({
+  // Use series if available, otherwise fall back to events (backward compat)
+  const eventSeries = (series ?? events ?? []).map((event: any) => ({
+    ...event,
+    type: event.type ?? 'event',
+    segment: event.segment ?? 'event',
+    filters: event.filters ?? [],
+  }));
+
+  return ChartEngine.execute({
     ...rest,
     startDate: rest.startDate
       ? DateTime.fromISO(rest.startDate)
@@ -194,11 +215,7 @@ export async function charts(
           .toFormat('yyyy-MM-dd HH:mm:ss')
       : undefined,
     projectId,
-    events: events.map((event) => ({
-      ...event,
-      segment: event.segment ?? 'event',
-      filters: event.filters ?? [],
-    })),
+    series: eventSeries,
     chartType: 'linear',
     metric: 'sum',
   });

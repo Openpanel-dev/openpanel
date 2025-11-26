@@ -1,8 +1,7 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventProperties } from '@/hooks/use-event-properties';
-import { useDispatch, useSelector } from '@/redux';
-import { api } from '@/trpc/client';
+import { useDispatch } from '@/redux';
 import { cn } from '@/utils/cn';
 import { DatabaseIcon } from 'lucide-react';
 
@@ -43,6 +42,7 @@ export function EventPropertiesCombobox({
           changeEvent({
             ...event,
             property: value,
+            type: 'event',
           }),
         );
       }}

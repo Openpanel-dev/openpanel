@@ -144,14 +144,16 @@ export function Summary({ data }: Props) {
         title="Flow"
         value={
           <div className="row flex-wrap gap-1">
-            {report.events.map((event, index) => {
-              return (
-                <div key={event.id} className="row items-center gap-2">
-                  {index !== 0 && <ChevronRightIcon className="size-3" />}
-                  <span>{event.name}</span>
-                </div>
-              );
-            })}
+            {report.series
+              .filter((item) => item.type === 'event')
+              .map((event, index) => {
+                return (
+                  <div key={event.id} className="row items-center gap-2">
+                    {index !== 0 && <ChevronRightIcon className="size-3" />}
+                    <span>{event.name}</span>
+                  </div>
+                );
+              })}
           </div>
         }
       />

@@ -12,7 +12,7 @@ import CohortTable from './table';
 export function ReportRetentionChart() {
   const {
     report: {
-      events,
+      series,
       range,
       projectId,
       startDate,
@@ -22,8 +22,9 @@ export function ReportRetentionChart() {
     },
     isLazyLoading,
   } = useReportChartContext();
-  const firstEvent = (events[0]?.filters[0]?.value ?? []).map(String);
-  const secondEvent = (events[1]?.filters[0]?.value ?? []).map(String);
+  const eventSeries = series.filter((item) => item.type === 'event');
+  const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
+  const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
   const trpc = useTRPC();

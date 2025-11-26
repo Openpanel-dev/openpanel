@@ -153,7 +153,7 @@ export function OverviewMetricCard({
                   width={width}
                   height={height / 4}
                   data={data}
-                  style={{ marginTop: (height / 4) * 3 }}
+                  style={{ marginTop: (height / 4) * 3, background: 'transparent' }}
                   onMouseMove={(event) => {
                     setCurrentIndex(event.activeTooltipIndex ?? null);
                   }}

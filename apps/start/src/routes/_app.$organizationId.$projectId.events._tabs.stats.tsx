@@ -9,7 +9,7 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 
-import type { IChartEvent } from '@openpanel/validation';
+import type { IChartEventItem } from '@openpanel/validation';
 
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -23,13 +23,14 @@ function Component() {
   const { projectId } = Route.useParams();
   const [filters] = useEventQueryFilters();
   const [events] = useEventQueryNamesFilter();
-  const fallback: IChartEvent[] = [
+  const fallback: IChartEventItem[] = [
     {
       id: 'A',
       name: '*',
       displayName: 'All events',
       segment: 'event',
       filters: filters ?? [],
+      type: 'event',
     },
   ];
 
@@ -49,7 +50,7 @@ function Component() {
               projectId={projectId}
               range="30d"
               chartType="histogram"
-              events={
+              series={
                 events && events.length > 0
                   ? events.map((name) => ({
                       id: name,
@@ -57,6 +58,7 @@ function Component() {
                       displayName: name,
                       segment: 'event',
                       filters: filters ?? [],
+                      type: 'event',
                     }))
                   : fallback
               }
@@ -69,6 +71,11 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              options={{
+                renderSerieName(names) {
+                  return names[1];
+                },
+              }}
               projectId={projectId}
               range="30d"
               chartType="pie"
@@ -78,7 +85,7 @@ function Component() {
                   name: 'name',
                 },
               ]}
-              events={
+              series={
                 events && events.length > 0
                   ? events.map((name) => ({
                       id: name,
@@ -86,6 +93,7 @@ function Component() {
                       displayName: name,
                       segment: 'event',
                       filters: filters ?? [],
+                      type: 'event',
                     }))
                   : [
                       {
@@ -94,6 +102,7 @@ function Component() {
                         displayName: 'All events',
                         segment: 'event',
                         filters: filters ?? [],
+                        type: 'event',
                       },
                     ]
               }
@@ -106,6 +115,11 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              options={{
+                renderSerieName(names) {
+                  return names[1];
+                },
+              }}
               projectId={projectId}
               range="30d"
               chartType="bar"
@@ -115,7 +129,7 @@ function Component() {
                   name: 'name',
                 },
               ]}
-              events={
+              series={
                 events && events.length > 0
                   ? events.map((name) => ({
                       id: name,
@@ -123,6 +137,7 @@ function Component() {
                       displayName: name,
                       segment: 'event',
                       filters: filters ?? [],
+                      type: 'event',
                     }))
                   : [
                       {
@@ -131,6 +146,7 @@ function Component() {
                         displayName: 'All events',
                         segment: 'event',
                         filters: filters ?? [],
+                        type: 'event',
                       },
                     ]
               }
@@ -143,6 +159,11 @@ function Component() {
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
+              options={{
+                renderSerieName(names) {
+                  return names[1];
+                },
+              }}
               projectId={projectId}
               range="30d"
               chartType="linear"
@@ -152,7 +173,7 @@ function Component() {
                   name: 'name',
                 },
               ]}
-              events={
+              series={
                 events && events.length > 0
                   ? events.map((name) => ({
                       id: name,
@@ -160,6 +181,7 @@ function Component() {
                       displayName: name,
                       segment: 'event',
                       filters: filters ?? [],
+                      type: 'event',
                     }))
                   : [
                       {
@@ -168,6 +190,7 @@ function Component() {
                         displayName: 'All events',
                         segment: 'event',
                         filters: filters ?? [],
+                        type: 'event',
                       },
                     ]
               }

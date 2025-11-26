@@ -155,7 +155,8 @@ export function getChartSql({
   }
 
   breakdowns.forEach((breakdown, index) => {
-    const key = `label_${index}`;
+    // Breakdowns start at label_1 (label_0 is reserved for event name)
+    const key = `label_${index + 1}`;
     sb.select[key] = `${getSelectPropertyKey(breakdown.name)} as ${key}`;
     sb.groupBy[key] = `${key}`;
   });
@@ -175,8 +176,8 @@ export function getChartSql({
 
   if (event.segment === 'property_sum' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `sum(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'sum(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -185,8 +186,8 @@ export function getChartSql({
 
   if (event.segment === 'property_average' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `avg(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'avg(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -195,8 +196,8 @@ export function getChartSql({
 
   if (event.segment === 'property_max' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `max(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'max(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `max(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -205,8 +206,8 @@ export function getChartSql({
 
   if (event.segment === 'property_min' && event.property) {
     if (event.property === 'revenue') {
-      sb.select.count = `min(revenue) as count`;
-      sb.where.property = `revenue > 0`;
+      sb.select.count = 'min(revenue) as count';
+      sb.where.property = 'revenue > 0';
     } else {
       sb.select.count = `min(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
       sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
@@ -230,14 +231,58 @@ export function getChartSql({
     return sql;
   }
 
-  // Add total unique count for user segment using a scalar subquery
-  if (event.segment === 'user') {
-    const totalUniqueSubquery = `(
-      SELECT ${sb.select.count}
+  // Build total_count calculation that accounts for breakdowns
+  // When breakdowns exist, we need to calculate total_count per breakdown group
+  if (breakdowns.length > 0) {
+    // Create a subquery that calculates total_count per breakdown group (without date grouping)
+    // Then reference it in the main query via JOIN
+    const breakdownSelects = breakdowns
+      .map((breakdown, index) => {
+        const key = `label_${index + 1}`;
+        const breakdownExpr = getSelectPropertyKey(breakdown.name);
+        return `${breakdownExpr} as ${key}`;
+      })
+      .join(', ');
+
+    // GROUP BY needs to use the actual expressions, not aliases
+    const breakdownGroupByExprs = breakdowns
+      .map((breakdown) => getSelectPropertyKey(breakdown.name))
+      .join(', ');
+
+    // Build the total_count subquery grouped only by breakdowns (no date)
+    // Extract the count expression without the alias (remove "as count")
+    const countExpression = sb.select.count.replace(/\s+as\s+count$/i, '');
+    const totalCountSubquery = `(
+      SELECT 
+        ${breakdownSelects},
+        ${countExpression} as total_count
       FROM ${sb.from}
       ${getJoins()}
       ${getWhere()}
-    )`;
+      GROUP BY ${breakdownGroupByExprs}
+    ) as total_counts`;
+
+    // Join the total_counts subquery to get total_count per breakdown
+    // Match on the breakdown column values
+    const joinConditions = breakdowns
+      .map((_, index) => {
+        const outerKey = `label_${index + 1}`;
+        return `${outerKey} = total_counts.label_${index + 1}`;
+      })
+      .join(' AND ');
+
+    sb.joins.total_counts = `LEFT JOIN ${totalCountSubquery} ON ${joinConditions}`;
+    // Use any() aggregate since total_count is the same for all rows in a breakdown group
+    sb.select.total_unique_count =
+      'any(total_counts.total_count) as total_count';
+  } else {
+    // No breakdowns - use a simple subquery for total count
+    const totalUniqueSubquery = `(
+        SELECT ${sb.select.count}
+        FROM ${sb.from}
+        ${getJoins()}
+        ${getWhere()}
+      )`;
     sb.select.total_unique_count = `${totalUniqueSubquery} as total_count`;
   }
 
@@ -509,12 +554,11 @@ export function getChartStartEndDate(
   }: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>,
   timezone: string,
 ) {
-  const ranges = getDatesFromRange(range, timezone);
-
   if (startDate && endDate) {
     return { startDate: startDate, endDate: endDate };
   }
 
+  const ranges = getDatesFromRange(range, timezone);
   if (!startDate && endDate) {
     return { startDate: ranges.startDate, endDate: endDate };
   }

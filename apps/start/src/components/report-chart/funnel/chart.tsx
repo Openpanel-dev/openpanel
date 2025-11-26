@@ -1,7 +1,9 @@
 import { ColorSquare } from '@/components/color-square';
+import { Button } from '@/components/ui/button';
+import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { ChevronRightIcon, InfoIcon } from 'lucide-react';
+import { ChevronRightIcon, InfoIcon, UsersIcon } from 'lucide-react';
 
 import { alphabetIds } from '@openpanel/constants';
 
@@ -23,6 +25,7 @@ import {
 } from 'recharts';
 import { useXAxisProps, useYAxisProps } from '../common/axis';
 import { PreviousDiffIndicatorPure } from '../common/previous-diff-indicator';
+import { useReportChartContext } from '../context';
 
 type Props = {
   data: {
@@ -113,11 +116,50 @@ function ChartName({
 export function Tables({
   data: {
     current: { steps, mostDropoffsStep, lastStep, breakdowns },
-    previous,
+    previous: previousData,
   },
 }: Props) {
   const number = useNumber();
   const hasHeader = breakdowns.length > 0;
+  const {
+    report: {
+      projectId,
+      startDate,
+      endDate,
+      range,
+      interval,
+      series: reportSeries,
+      breakdowns: reportBreakdowns,
+      previous,
+      funnelWindow,
+      funnelGroup,
+    },
+  } = useReportChartContext();
+
+  const handleInspectStep = (step: (typeof steps)[0], stepIndex: number) => {
+    if (!projectId || !step.event.id) return;
+
+    // For funnels, we need to pass the step index so the modal can query
+    // users who completed at least that step in the funnel sequence
+    pushModal('ViewChartUsers', {
+      type: 'funnel',
+      report: {
+        projectId,
+        series: reportSeries,
+        breakdowns: reportBreakdowns || [],
+        interval: interval || 'day',
+        startDate,
+        endDate,
+        range,
+        previous,
+        chartType: 'funnel',
+        metric: 'sum',
+        funnelWindow,
+        funnelGroup,
+      },
+      stepIndex, // Pass the step index for funnel queries
+    });
+  };
   return (
     <div className={cn('col @container divide-y divide-border card')}>
       {hasHeader && <ChartName breakdowns={breakdowns} className="p-4 py-3" />}
@@ -128,11 +170,11 @@ export function Tables({
             label="Conversion"
             value={number.formatWithUnit(lastStep?.percent / 100, '%')}
             enhancer={
-              previous && (
+              previousData && (
                 <PreviousDiffIndicatorPure
                   {...getPreviousMetric(
                     lastStep?.percent,
-                    previous.lastStep?.percent,
+                    previousData.lastStep?.percent,
                   )}
                 />
               )
@@ -143,11 +185,11 @@ export function Tables({
             label="Completed"
             value={number.format(lastStep?.count)}
             enhancer={
-              previous && (
+              previousData && (
                 <PreviousDiffIndicatorPure
                   {...getPreviousMetric(
                     lastStep?.count,
-                    previous.lastStep?.count,
+                    previousData.lastStep?.count,
                   )}
                 />
               )
@@ -238,6 +280,28 @@ export function Tables({
               className: 'text-right font-mono font-semibold',
               width: '90px',
             },
+            {
+              name: '',
+              render: (item) => (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const stepIndex = steps.findIndex(
+                      (s) => s.event.id === item.event.id,
+                    );
+                    handleInspectStep(item, stepIndex);
+                  }}
+                  title="View users who completed this step"
+                >
+                  <UsersIcon size={16} />
+                </Button>
+              ),
+              className: 'text-right',
+              width: '48px',
+            },
           ]}
         />
       </div>
@@ -299,6 +363,7 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
   const rechartData = useRechartData(data);
   const xAxisProps = useXAxisProps();
   const yAxisProps = useYAxisProps();
+  const hasBreakdowns = data.current.length > 1;
 
   return (
     <TooltipProvider data={data.current}>
@@ -327,19 +392,37 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
               }
             />
             <YAxis {...yAxisProps} />
-            <Bar
-              data={rechartData}
-              dataKey="step:percent:0"
-              shape={<BarShapeProps />}
-            >
-              {rechartData.map((item, index) => (
-                <Cell
-                  key={item.name}
-                  fill={getChartTranslucentColor(index)}
-                  stroke={getChartColor(index)}
-                />
-              ))}
-            </Bar>
+            {hasBreakdowns ? (
+              data.current.map((item, breakdownIndex) => (
+                <Bar
+                  key={`step:percent:${item.id}`}
+                  dataKey={`step:percent:${breakdownIndex}`}
+                  shape={<BarShapeProps />}
+                >
+                  {rechartData.map((item, stepIndex) => (
+                    <Cell
+                      key={`${item.name}-${breakdownIndex}`}
+                      fill={getChartTranslucentColor(breakdownIndex)}
+                      stroke={getChartColor(breakdownIndex)}
+                    />
+                  ))}
+                </Bar>
+              ))
+            ) : (
+              <Bar
+                data={rechartData}
+                dataKey="step:percent:0"
+                shape={<BarShapeProps />}
+              >
+                {rechartData.map((item, index) => (
+                  <Cell
+                    key={item.name}
+                    fill={getChartTranslucentColor(index)}
+                    stroke={getChartColor(index)}
+                  />
+                ))}
+              </Bar>
+            )}
             <Tooltip />
           </BarChart>
         </ResponsiveContainer>
@@ -347,8 +430,6 @@ export function Chart({ data }: { data: RouterOutputs['chart']['funnel'] }) {
     </TooltipProvider>
   );
 }
-
-type Hej = RouterOutputs['chart']['funnel']['current'];
 
 const { Tooltip, TooltipProvider } = createChartTooltip<
   RechartData,
@@ -371,7 +452,7 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
       <div className="flex justify-between gap-8 text-muted-foreground">
         <div>{data.name}</div>
       </div>
-      {variants.map((key) => {
+      {variants.map((key, breakdownIndex) => {
         const variant = data[key];
         const prevVariant = data[`prev_${key}`];
         if (!variant?.step) {
@@ -381,7 +462,11 @@ const { Tooltip, TooltipProvider } = createChartTooltip<
           <div className="row gap-2" key={key}>
             <div
               className="w-[3px] rounded-full"
-              style={{ background: getChartColor(index) }}
+              style={{
+                background: getChartColor(
+                  variants.length > 1 ? breakdownIndex : index,
+                ),
+              }}
             />
             <div className="col flex-1 gap-1">
               <div className="flex items-center gap-1">

@@ -15,8 +15,9 @@ export const ProfileCharts = memo(
     const pageViewsChart: IChartProps = {
       projectId,
       chartType: 'linear',
-      events: [
+      series: [
         {
+          type: 'event',
           segment: 'event',
           filters: [
             {
@@ -48,8 +49,9 @@ export const ProfileCharts = memo(
     const eventsChart: IChartProps = {
       projectId,
       chartType: 'linear',
-      events: [
+      series: [
         {
+          type: 'event',
           segment: 'event',
           filters: [
             {
