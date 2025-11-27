@@ -8,6 +8,7 @@ export interface SqlBuilderObject {
   orderBy: Record<string, string>;
   from: string;
   joins: Record<string, string>;
+  ctes: Record<string, string>;
   limit: number | undefined;
   offset: number | undefined;
   fill: string | undefined;
@@ -25,6 +26,7 @@ export function createSqlBuilder() {
     orderBy: {},
     having: {},
     joins: {},
+    ctes: {},
     limit: undefined,
     offset: undefined,
     fill: undefined,
@@ -46,6 +48,14 @@ export function createSqlBuilder() {
   const getJoins = () =>
     Object.keys(sb.joins).length ? join(sb.joins, ' ') : '';
   const getFill = () => (sb.fill ? `WITH FILL ${sb.fill}` : '');
+  const getWith = () => {
+    const cteEntries = Object.entries(sb.ctes);
+    if (cteEntries.length === 0) return '';
+    const cteClauses = cteEntries.map(
+      ([name, query]) => `${name} AS (${query})`,
+    );
+    return `WITH ${cteClauses.join(', ')} `;
+  };
 
   return {
     sb,
@@ -58,8 +68,13 @@ export function createSqlBuilder() {
     getHaving,
     getJoins,
     getFill,
+    getWith,
+    with: (name: string, query: string) => {
+      sb.ctes[name] = query;
+    },
     getSql: () => {
       const sql = [
+        getWith(),
         getSelect(),
         getFrom(),
         getJoins(),

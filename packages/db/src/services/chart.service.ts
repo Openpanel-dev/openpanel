@@ -1,3 +1,4 @@
+import { uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 
 import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
@@ -74,6 +75,8 @@ export function getChartSql({
     getOrderBy,
     getGroupBy,
     getFill,
+    getWith,
+    with: addCte,
   } = createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
@@ -93,14 +96,95 @@ export function getChartSql({
     breakdown.name.startsWith('profile.'),
   );
 
+  // Build WHERE clause without the bar filter (for use in subqueries and CTEs)
+  // Define this early so we can use it in CTE definitions
+  const getWhereWithoutBar = () => {
+    const whereWithoutBar = { ...sb.where };
+    delete whereWithoutBar.bar;
+    return Object.keys(whereWithoutBar).length
+      ? `WHERE ${join(whereWithoutBar, ' AND ')}`
+      : '';
+  };
+
+  // Collect all profile fields used in filters and breakdowns
+  // Extract top-level field names (e.g., 'properties' from 'profile.properties.os')
+  const getProfileFields = () => {
+    const fields = new Set<string>();
+
+    // Always need id for the join
+    fields.add('id');
+
+    // Collect from filters
+    event.filters
+      .filter((f) => f.name.startsWith('profile.'))
+      .forEach((f) => {
+        const fieldName = f.name.replace('profile.', '').split('.')[0];
+        if (fieldName && fieldName === 'properties') {
+          fields.add('properties');
+        } else if (
+          fieldName &&
+          ['email', 'first_name', 'last_name'].includes(fieldName)
+        ) {
+          fields.add(fieldName);
+        }
+      });
+
+    // Collect from breakdowns
+    breakdowns
+      .filter((b) => b.name.startsWith('profile.'))
+      .forEach((b) => {
+        const fieldName = b.name.replace('profile.', '').split('.')[0];
+        if (fieldName && fieldName === 'properties') {
+          fields.add('properties');
+        } else if (
+          fieldName &&
+          ['email', 'first_name', 'last_name'].includes(fieldName)
+        ) {
+          fields.add(fieldName);
+        }
+      });
+
+    return Array.from(fields);
+  };
+
+  // Create profiles CTE if profiles are needed (to avoid duplicating the heavy profile join)
+  // Only select the fields that are actually used
+  const profilesJoinRef =
+    anyFilterOnProfile || anyBreakdownOnProfile
+      ? 'LEFT ANY JOIN profile ON profile.id = profile_id'
+      : '';
+
   if (anyFilterOnProfile || anyBreakdownOnProfile) {
-    sb.joins.profiles = `LEFT ANY JOIN (SELECT 
-      id as "profile.id",
-      email as "profile.email",
-      first_name as "profile.first_name",
-      last_name as "profile.last_name",
-      properties as "profile.properties"
-    FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+    const profileFields = getProfileFields();
+    const selectFields = profileFields.map((field) => {
+      if (field === 'id') {
+        return 'id as "profile.id"';
+      }
+      if (field === 'properties') {
+        return 'properties as "profile.properties"';
+      }
+      if (field === 'email') {
+        return 'email as "profile.email"';
+      }
+      if (field === 'first_name') {
+        return 'first_name as "profile.first_name"';
+      }
+      if (field === 'last_name') {
+        return 'last_name as "profile.last_name"';
+      }
+      return field;
+    });
+
+    // Add profiles CTE using the builder
+    addCte(
+      'profile',
+      `SELECT ${selectFields.join(', ')}
+      FROM ${TABLE_NAMES.profiles} FINAL 
+      WHERE project_id = ${sqlstring.escape(projectId)}`,
+    );
+
+    // Use the CTE reference in the main query
+    sb.joins.profiles = profilesJoinRef;
   }
 
   sb.select.count = 'count(*) as count';
@@ -142,16 +226,25 @@ export function getChartSql({
     sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
   }
 
+  // Use CTE to define top breakdown values once, then reference in WHERE clause
   if (breakdowns.length > 0 && limit) {
-    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}) IN (
-      SELECT ${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}
-      FROM ${TABLE_NAMES.events}
-      ${getJoins()}
-      ${getWhere()}
-      GROUP BY ${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}
+    const breakdownSelects = breakdowns
+      .map((b) => getSelectPropertyKey(b.name))
+      .join(', ');
+
+    // Add top_breakdowns CTE using the builder
+    addCte(
+      'top_breakdowns',
+      `SELECT ${breakdownSelects}
+      FROM ${TABLE_NAMES.events} e
+      ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${getWhereWithoutBar()}
+      GROUP BY ${breakdownSelects}
       ORDER BY count(*) DESC
-      LIMIT ${limit}
-    )`;
+      LIMIT ${limit}`,
+    );
+
+    // Filter main query to only include top breakdown values
+    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
   }
 
   breakdowns.forEach((breakdown, index) => {
@@ -224,69 +317,26 @@ export function getChartSql({
       ) as subQuery`;
     sb.joins = {};
 
-    const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+    const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
     console.log('-- Report --');
     console.log(sql.replaceAll(/[\n\r]/g, ' '));
     console.log('-- End --');
     return sql;
   }
 
-  // Build total_count calculation that accounts for breakdowns
-  // When breakdowns exist, we need to calculate total_count per breakdown group
   if (breakdowns.length > 0) {
-    // Create a subquery that calculates total_count per breakdown group (without date grouping)
-    // Then reference it in the main query via JOIN
-    const breakdownSelects = breakdowns
-      .map((breakdown, index) => {
-        const key = `label_${index + 1}`;
-        const breakdownExpr = getSelectPropertyKey(breakdown.name);
-        return `${breakdownExpr} as ${key}`;
-      })
+    const breakdownPartitionKeys = breakdowns
+      .map((_, index) => `label_${index + 1}`)
       .join(', ');
 
-    // GROUP BY needs to use the actual expressions, not aliases
-    const breakdownGroupByExprs = breakdowns
-      .map((breakdown) => getSelectPropertyKey(breakdown.name))
-      .join(', ');
-
-    // Build the total_count subquery grouped only by breakdowns (no date)
-    // Extract the count expression without the alias (remove "as count")
-    const countExpression = sb.select.count.replace(/\s+as\s+count$/i, '');
-    const totalCountSubquery = `(
-      SELECT 
-        ${breakdownSelects},
-        ${countExpression} as total_count
-      FROM ${sb.from}
-      ${getJoins()}
-      ${getWhere()}
-      GROUP BY ${breakdownGroupByExprs}
-    ) as total_counts`;
-
-    // Join the total_counts subquery to get total_count per breakdown
-    // Match on the breakdown column values
-    const joinConditions = breakdowns
-      .map((_, index) => {
-        const outerKey = `label_${index + 1}`;
-        return `${outerKey} = total_counts.label_${index + 1}`;
-      })
-      .join(' AND ');
-
-    sb.joins.total_counts = `LEFT JOIN ${totalCountSubquery} ON ${joinConditions}`;
-    // Use any() aggregate since total_count is the same for all rows in a breakdown group
-    sb.select.total_unique_count =
-      'any(total_counts.total_count) as total_count';
+    sb.select.total_unique_count = `sum(count) OVER (PARTITION BY ${breakdownPartitionKeys}) as total_count`;
   } else {
-    // No breakdowns - use a simple subquery for total count
-    const totalUniqueSubquery = `(
-        SELECT ${sb.select.count}
-        FROM ${sb.from}
-        ${getJoins()}
-        ${getWhere()}
-      )`;
-    sb.select.total_unique_count = `${totalUniqueSubquery} as total_count`;
+    // No breakdowns - use window function without partition to get total across all rows
+    // Sum the count values across all grouped rows
+    sb.select.total_unique_count = 'sum(count) OVER () as total_count';
   }
 
-  const sql = `${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
+  const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
   console.log('-- Report --');
   console.log(sql.replaceAll(/[\n\r]/g, ' '));
   console.log('-- End --');

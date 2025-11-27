@@ -580,36 +580,34 @@ export const chartRouter = createTRPCRouter({
         sb.where.eventName = `name = ${sqlstring.escape(serie.name)}`;
       }
 
-      console.log('> breakdowns', input.breakdowns);
-      if (input.breakdowns) {
-        Object.entries(input.breakdowns).forEach(([key, value]) => {
-          sb.where[`breakdown_${key}`] = `${key} = ${sqlstring.escape(value)}`;
-        });
+      // Collect profile fields from filters and breakdowns
+      const profileFields = [
+        ...serie.filters
+          .filter((f) => f.name.startsWith('profile.'))
+          .map((f) => f.name.replace('profile.', '')),
+        ...(input.breakdowns
+          ? Object.keys(input.breakdowns)
+              .filter((key) => key.startsWith('profile.'))
+              .map((key) => key.replace('profile.', ''))
+          : []),
+      ];
+
+      if (profileFields.length > 0) {
+        // Extract top-level field names and select only what's needed
+        const fieldsToSelect = uniq(
+          profileFields.map((f) => f.split('.')[0]),
+        ).join(', ');
+        sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
       }
 
-      // // Handle breakdowns if provided
-      // const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
-      //   breakdown.name.startsWith('profile.'),
-      // );
-      // const anyFilterOnProfile = [...event.filters, ...filters].some((filter) =>
-      //   filter.name.startsWith('profile.'),
-      // );
-
-      // if (anyFilterOnProfile || anyBreakdownOnProfile) {
-      //   sb.joins.profiles = `LEFT ANY JOIN (SELECT
-      //     id as "profile.id",
-      //     email as "profile.email",
-      //     first_name as "profile.first_name",
-      //     last_name as "profile.last_name",
-      //     properties as "profile.properties"
-      //   FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
-      // }
-
-      // Apply breakdown filters if provided
-      // breakdowns.forEach((breakdown) => {
-      //   // This is simplified - in reality we'd need to match the breakdown value
-      //   // For now, we'll just get all profiles for the time bucket
-      // });
+      if (input.breakdowns) {
+        Object.entries(input.breakdowns).forEach(([key, value]) => {
+          // Transform property keys (e.g., properties.method -> properties['method'])
+          const propertyKey = getSelectPropertyKey(key);
+          sb.where[`breakdown_${key}`] =
+            `${propertyKey} = ${sqlstring.escape(value)}`;
+        });
+      }
 
       // Get unique profile IDs
       const profileIds = await chQuery<{ profile_id: string }>(getSql());

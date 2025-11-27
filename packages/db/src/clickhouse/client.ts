@@ -95,6 +95,7 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   },
   clickhouse_settings: {
     date_time_input_format: 'best_effort',
+    query_plan_convert_any_join_to_semi_or_anti_join: 0,
   },
   log: {
     LoggerClass: CustomLogger,
