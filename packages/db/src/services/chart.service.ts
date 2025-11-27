@@ -324,16 +324,42 @@ export function getChartSql({
     return sql;
   }
 
+  // Note: The profile CTE (if it exists) is available in subqueries, so we can reference it directly
   if (breakdowns.length > 0) {
-    const breakdownPartitionKeys = breakdowns
-      .map((_, index) => `label_${index + 1}`)
-      .join(', ');
+    // Match breakdown properties in subquery with outer query's grouped values
+    // Since outer query groups by label_X, we reference those in the correlation
+    const breakdownMatches = breakdowns
+      .map((b, index) => {
+        const propertyKey = getSelectPropertyKey(b.name);
+        // Correlate: match the property expression with outer query's label_X value
+        // ClickHouse allows referencing outer query columns in correlated subqueries
+        return `${propertyKey} = label_${index + 1}`;
+      })
+      .join(' AND ');
 
-    sb.select.total_unique_count = `sum(count) OVER (PARTITION BY ${breakdownPartitionKeys}) as total_count`;
+    // Build WHERE clause for subquery - replace table alias and keep profile CTE reference
+    const subqueryWhere = getWhereWithoutBar()
+      .replace(/\be\./g, 'e2.')
+      .replace(/\bprofile\./g, 'profile.');
+
+    sb.select.total_unique_count = `(
+        SELECT uniq(profile_id)
+        FROM ${TABLE_NAMES.events} e2
+        ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
+        AND ${breakdownMatches}
+      ) as total_count`;
   } else {
-    // No breakdowns - use window function without partition to get total across all rows
-    // Sum the count values across all grouped rows
-    sb.select.total_unique_count = 'sum(count) OVER () as total_count';
+    // No breakdowns: calculate unique count across all data
+    // Build WHERE clause for subquery - replace table alias and keep profile CTE reference
+    const subqueryWhere = getWhereWithoutBar()
+      .replace(/\be\./g, 'e2.')
+      .replace(/\bprofile\./g, 'profile.');
+
+    sb.select.total_unique_count = `(
+        SELECT uniq(profile_id)
+        FROM ${TABLE_NAMES.events} e2
+        ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
+      ) as total_count`;
   }
 
   const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
