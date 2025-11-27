@@ -676,8 +676,10 @@ export function ReportTable({
       },
       cell: ({ row }) => {
         const original = row.original;
-        const serieName = original.serieName;
         const serieId = original.serieId;
+        // Look up serie name directly from data to ensure we always have the latest value
+        const serie = data.series.find((s) => s.id === serieId);
+        const serieName = serie?.names[0] ?? original.serieName ?? '';
         const isVisible = visibleSeriesIds.includes(serieId);
         const serieIndex = getSerieIndex(serieId);
         const color = getChartColor(serieIndex);
@@ -1043,6 +1045,7 @@ export function ReportTable({
     dateRanges,
     columnSizing,
     expanded,
+    data,
   ]);
 
   // Create a hash of column IDs to track when columns change
@@ -1624,9 +1627,15 @@ export function ReportTable({
               const tableRow = rowModelToUse.rows[virtualRow.index];
               if (!tableRow) return null;
 
+              // Include serie name in key to force re-render when name changes
+              const serieId = tableRow.original.serieId;
+              const serie = data.series.find((s) => s.id === serieId);
+              const serieName =
+                serie?.names[0] ?? tableRow.original.serieName ?? '';
+
               return (
                 <VirtualRow
-                  key={`${virtualRow.key}-${gridTemplateColumns}`}
+                  key={`${virtualRow.key}-${serieName}-${gridTemplateColumns}`}
                   row={tableRow}
                   virtualRow={{
                     ...virtualRow,
