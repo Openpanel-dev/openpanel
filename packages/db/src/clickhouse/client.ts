@@ -12,6 +12,7 @@ export { createClient };
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
+import { getSafeJson } from '@openpanel/json';
 
 // All three LogParams types are exported by the client
 interface LogParams {
@@ -83,6 +84,22 @@ export function getReplicatedTableName(tableName: string): string {
   return tableName;
 }
 
+function getClickhouseSettings(): ClickHouseSettings {
+  const additionalSettings =
+    getSafeJson<ClickHouseSettings>(process.env.CLICKHOUSE_SETTINGS || '{}') ||
+    {};
+
+  return {
+    date_time_input_format: 'best_effort',
+    ...(!process.env.CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
+      ? {
+          query_plan_convert_any_join_to_semi_or_anti_join: 0,
+        }
+      : {}),
+    ...additionalSettings,
+  };
+}
+
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: 30,
   request_timeout: 300000,
@@ -93,15 +110,14 @@ export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   compression: {
     request: true,
   },
-  clickhouse_settings: {
-    date_time_input_format: 'best_effort',
-    query_plan_convert_any_join_to_semi_or_anti_join: 0,
-  },
+  clickhouse_settings: getClickhouseSettings(),
   log: {
     LoggerClass: CustomLogger,
     level: ClickHouseLogLevel.DEBUG,
   },
 };
+
+logger.info('Clickhouse options', CLICKHOUSE_OPTIONS);
 
 export const originalCh = createClient({
   url: process.env.CLICKHOUSE_URL,
