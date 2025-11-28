@@ -102,7 +102,7 @@ const op = new OpenPanel({
 
 ### E-mail
 
-Some of OpenPanel's features require e-mail. We use Resend as our transactional e-mail provider. So to get this working you'll need to create an account on Resend and set the `RESEND_API_KEY` environment variable.
+Some of OpenPanel's features require e-mail. We use Resend as our transactional e-mail provider. To enable email features, create an account on Resend and set the `RESEND_API_KEY` environment variable.
 
 <Callout>This is nothing that is required for the basic setup, but it is required for some features.</Callout>
 
@@ -111,6 +111,8 @@ Features that require e-mail:
 - Password reset
 - Invitations
 - more will be added over time
+
+For email configuration details, see the [Environment Variables documentation](/docs/self-hosting/environment-variables#email).
 
 ### AI integration
 
@@ -155,7 +157,7 @@ The AI assistant is optional. Without an API key configured, the AI chat feature
 AI features will incur costs based on your usage and the model you choose. Monitor your API usage through your provider's dashboard to avoid unexpected charges.
 </Callout>
 
-
+For complete AI configuration details, see the [Environment Variables documentation](/docs/self-hosting/environment-variables#ai-features).
 
 ### Managed Redis
 
@@ -180,6 +182,8 @@ Invitations are enabled by default. You can also disable invitations by setting 
 ```bash title=".env"
 ALLOW_INVITATION=false
 ```
+
+For a complete reference of all environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
 ## Helpful scripts
 

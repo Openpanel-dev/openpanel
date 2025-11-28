@@ -1,0 +1,562 @@
+---
+title: Deploy on Kubernetes
+description: Deploy OpenPanel on Kubernetes using Helm
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenPanel can be deployed on Kubernetes using the community-maintained Helm chart. This allows you to run OpenPanel in a scalable, production-ready Kubernetes environment.
+
+<Callout>
+The Helm chart is maintained by the community and available on [Artifact Hub](https://artifacthub.io/packages/helm/openpanel/openpanel).
+</Callout>
+
+## Prerequisites
+
+- Kubernetes 1.19+
+- Helm 3.0+
+- `kubectl` configured to access your cluster
+- At least 2GB RAM per node (4GB+ recommended)
+- Persistent volume support (if using self-hosted databases)
+
+## Quick Start
+
+<Steps>
+<Step>
+### Add the Helm Repository
+
+Add the OpenPanel Helm repository:
+
+```bash
+helm repo add openpanel https://yashGoyal40.github.io/openpanel
+helm repo update
+```
+</Step>
+
+<Step>
+### Download Default Values
+
+Download the default values file to customize your configuration:
+
+```bash
+helm show values openpanel/openpanel > my-values.yaml
+```
+
+<Callout type="warn">
+⚠️ **IMPORTANT**: Before installing, you **MUST** configure the required values in `values.yaml`. The chart includes placeholder values (marked with `<>`) that will cause the installation to fail if not properly configured.
+</Callout>
+</Step>
+
+<Step>
+### Configure Required Values
+
+Edit `my-values.yaml` and configure the following **required** values:
+
+1. **Ingress Configuration**:
+   ```yaml
+   ingress:
+     enabled: true
+     type: standard  # or "httpproxy" for Contour
+     fqdn: your-domain.com  # Replace with your actual domain
+     standard:
+       tlsSecretName: openpanel-tls
+   ```
+
+2. **Application URLs**:
+   ```yaml
+   config:
+     apiUrl: "https://your-domain.com/api"
+     dashboardUrl: "https://your-domain.com"
+     googleRedirectUri: "https://your-domain.com/api/oauth/google/callback"
+   ```
+
+3. **Cookie Secret** (generate with `openssl rand -base64 32`):
+   ```yaml
+   secrets:
+     cookieSecret: "YOUR_GENERATED_SECRET_HERE"
+   ```
+
+4. **PostgreSQL Configuration** (choose one):
+   - **Option A**: External PostgreSQL (recommended for production)
+     ```yaml
+     postgresql:
+       enabled: false
+     externalPostgresql:
+       host: "postgres.example.com"
+       port: 5432
+       user: "openpanel"
+       password: "your-secure-password"
+       database: "openpanel"
+       schema: public
+     ```
+   - **Option B**: Self-hosted PostgreSQL
+     ```yaml
+     postgresql:
+       enabled: true
+       user: postgres
+       password: "your-secure-password"
+       database: postgres
+       persistence:
+         size: 20Gi
+     ```
+</Step>
+
+<Step>
+### Install OpenPanel
+
+Install OpenPanel with your configured values:
+
+```bash
+helm install my-openpanel openpanel/openpanel \
+  --version 0.1.0 \
+  --namespace openpanel \
+  --create-namespace \
+  -f my-values.yaml
+```
+
+Or override specific values directly:
+
+```bash
+helm install my-openpanel openpanel/openpanel \
+  --version 0.1.0 \
+  --namespace openpanel \
+  --create-namespace \
+  --set ingress.fqdn=your-domain.com \
+  --set config.apiUrl=https://your-domain.com/api \
+  --set secrets.cookieSecret=$(openssl rand -base64 32)
+```
+</Step>
+
+<Step>
+### Verify Installation
+
+Check that all pods are running:
+
+```bash
+kubectl get pods -n openpanel
+```
+
+You should see pods for:
+- API server (`op-api`)
+- Dashboard (`op-dashboard`)
+- Worker (`op-worker`)
+- PostgreSQL (if using self-hosted)
+- Redis (if using self-hosted)
+- ClickHouse (if using self-hosted)
+
+Check the status:
+
+```bash
+kubectl get all -n openpanel
+```
+</Step>
+
+<Step>
+### Access Your Dashboard
+
+Once all pods are running, access OpenPanel at your configured domain. The ingress will route traffic to the dashboard service.
+
+If you need to test locally, you can port-forward:
+
+```bash
+kubectl port-forward svc/op-dashboard 3000:80 -n openpanel
+```
+
+Then access OpenPanel at `http://localhost:3000`.
+</Step>
+</Steps>
+
+## Configuration
+
+### Required Configuration
+
+The following values **MUST** be configured before installation:
+
+| Configuration | Required | Placeholder | Description |
+|--------------|----------|-------------|-------------|
+| `ingress.fqdn` | ✅ Yes | `<fqdn>` | Your domain name |
+| `ingress.*.tlsSecretName` | ✅ Yes | `<tls_secret_name>` | TLS certificate secret name |
+| `config.apiUrl` | ✅ Yes | `<fqdn>` | Full API URL |
+| `config.dashboardUrl` | ✅ Yes | `<fqdn>` | Full Dashboard URL |
+| `config.googleRedirectUri` | ✅ Yes | `<fqdn>` | OAuth callback URL |
+| `secrets.cookieSecret` | ✅ Yes | `CHANGE_ME_...` | Session encryption key |
+| `externalPostgresql.*` | ⚠️ If external | `<postgres_*>` | PostgreSQL connection details |
+
+### Complete Example Configuration
+
+Here's a minimal example configuration file (`my-values.yaml`) with all required values:
+
+```yaml title="my-values.yaml"
+# Ingress Configuration
+ingress:
+  enabled: true
+  type: standard  # or "httpproxy" for Contour
+  fqdn: analytics.example.com
+  standard:
+    tlsSecretName: openpanel-tls
+
+# Application URLs
+config:
+  apiUrl: "https://analytics.example.com/api"
+  dashboardUrl: "https://analytics.example.com"
+  googleRedirectUri: "https://analytics.example.com/api/oauth/google/callback"
+
+# Cookie Secret (generate with: openssl rand -base64 32)
+secrets:
+  cookieSecret: "YOUR_GENERATED_SECRET_HERE"
+
+# PostgreSQL - Using External Database
+postgresql:
+  enabled: false
+
+externalPostgresql:
+  host: "postgres.example.com"
+  port: 5432
+  user: "openpanel"
+  password: "your-secure-password"
+  database: "openpanel"
+  schema: public
+```
+
+### Optional Configuration
+
+The Helm chart maps environment variables to Helm values. For a complete reference of all available environment variables and their descriptions, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
+
+#### Email Configuration
+
+Enable email functionality (password resets, invitations, etc.):
+
+```yaml
+secrets:
+  resendApiKey: "re_xxxxxxxxxxxxx"  # Your Resend API key
+  emailSender: "noreply@your-domain.com"  # Verified sender email
+```
+
+<Callout>
+Get your Resend API key from [resend.com](https://resend.com). Make sure to verify your sender email domain.
+</Callout>
+
+#### AI Features
+
+Enable AI-powered features:
+
+```yaml
+config:
+  aiModel: "gpt-4o-mini"  # Options: gpt-4o, gpt-4o-mini, claude-3-5
+
+secrets:
+  openaiApiKey: "sk-xxxxxxxxxxxxx"  # For OpenAI models
+  anthropicApiKey: ""  # For Claude models (leave empty if not using)
+  geminiApiKey: ""  # For Gemini models (leave empty if not using)
+```
+
+<Callout>
+You only need to configure the API key for the model you choose. Leave other API keys as empty strings (`""`) if not using them.
+</Callout>
+
+#### Google OAuth
+
+Enable Google OAuth login:
+
+```yaml
+secrets:
+  googleClientId: "xxxxx.apps.googleusercontent.com"
+  googleClientSecret: "GOCSPX-xxxxxxxxxxxxx"
+```
+
+<Callout>
+Set up Google OAuth in [Google Cloud Console](https://console.cloud.google.com). Add authorized redirect URI: `https://your-domain.com/api/oauth/google/callback`
+</Callout>
+
+#### Redis Configuration
+
+Redis is enabled by default and deployed within Kubernetes. To use an external Redis instance:
+
+```yaml
+redis:
+  enabled: false
+
+externalRedis:
+  host: "redis.example.com"
+  port: 6379
+```
+
+#### ClickHouse Configuration
+
+ClickHouse is enabled by default and deployed within Kubernetes. To use an external ClickHouse instance:
+
+```yaml
+clickhouse:
+  enabled: false
+
+externalClickhouse:
+  host: "clickhouse.example.com"
+  port: 8123
+  database: openpanel
+```
+
+#### Application Components
+
+Enable/disable individual components:
+
+```yaml
+api:
+  enabled: true
+  replicas: 1
+
+dashboard:
+  enabled: true
+  replicas: 1
+
+worker:
+  enabled: true
+  replicas: 1
+```
+
+#### Resource Limits
+
+Adjust resource requests and limits:
+
+```yaml
+api:
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+```
+
+## Updating OpenPanel
+
+To upgrade to a newer version:
+
+```bash
+helm repo update
+helm upgrade my-openpanel openpanel/openpanel \
+  --version <new-version> \
+  --namespace openpanel \
+  -f my-values.yaml
+```
+
+Replace `<new-version>` with the desired version number (e.g., `0.1.1`).
+
+## Managing Your Deployment
+
+### View Logs
+
+View logs from specific deployments:
+
+```bash
+# API logs
+kubectl logs -f deployment/op-api -n openpanel
+
+# Dashboard logs
+kubectl logs -f deployment/op-dashboard -n openpanel
+
+# Worker logs
+kubectl logs -f deployment/op-worker -n openpanel
+```
+
+### Restart Services
+
+Restart a specific deployment:
+
+```bash
+kubectl rollout restart deployment/op-api -n openpanel
+kubectl rollout restart deployment/op-dashboard -n openpanel
+kubectl rollout restart deployment/op-worker -n openpanel
+```
+
+### Scale Services
+
+Scale services on the fly:
+
+```bash
+kubectl scale deployment/op-worker --replicas=3 -n openpanel
+```
+
+Or update your values file and upgrade:
+
+```yaml
+worker:
+  replicas: 3
+```
+
+```bash
+helm upgrade my-openpanel openpanel/openpanel -f my-values.yaml -n openpanel
+```
+
+### Check Services
+
+View all services:
+
+```bash
+kubectl get svc -n openpanel
+```
+
+### Check ConfigMap and Secrets
+
+Verify configuration:
+
+```bash
+kubectl get configmap openpanel-config -n openpanel -o yaml
+kubectl get secret openpanel-secrets -n openpanel -o yaml
+```
+
+## Ingress Configuration
+
+### Standard Ingress (NGINX/Traefik)
+
+```yaml
+ingress:
+  enabled: true
+  type: standard
+  fqdn: openpanel.your-domain.com
+  standard:
+    tlsSecretName: openpanel-tls
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+```
+
+### HTTPProxy (Contour)
+
+```yaml
+ingress:
+  enabled: true
+  type: httpproxy
+  fqdn: openpanel.your-domain.com
+  httpproxy:
+    tlsSecretName: openpanel-tls
+```
+
+## Troubleshooting
+
+### Pods Not Starting
+
+1. Check pod status:
+   ```bash
+   kubectl describe pod <pod-name> -n openpanel
+   ```
+
+2. Check events:
+   ```bash
+   kubectl get events --sort-by='.lastTimestamp' -n openpanel
+   ```
+
+3. Check logs:
+   ```bash
+   kubectl logs <pod-name> -n openpanel
+   ```
+
+### Database Connection Issues
+
+1. Verify database pods are running (if using self-hosted):
+   ```bash
+   kubectl get pods -n openpanel | grep postgres
+   ```
+
+2. Check database service:
+   ```bash
+   kubectl get svc -n openpanel | grep postgres
+   ```
+
+3. Test database connection:
+   ```bash
+   kubectl exec -it deployment/op-api -n openpanel -- env | grep DATABASE_URL
+   ```
+
+### Configuration Issues
+
+If pods are failing due to configuration:
+
+1. Verify all required values are set:
+   ```bash
+   helm get values my-openpanel -n openpanel
+   ```
+
+2. Check for placeholder values:
+   ```bash
+   helm get values my-openpanel -n openpanel | grep "<"
+   ```
+
+3. Ensure secrets are properly set:
+   ```bash
+   kubectl get secret openpanel-secrets -n openpanel -o yaml
+   ```
+
+### Ingress Not Working
+
+1. Check ingress status:
+   ```bash
+   kubectl get ingress -n openpanel
+   kubectl describe ingress -n openpanel
+   ```
+
+2. Verify ingress controller is running:
+   ```bash
+   kubectl get pods -n ingress-nginx  # For NGINX
+   # or
+   kubectl get pods -n projectcontour  # For Contour
+   ```
+
+3. Check DNS configuration
+
+## Backup and Restore
+
+### Backup PostgreSQL
+
+If using self-hosted PostgreSQL:
+
+```bash
+kubectl exec -it <postgresql-pod-name> -n openpanel -- \
+  pg_dump -U postgres openpanel > backup.sql
+```
+
+Or use a Kubernetes CronJob for automated backups.
+
+### Restore PostgreSQL
+
+Restore from backup:
+
+```bash
+kubectl exec -i <postgresql-pod-name> -n openpanel -- \
+  psql -U postgres openpanel < backup.sql
+```
+
+## Uninstalling
+
+To uninstall OpenPanel:
+
+```bash
+helm uninstall my-openpanel --namespace openpanel
+```
+
+<Callout type="warn">
+⚠️ **Warning**: This will delete all resources including persistent volumes. Make sure to backup your data before uninstalling!
+</Callout>
+
+To keep persistent volumes:
+
+```bash
+# Delete the release but keep PVCs
+helm uninstall my-openpanel --namespace openpanel
+
+# Manually delete PVCs if needed
+kubectl delete pvc -l app.kubernetes.io/name=openpanel -n openpanel
+```
+
+## Next Steps
+
+- [Configure email settings](/docs/self-hosting/self-hosting#e-mail) for password resets and invitations
+- [Set up AI integration](/docs/self-hosting/self-hosting#ai-integration) for the analytics assistant
+- [Configure SDK](/docs/self-hosting/self-hosting#always-use-correct-api-url) to track events from your applications
+
+## Additional Resources
+
+- [Helm Chart on Artifact Hub](https://artifacthub.io/packages/helm/openpanel/openpanel)
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [Helm Documentation](https://helm.sh/docs/)
