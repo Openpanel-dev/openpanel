@@ -203,9 +203,9 @@ export async function getSessionList({
     const cId = sqlstring.escape(cursor.id);
     sb.where.cursor = `(created_at < toDateTime64(${cAt}, 3) OR (created_at = toDateTime64(${cAt}, 3) AND id < ${cId}))`;
     sb.where.cursorWindow = `created_at >= toDateTime64(${cAt}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
-    sb.orderBy.created_at = 'toDate(created_at) DESC, created_at DESC, id DESC';
+    sb.orderBy.created_at = 'created_at DESC';
   } else {
-    sb.orderBy.created_at = 'toDate(created_at) DESC, created_at DESC, id DESC';
+    sb.orderBy.created_at = 'created_at DESC';
     sb.where.created_at = `created_at > now() - INTERVAL ${dateIntervalInDays} DAY`;
   }
 

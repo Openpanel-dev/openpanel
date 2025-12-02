@@ -628,8 +628,7 @@ export async function getEventList(options: GetEventListOptions) {
     }
   }
 
-  sb.orderBy.created_at =
-    'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
+  sb.orderBy.created_at = 'created_at DESC';
 
   if (custom) {
     custom(sb);
