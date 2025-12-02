@@ -34,6 +34,7 @@ interface MyRouterContext {
   apiUrl: string;
   dashboardUrl: string;
   isSelfHosted: boolean;
+  isMaintenance: boolean;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({

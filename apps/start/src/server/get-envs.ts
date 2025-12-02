@@ -8,6 +8,7 @@ export const getServerEnvs = createServerFn().handler(async () => {
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
     ),
     isSelfHosted: process.env.SELF_HOSTED !== undefined,
+    isMaintenance: process.env.MAINTENANCE === '1',
   };
 
   return envs;

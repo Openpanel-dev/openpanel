@@ -17,5 +17,6 @@ export function useAppContext() {
     apiUrl: params.apiUrl,
     dashboardUrl: params.dashboardUrl,
     isSelfHosted: params.isSelfHosted,
+    isMaintenance: params.isMaintenance ?? false,
   };
 }
