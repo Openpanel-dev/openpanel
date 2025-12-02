@@ -5,6 +5,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './global.css';
+import { OpenPanelComponent } from '@openpanel/nextjs';
 
 const font = Geist({
   subsets: ['latin'],
@@ -38,6 +39,16 @@ export default function Layout({ children }: LayoutProps<'/'>) {
         <RootProvider>
           <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
+        {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
+          <OpenPanelComponent
+            apiUrl="/api/op"
+            cdnUrl="/api/op/op1.js"
+            clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
+            trackAttributes
+            trackScreenViews
+            trackOutgoingLinks
+          />
+        )}
       </body>
     </html>
   );
