@@ -74,7 +74,7 @@ export default async function ComparePage({
       name: 'OpenPanel',
       logo: {
         '@type': 'ImageObject',
-        url: url('/logo.png'),
+        url: url('/logo.webp'),
       },
     },
   };
@@ -110,8 +110,8 @@ export default async function ComparePage({
 
       <div className="container my-16">
         <WindowImage
-          srcDark="/screenshots/overview-dark.png"
-          srcLight="/screenshots/overview-light.png"
+          srcDark="/screenshots/overview-dark.webp"
+          srcLight="/screenshots/overview-light.webp"
           alt="OpenPanel Dashboard Overview"
           caption="This is our web analytics dashboard, its an out-of-the-box experience so you can start understanding your traffic and engagement right away."
         />
@@ -126,8 +126,8 @@ export default async function ComparePage({
 
       <div className="container my-16">
         <WindowImage
-          srcDark="/screenshots/dashboard-dark.png"
-          srcLight="/screenshots/dashboard-light.png"
+          srcDark="/screenshots/dashboard-dark.webp"
+          srcLight="/screenshots/dashboard-light.webp"
           alt="OpenPanel Dashboard"
           caption="Comprehensive analytics dashboard with real-time insights and customizable views."
         />
@@ -146,8 +146,8 @@ export default async function ComparePage({
 
       <div className="container my-16">
         <WindowImage
-          srcDark="/screenshots/realtime-dark.png"
-          srcLight="/screenshots/realtime-light.png"
+          srcDark="/screenshots/realtime-dark.webp"
+          srcLight="/screenshots/realtime-light.webp"
           alt="OpenPanel Real-time Analytics"
           caption="Track events in real-time as they happen with instant updates and live monitoring."
         />
@@ -181,8 +181,8 @@ export default async function ComparePage({
 
       <div className="container my-16">
         <WindowImage
-          srcDark="/screenshots/report-dark.png"
-          srcLight="/screenshots/report-light.png"
+          srcDark="/screenshots/report-dark.webp"
+          srcLight="/screenshots/report-light.webp"
           alt="OpenPanel Reports"
           caption="Generate detailed reports and insights with customizable metrics and visualizations."
         />
@@ -202,8 +202,8 @@ export default async function ComparePage({
 
       <div className="container my-16">
         <WindowImage
-          srcDark="/screenshots/profile-dark.png"
-          srcLight="/screenshots/profile-light.png"
+          srcDark="/screenshots/profile-dark.webp"
+          srcLight="/screenshots/profile-light.webp"
           alt="OpenPanel User Profiles"
           caption="Deep dive into individual user profiles with complete event history and behavior tracking."
         />
