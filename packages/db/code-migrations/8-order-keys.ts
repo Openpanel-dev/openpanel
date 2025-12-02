@@ -9,25 +9,6 @@ import {
 } from '../src/clickhouse/migration';
 import { getIsCluster } from './helpers';
 
-/**
- * Migration to update ORDER BY keys for events and sessions tables.
- *
- * Changes:
- * - Events: Remove profile_id from ORDER BY, add created_at for better ordering
- *   Old: ['project_id', 'toDate(created_at)', 'profile_id', 'name']
- *   New: ['project_id', 'toDate(created_at)', 'created_at', 'name']
- *
- * - Sessions: Remove profile_id from ORDER BY, reorder to match query patterns
- *   Old: ['project_id', 'id', 'toDate(created_at)', 'profile_id']
- *   New: ['project_id', 'toDate(created_at)', 'created_at', 'id']
- *
- * Rationale:
- * - project_id: Always filtered first (100% of queries)
- * - toDate(created_at): Almost always filtered (95%+ of queries), good for partitioning
- * - created_at: Helps with ordering within same day, matches ORDER BY patterns in queries
- * - name (events): Frequently filtered (screen_view, session_start, etc.), good selectivity
- * - id (sessions): Used for ordering and uniqueness in session queries
- */
 export async function up() {
   const isClustered = getIsCluster();
 

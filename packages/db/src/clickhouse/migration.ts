@@ -318,18 +318,13 @@ export function moveDataBetweenTables({
         break;
     }
 
-    // For monthly/weekly intervals with transform, we need to use the start of the next period for the upper bound
+    // For monthly/weekly intervals with transform, upperBoundDate should be currentDate
+    // because currentDate already represents the start of the period we're processing
+    // The WHERE clause uses > previousDate AND <= currentDate to get exactly one period
     let upperBoundDate = currentDate;
-    if (interval === 'month' && batch.transform) {
-      const nextMonth = new Date(currentDate);
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      nextMonth.setDate(1);
-      upperBoundDate = nextMonth;
-    } else if (interval === 'week' && batch.transform) {
-      const nextWeek = new Date(currentDate);
-      nextWeek.setDate(nextWeek.getDate() + 7);
-      const nextWeekStart = getWeekStart(nextWeek);
-      upperBoundDate = nextWeekStart;
+    // Don't exceed the endDate
+    if (upperBoundDate > endDate) {
+      upperBoundDate = endDate;
     }
 
     const sql = `INSERT INTO ${to} 

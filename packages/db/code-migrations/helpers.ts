@@ -30,3 +30,7 @@ export function getIsSelfHosting() {
 export function getIsDry() {
   return process.argv.includes('--dry');
 }
+
+export function getShouldIgnoreRecord() {
+  return process.argv.includes('--no-record');
+}
