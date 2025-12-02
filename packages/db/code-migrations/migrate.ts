@@ -10,6 +10,7 @@ import {
   getIsCluster,
   getIsDry,
   getIsSelfHosting,
+  getShouldIgnoreRecord,
   printBoxMessage,
 } from './helpers';
 
@@ -55,8 +56,8 @@ async function migrate() {
   ]);
 
   if (!getIsSelfHosting()) {
-    printBoxMessage('🕒 Migrations starts in 10 seconds', []);
     if (!getIsDry()) {
+      printBoxMessage('🕒 Migrations starts in 10 seconds', []);
       await new Promise((resolve) => setTimeout(resolve, 10000));
     }
   }
@@ -83,7 +84,7 @@ async function runMigration(migrationsDir: string, file: string) {
   try {
     const migration = await import(path.join(migrationsDir, file));
     await migration.up();
-    if (!getIsDry()) {
+    if (!getIsDry() && !getShouldIgnoreRecord()) {
       await db.codeMigration.upsert({
         where: {
           name: file,
