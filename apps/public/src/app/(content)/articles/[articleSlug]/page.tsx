@@ -78,6 +78,8 @@ export default async function Page({
     '@type': 'Article',
     headline: article?.data.title,
     datePublished: article?.data.date.toISOString(),
+    dateModified:
+      article?.data.updated?.toISOString() || article?.data.date.toISOString(),
     author: {
       '@type': 'Person',
       name: author.name,
@@ -132,9 +134,16 @@ export default async function Page({
             </div>
             <div className="col">
               <p className="font-medium">{author.name}</p>
-              <p className="text-muted-foreground text-sm">
-                {article?.data.date.toLocaleDateString()}
-              </p>
+              <div className="row gap-2">
+                <p className="text-muted-foreground text-sm">
+                  {article?.data.date.toLocaleDateString()}
+                </p>
+                {article?.data.updated && (
+                  <p className="text-muted-foreground text-sm italic">
+                    Updated on {article?.data.updated.toLocaleDateString()}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>

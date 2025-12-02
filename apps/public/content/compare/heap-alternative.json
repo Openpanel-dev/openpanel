@@ -417,6 +417,28 @@
       }
     ]
   },
+  "related_links": {
+    "articles": [
+      {
+        "title": "Find an alternative to Mixpanel",
+        "url": "/articles/alternatives-to-mixpanel"
+      },
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      },
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      }
+    ]
+  },
   "ctas": {
     "primary": {
       "label": "Start with OpenPanel",

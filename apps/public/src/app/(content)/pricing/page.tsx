@@ -9,6 +9,7 @@ import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { formatEventsCount } from '@/lib/utils';
 import { PRICING } from '@openpanel/payments/prices';
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import Script from 'next/script';
 
 const title = 'OpenPanel Cloud Pricing';
@@ -58,6 +59,7 @@ export default function SupporterPage() {
       </HeroContainer>
       <Pricing />
       <PricingTable />
+      <ComparisonSection />
       <Testimonials />
       <Faq />
       <CtaBanner />
@@ -104,6 +106,28 @@ function PricingTable() {
           </tbody>
         </table>
       </div>
+    </Section>
+  );
+}
+
+function ComparisonSection() {
+  return (
+    <Section className="container">
+      <SectionHeader
+        title="How do we compare?"
+        description={
+          <>
+            See how OpenPanel stacks up against other analytics tools in our{' '}
+            <Link
+              href="/articles/open-source-web-analytics"
+              className="underline hover:text-primary transition-colors"
+            >
+              comprehensive comparison of open source web analytics tools
+            </Link>
+            .
+          </>
+        }
+      />
     </Section>
   );
 }

@@ -31,7 +31,7 @@ const faqData = [
   {
     question: 'How does OpenPanel compare to other analytics tools?',
     answer:
-      'We have a dedicated compare page where you can see how OpenPanel compares to other analytics tools. You can find it [here](/compare).',
+      'We have a dedicated compare page where you can see how OpenPanel compares to other analytics tools. You can find it [here](/compare). You can also read our comprehensive guide on the [best open source web analytics tools](/articles/open-source-web-analytics).',
   },
   {
     question: 'How does OpenPanel compare to Mixpanel?',

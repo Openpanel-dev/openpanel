@@ -158,6 +158,17 @@ export interface CompareMigration {
   };
 }
 
+export interface RelatedLink {
+  title?: string;
+  name?: string;
+  url: string;
+}
+
+export interface RelatedLinks {
+  articles?: RelatedLink[];
+  alternatives?: RelatedLink[];
+}
+
 export interface CompareData {
   url: string;
   slug: string;
@@ -175,6 +186,7 @@ export interface CompareData {
   use_cases: CompareUseCases;
   faqs: CompareFaqs;
   benefits_section?: CompareBenefitsSection;
+  related_links?: RelatedLinks;
   ctas: {
     primary: CompareCta;
     secondary: CompareCta;

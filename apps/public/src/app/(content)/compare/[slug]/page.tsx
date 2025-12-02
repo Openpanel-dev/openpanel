@@ -17,6 +17,7 @@ import { ComparisonTable } from './_components/comparison-table';
 import { FeaturesShowcase } from './_components/features-showcase';
 import { MigrationSection } from './_components/migration-section';
 import { PricingSection } from './_components/pricing-section';
+import { RelatedLinksSection } from './_components/related-links';
 import { TechnicalComparison } from './_components/technical-comparison';
 import { UseCases } from './_components/use-cases';
 import { WhoShouldChoose } from './_components/who-should-choose';
@@ -212,6 +213,10 @@ export default async function ComparePage({
       <div id="faq">
         <CompareFaq faqs={data.faqs} pageUrl={pageUrl} />
       </div>
+
+      {data.related_links && (
+        <RelatedLinksSection relatedLinks={data.related_links} />
+      )}
 
       <CtaBanner
         title={'Ready to make the switch?'}

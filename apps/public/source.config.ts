@@ -29,6 +29,7 @@ const zArticle = z.object({
   team: z.string().optional(),
   date: z.date(),
   cover: z.string().default('/content/cover-default.jpg'),
+  updated: z.date().optional(),
 });
 const zPage = z.object({
   title: z.string().min(1),
