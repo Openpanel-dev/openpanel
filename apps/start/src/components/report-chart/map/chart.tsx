@@ -15,13 +15,12 @@ export function Chart({ data }: Props) {
   const {
     report: { metric, unit },
   } = useReportChartContext();
-  const { series } = useVisibleSeries(data, 100);
-  const [filters, setFilter] = useEventQueryFilters();
-
+  const { series } = useVisibleSeries(data, 99999);
+  const [_, setFilter] = useEventQueryFilters();
   const mapData = useMemo(
     () =>
       series.map((s) => ({
-        country: s.names[0]?.toLowerCase() ?? '',
+        country: s.names[1]?.toLowerCase() ?? '',
         value: s.metrics[metric] ?? 0,
       })),
     [series, metric],
