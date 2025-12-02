@@ -1,0 +1,495 @@
+{
+  "slug": "microsoft-clarity-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Microsoft Clarity Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs Microsoft Clarity. Discover why teams choose OpenPanel as their Clarity alternative for product analytics, user identification, retention analysis, and self-hosting capabilities.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Microsoft Clarity Alternative",
+    "subheading": "Love Clarity's free heatmaps and session recordings? OpenPanel adds what Clarity lacks - product analytics, user identification, retention analysis, cohorts, and self-hosting - while staying privacy-friendly and open source.",
+    "badges": [
+      "Open-source",
+      "Product Analytics",
+      "Self-hostable",
+      "Retention Analysis"
+    ]
+  },
+  "competitor": {
+    "name": "Microsoft Clarity",
+    "logo": "/logos/microsoft-clarity.svg",
+    "url": "https://clarity.microsoft.com",
+    "short_description": "Free behavioral analytics tool from Microsoft offering session recordings, heatmaps, and insights.",
+    "founded": 2020,
+    "headquarters": "Redmond, Washington, USA"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Microsoft Clarity: Which is right for you?",
+    "intro": "Clarity focuses on behavioral analytics (session recordings, heatmaps). OpenPanel focuses on product analytics (events, retention, cohorts). Different tools for different needs.",
+    "one_liner": "Clarity excels at behavioral observation (recordings, heatmaps); OpenPanel excels at product analytics (retention, cohorts, funnels).",
+    "best_for_openpanel": [
+      "SaaS products needing retention and cohort analysis",
+      "Teams requiring self-hosting for data sovereignty",
+      "Products needing user identification and profiles",
+      "Teams wanting A/B testing capabilities"
+    ],
+    "best_for_competitor": [
+      "Teams needing session recordings and heatmaps (completely free)",
+      "Visual debugging of user frustration (rage clicks, dead clicks)",
+      "Organizations comfortable with Microsoft cloud hosting",
+      "Teams wanting AI-powered session insights (Copilot)"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Microsoft Clarity compare on key factors.",
+    "items": [
+      {
+        "label": "Analytics Focus",
+        "openpanel": "Product Analytics",
+        "competitor": "Behavioral Analytics",
+        "notes": "OpenPanel focuses on product analytics - funnels, retention, cohorts, and user journeys. Clarity focuses on behavioral analytics - session recordings and heatmaps. Different tools for different needs."
+      },
+      {
+        "label": "Self-Hosting",
+        "openpanel": "Yes - Full Docker deployment",
+        "competitor": "No - Cloud only",
+        "notes": "OpenPanel can be self-hosted with Docker, giving you complete data ownership. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers."
+      },
+      {
+        "label": "Session Recordings",
+        "openpanel": "No",
+        "competitor": "Yes - Unlimited free recordings",
+        "notes": "Clarity offers unlimited session recordings with visual playback of user sessions. OpenPanel focuses on event-based analytics rather than session replay."
+      },
+      {
+        "label": "Retention & Cohort Analysis",
+        "openpanel": "Yes - Built-in",
+        "competitor": "No",
+        "notes": "OpenPanel provides retention analysis and cohort tracking to understand user behavior over time. Clarity doesn't offer these product analytics features."
+      },
+      {
+        "label": "Pricing",
+        "openpanel": "Free tier + paid plans",
+        "competitor": "100% Free forever",
+        "notes": "Microsoft Clarity is completely free with no paid tiers, no traffic limits, and no restrictions. OpenPanel has a free tier with 10,000 events/month."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "Clarity and OpenPanel serve different purposes - behavioral vs product analytics.",
+    "groups": [
+      {
+        "group": "Behavioral Analytics",
+        "features": [
+          {
+            "name": "Session Recordings",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Clarity offers unlimited session recordings with 30-day retention"
+          },
+          {
+            "name": "Click Heatmaps",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "Scroll Heatmaps",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "Rage Click Detection",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Clarity auto-detects frustration signals like rage clicks"
+          },
+          {
+            "name": "Dead Click Detection",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "JavaScript Error Tracking",
+            "openpanel": false,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity calls these Smart Events"
+          },
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity added funnels in 2024"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity focuses on session-level data, not retention over time"
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity has custom identifiers but not full user profiles"
+          },
+          {
+            "name": "User Path Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity shows session journeys but not aggregate user paths"
+          },
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": false
+          }
+        ]
+      },
+      {
+        "group": "Web Analytics",
+        "features": [
+          {
+            "name": "Page Views & Visitors",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Traffic Sources",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Geographic Data",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Device & Browser",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity offers live session viewing"
+          },
+          {
+            "name": "UTM Campaign Tracking",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both require consent for full tracking"
+          },
+          {
+            "name": "CCPA Compliant",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Data Masking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity auto-masks sensitive content in recordings"
+          },
+          {
+            "name": "Self-Hostable",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity data stored on Microsoft Azure"
+          },
+          {
+            "name": "Cookie-Free Option",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Clarity uses first-party cookies for session tracking"
+          },
+          {
+            "name": "Open Source",
+            "openpanel": true,
+            "competitor": "partial",
+            "notes": "Clarity tracking code is open source on GitHub"
+          }
+        ]
+      },
+      {
+        "group": "Integrations & SDKs",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "React/Next.js",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Clarity iOS SDK launched July 2024"
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Flutter SDK",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Clarity Flutter SDK launched June 2025"
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Google Analytics Integration",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Clarity has native GA4 integration"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "Lightweight async script, mobile SDKs ~400-900 KB",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "iOS",
+          "Android",
+          "Flutter",
+          "React Native",
+          "Cordova",
+          "Ionic",
+          "WordPress",
+          "Shopify",
+          "Wix"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "Partial - Tracking code only",
+        "notes": "Clarity tracking code is open source on GitHub. Backend is proprietary."
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (simple single-container setup)",
+        "competitor": "Not available - Cloud only (Microsoft Azure)",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "Microsoft Azure (proprietary)",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "30 days recordings (13 months if labeled), 13 months heatmaps",
+        "notes": null
+      },
+      {
+        "label": "Language",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "TypeScript (tracking code), proprietary backend",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Microsoft Clarity is 100% free. OpenPanel offers free tier with paid plans.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. All features included at every tier."
+    },
+    "competitor": {
+      "model": "100% Free forever",
+      "description": "Unlimited sessions, unlimited heatmaps, up to 100,000 sessions per day, all features included. Session recordings, heatmaps, insights, Copilot AI, mobile SDKs, GA integration - all free. Microsoft offers it as a free tool to compete with Hotjar and drive Microsoft ecosystem adoption.",
+      "free_tier": "Unlimited - no traffic limits",
+      "pricing_url": null
+    }
+  },
+  "migration": {
+    "title": "Migrating from Microsoft Clarity to OpenPanel",
+    "intro": "Clarity and OpenPanel serve different purposes. Many teams use both.",
+    "difficulty": "easy",
+    "estimated_time": "30 minutes to 2 hours",
+    "steps": [
+      {
+        "title": "Understand the Difference",
+        "description": "Clarity and OpenPanel serve different purposes. Clarity is for behavioral analytics (watching sessions). OpenPanel is for product analytics (tracking user actions over time). Many teams use both."
+      },
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your application. If you're using Clarity's Smart Events, map them to OpenPanel events."
+      },
+      {
+        "title": "Set Up User Identification",
+        "description": "Unlike Clarity, OpenPanel tracks users across sessions. Add op.identify() calls to enable retention analysis, cohorts, and user profiles."
+      },
+      {
+        "title": "Configure Funnels and Retention",
+        "description": "Set up funnels in OpenPanel. Unlike Clarity's session-based funnels, OpenPanel tracks conversions over time across multiple sessions."
+      },
+      {
+        "title": "Consider Keeping Both",
+        "description": "Since Clarity is free, consider keeping it for session recordings and heatmaps while using OpenPanel for product analytics. They complement each other."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "These tools serve different purposes. Clarity focuses on session recordings; OpenPanel focuses on event-based analytics."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Most teams use both tools together since they serve different purposes."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Microsoft Clarity",
+    "intro": "Choose OpenPanel when you need product analytics beyond behavioral observation.",
+    "items": [
+      {
+        "title": "SaaS Products Needing Retention Analytics",
+        "description": "Clarity shows individual session recordings but doesn't track retention over time. If you need to understand how users return to your product week over week, OpenPanel's retention analysis provides these insights.",
+        "icon": "repeat"
+      },
+      {
+        "title": "Teams Requiring Self-Hosting",
+        "description": "Clarity is cloud-only with data stored on Microsoft Azure. If data sovereignty, compliance requirements, or privacy policies require self-hosting, OpenPanel can be deployed on your own infrastructure.",
+        "icon": "server"
+      },
+      {
+        "title": "Products Needing User Identification",
+        "description": "Clarity has custom identifiers but doesn't build comprehensive user profiles. OpenPanel lets you track individual users across sessions and analyze their complete journey with your product.",
+        "icon": "user-check"
+      },
+      {
+        "title": "Teams Wanting A/B Testing",
+        "description": "Clarity focuses on observation (watching what users do) not experimentation. OpenPanel includes A/B testing capabilities to measure the impact of changes.",
+        "icon": "git-branch"
+      },
+      {
+        "title": "Combining Both Tools",
+        "description": "Since Clarity is free, many teams use both: Clarity for visual session recordings and heatmaps, OpenPanel for product analytics, funnels, retention, and cohorts. They complement each other well.",
+        "icon": "layers"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about Microsoft Clarity and OpenPanel.",
+    "items": [
+      {
+        "question": "Is Microsoft Clarity really free?",
+        "answer": "Yes, Microsoft Clarity is 100% free forever with no paid tiers, no traffic limits, and no forced upgrades. Microsoft offers it as a free tool to compete with Hotjar and drive adoption of the Microsoft ecosystem."
+      },
+      {
+        "question": "Why would I choose OpenPanel over a free tool like Clarity?",
+        "answer": "Clarity and OpenPanel solve different problems. Clarity is for behavioral analytics - watching session recordings and heatmaps. OpenPanel is for product analytics - tracking events, analyzing retention, building cohorts, and identifying users. If you need product analytics features, OpenPanel provides them while Clarity doesn't."
+      },
+      {
+        "question": "Can I self-host Microsoft Clarity?",
+        "answer": "No. Microsoft Clarity is cloud-only with data stored on Microsoft Azure servers. If you need self-hosting for data sovereignty or compliance, OpenPanel offers full Docker-based self-hosting."
+      },
+      {
+        "question": "Does Clarity have retention and cohort analysis?",
+        "answer": "No. Clarity focuses on session-level behavioral analytics (recordings, heatmaps, rage clicks). It doesn't provide retention analysis or cohort tracking over time. OpenPanel includes these product analytics features."
+      },
+      {
+        "question": "How long does Clarity keep my data?",
+        "answer": "Clarity retains session recordings for 30 days (13 months if labeled or favorited). Heatmap data is retained for 13 months. OpenPanel's self-hosted option offers unlimited retention."
+      },
+      {
+        "question": "Does Clarity have A/B testing?",
+        "answer": "No. Clarity is an observation tool - it shows you what users do but doesn't help you experiment with changes. OpenPanel includes built-in A/B testing capabilities."
+      },
+      {
+        "question": "Should I use Clarity and OpenPanel together?",
+        "answer": "Many teams do! Since Clarity is free, you can use it for session recordings and heatmaps while using OpenPanel for product analytics, retention, cohorts, and user profiles. The tools complement each other."
+      },
+      {
+        "question": "Is Clarity open source?",
+        "answer": "Partially. The Clarity tracking code is open source on GitHub, but the backend and dashboard are proprietary Microsoft services. OpenPanel is fully open source with MIT license."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

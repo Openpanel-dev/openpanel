@@ -1,0 +1,478 @@
+{
+  "slug": "cabin-analytics-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Cabin Analytics Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs Cabin Analytics. Discover why teams choose OpenPanel as their Cabin alternative for deeper product analytics, self-hosting, and mobile SDKs while maintaining environmental responsibility.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Cabin Analytics alternative",
+    "subheading": "Love Cabin's carbon-conscious approach and privacy focus? OpenPanel adds deeper product analytics—self-hosting, mobile SDKs, user identification, funnels, and retention analysis—while staying open source and lightweight.",
+    "badges": [
+      "Open-source",
+      "Self-hostable",
+      "Mobile SDKs",
+      "Product analytics"
+    ]
+  },
+  "competitor": {
+    "name": "Cabin Analytics",
+    "logo": "/logos/cabin.svg",
+    "url": "https://withcabin.com",
+    "short_description": "Privacy-first, carbon-conscious web analytics alternative to Google Analytics with ultra-lightweight tracking.",
+    "founded": 2020,
+    "headquarters": "London, UK"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Cabin: Which is right for you?",
+    "intro": "Both platforms prioritize privacy and lightweight tracking. The key differences are depth of analytics, self-hosting capabilities, and platform support.",
+    "one_liner": "Cabin is simpler and carbon-conscious for web analytics; OpenPanel offers deeper product analytics with mobile SDKs and self-hosting.",
+    "best_for_openpanel": [
+      "Teams requiring self-hosting for data ownership and compliance",
+      "SaaS products needing user-level analytics and retention tracking",
+      "Mobile app analytics with native iOS and Android SDKs",
+      "Teams needing funnel analysis and cohort tracking",
+      "Products requiring A/B testing capabilities"
+    ],
+    "best_for_competitor": [
+      "Teams prioritizing carbon footprint tracking and environmental responsibility",
+      "Simple web analytics without user identification requirements",
+      "Ultra-lightweight tracking (1KB script) for performance",
+      "Projects needing renewable energy hosting",
+      "Teams wanting flat pricing regardless of traffic"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Cabin compare on the factors that matter most.",
+    "items": [
+      {
+        "label": "Self-hosting",
+        "openpanel": "Yes, completely free",
+        "competitor": "No (cloud only)"
+      },
+      {
+        "label": "Product analytics",
+        "openpanel": "Funnels, retention, cohorts",
+        "competitor": "Web analytics only"
+      },
+      {
+        "label": "User identification",
+        "openpanel": "Yes, track individual users",
+        "competitor": "No (anonymous only)"
+      },
+      {
+        "label": "Mobile SDKs",
+        "openpanel": "iOS, Android, React Native",
+        "competitor": "Web only"
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "Partial (client only)"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "OpenPanel covers product analytics and web analytics, while Cabin focuses on simple web metrics with unique carbon tracking.",
+    "groups": [
+      {
+        "group": "Web analytics",
+        "features": [
+          {
+            "name": "Page views & visitors",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Traffic sources",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Geographic data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel offers country, region, city. Cabin country only"
+          },
+          {
+            "name": "Device & browser stats",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "UTM tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Real-time data",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin doesn't offer real-time monitoring"
+          },
+          {
+            "name": "Bounce rate",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Page load time",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Product analytics",
+        "features": [
+          {
+            "name": "Event tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Cabin custom events require Pro plan"
+          },
+          {
+            "name": "Funnels",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Retention analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "User profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin is anonymous only"
+          },
+          {
+            "name": "Cohorts",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "User identification",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin is strictly anonymous by design"
+          },
+          {
+            "name": "User path analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Advanced features",
+        "features": [
+          {
+            "name": "A/B testing",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Carbon footprint tracking",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Unique Cabin feature"
+          },
+          {
+            "name": "Renewable energy hosting",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Cabin runs on 100% renewable energy"
+          },
+          {
+            "name": "Custom properties",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Public dashboards",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Email reports",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Privacy & compliance",
+        "features": [
+          {
+            "name": "Self-hosting",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Cookie-free tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "GDPR compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "CCPA compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "No IP tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "No consent banner required",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Integrations & data",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Cabin API requires Pro plan"
+          },
+          {
+            "name": "Data export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Mobile SDKs",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Cabin is web-only"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's how the implementations compare.",
+    "items": [
+      {
+        "label": "SDK size (JS)",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "~1 KB gzipped",
+        "notes": "Cabin has the lighter script"
+      },
+      {
+        "label": "Supported platforms",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Nuxt",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go"
+        ],
+        "competitor": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Nuxt",
+          "SvelteKit",
+          "Astro",
+          "Hugo",
+          "Ghost"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "Partial (client only)",
+        "notes": null
+      },
+      {
+        "label": "Self-hosted deployment",
+        "openpanel": "Docker, simple setup",
+        "competitor": "Not available",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "Proprietary",
+        "notes": null
+      },
+      {
+        "label": "Data retention",
+        "openpanel": "Unlimited (self-hosted)",
+        "competitor": "30 days free, unlimited Pro",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Both offer generous free tiers with different pricing models—event-based vs flat monthly.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. No limits on users, dashboards, or features at any tier."
+    },
+    "competitor": {
+      "model": "Flat monthly pricing",
+      "description": "Free tier: 1 website, 30-day retention, unlimited pageviews. Pro: $19/month for unlimited sites, unlimited retention, custom events, API access.",
+      "free_tier": "Yes (1 site, 30-day retention)",
+      "pricing_url": "https://withcabin.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Cabin to OpenPanel",
+    "intro": "Switching from Cabin to OpenPanel is straightforward for basic tracking, with added capabilities for product analytics.",
+    "difficulty": "easy",
+    "estimated_time": "30 minutes to 1 hour",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your application. The script is slightly larger (~2.3KB) but still lightweight."
+      },
+      {
+        "title": "Map custom events",
+        "description": "If you use Cabin custom events (Pro), translate them to OpenPanel format. cabin.event('signup') becomes op.track('signup', {properties})."
+      },
+      {
+        "title": "Add user identification",
+        "description": "Unlike Cabin which is anonymous, OpenPanel supports user identification. Add op.identify() calls to unlock user profiles and retention analysis."
+      },
+      {
+        "title": "Set up funnels and retention",
+        "description": "Create funnels and retention reports in OpenPanel—features not available in Cabin."
+      },
+      {
+        "title": "Remove Cabin script",
+        "description": "Once verified, remove the Cabin tracking script. Both are cookie-free so no consent flow changes needed."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use similar event tracking patterns. OpenPanel adds user identification capabilities not available in Cabin."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Cabin doesn't provide data export on the free plan. Historical data migration requires Pro plan export."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Cabin",
+    "intro": "OpenPanel shines when you need deeper product analytics and platform flexibility beyond simple web tracking.",
+    "items": [
+      {
+        "title": "Teams requiring self-hosting",
+        "description": "Cabin is cloud-only. If you need data on your own infrastructure for compliance or security, OpenPanel provides full self-hosting with Docker.",
+        "icon": "server"
+      },
+      {
+        "title": "SaaS products needing user-level analytics",
+        "description": "Cabin anonymizes all visitors. If you need to track logged-in users, analyze retention, or build cohorts, OpenPanel provides these capabilities.",
+        "icon": "users"
+      },
+      {
+        "title": "Mobile app analytics",
+        "description": "Cabin is web-only. OpenPanel provides native iOS, Android, and React Native SDKs with full product analytics capabilities.",
+        "icon": "smartphone"
+      },
+      {
+        "title": "Teams needing funnel analysis",
+        "description": "Track user flows through signup, onboarding, or purchase processes with OpenPanel's funnel analysis.",
+        "icon": "chart"
+      },
+      {
+        "title": "Products requiring A/B testing",
+        "description": "OpenPanel includes built-in experimentation capabilities. Cabin is analytics-only.",
+        "icon": "flask"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Cabin to OpenPanel.",
+    "items": [
+      {
+        "question": "Is OpenPanel as privacy-friendly as Cabin?",
+        "answer": "Both are cookie-free by default and GDPR/CCPA compliant. The key difference is that OpenPanel allows optional user identification for product analytics, while Cabin is strictly anonymous. Cabin stores data exclusively in the EU; OpenPanel lets you choose with self-hosting."
+      },
+      {
+        "question": "Why switch from Cabin to OpenPanel?",
+        "answer": "Teams typically switch when they need self-hosting, user identification, mobile SDKs, funnel analysis, or retention tracking. Cabin excels at simple, anonymous web analytics with carbon tracking, but if you need deeper product insights, OpenPanel provides these capabilities."
+      },
+      {
+        "question": "Does OpenPanel track carbon footprint like Cabin?",
+        "answer": "No. Carbon footprint tracking is a unique Cabin feature. If environmental impact tracking is critical for your organization, you may want to keep Cabin or use another tool for this specific capability."
+      },
+      {
+        "question": "Which has the smaller tracking script?",
+        "answer": "Cabin's script is smaller at approximately 1KB (77x smaller than Google Analytics). OpenPanel's script is 2.3KB gzipped. Both are significantly lighter than traditional analytics tools."
+      },
+      {
+        "question": "Can I self-host Cabin?",
+        "answer": "No. Cabin is cloud-only with no self-hosting option. Your data is always stored on their EU servers. OpenPanel offers full self-hosting with Docker if you need data on your own infrastructure."
+      },
+      {
+        "question": "How does pricing compare?",
+        "answer": "Cabin uses flat pricing: Free (1 site, 30-day retention) or $19/month Pro (unlimited sites and retention). OpenPanel uses event-based pricing with 10,000 free events/month. For high-traffic sites, Cabin's flat fee may be more cost-effective."
+      },
+      {
+        "question": "Does Cabin support mobile apps?",
+        "answer": "No. Cabin is web-only with no mobile SDKs. OpenPanel provides native iOS, Android, and React Native SDKs for mobile app analytics."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

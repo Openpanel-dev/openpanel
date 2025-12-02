@@ -1,0 +1,518 @@
+{
+  "slug": "countly-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Countly Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs Countly. Discover why teams choose OpenPanel as their Countly alternative for simpler pricing, lighter weight, and modern product analytics while maintaining privacy and self-hosting options.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Countly Alternative",
+    "subheading": "Want Countly's product analytics without the complexity? OpenPanel offers a simpler, more affordable approach to user analytics with self-hosting, mobile SDKs, and modern product analytics - all with transparent pricing.",
+    "badges": [
+      "Open-source",
+      "Simple Pricing",
+      "Lightweight",
+      "MIT License"
+    ]
+  },
+  "competitor": {
+    "name": "Countly",
+    "logo": "/logos/countly.svg",
+    "url": "https://countly.com",
+    "short_description": "All-in-one product analytics platform with engagement features like push notifications, crash reporting, and surveys.",
+    "founded": 2013,
+    "headquarters": "London, UK"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Countly: Which is right for you?",
+    "intro": "Both offer product analytics with self-hosting. Countly is an all-in-one platform with many features. OpenPanel focuses on analytics with simpler pricing.",
+    "one_liner": "Countly is an all-in-one platform with push/crash features; OpenPanel focuses purely on analytics with simpler pricing.",
+    "best_for_openpanel": [
+      "Teams wanting simple analytics without push notifications or crash reporting",
+      "Startups needing affordable, predictable event-based pricing",
+      "Developers wanting true open source (MIT) without commercial restrictions",
+      "Teams preferring lightweight Docker deployment over MongoDB setup"
+    ],
+    "best_for_competitor": [
+      "Mobile apps needing push notifications and crash reporting in one platform",
+      "Teams requiring remote configuration and in-app messaging",
+      "Enterprise customers needing ISO 27001 and SOC2 certifications",
+      "Products needing Flutter, Unity, or desktop (Windows/Mac) SDKs"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Countly compare on key factors.",
+    "items": [
+      {
+        "label": "Pricing Model",
+        "openpanel": "Event-based (10K free/month)",
+        "competitor": "MAU-based (starts at $80/month for 2K MAUs)",
+        "notes": "OpenPanel offers simple event-based pricing with 10,000 free events/month. Countly Flex charges by Monthly Active Users starting at $80/month for 2,000 MAUs, which can get expensive quickly."
+      },
+      {
+        "label": "Open Source License",
+        "openpanel": "MIT License (fully permissive)",
+        "competitor": "AGPL-3.0 (copyleft, non-commercial use only)",
+        "notes": "OpenPanel uses the permissive MIT license allowing any commercial use. Countly Lite uses AGPL-3.0 with modified terms that prohibit commercial use - you must purchase Enterprise for business use."
+      },
+      {
+        "label": "Setup Complexity",
+        "openpanel": "Simple Docker deployment",
+        "competitor": "Complex (MongoDB, Node.js, Nginx)",
+        "notes": "OpenPanel runs in a simple Docker container. Countly requires MongoDB, Node.js, and Nginx with a more complex installation process and upgrade path."
+      },
+      {
+        "label": "Push Notifications",
+        "openpanel": "Not built-in",
+        "competitor": "Built-in rich push notifications",
+        "notes": "Countly includes rich, interactive push notifications for iOS and Android as a core feature. OpenPanel focuses on analytics and doesn't include push notification functionality."
+      },
+      {
+        "label": "Crash Analytics",
+        "openpanel": "Not built-in",
+        "competitor": "Full crash reporting with symbolication",
+        "notes": "Countly provides comprehensive crash and error reporting with symbolication support across all platforms. OpenPanel focuses on product analytics rather than crash reporting."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "Countly is an all-in-one platform. OpenPanel focuses purely on analytics.",
+    "groups": [
+      {
+        "group": "Core Analytics",
+        "features": [
+          {
+            "name": "Page Views & Sessions",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "User Identification",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support user profiles and identification"
+          },
+          {
+            "name": "Geographic Data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer country and city-level data"
+          },
+          {
+            "name": "Device & Platform Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Custom Dashboards",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly calls this 'Funnels' plugin"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly has advanced behavioral cohorts"
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "User Flows/Journeys",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly has 'Flows' feature for journey visualization"
+          },
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly A/B testing tied to Remote Config"
+          },
+          {
+            "name": "Revenue Analytics",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Engagement Features",
+        "features": [
+          {
+            "name": "Push Notifications",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly has rich, interactive push for iOS/Android"
+          },
+          {
+            "name": "In-App Messaging",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "Surveys & NPS",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly includes surveys, ratings, and NPS"
+          },
+          {
+            "name": "Remote Configuration",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly can change app behavior remotely"
+          },
+          {
+            "name": "Automated Workflows",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly has hooks and automated push"
+          }
+        ]
+      },
+      {
+        "group": "Performance & Debugging",
+        "features": [
+          {
+            "name": "Crash Reporting",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly has full crash analytics with symbolication"
+          },
+          {
+            "name": "Performance Monitoring (APM)",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly monitors network and device performance"
+          },
+          {
+            "name": "Error Tracking",
+            "openpanel": false,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "Self-Hosting Option",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer self-hosted deployment"
+          },
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Consent Management",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Countly has a 'Compliance Hub' feature"
+          },
+          {
+            "name": "Data Export",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "ISO 27001 Certified",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "SOC2 Certified",
+            "openpanel": false,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Integrations & SDKs",
+        "features": [
+          {
+            "name": "JavaScript/Web SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Flutter SDK",
+            "openpanel": false,
+            "competitor": true
+          },
+          {
+            "name": "Unity SDK",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly supports game development with Unity"
+          },
+          {
+            "name": "Desktop SDKs (Windows/Mac)",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Countly has C++ and Windows SDKs"
+          },
+          {
+            "name": "Node.js SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "Varies by platform (larger, full-featured SDKs)",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript/Web",
+          "iOS",
+          "Android",
+          "React Native",
+          "Flutter",
+          "Unity",
+          "C++",
+          "Java",
+          "Windows",
+          "Node.js"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "Partial - AGPL (non-commercial only)",
+        "notes": "OpenPanel is fully MIT licensed. Countly Lite is AGPL-3.0 (non-commercial only). Countly Enterprise is proprietary."
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (simple single-container setup)",
+        "competitor": "Docker or install script (requires MongoDB, Node.js, Nginx)",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "MongoDB",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "6 months (Flex free), configurable as add-on",
+        "notes": null
+      },
+      {
+        "label": "Certifications",
+        "openpanel": "None listed",
+        "competitor": "ISO 27001, SOC2",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Countly's MAU-based pricing with add-ons can get expensive. OpenPanel offers simple event-based pricing.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+    },
+    "competitor": {
+      "model": "MAU-based with feature add-ons",
+      "description": "Lite: Self-hosted, AGPL, non-commercial only. Flex Free: 500 MAUs. Flex Tier 1: $80/month for 2,000 MAUs. Core analytics included, advanced features (A/B testing, surveys, push) are add-ons. Fully-featured Flex can cost $132,000+/year at scale.",
+      "free_tier": "Lite (non-commercial only) or Flex Free (500 MAUs)",
+      "pricing_url": "https://countly.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Countly to OpenPanel",
+    "intro": "Switching from Countly to OpenPanel is straightforward for analytics. You'll need separate tools for push notifications and crash reporting.",
+    "difficulty": "moderate",
+    "estimated_time": "1-4 hours depending on feature usage",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Replace Countly SDK with OpenPanel. OpenPanel's SDK is significantly lighter and simpler to integrate."
+      },
+      {
+        "title": "Map Events and Properties",
+        "description": "Countly events map directly to OpenPanel events. Countly.recordEvent() becomes op.track(). User properties translate similarly."
+      },
+      {
+        "title": "Set Up User Identification",
+        "description": "Both platforms support user identification. Replace Countly's device ID management with OpenPanel's identify() method."
+      },
+      {
+        "title": "Recreate Funnels and Cohorts",
+        "description": "Set up your conversion funnels and user cohorts in OpenPanel. The concepts are similar, though OpenPanel's interface is simpler."
+      },
+      {
+        "title": "Plan for Feature Gaps",
+        "description": "If you use Countly's push notifications, crash reporting, or remote config, you'll need separate tools. OpenPanel focuses purely on analytics."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use event-based tracking with similar APIs."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Most teams start fresh with OpenPanel and run both tools in parallel briefly."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Countly",
+    "intro": "Choose OpenPanel when you want analytics without the complexity and cost of an all-in-one platform.",
+    "items": [
+      {
+        "title": "Teams Wanting Simpler, Cheaper Analytics",
+        "description": "Countly's MAU-based pricing gets expensive quickly, and the feature add-on model adds complexity. OpenPanel offers straightforward event-based pricing with all features included.",
+        "icon": "dollar-sign"
+      },
+      {
+        "title": "Open Source Commercial Use",
+        "description": "Countly Lite's AGPL license prohibits commercial use - you must buy Enterprise. OpenPanel's MIT license allows unlimited commercial use for free.",
+        "icon": "unlock"
+      },
+      {
+        "title": "Lightweight Self-Hosting",
+        "description": "Countly requires MongoDB, Node.js, and Nginx with complex upgrade procedures. OpenPanel runs in a simple Docker container with ClickHouse for faster queries.",
+        "icon": "server"
+      },
+      {
+        "title": "Pure Product Analytics Focus",
+        "description": "If you only need analytics without push notifications, crash reporting, or remote config, OpenPanel provides a focused, less complex solution.",
+        "icon": "bar-chart"
+      },
+      {
+        "title": "Startups with Limited Budgets",
+        "description": "Countly's pricing can reach $132,000+/year for full features at scale. OpenPanel's event-based model is more predictable and affordable for growing startups.",
+        "icon": "trending-up"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Countly to OpenPanel.",
+    "items": [
+      {
+        "question": "Is Countly really open source?",
+        "answer": "Partially. Countly Lite is open source under AGPL-3.0 with modified terms, but it explicitly prohibits commercial use. For business use, you must purchase Countly Enterprise or use Countly Flex (their SaaS). OpenPanel is fully open source under MIT license with no commercial restrictions."
+      },
+      {
+        "question": "Why is OpenPanel cheaper than Countly?",
+        "answer": "OpenPanel uses event-based pricing with 10,000 free events/month. Countly charges by Monthly Active Users (MAUs) starting at $80/month for just 2,000 MAUs, plus additional fees for features like A/B testing, surveys, and push notifications as add-ons."
+      },
+      {
+        "question": "Does OpenPanel have push notifications like Countly?",
+        "answer": "No. Countly is an all-in-one platform including push notifications, surveys, and remote configuration. OpenPanel focuses purely on product analytics. You would need separate tools like OneSignal or Firebase for push notifications."
+      },
+      {
+        "question": "Does OpenPanel have crash reporting?",
+        "answer": "No. Countly includes comprehensive crash and error reporting with symbolication. OpenPanel focuses on product analytics. For crash reporting, consider tools like Sentry or Crashlytics alongside OpenPanel."
+      },
+      {
+        "question": "How does self-hosting compare?",
+        "answer": "OpenPanel runs in a simple Docker container with ClickHouse. Countly requires MongoDB, Node.js, and Nginx with a more complex installation script. Countly's upgrade process can be tedious for older versions."
+      },
+      {
+        "question": "Which has better mobile SDK support?",
+        "answer": "Countly has broader SDK coverage including Flutter, Unity, and desktop (Windows/Mac). OpenPanel supports iOS, Android, and React Native. Choose based on your specific platform needs."
+      },
+      {
+        "question": "Is Countly better for enterprise?",
+        "answer": "Countly Enterprise offers ISO 27001 and SOC2 certifications, SLAs, and direct support - important for large enterprises with strict compliance needs. OpenPanel is better suited for startups and teams prioritizing simplicity and cost."
+      },
+      {
+        "question": "Can I use Countly Lite for my startup?",
+        "answer": "No. Countly Lite's license explicitly states: 'you cannot use Countly Lite for commercial or non-commercial purposes, to provide Countly as a service to your customers.' For business use, you must purchase Countly Enterprise or Flex."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

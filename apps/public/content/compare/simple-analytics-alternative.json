@@ -1,0 +1,476 @@
+{
+  "slug": "simple-analytics-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Simple Analytics Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs Simple Analytics. Discover why teams choose OpenPanel as their Simple Analytics alternative for product analytics, user identification, and self-hosting while maintaining privacy-first principles.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Simple Analytics Alternative",
+    "subheading": "Love Simple Analytics' privacy focus and clean dashboard? OpenPanel adds product analytics capabilities - funnels, cohorts, retention, and user identification - plus self-hosting options and longer data retention on the free tier.",
+    "badges": [
+      "Open-source",
+      "Privacy-first",
+      "Self-hostable",
+      "Product Analytics"
+    ]
+  },
+  "competitor": {
+    "name": "Simple Analytics",
+    "logo": "/logos/simple-analytics.svg",
+    "url": "https://simpleanalytics.com",
+    "short_description": "Privacy-focused web analytics with AI assistant, clean design, and Netherlands-based hosting.",
+    "founded": 2018,
+    "headquarters": "Amsterdam, Netherlands"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Simple Analytics: Which is right for you?",
+    "intro": "Both are privacy-focused analytics platforms. Simple Analytics focuses on simple web traffic metrics. OpenPanel adds product analytics with user identification and self-hosting.",
+    "one_liner": "Simple Analytics excels at simple web stats with AI assistant; OpenPanel adds product analytics, self-hosting, and longer free-tier retention.",
+    "best_for_openpanel": [
+      "SaaS products needing user-level analytics and retention tracking",
+      "Teams wanting self-hosting for complete data control",
+      "Projects needing longer free-tier data retention (vs 30 days)",
+      "Mobile app developers needing native iOS, Android, React Native SDKs"
+    ],
+    "best_for_competitor": [
+      "Simple content sites and blogs wanting traffic stats only",
+      "Teams valuing the AI assistant for conversational analytics queries",
+      "Users wanting Mini Websites feature to see exact referring pages",
+      "Organizations prioritizing Netherlands/EU-only data hosting"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Simple Analytics compare on key factors.",
+    "items": [
+      {
+        "label": "Analytics Depth",
+        "openpanel": "Web + Product Analytics",
+        "competitor": "Web Analytics Only",
+        "notes": "OpenPanel combines web analytics with product analytics including funnels, retention, cohorts, and user profiles. Simple Analytics focuses on simple website traffic metrics with basic goals tracking."
+      },
+      {
+        "label": "Self-Hosting",
+        "openpanel": "Full self-hosting available",
+        "competitor": "Cloud-only (no self-host option)",
+        "notes": "OpenPanel offers full self-hosting in a single Docker container. Simple Analytics is cloud-only with no self-hosting option available."
+      },
+      {
+        "label": "Free Tier Data Retention",
+        "openpanel": "Full data retention",
+        "competitor": "30-day retention only",
+        "notes": "OpenPanel's free tier includes full data retention. Simple Analytics' free tier deletes data older than 30 days automatically."
+      },
+      {
+        "label": "User Identification",
+        "openpanel": "Yes - Track individual users",
+        "competitor": "No - Anonymous aggregate only",
+        "notes": "OpenPanel lets you identify and track individual users across sessions. Simple Analytics uses anonymization and doesn't track individuals."
+      },
+      {
+        "label": "AI Assistant",
+        "openpanel": "Coming Soon",
+        "competitor": "Yes - Chat with analytics",
+        "notes": "Simple Analytics offers an AI assistant that lets you chat with your analytics to get insights. OpenPanel is developing similar capabilities."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "Both are privacy-focused, but with different capabilities and feature sets.",
+    "groups": [
+      {
+        "group": "Web Analytics",
+        "features": [
+          {
+            "name": "Page Views & Visitors",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Traffic Sources",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both track referrers and traffic sources"
+          },
+          {
+            "name": "Geographic Data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics uses timezone instead of IP for location"
+          },
+          {
+            "name": "Device & Browser",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM Campaign Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support custom events"
+          },
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics has basic goals but no multi-step funnels"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics' anonymous model doesn't support retention"
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics intentionally doesn't track individual users"
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics provides aggregate data only"
+          },
+          {
+            "name": "User Path Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics shows top pages but not user journeys"
+          }
+        ]
+      },
+      {
+        "group": "Advanced Features",
+        "features": [
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics is analytics-only, no experimentation"
+          },
+          {
+            "name": "AI Chat Assistant",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Simple Analytics AI lets you chat with your analytics"
+          },
+          {
+            "name": "Email Reports",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer scheduled email reports"
+          },
+          {
+            "name": "Dashboard Sharing",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support public and private dashboard sharing"
+          },
+          {
+            "name": "Google Analytics Import",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Simple Analytics has a GA import tool"
+          },
+          {
+            "name": "Ad-Blocker Bypass",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics requires Team plan for this feature"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "Cookie-Free by Default",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both are cookieless by default"
+          },
+          {
+            "name": "No Consent Banner Required",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both claim no consent needed for basic analytics"
+          },
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both designed with GDPR compliance in mind"
+          },
+          {
+            "name": "EU Data Hosting",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics data never leaves Netherlands/EU"
+          },
+          {
+            "name": "Self-Hosting Option",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Simple Analytics is cloud-only"
+          },
+          {
+            "name": "HIPAA Compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics claims HIPAA compliance (no PHI collected)"
+          }
+        ]
+      },
+      {
+        "group": "Integrations",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Simple Analytics offers Stats API and Export API"
+          },
+          {
+            "name": "Data Export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support CSV export"
+          },
+          {
+            "name": "WordPress Plugin",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both have WordPress integrations"
+          },
+          {
+            "name": "NPM/JavaScript SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both provide JavaScript integration options"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "1.9 KB (light) / 3.7 KB (full) gzipped",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript (browser)",
+          "WordPress",
+          "Webflow",
+          "Squarespace",
+          "WIX",
+          "Ghost",
+          "Cloudflare",
+          "Google Tag Manager",
+          "Looker Studio",
+          "Power BI"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "No - Closed source (only tracking scripts MIT)",
+        "notes": "Simple Analytics is closed-source (only their tracking scripts are MIT licensed on GitHub)"
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (simple single-container setup)",
+        "competitor": "Not available (cloud-only service)",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "Proprietary (hosted on Worldstream/Leaseweb servers in Netherlands)",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "30 days (free), 3 years (Simple), 5 years (Team)",
+        "notes": null
+      },
+      {
+        "label": "Language",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "Unknown (closed-source)",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Simple Analytics has a free tier but with limited data retention. OpenPanel offers full retention on free tier.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Full data retention even on free tier."
+    },
+    "competitor": {
+      "model": "Datapoint-based with limited free tier",
+      "description": "Free: Unlimited pageviews, 30-day retention, 5 sites, 1 user. Simple ($15/month): 10 sites, 3-year retention. Team ($40/month): 20 sites, 5-year retention, 2+ users, export API. 50% discount for nonprofits.",
+      "free_tier": "Free forever - unlimited pageviews (fair use), 30-day retention",
+      "pricing_url": "https://simpleanalytics.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Simple Analytics to OpenPanel",
+    "intro": "Both use lightweight scripts and simple event tracking, making migration straightforward.",
+    "difficulty": "easy",
+    "estimated_time": "30 minutes to 2 hours",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts, so the transition is straightforward."
+      },
+      {
+        "title": "Map Events",
+        "description": "Simple Analytics custom events translate directly to OpenPanel's op.track() calls."
+      },
+      {
+        "title": "Set Up User Identification (New)",
+        "description": "Unlike Simple Analytics, OpenPanel can identify users. Add op.identify() calls to unlock retention, cohorts, and user profiles."
+      },
+      {
+        "title": "Configure Product Analytics (New)",
+        "description": "Set up funnels, retention reports, and cohorts. These features aren't available in Simple Analytics."
+      },
+      {
+        "title": "Remove Simple Analytics Script",
+        "description": "Once verified, remove the Simple Analytics tracking script. Both are cookie-free so no consent changes needed."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use simple event tracking APIs."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Most teams start fresh with OpenPanel and run both tools in parallel briefly."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Simple Analytics",
+    "intro": "Choose OpenPanel when you need product analytics, self-hosting, or longer data retention on free tier.",
+    "items": [
+      {
+        "title": "SaaS Products Needing User Analytics",
+        "description": "Simple Analytics shows aggregate website traffic. If you need to understand individual user journeys, retention, and behavior within your product, OpenPanel adds these capabilities while staying privacy-friendly.",
+        "icon": "users"
+      },
+      {
+        "title": "Teams Who Want Self-Hosting",
+        "description": "Simple Analytics is cloud-only with no self-hosting option. If data sovereignty or compliance requirements mean you need to host your own analytics, OpenPanel provides full self-hosting in a single Docker container.",
+        "icon": "server"
+      },
+      {
+        "title": "Projects Needing Longer Data Retention",
+        "description": "Simple Analytics' free tier only keeps 30 days of data. If you need historical data for trend analysis on a budget, OpenPanel's free tier includes full data retention.",
+        "icon": "database"
+      },
+      {
+        "title": "Mobile App Analytics",
+        "description": "Simple Analytics is designed for websites and doesn't provide native mobile SDKs. OpenPanel offers native iOS, Android, and React Native SDKs with full product analytics capabilities.",
+        "icon": "smartphone"
+      },
+      {
+        "title": "Teams Needing Funnel Analysis",
+        "description": "Simple Analytics has basic goals but doesn't offer multi-step funnel analysis. If understanding conversion paths matters, OpenPanel provides detailed funnel visualization.",
+        "icon": "filter"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Simple Analytics to OpenPanel.",
+    "items": [
+      {
+        "question": "Is OpenPanel as privacy-friendly as Simple Analytics?",
+        "answer": "Yes! Both are cookie-free by default and don't require consent banners. The key difference is that OpenPanel allows optional user identification for product analytics, while Simple Analytics is strictly anonymous. You control whether to identify users in OpenPanel."
+      },
+      {
+        "question": "Why switch from Simple Analytics to OpenPanel?",
+        "answer": "Teams typically switch when they need: 1) Product analytics (funnels, retention, cohorts), 2) User identification, 3) Self-hosting options, 4) Longer data retention on the free tier, or 5) Native mobile SDKs. Simple Analytics excels at simple web analytics but doesn't offer these capabilities."
+      },
+      {
+        "question": "Does Simple Analytics have a free tier?",
+        "answer": "Yes, but with limitations. Simple Analytics offers a free-forever plan with unlimited pageviews (fair use) but only 30-day data retention and basic features. OpenPanel's free tier includes 10,000 events with full data retention and all features."
+      },
+      {
+        "question": "Can I self-host Simple Analytics?",
+        "answer": "No. Simple Analytics is a cloud-only service with no self-hosting option. They host all data in the Netherlands on EU servers. OpenPanel offers full self-hosting in a single Docker container if you need complete data control."
+      },
+      {
+        "question": "Which has the smaller tracking script?",
+        "answer": "Simple Analytics offers two script versions: a 'light' version at 1.9KB and a full version at 3.7KB (gzipped). OpenPanel's script is 2.3KB. All are significantly smaller than Google Analytics (45KB+)."
+      },
+      {
+        "question": "Can Simple Analytics track mobile apps?",
+        "answer": "Not natively. Simple Analytics is designed for web analytics and doesn't provide mobile SDKs. They have an iOS app to view your dashboard, but not to track mobile app users. OpenPanel offers native iOS, Android, and React Native SDKs."
+      },
+      {
+        "question": "What will I lose switching from Simple Analytics?",
+        "answer": "Simple Analytics has an AI chat assistant that lets you query your analytics conversationally - OpenPanel doesn't have this yet. They also have a Google Analytics import tool, a 'Mini Websites' feature showing referring pages, and an iOS app for viewing dashboards. However, you'll gain product analytics, self-hosting, and user identification that Simple Analytics doesn't offer."
+      },
+      {
+        "question": "Is Simple Analytics or OpenPanel better for blogs/content sites?",
+        "answer": "For simple content sites where you just need traffic stats, Simple Analytics' simplicity and AI assistant are excellent. Their Mini Websites feature is unique for seeing exactly which tweets or pages linked to you. If you're running a SaaS, e-commerce, or any product where understanding user behavior matters, OpenPanel's product analytics features provide more value."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

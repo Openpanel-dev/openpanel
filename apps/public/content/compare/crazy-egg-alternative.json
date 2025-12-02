@@ -1,0 +1,420 @@
+{
+  "slug": "crazy-egg-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Crazy Egg Alternative",
+    "description": "Compare OpenPanel with Crazy Egg: pricing, features, and focus. OpenPanel offers product analytics with mobile SDKs; Crazy Egg excels at heatmaps and A/B testing.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Crazy Egg alternative",
+    "subheading": "Get full product analytics capabilities beyond heatmaps. OpenPanel delivers funnel analysis, retention tracking, mobile SDKs, and user identification—fully open source and self-hostable.",
+    "badges": [
+      "Open-source",
+      "Self-hostable",
+      "Mobile SDKs",
+      "Product analytics"
+    ]
+  },
+  "competitor": {
+    "name": "Crazy Egg",
+    "logo": "/logos/crazy-egg.svg",
+    "url": "https://www.crazyegg.com",
+    "short_description": "Website optimization platform with heatmaps, A/B testing, surveys, and session recordings. Founded by Neil Patel and Hiten Shah in 2005.",
+    "founded": 2005,
+    "headquarters": "La Mirada, CA"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Crazy Egg: Which is right for you?",
+    "intro": "Crazy Egg focuses on visual website optimization with heatmaps and A/B testing. OpenPanel focuses on product analytics with mobile support.",
+    "one_liner": "OpenPanel is for product analytics with mobile SDKs and self-hosting; Crazy Egg is for visual website optimization with heatmaps.",
+    "best_for_openpanel": [
+      "Teams needing mobile app analytics with native SDKs",
+      "Product analytics focus (funnels, retention, cohorts)",
+      "Organizations requiring self-hosting for data ownership",
+      "Open source requirements for transparency",
+      "User-level analytics across platforms"
+    ],
+    "best_for_competitor": [
+      "Teams requiring comprehensive heatmaps for visual analysis",
+      "Website conversion optimization with A/B testing",
+      "On-site surveys and feedback collection",
+      "Popup CTA creation and management",
+      "Visual website optimization without mobile requirements"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Crazy Egg compare on the factors that matter most.",
+    "items": [
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "No (proprietary)"
+      },
+      {
+        "label": "Self-hosting",
+        "openpanel": "Yes, with Docker",
+        "competitor": "No (cloud only)"
+      },
+      {
+        "label": "Mobile SDKs",
+        "openpanel": "iOS, Android, RN, Flutter",
+        "competitor": "Web only"
+      },
+      {
+        "label": "Heatmaps",
+        "openpanel": "Not available",
+        "competitor": "Click, scroll, confetti, overlay"
+      },
+      {
+        "label": "A/B testing",
+        "openpanel": "Not built-in",
+        "competitor": "Visual editor with optimization"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "OpenPanel focuses on product analytics; Crazy Egg focuses on visual website optimization.",
+    "groups": [
+      {
+        "group": "Core analytics",
+        "features": [
+          {
+            "name": "Event tracking",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Crazy Egg is pageview-focused"
+          },
+          {
+            "name": "Funnels",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Retention analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "User profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Cohorts",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Custom dashboards",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Real-time data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Visual website optimization",
+        "features": [
+          {
+            "name": "Heatmaps",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Crazy Egg's flagship feature"
+          },
+          {
+            "name": "Scroll maps",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Confetti reports",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "A/B testing",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Visual editor"
+          },
+          {
+            "name": "Session recordings",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Popup CTAs",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Feedback & surveys",
+        "features": [
+          {
+            "name": "On-site surveys",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "NPS scoring",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Privacy & compliance",
+        "features": [
+          {
+            "name": "Self-hosting",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Open source",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "GDPR compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Cookie-free option",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "HIPAA compliant",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Integrations & data",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Crazy Egg has limited API"
+          },
+          {
+            "name": "Data export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Mobile SDKs",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Crazy Egg is web only"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's how the implementations compare.",
+    "items": [
+      {
+        "label": "SDK size (JS)",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "Async script (minimal impact)",
+        "notes": null
+      },
+      {
+        "label": "Supported platforms",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Flutter"
+        ],
+        "competitor": [
+          "JavaScript (web only)"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "No",
+        "notes": null
+      },
+      {
+        "label": "Self-hosted deployment",
+        "openpanel": "Docker, simple setup",
+        "competitor": "Not available",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "Proprietary",
+        "notes": null
+      },
+      {
+        "label": "Data retention",
+        "openpanel": "Unlimited (self-hosted)",
+        "competitor": "6 months to 2 years",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Both offer generous free tiers with different pricing models—event-based vs pageview-based.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. All features included at every tier."
+    },
+    "competitor": {
+      "model": "Pageview-based, annual billing",
+      "description": "Free plan with limited features. Starter: $29/month for 5,000 pageviews. Plus: $99/month for 150,000 pageviews with A/B testing. Enterprise: $599/month for 1M pageviews.",
+      "free_tier": "Yes (limited features)",
+      "pricing_url": "https://www.crazyegg.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Crazy Egg to OpenPanel",
+    "intro": "Consider if heatmaps and A/B testing are critical before switching, as these are Crazy Egg's core strengths.",
+    "difficulty": "easy",
+    "estimated_time": "1-2 hours",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your website. The SDK is lightweight and loads asynchronously."
+      },
+      {
+        "title": "Define event tracking strategy",
+        "description": "Unlike Crazy Egg's pageview focus, OpenPanel tracks custom events. Define key actions using track() calls."
+      },
+      {
+        "title": "Set up user identification",
+        "description": "Crazy Egg tracks anonymous sessions. With OpenPanel, identify users with identify() to track individual journeys."
+      },
+      {
+        "title": "Build funnels and dashboards",
+        "description": "Recreate conversion tracking from Crazy Egg as OpenPanel funnels."
+      },
+      {
+        "title": "Remove Crazy Egg script",
+        "description": "Once verified, remove the Crazy Egg tracking code. Note: You will lose heatmaps, A/B testing, and surveys."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "Different tracking philosophies: Crazy Egg is pageview/visual focused, OpenPanel is event-based."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Crazy Egg data export depends on your plan. Historical heatmap data cannot be migrated."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Crazy Egg",
+    "intro": "OpenPanel excels when you need product analytics beyond visual website optimization.",
+    "items": [
+      {
+        "title": "Mobile app analytics",
+        "description": "Crazy Egg is web-only. OpenPanel offers native SDKs for iOS, Android, React Native, and Flutter.",
+        "icon": "smartphone"
+      },
+      {
+        "title": "Product analytics beyond heatmaps",
+        "description": "OpenPanel provides funnel analysis, retention cohorts, user profiles, and path analysis.",
+        "icon": "chart"
+      },
+      {
+        "title": "Self-hosting requirements",
+        "description": "Crazy Egg is cloud-only. OpenPanel offers Docker deployment for complete data control.",
+        "icon": "server"
+      },
+      {
+        "title": "Open source requirements",
+        "description": "Full source code transparency under MIT license. Crazy Egg is proprietary.",
+        "icon": "code"
+      },
+      {
+        "title": "User-level analytics",
+        "description": "Track individual users and their complete journey across sessions. Crazy Egg focuses on aggregate pageview data.",
+        "icon": "users"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Crazy Egg to OpenPanel.",
+    "items": [
+      {
+        "question": "What will I lose switching from Crazy Egg to OpenPanel?",
+        "answer": "Crazy Egg's core features are heatmaps, A/B testing, on-site surveys, and popup CTAs. OpenPanel does not offer these features—it focuses on product analytics instead."
+      },
+      {
+        "question": "Does OpenPanel have heatmaps like Crazy Egg?",
+        "answer": "No. OpenPanel is focused on event-based product analytics (funnels, retention, user identification) rather than visual website optimization."
+      },
+      {
+        "question": "How does pricing compare?",
+        "answer": "Crazy Egg pricing starts at $29/month for 5,000 pageviews (annual billing). OpenPanel offers 10,000 events/month free, then $0.00005/event. For similar traffic, OpenPanel is typically more affordable."
+      },
+      {
+        "question": "Can I track mobile apps with Crazy Egg?",
+        "answer": "No. Crazy Egg is designed exclusively for website analytics. OpenPanel offers native SDKs for iOS, Android, React Native, and Flutter."
+      },
+      {
+        "question": "Does OpenPanel have A/B testing like Crazy Egg?",
+        "answer": "No. Crazy Egg includes a visual A/B testing editor as a core feature. OpenPanel focuses on analytics rather than experimentation."
+      },
+      {
+        "question": "Is Crazy Egg open source?",
+        "answer": "No. Crazy Egg is proprietary closed-source. OpenPanel is fully open source under the MIT license."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

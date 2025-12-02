@@ -1,0 +1,546 @@
+{
+  "slug": "goatcounter-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "GoatCounter Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs GoatCounter. Discover why teams choose OpenPanel as their GoatCounter alternative for deeper product analytics, user identification, and mobile SDKs while maintaining privacy and open source values.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "GoatCounter Alternative",
+    "subheading": "Love GoatCounter's simplicity and privacy focus? OpenPanel adds deeper product analytics - user identification, funnels, retention analysis, and mobile SDKs - while staying open source and cookie-free.",
+    "badges": [
+      "Open-source",
+      "Privacy-first",
+      "Product Analytics",
+      "Lightweight"
+    ]
+  },
+  "competitor": {
+    "name": "GoatCounter",
+    "logo": "/logos/goatcounter.svg",
+    "url": "https://goatcounter.com",
+    "short_description": "Minimalist, privacy-focused, self-hosted web analytics created by solo developer Martin Tournoij.",
+    "founded": 2019,
+    "headquarters": "Netherlands"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs GoatCounter: Which is right for you?",
+    "intro": "Both are privacy-focused open source analytics tools. GoatCounter is ultra-minimal for simple web stats. OpenPanel adds product analytics for user behavior tracking.",
+    "one_liner": "GoatCounter is minimal web analytics; OpenPanel adds product analytics with funnels, retention, and user identification.",
+    "best_for_openpanel": [
+      "SaaS products needing user-level analytics and retention tracking",
+      "Mobile app developers needing native iOS, Android, React Native SDKs",
+      "Teams needing funnel analysis and conversion tracking",
+      "High-volume analytics requiring ClickHouse performance at scale"
+    ],
+    "best_for_competitor": [
+      "Personal blogs and small sites wanting simple stats",
+      "Developers wanting the simplest possible self-hosting (single binary + SQLite)",
+      "Privacy maximalists who want zero user identification",
+      "Projects wanting free hosted service with no usage limits"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and GoatCounter compare on key factors.",
+    "items": [
+      {
+        "label": "User Identification",
+        "openpanel": "Yes - Track individual users",
+        "competitor": "No - Anonymous aggregate only",
+        "notes": "OpenPanel lets you identify and track individual users across sessions. GoatCounter intentionally uses anonymous hashing without persistent user tracking to maximize privacy."
+      },
+      {
+        "label": "Funnel Analysis",
+        "openpanel": "Yes - Visual funnel builder",
+        "competitor": "No - Not available",
+        "notes": "OpenPanel provides funnel analysis to track conversion paths. GoatCounter focuses on simple page view and visitor statistics without conversion funnel features."
+      },
+      {
+        "label": "Mobile SDKs",
+        "openpanel": "iOS, Android, React Native",
+        "competitor": "Web only (JavaScript + tracking pixel)",
+        "notes": "OpenPanel offers native mobile SDKs for iOS, Android, and React Native. GoatCounter is designed for web analytics with JavaScript and tracking pixel options only."
+      },
+      {
+        "label": "Open Source License",
+        "openpanel": "MIT License",
+        "competitor": "EUPL 1.2 (copyleft)",
+        "notes": "OpenPanel uses the permissive MIT license. GoatCounter uses EUPL 1.2, a copyleft license requiring derivative works to use compatible licenses."
+      },
+      {
+        "label": "Free Hosted Service",
+        "openpanel": "10,000 events/month",
+        "competitor": "Unlimited (reasonable use)",
+        "notes": "GoatCounter offers free hosted service for personal sites and small-to-medium businesses with reasonable usage. OpenPanel offers 10,000 events/month free."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "Both are open source and privacy-focused, but with different depths of capabilities.",
+    "groups": [
+      {
+        "group": "Web Analytics",
+        "features": [
+          {
+            "name": "Page Views & Visitors",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Traffic Sources & Referrers",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Geographic Data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter shows country-level location data"
+          },
+          {
+            "name": "Device & Browser",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Screen Size",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM Campaign Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter supports utm_campaign, utm_source parameters"
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter updates statistics every 10 seconds"
+          },
+          {
+            "name": "Session Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter uses rotating 4-hour salted hash for sessions"
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter supports events via data-goatcounter-click attribute"
+          },
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter focuses on simple metrics without funnels"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter doesn't track user retention over time"
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter intentionally doesn't track individual users"
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter provides aggregate statistics only"
+          },
+          {
+            "name": "User Path/Journey Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter doesn't track user journeys"
+          },
+          {
+            "name": "User Identification",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter uses anonymous hashing, no persistent user IDs"
+          }
+        ]
+      },
+      {
+        "group": "Advanced Features",
+        "features": [
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter is analytics-only, no experimentation"
+          },
+          {
+            "name": "Custom Properties on Events",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter supports title and referrer on events"
+          },
+          {
+            "name": "Public Dashboards",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter has unique public stats sharing feature"
+          },
+          {
+            "name": "CLI Dashboard",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter has terminal-based dashboard command"
+          },
+          {
+            "name": "Email Reports",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "GoatCounter doesn't have automated email reports"
+          },
+          {
+            "name": "Tracking Pixel (No-JS)",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter supports JavaScript-free tracking via 1x1 GIF"
+          },
+          {
+            "name": "Log File Import",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter can import nginx, Apache, Caddy, CloudFront logs"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "Cookie-Free by Default",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter designed to not require GDPR consent notices"
+          },
+          {
+            "name": "No Personal Data Storage",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter uses rotating 4-hour salted hashes for anonymization"
+          },
+          {
+            "name": "Self-Hosting Option",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Data Export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter supports CSV export and full API access"
+          },
+          {
+            "name": "Bot Filtering",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter ignores bots that identify themselves"
+          }
+        ]
+      },
+      {
+        "group": "SDKs & Platforms",
+        "features": [
+          {
+            "name": "JavaScript/Browser",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "Server-Side API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter has backend integration API"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter has comprehensive /api/v0 endpoints"
+          }
+        ]
+      },
+      {
+        "group": "Deployment",
+        "features": [
+          {
+            "name": "Cloud Hosted",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Docker Support",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "GoatCounter available on DockerHub at arp242/goatcounter"
+          },
+          {
+            "name": "Single Binary Deployment",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter is a ~7MB statically compiled binary"
+          },
+          {
+            "name": "SQLite Support",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter can run on simple SQLite database"
+          },
+          {
+            "name": "PostgreSQL Support",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter supports PostgreSQL for larger sites"
+          },
+          {
+            "name": "Built-in TLS/ACME",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "GoatCounter includes automatic Let's Encrypt certificates"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "~3.5 KB",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript (browser)",
+          "Tracking Pixel (no-JS)",
+          "Backend API",
+          "Log file import (nginx, Apache, Caddy, CloudFront)"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "Yes - EUPL 1.2 (copyleft)",
+        "notes": "OpenPanel uses MIT license. GoatCounter uses EUPL 1.2 (copyleft). GoatCounter has 5,200+ GitHub stars."
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (simple single-container setup)",
+        "competitor": "Single binary (~7MB) or Docker. SQLite or PostgreSQL. Built-in ACME/TLS support.",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "SQLite (default, recommended for most) or PostgreSQL (for load balancing)",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "Unlimited (self-hosted), unlimited (hosted free)",
+        "notes": null
+      },
+      {
+        "label": "Language",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "Go (Golang)",
+        "notes": null
+      },
+      {
+        "label": "Performance",
+        "openpanel": "ClickHouse optimized for analytics queries",
+        "competitor": "~800 hits/second on $5/month VPS. 99.9% requests answered within ~2ms.",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "GoatCounter is donation-supported. OpenPanel offers both free cloud and self-hosting.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+    },
+    "competitor": {
+      "model": "Donation-supported or free self-hosting",
+      "description": "Hosted: Free for reasonable public usage (personal sites, small-to-medium businesses). Self-hosted: Completely free. Donations encouraged via GitHub Sponsors for sustainability. Not designed for high-volume enterprise use cases.",
+      "free_tier": "Free for reasonable use",
+      "pricing_url": null
+    }
+  },
+  "migration": {
+    "title": "Migrating from GoatCounter to OpenPanel",
+    "intro": "Both use lightweight scripts and simple event tracking, making migration straightforward.",
+    "difficulty": "easy",
+    "estimated_time": "30 minutes to 1 hour",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts (GoatCounter ~3.5KB, OpenPanel ~2.3KB gzipped), making the transition easy."
+      },
+      {
+        "title": "Map Custom Events",
+        "description": "GoatCounter click events using data-goatcounter-click attribute translate to OpenPanel's op.track() calls. Map your event names and any custom properties."
+      },
+      {
+        "title": "Add User Identification (New)",
+        "description": "Unlike GoatCounter which uses anonymous hashing, OpenPanel supports user identification. Add op.identify() calls to unlock user profiles, retention analysis, and cohort features."
+      },
+      {
+        "title": "Set Up Funnels and Analytics (New)",
+        "description": "GoatCounter doesn't have funnels or retention analysis. Set up these features in OpenPanel to gain deeper product insights you couldn't get before."
+      },
+      {
+        "title": "Remove GoatCounter Script",
+        "description": "Once verified, remove the GoatCounter tracking script. Both are cookie-free so no consent flow changes are needed."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use simple event tracking approaches."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "GoatCounter intentionally anonymizes data. Most teams start fresh with OpenPanel."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than GoatCounter",
+    "intro": "Choose OpenPanel when you need product analytics beyond simple web stats.",
+    "items": [
+      {
+        "title": "SaaS Products Needing User Identification",
+        "description": "GoatCounter uses anonymous hashing by design. If you need to track logged-in users, understand individual customer journeys, or analyze user-level retention, OpenPanel provides these capabilities while still respecting privacy.",
+        "icon": "user-check"
+      },
+      {
+        "title": "Mobile App Analytics",
+        "description": "GoatCounter is designed for web analytics with JavaScript and tracking pixels only. OpenPanel provides native iOS, Android, and React Native SDKs with full product analytics capabilities.",
+        "icon": "smartphone"
+      },
+      {
+        "title": "Teams Needing Funnel Analysis",
+        "description": "GoatCounter focuses on simple metrics like page views, visitors, and referrers without conversion funnels. If you need to track user conversion paths and identify drop-offs, OpenPanel's funnel analysis provides these insights.",
+        "icon": "filter"
+      },
+      {
+        "title": "Products Requiring Retention Analysis",
+        "description": "GoatCounter doesn't track user retention over time. If you need to understand how many users return after signup or measure engagement over weeks and months, OpenPanel's retention analysis delivers these metrics.",
+        "icon": "repeat"
+      },
+      {
+        "title": "High-Volume Analytics at Scale",
+        "description": "GoatCounter is an indie project optimized for personal sites and small-to-medium businesses. For enterprise-scale analytics with millions of events, OpenPanel's ClickHouse backend is designed for high-volume workloads.",
+        "icon": "trending-up"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from GoatCounter to OpenPanel.",
+    "items": [
+      {
+        "question": "Is OpenPanel as privacy-friendly as GoatCounter?",
+        "answer": "Both are cookie-free by default and GDPR compliant. GoatCounter uses rotating 4-hour salted hashes for maximum anonymization. OpenPanel allows optional user identification for product analytics. You control whether to identify users in OpenPanel."
+      },
+      {
+        "question": "Why switch from GoatCounter to OpenPanel?",
+        "answer": "Teams typically switch when they need user identification, funnel analysis, retention tracking, or mobile SDKs. GoatCounter excels at simple, privacy-first web analytics for content sites and blogs. For products requiring deeper user behavior insights, OpenPanel provides these capabilities."
+      },
+      {
+        "question": "How does GoatCounter's pricing compare to OpenPanel?",
+        "answer": "GoatCounter is free for reasonable public use (personal sites, small-to-medium businesses) and completely free when self-hosted. It's donation-supported. OpenPanel offers 10,000 events/month free with paid tiers after that. Both have free self-hosting options."
+      },
+      {
+        "question": "Which has the smaller tracking script?",
+        "answer": "OpenPanel's script is slightly smaller at 2.3KB gzipped compared to GoatCounter's ~3.5KB. Both are significantly smaller than Google Analytics (45KB+) or Mixpanel. GoatCounter also offers a JavaScript-free tracking pixel option."
+      },
+      {
+        "question": "Can GoatCounter track mobile apps?",
+        "answer": "Not with native SDKs. GoatCounter is designed for web analytics using JavaScript or tracking pixels. It has a backend API for server-side tracking but no mobile SDKs. OpenPanel offers native iOS, Android, and React Native SDKs."
+      },
+      {
+        "question": "Does GoatCounter support funnels or retention analysis?",
+        "answer": "No. GoatCounter focuses on simple metrics: page views, visitors, referrers, browsers, locations, and campaigns. It's intentionally simple and doesn't include product analytics features like funnels, retention, or cohort analysis."
+      },
+      {
+        "question": "How does self-hosting compare?",
+        "answer": "GoatCounter is extremely easy to self-host: a single ~7MB statically compiled Go binary with SQLite as default database. It includes built-in TLS/ACME certificate generation. OpenPanel uses Docker with ClickHouse. GoatCounter is simpler; OpenPanel scales better."
+      },
+      {
+        "question": "What license does GoatCounter use?",
+        "answer": "GoatCounter uses EUPL 1.2 (European Union Public License), a copyleft license requiring derivative works to use compatible licenses. OpenPanel uses the permissive MIT license which allows any use including proprietary derivatives."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

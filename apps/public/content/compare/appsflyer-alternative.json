@@ -1,0 +1,426 @@
+{
+  "slug": "appsflyer-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "AppsFlyer Alternative",
+    "description": "Compare OpenPanel with AppsFlyer: pricing, features, and focus. OpenPanel provides product analytics; AppsFlyer specializes in mobile attribution.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "AppsFlyer alternative",
+    "subheading": "Need to understand user behavior, not just ad attribution? OpenPanel provides product analytics—funnels, retention, cohorts, and user profiles—at a fraction of AppsFlyer's cost, without complex enterprise contracts.",
+    "badges": [
+      "Product analytics",
+      "Self-hostable",
+      "Transparent pricing",
+      "Open-source"
+    ]
+  },
+  "competitor": {
+    "name": "AppsFlyer",
+    "logo": "/logos/appsflyer.svg",
+    "url": "https://www.appsflyer.com",
+    "short_description": "Mobile Measurement Partner (MMP) focused on attributing app installs to marketing campaigns with fraud protection.",
+    "founded": 2011,
+    "headquarters": "San Francisco, CA"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs AppsFlyer: Which is right for you?",
+    "intro": "These tools serve different primary purposes. AppsFlyer focuses on mobile attribution (which ad drove an install); OpenPanel focuses on product analytics (what users do in your app).",
+    "one_liner": "OpenPanel is for product analytics and user behavior; AppsFlyer is for mobile attribution and marketing measurement.",
+    "best_for_openpanel": [
+      "Product teams needing user behavior analytics and funnels",
+      "Startups seeking affordable analytics without enterprise pricing",
+      "Teams wanting self-hosted analytics for data ownership",
+      "Web-first products and SaaS applications",
+      "Open source preference for transparency and auditability"
+    ],
+    "best_for_competitor": [
+      "Mobile marketers needing install attribution",
+      "Teams requiring multi-touch attribution across ad networks",
+      "Apps needing deep linking and deferred deep linking",
+      "Mobile games requiring SKAdNetwork support",
+      "Organizations needing fraud protection for ad spend"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and AppsFlyer compare on the factors that matter most.",
+    "items": [
+      {
+        "label": "Primary focus",
+        "openpanel": "Product analytics",
+        "competitor": "Mobile attribution"
+      },
+      {
+        "label": "Pricing model",
+        "openpanel": "Simple event-based",
+        "competitor": "Per-conversion + add-ons"
+      },
+      {
+        "label": "Self-hosting",
+        "openpanel": "Yes, with Docker",
+        "competitor": "No (cloud only)"
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "No (proprietary)"
+      },
+      {
+        "label": "Ad network integrations",
+        "openpanel": "Limited",
+        "competitor": "5,000+ partners"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "OpenPanel and AppsFlyer serve different primary needs—product analytics vs mobile attribution.",
+    "groups": [
+      {
+        "group": "Product analytics",
+        "features": [
+          {
+            "name": "Event tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Funnels",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "AppsFlyer has attribution funnels, not product funnels"
+          },
+          {
+            "name": "Retention analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "User profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Cohorts",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "AppsFlyer offers for LTV analysis"
+          },
+          {
+            "name": "User path analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Mobile attribution",
+        "features": [
+          {
+            "name": "Install attribution",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "AppsFlyer's core feature"
+          },
+          {
+            "name": "Multi-touch attribution",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Deep linking",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "AppsFlyer OneLink"
+          },
+          {
+            "name": "SKAdNetwork support",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Uninstall tracking",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Advanced features",
+        "features": [
+          {
+            "name": "Fraud protection",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "AppsFlyer Protect360"
+          },
+          {
+            "name": "A/B testing",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Audience segmentation",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "AppsFlyer Audiences is premium add-on"
+          },
+          {
+            "name": "Cost aggregation",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "AppsFlyer Xpend"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & compliance",
+        "features": [
+          {
+            "name": "Self-hosting",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Open source",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "GDPR compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Data residency options",
+            "openpanel": "Via self-hosting",
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Integrations & data",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Mobile SDKs",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Ad network integrations",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "5,000+ marketing partners"
+          },
+          {
+            "name": "Data export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "AppsFlyer Data Locker is premium"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's how the implementations compare.",
+    "items": [
+      {
+        "label": "SDK size (mobile)",
+        "openpanel": "~2.3 KB for web",
+        "competitor": "Lightweight (<1% app size)",
+        "notes": "Both maintain small SDK footprints"
+      },
+      {
+        "label": "Supported platforms",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python"
+        ],
+        "competitor": [
+          "iOS",
+          "Android",
+          "Unity",
+          "React Native",
+          "Flutter",
+          "Web",
+          "Smart TV",
+          "CTV/OTT"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "No",
+        "notes": null
+      },
+      {
+        "label": "Self-hosted deployment",
+        "openpanel": "Docker, simple setup",
+        "competitor": "Not available",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "Proprietary",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "OpenPanel offers simple event-based pricing. AppsFlyer uses per-conversion pricing with expensive add-ons.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. All features included at every tier."
+    },
+    "competitor": {
+      "model": "Per-conversion with add-ons",
+      "description": "Zero plan: 12K lifetime conversions free. Growth: $0.05-0.07/conversion. Enterprise: ~$0.03/conversion. Premium add-ons (fraud protection, data locker) cost extra. Enterprise contracts typically $3,000-$100,000+ annually.",
+      "free_tier": "Yes (12K lifetime conversions)",
+      "pricing_url": "https://www.appsflyer.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from AppsFlyer to OpenPanel",
+    "intro": "Consider whether you need attribution (AppsFlyer) or product analytics (OpenPanel). Many teams use both.",
+    "difficulty": "moderate",
+    "estimated_time": "1-2 days for basic setup",
+    "steps": [
+      {
+        "title": "Assess your needs",
+        "description": "Determine if you need mobile attribution (AppsFlyer's strength) or product analytics (OpenPanel's strength). Many teams use both tools."
+      },
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK alongside or instead of AppsFlyer. Available for iOS, Android, React Native, and web."
+      },
+      {
+        "title": "Map events",
+        "description": "Translate your AppsFlyer in-app events to OpenPanel events. Both use similar event-tracking patterns."
+      },
+      {
+        "title": "Set up user identification",
+        "description": "OpenPanel provides detailed user profiles and journey tracking. Add identify() calls to unlock retention and cohort analytics."
+      },
+      {
+        "title": "Configure product analytics",
+        "description": "Set up funnels, retention charts, and dashboards in OpenPanel—features not available in AppsFlyer."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use standard event tracking APIs. OpenPanel focuses on product analytics; AppsFlyer on attribution."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Attribution data from AppsFlyer typically doesn't need migration if using OpenPanel for product analytics."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than AppsFlyer",
+    "intro": "OpenPanel excels when you need product analytics rather than mobile attribution.",
+    "items": [
+      {
+        "title": "Product teams needing behavior analytics",
+        "description": "AppsFlyer tells you which ad brought a user. OpenPanel tells you what that user does in your product—funnels, feature usage, retention patterns.",
+        "icon": "chart"
+      },
+      {
+        "title": "Startups seeking affordable analytics",
+        "description": "AppsFlyer's pricing can reach tens of thousands monthly. OpenPanel offers a generous free tier and simple pricing without expensive add-ons.",
+        "icon": "dollar"
+      },
+      {
+        "title": "Teams wanting self-hosted analytics",
+        "description": "AppsFlyer is cloud-only. OpenPanel can be self-hosted with Docker for complete data ownership and compliance requirements.",
+        "icon": "server"
+      },
+      {
+        "title": "Web-first products",
+        "description": "AppsFlyer is designed primarily for mobile attribution. OpenPanel works equally well for web, SaaS, and mobile apps.",
+        "icon": "globe"
+      },
+      {
+        "title": "Open source preference",
+        "description": "If you value transparency and auditability, OpenPanel's open source codebase provides what AppsFlyer's proprietary system cannot.",
+        "icon": "code"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about AppsFlyer and OpenPanel.",
+    "items": [
+      {
+        "question": "Are AppsFlyer and OpenPanel competitors?",
+        "answer": "They solve different problems. AppsFlyer is a Mobile Measurement Partner (MMP) focused on attributing app installs to marketing campaigns. OpenPanel is a product analytics platform focused on understanding user behavior within your product. Many companies use both."
+      },
+      {
+        "question": "Can OpenPanel replace AppsFlyer?",
+        "answer": "It depends on your needs. If you primarily need mobile attribution (knowing which ad campaign drove an install), you need an MMP like AppsFlyer. If you need product analytics (understanding what users do in your app), OpenPanel is the better choice."
+      },
+      {
+        "question": "Why is AppsFlyer so expensive?",
+        "answer": "AppsFlyer charges per attributed conversion ($0.05-0.07 on Growth plan) plus premium add-ons for fraud protection, raw data access, and audience segmentation. Enterprise contracts can cost $50,000-$100,000+ annually. This pricing reflects their position as the market-leading MMP."
+      },
+      {
+        "question": "Does OpenPanel have fraud protection like AppsFlyer?",
+        "answer": "No. Fraud protection is specific to mobile attribution—detecting fake installs and click fraud. Since OpenPanel focuses on product analytics rather than attribution, fraud protection isn't applicable."
+      },
+      {
+        "question": "Can OpenPanel do deep linking like AppsFlyer?",
+        "answer": "No. Deep linking (routing users from ads/web to specific app content) is an attribution feature. OpenPanel focuses on analytics after users are in your product."
+      },
+      {
+        "question": "Which is better for mobile games?",
+        "answer": "For user acquisition attribution and ad monetization tracking, AppsFlyer (or similar MMPs) is essential. For understanding player behavior, progression funnels, and retention, OpenPanel provides the product analytics that AppsFlyer lacks. Mobile game studios typically use both."
+      },
+      {
+        "question": "Can I self-host AppsFlyer?",
+        "answer": "No. AppsFlyer is a cloud-only SaaS platform with no self-hosting option. OpenPanel can be fully self-hosted using Docker."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

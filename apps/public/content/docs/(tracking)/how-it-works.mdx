@@ -12,7 +12,7 @@ A **device ID** is a unique identifier generated for each device/browser combina
 - **Origin** (project ID)
 - **Salt** (a rotating secret key)
 
-```typescript:packages/common/server/profileId.ts
+```typescript
 export function generateDeviceId({
   salt,
   ua,
@@ -31,7 +31,7 @@ The salt used for device ID generation rotates **daily at midnight** (UTC). This
 - Device IDs reset each day for privacy purposes
 - The system maintains both the current and previous day's salt to handle events that may arrive slightly after midnight
 
-```typescript:apps/worker/src/jobs/cron.salt.ts
+```typescript
 // Salt rotation happens daily at midnight (pattern: '0 0 * * *')
 ```
 
@@ -45,7 +45,7 @@ A **session** represents a continuous period of user activity. Sessions are used
 
 Sessions have a **30-minute timeout**. If no events are received for 30 minutes, the session automatically ends. Each new event resets this 30-minute timer.
 
-```typescript:apps/worker/src/utils/session-handler.ts
+```typescript
 export const SESSION_TIMEOUT = 1000 * 60 * 30; // 30 minutes
 ```
 
@@ -59,7 +59,7 @@ Sessions are **only created for client events**, not server events. This means:
 
 Additionally, sessions are **not created for events older than 15 minutes**. This prevents historical data imports from creating artificial sessions.
 
-```typescript:apps/worker/src/jobs/events.incoming-event.ts
+```typescript
 // Sessions are not created if:
 // 1. The event is from a server (uaInfo.isServer === true)
 // 2. The timestamp is from the past (isTimestampFromThePast === true)
@@ -81,7 +81,7 @@ This means:
 - Once you identify a user (by providing a profile ID), all their events will be associated with that profile
 - The same user can be tracked across multiple devices by using the same profile ID
 
-```typescript:packages/db/src/services/event.service.ts
+```typescript
 // If no profileId is provided, it defaults to deviceId
 if (!payload.profileId && payload.deviceId) {
   payload.profileId = payload.deviceId;
@@ -116,7 +116,7 @@ Server events:
 - Are attached to existing sessions if available
 - Are useful for backend tracking without session management
 
-```typescript:packages/common/server/parser-user-agent.ts
+```typescript
 // Server events are detected by patterns like "Go-http-client/1.0"
 function isServer(res: UAParser.IResult) {
   if (SINGLE_NAME_VERSION_REGEX.test(res.ua)) {
@@ -128,7 +128,7 @@ function isServer(res: UAParser.IResult) {
 
 The distinction is made in the event processing pipeline:
 
-```typescript:apps/worker/src/jobs/events.incoming-event.ts
+```typescript
 const uaInfo = parseUserAgent(userAgent, properties);
 
 // Only client events create sessions
@@ -158,7 +158,7 @@ The system validates timestamps to prevent abuse and ensure data quality:
 1. **Future timestamps**: If a timestamp is more than **1 minute in the future**, the server timestamp is used instead
 2. **Past timestamps**: If a timestamp is older than **15 minutes**, it's marked as `isTimestampFromThePast: true`
 
-```typescript:apps/api/src/controllers/track.controller.ts
+```typescript
 // Timestamp validation logic
 const ONE_MINUTE_MS = 60 * 1000;
 const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
@@ -177,7 +177,7 @@ const isTimestampFromThePast =
 
 **Important**: Events with timestamps older than 15 minutes (`isTimestampFromThePast: true`) will **not create new sessions**. This prevents historical data imports from creating artificial sessions in your analytics.
 
-```typescript:apps/worker/src/jobs/events.incoming-event.ts
+```typescript
 // Events from the past don't create sessions
 if (uaInfo.isServer || isTimestampFromThePast) {
   // Attach to existing session or track without session

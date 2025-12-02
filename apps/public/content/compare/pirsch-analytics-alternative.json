@@ -1,0 +1,472 @@
+{
+  "slug": "pirsch-analytics-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Pirsch Analytics Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs Pirsch Analytics. Discover why teams choose OpenPanel as their Pirsch alternative for product analytics, user identification, and free self-hosting without enterprise pricing.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Pirsch Alternative",
+    "subheading": "Love Pirsch's German privacy focus and developer-friendly approach? OpenPanel adds product analytics capabilities - funnels, cohorts, retention, and user identification - plus free self-hosting without enterprise pricing.",
+    "badges": [
+      "Open-source",
+      "Privacy-first",
+      "Free Self-Hosting",
+      "Product Analytics"
+    ]
+  },
+  "competitor": {
+    "name": "Pirsch Analytics",
+    "logo": "/logos/pirsch.svg",
+    "url": "https://pirsch.io",
+    "short_description": "Privacy-focused web analytics with strong German hosting, developer-friendly features, and agency-focused capabilities.",
+    "founded": 2020,
+    "headquarters": "Rheda-Wiedenbruck, Germany"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Pirsch: Which is right for you?",
+    "intro": "Both are privacy-focused analytics tools. Pirsch focuses on affordable web analytics with agency features. OpenPanel adds product analytics with user identification.",
+    "one_liner": "Pirsch excels at affordable web analytics with excellent white-labeling; OpenPanel adds product analytics with free self-hosting.",
+    "best_for_openpanel": [
+      "SaaS products needing user-level analytics and retention tracking",
+      "Teams wanting free self-hosting without Enterprise license fees",
+      "Startups needing a permanent free tier (10K events/month)",
+      "Mobile app developers needing native iOS, Android, React Native SDKs"
+    ],
+    "best_for_competitor": [
+      "Agencies managing many client websites with white-labeling needs",
+      "Developers preferring Go/backend server-side integration",
+      "European businesses prioritizing German-hosted data",
+      "Teams wanting affordable unlimited-website plans ($12/month)"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Pirsch compare on key factors.",
+    "items": [
+      {
+        "label": "Analytics Depth",
+        "openpanel": "Web + Product Analytics",
+        "competitor": "Web Analytics + Basic Funnels",
+        "notes": "OpenPanel combines web analytics with full product analytics including retention, cohorts, and user profiles. Pirsch focuses on web analytics with funnels and A/B testing on higher tiers."
+      },
+      {
+        "label": "Free Self-Hosting",
+        "openpanel": "Free Docker deployment",
+        "competitor": "Enterprise license required",
+        "notes": "OpenPanel offers free self-hosting in a single Docker container. Pirsch requires an Enterprise license with custom pricing for on-premise deployment."
+      },
+      {
+        "label": "Free Tier",
+        "openpanel": "10,000 events/month free",
+        "competitor": "30-day trial only",
+        "notes": "OpenPanel offers a generous free tier. Pirsch has no free tier - just a 30-day trial before requiring a $6/month minimum subscription."
+      },
+      {
+        "label": "User Identification",
+        "openpanel": "Yes - Track individual users",
+        "competitor": "No - Anonymous fingerprinting only",
+        "notes": "OpenPanel lets you identify and track individual users across sessions. Pirsch uses daily fingerprinting and doesn't track individuals."
+      },
+      {
+        "label": "Server-Side Integration",
+        "openpanel": "Yes - Multiple backends",
+        "competitor": "Yes - Excellent Go/backend focus",
+        "notes": "Both offer strong server-side integration. Pirsch was originally built as a Go library for backend tracking, avoiding ad blockers."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "Both are developer-friendly with privacy focus, but different in depth and pricing.",
+    "groups": [
+      {
+        "group": "Web Analytics",
+        "features": [
+          {
+            "name": "Page Views & Visitors",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Traffic Sources",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both track referrers and UTM parameters"
+          },
+          {
+            "name": "Geographic Data",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Device & Browser",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM Campaign Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch supports events with custom metadata"
+          },
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch funnels require Plus plan ($12/month)"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Pirsch's anonymous model doesn't support retention"
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Pirsch doesn't track individual users"
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Pirsch provides aggregate data only"
+          },
+          {
+            "name": "Session Replay",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Pirsch has session analysis (not full replay)"
+          }
+        ]
+      },
+      {
+        "group": "Advanced Features",
+        "features": [
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch A/B testing requires Plus plan"
+          },
+          {
+            "name": "Conversion Goals",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support conversion tracking"
+          },
+          {
+            "name": "Email Reports",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer scheduled email reports"
+          },
+          {
+            "name": "Dashboard Sharing",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support public and private sharing"
+          },
+          {
+            "name": "Google Analytics Import",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Pirsch has a GA import tool"
+          },
+          {
+            "name": "URL Shortener",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Pirsch has built-in URL shortener with tracking"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "Cookie-Free by Default",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both are cookieless by default"
+          },
+          {
+            "name": "No Consent Banner Required",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both claim no consent needed for basic analytics"
+          },
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch is hosted in Germany with strict EU compliance"
+          },
+          {
+            "name": "Schrems II Compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch emphasizes Schrems II compliance"
+          },
+          {
+            "name": "Self-Hosting Option",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch self-hosting requires Enterprise license"
+          },
+          {
+            "name": "Open Source Core",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both have open source cores (Pirsch MIT, OpenPanel open source)"
+          }
+        ]
+      },
+      {
+        "group": "Integrations",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch has comprehensive RESTful API"
+          },
+          {
+            "name": "Google Search Console",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Pirsch has GSC integration in dashboard"
+          },
+          {
+            "name": "WordPress Plugin",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both have WordPress plugins"
+          },
+          {
+            "name": "Server-Side SDKs",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Pirsch: Go, Laravel. OpenPanel: Node, Python, PHP, Go, Rust"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "~4 KB (about 30x smaller than GA)",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript",
+          "Go (native)",
+          "Laravel/PHP",
+          "WordPress",
+          "Drupal",
+          "Caddy",
+          "Various backend integrations"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "Partial - Core MIT, SaaS proprietary",
+        "notes": "Pirsch core is open source under MIT license. SaaS features are proprietary."
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (free single-container setup)",
+        "competitor": "Enterprise license required (custom pricing)",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "ClickHouse",
+        "notes": "Both use ClickHouse for analytics queries"
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "Unlimited on all plans",
+        "notes": null
+      },
+      {
+        "label": "Language",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "Go (Golang)",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Pirsch offers affordable web analytics. OpenPanel adds a permanent free tier with all features.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+    },
+    "competitor": {
+      "model": "Pageview-based with 30-day trial",
+      "description": "Standard: $6/month for 10K pageviews, 50 websites. Plus: $12/month - unlimited websites, funnels, A/B testing. Enterprise: Custom pricing for on-premise and SSO. No free tier, just 30-day trial.",
+      "free_tier": "No free tier (30-day trial only)",
+      "pricing_url": "https://pirsch.io/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Pirsch to OpenPanel",
+    "intro": "Both use lightweight scripts and similar event tracking, making migration straightforward.",
+    "difficulty": "easy",
+    "estimated_time": "30 minutes to 2 hours",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts and server-side options."
+      },
+      {
+        "title": "Map Events",
+        "description": "Pirsch events with metadata translate directly to OpenPanel's op.track() calls."
+      },
+      {
+        "title": "Set Up User Identification (New)",
+        "description": "Unlike Pirsch, OpenPanel can identify users. Add op.identify() calls to unlock retention, cohorts, and user profiles."
+      },
+      {
+        "title": "Configure Product Analytics (New)",
+        "description": "Set up retention reports, cohorts, and user journey analysis. Pirsch has basic funnels but not these features."
+      },
+      {
+        "title": "Remove Pirsch Script",
+        "description": "Once verified, remove the Pirsch tracking script. Both are cookie-free so no consent changes needed."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use event-based tracking with simple APIs."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Most teams start fresh with OpenPanel and run both tools in parallel briefly."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Pirsch",
+    "intro": "Choose OpenPanel when you need user-level analytics, free self-hosting, or a permanent free tier.",
+    "items": [
+      {
+        "title": "SaaS Products Needing User Analytics",
+        "description": "Pirsch shows aggregate website traffic and basic funnels. If you need to understand individual user journeys, retention, and behavior within your product, OpenPanel adds these capabilities while staying privacy-friendly.",
+        "icon": "users"
+      },
+      {
+        "title": "Teams Who Want Free Self-Hosting",
+        "description": "Pirsch requires an Enterprise license with custom pricing for on-premise deployment. OpenPanel provides free self-hosting in a single Docker container with no restrictions.",
+        "icon": "server"
+      },
+      {
+        "title": "Startups Needing a Free Tier",
+        "description": "Pirsch has no free option - just a 30-day trial before requiring a $6/month subscription. OpenPanel offers 10,000 free events monthly, perfect for early-stage products.",
+        "icon": "trending-up"
+      },
+      {
+        "title": "Mobile App Analytics",
+        "description": "Pirsch is designed for websites with a backend focus. OpenPanel offers native iOS, Android, and React Native SDKs with full product analytics capabilities.",
+        "icon": "smartphone"
+      },
+      {
+        "title": "Teams Needing Cohort & Retention Analysis",
+        "description": "Pirsch's anonymous fingerprinting model doesn't support retention or cohort analysis. If understanding user behavior over time matters, OpenPanel provides these capabilities.",
+        "icon": "bar-chart"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Pirsch to OpenPanel.",
+    "items": [
+      {
+        "question": "Is OpenPanel as privacy-friendly as Pirsch?",
+        "answer": "Yes! Both are cookie-free by default and don't require consent banners. The key difference is that OpenPanel allows optional user identification for product analytics, while Pirsch uses anonymous fingerprinting. You control whether to identify users in OpenPanel."
+      },
+      {
+        "question": "Why switch from Pirsch to OpenPanel?",
+        "answer": "Teams typically switch when they need: 1) Full product analytics (retention, cohorts, user profiles), 2) Free self-hosting without Enterprise pricing, 3) A permanent free tier, or 4) Native mobile SDKs. Pirsch excels at affordable web analytics but has limitations for product analytics."
+      },
+      {
+        "question": "Does Pirsch have a free tier?",
+        "answer": "No. Pirsch offers a 30-day free trial, then requires a minimum $6/month subscription. OpenPanel provides 10,000 free events monthly with no time limit."
+      },
+      {
+        "question": "Can I self-host Pirsch for free?",
+        "answer": "No. Pirsch self-hosting requires an Enterprise license with custom pricing. While the core library is open source (MIT), running the full SaaS requires a license. OpenPanel offers free self-hosting in a single Docker container."
+      },
+      {
+        "question": "Which has the smaller tracking script?",
+        "answer": "OpenPanel's script is 2.3KB, while Pirsch's is about 4KB. Both are significantly smaller than Google Analytics (50KB+). Pirsch also emphasizes server-side integration which adds zero client-side weight."
+      },
+      {
+        "question": "Can Pirsch track mobile apps?",
+        "answer": "Not natively. Pirsch is designed for web analytics with a backend/server-side focus. You could use their API, but there are no mobile-specific SDKs. OpenPanel offers native iOS, Android, and React Native SDKs."
+      },
+      {
+        "question": "What will I lose switching from Pirsch?",
+        "answer": "Pirsch has a built-in URL shortener with tracking, Google Search Console integration in the dashboard, excellent white labeling options, and strong Go/backend integration. However, you'll gain full product analytics, free self-hosting, and mobile SDKs that Pirsch doesn't offer."
+      },
+      {
+        "question": "Is Pirsch or OpenPanel better for agencies?",
+        "answer": "Pirsch has excellent agency features: extensive white labeling, custom domains, team management, and client access links. Their Plus plan at $12/month with unlimited websites is very affordable. However, if your clients need product analytics or you want free self-hosting, OpenPanel provides more value."
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}
