@@ -9,9 +9,10 @@ import {
   hashPassword,
   invalidateSession,
   setSessionTokenCookie,
+  validateSessionToken,
   verifyPasswordHash,
 } from '@openpanel/auth';
-import { generateSecureId } from '@openpanel/common/server/id';
+import { generateSecureId } from '@openpanel/common/server';
 import {
   connectUserToOrganization,
   db,
@@ -19,6 +20,7 @@ import {
   getUserAccount,
 } from '@openpanel/db';
 import { sendEmail } from '@openpanel/email';
+import { deleteCache } from '@openpanel/redis';
 import {
   zRequestResetPassword,
   zResetPassword,
@@ -26,7 +28,6 @@ import {
   zSignInShare,
   zSignUpEmail,
 } from '@openpanel/validation';
-import * as bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { TRPCAccessError, TRPCNotFoundError } from '../errors';
 import {
@@ -216,20 +217,14 @@ export const authRouter = createTRPCRouter({
             throw TRPCAccessError('Incorrect email or password');
           }
         } else {
-          const validPassword = await bcrypt.compare(
-            password,
-            user.account.password ?? '',
+          throw TRPCAccessError(
+            'Reset your password, old password has expired',
           );
-
-          if (!validPassword) {
-            throw TRPCAccessError('Incorrect email or password');
-          }
         }
       }
 
       const token = generateSessionToken();
       const session = await createSession(token, user.id);
-
       setSessionTokenCookie(ctx.setCookie, token, session.expiresAt);
       return {
         type: 'email',
@@ -318,7 +313,7 @@ export const authRouter = createTRPCRouter({
       await sendEmail('reset-password', {
         to: input.email,
         data: {
-          url: `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/reset-password?token=${token}`,
+          url: `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/reset-password?token=${token}`,
         },
       });
 
@@ -326,6 +321,26 @@ export const authRouter = createTRPCRouter({
     }),
   session: publicProcedure.query(async ({ ctx }) => {
     return ctx.session;
+  }),
+
+  extendSession: publicProcedure.mutation(async ({ ctx }) => {
+    if (!ctx.session.session || !ctx.cookies.session) {
+      return { extended: false };
+    }
+
+    const token = ctx.cookies.session;
+    const session = await validateSessionToken(token);
+
+    if (session.session) {
+      // Re-set the cookie with updated expiration
+      setSessionTokenCookie(ctx.setCookie, token, session.session.expiresAt);
+      return {
+        extended: true,
+        expiresAt: session.session.expiresAt,
+      };
+    }
+
+    return { extended: false };
   }),
 
   signInShare: publicProcedure

@@ -1,0 +1,222 @@
+---
+title: Deploy with Coolify
+description: Deploy OpenPanel using Coolify's one-click service
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+[Coolify](https://coolify.io) is an open-source, self-hosted platform that simplifies deploying applications. OpenPanel is available as a one-click service in Coolify, making deployment quick and easy.
+
+## Prerequisites
+
+- A Coolify instance installed and running
+- A server with at least 2GB RAM (4GB+ recommended)
+- Domain name configured in Coolify (optional but recommended)
+
+## Quick Start
+
+<Steps>
+<Step>
+### Create a New Resource
+
+1. Log in to your Coolify dashboard
+2. Navigate to your project
+3. Click **"New Resource"** or **"Add Service"**
+4. Select **"One-Click Services"** or **"Docker Compose"**
+</Step>
+
+<Step>
+### Select OpenPanel
+
+1. Search for **"OpenPanel"** in the services list
+2. Click on **OpenPanel** to select it
+3. The service template will be automatically filled in with the required configuration
+</Step>
+
+<Step>
+### Configure Your Deployment
+
+Coolify will automatically configure most settings, but you may want to customize:
+
+- **Domain**: Set your domain name for the dashboard
+- **Environment Variables**: Configure optional settings like:
+  - `ALLOW_REGISTRATION`: Set to `false` to disable public registration
+  - `ALLOW_INVITATION`: Set to `true` to allow user invitations
+  - `RESEND_API_KEY`: Your Resend API key for email features
+  - `EMAIL_SENDER`: Email sender address
+  - `OPENAI_API_KEY`: OpenAI API key for AI features (optional)
+  - `AI_MODEL`: AI model to use (`gpt-4o-mini`, `gpt-4o`, or `claude-3-5`)
+
+<Callout>
+Coolify automatically handles:
+- Database setup (PostgreSQL)
+- Redis configuration
+- ClickHouse setup
+- SSL certificates
+- Service health checks
+- Automatic restarts
+</Callout>
+</Step>
+
+<Step>
+### Deploy
+
+1. Review your configuration
+2. Click **"Deploy"** or **"Save"**
+3. Coolify will automatically:
+   - Pull the required Docker images
+   - Start all services
+   - Run database migrations
+   - Set up SSL certificates (if domain is configured)
+
+Wait for all services to become healthy. You can monitor the deployment progress in the Coolify dashboard.
+</Step>
+
+<Step>
+### Access Your Dashboard
+
+Once deployment is complete, you can access OpenPanel at your configured domain. The first user to register will become the admin account.
+
+<Callout type="warn">
+By default, registration is disabled after the first user is created. Make sure to register your admin account first!
+</Callout>
+</Step>
+</Steps>
+
+## Service Structure
+
+Coolify deploys OpenPanel with the following services:
+
+- **opapi**: OpenPanel API server (handles `/api` routes)
+- **opdashboard**: OpenPanel dashboard (frontend)
+- **opworker**: Background worker for processing events
+- **opdb**: PostgreSQL database
+- **opkv**: Redis cache
+- **opch**: ClickHouse analytics database
+
+## Configuration
+
+### Environment Variables
+
+You can configure OpenPanel through environment variables in Coolify. Coolify automatically sets the required database and connection variables.
+
+For a complete reference of all available environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
+
+#### Coolify-Specific Notes
+
+Coolify automatically handles these variables:
+- `DATABASE_URL`: PostgreSQL connection string
+- `REDIS_URL`: Redis connection string
+- `CLICKHOUSE_URL`: ClickHouse connection string
+- `NEXT_PUBLIC_API_URL`: API endpoint URL (set via `SERVICE_FQDN_OPAPI`)
+- `NEXT_PUBLIC_DASHBOARD_URL`: Dashboard URL (set via `SERVICE_FQDN_OPDASHBOARD`)
+- `COOKIE_SECRET`: Automatically generated secret
+
+You can configure optional variables like `ALLOW_REGISTRATION`, `RESEND_API_KEY`, `OPENAI_API_KEY`, etc. through Coolify's environment variable interface.
+
+### Updating OpenPanel
+
+To update OpenPanel in Coolify:
+
+1. Navigate to your OpenPanel service
+2. Click **"Redeploy"** or **"Update"**
+3. Coolify will pull the latest images and restart services
+
+<Callout>
+Database migrations run automatically when the API service starts, so updates are seamless.
+</Callout>
+
+### Scaling
+
+You can scale the worker service in Coolify:
+
+1. Navigate to your OpenPanel service
+2. Edit the `opworker` service configuration
+3. Adjust the replica count
+4. Save and redeploy
+
+## Troubleshooting
+
+### Services Not Starting
+
+1. Check service logs in Coolify dashboard
+2. Verify all environment variables are set correctly
+3. Ensure your server has enough resources (RAM, disk space)
+
+### Database Connection Issues
+
+1. Verify the database service (`opdb`) is running
+2. Check that `DATABASE_URL` is correctly formatted
+3. Review database logs in Coolify
+
+### SSL Certificate Issues
+
+If SSL certificates aren't being issued:
+
+1. Verify your domain DNS is pointing to Coolify
+2. Check Coolify's SSL/TLS settings
+3. Review Coolify logs for Let's Encrypt errors
+
+### Health Check Failures
+
+If health checks are failing:
+
+1. Check service logs for errors
+2. Verify all dependencies are running
+3. Increase health check timeout if needed
+
+## Using Your Own Database
+
+If you want to use an external PostgreSQL database:
+
+1. Create a new PostgreSQL database in Coolify or use an external service
+2. Update the `DATABASE_URL` environment variable in your OpenPanel service
+3. Update `DATABASE_URL_DIRECT` to match
+4. Redeploy the service
+
+The same applies to Redis and ClickHouse if you want to use external services.
+
+## Backup and Restore
+
+### Backup
+
+Coolify provides built-in backup functionality:
+
+1. Navigate to your database service (`opdb`)
+2. Configure backup settings
+3. Set up backup schedule
+4. Backups will be stored according to your Coolify configuration
+
+### Manual Backup
+
+You can also create manual backups:
+
+1. Use Coolify's terminal access
+2. Export the database:
+   ```bash
+   docker exec opdb pg_dump -U postgres openpanel-db > backup.sql
+   ```
+
+### Restore
+
+To restore from a backup:
+
+1. Use Coolify's terminal access
+2. Restore the database:
+   ```bash
+   docker exec -i opdb psql -U postgres openpanel-db < backup.sql
+   ```
+
+## Next Steps
+
+- [Configure email settings](/docs/self-hosting/self-hosting#e-mail) for password resets and invitations
+- [Set up AI integration](/docs/self-hosting/self-hosting#ai-integration) for the analytics assistant
+- [Configure SDK](/docs/self-hosting/self-hosting#always-use-correct-api-url) to track events from your applications
+
+## Additional Resources
+
+- [Coolify Documentation](https://coolify.io/docs)
+- [Coolify Services Directory](https://coolify.io/docs/services)
+- [OpenPanel on Coolify](https://coolify.io/docs/services/openpanel)
+

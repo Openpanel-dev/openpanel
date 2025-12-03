@@ -1,0 +1,364 @@
+---
+title: Deploy with Docker Compose
+description: Deploy OpenPanel using Docker Compose on your own server
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+This guide will help you deploy OpenPanel using Docker Compose. This method gives you full control over your deployment and is perfect for self-hosting on a VPS or dedicated server.
+
+## Prerequisites
+
+- A VPS or server (Docker and Node will be installed automatically if needed)
+- At least 2GB RAM (4GB+ recommended)
+- Domain name pointing to your server (optional but recommended)
+- Basic knowledge of command line
+
+<Callout>
+🙋‍♂️ This should work on any system. The setup script will install Docker and Node if they're not already installed.
+</Callout>
+
+## Quick Start
+
+<Steps>
+<Step>
+### Clone the Repository
+
+Clone the OpenPanel repository and navigate to the self-hosting directory:
+
+```bash
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel.git
+cd openpanel/self-hosting
+```
+</Step>
+
+<Step>
+### Run the Setup Script
+
+The setup script will guide you through the configuration process. It will:
+
+1. Install Node.js (if you accept and it's not already installed)
+2. Install Docker (if you accept and it's not already installed)
+3. Run an interactive quiz/wizard that asks questions about your setup
+
+> Setup takes 30s to 2 minutes depending on your VPS
+
+```bash
+./setup
+```
+
+The wizard will ask you questions about:
+- Your domain name
+- Database configuration
+- Email settings (optional)
+- AI integration (optional)
+- Registration settings
+
+<Callout>
+⚠️ If the `./setup` script fails to run, you can do it manually:
+
+1. Install Docker
+2. Install Node.js
+3. Install npm
+4. Run `npm run quiz` inside the self-hosting folder
+</Callout>
+</Step>
+
+<Step>
+### Start the Services
+
+After the setup is complete, start all OpenPanel services:
+
+```bash
+./start
+```
+
+This will start all required services:
+- **op-db**: PostgreSQL database
+- **op-kv**: Redis cache
+- **op-ch**: ClickHouse analytics database
+- **op-api**: OpenPanel API server
+- **op-dashboard**: OpenPanel dashboard (frontend)
+- **op-worker**: Background worker for processing events
+</Step>
+
+<Step>
+### Verify Installation
+
+Check that all containers are running:
+
+```bash
+docker compose ps
+```
+
+All services should show as "healthy" or "running". You can also check the logs:
+
+```bash
+docker compose logs -f
+```
+
+Or use the provided logs script:
+
+```bash
+./logs
+```
+
+Once all services are healthy, you can access OpenPanel at your configured domain (or `http://your-server-ip` if you haven't configured a domain).
+</Step>
+</Steps>
+
+## Configuration
+
+### Environment Variables
+
+The setup wizard will configure most environment variables automatically. You can manually edit the `.env` file in the `self-hosting` directory if needed.
+
+For a complete reference of all available environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
+
+<Callout>
+If you change the `.env` file, you need to restart the services for the changes to take effect. Use `./stop` and `./start` or `docker compose restart`.
+</Callout>
+
+### Using Custom Docker Images
+
+If you want to use specific image versions, edit the `docker-compose.yml` file and update the image tags:
+
+```yaml
+op-api:
+  image: lindesvard/openpanel-api:v1.0.0  # Specify version
+```
+
+### Scaling Workers
+
+To scale the worker service, set the `OP_WORKER_REPLICAS` environment variable:
+
+```bash
+OP_WORKER_REPLICAS=3 docker compose up -d
+```
+
+Or edit the `docker-compose.yml` file:
+
+```yaml
+op-worker:
+  deploy:
+    replicas: 3
+```
+
+## Managing Your Deployment
+
+OpenPanel comes with several utility scripts to help manage your deployment. All scripts should be run from within the `self-hosting` directory.
+
+### Basic Operations
+
+```bash
+./start    # Start all OpenPanel services
+./stop     # Stop all OpenPanel services
+./logs     # View real-time logs from all services
+```
+
+### View Logs
+
+View logs from all services:
+
+```bash
+./logs
+```
+
+Or using Docker Compose directly:
+
+```bash
+docker compose logs -f
+```
+
+View logs from a specific service:
+
+```bash
+docker compose logs -f op-api
+```
+
+### Stop Services
+
+Stop all services:
+
+```bash
+./stop
+```
+
+Or using Docker Compose:
+
+```bash
+docker compose down
+```
+
+Stop services but keep volumes (data persists):
+
+```bash
+docker compose stop
+```
+
+### Restart Services
+
+Restart all services:
+
+```bash
+./stop && ./start
+```
+
+Or using Docker Compose:
+
+```bash
+docker compose restart
+```
+
+Restart a specific service:
+
+```bash
+docker compose restart op-api
+```
+
+### Rebuild Services
+
+Rebuild and restart a specific service:
+
+```bash
+./rebuild op-dashboard
+```
+
+### Update OpenPanel
+
+To update to the latest version, use the update script:
+
+```bash
+./update
+```
+
+This script will:
+1. Pull the latest changes from the repository
+2. Pull the latest Docker images
+3. Restart all services
+
+<Callout>
+If you don't have the `./update` script, you can manually update:
+
+```bash
+git pull
+docker compose pull
+docker compose up -d
+```
+</Callout>
+
+<Callout type="warn">
+Always backup your data before updating. The database migrations will run automatically when the API container starts. Also read any changes in the [changelog](/docs/self-hosting/changelog) and apply them to your instance.
+</Callout>
+
+### Backup and Restore
+
+#### Backup
+
+Backup your PostgreSQL database:
+
+```bash
+docker compose exec op-db pg_dump -U postgres postgres > backup.sql
+```
+
+Backup volumes:
+
+```bash
+docker run --rm -v openpanel_op-db-data:/data -v $(pwd):/backup alpine tar czf /backup/db-backup.tar.gz /data
+```
+
+#### Restore
+
+Restore PostgreSQL database:
+
+```bash
+docker compose exec -T op-db psql -U postgres postgres < backup.sql
+```
+
+## Troubleshooting
+
+### Services Won't Start
+
+1. Check Docker and Docker Compose versions:
+   ```bash
+   docker --version
+   docker compose version
+   ```
+
+2. Check available disk space:
+   ```bash
+   df -h
+   ```
+
+3. Check logs for errors:
+   ```bash
+   docker compose logs
+   ```
+
+### Database Connection Issues
+
+If services can't connect to the database:
+
+1. Verify the database is healthy:
+   ```bash
+   docker compose ps op-db
+   ```
+
+2. Check database logs:
+   ```bash
+   docker compose logs op-db
+   ```
+
+3. Verify `DATABASE_URL` in your `.env` file matches the service name `op-db`
+
+### Port Conflicts
+
+If ports 80 or 443 are already in use, you can:
+
+1. Change the ports in `docker-compose.yml`:
+   ```yaml
+   ports:
+     - "8080:80"
+     - "8443:443"
+   ```
+
+2. Or stop the conflicting service
+
+### Health Check Failures
+
+If health checks are failing:
+
+1. Check if services are actually running:
+   ```bash
+   docker compose ps
+   ```
+
+2. Increase health check timeout in `docker-compose.yml`:
+   ```yaml
+   healthcheck:
+     interval: 30s
+     timeout: 10s
+     retries: 10
+   ```
+
+## Using Your Own Reverse Proxy
+
+If you're using your own reverse proxy (like Nginx or Traefik), you can disable the included Caddy proxy by commenting it out in `docker-compose.yml`:
+
+```yaml
+# op-proxy:
+#   image: caddy:2-alpine
+#   ...
+```
+
+Then configure your reverse proxy to forward requests:
+- `/api/*` → `op-api:3000`
+- `/*` → `op-dashboard:3000`
+
+## Next Steps
+
+- [Configure email settings](/docs/self-hosting/self-hosting#e-mail) for password resets and invitations
+- [Set up AI integration](/docs/self-hosting/self-hosting#ai-integration) for the analytics assistant
+- [Configure SDK](/docs/self-hosting/self-hosting#always-use-correct-api-url) to track events from your applications
+

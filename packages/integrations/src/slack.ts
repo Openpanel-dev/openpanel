@@ -1,6 +1,7 @@
 // Cred to (@c_alares) https://github.com/christianalares/seventy-seven/blob/main/packages/integrations/src/slack/index.ts
 
-import { LogLevel, App as SlackApp } from '@slack/bolt';
+import * as Slack from '@slack/bolt';
+const { LogLevel, App: SlackApp } = Slack;
 import { InstallProvider } from '@slack/oauth';
 
 const SLACK_CLIENT_ID = process.env.SLACK_CLIENT_ID;
@@ -24,8 +25,7 @@ export const slackInstaller = SLACK_CLIENT_ID
 export const getSlackInstallUrl = ({
   integrationId,
   organizationId,
-  projectId,
-}: { integrationId: string; organizationId: string; projectId: string }) => {
+}: { integrationId: string; organizationId: string }) => {
   if (!SLACK_CLIENT_ID) {
     throw new Error('SLACK_CLIENT_ID is not set (slack.ts)');
   }
@@ -37,7 +37,7 @@ export const getSlackInstallUrl = ({
       'team:read',
     ],
     redirectUri: SLACK_OAUTH_REDIRECT_URL,
-    metadata: JSON.stringify({ integrationId, organizationId, projectId }),
+    metadata: JSON.stringify({ integrationId, organizationId }),
   });
 };
 

@@ -1,0 +1,528 @@
+{
+  "slug": "umami-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Umami Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs Umami Analytics. Discover why teams choose OpenPanel as their Umami alternative for deeper product analytics, user identification, and mobile SDKs while maintaining privacy.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Umami Alternative",
+    "subheading": "Love Umami's simplicity and privacy focus? OpenPanel adds deeper product analytics - user identification, mobile SDKs, A/B testing, and detailed user profiles - while staying open source and cookie-free.",
+    "badges": [
+      "Open-source",
+      "Privacy-first",
+      "User Identification",
+      "Mobile SDKs"
+    ]
+  },
+  "competitor": {
+    "name": "Umami Analytics",
+    "logo": "/logos/umami.svg",
+    "url": "https://umami.is",
+    "short_description": "Privacy-focused, open-source web analytics with lightweight script and developer-friendly setup.",
+    "founded": 2020,
+    "headquarters": "San Francisco Bay Area, USA"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Umami: Which is right for you?",
+    "intro": "Both are open-source, privacy-focused analytics tools. Umami focuses on anonymous web analytics. OpenPanel adds user identification and product analytics.",
+    "one_liner": "Umami excels at anonymous web analytics; OpenPanel adds user identification, product analytics, and mobile SDKs.",
+    "best_for_openpanel": [
+      "SaaS products needing user identification and retention tracking",
+      "Mobile app developers needing native iOS, Android, React Native SDKs",
+      "Teams needing A/B testing and experimentation capabilities",
+      "Products requiring session-level analysis and user behavior tracking"
+    ],
+    "best_for_competitor": [
+      "Simple content sites and blogs wanting anonymous traffic stats",
+      "Developers prioritizing PostgreSQL over ClickHouse",
+      "Teams valuing extremely generous free tier (1M events/month)",
+      "Projects wanting the lightest possible tracking script"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Umami compare on key factors.",
+    "items": [
+      {
+        "label": "User Identification",
+        "openpanel": "Yes - Track individual users",
+        "competitor": "No - Anonymous aggregate only",
+        "notes": "OpenPanel lets you identify and track individual users across sessions. Umami intentionally anonymizes all data and doesn't support user identification to maximize privacy."
+      },
+      {
+        "label": "Mobile SDKs",
+        "openpanel": "iOS, Android, React Native",
+        "competitor": "Web only (API for backend)",
+        "notes": "OpenPanel offers native mobile SDKs for iOS, Android, and React Native. Umami is designed for web analytics and requires API calls for any server-side tracking."
+      },
+      {
+        "label": "A/B Testing",
+        "openpanel": "Built-in experimentation",
+        "competitor": "Not available",
+        "notes": "OpenPanel includes A/B testing capabilities. Umami focuses purely on analytics and doesn't offer experimentation features."
+      },
+      {
+        "label": "Cloud Free Tier",
+        "openpanel": "10,000 events/month",
+        "competitor": "1 million events/month",
+        "notes": "Umami Cloud offers a very generous free tier of 1 million events per month. OpenPanel offers 10,000 events/month free."
+      },
+      {
+        "label": "Open Source License",
+        "openpanel": "MIT License",
+        "competitor": "MIT License",
+        "notes": "Both platforms use the permissive MIT license, offering maximum flexibility for commercial use and modification."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "Both are open source and privacy-focused, but with different depths of analytics capabilities.",
+    "groups": [
+      {
+        "group": "Web Analytics",
+        "features": [
+          {
+            "name": "Page Views & Visitors",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Traffic Sources & Referrers",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Geographic Data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer country, region, and city-level data"
+          },
+          {
+            "name": "Device & Browser",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM Campaign Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Bounce Rate",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami added funnels in 2023, supports URLs and custom events"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 added retention reports"
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami intentionally doesn't track individual users"
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 added cohort analysis"
+          },
+          {
+            "name": "User Path/Journey Analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 added journey reports"
+          },
+          {
+            "name": "User Identification",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami has distinct ID but no true user identification"
+          }
+        ]
+      },
+      {
+        "group": "Advanced Features",
+        "features": [
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami is analytics-only, no experimentation"
+          },
+          {
+            "name": "Custom Properties on Events",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Segments",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 added saved filter segments"
+          },
+          {
+            "name": "Shareable Dashboards",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support public/private shareable links"
+          },
+          {
+            "name": "Email Reports",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami email reports only on cloud/paid plans"
+          },
+          {
+            "name": "Tracking Pixels",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Umami v3 added invisible tracking pixels for emails"
+          },
+          {
+            "name": "Link Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 added short URL link tracking"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "Cookie-Free by Default",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "No Consent Banner Required",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both claim no consent needed for basic analytics"
+          },
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "CCPA Compliant",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "IP Anonymization",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Self-Hostable",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Integrations & SDKs",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "React SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Via npm packages for both"
+          },
+          {
+            "name": "Next.js SDK",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Umami is web-focused, no native mobile SDKs"
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": false
+          },
+          {
+            "name": "Python SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "umami-analytics package available on PyPI"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Data Export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Umami v3 added UI-based data export"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "~2 KB (~1.5 KB gzipped)",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript (browser)",
+          "React (via npm)",
+          "Next.js",
+          "Vue",
+          "Python (umami-analytics)",
+          "REST API"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "Yes - MIT License",
+        "notes": "Both are MIT licensed. Umami has 23,000+ GitHub stars."
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (simple single-container setup)",
+        "competitor": "Docker Compose with PostgreSQL (Node.js 18.18+ required)",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "PostgreSQL (v3 dropped MySQL support)",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "5 years (cloud), unlimited (self-hosted)",
+        "notes": null
+      },
+      {
+        "label": "Language",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "React/Next.js/Node.js",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Umami offers a very generous free tier. OpenPanel offers simpler event-based pricing with all features.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. All features included at every tier. Self-host for free with unlimited events."
+    },
+    "competitor": {
+      "model": "Event-based with very generous free tier",
+      "description": "1M events/month free. $0.00002/event after free tier. Unlimited websites, unlimited team members, 5 years data retention. Self-hosted is completely free with no limits.",
+      "free_tier": "1,000,000 events/month free",
+      "pricing_url": "https://umami.is/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Umami to OpenPanel",
+    "intro": "Both use lightweight scripts with similar event tracking, making migration straightforward.",
+    "difficulty": "easy",
+    "estimated_time": "30 minutes to 2 hours",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts with similar size (~2KB), making the transition easy."
+      },
+      {
+        "title": "Map Custom Events",
+        "description": "Umami custom events translate directly to OpenPanel. umami.track('signup', {plan: 'pro'}) becomes op.track('signup', {plan: 'pro'})."
+      },
+      {
+        "title": "Add User Identification (New)",
+        "description": "Unlike Umami which is fully anonymous, OpenPanel supports user identification. Add op.identify() calls to unlock user profiles, retention by user, and cohort analysis."
+      },
+      {
+        "title": "Recreate Funnels and Reports",
+        "description": "Set up your funnels in OpenPanel. You'll have access to additional product analytics features like user-level analysis that Umami doesn't provide."
+      },
+      {
+        "title": "Remove Umami Script",
+        "description": "Once verified, remove the Umami tracking script. Both are cookie-free so no consent flow changes are needed."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use event-based tracking with similar APIs. umami.track() becomes op.track()."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Most teams start fresh with OpenPanel and run both tools in parallel briefly."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Umami",
+    "intro": "Choose OpenPanel when you need user identification, mobile SDKs, or A/B testing.",
+    "items": [
+      {
+        "title": "SaaS Products Needing User Identification",
+        "description": "Umami anonymizes all visitors by design. If you need to track logged-in users, understand individual customer journeys, or analyze user-level retention, OpenPanel provides these capabilities while still respecting privacy.",
+        "icon": "user-check"
+      },
+      {
+        "title": "Mobile App Analytics",
+        "description": "Umami is designed for web analytics and doesn't offer native mobile SDKs. OpenPanel provides native iOS, Android, and React Native SDKs with full product analytics capabilities.",
+        "icon": "smartphone"
+      },
+      {
+        "title": "Teams Needing A/B Testing",
+        "description": "Umami focuses purely on analytics without experimentation features. If you need to run A/B tests and measure their impact, OpenPanel includes built-in experimentation.",
+        "icon": "git-branch"
+      },
+      {
+        "title": "Companies Building Data Pipelines",
+        "description": "While Umami offers API access and data export, OpenPanel's ClickHouse backend is optimized for high-volume analytics queries and integrations with data warehouses.",
+        "icon": "database"
+      },
+      {
+        "title": "Products Requiring Session-Level Analysis",
+        "description": "Umami provides aggregate metrics but doesn't track individual sessions in detail. OpenPanel lets you analyze specific user sessions and behaviors.",
+        "icon": "activity"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Umami to OpenPanel.",
+    "items": [
+      {
+        "question": "Is OpenPanel as privacy-friendly as Umami?",
+        "answer": "Both are cookie-free by default and GDPR compliant. The key difference is that OpenPanel allows optional user identification for product analytics, while Umami is strictly anonymous by design. You control whether to identify users in OpenPanel."
+      },
+      {
+        "question": "Why switch from Umami to OpenPanel?",
+        "answer": "Teams typically switch when they need user identification, mobile SDKs, or A/B testing. Umami excels at anonymous web analytics, but if you're building a product and need to understand individual user behavior across sessions, OpenPanel provides these capabilities."
+      },
+      {
+        "question": "How does Umami's free tier compare to OpenPanel?",
+        "answer": "Umami Cloud offers 1 million events/month free, which is very generous. OpenPanel offers 10,000 events/month free. However, Umami's self-hosted version is completely free with no limits, as is OpenPanel's self-hosted option."
+      },
+      {
+        "question": "Which has the smaller tracking script?",
+        "answer": "Both are very similar - Umami's script is about 2KB (1.5KB gzipped) and OpenPanel's is 2.3KB. Both are significantly smaller than Google Analytics (45KB+) or Mixpanel."
+      },
+      {
+        "question": "Can Umami track mobile apps?",
+        "answer": "Not with native SDKs. Umami is designed for web analytics and requires API calls for any non-browser tracking. OpenPanel offers native iOS, Android, and React Native SDKs."
+      },
+      {
+        "question": "Does Umami support heatmaps or session replay?",
+        "answer": "No. Umami focuses on privacy-first analytics without session recording or heatmaps. Neither does OpenPanel - both prioritize privacy over invasive tracking methods."
+      },
+      {
+        "question": "How does self-hosting compare?",
+        "answer": "Umami requires Docker with PostgreSQL (Node.js 18.18+ minimum). Umami v3 dropped MySQL support. OpenPanel runs in a single Docker container with simpler setup."
+      },
+      {
+        "question": "Is Umami or OpenPanel better for simple content websites?",
+        "answer": "For simple blogs or content sites where you just need traffic stats without user identification, Umami's generous free tier and simplicity are excellent. For products, SaaS, or apps where you need to understand user behavior, OpenPanel's product analytics features provide more value."
+      }
+    ]
+  },
+  "related_links": {
+    "articles": [
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      },
+      {
+        "title": "Self-hosted web analytics",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "Ackee",
+        "url": "/compare/ackee-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

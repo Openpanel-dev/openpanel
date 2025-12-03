@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { db } from '@openpanel/db';
+import { db, getReportById, getReportsByDashboardId } from '@openpanel/db';
 import { zReportInput } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
@@ -8,6 +8,16 @@ import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const reportRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(
+      z.object({
+        dashboardId: z.string(),
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input: { dashboardId, projectId }, ctx }) => {
+      return getReportsByDashboardId(dashboardId);
+    }),
   create: protectedProcedure
     .input(
       z.object({
@@ -36,7 +46,7 @@ export const reportRouter = createTRPCRouter({
           projectId: dashboard.projectId,
           dashboardId,
           name: report.name,
-          events: report.events,
+          events: report.series,
           interval: report.interval,
           breakdowns: report.breakdowns,
           chartType: report.chartType,
@@ -46,7 +56,7 @@ export const reportRouter = createTRPCRouter({
           previous: report.previous ?? false,
           unit: report.unit,
           criteria: report.criteria,
-          metric: report.metric,
+          metric: report.metric === 'count' ? 'sum' : report.metric,
           funnelGroup: report.funnelGroup,
           funnelWindow: report.funnelWindow,
         },
@@ -81,7 +91,7 @@ export const reportRouter = createTRPCRouter({
         },
         data: {
           name: report.name,
-          events: report.events,
+          events: report.series,
           interval: report.interval,
           breakdowns: report.breakdowns,
           chartType: report.chartType,
@@ -91,7 +101,7 @@ export const reportRouter = createTRPCRouter({
           previous: report.previous ?? false,
           unit: report.unit,
           criteria: report.criteria,
-          metric: report.metric,
+          metric: report.metric === 'count' ? 'sum' : report.metric,
           funnelGroup: report.funnelGroup,
           funnelWindow: report.funnelWindow,
         },
@@ -122,6 +132,172 @@ export const reportRouter = createTRPCRouter({
       return db.report.delete({
         where: {
           id: reportId,
+        },
+      });
+    }),
+  duplicate: protectedProcedure
+    .input(
+      z.object({
+        reportId: z.string(),
+      }),
+    )
+    .mutation(async ({ input: { reportId }, ctx }) => {
+      const report = await db.report.findUniqueOrThrow({
+        where: {
+          id: reportId,
+        },
+      });
+
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: report.projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      return db.report.create({
+        data: {
+          projectId: report.projectId,
+          dashboardId: report.dashboardId,
+          name: `Copy of ${report.name}`,
+          events: report.events!,
+          interval: report.interval,
+          breakdowns: report.breakdowns!,
+          chartType: report.chartType,
+          lineType: report.lineType,
+          range: report.range,
+          formula: report.formula,
+          previous: report.previous,
+          unit: report.unit,
+          criteria: report.criteria,
+          metric: report.metric,
+          funnelGroup: report.funnelGroup,
+          funnelWindow: report.funnelWindow,
+        },
+      });
+    }),
+  get: protectedProcedure
+    .input(
+      z.object({
+        reportId: z.string(),
+      }),
+    )
+    .query(async ({ input: { reportId }, ctx }) => {
+      return getReportById(reportId);
+    }),
+  updateLayout: protectedProcedure
+    .input(
+      z.object({
+        reportId: z.string(),
+        layout: z.object({
+          x: z.number(),
+          y: z.number(),
+          w: z.number(),
+          h: z.number(),
+          minW: z.number().optional(),
+          minH: z.number().optional(),
+          maxW: z.number().optional(),
+          maxH: z.number().optional(),
+        }),
+      }),
+    )
+    .mutation(async ({ input: { reportId, layout }, ctx }) => {
+      const report = await db.report.findUniqueOrThrow({
+        where: {
+          id: reportId,
+        },
+      });
+
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: report.projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      // Upsert the layout (create if doesn't exist, update if it does)
+      return db.reportLayout.upsert({
+        where: {
+          reportId: reportId,
+        },
+        create: {
+          reportId: reportId,
+          x: layout.x,
+          y: layout.y,
+          w: layout.w,
+          h: layout.h,
+          minW: layout.minW,
+          minH: layout.minH,
+          maxW: layout.maxW,
+          maxH: layout.maxH,
+        },
+        update: {
+          x: layout.x,
+          y: layout.y,
+          w: layout.w,
+          h: layout.h,
+          minW: layout.minW,
+          minH: layout.minH,
+          maxW: layout.maxW,
+          maxH: layout.maxH,
+        },
+      });
+    }),
+  getLayouts: protectedProcedure
+    .input(
+      z.object({
+        dashboardId: z.string(),
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input: { dashboardId, projectId }, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      return db.reportLayout.findMany({
+        where: {
+          report: {
+            dashboardId: dashboardId,
+          },
+        },
+        include: {
+          report: true,
+        },
+      });
+    }),
+  resetLayout: protectedProcedure
+    .input(
+      z.object({
+        dashboardId: z.string(),
+        projectId: z.string(),
+      }),
+    )
+    .mutation(async ({ input: { dashboardId, projectId }, ctx }) => {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId: projectId,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
+
+      // Delete all layout data for reports in this dashboard
+      return db.reportLayout.deleteMany({
+        where: {
+          report: {
+            dashboardId: dashboardId,
+          },
         },
       });
     }),

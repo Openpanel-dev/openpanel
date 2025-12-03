@@ -135,7 +135,7 @@ services:
     environment:
       # Common
       - NODE_ENV=production
-      - NEXT_PUBLIC_SELF_HOSTED=true
+      - SELF_HOSTED=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
@@ -143,8 +143,8 @@ services:
       - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
       - SERVICE_FQDN_OPAPI=/api
       # Set coolify FQDN domain
-      - NEXT_PUBLIC_API_URL=$SERVICE_FQDN_OPAPI
-      - NEXT_PUBLIC_DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
+      - API_URL=$SERVICE_FQDN_OPAPI
+      - DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
       # Others
       - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
       - ALLOW_REGISTRATION=${OPENPANEL_ALLOW_REGISTRATION:-false}
@@ -166,15 +166,15 @@ services:
     environment:
       # Common
       - NODE_ENV=production
-      - NEXT_PUBLIC_SELF_HOSTED=true
+      - SELF_HOSTED=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@opkv:6379
       - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
       - SERVICE_FQDN_OPDASHBOARD
       # Set coolify FQDN domain
-      - NEXT_PUBLIC_API_URL=$SERVICE_FQDN_OPAPI
-      - NEXT_PUBLIC_DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
+      - API_URL=$SERVICE_FQDN_OPAPI
+      - DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
     healthcheck:
       test:
         ["CMD-SHELL", "curl -f http://localhost:3000/api/healthcheck || exit 1"]
@@ -193,14 +193,14 @@ services:
       - SERVICE_FQDN_OPBULLBOARD
       # Common
       - NODE_ENV=production
-      - NEXT_PUBLIC_SELF_HOSTED=true
+      - SELF_HOSTED=true
       # URLs
       - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
       - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@opkv:6379
       - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
       # Set coolify FQDN domain
-      - NEXT_PUBLIC_API_URL=$SERVICE_FQDN_OPAPI
+      - API_URL=$SERVICE_FQDN_OPAPI
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
       interval: 10s

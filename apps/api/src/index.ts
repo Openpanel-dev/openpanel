@@ -8,14 +8,18 @@ import Fastify from 'fastify';
 import metricsPlugin from 'fastify-metrics';
 
 import { generateId } from '@openpanel/common';
-import type { IServiceClientWithProject } from '@openpanel/db';
-import { getRedisPub } from '@openpanel/redis';
+import {
+  type IServiceClientWithProject,
+  runWithAlsSession,
+} from '@openpanel/db';
+import { getCache, getRedisPub } from '@openpanel/redis';
 import type { AppRouter } from '@openpanel/trpc';
 import { appRouter, createContext } from '@openpanel/trpc';
 
 import {
   EMPTY_SESSION,
   type SessionValidationResult,
+  decodeSessionToken,
   validateSessionToken,
 } from '@openpanel/auth';
 import sourceMapSupport from 'source-map-support';
@@ -24,7 +28,6 @@ import {
   liveness,
   readiness,
 } from './controllers/healthcheck.controller';
-import { fixHook } from './hooks/fix.hook';
 import { ipHook } from './hooks/ip.hook';
 import { requestIdHook } from './hooks/request-id.hook';
 import { requestLoggingHook } from './hooks/request-logging.hook';
@@ -51,7 +54,8 @@ process.env.TZ = 'UTC';
 declare module 'fastify' {
   interface FastifyRequest {
     client: IServiceClientWithProject | null;
-    clientIp?: string;
+    clientIp: string;
+    clientIpHeader: string;
     timestamp?: number;
     session: SessionValidationResult;
   }
@@ -95,14 +99,12 @@ const startServer = async () => {
         if (isPrivatePath) {
           // Allow multiple dashboard domains
           const allowedOrigins = [
-            process.env.NEXT_PUBLIC_DASHBOARD_URL,
+            process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
             ...(process.env.API_CORS_ORIGINS?.split(',') ?? []),
           ].filter(Boolean);
 
           const origin = req.headers.origin;
           const isAllowed = origin && allowedOrigins.includes(origin);
-
-          logger.info('Allowed origins', { allowedOrigins, origin, isAllowed });
 
           return callback(null, {
             origin: isAllowed ? origin : false,
@@ -123,7 +125,6 @@ const startServer = async () => {
     fastify.addHook('onRequest', requestIdHook);
     fastify.addHook('onRequest', timestampHook);
     fastify.addHook('onRequest', ipHook);
-    fastify.addHook('onRequest', fixHook);
     fastify.addHook('onResponse', requestLoggingHook);
 
     fastify.register(compress, {
@@ -142,10 +143,11 @@ const startServer = async () => {
       instance.addHook('onRequest', async (req) => {
         if (req.cookies?.session) {
           try {
-            const session = await validateSessionToken(req.cookies.session);
-            if (session.session) {
-              req.session = session;
-            }
+            const sessionId = decodeSessionToken(req.cookies.session);
+            const session = await runWithAlsSession(sessionId, () =>
+              validateSessionToken(req.cookies.session),
+            );
+            req.session = session;
           } catch (e) {
             req.session = EMPTY_SESSION;
           }
@@ -160,11 +162,18 @@ const startServer = async () => {
           router: appRouter,
           createContext: createContext,
           onError(ctx) {
+            if (
+              ctx.error.code === 'UNAUTHORIZED' &&
+              ctx.path === 'organization.list'
+            ) {
+              return;
+            }
             ctx.req.log.error('trpc error', {
               error: ctx.error,
               path: ctx.path,
               input: ctx.input,
               type: ctx.type,
+              session: ctx.ctx?.session,
             });
           },
         } satisfies FastifyTRPCPluginOptions<AppRouter>['trpcOptions'],
@@ -191,7 +200,10 @@ const startServer = async () => {
       instance.get('/healthz/live', liveness);
       instance.get('/healthz/ready', readiness);
       instance.get('/', (_request, reply) =>
-        reply.send({ name: 'openpanel sdk api' }),
+        reply.send({
+          status: 'ok',
+          message: 'Successfully running OpenPanel.dev API',
+        }),
       );
     });
 

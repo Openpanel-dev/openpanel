@@ -1,22 +1,27 @@
 {
   "name": "@openpanel/payments",
   "version": "0.0.1",
+  "type": "module",
   "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./prices": "./src/prices.ts"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@polar-sh/sdk": "^0.26.1"
+    "@polar-sh/sdk": "^0.35.4"
   },
   "devDependencies": {
     "@openpanel/db": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/inquirer": "^9.0.7",
     "@types/inquirer-autocomplete-prompt": "^3.0.3",
-    "@types/node": "20.14.8",
-    "@types/react": "^18.2.0",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
     "inquirer": "^9.3.5",
     "inquirer-autocomplete-prompt": "^3.0.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

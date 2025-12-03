@@ -1,0 +1,499 @@
+{
+  "slug": "mixpanel-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "The best Mixpanel alternative",
+    "description": "Compare OpenPanel with Mixpanel: pricing, privacy, self-hosting, and features. OpenPanel offers similar product analytics at a fraction of the cost with EU-only hosting.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Mixpanel alternative",
+    "subheading": "OpenPanel is an open-source, privacy-first alternative to Mixpanel. Get powerful product analytics—events, funnels, retention, and user profiles—without event-based pricing that scales to thousands per month or sending your data to US servers.",
+    "badges": [
+      "Open-source",
+      "EU-only hosting",
+      "Self-hostable",
+      "From $2.50/month"
+    ]
+  },
+  "competitor": {
+    "name": "Mixpanel",
+    "logo": "/logos/mixpanel.svg",
+    "url": "https://mixpanel.com",
+    "short_description": "Enterprise product analytics platform for tracking user behavior across web and mobile applications.",
+    "founded": 2009,
+    "headquarters": "San Francisco, CA"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Mixpanel: Which is right for you?",
+    "intro": "Both platforms help you understand how users interact with your product. The key differences are pricing structure, data privacy approach, and complexity level.",
+    "one_liner": "OpenPanel is simpler, more affordable, and privacy-focused; Mixpanel is more powerful for enterprise teams with complex analytics needs.",
+    "best_for_openpanel": [
+      "Startups and medium-sized businesses who want powerful analytics without enterprise pricing",
+      "Privacy-conscious teams requiring EU-only data storage",
+      "Developers who want to self-host and own their data",
+      "Teams looking for both web and product analytics in one tool"
+    ],
+    "best_for_competitor": [
+      "Enterprise teams needing advanced experimentation and feature flags",
+      "Organizations requiring session replay across web and mobile",
+      "Companies with complex data warehouse integration needs",
+      "Teams that need Metric Trees for organizational alignment"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Mixpanel compare on the factors that matter most.",
+    "items": [
+      {
+        "label": "Starting price",
+        "openpanel": "$2.50/month (5k events)",
+        "competitor": "$0 (1M events free, then $20+/month)"
+      },
+      {
+        "label": "Self-hosting",
+        "openpanel": "Yes, completely free",
+        "competitor": "No"
+      },
+      {
+        "label": "Data location",
+        "openpanel": "EU-only (or your own servers)",
+        "competitor": "US default, EU/India optional"
+      },
+      {
+        "label": "Cookies",
+        "openpanel": "Cookie-free by default",
+        "competitor": "Uses cookies by default"
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (AGPL-3.0)",
+        "competitor": "No"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "OpenPanel covers the core analytics most teams need, while Mixpanel extends into enterprise-grade experimentation and session replay.",
+    "groups": [
+      {
+        "group": "Core analytics",
+        "features": [
+          {
+            "name": "Event tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Funnels",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Mixpanel offers more advanced multi-path funnels"
+          },
+          {
+            "name": "Retention analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "User profiles",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Cohorts",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Mixpanel has more advanced cohort builder"
+          },
+          {
+            "name": "Custom dashboards",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Real-time data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Web analytics",
+        "features": [
+          {
+            "name": "Page views & visitors",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Traffic sources",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Geographic data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Device & browser stats",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "UTM tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Advanced features",
+        "features": [
+          {
+            "name": "A/B testing",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Mixpanel has more advanced experimentation with Experimentation 2.0"
+          },
+          {
+            "name": "Feature flags",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Mixpanel offers native feature flags (Enterprise)"
+          },
+          {
+            "name": "Session replay",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Mixpanel supports web, iOS, and Android"
+          },
+          {
+            "name": "Revenue tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "AI insights",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer AI-powered features"
+          },
+          {
+            "name": "Metric Trees",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Mixpanel's unique feature for mapping metrics to outcomes"
+          },
+          {
+            "name": "Notifications/Alerts",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel supports webhooks, Slack, Discord"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & compliance",
+        "features": [
+          {
+            "name": "Self-hosting",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "EU data residency",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel is EU-only; Mixpanel offers EU as an option"
+          },
+          {
+            "name": "Cookie-free tracking",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Mixpanel uses cookies by default"
+          },
+          {
+            "name": "GDPR compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "DPA available",
+            "openpanel": "on request",
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "SOC 2 Type II",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Integrations & data",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Data export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Warehouse connectors",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Mixpanel has extensive warehouse integration"
+          },
+          {
+            "name": "Segment integration",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's how the SDKs and technical implementations compare.",
+    "items": [
+      {
+        "label": "SDK size (JS)",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "~20+ KB gzipped",
+        "notes": "OpenPanel's lighter SDK means faster page loads"
+      },
+      {
+        "label": "Supported platforms",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Node.js",
+          "Python",
+          "Swift",
+          "Kotlin",
+          "React Native",
+          "Astro",
+          "Remix",
+          "Express"
+        ],
+        "competitor": [
+          "JavaScript",
+          "React Native",
+          "iOS (Swift/Obj-C)",
+          "Android",
+          "Flutter",
+          "Unity",
+          "Python",
+          "Node.js",
+          "Ruby",
+          "PHP",
+          "Go",
+          "Java"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (AGPL-3.0)",
+        "competitor": "No",
+        "notes": null
+      },
+      {
+        "label": "Self-hosted deployment",
+        "openpanel": "Docker, simple setup script",
+        "competitor": "Not available",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "Proprietary (Arb)",
+        "notes": "OpenPanel gives you direct SQL access to your data"
+      },
+      {
+        "label": "Autocapture",
+        "openpanel": "Manual events + auto pageviews",
+        "competitor": "Full autocapture available",
+        "notes": "Mixpanel can automatically capture clicks, inputs, etc."
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "OpenPanel offers predictable, affordable pricing. Mixpanel's pricing can scale significantly as your usage grows.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing starting at $2.50/month for 5,000 events. 100,000 events costs $20/month. Self-host for free with unlimited events. No limits on users, dashboards, or features at any tier."
+    },
+    "competitor": {
+      "model": "Event-based, tiered",
+      "description": "Free tier includes 1M events/month with limited features. Growth plans start at $20/month and scale with usage. Enterprise plans start around $1,167/month with advanced features like session replay and feature flags.",
+      "free_tier": "Yes (1M events/month)",
+      "pricing_url": "https://mixpanel.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Mixpanel to OpenPanel",
+    "intro": "Switching from Mixpanel to OpenPanel is straightforward thanks to similar API patterns and our built-in import tool.",
+    "difficulty": "easy",
+    "estimated_time": "1-2 hours",
+    "steps": [
+      {
+        "title": "Export your Mixpanel data",
+        "description": "Use Mixpanel's data export API to extract your historical events if you want to preserve them."
+      },
+      {
+        "title": "Import into OpenPanel",
+        "description": "OpenPanel has a built-in Mixpanel importer. Upload your exported data to maintain historical context."
+      },
+      {
+        "title": "Install the OpenPanel SDK",
+        "description": "Replace the Mixpanel SDK with OpenPanel's lightweight tracker. The API is similar—track(), identify(), and setGlobalProperties() work the same way."
+      },
+      {
+        "title": "Update your event calls",
+        "description": "Most Mixpanel event calls translate directly. Review your implementation and update any Mixpanel-specific features."
+      },
+      {
+        "title": "Verify and go live",
+        "description": "Run both tools in parallel briefly to validate data consistency, then switch fully to OpenPanel."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "OpenPanel uses similar method names: track(), identify(), setGlobalProperties(). Most implementations translate with minimal changes."
+    },
+    "historical_data": {
+      "can_import": true,
+      "notes": "OpenPanel has a built-in Mixpanel importer. Contact us if you need assistance with large data migrations."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Mixpanel",
+    "intro": "OpenPanel shines for teams that value simplicity, privacy, and cost-effectiveness over enterprise complexity.",
+    "items": [
+      {
+        "title": "Startups watching their budget",
+        "description": "Start at $2.50/month instead of dealing with Mixpanel's pricing that can jump to hundreds or thousands as you scale.",
+        "icon": "dollar"
+      },
+      {
+        "title": "Privacy-first products",
+        "description": "Cookie-free tracking and EU-only hosting by default. No need to configure data residency or worry about US data transfers.",
+        "icon": "shield"
+      },
+      {
+        "title": "Self-hosted requirements",
+        "description": "Deploy OpenPanel on your own infrastructure for complete data ownership. Perfect for regulated industries or security-conscious teams.",
+        "icon": "server"
+      },
+      {
+        "title": "Web + product analytics combined",
+        "description": "Get Plausible-style web analytics and Mixpanel-style product analytics in one tool, not two separate subscriptions.",
+        "icon": "chart"
+      },
+      {
+        "title": "Developer-led teams",
+        "description": "Open source, tiny SDK, direct database access. Built by developers, for developers who want control.",
+        "icon": "code"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Mixpanel to OpenPanel.",
+    "items": [
+      {
+        "question": "Does OpenPanel have all the features I use in Mixpanel?",
+        "answer": "OpenPanel covers the core features most teams actually use: event tracking, funnels, retention, cohorts, user profiles, and A/B testing. If you rely heavily on Mixpanel's session replay, feature flags, or Metric Trees, those aren't available in OpenPanel yet."
+      },
+      {
+        "question": "Can I import my historical Mixpanel data?",
+        "answer": "Yes! OpenPanel has a built-in Mixpanel importer. You can export your data from Mixpanel and import it directly into OpenPanel to maintain historical context."
+      },
+      {
+        "question": "How does pricing compare at scale?",
+        "answer": "OpenPanel is significantly cheaper at most scales. For example, 100k events costs $20/month on OpenPanel. On Mixpanel, once you exceed the free tier limits, costs can climb quickly into hundreds per month. Self-hosting OpenPanel is free with no event limits."
+      },
+      {
+        "question": "Is OpenPanel GDPR compliant?",
+        "answer": "Yes. OpenPanel is EU-based (Sweden), uses cookie-free tracking by default, and stores data in EU servers. We also offer DPA agreements on request."
+      },
+      {
+        "question": "Can I self-host OpenPanel?",
+        "answer": "Yes. OpenPanel is fully open source and can be self-hosted with a simple Docker setup script. Self-hosting is completely free with unlimited events."
+      },
+      {
+        "question": "How does the SDK size compare?",
+        "answer": "OpenPanel's JavaScript SDK is ~2.3 KB gzipped compared to Mixpanel's 20+ KB. This means faster page loads and better Core Web Vitals scores."
+      },
+      {
+        "question": "Does OpenPanel support mobile apps?",
+        "answer": "Yes. OpenPanel has SDKs for Swift (iOS), Kotlin (Android), and React Native. While not as mature as Mixpanel's mobile SDKs, they cover the core tracking needs."
+      }
+    ]
+  },
+  "related_links": {
+    "articles": [
+      {
+        "title": "Find an alternative to Mixpanel",
+        "url": "/articles/alternatives-to-mixpanel"
+      },
+      {
+        "title": "Mixpanel vs OpenPanel",
+        "url": "/articles/vs-mixpanel"
+      },
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "name": "Amplitude",
+        "url": "/compare/amplitude-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

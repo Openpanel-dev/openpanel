@@ -83,60 +83,10 @@ export type IGetTopGenericInput = z.infer<typeof zGetTopGenericInput> & {
 };
 
 export class OverviewService {
-  private pendingQueries: Map<string, Promise<number | null>> = new Map();
-
   constructor(private client: typeof ch) {}
 
   isPageFilter(filters: IChartEventFilter[]) {
     return filters.some((filter) => filter.name === 'path' && filter.value);
-  }
-
-  getTotalSessions({
-    projectId,
-    startDate,
-    endDate,
-    filters,
-    timezone,
-  }: {
-    projectId: string;
-    startDate: string;
-    endDate: string;
-    filters: IChartEventFilter[];
-    timezone: string;
-  }) {
-    const where = this.getRawWhereClause('sessions', filters);
-    const key = `total_sessions_${projectId}_${startDate}_${endDate}_${JSON.stringify(filters)}`;
-
-    // Check if there's already a pending query for this key
-    const pendingQuery = this.pendingQueries.get(key);
-    if (pendingQuery) {
-      return pendingQuery.then((res) => res ?? 0);
-    }
-
-    // Create new query promise and store it
-    const queryPromise = getCache(key, 15, async () => {
-      try {
-        const result = await clix(this.client, timezone)
-          .select<{
-            total_sessions: number;
-          }>(['sum(sign) as total_sessions'])
-          .from(TABLE_NAMES.sessions, true)
-          .where('project_id', '=', projectId)
-          .where('created_at', 'BETWEEN', [
-            clix.datetime(startDate, 'toDateTime'),
-            clix.datetime(endDate, 'toDateTime'),
-          ])
-          .rawWhere(where)
-          .having('sum(sign)', '>', 0)
-          .execute();
-        return result?.[0]?.total_sessions ?? 0;
-      } catch (error) {
-        return 0;
-      }
-    });
-
-    this.pendingQueries.set(key, queryPromise);
-    return queryPromise;
   }
 
   getMetrics({
@@ -154,6 +104,7 @@ export class OverviewService {
       avg_session_duration: number;
       total_screen_views: number;
       views_per_session: number;
+      total_revenue: number;
     };
     series: {
       date: string;
@@ -163,18 +114,9 @@ export class OverviewService {
       avg_session_duration: number;
       total_screen_views: number;
       views_per_session: number;
+      total_revenue: number;
     }[];
   }> {
-    console.log('-----------------');
-    console.log('getMetrics', {
-      projectId,
-      filters,
-      startDate,
-      endDate,
-      interval,
-      timezone,
-    });
-
     const where = this.getRawWhereClause('sessions', filters);
     if (this.isPageFilter(filters)) {
       // Session aggregation with bounce rates
@@ -182,6 +124,7 @@ export class OverviewService {
         .select([
           `${clix.toStartOf('created_at', interval, timezone)} AS date`,
           'round((countIf(is_bounce = 1 AND sign = 1) * 100.) / countIf(sign = 1), 2) AS bounce_rate',
+          'sum(revenue * sign) AS total_revenue',
         ])
         .from(TABLE_NAMES.sessions, true)
         .where('sign', '=', 1)
@@ -210,6 +153,12 @@ export class OverviewService {
         ])
         .rawWhere(this.getRawWhereClause('events', filters));
 
+      // Use toDate for month/week intervals, toDateTime for others
+      const rollupDate =
+        interval === 'month' || interval === 'week'
+          ? clix.date('1970-01-01')
+          : clix.datetime('1970-01-01 00:00:00');
+
       return clix(this.client, timezone)
         .with('session_agg', sessionAggQuery)
         .with(
@@ -217,14 +166,21 @@ export class OverviewService {
           clix(this.client, timezone)
             .select(['bounce_rate'])
             .from('session_agg')
-            .where('date', '=', clix.exp("'1970-01-01 00:00:00'")),
+            .where('date', '=', rollupDate),
+        )
+        .with(
+          'overall_total_revenue',
+          clix(this.client, timezone)
+            .select(['total_revenue'])
+            .from('session_agg')
+            .where('date', '=', rollupDate),
         )
         .with(
           'daily_stats',
           clix(this.client, timezone)
-            .select(['date', 'bounce_rate'])
+            .select(['date', 'bounce_rate', 'total_revenue'])
             .from('session_agg')
-            .where('date', '!=', clix.exp("'1970-01-01 00:00:00'")),
+            .where('date', '!=', rollupDate),
         )
         .with('overall_unique_visitors', overallUniqueVisitorsQuery)
         .select<{
@@ -235,9 +191,11 @@ export class OverviewService {
           avg_session_duration: number;
           total_screen_views: number;
           views_per_session: number;
+          total_revenue: number;
           overall_unique_visitors: number;
           overall_total_sessions: number;
           overall_bounce_rate: number;
+          overall_total_revenue: number;
         }>([
           `${clix.toStartOf('e.created_at', interval)} AS date`,
           'ds.bounce_rate as bounce_rate',
@@ -247,9 +205,11 @@ export class OverviewService {
           'if(isNaN(_avg_session_duration), 0, _avg_session_duration) AS avg_session_duration',
           'count(*) AS total_screen_views',
           'round((count(*) * 1.) / uniq(e.session_id), 2) AS views_per_session',
+          'ds.total_revenue AS total_revenue',
           '(SELECT unique_visitors FROM overall_unique_visitors) AS overall_unique_visitors',
           '(SELECT total_sessions FROM overall_unique_visitors) AS overall_total_sessions',
           '(SELECT bounce_rate FROM overall_bounce_rate) AS overall_bounce_rate',
+          '(SELECT total_revenue FROM overall_total_revenue) AS overall_total_revenue',
         ])
         .from(`${TABLE_NAMES.events} AS e`)
         .leftJoin(
@@ -263,7 +223,7 @@ export class OverviewService {
           clix.datetime(endDate, 'toDateTime'),
         ])
         .rawWhere(this.getRawWhereClause('events', filters))
-        .groupBy(['date', 'ds.bounce_rate'])
+        .groupBy(['date', 'ds.bounce_rate', 'ds.total_revenue'])
         .orderBy('date', 'ASC')
         .fill(
           clix.toStartOf(
@@ -288,7 +248,8 @@ export class OverviewService {
             (item) =>
               item.overall_bounce_rate !== null ||
               item.overall_total_sessions !== null ||
-              item.overall_unique_visitors !== null,
+              item.overall_unique_visitors !== null ||
+              item.overall_total_revenue !== null,
           );
           return {
             metrics: {
@@ -304,12 +265,14 @@ export class OverviewService {
               views_per_session: average(
                 res.map((item) => item.views_per_session),
               ),
+              total_revenue: anyRowWithData?.overall_total_revenue ?? 0,
             },
             series: res.map(
               omit([
                 'overall_bounce_rate',
                 'overall_unique_visitors',
                 'overall_total_sessions',
+                'overall_total_revenue',
               ]),
             ),
           };
@@ -325,6 +288,7 @@ export class OverviewService {
         avg_session_duration: number;
         total_screen_views: number;
         views_per_session: number;
+        total_revenue: number;
       }>([
         `${clix.toStartOf('created_at', interval, timezone)} AS date`,
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) as bounce_rate',
@@ -334,6 +298,7 @@ export class OverviewService {
         'if(isNaN(_avg_session_duration), 0, _avg_session_duration) AS avg_session_duration',
         'sum(sign * screen_view_count) AS total_screen_views',
         'round(sum(sign * screen_view_count) * 1.0 / sum(sign), 2) AS views_per_session',
+        'sum(revenue * sign) AS total_revenue',
       ])
       .from('sessions')
       .where('created_at', 'BETWEEN', [
@@ -374,6 +339,7 @@ export class OverviewService {
           avg_session_duration: res[0]?.avg_session_duration ?? 0,
           total_screen_views: res[0]?.total_screen_views ?? 0,
           views_per_session: res[0]?.views_per_session ?? 0,
+          total_revenue: res[0]?.total_revenue ?? 0,
         },
         series: res
           .slice(1)
@@ -448,6 +414,7 @@ export class OverviewService {
         'entry_path',
         'entry_origin',
         'coalesce(round(countIf(is_bounce = 1 AND sign = 1) * 100.0 / countIf(sign = 1), 2), 0) as bounce_rate',
+        'sum(revenue * sign) as revenue',
       ])
       .from(TABLE_NAMES.sessions, true)
       .where('sign', '=', 1)
@@ -471,6 +438,7 @@ export class OverviewService {
         avg_duration: number;
         bounce_rate: number;
         sessions: number;
+        revenue: number;
       }>([
         'p.title',
         'p.origin',
@@ -478,6 +446,7 @@ export class OverviewService {
         'p.avg_duration',
         'p.count as sessions',
         'b.bounce_rate',
+        'coalesce(b.revenue, 0) as revenue',
       ])
       .from('page_stats p', false)
       .leftJoin(
@@ -486,14 +455,6 @@ export class OverviewService {
       )
       .orderBy('sessions', 'DESC')
       .limit(limit);
-
-    const totalSessions = await this.getTotalSessions({
-      projectId,
-      startDate,
-      endDate,
-      filters,
-      timezone,
-    });
 
     return mainQuery.execute();
   }
@@ -527,12 +488,14 @@ export class OverviewService {
         avg_duration: number;
         bounce_rate: number;
         sessions: number;
+        revenue: number;
       }>([
         `${mode}_origin AS origin`,
         `${mode}_path AS path`,
         'round(avg(duration * sign)/1000, 2) as avg_duration',
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) as bounce_rate',
         'sum(sign) as sessions',
+        'sum(revenue * sign) as revenue',
       ])
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
@@ -559,14 +522,6 @@ export class OverviewService {
           clix.exp('(SELECT session_id FROM distinct_sessions)'),
         );
     }
-
-    const totalSessions = await this.getTotalSessions({
-      projectId,
-      startDate,
-      endDate,
-      filters,
-      timezone,
-    });
 
     return mainQuery.execute();
   }
@@ -636,12 +591,14 @@ export class OverviewService {
         sessions: number;
         bounce_rate: number;
         avg_session_duration: number;
+        revenue: number;
       }>([
         prefixColumn && `${prefixColumn} as prefix`,
         `nullIf(${column}, '') as name`,
         'sum(sign) as sessions',
         'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) AS bounce_rate',
         'round(avgIf(duration, duration > 0 AND sign > 0), 2)/1000 AS avg_session_duration',
+        'sum(revenue * sign) as revenue',
       ])
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
@@ -670,16 +627,7 @@ export class OverviewService {
       mainQuery.rawWhere(this.getRawWhereClause('sessions', filters));
     }
 
-    const [res, totalSessions] = await Promise.all([
-      mainQuery.execute(),
-      this.getTotalSessions({
-        projectId,
-        startDate,
-        endDate,
-        filters,
-        timezone,
-      }),
-    ]);
+    const res = await mainQuery.execute();
 
     return res;
   }

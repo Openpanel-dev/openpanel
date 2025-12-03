@@ -2,12 +2,16 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
 }
 
-generator json {
-  provider = "prisma-json-types-generator"
-}
+// generator json {
+//   provider = "prisma-json-types-generator"
+// }
 
 datasource db {
   provider  = "postgresql"
@@ -168,17 +172,18 @@ model Invite {
 }
 
 model Project {
-  id             String        @id @default(dbgenerated("gen_random_uuid()"))
-  name           String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String
-  eventsCount    Int           @default(0)
-  types          ProjectType[] @default([])
-  domain         String?
-  cors           String[]      @default([])
-  crossDomain    Boolean       @default(false)
+  id                         String        @id @default(dbgenerated("gen_random_uuid()"))
+  name                       String
+  organization               Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId             String
+  eventsCount                Int           @default(0)
+  types                      ProjectType[] @default([])
+  domain                     String?
+  cors                       String[]      @default([])
+  crossDomain                Boolean       @default(false)
+  allowUnsafeRevenueTracking Boolean       @default(false)
   /// [IPrismaProjectFilters]
-  filters        Json          @default("[]")
+  filters                    Json          @default("[]")
 
   clients    Client[]
   reports    Report[]
@@ -190,6 +195,7 @@ model Project {
 
   notificationRules NotificationRule[]
   notifications     Notification[]
+  imports           Import[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -245,6 +251,8 @@ model Client {
   project        Project?     @relation(fields: [projectId], references: [id], onDelete: Cascade)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
+
+  ignoreCorsAndSecret Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -315,12 +323,36 @@ model Report {
   funnelWindow Float?
 
   dashboardId String
-  dashboard   Dashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  layout      ReportLayout?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("reports")
+}
+
+model ReportLayout {
+  id       String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reportId String @unique @db.Uuid
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  // Grid position and size
+  x Int @default(0)
+  y Int @default(0)
+  w Int @default(4)
+  h Int @default(3)
+
+  // Optional: store additional layout preferences
+  minW Int? @default(2)
+  minH Int? @default(2)
+  maxW Int?
+  maxH Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("report_layouts")
 }
 
 model ShareOverview {
@@ -436,4 +468,32 @@ model ResetPassword {
   updatedAt DateTime @default(now()) @updatedAt
 
   @@map("reset_password")
+}
+
+enum ImportStatus {
+  pending
+  processing
+  completed
+  failed
+}
+
+model Import {
+  id              String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  jobId           String? // BullMQ job ID
+  status          ImportStatus
+  statusMessage   String? // Human-readable current step like "Importing events (Feb 2025)", "Generating session IDs"
+  errorMessage    String?
+  /// [IPrismaImportConfig]
+  config          Json
+  totalEvents     Int          @default(0)
+  processedEvents Int          @default(0)
+  currentStep     String?
+  currentBatch    String? // String date 2020-01-01
+  createdAt       DateTime     @default(now())
+  completedAt     DateTime?
+  updatedAt       DateTime     @default(now()) @updatedAt
+
+  @@map("imports")
 }

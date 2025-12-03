@@ -1,0 +1,181 @@
+import { formatDateTime, formatTime } from '@/utils/date';
+import type { ColumnDef } from '@tanstack/react-table';
+import { isToday } from 'date-fns';
+
+import { ColumnCreatedAt } from '@/components/column-created-at';
+import { ProjectLink } from '@/components/links';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
+import type { RouterOutputs } from '@/trpc/client';
+import type { INotificationPayload } from '@openpanel/db';
+
+function getEventFromPayload(payload: INotificationPayload | null) {
+  if (payload?.type === 'event') {
+    return payload.event;
+  }
+  if (payload?.type === 'funnel') {
+    return payload.funnel[0] || null;
+  }
+  return null;
+}
+
+export function useColumns() {
+  const columns: ColumnDef<RouterOutputs['notification']['list'][number]>[] = [
+    {
+      accessorKey: 'title',
+      header: 'Title',
+      cell({ row }) {
+        const { title } = row.original;
+        return (
+          <div className="row gap-2 items-center">
+            {/* {isReadAt === null && <PingBadge>Unread</PingBadge>} */}
+            <span className="max-w-md truncate font-medium">{title}</span>
+          </div>
+        );
+      },
+      meta: {
+        variant: 'text',
+        placeholder: 'Search',
+        label: 'Title',
+      },
+    },
+    {
+      accessorKey: 'message',
+      header: 'Message',
+      cell({ row }) {
+        const { message } = row.original;
+        return (
+          <div className="inline-flex min-w-full flex-none items-center gap-2">
+            {message}
+          </div>
+        );
+      },
+      meta: {
+        label: 'Message',
+        hidden: true,
+      },
+    },
+    {
+      accessorKey: 'integration',
+      header: 'Integration',
+      cell({ row }) {
+        const integration = row.original.integration;
+        return <div>{integration?.name}</div>;
+      },
+      meta: {
+        label: 'Integration',
+      },
+    },
+    {
+      accessorKey: 'notificationRule',
+      header: 'Rule',
+      cell({ row }) {
+        const rule = row.original.notificationRule;
+        return <div>{rule?.name}</div>;
+      },
+      meta: {
+        label: 'Rule',
+        hidden: true,
+      },
+    },
+    {
+      accessorKey: 'country',
+      header: 'Country',
+      cell({ row }) {
+        const { payload } = row.original;
+        const event = getEventFromPayload(payload);
+        if (!event) {
+          return null;
+        }
+        return (
+          <div className="inline-flex min-w-full flex-none items-center gap-2">
+            <SerieIcon name={event.country} />
+            <span>{event.city}</span>
+          </div>
+        );
+      },
+      meta: {
+        label: 'Country',
+      },
+    },
+    {
+      accessorKey: 'os',
+      header: 'OS',
+      cell({ row }) {
+        const { payload } = row.original;
+        const event = getEventFromPayload(payload);
+        if (!event) {
+          return null;
+        }
+        return (
+          <div className="flex min-w-full items-center gap-2">
+            <SerieIcon name={event.os} />
+            <span>{event.os}</span>
+          </div>
+        );
+      },
+      meta: {
+        label: 'OS',
+      },
+    },
+    {
+      accessorKey: 'browser',
+      header: 'Browser',
+      cell({ row }) {
+        const { payload } = row.original;
+        const event = getEventFromPayload(payload);
+        if (!event) {
+          return null;
+        }
+        return (
+          <div className="inline-flex min-w-full flex-none items-center gap-2">
+            <SerieIcon name={event.browser} />
+            <span>{event.browser}</span>
+          </div>
+        );
+      },
+      meta: {
+        label: 'Browser',
+      },
+    },
+    {
+      accessorKey: 'profile',
+      header: createHeaderColumn('Profile'),
+      cell({ row }) {
+        const { payload } = row.original;
+        const event = getEventFromPayload(payload);
+        if (!event) {
+          return null;
+        }
+        return (
+          <ProjectLink
+            href={`/profiles/${event.profileId}`}
+            className="inline-flex min-w-full flex-none items-center gap-2"
+          >
+            {event.profileId}
+          </ProjectLink>
+        );
+      },
+      meta: {
+        label: 'Profile',
+      },
+    },
+    {
+      accessorKey: 'createdAt',
+      header: 'Created at',
+      size: ColumnCreatedAt.size,
+      cell: ({ row }) => {
+        const item = row.original;
+        return <ColumnCreatedAt>{item.createdAt}</ColumnCreatedAt>;
+      },
+      filterFn: 'isWithinRange',
+      meta: {
+        variant: 'dateRange',
+        placeholder: 'Created at',
+        label: 'Created at',
+      },
+    },
+  ];
+
+  return columns;
+}

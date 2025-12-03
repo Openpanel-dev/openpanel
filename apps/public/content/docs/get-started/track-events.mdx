@@ -1,0 +1,48 @@
+---
+title: Track Events
+description: Learn how to track custom events to measure user actions.
+---
+
+Events are the core of OpenPanel. They allow you to measure specific actions users take on your site, like clicking a button, submitting a form, or completing a purchase.
+
+## Tracking an event
+
+To track an event, simply call the `track` method with an event name.
+
+```javascript
+op.track('button_clicked');
+```
+
+## Adding properties
+
+You can add additional context to your events by passing a properties object. This helps you understand the details of the interaction.
+
+```javascript
+op.track('signup_button_clicked', {
+  location: 'header',
+  color: 'blue',
+  variant: 'primary'
+});
+```
+
+### Common property types
+
+- **Strings**: Text values like names, categories, or IDs.
+- **Numbers**: Numeric values like price, quantity, or score.
+- **Booleans**: True or false values.
+
+## Using Data Attributes
+
+If you prefer not to write JavaScript, you can use data attributes to track clicks automatically.
+
+```html
+<button 
+  data-track="signup_clicked" 
+  data-location="header"
+>
+  Sign Up
+</button>
+```
+
+When a user clicks this button, OpenPanel will automatically track a `signup_clicked` event with the property `location: 'header'`.
+

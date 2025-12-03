@@ -1,5 +1,5 @@
 import { NOT_SET_VALUE } from '@openpanel/constants';
-import type { IChartInput } from '@openpanel/validation';
+import type { IChartEvent, IChartInput } from '@openpanel/validation';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -7,6 +7,7 @@ import {
   getEventFiltersWhereClause,
   getSelectPropertyKey,
 } from './chart.service';
+import { onlyReportEvents } from './reports.service';
 
 export class ConversionService {
   constructor(private client: typeof ch) {}
@@ -17,15 +18,21 @@ export class ConversionService {
     endDate,
     funnelGroup,
     funnelWindow = 24,
-    events,
+    series,
     breakdowns = [],
+    limit,
     interval,
-  }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'>) {
+    timezone,
+  }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
+    timezone: string;
+  }) {
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
     const breakdownColumns = breakdowns.map(
       (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
     );
     const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
+
+    const events = onlyReportEvents(series);
 
     if (events.length !== 2) {
       throw new Error('events must be an array of two events');
@@ -44,7 +51,7 @@ export class ConversionService {
       getEventFiltersWhereClause(eventB.filters),
     ).join(' AND ');
 
-    const eventACte = clix(this.client)
+    const eventACte = clix(this.client, timezone)
       .select([
         `DISTINCT ${group}`,
         'created_at AS a_time',
@@ -56,22 +63,22 @@ export class ConversionService {
       .where('name', '=', eventA.name)
       .rawWhere(whereA)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ]);
 
-    const eventBCte = clix(this.client)
+    const eventBCte = clix(this.client, timezone)
       .select([group, 'created_at AS b_time'])
       .from(TABLE_NAMES.events)
       .where('project_id', '=', projectId)
       .where('name', '=', eventB.name)
       .rawWhere(whereB)
       .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate),
-        clix.datetime(endDate),
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
       ]);
 
-    const query = clix(this.client)
+    const query = clix(this.client, timezone)
       .with('event_a', eventACte)
       .with('event_b', eventBCte)
       .select<{
@@ -108,18 +115,20 @@ export class ConversionService {
     }
 
     const results = await query.execute();
-    return this.toSeries(results, breakdowns).map((serie, serieIndex) => {
-      return {
-        ...serie,
-        data: serie.data.map((d, index) => ({
-          ...d,
-          timestamp: new Date(d.date).getTime(),
-          serieIndex,
-          index,
-          serie: omit(['data'], serie),
-        })),
-      };
-    });
+    return this.toSeries(results, breakdowns, limit).map(
+      (serie, serieIndex) => {
+        return {
+          ...serie,
+          data: serie.data.map((d, index) => ({
+            ...d,
+            timestamp: new Date(d.date).getTime(),
+            serieIndex,
+            index,
+            serie: omit(['data'], serie),
+          })),
+        };
+      },
+    );
   }
 
   private toSeries(
@@ -131,6 +140,7 @@ export class ConversionService {
       [key: string]: string | number;
     }[],
     breakdowns: { name: string }[] = [],
+    limit: number | undefined = undefined,
   ) {
     if (!breakdowns.length) {
       return [
@@ -150,6 +160,10 @@ export class ConversionService {
     // Group by breakdown values
     const series = data.reduce(
       (acc, d) => {
+        if (limit && Object.keys(acc).length >= limit) {
+          return acc;
+        }
+
         const key =
           breakdowns.map((b, index) => d[`b_${index}`]).join('|') ||
           NOT_SET_VALUE;

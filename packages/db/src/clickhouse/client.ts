@@ -1,6 +1,7 @@
+import { Readable } from 'node:stream';
 import type { ClickHouseSettings, ResponseJSON } from '@clickhouse/client';
 import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
 import { createLogger } from '@openpanel/logger';
@@ -11,6 +12,7 @@ export { createClient };
 const logger = createLogger({ name: 'clickhouse' });
 
 import type { Logger } from '@clickhouse/client';
+import { getSafeJson } from '@openpanel/json';
 
 // All three LogParams types are exported by the client
 interface LogParams {
@@ -56,26 +58,66 @@ export const TABLE_NAMES = {
   event_property_values_mv: 'event_property_values_mv',
   cohort_events_mv: 'cohort_events_mv',
   sessions: 'sessions',
+  events_imports: 'events_imports',
 };
+
+/**
+ * Check if ClickHouse is running in clustered mode
+ * Clustered mode = production (not self-hosted)
+ * Non-clustered mode = self-hosted environments
+ */
+export function isClickhouseClustered(): boolean {
+  return !(
+    process.env.SELF_HOSTED === 'true' || process.env.SELF_HOSTED === '1'
+  );
+}
+
+/**
+ * Get the replicated table name for mutations
+ * In clustered mode, returns table_name_replicated
+ * In non-clustered mode, returns the original table name
+ */
+export function getReplicatedTableName(tableName: string): string {
+  if (isClickhouseClustered()) {
+    return `${tableName}_replicated ON CLUSTER '{cluster}'`;
+  }
+  return tableName;
+}
+
+function getClickhouseSettings(): ClickHouseSettings {
+  const additionalSettings =
+    getSafeJson<ClickHouseSettings>(process.env.CLICKHOUSE_SETTINGS || '{}') ||
+    {};
+
+  return {
+    date_time_input_format: 'best_effort',
+    ...(!process.env.CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
+      ? {
+          query_plan_convert_any_join_to_semi_or_anti_join: 0,
+        }
+      : {}),
+    ...additionalSettings,
+  };
+}
 
 export const CLICKHOUSE_OPTIONS: NodeClickHouseClientConfigOptions = {
   max_open_connections: 30,
-  request_timeout: 60000,
+  request_timeout: 300000,
   keep_alive: {
     enabled: true,
-    idle_socket_ttl: 8000,
+    idle_socket_ttl: 60000,
   },
   compression: {
     request: true,
   },
-  clickhouse_settings: {
-    date_time_input_format: 'best_effort',
-  },
+  clickhouse_settings: getClickhouseSettings(),
   log: {
     LoggerClass: CustomLogger,
     level: ClickHouseLogLevel.DEBUG,
   },
 };
+
+logger.info('Clickhouse options', CLICKHOUSE_OPTIONS);
 
 export const originalCh = createClient({
   url: process.env.CLICKHOUSE_URL,
@@ -87,7 +129,7 @@ const cleanQuery = (query?: string) =>
     ? query.replace(/\n/g, '').replace(/\s+/g, ' ').trim()
     : undefined;
 
-async function withRetry<T>(
+export async function withRetry<T>(
   operation: () => Promise<T>,
   maxRetries = 3,
   baseDelay = 500,
@@ -132,7 +174,31 @@ export const ch = new Proxy(originalCh, {
     const value = Reflect.get(target, property, receiver);
 
     if (property === 'insert') {
-      return (...args: any[]) => withRetry(() => value.apply(target, args));
+      return (...args: any[]) =>
+        withRetry(() => {
+          args[0].clickhouse_settings = {
+            // Increase insert timeouts and buffer sizes for large batches
+            max_execution_time: 300,
+            max_insert_block_size: '500000',
+            max_http_get_redirects: '0',
+            // Ensure JSONEachRow stays efficient
+            input_format_parallel_parsing: 1,
+            // Keep long-running inserts/queries from idling out at proxies by sending progress headers
+            send_progress_in_http_headers: 1,
+            http_headers_progress_interval_ms: '50000',
+            // Ensure server holds the connection until the query is finished
+            wait_end_of_query: 1,
+            ...args[0].clickhouse_settings,
+          };
+          return value.apply(target, args);
+        });
+    }
+
+    if (property === 'command') {
+      return (...args: any[]) =>
+        withRetry(() => {
+          return value.apply(target, args);
+        });
     }
 
     return value;
@@ -177,6 +243,34 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
   return response;
 }
 
+export async function chInsertCSV(tableName: string, rows: string[]) {
+  try {
+    const now = performance.now();
+    // Create a readable stream in binary mode for CSV (similar to EventBuffer)
+    const csvStream = Readable.from(rows.join('\n'), {
+      objectMode: false,
+    });
+
+    await ch.insert({
+      table: tableName,
+      values: csvStream,
+      format: 'CSV',
+      clickhouse_settings: {
+        format_csv_allow_double_quotes: 1,
+        format_csv_allow_single_quotes: 0,
+      },
+    });
+
+    logger.info('CSV Insert successful', {
+      elapsed: performance.now() - now,
+      rows: rows.length,
+    });
+  } catch (error) {
+    logger.error('CSV Insert failed:', error);
+    throw error;
+  }
+}
+
 export async function chQuery<T extends Record<string, any>>(
   query: string,
   clickhouseSettings?: ClickHouseSettings,
@@ -201,14 +295,14 @@ export function toDate(str: string, interval?: IInterval) {
   // If it does not match the regex it's a column name eg 'created_at'
   if (!interval || interval === 'minute' || interval === 'hour') {
     if (str.match(/\d{4}-\d{2}-\d{2}/)) {
-      return escape(str);
+      return sqlstring.escape(str);
     }
 
     return str;
   }
 
   if (str.match(/\d{4}-\d{2}-\d{2}/)) {
-    return `toDate(${escape(str.split(' ')[0])})`;
+    return `toDate(${sqlstring.escape(str.split(' ')[0])})`;
   }
 
   return `toDate(${str})`;

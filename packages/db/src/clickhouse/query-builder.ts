@@ -1,6 +1,6 @@
 import type { ClickHouseClient, ResponseJSON } from '@clickhouse/client';
 import type { IInterval } from '@openpanel/validation';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 
 type SqlValue = string | number | boolean | Date | null | Expression;
 type SqlParam = SqlValue | SqlValue[];
@@ -133,7 +133,7 @@ export class Query<T = any> {
       return this.escapeDate(value);
     }
 
-    return escape(value);
+    return sqlstring.escape(value);
   }
 
   where(column: string, operator: Operator, value?: SqlParam): this {
@@ -247,22 +247,27 @@ export class Query<T = any> {
   }
 
   // Fill
-  fill(from: string | Date, to: string | Date, step: string): this {
+  fill(
+    from: string | Date | Expression,
+    to: string | Date | Expression,
+    step: string | Expression,
+  ): this {
     this._fill = {
-      from: this.escapeDate(from),
-      to: this.escapeDate(to),
-      step: step,
+      from:
+        from instanceof Expression ? from.toString() : this.escapeDate(from),
+      to: to instanceof Expression ? to.toString() : this.escapeDate(to),
+      step: step instanceof Expression ? step.toString() : step,
     };
     return this;
   }
 
   private escapeDate(value: string | Date): string {
     if (value instanceof Date) {
-      return escape(clix.datetime(value));
+      return sqlstring.escape(clix.datetime(value));
     }
 
     return value.replaceAll(this._dateRegex, (match) => {
-      return escape(match);
+      return sqlstring.escape(match);
     });
   }
 
@@ -503,7 +508,10 @@ export class Query<T = any> {
   // Execution methods
   async execute(): Promise<T[]> {
     const query = this.buildQuery();
-    console.log('query', query);
+    console.log(
+      'query',
+      `${query} SETTINGS session_timezone = '${this.timezone}'`,
+    );
 
     const result = await this.client.query({
       query,
@@ -672,12 +680,10 @@ clix.toStartOf = (node: string, interval: IInterval, timezone?: string) => {
       return `toStartOfDay(${node})`;
     }
     case 'week': {
-      // Does not respect timezone settings (session_timezone) so we need to pass it manually
-      return `toStartOfWeek(${node}${timezone ? `, 1, '${timezone}'` : ''})`;
+      return `toStartOfWeek(toDateTime(${node}))`;
     }
     case 'month': {
-      // Does not respect timezone settings (session_timezone) so we need to pass it manually
-      return `toStartOfMonth(${node}${timezone ? `, '${timezone}'` : ''})`;
+      return `toStartOfMonth(toDateTime(${node}))`;
     }
   }
 };
@@ -725,6 +731,7 @@ clix.toInterval = (node: string, interval: IInterval) => {
 };
 clix.toDate = (node: string, interval: IInterval) => {
   switch (interval) {
+    case 'day':
     case 'week':
     case 'month': {
       return `toDate(${node})`;

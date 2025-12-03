@@ -1,18 +1,18 @@
 {
   "name": "@openpanel/web",
-  "version": "1.0.1-local",
+  "version": "1.0.5-local",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "workspace:1.0.0-local"
+    "@openpanel/sdk": "workspace:1.0.2-local"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "tsup": "^7.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

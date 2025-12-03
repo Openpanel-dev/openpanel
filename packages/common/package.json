@@ -1,14 +1,22 @@
 {
   "name": "@openpanel/common",
   "version": "0.0.1",
+  "type": "module",
   "main": "index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./server": "./server/index.ts",
+    "./server/get-client-ip": "./server/get-client-ip.ts"
+  },
   "scripts": {
     "test": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "gen:referrers": "jiti scripts/get-referrers.ts && biome format --write ./server/referrers/index.ts"
   },
   "dependencies": {
     "@openpanel/constants": "workspace:*",
     "date-fns": "^3.3.1",
+    "lru-cache": "^11.2.2",
     "luxon": "^3.6.1",
     "mathjs": "^12.3.2",
     "nanoid": "^5.0.7",
@@ -22,10 +30,10 @@
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@types/luxon": "^3.6.2",
-    "@types/node": "20.14.8",
+    "@types/node": "catalog:",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",
     "prisma": "^5.1.1",
-    "typescript": "^5.2.2"
+    "typescript": "catalog:"
   }
 }

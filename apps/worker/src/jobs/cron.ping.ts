@@ -12,7 +12,8 @@ export async function ping() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        domain: process.env.NEXT_PUBLIC_DASHBOARD_URL,
+        domain:
+          process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL,
         count: res?.count,
       }),
     });

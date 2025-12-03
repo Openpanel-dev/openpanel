@@ -1,0 +1,60 @@
+#!/bin/bash
+
+# Tags to manage
+TAGS=("self-hosting")
+
+# Get commit from argument or default to HEAD
+COMMIT="${1:-HEAD}"
+
+echo "🏷️  Managing tags: ${TAGS[@]}"
+echo "📍 Target commit: $COMMIT"
+echo ""
+
+# Verify commit exists
+if ! git rev-parse --verify "$COMMIT" >/dev/null 2>&1; then
+  echo "❌ Error: Invalid commit reference: $COMMIT"
+  exit 1
+fi
+
+# Delete local tags
+echo "🗑️  Deleting local tags..."
+for tag in "${TAGS[@]}"; do
+  if git tag -l "$tag" | grep -q "$tag"; then
+    git tag -d "$tag"
+    echo "  ✓ Deleted local tag: $tag"
+  else
+    echo "  - Tag $tag doesn't exist locally"
+  fi
+done
+
+echo ""
+
+# Delete remote tags
+echo "🗑️  Deleting remote tags..."
+for tag in "${TAGS[@]}"; do
+  if git ls-remote --tags origin | grep -q "refs/tags/$tag"; then
+    SKIP_HOOKS=1 git push origin ":refs/tags/$tag" 2>/dev/null
+    echo "  ✓ Deleted remote tag: $tag"
+  else
+    echo "  - Tag $tag doesn't exist on remote"
+  fi
+done
+
+echo ""
+
+# Create new tags
+echo "🏷️  Creating new tags on commit $COMMIT..."
+for tag in "${TAGS[@]}"; do
+  git tag "$tag" "$COMMIT"
+  echo "  ✓ Created tag: $tag"
+done
+
+echo ""
+
+# Push tags
+echo "🚀 Pushing tags to remote..."
+SKIP_HOOKS=1 git push origin "${TAGS[@]}"
+
+echo ""
+echo "✅ Done! Tags updated successfully."
+

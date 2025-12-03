@@ -57,12 +57,70 @@ export const zChartEvent = z.object({
     .default([])
     .describe('Filters applied specifically to this event'),
 });
+
+export const zChartFormula = z.object({
+  id: z
+    .string()
+    .optional()
+    .describe('Unique identifier for the formula configuration'),
+  type: z.literal('formula'),
+  formula: z.string().describe('The formula expression (e.g., A+B, A/B)'),
+  displayName: z
+    .string()
+    .optional()
+    .describe('A user-friendly name for display purposes'),
+});
+
+// Event with type field for discriminated union
+export const zChartEventWithType = zChartEvent.extend({
+  type: z.literal('event'),
+});
+
+export const zChartEventItem = z.discriminatedUnion('type', [
+  zChartEventWithType,
+  zChartFormula,
+]);
+
 export const zChartBreakdown = z.object({
   id: z.string().optional(),
   name: z.string(),
 });
 
-export const zChartEvents = z.array(zChartEvent);
+// Support both old format (array of events without type) and new format (array of event/formula items)
+// Preprocess to normalize: if item has 'type' field, use discriminated union; otherwise, add type: 'event'
+export const zChartSeries = z.preprocess((val) => {
+  if (!val) return val;
+  let processedVal = val;
+
+  // If the input is an object with numeric keys, convert it to an array
+  if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+    const keys = Object.keys(val).sort(
+      (a, b) => Number.parseInt(a) - Number.parseInt(b),
+    );
+    processedVal = keys.map((key) => (val as any)[key]);
+  }
+
+  if (!Array.isArray(processedVal)) return processedVal;
+
+  return processedVal.map((item: any) => {
+    // If item already has type field, return as-is
+    if (item && typeof item === 'object' && 'type' in item) {
+      return item;
+    }
+    // Otherwise, add type: 'event' for backward compatibility
+    if (item && typeof item === 'object' && 'name' in item) {
+      return { ...item, type: 'event' };
+    }
+    return item;
+  });
+}, z
+  .array(zChartEventItem)
+  .describe(
+    'Array of series (events or formulas) to be tracked and displayed in the chart',
+  ));
+
+// Keep zChartEvents as an alias for backward compatibility during migration
+export const zChartEvents = zChartSeries;
 export const zChartBreakdowns = z.array(zChartBreakdown);
 
 export const zChartType = z.enum(objectToZodEnums(chartTypes));
@@ -77,7 +135,7 @@ export const zRange = z.enum(objectToZodEnums(timeWindows));
 
 export const zCriteria = z.enum(['on_or_after', 'on']);
 
-export const zChartInput = z.object({
+export const zChartInputBase = z.object({
   chartType: zChartType
     .default('linear')
     .describe('What type of chart should be displayed'),
@@ -86,8 +144,8 @@ export const zChartInput = z.object({
     .describe(
       'The time interval for data aggregation (e.g., day, week, month)',
     ),
-  events: zChartEvents.describe(
-    'Array of events to be tracked and displayed in the chart',
+  series: zChartSeries.describe(
+    'Array of series (events or formulas) to be tracked and displayed in the chart',
   ),
   breakdowns: zChartBreakdowns
     .default([])
@@ -144,7 +202,15 @@ export const zChartInput = z.object({
     .describe('Time window in hours for funnel analysis'),
 });
 
-export const zReportInput = zChartInput.extend({
+export const zChartInput = z.preprocess((val) => {
+  if (val && typeof val === 'object' && 'events' in val && !('series' in val)) {
+    // Migrate old 'events' field to 'series'
+    return { ...val, series: val.events };
+  }
+  return val;
+}, zChartInputBase);
+
+export const zReportInput = zChartInputBase.extend({
   name: z.string().describe('The user-defined name for the report'),
   lineType: zLineType.describe('The visual style of the line in the chart'),
   unit: z
@@ -302,7 +368,6 @@ const zCreateIntegration = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
   organizationId: z.string().min(1),
-  projectId: z.string().min(1),
 });
 
 export const zCreateSlackIntegration = zCreateIntegration;
@@ -380,6 +445,7 @@ export const zProject = z.object({
   domain: z.string().url().or(z.literal('').or(z.null())),
   cors: z.array(z.string()).default([]),
   crossDomain: z.boolean().default(false),
+  allowUnsafeRevenueTracking: z.boolean().default(false),
 });
 export type IProjectEdit = z.infer<typeof zProject>;
 
@@ -436,3 +502,54 @@ export const zEditOrganization = z.object({
   name: z.string().min(2),
   timezone: z.string().min(1),
 });
+
+const zProjectMapper = z.object({
+  from: z.string().min(1),
+  to: z.string().min(1),
+});
+
+const createFileImportConfig = <T extends string>(provider: T) =>
+  z.object({
+    provider: z.literal(provider),
+    type: z.literal('file'),
+    fileUrl: z.string().url(),
+  });
+
+// Import configs
+export const zUmamiImportConfig = createFileImportConfig('umami').extend({
+  projectMapper: z.array(zProjectMapper),
+});
+
+export type IUmamiImportConfig = z.infer<typeof zUmamiImportConfig>;
+
+export const zPlausibleImportConfig = createFileImportConfig('plausible');
+export type IPlausibleImportConfig = z.infer<typeof zPlausibleImportConfig>;
+
+export const zMixpanelImportConfig = z.object({
+  provider: z.literal('mixpanel'),
+  type: z.literal('api'),
+  serviceAccount: z.string().min(1),
+  serviceSecret: z.string().min(1),
+  projectId: z.string().min(1),
+  from: z.string().min(1),
+  to: z.string().min(1),
+  mapScreenViewProperty: z.string().optional(),
+});
+export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
+
+export type IImportConfig =
+  | IUmamiImportConfig
+  | IPlausibleImportConfig
+  | IMixpanelImportConfig;
+
+export const zCreateImport = z.object({
+  projectId: z.string().min(1),
+  provider: z.enum(['umami', 'plausible', 'mixpanel']),
+  config: z.union([
+    zUmamiImportConfig,
+    zPlausibleImportConfig,
+    zMixpanelImportConfig,
+  ]),
+});
+
+export type ICreateImport = z.infer<typeof zCreateImport>;

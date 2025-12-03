@@ -1,0 +1,190 @@
+---
+title: How it works
+description: Understanding device IDs, session IDs, profile IDs, and event tracking
+---
+
+## Device ID
+
+A **device ID** is a unique identifier generated for each device/browser combination. It's calculated using a hash function that combines:
+
+- **User Agent** (browser/client information)
+- **IP Address**
+- **Origin** (project ID)
+- **Salt** (a rotating secret key)
+
+```typescript
+export function generateDeviceId({
+  salt,
+  ua,
+  ip,
+  origin,
+}: GenerateDeviceIdOptions) {
+  return createHash(`${ua}:${ip}:${origin}:${salt}`, 16);
+}
+```
+
+### Salt Rotation
+
+The salt used for device ID generation rotates **daily at midnight** (UTC). This means:
+
+- Device IDs remain consistent throughout a single day
+- Device IDs reset each day for privacy purposes
+- The system maintains both the current and previous day's salt to handle events that may arrive slightly after midnight
+
+```typescript
+// Salt rotation happens daily at midnight (pattern: '0 0 * * *')
+```
+
+When the salt rotates, all device IDs change, effectively anonymizing tracking data on a daily basis while still allowing session continuity within a 24-hour period.
+
+## Session ID
+
+A **session** represents a continuous period of user activity. Sessions are used to group related events together and understand user behavior patterns.
+
+### Session Duration
+
+Sessions have a **30-minute timeout**. If no events are received for 30 minutes, the session automatically ends. Each new event resets this 30-minute timer.
+
+```typescript
+export const SESSION_TIMEOUT = 1000 * 60 * 30; // 30 minutes
+```
+
+### Session Creation Rules
+
+Sessions are **only created for client events**, not server events. This means:
+
+- Events sent from browsers, mobile apps, or client-side SDKs will create sessions
+- Events sent from backend servers, scripts, or server-side SDKs will **not** create sessions
+- If you only track events from your backend, no sessions will be created
+
+Additionally, sessions are **not created for events older than 15 minutes**. This prevents historical data imports from creating artificial sessions.
+
+```typescript
+// Sessions are not created if:
+// 1. The event is from a server (uaInfo.isServer === true)
+// 2. The timestamp is from the past (isTimestampFromThePast === true)
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Event is attached to existing session or no session
+}
+```
+
+## Profile ID
+
+A **profile ID** is a persistent identifier for a user across multiple devices and sessions. It allows you to track the same user across different browsers, devices, and time periods.
+
+### Profile ID Assignment
+
+If a `profileId` is provided when tracking an event, it will be used to identify the user. However, **if no `profileId` is provided, it defaults to the `deviceId`**.
+
+This means:
+- Anonymous users (without a profile ID) are tracked by their device ID
+- Once you identify a user (by providing a profile ID), all their events will be associated with that profile
+- The same user can be tracked across multiple devices by using the same profile ID
+
+```typescript
+// If no profileId is provided, it defaults to deviceId
+if (!payload.profileId && payload.deviceId) {
+  payload.profileId = payload.deviceId;
+}
+```
+
+## Client Events vs Server Events
+
+OpenPanel distinguishes between **client events** and **server events** based on the User-Agent header.
+
+### Client Events
+
+Client events are sent from:
+- Web browsers (Chrome, Firefox, Safari, etc.)
+- Mobile apps using client-side SDKs
+- Any client that sends a browser-like User-Agent
+
+Client events:
+- Create sessions
+- Generate device IDs
+- Support full session tracking
+
+### Server Events
+
+Server events are detected when the User-Agent matches server patterns, such as:
+- `Go-http-client/1.0`
+- `node-fetch/1.0`
+- Other single-name/version patterns (e.g., `LibraryName/1.0`)
+
+Server events:
+- Do **not** create sessions
+- Are attached to existing sessions if available
+- Are useful for backend tracking without session management
+
+```typescript
+// Server events are detected by patterns like "Go-http-client/1.0"
+function isServer(res: UAParser.IResult) {
+  if (SINGLE_NAME_VERSION_REGEX.test(res.ua)) {
+    return true;
+  }
+  // ... additional checks
+}
+```
+
+The distinction is made in the event processing pipeline:
+
+```typescript
+const uaInfo = parseUserAgent(userAgent, properties);
+
+// Only client events create sessions
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Server events or old events don't create new sessions
+}
+```
+
+## Timestamps
+
+Events can include custom timestamps to track when events actually occurred, rather than when they were received by the server.
+
+### Setting Custom Timestamps
+
+You can provide a custom timestamp using the `__timestamp` property in your event properties:
+
+```javascript
+track('page_view', {
+  __timestamp: '2024-01-15T10:30:00Z'
+});
+```
+
+### Timestamp Validation
+
+The system validates timestamps to prevent abuse and ensure data quality:
+
+1. **Future timestamps**: If a timestamp is more than **1 minute in the future**, the server timestamp is used instead
+2. **Past timestamps**: If a timestamp is older than **15 minutes**, it's marked as `isTimestampFromThePast: true`
+
+```typescript
+// Timestamp validation logic
+const ONE_MINUTE_MS = 60 * 1000;
+const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
+
+// Future check: more than 1 minute ahead
+if (clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS) {
+  return { timestamp: safeTimestamp, isTimestampFromThePast: false };
+}
+
+// Past check: older than 15 minutes
+const isTimestampFromThePast =
+  clientTimestampNumber < safeTimestamp - FIFTEEN_MINUTES_MS;
+```
+
+### Timestamp Impact on Sessions
+
+**Important**: Events with timestamps older than 15 minutes (`isTimestampFromThePast: true`) will **not create new sessions**. This prevents historical data imports from creating artificial sessions in your analytics.
+
+```typescript
+// Events from the past don't create sessions
+if (uaInfo.isServer || isTimestampFromThePast) {
+  // Attach to existing session or track without session
+}
+```
+
+This ensures that:
+- Real-time tracking creates proper sessions
+- Historical data imports don't interfere with session analytics
+- Backdated events are still tracked but don't affect session metrics

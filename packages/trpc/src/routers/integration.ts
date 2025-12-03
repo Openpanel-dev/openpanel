@@ -9,7 +9,7 @@ import {
   zCreateSlackIntegration,
   zCreateWebhookIntegration,
 } from '@openpanel/validation';
-import { getOrganizationAccessCached } from '../access';
+import { getOrganizationAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
 
@@ -23,7 +23,7 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      const access = await getOrganizationAccessCached({
+      const access = await getOrganizationAccess({
         userId: ctx.session.userId,
         organizationId: integration.organizationId,
       });
@@ -69,7 +69,6 @@ export const integrationRouter = createTRPCRouter({
           slackInstallUrl: await getSlackInstallUrl({
             integrationId: res.id,
             organizationId: input.organizationId,
-            projectId: input.projectId,
           }),
         };
       }
@@ -88,7 +87,6 @@ export const integrationRouter = createTRPCRouter({
         slackInstallUrl: await getSlackInstallUrl({
           integrationId: res.id,
           organizationId: input.organizationId,
-          projectId: input.projectId,
         }),
       };
     }),
@@ -124,7 +122,7 @@ export const integrationRouter = createTRPCRouter({
         },
       });
 
-      const access = await getOrganizationAccessCached({
+      const access = await getOrganizationAccess({
         userId: ctx.session.userId,
         organizationId: integration.organizationId,
       });

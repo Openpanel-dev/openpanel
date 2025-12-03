@@ -493,9 +493,11 @@ async function main() {
   const [type, file = 'mock-basic.json'] = process.argv.slice(2);
 
   switch (type) {
-    case 'send':
-      await triggerEvents(require(`./${file}`));
+    case 'send': {
+      const data = await import(`./${file}`, { assert: { type: 'json' } });
+      await triggerEvents(data.default);
       break;
+    }
     case 'sim':
       await simultaneousRequests();
       break;

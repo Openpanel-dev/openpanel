@@ -4,14 +4,15 @@ import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
-import { COOKIE_OPTIONS, validateSessionToken } from '@openpanel/auth';
+import { COOKIE_OPTIONS, type SessionValidationResult } from '@openpanel/auth';
+import { runWithAlsSession } from '@openpanel/db';
 import { getRedisCache } from '@openpanel/redis';
 import type { ISetCookie } from '@openpanel/validation';
 import {
   createTrpcRedisLimiter,
   defaultFingerPrint,
 } from '@trpc-limiter/redis';
-import { getOrganizationAccessCached, getProjectAccessCached } from './access';
+import { getOrganizationAccess, getProjectAccess } from './access';
 import { TRPCAccessError } from './errors';
 
 export const rateLimitMiddleware = ({
@@ -31,6 +32,7 @@ export const rateLimitMiddleware = ({
   });
 
 export async function createContext({ req, res }: CreateFastifyContextOptions) {
+  const cookies = (req as any).cookies as Record<string, string | undefined>;
   const setCookie: ISetCookie = (key, value, options) => {
     // @ts-ignore
     res.setCookie(key, value, {
@@ -39,16 +41,20 @@ export async function createContext({ req, res }: CreateFastifyContextOptions) {
     });
   };
 
-  // @ts-ignore
-  const session = await validateSessionToken(req.cookies?.session);
+  if (process.env.NODE_ENV !== 'production') {
+    await new Promise((res) =>
+      setTimeout(() => res(1), Math.min(Math.random() * 500, 200)),
+    );
+  }
 
   return {
     req,
     res,
-    session,
+    session: (req as any).session as SessionValidationResult,
     // we do not get types for `setCookie` from fastify
     // so define it here and be safe in routers
     setCookie,
+    cookies,
   };
 }
 export type Context = Awaited<ReturnType<typeof createContext>>;
@@ -88,43 +94,48 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 });
 
 // Only used on protected routes
-const enforceAccess = t.middleware(async ({ ctx, next, rawInput, type }) => {
-  if (type === 'mutation' && process.env.DEMO_USER_ID) {
-    throw new TRPCError({
-      code: 'UNAUTHORIZED',
-      message: 'You are not allowed to do this in demo mode',
-    });
-  }
-
-  if (has('projectId', rawInput)) {
-    const access = await getProjectAccessCached({
-      userId: ctx.session.userId!,
-      projectId: rawInput.projectId as string,
-    });
-
-    if (!access) {
-      throw TRPCAccessError('You do not have access to this project');
+const enforceAccess = t.middleware(async ({ ctx, next, type, getRawInput }) => {
+  const sessionId = ctx.session?.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
+    const rawInput = await getRawInput();
+    if (type === 'mutation' && process.env.DEMO_USER_ID) {
+      throw new TRPCError({
+        code: 'UNAUTHORIZED',
+        message: 'You are not allowed to do this in demo mode',
+      });
     }
-  }
 
-  if (has('organizationId', rawInput)) {
-    const access = await getOrganizationAccessCached({
-      userId: ctx.session.userId!,
-      organizationId: rawInput.organizationId as string,
-    });
+    if (has('projectId', rawInput)) {
+      const access = await getProjectAccess({
+        userId: ctx.session.userId!,
+        projectId: rawInput.projectId as string,
+      });
 
-    if (!access) {
-      throw TRPCAccessError('You do not have access to this organization');
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this project');
+      }
     }
-  }
 
-  return next();
+    if (has('organizationId', rawInput)) {
+      const access = await getOrganizationAccess({
+        userId: ctx.session.userId!,
+        organizationId: rawInput.organizationId as string,
+      });
+
+      if (!access) {
+        throw TRPCAccessError('You do not have access to this organization');
+      }
+    }
+
+    return next();
+  });
 });
 
 export const createTRPCRouter = t.router;
 
 const loggerMiddleware = t.middleware(
-  async ({ ctx, next, rawInput, path, input, type }) => {
+  async ({ ctx, next, getRawInput, path, input, type }) => {
+    const rawInput = await getRawInput();
     // Only log mutations
     if (type === 'mutation') {
       ctx.req.log.info('TRPC mutation', {
@@ -142,18 +153,36 @@ const loggerMiddleware = t.middleware(
   },
 );
 
-export const publicProcedure = t.procedure.use(loggerMiddleware);
+const sessionScopeMiddleware = t.middleware(async ({ ctx, next }) => {
+  const sessionId = ctx.session?.session?.id ?? null;
+  return runWithAlsSession(sessionId, async () => {
+    return next();
+  });
+});
+
+export const publicProcedure = t.procedure
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
 export const protectedProcedure = t.procedure
   .use(enforceUserIsAuthed)
   .use(enforceAccess)
-  .use(loggerMiddleware);
+  .use(loggerMiddleware)
+  .use(sessionScopeMiddleware);
 
 const middlewareMarker = 'middlewareMarker' as 'middlewareMarker' & {
   __brand: 'middlewareMarker';
 };
 
-export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
-  t.middleware(async ({ ctx, next, path, type, rawInput, input }) => {
+export const cacheMiddleware = (
+  cbOrTtl: number | ((input: any, opts: { path: string }) => number),
+) =>
+  t.middleware(async ({ ctx, next, path, type, getRawInput, input }) => {
+    const ttl =
+      typeof cbOrTtl === 'function' ? cbOrTtl(input, { path }) : cbOrTtl;
+    if (!ttl) {
+      return next();
+    }
+    const rawInput = await getRawInput();
     if (type !== 'query') {
       return next();
     }
@@ -162,7 +191,7 @@ export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
       key += JSON.stringify(rawInput).replace(/\"/g, "'");
     }
     const cache = await getRedisCache().getJson(key);
-    if (cache) {
+    if (cache && process.env.NODE_ENV === 'production') {
       return {
         ok: true,
         data: cache,
@@ -176,7 +205,7 @@ export const cacheMiddleware = (cbOrTtl: number | ((input: any) => number)) =>
     if (result.data) {
       getRedisCache().setJson(
         key,
-        typeof cbOrTtl === 'function' ? cbOrTtl(input) : cbOrTtl,
+        ttl,
         // @ts-expect-error
         result.data,
       );

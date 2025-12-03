@@ -13,14 +13,8 @@ export const polar = new Polar({
   server: process.env.NODE_ENV === 'production' ? 'production' : 'sandbox',
 });
 
-export const getSuccessUrl = (
-  baseUrl: string,
-  organizationId: string,
-  projectId?: string,
-) =>
-  projectId
-    ? `${baseUrl}/${organizationId}/${projectId}/settings?tab=billing`
-    : `${baseUrl}/${organizationId}`;
+export const getSuccessUrl = (baseUrl: string, organizationId: string) =>
+  `${baseUrl}/${organizationId}/billing`;
 
 export async function getProducts() {
   const products = await polar.products.list({
@@ -50,15 +44,13 @@ export async function createPortal({
 }
 
 export async function createCheckout({
-  priceId,
+  productId,
   organizationId,
-  projectId,
   user,
   ipAddress,
 }: {
-  priceId: string;
+  productId: string;
   organizationId: string;
-  projectId?: string;
   user: {
     id: string;
     firstName: string | null;
@@ -68,11 +60,11 @@ export async function createCheckout({
   ipAddress: string;
 }) {
   return polar.checkouts.create({
-    productPriceId: priceId,
+    // productPriceId: priceId,
+    products: [productId],
     successUrl: getSuccessUrl(
-      process.env.NEXT_PUBLIC_DASHBOARD_URL!,
+      process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!,
       organizationId,
-      projectId,
     ),
     customerEmail: user.email,
     customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),
@@ -90,7 +82,6 @@ export async function cancelSubscription(subscriptionId: string) {
       id: subscriptionId,
       subscriptionUpdate: {
         cancelAtPeriodEnd: true,
-        revoke: null,
       },
     });
   } catch (error) {
@@ -110,7 +101,6 @@ export function reactivateSubscription(subscriptionId: string) {
     id: subscriptionId,
     subscriptionUpdate: {
       cancelAtPeriodEnd: false,
-      revoke: null,
     },
   });
 }

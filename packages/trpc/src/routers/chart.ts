@@ -1,5 +1,5 @@
 import { flatten, map, pipe, prop, range, sort, uniq } from 'ramda';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { z } from 'zod';
 
 import {
@@ -10,29 +10,39 @@ import {
   chQuery,
   clix,
   conversionService,
+  createSqlBuilder,
   db,
+  formatClickhouseDate,
   funnelService,
   getChartPrevStartEndDate,
   getChartStartEndDate,
+  getEventFiltersWhereClause,
   getEventMetasCached,
+  getProfilesCached,
   getSelectPropertyKey,
   getSettingsForProject,
+  onlyReportEvents,
 } from '@openpanel/db';
 import {
+  type IChartEvent,
+  zChartEvent,
+  zChartEventFilter,
   zChartInput,
+  zChartSeries,
   zCriteria,
   zRange,
   zTimeInterval,
 } from '@openpanel/validation';
 
 import { round } from '@openpanel/common';
+import { ChartEngine } from '@openpanel/db';
 import {
   differenceInDays,
   differenceInMonths,
   differenceInWeeks,
   formatISO,
 } from 'date-fns';
-import { getProjectAccessCached } from '../access';
+import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
 import {
   cacheMiddleware,
@@ -40,7 +50,6 @@ import {
   protectedProcedure,
   publicProcedure,
 } from '../trpc';
-import { getChart } from './chart.helpers';
 
 function utc(date: string | Date) {
   if (typeof date === 'string') {
@@ -52,6 +61,88 @@ function utc(date: string | Date) {
 const cacher = cacheMiddleware(60);
 
 export const chartRouter = createTRPCRouter({
+  projectCard: protectedProcedure
+    .use(cacheMiddleware(60 * 5))
+    .input(
+      z.object({
+        projectId: z.string(),
+      }),
+    )
+    .query(async ({ input: { projectId } }) => {
+      const { timezone } = await getSettingsForProject(projectId);
+      const chartPromise = chQuery<{
+        value: number;
+        date: Date;
+        revenue: number;
+      }>(
+        `SELECT
+            uniqHLL12(profile_id) as value,
+            toStartOfDay(created_at) as date,
+            sum(revenue * sign) as revenue
+        FROM ${TABLE_NAMES.sessions}
+        WHERE 
+            project_id = ${sqlstring.escape(projectId)} AND 
+            created_at >= now() - interval '3 month'
+        GROUP BY date
+        ORDER BY date ASC
+        WITH FILL FROM toStartOfDay(now() - interval '1 month') 
+        TO toStartOfDay(now()) 
+        STEP INTERVAL 1 day
+        SETTINGS session_timezone = '${timezone}'
+      `,
+      );
+
+      const metricsPromise = clix(ch, timezone)
+        .select<{
+          months_3: number;
+          months_3_prev: number;
+          month: number;
+          day: number;
+          day_prev: number;
+          revenue: number;
+        }>([
+          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(3)), profile_id, null)) AS months_3',
+          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(6)) AND created_at < (now() - toIntervalMonth(3)), profile_id, null)) AS months_3_prev',
+          'uniqHLL12(if(created_at >= (now() - toIntervalMonth(1)), profile_id, null)) AS month',
+          'uniqHLL12(if(created_at >= (now() - toIntervalDay(1)), profile_id, null)) AS day',
+          'uniqHLL12(if(created_at >= (now() - toIntervalDay(2)) AND created_at < (now() - toIntervalDay(1)), profile_id, null)) AS day_prev',
+          'sum(revenue * sign) as revenue',
+        ])
+        .from(TABLE_NAMES.sessions)
+        .where('project_id', '=', projectId)
+        .where('created_at', '>=', clix.exp('now() - toIntervalMonth(6)'))
+        .execute();
+
+      const [chart, [metrics]] = await Promise.all([
+        chartPromise,
+        metricsPromise,
+      ]);
+
+      const change =
+        metrics && metrics.months_3_prev > 0 && metrics.months_3 > 0
+          ? Math.round(
+              ((metrics.months_3 - metrics.months_3_prev) /
+                metrics.months_3_prev) *
+                100,
+            )
+          : null;
+
+      const trend =
+        change === null
+          ? { direction: 'neutral' as const, percentage: null as number | null }
+          : change > 0
+            ? { direction: 'up' as const, percentage: change }
+            : change < 0
+              ? { direction: 'down' as const, percentage: Math.abs(change) }
+              : { direction: 'neutral' as const, percentage: 0 };
+
+      return {
+        chart: chart.map((d) => ({ ...d, date: new Date(d.date) })),
+        metrics,
+        trend,
+      };
+    }),
+
   events: protectedProcedure
     .input(
       z.object({
@@ -61,7 +152,7 @@ export const chartRouter = createTRPCRouter({
     .query(async ({ input: { projectId } }) => {
       const [events, meta] = await Promise.all([
         chQuery<{ name: string; count: number }>(
-          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`,
+          `SELECT name, count(name) as count FROM ${TABLE_NAMES.event_names_mv} WHERE project_id = ${sqlstring.escape(projectId)} GROUP BY name ORDER BY count DESC, name ASC`,
         ),
         getEventMetasCached(projectId),
       ]);
@@ -133,12 +224,12 @@ export const chartRouter = createTRPCRouter({
       }
 
       properties.push(
+        'revenue',
         'has_profile',
         'path',
         'origin',
         'referrer',
         'referrer_name',
-        'duration',
         'created_at',
         'country',
         'city',
@@ -248,9 +339,9 @@ export const chartRouter = createTRPCRouter({
     const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
-      funnelService.getFunnel({ ...input, ...currentPeriod }),
+      funnelService.getFunnel({ ...input, ...currentPeriod, timezone }),
       input.previous
-        ? funnelService.getFunnel({ ...input, ...previousPeriod })
+        ? funnelService.getFunnel({ ...input, ...previousPeriod, timezone })
         : Promise.resolve(null),
     ]);
 
@@ -266,9 +357,13 @@ export const chartRouter = createTRPCRouter({
     const previousPeriod = getChartPrevStartEndDate(currentPeriod);
 
     const [current, previous] = await Promise.all([
-      conversionService.getConversion({ ...input, ...currentPeriod }),
+      conversionService.getConversion({ ...input, ...currentPeriod, timezone }),
       input.previous
-        ? conversionService.getConversion({ ...input, ...previousPeriod })
+        ? conversionService.getConversion({
+            ...input,
+            ...previousPeriod,
+            timezone,
+          })
         : Promise.resolve(null),
     ]);
 
@@ -289,7 +384,7 @@ export const chartRouter = createTRPCRouter({
     .input(zChartInput)
     .query(async ({ input, ctx }) => {
       if (ctx.session.userId) {
-        const access = await getProjectAccessCached({
+        const access = await getProjectAccess({
           projectId: input.projectId,
           userId: ctx.session.userId,
         });
@@ -316,7 +411,8 @@ export const chartRouter = createTRPCRouter({
         }
       }
 
-      return getChart(input);
+      // Use new chart engine
+      return ChartEngine.execute(input);
     }),
   cohort: protectedProcedure
     .input(
@@ -376,9 +472,9 @@ export const chartRouter = createTRPCRouter({
 
       const whereEventNameIs = (event: string[]) => {
         if (event.length === 1) {
-          return `name = ${escape(event[0])}`;
+          return `name = ${sqlstring.escape(event[0])}`;
         }
-        return `name IN (${event.map((e) => escape(e)).join(',')})`;
+        return `name IN (${event.map((e) => sqlstring.escape(e)).join(',')})`;
       };
 
       const cohortQuery = `
@@ -390,7 +486,7 @@ export const chartRouter = createTRPCRouter({
             ${sqlToStartOf}(created_at) AS cohort_interval
           FROM ${TABLE_NAMES.cohort_events_mv}
           WHERE ${whereEventNameIs(firstEvent)}
-            AND project_id = ${escape(projectId)}
+            AND project_id = ${sqlstring.escape(projectId)}
             AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}')
         ),
         last_event AS
@@ -401,7 +497,7 @@ export const chartRouter = createTRPCRouter({
                 toDate(created_at) AS event_date
             FROM cohort_events_mv
             WHERE ${whereEventNameIs(secondEvent)}
-            AND project_id = ${escape(projectId)}
+            AND project_id = ${sqlstring.escape(projectId)}
             AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}') + INTERVAL ${diffInterval} ${sqlInterval}
         ),
         retention_matrix AS
@@ -445,6 +541,198 @@ export const chartRouter = createTRPCRouter({
       }>(cohortQuery);
 
       return processCohortData(cohortData, diffInterval);
+    }),
+
+  getProfiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        date: z.string().describe('The date for the data point (ISO string)'),
+        interval: zTimeInterval.default('day'),
+        series: zChartSeries,
+        breakdowns: z.record(z.string(), z.string()).optional(),
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { projectId, date, series } = input;
+      const limit = 100;
+      const serie = series[0];
+
+      if (!serie) {
+        throw new Error('Series not found');
+      }
+
+      if (serie.type !== 'event') {
+        throw new Error('Series must be an event');
+      }
+
+      // Build the date range for the specific interval bucket
+      const dateObj = new Date(date);
+      // Build query to get unique profile_ids for this time bucket
+      const { sb, getSql } = createSqlBuilder();
+
+      sb.select.profile_id = 'DISTINCT profile_id';
+      sb.where = getEventFiltersWhereClause(serie.filters);
+      sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+      sb.where.dateRange = `${clix.toStartOf('created_at', input.interval)} = ${clix.toDate(sqlstring.escape(formatClickhouseDate(dateObj)), input.interval)}`;
+      if (serie.name !== '*') {
+        sb.where.eventName = `name = ${sqlstring.escape(serie.name)}`;
+      }
+
+      // Collect profile fields from filters and breakdowns
+      const profileFields = [
+        ...serie.filters
+          .filter((f) => f.name.startsWith('profile.'))
+          .map((f) => f.name.replace('profile.', '')),
+        ...(input.breakdowns
+          ? Object.keys(input.breakdowns)
+              .filter((key) => key.startsWith('profile.'))
+              .map((key) => key.replace('profile.', ''))
+          : []),
+      ];
+
+      if (profileFields.length > 0) {
+        // Extract top-level field names and select only what's needed
+        const fieldsToSelect = uniq(
+          profileFields.map((f) => f.split('.')[0]),
+        ).join(', ');
+        sb.joins.profiles = `LEFT ANY JOIN (SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile on profile.id = profile_id`;
+      }
+
+      if (input.breakdowns) {
+        Object.entries(input.breakdowns).forEach(([key, value]) => {
+          // Transform property keys (e.g., properties.method -> properties['method'])
+          const propertyKey = getSelectPropertyKey(key);
+          sb.where[`breakdown_${key}`] =
+            `${propertyKey} = ${sqlstring.escape(value)}`;
+        });
+      }
+
+      // Get unique profile IDs
+      const profileIds = await chQuery<{ profile_id: string }>(getSql());
+      if (profileIds.length === 0) {
+        return [];
+      }
+
+      // Fetch profile details
+      const ids = profileIds.map((p) => p.profile_id).filter(Boolean);
+      const profiles = await getProfilesCached(ids, projectId);
+
+      return profiles;
+    }),
+
+  getFunnelProfiles: protectedProcedure
+    .input(
+      z.object({
+        projectId: z.string(),
+        startDate: z.string().nullish(),
+        endDate: z.string().nullish(),
+        series: zChartSeries,
+        stepIndex: z.number().describe('0-based index of the funnel step'),
+        showDropoffs: z
+          .boolean()
+          .optional()
+          .default(false)
+          .describe(
+            'If true, show users who dropped off at this step. If false, show users who completed at least this step.',
+          ),
+        funnelWindow: z.number().optional(),
+        funnelGroup: z.string().optional(),
+        breakdowns: z.array(z.object({ name: z.string() })).optional(),
+        range: zRange,
+      }),
+    )
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const {
+        projectId,
+        series,
+        stepIndex,
+        showDropoffs = false,
+        funnelWindow,
+        funnelGroup,
+        breakdowns = [],
+      } = input;
+
+      const { startDate, endDate } = getChartStartEndDate(input, timezone);
+
+      // stepIndex is 0-based, but level is 1-based, so we need level >= stepIndex + 1
+      const targetLevel = stepIndex + 1;
+
+      const eventSeries = onlyReportEvents(series);
+
+      if (eventSeries.length === 0) {
+        throw new Error('At least one event series is required');
+      }
+
+      const funnelWindowSeconds = (funnelWindow || 24) * 3600;
+      const funnelWindowMilliseconds = funnelWindowSeconds * 1000;
+
+      // Use funnel service methods
+      const group = funnelService.getFunnelGroup(funnelGroup);
+
+      // Create sessions CTE if needed
+      const sessionsCte =
+        group[0] !== 'session_id'
+          ? funnelService.buildSessionsCte({
+              projectId,
+              startDate,
+              endDate,
+              timezone,
+            })
+          : null;
+
+      // Create funnel CTE using funnel service
+      const funnelCte = funnelService.buildFunnelCte({
+        projectId,
+        startDate,
+        endDate,
+        eventSeries: eventSeries as IChartEvent[],
+        funnelWindowMilliseconds,
+        group,
+        timezone,
+        additionalSelects: ['profile_id'],
+        additionalGroupBy: ['profile_id'],
+      });
+
+      // Build main query
+      const query = clix(ch, timezone);
+
+      if (sessionsCte) {
+        funnelCte.leftJoin('sessions s', 's.sid = events.session_id');
+        query.with('sessions', sessionsCte);
+      }
+
+      query.with('funnel', funnelCte);
+
+      // Get distinct profile IDs
+      query
+        .select(['DISTINCT profile_id'])
+        .from('funnel')
+        .where('level', '!=', 0);
+
+      if (showDropoffs) {
+        // Show users who dropped off at this step (completed this step but not the next)
+        query.where('level', '=', targetLevel);
+      } else {
+        // Show users who completed at least this step
+        query.where('level', '>=', targetLevel);
+      }
+
+      const profileIdsResult = (await query.execute()) as {
+        profile_id: string;
+      }[];
+
+      if (profileIdsResult.length === 0) {
+        return [];
+      }
+
+      // Fetch profile details
+      const ids = profileIdsResult.map((p) => p.profile_id).filter(Boolean);
+      const profiles = await getProfilesCached(ids, projectId);
+
+      return profiles;
     }),
 });
 

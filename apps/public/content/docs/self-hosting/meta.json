@@ -3,7 +3,12 @@
   "defaultOpen": true,
   "pages": [
     "[Get started](/docs/self-hosting/self-hosting)",
-    "changelog",
-    "migrating-from-clerk"
+    "[Deploy with Docker Compose](/docs/self-hosting/deploy-docker-compose)",
+    "[Deploy with Coolify](/docs/self-hosting/deploy-coolify)",
+    "[Deploy with Dokploy](/docs/self-hosting/deploy-dokploy)",
+    "[Deploy on Kubernetes](/docs/self-hosting/deploy-kubernetes)",
+    "[Environment Variables](/docs/self-hosting/environment-variables)",
+    "supporter-access-latest-docker-images",
+    "changelog"
   ]
 }

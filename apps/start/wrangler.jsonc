@@ -1,0 +1,28 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "openpanel-dashboard",
+  "account_id": "ff15074258b1981316524df0b09047df",
+  "compatibility_date": "2025-09-02",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "routes": [
+    {
+      "pattern": "dashboard.openpanel.dev/*",
+      "zone_name": "openpanel.dev"
+    }
+  ],
+  "vars": {
+    "VITE_OP_CLIENT_ID": "301c6dc1-424c-4bc3-9886-a8beab09b615",
+    "API_URL": "https://api.openpanel.dev",
+    "DASHBOARD_URL": "https://dashboard.openpanel.dev",
+    "NODE_ENV": "production",
+    "APP_VERSION": "1.0.0"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true
+    }
+  }
+}

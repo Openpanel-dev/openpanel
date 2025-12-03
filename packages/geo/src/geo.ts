@@ -1,7 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { ReaderModel } from '@maxmind/geoip2-node';
 import { Reader } from '@maxmind/geoip2-node';
+import { LRUCache } from 'lru-cache';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const filename = 'GeoLite2-City.mmdb';
 // From api or worker package
@@ -45,9 +51,20 @@ const DEFAULT_GEO: GeoLocation = {
 
 const ignore = ['127.0.0.1', '::1'];
 
+const cache = new LRUCache<string, GeoLocation>({
+  max: 1000,
+  ttl: 1000 * 60 * 5,
+  ttlAutopurge: true,
+});
+
 export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
   if (!ip || ignore.includes(ip)) {
     return DEFAULT_GEO;
+  }
+
+  const cached = cache.get(ip);
+  if (cached) {
+    return cached;
   }
 
   if (!reader) {
@@ -56,13 +73,15 @@ export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
 
   try {
     const response = await reader?.city(ip);
-    return {
+    const res = {
       city: response?.city?.names.en,
       country: response?.country?.isoCode,
       region: response?.subdivisions?.[0]?.names.en,
       longitude: response?.location?.longitude,
       latitude: response?.location?.latitude,
     };
+    cache.set(ip, res);
+    return res;
   } catch (error) {
     return DEFAULT_GEO;
   }

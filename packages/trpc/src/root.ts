@@ -1,8 +1,10 @@
 import { authRouter } from './routers/auth';
 import { chartRouter } from './routers/chart';
+import { chatRouter } from './routers/chat';
 import { clientRouter } from './routers/client';
 import { dashboardRouter } from './routers/dashboard';
 import { eventRouter } from './routers/event';
+import { importRouter } from './routers/import';
 import { integrationRouter } from './routers/integration';
 import { notificationRouter } from './routers/notification';
 import { onboardingRouter } from './routers/onboarding';
@@ -10,11 +12,12 @@ import { organizationRouter } from './routers/organization';
 import { overviewRouter } from './routers/overview';
 import { profileRouter } from './routers/profile';
 import { projectRouter } from './routers/project';
+import { realtimeRouter } from './routers/realtime';
 import { referenceRouter } from './routers/reference';
 import { reportRouter } from './routers/report';
+import { sessionRouter } from './routers/session';
 import { shareRouter } from './routers/share';
 import { subscriptionRouter } from './routers/subscription';
-import { ticketRouter } from './routers/ticket';
 import { userRouter } from './routers/user';
 import { createTRPCRouter } from './trpc';
 /**
@@ -32,15 +35,18 @@ export const appRouter = createTRPCRouter({
   client: clientRouter,
   event: eventRouter,
   profile: profileRouter,
+  session: sessionRouter,
   share: shareRouter,
   onboarding: onboardingRouter,
   reference: referenceRouter,
-  ticket: ticketRouter,
   notification: notificationRouter,
   integration: integrationRouter,
+  import: importRouter,
   auth: authRouter,
   subscription: subscriptionRouter,
   overview: overviewRouter,
+  realtime: realtimeRouter,
+  chat: chatRouter,
 });
 
 // export type definition of API

@@ -1,0 +1,20 @@
+{
+  "title": "SDKs",
+  "pages": [
+    "script",
+    "web",
+    "javascript",
+    "nextjs",
+    "react",
+    "vue",
+    "astro",
+    "remix",
+    "express",
+    "python",
+    "react-native",
+    "swift",
+    "kotlin",
+    "..."
+  ],
+  "defaultOpen": false
+}

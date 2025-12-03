@@ -33,10 +33,7 @@ async function createOrGetOrganization(
       },
     });
 
-    if (
-      process.env.NEXT_PUBLIC_SELF_HOSTED !== 'true' &&
-      !process.env.SELF_HOSTED
-    ) {
+    if (!process.env.SELF_HOSTED) {
       await addTrialEndingSoonJob(
         organization.id,
         1000 * 60 * 60 * 24 * TRIAL_DURATION_IN_DAYS * 0.9,
@@ -64,7 +61,6 @@ export const onboardingRouter = createTRPCRouter({
     if (members.length > 0) {
       return {
         canSkip: true,
-        url: `/${members[0]?.organizationId}`,
       };
     }
 
@@ -77,11 +73,10 @@ export const onboardingRouter = createTRPCRouter({
     if (projectAccess.length > 0) {
       return {
         canSkip: true,
-        url: `/${projectAccess[0]?.organizationId}/${projectAccess[0]?.projectId}`,
       };
     }
 
-    return { canSkip: false, url: null };
+    return { canSkip: false };
   }),
   project: protectedProcedure
     .input(zOnboardingProject)

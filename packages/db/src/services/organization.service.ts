@@ -1,11 +1,12 @@
 import { DateTime } from '@openpanel/common';
 import { cacheable } from '@openpanel/redis';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { chQuery, formatClickhouseDate } from '../clickhouse/client';
 import type { Invite, Prisma, ProjectAccess, User } from '../prisma-client';
 import { db } from '../prisma-client';
 import { createSqlBuilder } from '../sql-builder';
-import type { IServiceProject } from './project.service';
+import { getOrganizationAccess, getProjectAccess } from './access.service';
+import { type IServiceProject, getProjectById } from './project.service';
 export type IServiceOrganization = Awaited<
   ReturnType<typeof db.organization.findUniqueOrThrow>
 >;
@@ -61,7 +62,7 @@ export async function getOrganizationByProjectId(projectId: string) {
 
 export const getOrganizationByProjectIdCached = cacheable(
   getOrganizationByProjectId,
-  60 * 60 * 24,
+  60 * 5,
 );
 
 export async function getInvites(organizationId: string) {
@@ -69,11 +70,14 @@ export async function getInvites(organizationId: string) {
     where: {
       organizationId,
     },
+    orderBy: {
+      createdAt: 'desc',
+    },
   });
 }
 
-export function getInviteById(inviteId: string) {
-  return db.invite.findUnique({
+export async function getInviteById(inviteId: string) {
+  const res = await db.invite.findUnique({
     where: {
       id: inviteId,
     },
@@ -86,6 +90,11 @@ export function getInviteById(inviteId: string) {
       },
     },
   });
+
+  return {
+    ...res,
+    isExpired: res?.expiresAt && res.expiresAt < new Date(),
+  };
 }
 
 export async function getMembers(organizationId: string) {
@@ -160,8 +169,14 @@ export async function connectUserToOrganization({
     },
   });
 
+  await getOrganizationAccess.clear({
+    userId: user.id,
+    organizationId: invite.organizationId,
+  });
+
   if (invite.projectAccess.length > 0) {
     for (const projectId of invite.projectAccess) {
+      await getProjectAccess.clear({ userId: user.id, projectId });
       await db.projectAccess.create({
         data: {
           projectId,
@@ -201,8 +216,9 @@ export async function getOrganizationBillingEventsCount(
   const { sb, getSql } = createSqlBuilder();
 
   sb.select.count = 'COUNT(*) AS count';
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => escape(project.id)).join(',')})`;
-  sb.where.createdAt = `created_at BETWEEN ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
+  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
+  sb.where.createdAt = `created_at BETWEEN ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodStart))} AND ${sqlstring.escape(formatClickhouseDate(organization.subscriptionCurrentPeriodEnd))}`;
+  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
   const res = await chQuery<{ count: number }>(getSql());
   return res[0]?.count;
@@ -224,9 +240,10 @@ export async function getOrganizationBillingEventsCountSerie(
   sb.select.count = 'COUNT(*) AS count';
   sb.select.day = `toDate(toStartOf${interval.slice(0, 1).toUpperCase() + interval.slice(1)}(created_at)) AS ${interval}`;
   sb.groupBy.day = interval;
-  sb.orderBy.day = `${interval} WITH FILL FROM toDate(${escape(formatClickhouseDate(startDate, true))}) TO toDate(${escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
-  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => escape(project.id)).join(',')})`;
-  sb.where.createdAt = `${interval} BETWEEN ${escape(formatClickhouseDate(startDate, true))} AND ${escape(formatClickhouseDate(endDate, true))}`;
+  sb.orderBy.day = `${interval} WITH FILL FROM toDate(${sqlstring.escape(formatClickhouseDate(startDate, true))}) TO toDate(${sqlstring.escape(formatClickhouseDate(endDate, true))}) STEP INTERVAL 1 ${interval.toUpperCase()}`;
+  sb.where.projectIds = `project_id IN (${organization.projects.map((project) => sqlstring.escape(project.id)).join(',')})`;
+  sb.where.createdAt = `${interval} BETWEEN ${sqlstring.escape(formatClickhouseDate(startDate, true))} AND ${sqlstring.escape(formatClickhouseDate(endDate, true))}`;
+  sb.where.names = `name NOT IN ('session_start', 'session_end')`;
 
   const res = await chQuery<{ count: number; day: string }>(getSql());
   return res;

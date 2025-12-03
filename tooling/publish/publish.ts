@@ -1,6 +1,11 @@
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import { join, resolve } from 'node:path';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import arg from 'arg';
 import type { ReleaseType } from 'semver';
 import semver, { RELEASE_TYPES } from 'semver';
@@ -139,7 +144,7 @@ const updatePackageJsonForRelease = (
     newPkgJson = {
       ...newPkgJson,
       main: './dist/index.js',
-      module: './dist/index.mjs',
+      module: './dist/index.js',
       types: './dist/index.d.ts',
       files: ['dist'],
       exports: restPkgJson.exports ?? {

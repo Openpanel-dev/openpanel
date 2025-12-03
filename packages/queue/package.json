@@ -1,6 +1,7 @@
 {
   "name": "@openpanel/queue",
   "version": "0.0.1",
+  "type": "module",
   "main": "index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -9,13 +10,13 @@
     "@openpanel/db": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/redis": "workspace:*",
-    "bullmq": "^5.8.7",
-    "groupmq": "1.0.0-next.19"
+    "bullmq": "^5.63.0",
+    "groupmq": "1.1.0-next.6"
   },
   "devDependencies": {
     "@openpanel/sdk": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
-    "@types/node": "20.14.8",
-    "typescript": "^5.2.2"
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
   }
 }

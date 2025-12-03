@@ -36,11 +36,7 @@ export async function bootCron() {
     },
   ];
 
-  if (
-    (process.env.NEXT_PUBLIC_SELF_HOSTED === 'true' ||
-      process.env.SELF_HOSTED) &&
-    process.env.NODE_ENV === 'production'
-  ) {
+  if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
     jobs.push({
       name: 'ping',
       type: 'ping',
@@ -48,43 +44,30 @@ export async function bootCron() {
     });
   }
 
-  // Add repeatable jobs
-  for (const job of jobs) {
-    await cronQueue.add(
-      job.name,
-      {
-        type: job.type,
-        payload: undefined,
-      },
-      {
-        jobId: job.type,
-        repeat:
-          typeof job.pattern === 'number'
-            ? {
-                every: job.pattern,
-              }
-            : {
-                pattern: job.pattern,
-              },
-      },
-    );
+  logger.info('Updating cron jobs');
+
+  const jobSchedulers = await cronQueue.getJobSchedulers();
+  for (const jobScheduler of jobSchedulers) {
+    await cronQueue.removeJobScheduler(jobScheduler.key);
   }
 
-  // Remove outdated repeatable jobs
-  const repeatableJobs = await cronQueue.getRepeatableJobs();
-  for (const repeatableJob of repeatableJobs) {
-    const match = jobs.find(
-      (job) => `${job.name}:${job.type}:::${job.pattern}` === repeatableJob.key,
+  // Add repeatable jobs
+  for (const job of jobs) {
+    await cronQueue.upsertJobScheduler(
+      job.type,
+      typeof job.pattern === 'number'
+        ? {
+            every: job.pattern,
+          }
+        : {
+            pattern: job.pattern,
+          },
+      {
+        data: {
+          type: job.type,
+          payload: undefined,
+        },
+      },
     );
-    if (match) {
-      logger.info('Repeatable job exists', {
-        key: repeatableJob.key,
-      });
-    } else {
-      logger.info('Removing repeatable job', {
-        key: repeatableJob.key,
-      });
-      cronQueue.removeRepeatableByKey(repeatableJob.key);
-    }
   }
 }

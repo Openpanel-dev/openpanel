@@ -1,4 +1,6 @@
 .secrets
+packages/db/src/generated/prisma
+packages/db/code-migrations/*.sql
 
 # Based on https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore
 packages/sdk/profileId.txt
@@ -167,6 +169,9 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 
 .vscode-test
+
+# Wrangler build artifacts and cache
+.wrangler/
 
 # yarn v2
 

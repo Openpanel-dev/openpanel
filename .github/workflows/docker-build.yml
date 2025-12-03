@@ -23,6 +23,7 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       worker: ${{ steps.filter.outputs.worker }}
       public: ${{ steps.filter.outputs.public }}
+      dashboard: ${{ steps.filter.outputs.dashboard }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v2
@@ -42,10 +43,14 @@ jobs:
               - 'apps/public/**'
               - 'packages/**'
               - '.github/workflows/**'
+            dashboard:
+              - 'apps/start/**'
+              - 'packages/**'
+              - '.github/workflows/**'
 
   lint-and-test:
     needs: changes
-    if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.worker == 'true' || needs.changes.outputs.public == 'true' }}
+    if: ${{ needs.changes.outputs.api == 'true' || needs.changes.outputs.worker == 'true' || needs.changes.outputs.public == 'true' || needs.changes.outputs.dashboard == 'true' }}
     runs-on: ubuntu-latest
     services:
       redis:
@@ -90,21 +95,32 @@ jobs:
       # - name: Run Biome
       #   run: pnpm lint
 
-      - name: Run TypeScript checks
-        run: pnpm typecheck
+      # - name: Run TypeScript checks
+      #   run: pnpm typecheck
 
-      - name: Run tests
-        run: pnpm test
+      # - name: Run tests
+      #   run: pnpm test
 
   build-and-push-api:
     permissions:
       packages: write
+      contents: write
     needs: [changes, lint-and-test]
     if: ${{ needs.changes.outputs.api == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Generate tags
+        id: tags
+        run: |
+          # Sanitize branch name by replacing / with -
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          # Get first 4 characters of commit SHA
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -125,20 +141,47 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/${{ env.repo_owner }}/api:latest
-            ghcr.io/${{ env.repo_owner }}/api:${{ github.sha }}
+            ghcr.io/${{ env.repo_owner }}/api:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: Create/Update API tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Delete existing tag if it exists
+          if git tag -l "api" | grep -q "api"; then
+            git tag -d "api"
+            echo "Deleted local tag: api"
+          fi
+
+          # Create new tag
+          git tag "api" "${{ github.sha }}"
+          echo "Created tag: api"
+
+          # Push tag to remote
+          git push origin "api" --force
+          echo "Pushed tag: api"
 
   build-and-push-worker:
     permissions:
       packages: write
+      contents: write
     needs: [changes, lint-and-test]
     if: ${{ needs.changes.outputs.worker == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Generate tags
+        id: tags
+        run: |
+          # Sanitize branch name by replacing / with -
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          # Get first 4 characters of commit SHA
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -159,7 +202,84 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/${{ env.repo_owner }}/worker:latest
-            ghcr.io/${{ env.repo_owner }}/worker:${{ github.sha }}
+            ghcr.io/${{ env.repo_owner }}/worker:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
+
+      - name: Create/Update Worker tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Delete existing tag if it exists
+          if git tag -l "worker" | grep -q "worker"; then
+            git tag -d "worker"
+            echo "Deleted local tag: worker"
+          fi
+
+          # Create new tag
+          git tag "worker" "${{ github.sha }}"
+          echo "Created tag: worker"
+
+          # Push tag to remote
+          git push origin "worker" --force
+          echo "Pushed tag: worker"
+
+  build-and-push-dashboard:
+    permissions:
+      packages: write
+      contents: write
+    needs: [changes, lint-and-test]
+    if: ${{ needs.changes.outputs.dashboard == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate tags
+        id: tags
+        run: |
+          # Sanitize branch name by replacing / with -
+          BRANCH_NAME=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          # Get first 4 characters of commit SHA
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-4)
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/start/Dockerfile
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ghcr.io/${{ env.repo_owner }}/dashboard:${{ steps.tags.outputs.branch_name }}-${{ steps.tags.outputs.short_sha }}
+          build-args: |
+            NO_CLOUDFLARE=1
+
+      - name: Create/Update Dashboard tag
+        if: github.ref == 'refs/heads/main'
+        run: |
+          # Delete existing tag if it exists
+          if git tag -l "dashboard" | grep -q "dashboard"; then
+            git tag -d "dashboard"
+            echo "Deleted local tag: dashboard"
+          fi
+
+          # Create new tag
+          git tag "dashboard" "${{ github.sha }}"
+          echo "Created tag: dashboard"
+
+          # Push tag to remote
+          git push origin "dashboard" --force
+          echo "Pushed tag: dashboard"

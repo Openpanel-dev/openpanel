@@ -1,5 +1,5 @@
 import { cacheable } from '@openpanel/redis';
-import { escape } from 'sqlstring';
+import sqlstring from 'sqlstring';
 import { TABLE_NAMES, chQuery } from '../clickhouse/client';
 import type { Prisma, Project } from '../prisma-client';
 import { db } from '../prisma-client';
@@ -28,7 +28,7 @@ export async function getProjectById(id: string) {
 export const getProjectByIdCached = cacheable(getProjectById, 60 * 60 * 24);
 
 export async function getProjectWithClients(id: string) {
-  const res = await db.project.findUnique({
+  const res = await db.$primary().project.findUnique({
     where: {
       id,
     },
@@ -50,7 +50,7 @@ export async function getProjectsByOrganizationId(organizationId: string) {
       organizationId,
     },
     orderBy: {
-      createdAt: 'desc',
+      eventsCount: 'desc',
     },
   });
 }
@@ -104,7 +104,7 @@ export async function getProjects({
 
 export const getProjectEventsCount = async (projectId: string) => {
   const res = await chQuery<{ count: number }>(
-    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${escape(projectId)}`,
+    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`,
   );
   return res[0]?.count;
 };

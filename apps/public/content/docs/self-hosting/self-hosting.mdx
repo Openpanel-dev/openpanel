@@ -16,7 +16,7 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 ### Quickstart
 
 ```bash
-git clone https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hosting && ./setup
 # After setup is complete run `./start` to start OpenPanel
 ```
 
@@ -25,10 +25,10 @@ git clone https://github.com/Openpanel-dev/openpanel && cd openpanel/self-hostin
 <Step>
 ### Clone
 
-Clone the repository to your VPS
+Clone the repository to your VPS and checkout the self-hosting tag
 
 ```bash
-git clone https://github.com/Openpanel-dev/openpanel.git
+git clone -b self-hosting https://github.com/Openpanel-dev/openpanel.git
 ```
 </Step>
 <Step>
@@ -76,7 +76,7 @@ The path should be `/api` and the domain should be your domain.
 
 ```html title="index.html"
 <script>
-  window.op = window.op||function(...args){(window.op.q=window.op.q||[]).push(args);};
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
   window.op('init', {
     apiUrl: 'https://your-domain.com/api', // [!code highlight]
     clientId: 'YOUR_CLIENT_ID',
@@ -102,7 +102,7 @@ const op = new OpenPanel({
 
 ### E-mail
 
-Some of OpenPanel's features require e-mail. We use Resend as our transactional e-mail provider. So to get this working you'll need to create an account on Resend and set the `RESEND_API_KEY` environment variable.
+Some of OpenPanel's features require e-mail. We use Resend as our transactional e-mail provider. To enable email features, create an account on Resend and set the `RESEND_API_KEY` environment variable.
 
 <Callout>This is nothing that is required for the basic setup, but it is required for some features.</Callout>
 
@@ -111,6 +111,53 @@ Features that require e-mail:
 - Password reset
 - Invitations
 - more will be added over time
+
+For email configuration details, see the [Environment Variables documentation](/docs/self-hosting/environment-variables#email).
+
+### AI integration
+
+OpenPanel includes an AI-powered analytics assistant that can help you analyze data, create reports, and answer questions about your analytics. To enable this feature, you need to configure an API key for either OpenAI or Anthropic.
+
+#### Supported Models
+
+- **OpenAI** (default)
+  - `gpt-4o` - More powerful but higher cost
+  - `gpt-4o-mini` - Default model, good balance of performance and cost
+- **Anthropic**
+  - `claude-3-5-haiku-latest` - Fast and cost-effective
+
+#### Configuration
+
+Add the following environment variables to your `.env` file in the `self-hosting` directory:
+
+**For OpenAI (default):**
+
+```bash title=".env"
+OPENAI_API_KEY=sk-your-openai-api-key-here
+AI_MODEL=gpt-4o-mini  # Optional: defaults to gpt-4o-mini
+```
+
+**For Anthropic:**
+
+```bash title=".env"
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+AI_MODEL=claude-3-5
+```
+
+#### Getting API Keys
+
+- **OpenAI**: Get your API key from [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- **Anthropic**: Get your API key from [console.anthropic.com](https://console.anthropic.com)
+
+<Callout type="info">
+The AI assistant is optional. Without an API key configured, the AI chat feature will not be available, but all other OpenPanel features will continue to work normally.
+</Callout>
+
+<Callout type="warn">
+AI features will incur costs based on your usage and the model you choose. Monitor your API usage through your provider's dashboard to avoid unexpected charges.
+</Callout>
+
+For complete AI configuration details, see the [Environment Variables documentation](/docs/self-hosting/environment-variables#ai-features).
 
 ### Managed Redis
 
@@ -135,6 +182,8 @@ Invitations are enabled by default. You can also disable invitations by setting 
 ```bash title=".env"
 ALLOW_INVITATION=false
 ```
+
+For a complete reference of all environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
 ## Helpful scripts
 

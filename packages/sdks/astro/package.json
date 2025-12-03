@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/astro",
-  "version": "1.0.1-local",
+  "version": "1.0.5-local",
   "config": {
     "transformPackageJson": false,
     "transformEnvs": true
@@ -14,7 +14,7 @@
   "files": ["src", "index.ts"],
   "keywords": ["astro-component"],
   "dependencies": {
-    "@openpanel/web": "workspace:1.0.1-local"
+    "@openpanel/web": "workspace:1.0.5-local"
   },
   "devDependencies": {
     "astro": "^5.7.7"

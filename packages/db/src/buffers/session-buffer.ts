@@ -12,6 +12,9 @@ export class SessionBuffer extends BaseBuffer {
   private batchSize = process.env.SESSION_BUFFER_BATCH_SIZE
     ? Number.parseInt(process.env.SESSION_BUFFER_BATCH_SIZE, 10)
     : 1000;
+  private chunkSize = process.env.SESSION_BUFFER_CHUNK_SIZE
+    ? Number.parseInt(process.env.SESSION_BUFFER_CHUNK_SIZE, 10)
+    : 1000;
 
   private readonly redisKey = 'session-buffer';
   private redis: Redis;
@@ -25,8 +28,24 @@ export class SessionBuffer extends BaseBuffer {
     this.redis = getRedisCache();
   }
 
-  public async getExistingSession(sessionId: string) {
-    const hit = await this.redis.get(`session:${sessionId}`);
+  public async getExistingSession(
+    options:
+      | {
+          sessionId: string;
+        }
+      | {
+          projectId: string;
+          profileId: string;
+        },
+  ) {
+    let hit: string | null = null;
+    if ('sessionId' in options) {
+      hit = await this.redis.get(`session:${options.sessionId}`);
+    } else {
+      hit = await this.redis.get(
+        `session:${options.projectId}:${options.profileId}`,
+      );
+    }
 
     if (hit) {
       return getSafeJson<IClickhouseSession>(hit);
@@ -38,7 +57,9 @@ export class SessionBuffer extends BaseBuffer {
   async getSession(
     event: IClickhouseEvent,
   ): Promise<[IClickhouseSession] | [IClickhouseSession, IClickhouseSession]> {
-    const existingSession = await this.getExistingSession(event.session_id);
+    const existingSession = await this.getExistingSession({
+      sessionId: event.session_id,
+    });
 
     if (existingSession) {
       const oldSession = assocPath(['sign'], -1, clone(existingSession));
@@ -74,7 +95,9 @@ export class SessionBuffer extends BaseBuffer {
         ...(event.properties || {}),
         ...(newSession.properties || {}),
       });
-      // newSession.revenue += event.properties?.__revenue ?? 0;
+
+      const addedRevenue = event.name === 'revenue' ? (event.revenue ?? 0) : 0;
+      newSession.revenue = (newSession.revenue ?? 0) + addedRevenue;
 
       if (event.name === 'screen_view' && event.path) {
         newSession.screen_views.push(event.path);
@@ -111,7 +134,7 @@ export class SessionBuffer extends BaseBuffer {
         entry_origin: event.origin,
         exit_path: event.path,
         exit_origin: event.origin,
-        revenue: 0,
+        revenue: event.name === 'revenue' ? (event.revenue ?? 0) : 0,
         referrer: event.referrer,
         referrer_name: event.referrer_name,
         referrer_type: event.referrer_type,
@@ -171,6 +194,14 @@ export class SessionBuffer extends BaseBuffer {
         'EX',
         60 * 60,
       );
+      if (newSession.profile_id) {
+        multi.set(
+          `session:${newSession.project_id}:${newSession.profile_id}`,
+          JSON.stringify(newSession),
+          'EX',
+          60 * 60,
+        );
+      }
       for (const session of sessions) {
         multi.rpush(this.redisKey, JSON.stringify(session));
       }
@@ -209,7 +240,7 @@ export class SessionBuffer extends BaseBuffer {
           };
         });
 
-      for (const chunk of this.chunks(sessions, 1000)) {
+      for (const chunk of this.chunks(sessions, this.chunkSize)) {
         // Insert to ClickHouse
         await ch.insert({
           table: TABLE_NAMES.sessions,
@@ -225,7 +256,7 @@ export class SessionBuffer extends BaseBuffer {
         .decrby(this.bufferCounterKey, events.length);
       await multi.exec();
 
-      this.logger.info('Processed sessions', {
+      this.logger.debug('Processed sessions', {
         count: events.length,
       });
     } catch (error) {

@@ -1,5 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { db, getOrganizationByProjectIdCached } from '@openpanel/db';
 import {
   sendSlackNotification,
@@ -22,7 +27,6 @@ const paramsSchema = z.object({
 
 const metadataSchema = z.object({
   organizationId: z.string(),
-  projectId: z.string(),
   integrationId: z.string(),
 });
 
@@ -84,7 +88,7 @@ export async function slackWebhook(
         '👋 Hello. You have successfully connected OpenPanel.dev to your Slack workspace.',
     });
 
-    const { projectId, organizationId, integrationId } = parsedMetadata.data;
+    const { organizationId, integrationId } = parsedMetadata.data;
 
     await db.integration.update({
       where: {
@@ -100,12 +104,23 @@ export async function slackWebhook(
     });
 
     return reply.redirect(
-      `${process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/${projectId}/settings/integrations?tab=installed`,
+      `${process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL}/${organizationId}/integrations/installed`,
     );
   } catch (err) {
     request.log.error(err);
     const html = fs.readFileSync(path.join(__dirname, 'error.html'), 'utf8');
     return reply.status(500).header('Content-Type', 'text/html').send(html);
+  }
+}
+
+async function clearOrganizationCache(organizationId: string) {
+  const projects = await db.project.findMany({
+    where: {
+      organizationId,
+    },
+  });
+  for (const project of projects) {
+    await getOrganizationByProjectIdCached.clear(project.id);
   }
 }
 
@@ -137,8 +152,11 @@ export async function polarWebhook(
             },
             data: {
               subscriptionPeriodEventsCount: 0,
+              subscriptionPeriodEventsCountExceededAt: null,
             },
           });
+
+          await clearOrganizationCache(metadata.organizationId);
         }
         break;
       }
@@ -151,6 +169,11 @@ export async function polarWebhook(
           .parse(event.data.metadata);
 
         const product = await getProduct(event.data.productId);
+        const organization = await db.organization.findUniqueOrThrow({
+          where: {
+            id: metadata.organizationId,
+          },
+        });
         const eventsLimit = product.metadata?.eventsLimit;
         const subscriptionPeriodEventsLimit =
           typeof eventsLimit === 'number' ? eventsLimit : undefined;
@@ -184,7 +207,7 @@ export async function polarWebhook(
           data: {
             subscriptionId: event.data.id,
             subscriptionCustomerId: event.data.customer.id,
-            subscriptionPriceId: event.data.priceId,
+            subscriptionPriceId: event.data.prices[0]?.id ?? null,
             subscriptionProductId: event.data.productId,
             subscriptionStatus: event.data.status,
             subscriptionStartsAt: event.data.currentPeriodStart,
@@ -198,18 +221,17 @@ export async function polarWebhook(
             subscriptionCreatedByUserId: metadata.userId,
             subscriptionInterval: event.data.recurringInterval,
             subscriptionPeriodEventsLimit,
+            subscriptionPeriodEventsCountExceededAt:
+              subscriptionPeriodEventsLimit &&
+              organization.subscriptionPeriodEventsCountExceededAt &&
+              organization.subscriptionPeriodEventsLimit <
+                subscriptionPeriodEventsLimit
+                ? null
+                : undefined,
           },
         });
 
-        const projects = await db.project.findMany({
-          where: {
-            organizationId: metadata.organizationId,
-          },
-        });
-
-        for (const project of projects) {
-          await getOrganizationByProjectIdCached.clear(project.id);
-        }
+        await clearOrganizationCache(metadata.organizationId);
 
         await publishEvent('organization', 'subscription_updated', {
           organizationId: metadata.organizationId,

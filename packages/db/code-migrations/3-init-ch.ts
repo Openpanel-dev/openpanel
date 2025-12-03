@@ -1,5 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import { formatClickhouseDate } from '../src/clickhouse/client';
 import {
   createDatabase,
@@ -11,7 +16,7 @@ import {
   renameTable,
   runClickhouseMigrationCommands,
 } from '../src/clickhouse/migration';
-import { getIsSelfHosting, printBoxMessage } from './helpers';
+import { getIsCluster, getIsSelfHosting, printBoxMessage } from './helpers';
 
 export async function up() {
   const replicatedVersion = '1';
@@ -26,7 +31,7 @@ export async function up() {
   );
 
   const isSelfHosting = getIsSelfHosting();
-  const isClustered = !isSelfHosting;
+  const isClustered = getIsCluster();
 
   const isSelfHostingPostCluster =
     existingTables.includes('events_replicated') && isSelfHosting;
@@ -53,7 +58,7 @@ export async function up() {
           return renameTable({
             from: table,
             to: `${table}_tmp`,
-            isClustered: false,
+            isClustered,
           });
         }),
     );

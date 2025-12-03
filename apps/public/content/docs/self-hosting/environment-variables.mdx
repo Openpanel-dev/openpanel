@@ -1,0 +1,804 @@
+---
+title: Environment Variables
+description: Complete reference for all OpenPanel environment variables
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+This page documents all environment variables used by OpenPanel. Variables are organized by category. Most variables are optional and have sensible defaults.
+
+<Callout>
+For deployment-specific configuration, see the [deployment guides](/docs/self-hosting/deploy-docker-compose).
+</Callout>
+
+## Database & Storage
+
+### DATABASE_URL
+
+**Type**: `string`  
+**Required**: Yes  
+**Default**: None
+
+PostgreSQL connection string for the main database.
+
+**Example**:
+```bash
+DATABASE_URL=postgres://user:password@localhost:5432/openpanel?schema=public
+```
+
+### DATABASE_URL_DIRECT
+
+**Type**: `string`  
+**Required**: No  
+**Default**: Same as `DATABASE_URL`
+
+Direct PostgreSQL connection string (bypasses connection pooling). Used for migrations and administrative operations.
+
+**Example**:
+```bash
+DATABASE_URL_DIRECT=postgres://user:password@localhost:5432/openpanel?schema=public
+```
+
+### DATABASE_URL_REPLICA
+
+**Type**: `string`  
+**Required**: No  
+**Default**: Same as `DATABASE_URL`
+
+Read replica connection string for read-heavy operations. If not set, uses the main database.
+
+**Example**:
+```bash
+DATABASE_URL_REPLICA=postgres://user:password@replica-host:5432/openpanel?schema=public
+```
+
+### REDIS_URL
+
+**Type**: `string`  
+**Required**: Yes  
+**Default**: `redis://localhost:6379`
+
+Redis connection string for caching and queue management.
+
+**Example**:
+```bash
+REDIS_URL=redis://localhost:6379
+# With password
+REDIS_URL=redis://:password@localhost:6379
+```
+
+### CLICKHOUSE_URL
+
+**Type**: `string`  
+**Required**: Yes  
+**Default**: `http://localhost:8123/openpanel`
+
+ClickHouse HTTP connection URL for analytics data storage.
+
+**Example**:
+```bash
+CLICKHOUSE_URL=http://localhost:8123/openpanel
+```
+
+### CLICKHOUSE_CLUSTER
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Enable ClickHouse cluster mode. Set to `true` or `1` if using a ClickHouse cluster.
+
+**Example**:
+```bash
+CLICKHOUSE_CLUSTER=true
+```
+
+### CLICKHOUSE_SETTINGS
+
+**Type**: `string` (JSON)  
+**Required**: No  
+**Default**: `{}`
+
+Additional ClickHouse settings as a JSON object.
+
+**Example**:
+```bash
+CLICKHOUSE_SETTINGS='{"max_execution_time": 300}'
+```
+
+### CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Remove `convert_any_join` from ClickHouse settings. Used for compatibility with certain ClickHouse versions. This needs to be set if you use any clickhouse version below 25!
+
+## Application URLs
+
+### NEXT_PUBLIC_API_URL
+
+**Type**: `string`  
+**Required**: Yes  
+**Default**: None
+
+Public API URL exposed to the browser. Used by the dashboard frontend and API service.
+
+**Example**:
+```bash
+NEXT_PUBLIC_API_URL=https://analytics.example.com/api
+```
+
+### NEXT_PUBLIC_DASHBOARD_URL
+
+**Type**: `string`  
+**Required**: Yes  
+**Default**: None
+
+Public dashboard URL exposed to the browser. Used by the dashboard frontend and API service.
+
+**Example**:
+```bash
+NEXT_PUBLIC_DASHBOARD_URL=https://analytics.example.com
+```
+
+### API_CORS_ORIGINS
+
+**Type**: `string` (comma-separated)  
+**Required**: No  
+**Default**: None
+
+Additional CORS origins allowed for API requests. Comma-separated list of origins.
+
+**Example**:
+```bash
+API_CORS_ORIGINS=https://app.example.com,https://another-app.com
+```
+
+## Authentication & Security
+
+### COOKIE_SECRET
+
+**Type**: `string`  
+**Required**: Yes  
+**Default**: None
+
+Secret key for encrypting session cookies. Generate a secure random string (32+ characters).
+
+**Example**:
+```bash
+# Generate with: openssl rand -base64 32
+COOKIE_SECRET=your-random-secret-here
+```
+
+<Callout type="warn">
+Never use the default value in production! Always generate a unique secret.
+</Callout>
+
+### DEMO_USER_ID
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+User ID for demo mode. When set, creates a demo session for testing.
+
+**Example**:
+```bash
+DEMO_USER_ID=user_1234567890
+```
+
+### ALLOW_REGISTRATION
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false` (after first user is created)
+
+Allow new user registrations. Set to `true` to enable public registration.
+
+**Example**:
+```bash
+ALLOW_REGISTRATION=true
+```
+
+<Callout>
+Registration is automatically disabled after the first user is created. Set this to `true` to re-enable it.
+</Callout>
+
+### ALLOW_INVITATION
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `true`
+
+Allow user invitations. Set to `false` to disable invitation functionality.
+
+**Example**:
+```bash
+ALLOW_INVITATION=false
+```
+
+## AI Features
+
+### AI_MODEL
+
+**Type**: `string`  
+**Required**: No  
+**Default**: `gpt-4.1-mini`
+
+AI model to use for the analytics assistant. Options: `gpt-4o`, `gpt-4o-mini`, `claude-3-5`.
+
+**Example**:
+```bash
+AI_MODEL=gpt-4o-mini
+```
+
+### OPENAI_API_KEY
+
+**Type**: `string`  
+**Required**: No (required if using OpenAI models)  
+**Default**: None
+
+OpenAI API key for AI features. Required if `AI_MODEL` is set to `gpt-4o` or `gpt-4o-mini`.
+
+**Example**:
+```bash
+OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+### ANTHROPIC_API_KEY
+
+**Type**: `string`  
+**Required**: No (required if using Claude models)  
+**Default**: None
+
+Anthropic API key for Claude AI models. Required if `AI_MODEL` is set to `claude-3-5`.
+
+**Example**:
+```bash
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+```
+
+### GEMINI_API_KEY
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Google Gemini API key for Gemini AI models. Currently not used but reserved for future support.
+
+**Example**:
+```bash
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+
+<Callout type="info">
+The AI assistant is optional. Without an API key configured, the AI chat feature will not be available, but all other OpenPanel features will continue to work normally.
+</Callout>
+
+## Email
+
+### RESEND_API_KEY
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Resend API key for sending transactional emails (password resets, invitations, etc.).
+
+**Example**:
+```bash
+RESEND_API_KEY=re_xxxxxxxxxxxxx
+```
+
+<Callout>
+Get your API key from [resend.com](https://resend.com). Make sure to verify your sender email domain.
+</Callout>
+
+### EMAIL_SENDER
+
+**Type**: `string`  
+**Required**: No  
+**Default**: `hello@openpanel.dev`
+
+Email address used as the sender for transactional emails.
+
+**Example**:
+```bash
+EMAIL_SENDER=noreply@yourdomain.com
+```
+
+<Callout>
+The sender email must be verified in your Resend account.
+</Callout>
+
+## OAuth & Integrations
+
+### SLACK_CLIENT_ID
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Slack OAuth client ID for Slack integration.
+
+**Example**:
+```bash
+SLACK_CLIENT_ID=1234567890.1234567890
+```
+
+### SLACK_CLIENT_SECRET
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Slack OAuth client secret for Slack integration.
+
+**Example**:
+```bash
+SLACK_CLIENT_SECRET=your-slack-client-secret
+```
+
+### SLACK_OAUTH_REDIRECT_URL
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Slack OAuth redirect URL. Must match the redirect URI configured in your Slack app.
+
+**Example**:
+```bash
+SLACK_OAUTH_REDIRECT_URL=https://analytics.example.com/api/integrations/slack/callback
+```
+
+### SLACK_STATE_SECRET
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Secret for signing Slack OAuth state parameter.
+
+**Example**:
+```bash
+SLACK_STATE_SECRET=your-state-secret
+```
+
+## Self-hosting
+
+### NEXT_PUBLIC_SELF_HOSTED
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Enable self-hosted mode. Set to `true` or `1` to enable self-hosting features. Used by both the dashboard frontend and API service.
+
+**Example**:
+```bash
+NEXT_PUBLIC_SELF_HOSTED=true
+```
+
+## Worker & Queue
+
+### WORKER_PORT
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `3000`
+
+Port for the worker service to listen on.
+
+**Example**:
+```bash
+WORKER_PORT=3000
+```
+
+### DISABLE_BULLBOARD
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Disable BullMQ board UI. Set to `true` or `1` to disable the queue monitoring dashboard.
+
+**Example**:
+```bash
+DISABLE_BULLBOARD=true
+```
+
+### DISABLE_WORKERS
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Disable all worker processes. Set to `true` or `1` to disable background job processing.
+
+**Example**:
+```bash
+DISABLE_WORKERS=true
+```
+
+### ENABLED_QUEUES
+
+**Type**: `string` (comma-separated)  
+**Required**: No  
+**Default**: All queues enabled
+
+Comma-separated list of queue names to enable. Available queues: `events`, `sessions`, `cron`, `notification`, `misc`, `import`.
+
+**Example**:
+```bash
+ENABLED_QUEUES=events,sessions,cron
+```
+
+### EVENT_JOB_CONCURRENCY
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `10`
+
+Number of concurrent event processing jobs per worker.
+
+**Example**:
+```bash
+EVENT_JOB_CONCURRENCY=20
+```
+
+### EVENT_BLOCKING_TIMEOUT_SEC
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `1`
+
+Blocking timeout in seconds for event queue workers.
+
+**Example**:
+```bash
+EVENT_BLOCKING_TIMEOUT_SEC=2
+```
+
+### EVENTS_GROUP_QUEUES_SHARDS
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `1`
+
+Number of shards for the events group queue. Increase for better performance with high event volume.
+
+**Example**:
+```bash
+EVENTS_GROUP_QUEUES_SHARDS=4
+```
+
+### QUEUE_CLUSTER
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Enable Redis cluster mode for queues. When enabled, queue names are wrapped with `{}` for Redis cluster sharding.
+
+**Example**:
+```bash
+QUEUE_CLUSTER=true
+```
+
+### ORDERING_DELAY_MS
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `100`
+
+Delay in milliseconds to hold events for correct ordering when events arrive out of order.
+
+**Example**:
+```bash
+ORDERING_DELAY_MS=200
+```
+
+<Callout type="warn">
+Should not exceed 500ms. Higher values may cause delays in event processing.
+</Callout>
+
+### AUTO_BATCH_MAX_WAIT_MS
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `0` (disabled)
+
+Maximum wait time in milliseconds for auto-batching events. Experimental feature.
+
+**Example**:
+```bash
+AUTO_BATCH_MAX_WAIT_MS=100
+```
+
+<Callout type="warn">
+⚠️ **Experimental**: This feature is experimental and not used in production. Do not use unless you have a good understanding of the implications and specific performance requirements.
+</Callout>
+
+### AUTO_BATCH_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `0` (disabled)
+
+Batch size for auto-batching events. Experimental feature.
+
+**Example**:
+```bash
+AUTO_BATCH_SIZE=100
+```
+
+<Callout type="warn">
+⚠️ **Experimental**: This feature is experimental and not used in production. Do not use unless you have a good understanding of the implications and specific performance requirements.
+</Callout>
+
+## Buffers
+
+### SESSION_BUFFER_BATCH_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: Buffer-specific default
+
+Batch size for session buffer operations.
+
+**Example**:
+```bash
+SESSION_BUFFER_BATCH_SIZE=5000
+```
+
+### SESSION_BUFFER_CHUNK_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: Buffer-specific default
+
+Chunk size for session buffer operations.
+
+**Example**:
+```bash
+SESSION_BUFFER_CHUNK_SIZE=1000
+```
+
+### EVENT_BUFFER_BATCH_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `4000`
+
+Batch size for event buffer operations.
+
+**Example**:
+```bash
+EVENT_BUFFER_BATCH_SIZE=5000
+```
+
+### EVENT_BUFFER_CHUNK_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `1000`
+
+Chunk size for event buffer operations.
+
+**Example**:
+```bash
+EVENT_BUFFER_CHUNK_SIZE=2000
+```
+
+### PROFILE_BUFFER_BATCH_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: Buffer-specific default
+
+Batch size for profile buffer operations.
+
+**Example**:
+```bash
+PROFILE_BUFFER_BATCH_SIZE=5000
+```
+
+### PROFILE_BUFFER_CHUNK_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: Buffer-specific default
+
+Chunk size for profile buffer operations.
+
+**Example**:
+```bash
+PROFILE_BUFFER_CHUNK_SIZE=1000
+```
+
+### PROFILE_BUFFER_TTL_IN_SECONDS
+
+**Type**: `number`  
+**Required**: No  
+**Default**: Buffer-specific default
+
+Time-to-live in seconds for profile buffer entries.
+
+**Example**:
+```bash
+PROFILE_BUFFER_TTL_IN_SECONDS=3600
+```
+
+### BOT_BUFFER_BATCH_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: Buffer-specific default
+
+Batch size for bot detection buffer operations.
+
+**Example**:
+```bash
+BOT_BUFFER_BATCH_SIZE=1000
+```
+
+## Performance & Tuning
+
+### IMPORT_BATCH_SIZE
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `5000`
+
+Batch size for data import operations.
+
+**Example**:
+```bash
+IMPORT_BATCH_SIZE=10000
+```
+
+### IP_HEADER_ORDER
+
+**Type**: `string` (comma-separated)  
+**Required**: No  
+**Default**: See [default order](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts)
+
+Custom order of HTTP headers to check for client IP address. Useful when behind specific proxies or CDNs.
+
+**Example**:
+```bash
+IP_HEADER_ORDER=cf-connecting-ip,x-real-ip,x-forwarded-for
+```
+
+<Callout>
+The default order includes: `openpanel-client-ip`, `cf-connecting-ip`, `true-client-ip`, `x-client-ip`, `x-forwarded-for`, `x-real-ip`, and others. See the [source code](https://github.com/Openpanel-dev/openpanel/blob/main/packages/common/server/get-client-ip.ts) for the complete default list.
+</Callout>
+
+### SHUTDOWN_GRACE_PERIOD_MS
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `5000`
+
+Grace period in milliseconds for graceful shutdown of services.
+
+**Example**:
+```bash
+SHUTDOWN_GRACE_PERIOD_MS=10000
+```
+
+### API_PORT
+
+**Type**: `number`  
+**Required**: No  
+**Default**: `3000`
+
+Port for the API service to listen on.
+
+**Example**:
+```bash
+API_PORT=3000
+```
+
+## Logging
+
+### LOG_LEVEL
+
+**Type**: `string`  
+**Required**: No  
+**Default**: `info`
+
+Logging level. Options: `error`, `warn`, `info`, `debug`.
+
+**Example**:
+```bash
+LOG_LEVEL=debug
+```
+
+### LOG_SILENT
+
+**Type**: `boolean`  
+**Required**: No  
+**Default**: `false`
+
+Disable all logging output. Set to `true` to silence logs.
+
+**Example**:
+```bash
+LOG_SILENT=true
+```
+
+### LOG_PREFIX
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Prefix for log messages. Useful for identifying logs from different services.
+
+**Example**:
+```bash
+LOG_PREFIX=api
+```
+
+### HYPERDX_API_KEY
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+HyperDX API key for sending logs to HyperDX for monitoring and analysis.
+
+**Example**:
+```bash
+HYPERDX_API_KEY=your-hyperdx-api-key
+```
+
+## Geo
+
+### MAXMIND_LICENSE_KEY
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+MaxMind GeoLite2 license key for downloading GeoIP databases.
+
+**Example**:
+```bash
+MAXMIND_LICENSE_KEY=your-maxmind-license-key
+```
+
+<Callout>
+Get your license key from [MaxMind](https://www.maxmind.com/en/accounts/current/license-key). Required for downloading GeoIP databases.
+</Callout>
+
+## Quick Reference
+
+### Required Variables
+
+For a basic self-hosted installation, these variables are required:
+
+- `DATABASE_URL` - PostgreSQL connection
+- `REDIS_URL` - Redis connection
+- `CLICKHOUSE_URL` - ClickHouse connection
+- `NEXT_PUBLIC_API_URL` - API endpoint URL
+- `NEXT_PUBLIC_DASHBOARD_URL` - Dashboard URL
+- `COOKIE_SECRET` - Session encryption secret
+
+### Optional but Recommended
+
+- `RESEND_API_KEY` - For email features
+- `EMAIL_SENDER` - Email sender address
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` - For AI features
+- `AI_MODEL` - AI model selection
+
+### See Also
+
+- [Deploy with Docker Compose](/docs/self-hosting/deploy-docker-compose)
+- [Deploy with Coolify](/docs/self-hosting/deploy-coolify)
+- [Deploy with Dokploy](/docs/self-hosting/deploy-dokploy)
+- [Deploy on Kubernetes](/docs/self-hosting/deploy-kubernetes)
+

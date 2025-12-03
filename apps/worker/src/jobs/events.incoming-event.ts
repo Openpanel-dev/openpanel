@@ -1,27 +1,27 @@
 import { logger as baseLogger } from '@/utils/logger';
-import { getReferrerWithQuery, parseReferrer } from '@/utils/parse-referrer';
 import {
   createSessionEndJob,
   createSessionStart,
   getSessionEnd,
 } from '@/utils/session-handler';
 import { isSameDomain, parsePath } from '@openpanel/common';
-import { parseUserAgent } from '@openpanel/common/server';
+import {
+  getReferrerWithQuery,
+  parseReferrer,
+  parseUserAgent,
+} from '@openpanel/common/server';
 import type { IServiceCreateEventPayload, IServiceEvent } from '@openpanel/db';
 import {
   checkNotificationRulesForEvent,
   createEvent,
-  eventBuffer,
+  sessionBuffer,
 } from '@openpanel/db';
 import type { ILogger } from '@openpanel/logger';
 import type { EventsQueuePayloadIncomingEvent } from '@openpanel/queue';
-import { getLock } from '@openpanel/redis';
-import { DelayedError, type Job } from 'bullmq';
-import { omit } from 'ramda';
 import * as R from 'ramda';
 import { v4 as uuid } from 'uuid';
 
-const GLOBAL_PROPERTIES = ['__path', '__referrer'];
+const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 
 // This function will merge two objects.
 // First it will strip '' and undefined/null from B
@@ -31,10 +31,9 @@ const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
 
 async function createEventAndNotify(
   payload: IServiceCreateEventPayload,
-  jobData: Job<EventsQueuePayloadIncomingEvent>['data']['payload'],
   logger: ILogger,
 ) {
-  logger.info('Creating event', { event: payload, jobData });
+  logger.info('Creating event', { event: payload });
   const [event] = await Promise.all([
     createEvent(payload),
     checkNotificationRulesForEvent(payload).catch(() => {}),
@@ -42,17 +41,19 @@ async function createEventAndNotify(
   return event;
 }
 
-export async function incomingEvent(
-  job: Job<EventsQueuePayloadIncomingEvent>,
-  token?: string,
-) {
-  return incomingEventPure(job.data.payload, job, token);
-}
+const parseRevenue = (revenue: unknown): number | undefined => {
+  if (!revenue) return undefined;
+  if (typeof revenue === 'number') return revenue;
+  if (typeof revenue === 'string') {
+    const parsed = Number.parseFloat(revenue);
+    if (Number.isNaN(parsed)) return undefined;
+    return parsed;
+  }
+  return undefined;
+};
 
-export async function incomingEventPure(
+export async function incomingEvent(
   jobPayload: EventsQueuePayloadIncomingEvent['payload'],
-  job?: Job<EventsQueuePayloadIncomingEvent>,
-  token?: string,
 ) {
   const {
     geo,
@@ -61,6 +62,7 @@ export async function incomingEventPure(
     projectId,
     currentDeviceId,
     previousDeviceId,
+    uaInfo: _uaInfo,
   } = jobPayload;
   const properties = body.properties ?? {};
   const reqId = headers['request-id'] ?? 'unknown';
@@ -91,18 +93,17 @@ export async function incomingEventPure(
   const userAgent = headers['user-agent'];
   const sdkName = headers['openpanel-sdk-name'];
   const sdkVersion = headers['openpanel-sdk-version'];
-  const uaInfo = parseUserAgent(userAgent, properties);
+  // TODO: Remove both user-agent and parseUserAgent
+  const uaInfo = _uaInfo ?? parseUserAgent(userAgent, properties);
 
   const baseEvent = {
     name: body.name,
     profileId,
     projectId,
-    properties: omit(GLOBAL_PROPERTIES, {
+    properties: R.omit(GLOBAL_PROPERTIES, {
       ...properties,
-      __user_agent: userAgent,
       __hash: hash,
       __query: query,
-      __reqId: reqId,
     }),
     createdAt,
     duration: 0,
@@ -115,9 +116,9 @@ export async function incomingEventPure(
     latitude: geo.latitude,
     path,
     origin,
-    referrer: utmReferrer?.url || referrer?.url || '',
+    referrer: referrer?.url || '',
     referrerName: utmReferrer?.name || referrer?.name || '',
-    referrerType: utmReferrer?.type || referrer?.type || '',
+    referrerType: referrer?.type || utmReferrer?.type || '',
     os: uaInfo.os,
     osVersion: uaInfo.osVersion,
     browser: uaInfo.browser,
@@ -125,12 +126,16 @@ export async function incomingEventPure(
     device: uaInfo.device,
     brand: uaInfo.brand,
     model: uaInfo.model,
+    revenue:
+      body.name === 'revenue' && '__revenue' in properties
+        ? parseRevenue(properties.__revenue)
+        : undefined,
   } as const;
 
   // if timestamp is from the past we dont want to create a new session
   if (uaInfo.isServer || isTimestampFromThePast) {
-    const screenView = profileId
-      ? await eventBuffer.getLastScreenView({
+    const session = profileId
+      ? await sessionBuffer.getExistingSession({
           profileId,
           projectId,
         })
@@ -138,28 +143,28 @@ export async function incomingEventPure(
 
     const payload = {
       ...baseEvent,
-      deviceId: screenView?.deviceId ?? '',
-      sessionId: screenView?.sessionId ?? '',
-      referrer: screenView?.referrer ?? undefined,
-      referrerName: screenView?.referrerName ?? undefined,
-      referrerType: screenView?.referrerType ?? undefined,
-      path: screenView?.path ?? baseEvent.path,
-      os: screenView?.os ?? baseEvent.os,
-      osVersion: screenView?.osVersion ?? baseEvent.osVersion,
-      browserVersion: screenView?.browserVersion ?? baseEvent.browserVersion,
-      browser: screenView?.browser ?? baseEvent.browser,
-      device: screenView?.device ?? baseEvent.device,
-      brand: screenView?.brand ?? baseEvent.brand,
-      model: screenView?.model ?? baseEvent.model,
-      city: screenView?.city ?? baseEvent.city,
-      country: screenView?.country ?? baseEvent.country,
-      region: screenView?.region ?? baseEvent.region,
-      longitude: screenView?.longitude ?? baseEvent.longitude,
-      latitude: screenView?.latitude ?? baseEvent.latitude,
-      origin: screenView?.origin ?? baseEvent.origin,
+      deviceId: session?.device_id ?? '',
+      sessionId: session?.id ?? '',
+      referrer: session?.referrer ?? undefined,
+      referrerName: session?.referrer_name ?? undefined,
+      referrerType: session?.referrer_type ?? undefined,
+      path: session?.exit_path ?? baseEvent.path,
+      origin: session?.exit_origin ?? baseEvent.origin,
+      os: session?.os ?? baseEvent.os,
+      osVersion: session?.os_version ?? baseEvent.osVersion,
+      browserVersion: session?.browser_version ?? baseEvent.browserVersion,
+      browser: session?.browser ?? baseEvent.browser,
+      device: session?.device ?? baseEvent.device,
+      brand: session?.brand ?? baseEvent.brand,
+      model: session?.model ?? baseEvent.model,
+      city: session?.city ?? baseEvent.city,
+      country: session?.country ?? baseEvent.country,
+      region: session?.region ?? baseEvent.region,
+      longitude: session?.longitude ?? baseEvent.longitude,
+      latitude: session?.latitude ?? baseEvent.latitude,
     };
 
-    return createEventAndNotify(payload as IServiceEvent, jobPayload, logger);
+    return createEventAndNotify(payload as IServiceEvent, logger);
   }
 
   const sessionEnd = await getSessionEnd({
@@ -170,8 +175,7 @@ export async function incomingEventPure(
   });
 
   const lastScreenView = sessionEnd
-    ? await eventBuffer.getLastScreenView({
-        projectId,
+    ? await sessionBuffer.getExistingSession({
         sessionId: sessionEnd.sessionId,
       })
     : null;
@@ -183,8 +187,8 @@ export async function incomingEventPure(
     referrerName: sessionEnd?.referrerName ?? baseEvent.referrerName,
     referrerType: sessionEnd?.referrerType ?? baseEvent.referrerType,
     // if the path is not set, use the last screen view path
-    path: baseEvent.path || lastScreenView?.path || '',
-    origin: baseEvent.origin || lastScreenView?.origin || '',
+    path: baseEvent.path || lastScreenView?.exit_path || '',
+    origin: baseEvent.origin || lastScreenView?.exit_origin || '',
   } as Partial<IServiceCreateEventPayload>) as IServiceCreateEventPayload;
 
   if (!sessionEnd) {
@@ -195,7 +199,7 @@ export async function incomingEventPure(
     });
   }
 
-  const event = await createEventAndNotify(payload, jobPayload, logger);
+  const event = await createEventAndNotify(payload, logger);
 
   if (!sessionEnd) {
     logger.info('Creating session end job', { event: payload });

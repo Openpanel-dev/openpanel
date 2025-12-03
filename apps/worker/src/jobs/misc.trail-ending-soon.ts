@@ -44,7 +44,7 @@ export async function trialEndingSoonJob(
     to: organization.createdBy?.email,
     data: {
       organizationName: organization.name,
-      url: `https://dashboard.openpanel.dev/${organization.id}/${project.id}/settings/organization?tab=billing`,
+      url: `https://dashboard.openpanel.dev/${organization.id}/billing`,
     },
   });
 }

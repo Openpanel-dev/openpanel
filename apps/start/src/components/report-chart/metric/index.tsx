@@ -1,0 +1,74 @@
+import { useTRPC } from '@/integrations/trpc/react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+
+import { useReportChartContext } from '../context';
+import { Chart } from './chart';
+
+export function ReportMetricChart() {
+  const { isLazyLoading, report } = useReportChartContext();
+  const trpc = useTRPC();
+
+  const res = useQuery(
+    trpc.chart.chart.queryOptions(report, {
+      placeholderData: keepPreviousData,
+      staleTime: 1000 * 60 * 1,
+      enabled: !isLazyLoading,
+    }),
+  );
+
+  if (
+    isLazyLoading ||
+    res.isLoading ||
+    (res.isFetching && !res.data?.series.length)
+  ) {
+    return <Loading />;
+  }
+
+  if (res.isError) {
+    return <Error />;
+  }
+
+  if (!res.data || res.data?.series.length === 0) {
+    return <Empty />;
+  }
+
+  return <Chart data={res.data} />;
+}
+
+export function Loading() {
+  return (
+    <div className="flex h-[78px] flex-col justify-between p-4">
+      <div className="h-3 w-1/2 animate-pulse rounded bg-def-200" />
+      <div className="row items-end justify-between">
+        <div className="h-6 w-1/3 animate-pulse rounded bg-def-200" />
+        <div className="h-3 w-1/5 animate-pulse rounded bg-def-200" />
+      </div>
+    </div>
+  );
+}
+
+export function Error() {
+  return (
+    <div className="relative h-[70px]">
+      <div className="opacity-50">
+        <Loading />
+      </div>
+      <div className="center-center absolute inset-0 text-muted-foreground">
+        <div className="text-sm font-medium">Error fetching data</div>
+      </div>
+    </div>
+  );
+}
+
+export function Empty() {
+  return (
+    <div className="relative h-[70px]">
+      <div className="opacity-50">
+        <Loading />
+      </div>
+      <div className="center-center absolute inset-0 text-muted-foreground">
+        <div className="text-sm font-medium">No data</div>
+      </div>
+    </div>
+  );
+}

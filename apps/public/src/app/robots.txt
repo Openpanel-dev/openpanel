@@ -1,0 +1,4 @@
+User-Agent: *
+Allow: /
+Allow: /og*
+Sitemap: https://openpanel.dev/sitemap.xml

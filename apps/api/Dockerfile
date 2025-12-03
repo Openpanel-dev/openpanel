@@ -1,4 +1,4 @@
-ARG NODE_VERSION=20.15.1
+ARG NODE_VERSION=22.20.0
 
 FROM node:${NODE_VERSION}-slim AS base
 
@@ -43,6 +43,7 @@ COPY packages/constants/package.json packages/constants/
 COPY packages/validation/package.json packages/validation/
 COPY packages/integrations/package.json packages/integrations/
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/
+COPY patches ./patches
 
 # BUILD
 FROM base AS build
@@ -66,6 +67,8 @@ RUN pnpm codegen && \
 # PROD
 FROM base AS prod
 
+ENV npm_config_build_from_source=true
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
@@ -75,12 +78,14 @@ WORKDIR /app
 COPY --from=build /app/package.json ./
 COPY --from=build /app/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod && \
+    pnpm rebuild && \
     pnpm store prune
 
 # FINAL
 FROM base AS runner
 
 ENV NODE_ENV=production
+ENV npm_config_build_from_source=true
 
 WORKDIR /app
 
@@ -106,6 +111,7 @@ COPY --from=build /app/packages/sdks/sdk ./packages/sdks/sdk
 COPY --from=build /app/packages/constants ./packages/constants
 COPY --from=build /app/packages/validation ./packages/validation
 COPY --from=build /app/packages/integrations ./packages/integrations
+COPY --from=build /app/tooling/typescript ./tooling/typescript
 RUN pnpm db:codegen
 
 WORKDIR /app/apps/api
