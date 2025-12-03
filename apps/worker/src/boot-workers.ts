@@ -117,7 +117,7 @@ export async function bootWorkers() {
     const worker = new GroupWorker<EventsQueuePayloadIncomingEvent['payload']>({
       queue,
       concurrency,
-      logger: queueLogger,
+      logger: process.env.NODE_ENV === 'production' ? queueLogger : undefined,
       blockingTimeoutSec: Number.parseFloat(
         process.env.EVENT_BLOCKING_TIMEOUT_SEC || '1',
       ),

@@ -131,7 +131,6 @@ export function transformSessionToEvent(
     duration: 0,
     revenue: session.revenue,
     properties: {
-      ...session.properties,
       is_bounce: session.is_bounce,
       __query: {
         utm_medium: session.utm_medium,

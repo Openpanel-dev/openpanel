@@ -217,6 +217,7 @@ export function moveDataBetweenTables({
   from,
   to,
   batch,
+  columns,
 }: {
   from: string;
   to: string;
@@ -227,11 +228,15 @@ export function moveDataBetweenTables({
     endDate?: Date;
     startDate?: Date;
   };
+  columns?: string[];
 }): string[] {
   const sqls: string[] = [];
 
+  // Build the SELECT clause
+  const selectClause = columns && columns.length > 0 ? columns.join(', ') : '*';
+
   if (!batch) {
-    return [`INSERT INTO ${to} SELECT * FROM ${from}`];
+    return [`INSERT INTO ${to} SELECT ${selectClause} FROM ${from}`];
   }
 
   // Start from today and go back 3 years
@@ -328,7 +333,7 @@ export function moveDataBetweenTables({
     }
 
     const sql = `INSERT INTO ${to} 
-      SELECT * FROM ${from} 
+      SELECT ${selectClause} FROM ${from} 
       WHERE ${batch.column} > '${batch.transform ? batch.transform(previousDate) : formatClickhouseDate(previousDate, true)}' 
       AND ${batch.column} <= '${batch.transform ? batch.transform(upperBoundDate) : formatClickhouseDate(upperBoundDate, true)}'`;
     sqls.push(sql);
