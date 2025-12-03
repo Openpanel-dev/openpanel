@@ -1,0 +1,218 @@
+---
+title: Ruby
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+The OpenPanel Ruby SDK allows you to track user behavior in your Ruby applications. This guide provides instructions for installing and using the Ruby SDK in your project.
+
+<Callout>
+View the [Ruby SDK on GitHub](https://github.com/tstaetter/openpanel-ruby-sdk) for the latest updates and source code.
+</Callout>
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+If you're using Bundler, add to your `Gemfile`:
+
+```bash
+bundle add openpanel-sdk
+```
+
+Or install the gem directly:
+
+```bash
+gem install openpanel-sdk
+```
+
+### Set environment variables
+
+Set your environment variables in a `.env` file:
+
+```bash
+OPENPANEL_TRACK_URL=https://api.openpanel.dev/track
+OPENPANEL_CLIENT_ID=<YOUR_CLIENT_ID>
+OPENPANEL_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
+```
+
+### Initialize
+
+Require and initialize the OpenPanel SDK:
+
+```ruby
+require 'openpanel-sdk'
+
+tracker = OpenPanel::SDK::Tracker.new
+```
+
+### Configuration Options
+
+<CommonSdkConfig />
+
+Additional Ruby-specific options:
+
+- `disabled` - Set to `true` to disable all event tracking
+- `env` - Environment name (e.g., `Rails.env.to_s`)
+
+```ruby
+tracker = OpenPanel::SDK::Tracker.new(
+  { env: Rails.env.to_s },
+  disabled: Rails.env.development?
+)
+```
+
+</Steps>
+
+## Usage
+
+### Tracking Events
+
+To track an event, use the `track` method:
+
+```ruby
+tracker.track('test_event', payload: { name: 'test' })
+```
+
+### Identifying Users
+
+Create an `IdentifyUser` object and pass it to the `identify` method:
+
+```ruby
+identify_user = OpenPanel::SDK::IdentifyUser.new
+identify_user.profile_id = 'user_123'
+identify_user.email = 'user@example.com'
+identify_user.first_name = 'John'
+identify_user.last_name = 'Doe'
+identify_user.properties = { tier: 'premium', company: 'Acme Inc' }
+
+response = tracker.identify(identify_user)
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile:
+
+```ruby
+tracker.increment_property(identify_user, 'visits', 1)
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile:
+
+```ruby
+tracker.decrement_property(identify_user, 'credits', 1)
+```
+
+### Filtering Events
+
+Filters are used to prevent sending events to OpenPanel in certain cases. You can filter events by passing a `filter` lambda to the `track` method:
+
+```ruby
+filter = lambda { |payload|
+  # Return true to send the event, false to skip it
+  payload[:name] == 'test'
+}
+
+response = tracker.track('test_event', payload: { name: 'test' }, filter: filter)
+# If filter returns false, response will be nil
+```
+
+## Rails Integration
+
+### Setting up the Tracker
+
+Add the following to your `application_controller.rb`:
+
+```ruby
+before_action :set_openpanel_tracker
+
+protected
+
+def set_openpanel_tracker
+  @openpanel_tracker = OpenPanel::SDK::Tracker.new(
+    { env: Rails.env.to_s },
+    disabled: Rails.env.development?
+  )
+  @openpanel_tracker.set_header 'x-client-ip', request.ip
+  @openpanel_tracker.set_header 'user-agent', request.user_agent
+end
+```
+
+### Tracking Events in Controllers
+
+Use `@openpanel_tracker` in your controllers to track events:
+
+```ruby
+def create
+  @user = User.create(user_params)
+  @openpanel_tracker.track('user_created', payload: { user_id: @user.id })
+  redirect_to @user
+end
+```
+
+### Identifying Users
+
+Create a helper method to convert your app's user model to an `IdentifyUser`:
+
+```ruby
+def identify_user_from_app_user(user, properties: {})
+  iu = OpenPanel::SDK::IdentifyUser.new
+  iu.profile_id = user.id.to_s
+  iu.email = user.email
+  iu.first_name = user.first_name
+  iu.last_name = user.last_name
+  iu.properties = properties
+  iu
+end
+
+# Usage in controller
+def show
+  iu = identify_user_from_app_user(current_user)
+  @openpanel_tracker.identify(iu)
+end
+```
+
+## Advanced Usage
+
+### Setting Custom Headers
+
+You can set custom headers for requests:
+
+```ruby
+tracker.set_header 'x-client-ip', request.ip
+tracker.set_header 'user-agent', request.user_agent
+```
+
+### Error Handling
+
+The SDK returns a `Faraday::Response` object. Check the response status:
+
+```ruby
+response = tracker.track('event', payload: { name: 'test' })
+if response&.status == 200
+  puts 'Event tracked successfully'
+else
+  puts "Failed to track event: #{response&.status}"
+end
+```
+
+### Disabling Tracking
+
+You can disable tracking during initialization or in specific environments:
+
+```ruby
+# Disable during initialization
+tracker = OpenPanel::SDK::Tracker.new({}, disabled: true)
+
+# Or disable in development
+tracker = OpenPanel::SDK::Tracker.new(
+  { env: Rails.env.to_s },
+  disabled: Rails.env.development?
+)
+```
+
