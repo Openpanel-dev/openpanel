@@ -173,23 +173,23 @@ export function getChartSql({
   }
 
   if (event.segment === 'property_sum' && event.property) {
-    sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+    sb.select.count = `sum(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'property_average' && event.property) {
-    sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+    sb.select.count = `avg(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'property_max' && event.property) {
-    sb.select.count = `max(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+    sb.select.count = `max(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'property_min' && event.property) {
-    sb.select.count = `min(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+    sb.select.count = `min(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+    sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
   }
 
   if (event.segment === 'one_event_per_user') {
