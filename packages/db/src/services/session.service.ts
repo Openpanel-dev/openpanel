@@ -1,6 +1,5 @@
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
-import { uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import {
   TABLE_NAMES,
@@ -53,7 +52,6 @@ export type IClickhouseSession = {
   revenue: number;
   sign: 1 | 0;
   version: number;
-  properties: Record<string, string>;
 };
 
 export interface IServiceSession {
@@ -92,7 +90,6 @@ export interface IServiceSession {
   utmContent: string;
   utmTerm: string;
   revenue: number;
-  properties: Record<string, string>;
   profile?: IServiceProfile;
 }
 
@@ -144,7 +141,6 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     utmContent: session.utm_content,
     utmTerm: session.utm_term,
     revenue: session.revenue,
-    properties: session.properties,
     profile: undefined,
   };
 }

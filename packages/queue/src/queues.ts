@@ -146,7 +146,7 @@ export const eventsGroupQueues = Array.from({
 }).map(
   (_, index, list) =>
     new GroupQueue<EventsQueuePayloadIncomingEvent['payload']>({
-      logger: queueLogger,
+      logger: process.env.NODE_ENV === 'production' ? queueLogger : undefined,
       namespace: getQueueName(
         list.length === 1 ? 'group_events' : `group_events_${index}`,
       ),
