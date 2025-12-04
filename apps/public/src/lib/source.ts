@@ -50,23 +50,37 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const contentDir = path.join(__dirname, '../../content/compare');
 
-const files = fs
-  .readdirSync(contentDir)
-  .filter((file) => file.endsWith('.json'));
-
-export const compareSource: CompareData[] = files
-  .map((file) => {
-    const filePath = path.join(contentDir, file);
-    const fileContents = fs.readFileSync(filePath, 'utf8');
-    try {
-      return JSON.parse(fileContents) as CompareData;
-    } catch (error) {
-      console.error(`Error parsing compare data for ${file}:`, error);
-      return null;
+function loadCompareSource(): CompareData[] {
+  try {
+    // Check if directory exists before trying to read it
+    if (!fs.existsSync(contentDir)) {
+      return [];
     }
-  })
-  .flatMap((item) => (item ? [item] : []))
-  .map((item) => ({
-    ...item,
-    url: `/compare/${item.slug}`,
-  }));
+
+    const files = fs
+      .readdirSync(contentDir)
+      .filter((file) => file.endsWith('.json'));
+
+    return files
+      .map((file) => {
+        const filePath = path.join(contentDir, file);
+        const fileContents = fs.readFileSync(filePath, 'utf8');
+        try {
+          return JSON.parse(fileContents) as CompareData;
+        } catch (error) {
+          console.error(`Error parsing compare data for ${file}:`, error);
+          return null;
+        }
+      })
+      .flatMap((item) => (item ? [item] : []))
+      .map((item) => ({
+        ...item,
+        url: `/compare/${item.slug}`,
+      }));
+  } catch (error) {
+    console.error('Error loading compare source:', error);
+    return [];
+  }
+}
+
+export const compareSource: CompareData[] = loadCompareSource();

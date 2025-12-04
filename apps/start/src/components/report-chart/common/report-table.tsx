@@ -13,7 +13,6 @@ import {
   getCoreRowModel,
   getExpandedRowModel,
   getFilteredRowModel,
-  getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
 import {
@@ -26,15 +25,12 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 import type * as React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { Tooltiper } from '@/components/ui/tooltip';
 import { ReportTableToolbar } from './report-table-toolbar';
 import {
   type ExpandableTableRow,
-  type GroupedItem,
   type GroupedTableRow,
   type TableRow,
   groupsToExpandableRows,
-  groupsToTableRows,
   transformToHierarchicalGroups,
   transformToTableData,
 } from './report-table-utils';
@@ -1151,14 +1147,10 @@ export function ReportTable({
   }, []);
 
   // Get the row model to use (expanded when grouped, regular otherwise)
-  // filteredRows is already sorted, so getExpandedRowModel/getRowModel should preserve that order
-  // We need to recalculate when filteredRows changes to ensure sorting is applied
-  const rowModelToUse = useMemo(() => {
-    if (grouped) {
-      return table.getExpandedRowModel();
-    }
-    return table.getRowModel();
-  }, [table, grouped, expanded, filteredRows.length, sorting]);
+  // Always call the table helpers so React Table can manage its own memoization
+  const rowModelToUse = grouped
+    ? table.getExpandedRowModel()
+    : table.getRowModel();
 
   const virtualizer = useWindowVirtualizer({
     count: rowModelToUse.rows.length,

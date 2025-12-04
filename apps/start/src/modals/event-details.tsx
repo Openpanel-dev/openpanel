@@ -18,10 +18,10 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/db';
-import { useQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { popModal } from '.';
 import { ModalContent } from './Modal/Container';
 
@@ -52,7 +52,19 @@ const filterable: Partial<Record<keyof IServiceEvent, keyof IClickhouseEvent>> =
     origin: 'origin',
   };
 
-export default function EventDetails({ id, createdAt, projectId }: Props) {
+export default function EventDetails(props: Props) {
+  return (
+    <ModalContent className="!p-0">
+      <Widget className="bg-transparent border-0 min-w-0">
+        <Suspense fallback={<EventDetailsSkeleton />}>
+          <EventDetailsContent {...props} />
+        </Suspense>
+      </Widget>
+    </ModalContent>
+  );
+}
+
+function EventDetailsContent({ id, createdAt, projectId }: Props) {
   const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
   const TABS = {
@@ -67,17 +79,13 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
   };
   const [widget, setWidget] = useState(TABS.essentials);
   const trpc = useTRPC();
-  const query = useQuery(
+  const query = useSuspenseQuery(
     trpc.event.details.queryOptions({
       id,
       projectId,
       createdAt,
     }),
   );
-
-  if (!query.data) {
-    return <EventDetailsSkeleton />;
-  }
 
   const { event, session } = query.data;
 
@@ -172,13 +180,12 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
     }));
 
   return (
-    <ModalContent className="!p-0">
-      <Widget className="bg-transparent border-0 min-w-0">
-        <WidgetHead>
-          <div className="row items-center justify-between">
-            <div className="title">{event.name}</div>
-            <div className="row items-center gap-2 pr-2">
-              {/* <Button
+    <>
+      <WidgetHead>
+        <div className="row items-center justify-between">
+          <div className="title">{event.name}</div>
+          <div className="row items-center gap-2 pr-2">
+            {/* <Button
                 size="icon"
                 variant={'ghost'}
                 onClick={() => {
@@ -202,251 +209,242 @@ export default function EventDetails({ id, createdAt, projectId }: Props) {
               >
                 <ArrowRightIcon className="size-4" />
               </Button> */}
-              <Button size="icon" variant={'ghost'} onClick={() => popModal()}>
-                <XIcon className="size-4" />
-              </Button>
-            </div>
+            <Button size="icon" variant={'ghost'} onClick={() => popModal()}>
+              <XIcon className="size-4" />
+            </Button>
           </div>
+        </div>
 
-          <WidgetButtons>
-            {Object.entries(TABS).map(([, tab]) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setWidget(tab)}
-                className={cn(tab.id === widget.id && 'active')}
-              >
-                {tab.title}
-              </button>
-            ))}
-          </WidgetButtons>
-        </WidgetHead>
-        <WidgetBody className="col gap-4 bg-def-100">
-          {profile && (
-            <ProjectLink
-              onClick={() => popModal()}
-              href={`/profiles/${profile.id}`}
-              className="card p-4 py-2 col gap-2 hover:bg-def-100"
+        <WidgetButtons>
+          {Object.entries(TABS).map(([, tab]) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setWidget(tab)}
+              className={cn(tab.id === widget.id && 'active')}
             >
-              <div className="row items-center gap-2 justify-between">
-                <div className="row items-center gap-2 min-w-0">
-                  {profile.avatar && (
-                    <img
-                      className="size-4 bg-border rounded-full"
-                      src={profile.avatar}
-                    />
-                  )}
-                  <div className="font-medium truncate">
-                    {getProfileName(profile, false)}
-                  </div>
-                </div>
-                <div className="row items-center gap-2 shrink-0">
-                  <div className="row gap-1 items-center">
-                    <SerieIcon name={event.country} />
-                    <SerieIcon name={event.os} />
-                    <SerieIcon name={event.browser} />
-                  </div>
-                  <div className="text-muted-foreground truncate max-w-40">
-                    {event.referrerName || event.referrer}
-                  </div>
-                </div>
-              </div>
-              {!!session && (
-                <div className="text-sm">
-                  This session has {session.screenViewCount} screen views and{' '}
-                  {session.eventCount} events. Visit duration is{' '}
-                  {fancyMinutes(session.duration / 1000)}.
-                </div>
-              )}
-            </ProjectLink>
-          )}
-
-          {properties.length > 0 && (
-            <section>
-              <div className="mb-2 flex justify-between font-medium">
-                <div>Properties</div>
-              </div>
-              <KeyValueGrid
-                columns={1}
-                data={properties}
-                renderValue={(item) => (
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono">{String(item.value)}</span>
-                    <FilterIcon className="size-3 shrink-0" />
-                  </div>
+              {tab.title}
+            </button>
+          ))}
+        </WidgetButtons>
+      </WidgetHead>
+      <WidgetBody className="col gap-4 bg-def-100">
+        {profile && (
+          <ProjectLink
+            onClick={() => popModal()}
+            href={`/profiles/${profile.id}`}
+            className="card p-4 py-2 col gap-2 hover:bg-def-100"
+          >
+            <div className="row items-center gap-2 justify-between">
+              <div className="row items-center gap-2 min-w-0">
+                {profile.avatar && (
+                  <img
+                    className="size-4 bg-border rounded-full"
+                    src={profile.avatar}
+                  />
                 )}
-                onItemClick={(item) => {
-                  popModal();
-                  setFilter(`properties.${item.name}`, item.value as any);
-                }}
-              />
-            </section>
-          )}
+                <div className="font-medium truncate">
+                  {getProfileName(profile, false)}
+                </div>
+              </div>
+              <div className="row items-center gap-2 shrink-0">
+                <div className="row gap-1 items-center">
+                  <SerieIcon name={event.country} />
+                  <SerieIcon name={event.os} />
+                  <SerieIcon name={event.browser} />
+                </div>
+                <div className="text-muted-foreground truncate max-w-40">
+                  {event.referrerName || event.referrer}
+                </div>
+              </div>
+            </div>
+            {!!session && (
+              <div className="text-sm">
+                This session has {session.screenViewCount} screen views and{' '}
+                {session.eventCount} events. Visit duration is{' '}
+                {fancyMinutes(session.duration / 1000)}.
+              </div>
+            )}
+          </ProjectLink>
+        )}
+
+        {properties.length > 0 && (
           <section>
             <div className="mb-2 flex justify-between font-medium">
-              <div>Information</div>
+              <div>Properties</div>
             </div>
             <KeyValueGrid
               columns={1}
-              data={data}
-              renderValue={(item) => {
-                const isFilterable =
-                  item.value && (filterable as any)[item.name];
-                if (isFilterable) {
-                  return (
-                    <div className="flex items-center gap-2">
-                      <FieldValue
-                        name={item.name}
-                        value={item.value}
-                        event={event}
-                      />
-                      <FilterIcon className="size-3 shrink-0" />
-                    </div>
-                  );
-                }
-
-                return (
-                  <FieldValue
-                    name={item.name}
-                    value={item.value}
-                    event={event}
-                  />
-                );
-              }}
+              data={properties}
+              renderValue={(item) => (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono">{String(item.value)}</span>
+                  <FilterIcon className="size-3 shrink-0" />
+                </div>
+              )}
               onItemClick={(item) => {
-                const isFilterable =
-                  item.value && (filterable as any)[item.name];
-                if (isFilterable) {
-                  popModal();
-                  setFilter(item.name as keyof IServiceEvent, item.value);
-                }
+                popModal();
+                setFilter(`properties.${item.name}`, item.value as any);
               }}
             />
           </section>
-          <section>
-            <div className="mb-2 flex justify-between font-medium">
-              <div>All events for {event.name}</div>
-              <button
-                type="button"
-                className="text-muted-foreground hover:underline"
-                onClick={() => {
-                  setEvents([event.name]);
-                  popModal();
-                }}
-              >
-                Show all
-              </button>
-            </div>
-            <div className="card p-4">
-              <ReportChartShortcut
-                projectId={event.projectId}
-                chartType="linear"
-                series={[
-                  {
-                    id: 'A',
-                    name: event.name,
-                    displayName: 'Similar events',
-                    segment: 'event',
-                    filters: [],
-                    type: 'event',
-                  },
-                ]}
-              />
-            </div>
-          </section>
-        </WidgetBody>
-      </Widget>
-    </ModalContent>
+        )}
+        <section>
+          <div className="mb-2 flex justify-between font-medium">
+            <div>Information</div>
+          </div>
+          <KeyValueGrid
+            columns={1}
+            data={data}
+            renderValue={(item) => {
+              const isFilterable = item.value && (filterable as any)[item.name];
+              if (isFilterable) {
+                return (
+                  <div className="flex items-center gap-2">
+                    <FieldValue
+                      name={item.name}
+                      value={item.value}
+                      event={event}
+                    />
+                    <FilterIcon className="size-3 shrink-0" />
+                  </div>
+                );
+              }
+
+              return (
+                <FieldValue name={item.name} value={item.value} event={event} />
+              );
+            }}
+            onItemClick={(item) => {
+              const isFilterable = item.value && (filterable as any)[item.name];
+              if (isFilterable) {
+                popModal();
+                setFilter(item.name as keyof IServiceEvent, item.value);
+              }
+            }}
+          />
+        </section>
+        <section>
+          <div className="mb-2 flex justify-between font-medium">
+            <div>All events for {event.name}</div>
+            <button
+              type="button"
+              className="text-muted-foreground hover:underline"
+              onClick={() => {
+                setEvents([event.name]);
+                popModal();
+              }}
+            >
+              Show all
+            </button>
+          </div>
+          <div className="card p-4">
+            <ReportChartShortcut
+              projectId={event.projectId}
+              chartType="linear"
+              series={[
+                {
+                  id: 'A',
+                  name: event.name,
+                  displayName: 'Similar events',
+                  segment: 'event',
+                  filters: [],
+                  type: 'event',
+                },
+              ]}
+            />
+          </div>
+        </section>
+      </WidgetBody>
+    </>
   );
 }
 
 function EventDetailsSkeleton() {
   return (
-    <ModalContent className="!p-0">
-      <Widget className="bg-transparent border-0 min-w-0">
-        <WidgetHead>
-          <div className="row items-center justify-between">
-            <div className="h-6 w-32 bg-muted animate-pulse rounded" />
-            <div className="row items-center gap-2 pr-2">
-              <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-              <div className="h-8 w-8 bg-muted animate-pulse rounded" />
-              <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+    <>
+      <WidgetHead>
+        <div className="row items-center justify-between">
+          <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+          <div className="row items-center gap-2 pr-2">
+            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+            <div className="h-8 w-8 bg-muted animate-pulse rounded" />
+          </div>
+        </div>
+
+        <WidgetButtons>
+          <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+          <div className="h-8 w-20 bg-muted animate-pulse rounded" />
+        </WidgetButtons>
+      </WidgetHead>
+      <WidgetBody className="col gap-4 bg-def-100">
+        {/* Profile skeleton */}
+        <div className="card p-4 py-2 col gap-2">
+          <div className="row items-center gap-2 justify-between">
+            <div className="row items-center gap-2 min-w-0">
+              <div className="size-4 bg-muted animate-pulse rounded-full" />
+              <div className="h-4 w-24 bg-muted animate-pulse rounded" />
+            </div>
+            <div className="row items-center gap-2 shrink-0">
+              <div className="row gap-1 items-center">
+                <div className="size-4 bg-muted animate-pulse rounded" />
+                <div className="size-4 bg-muted animate-pulse rounded" />
+                <div className="size-4 bg-muted animate-pulse rounded" />
+              </div>
+              <div className="h-4 w-32 bg-muted animate-pulse rounded" />
             </div>
           </div>
+          <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+        </div>
 
-          <WidgetButtons>
-            <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-            <div className="h-8 w-20 bg-muted animate-pulse rounded" />
-          </WidgetButtons>
-        </WidgetHead>
-        <WidgetBody className="col gap-4 bg-def-100">
-          {/* Profile skeleton */}
-          <div className="card p-4 py-2 col gap-2">
-            <div className="row items-center gap-2 justify-between">
-              <div className="row items-center gap-2 min-w-0">
-                <div className="size-4 bg-muted animate-pulse rounded-full" />
+        {/* Properties skeleton */}
+        <section>
+          <div className="mb-2 flex justify-between font-medium">
+            <div className="h-5 w-20 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i.toString()}
+                className="flex items-center justify-between p-3 bg-muted/50 rounded"
+              >
                 <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-              </div>
-              <div className="row items-center gap-2 shrink-0">
-                <div className="row gap-1 items-center">
-                  <div className="size-4 bg-muted animate-pulse rounded" />
-                  <div className="size-4 bg-muted animate-pulse rounded" />
-                  <div className="size-4 bg-muted animate-pulse rounded" />
-                </div>
                 <div className="h-4 w-32 bg-muted animate-pulse rounded" />
               </div>
-            </div>
-            <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+            ))}
           </div>
+        </section>
 
-          {/* Properties skeleton */}
-          <section>
-            <div className="mb-2 flex justify-between font-medium">
-              <div className="h-5 w-20 bg-muted animate-pulse rounded" />
-            </div>
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i.toString()}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded"
-                >
-                  <div className="h-4 w-24 bg-muted animate-pulse rounded" />
-                  <div className="h-4 w-32 bg-muted animate-pulse rounded" />
-                </div>
-              ))}
-            </div>
-          </section>
+        {/* Information skeleton */}
+        <section>
+          <div className="mb-2 flex justify-between font-medium">
+            <div className="h-5 w-24 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i.toString()}
+                className="flex items-center justify-between p-3 bg-muted/50 rounded"
+              >
+                <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                <div className="h-4 w-28 bg-muted animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        </section>
 
-          {/* Information skeleton */}
-          <section>
-            <div className="mb-2 flex justify-between font-medium">
-              <div className="h-5 w-24 bg-muted animate-pulse rounded" />
-            </div>
-            <div className="space-y-2">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i.toString()}
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded"
-                >
-                  <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                  <div className="h-4 w-28 bg-muted animate-pulse rounded" />
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Chart skeleton */}
-          <section>
-            <div className="mb-2 flex justify-between font-medium">
-              <div className="h-5 w-40 bg-muted animate-pulse rounded" />
-              <div className="h-4 w-16 bg-muted animate-pulse rounded" />
-            </div>
-            <div className="card p-4">
-              <div className="h-32 w-full bg-muted animate-pulse rounded" />
-            </div>
-          </section>
-        </WidgetBody>
-      </Widget>
-    </ModalContent>
+        {/* Chart skeleton */}
+        <section>
+          <div className="mb-2 flex justify-between font-medium">
+            <div className="h-5 w-40 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="card p-4">
+            <div className="h-32 w-full bg-muted animate-pulse rounded" />
+          </div>
+        </section>
+      </WidgetBody>
+    </>
   );
 }

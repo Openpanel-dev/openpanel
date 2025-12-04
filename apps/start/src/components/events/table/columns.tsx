@@ -3,7 +3,6 @@ import { ProjectLink } from '@/components/links';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
-import { formatDateTime, formatTimeAgoOrDateTime, timeAgo } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -28,7 +27,7 @@ export function useColumns() {
       accessorKey: 'name',
       header: 'Name',
       cell({ row }) {
-        const { name, path, duration } = row.original;
+        const { name, path, duration, properties } = row.original;
         const renderName = () => {
           if (name === 'screen_view') {
             if (path.includes('/')) {
@@ -209,7 +208,7 @@ export function useColumns() {
           ),
         );
         const items = Object.entries(filteredProperties);
-        const limit = 1;
+        const limit = 2;
         const data = items.slice(0, limit).map(([key, value]) => ({
           name: key,
           value: value,

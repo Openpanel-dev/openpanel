@@ -1,0 +1,204 @@
+---
+title: Rust
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+
+The OpenPanel Rust SDK allows you to track user behavior in your Rust applications. This guide provides instructions for installing and using the Rust SDK in your project.
+
+<Callout>
+View the [Rust SDK on GitHub](https://github.com/tstaetter/openpanel-rust-sdk/) for the latest updates and source code.
+</Callout>
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+Add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+openpanel-sdk = "0.1.0"
+```
+
+Or install via cargo:
+
+```bash
+cargo add openpanel-sdk
+```
+
+### Set environment variables
+
+Set your environment variables in a `.env` file:
+
+```bash
+OPENPANEL_TRACK_URL=https://api.openpanel.dev/track
+OPENPANEL_CLIENT_ID=<YOUR_CLIENT_ID>
+OPENPANEL_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
+```
+
+### Initialize
+
+Import and initialize the OpenPanel SDK:
+
+```rust
+use openpanel_sdk::sdk::Tracker;
+
+let tracker = Tracker::try_new_from_env()?.with_default_headers()?;
+```
+
+### Configuration Options
+
+<CommonSdkConfig />
+
+</Steps>
+
+## Usage
+
+### Tracking Events
+
+To track an event, use the `track` method:
+
+```rust
+use std::collections::HashMap;
+use openpanel_sdk::sdk::Tracker;
+
+let mut properties = HashMap::new();
+properties.insert("name".to_string(), "rust".to_string());
+
+let response = tracker
+    .track("test_event".to_string(), Some(properties), None)
+    .await?;
+```
+
+### Identifying Users
+
+To identify a user, you need to convert your user struct into `user::IdentifyUser` by implementing the `From` trait:
+
+```rust
+use std::collections::HashMap;
+use openpanel_sdk::sdk::Tracker;
+use openpanel_sdk::user;
+
+struct Address {
+    pub street: String,
+    pub city: String,
+    pub zip: String,
+}
+
+struct AppUser {
+    pub id: String,
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub address: Address,
+}
+
+impl From<Address> for HashMap<String, String> {
+    fn from(address: Address) -> Self {
+        let mut properties = HashMap::new();
+        properties.insert("street".to_string(), address.street);
+        properties.insert("city".to_string(), address.city);
+        properties.insert("zip".to_string(), address.zip);
+        properties
+    }
+}
+
+impl From<AppUser> for user::IdentifyUser {
+    fn from(app_user: AppUser) -> Self {
+        Self {
+            profile_id: app_user.id,
+            email: app_user.email,
+            first_name: app_user.first_name,
+            last_name: app_user.last_name,
+            properties: app_user.address.into(),
+        }
+    }
+}
+
+// Usage
+let user = AppUser { /* ... */ };
+let response = tracker.identify(user.into()).await?;
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile:
+
+```rust
+let response = tracker
+    .increment_property(profile_id, "visits", 1)
+    .await?;
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile:
+
+```rust
+let response = tracker
+    .decrement_property(profile_id, "credits", 1)
+    .await?;
+```
+
+### Filtering Events
+
+Filters are used to prevent sending events to OpenPanel in certain cases. You can filter events by passing a `filter` function to the `track` method:
+
+```rust
+use std::collections::HashMap;
+
+let filter = |properties: HashMap<String, String>| {
+    // Return true to send the event, false to skip it
+    properties.contains_key("required_key")
+};
+
+let mut properties = HashMap::new();
+properties.insert("name".to_string(), "rust".to_string());
+
+let response = tracker
+    .track("test_event".to_string(), Some(properties), Some(&filter))
+    .await;
+
+// If filter returns false, the event won't be sent and an Err is returned
+match response {
+    Ok(_) => println!("Event sent successfully"),
+    Err(_) => println!("Event was filtered out"),
+}
+```
+
+## Advanced Usage
+
+### Error Handling
+
+The SDK uses Rust's `Result` type for error handling. Always handle errors appropriately:
+
+```rust
+match tracker.track("event".to_string(), Some(properties), None).await {
+    Ok(response) => {
+        if response.status() == 200 {
+            println!("Event tracked successfully");
+        }
+    }
+    Err(e) => {
+        eprintln!("Failed to track event: {}", e);
+    }
+}
+```
+
+### Async Runtime
+
+The SDK uses async/await. Make sure you're running within an async runtime (e.g., Tokio):
+
+```rust
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    let tracker = Tracker::try_new_from_env()?.with_default_headers()?;
+    // ... use tracker
+    Ok(())
+}
+```
+

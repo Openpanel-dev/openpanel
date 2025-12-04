@@ -1,6 +1,7 @@
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewFiltersButtons } from '@/components/overview/filters/overview-filters-buttons';
 import { LiveCounter } from '@/components/overview/live-counter';
 import OverviewMetrics from '@/components/overview/overview-metrics';
@@ -24,11 +25,32 @@ export const Route = createFileRoute('/share/overview/$shareId')({
   component: RouteComponent,
   validateSearch: shareSearchSchema,
   loader: async ({ context, params }) => {
-    await context.queryClient.prefetchQuery(
+    const share = await context.queryClient.ensureQueryData(
       context.trpc.share.overview.queryOptions({
         shareId: params.shareId,
       }),
     );
+
+    return { share };
+  },
+  head: ({ loaderData }) => {
+    if (!loaderData || !loaderData.share) {
+      return {
+        meta: [
+          {
+            title: 'Share not found - OpenPanel.dev',
+          },
+        ],
+      };
+    }
+
+    return {
+      meta: [
+        {
+          title: `${loaderData.share.project?.name} - ${loaderData.share.organization?.name} - OpenPanel.dev`,
+        },
+      ],
+    };
   },
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
@@ -78,19 +100,8 @@ function RouteComponent() {
   return (
     <div>
       {isHeaderVisible && (
-        <div className="mx-auto max-w-7xl justify-between row gap-4 p-4 pb-0">
-          <div className="col gap-1">
-            <span className="text-sm">{share.organization?.name}</span>
-            <h1 className="text-xl font-medium">{share.project?.name}</h1>
-          </div>
-          <a
-            href="https://openpanel.dev?utm_source=openpanel.dev&utm_medium=share"
-            className="col gap-1 items-end"
-            title="OpenPanel"
-          >
-            <span className="text-xs">POWERED BY</span>
-            <span className="text-xl font-medium">openpanel.dev</span>
-          </a>
+        <div className="mx-auto max-w-7xl">
+          <LoginNavbar className="relative p-4" />
         </div>
       )}
       <div className="">

@@ -12,7 +12,10 @@ import { z } from 'zod';
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
   head: () => ({
-    meta: [{ title: createTitle(PAGE_TITLES.LOGIN) }],
+    meta: [
+      { title: createTitle(PAGE_TITLES.LOGIN) },
+      { name: 'robots', content: 'noindex, follow' },
+    ],
   }),
   validateSearch: z.object({
     error: z.string().optional(),
@@ -26,11 +29,13 @@ function LoginPage() {
   return (
     <div className="col gap-8 w-full text-left">
       <div>
-        <LogoSquare className="size-12 mb-8 md:hidden" />
         <h1 className="text-3xl font-bold text-foreground mb-2">Sign in</h1>
         <p className="text-muted-foreground">
           Don't have an account?{' '}
-          <a href="/onboarding" className="underline">
+          <a
+            href="/onboarding"
+            className="underline font-medium text-foreground"
+          >
             Create one today
           </a>
         </p>

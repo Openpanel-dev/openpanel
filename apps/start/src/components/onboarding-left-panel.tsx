@@ -91,19 +91,8 @@ const onboardingSellingPoints = [
 export function OnboardingLeftPanel() {
   return (
     <div className="sticky top-0 h-screen overflow-hidden">
-      <div className="row justify-between items-center p-8">
-        <LogoSquare className="h-8 w-8" />
-
-        <div className="text-sm text-muted-foreground">
-          Already have an account?{' '}
-          <Link to="/login" className="text-sm text-muted-foreground underline">
-            Sign in
-          </Link>
-        </div>
-      </div>
-
       {/* Carousel */}
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full mt-24">
         <Carousel
           className="w-full h-full [&>div]:h-full [&>div]:min-h-full"
           opts={{

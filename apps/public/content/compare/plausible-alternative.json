@@ -352,7 +352,7 @@
       "model": "Pageview-based with 30-day trial",
       "description": "10K pageviews: $9/month. 100K: ~$19/month. 1M: ~$69/month. 10M: ~$299/month. All features included. Annual billing saves 2 months. No free tier for cloud (except self-hosted).",
       "free_tier": "No free tier (30-day trial only)",
-      "pricing_url": "https://plausible.io/pricing"
+      "pricing_url": "https://plausible.io/#pricing"
     }
   },
   "migration": {

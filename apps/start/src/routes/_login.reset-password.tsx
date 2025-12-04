@@ -6,7 +6,10 @@ import { z } from 'zod';
 
 export const Route = createFileRoute('/_login/reset-password')({
   head: () => ({
-    meta: [{ title: createTitle(PAGE_TITLES.RESET_PASSWORD) }],
+    meta: [
+      { title: createTitle(PAGE_TITLES.RESET_PASSWORD) },
+      { name: 'robots', content: 'noindex, follow' },
+    ],
   }),
   component: Component,
   validateSearch: z.object({

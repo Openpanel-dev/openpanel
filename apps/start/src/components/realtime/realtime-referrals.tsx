@@ -45,6 +45,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
           {
             name: 'Referrer',
             width: 'w-full',
+            responsive: { priority: 1 },
             render(item) {
               return (
                 <Tooltiper asChild content={item.referrer_name} side="left">
@@ -59,6 +60,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
           {
             name: 'Duration',
             width: '75px',
+            responsive: { priority: 7 },
             render(item) {
               return number.shortWithUnit(item.avg_duration, 'min');
             },
@@ -66,6 +68,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
           {
             name: 'Events',
             width: '60px',
+            responsive: { priority: 4 },
             render(item) {
               return (
                 <div className="row gap-2 justify-end">
@@ -79,6 +82,7 @@ export function RealtimeReferrals({ projectId }: RealtimeReferralsProps) {
           {
             name: 'Sessions',
             width: '82px',
+            responsive: { priority: 2 },
             render(item) {
               return (
                 <div className="row gap-2 justify-end">
