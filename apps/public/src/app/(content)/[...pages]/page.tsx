@@ -29,6 +29,13 @@ export async function generateMetadata({
   });
 }
 
+export async function generateStaticParams() {
+  const pages = await pageSource.getPages();
+  return pages.map((page) => ({
+    pages: page.url.split('/').slice(1),
+  }));
+}
+
 export default async function Page({
   params,
 }: {
