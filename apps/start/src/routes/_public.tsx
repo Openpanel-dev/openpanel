@@ -1,3 +1,4 @@
+import { LoginNavbar } from '@/components/login-navbar';
 import { OnboardingLeftPanel } from '@/components/onboarding-left-panel';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
@@ -8,6 +9,7 @@ export const Route = createFileRoute('/_public')({
 function OnboardingLayout() {
   return (
     <div className="relative min-h-screen grid md:grid-cols-2">
+      <LoginNavbar />
       <div className="hidden md:block">
         <OnboardingLeftPanel />
       </div>
