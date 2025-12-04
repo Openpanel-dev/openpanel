@@ -272,8 +272,15 @@ export function getChartSql({
       sb.select.count = 'sum(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      const propertyKey = getSelectPropertyKey(event.property);
+
+      if (isNumericColumn(event.property)) {
+        sb.select.count = `sum(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL`;
+      } else {
+        sb.select.count = `sum(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL AND notEmpty(${propertyKey})`;
+      }
     }
   }
 
@@ -282,8 +289,15 @@ export function getChartSql({
       sb.select.count = 'avg(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      const propertyKey = getSelectPropertyKey(event.property);
+
+      if (isNumericColumn(event.property)) {
+        sb.select.count = `avg(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL`;
+      } else {
+        sb.select.count = `avg(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL AND notEmpty(${propertyKey})`;
+      }
     }
   }
 
@@ -292,8 +306,15 @@ export function getChartSql({
       sb.select.count = 'max(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `max(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      const propertyKey = getSelectPropertyKey(event.property);
+
+      if (isNumericColumn(event.property)) {
+        sb.select.count = `max(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL`;
+      } else {
+        sb.select.count = `max(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL AND notEmpty(${propertyKey})`;
+      }
     }
   }
 
@@ -302,8 +323,15 @@ export function getChartSql({
       sb.select.count = 'min(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `min(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      const propertyKey = getSelectPropertyKey(event.property);
+
+      if (isNumericColumn(event.property)) {
+        sb.select.count = `min(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL`;
+      } else {
+        sb.select.count = `min(toFloat64OrNull(${propertyKey})) as count`;
+        sb.where.property = `${propertyKey} IS NOT NULL AND notEmpty(${propertyKey})`;
+      }
     }
   }
 
