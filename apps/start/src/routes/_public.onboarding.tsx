@@ -18,6 +18,7 @@ export const Route = createFileRoute('/_public/onboarding')({
   head: () => ({
     meta: [
       { title: createEntityTitle('Create an account', PAGE_TITLES.ONBOARDING) },
+      { name: 'robots', content: 'noindex, follow' },
     ],
   }),
   beforeLoad: async ({ context }) => {
@@ -56,7 +57,6 @@ function Component() {
   return (
     <div className="col gap-8 w-full text-left">
       <div>
-        <LogoSquare className="size-12 mb-8 md:hidden" />
         <h1 className="text-3xl font-bold text-foreground mb-2">
           Create an account
         </h1>

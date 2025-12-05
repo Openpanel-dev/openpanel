@@ -81,18 +81,15 @@ op.track("login_successful", {
 
 ### Identifying Users
 
-To identify a user, use the `identify` method:
+To identify a user, use the `identify` method with the profile ID as the first argument and a dictionary of traits as the second:
 
 ```python
-op.identify({
-    "profile_id": "123",  # Required
-    "first_name": "Joe",
-    "last_name": "Doe",
-    "email": "joe@doe.com",
-    "properties": {
-        "tier": "premium",
-        "company": "Acme Inc"
-    }
+op.identify("user123", {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "tier": "premium",
+    "company": "Acme Inc"
 })
 ```
 

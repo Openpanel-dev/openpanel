@@ -11,6 +11,8 @@ import { RemixIcon } from './icons/remix-icon';
 import { RestIcon } from './icons/rest-icon';
 import { SwiftIcon } from './icons/swift-icon';
 import { VueIcon } from './icons/vue-icon';
+import { RustIcon } from './icons/rust-icon';
+import { RubyIcon } from './icons/ruby-icon';
 
 export type Framework = {
   key: string;
@@ -96,6 +98,20 @@ export const frameworks: Framework[] = [
     IconComponent: LaravelIcon,
     name: 'Laravel',
     href: 'https://github.com/tbleckert/openpanel-laravel/tree/main',
+    type: ['backend'],
+  },
+  {
+    key: 'rust',
+    IconComponent: RustIcon,
+    name: 'Rust',
+    href: 'https://openpanel.dev/docs/sdks/rust',
+    type: ['backend'],
+  },
+  {
+    key: 'ruby',
+    IconComponent: RubyIcon,
+    name: 'Ruby',
+    href: 'https://openpanel.dev/docs/sdks/ruby',
     type: ['backend'],
   },
   {

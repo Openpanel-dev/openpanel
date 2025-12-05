@@ -369,6 +369,11 @@ export function getChartSql({
   return sql;
 }
 
+function isNumericColumn(columnName: string): boolean {
+  const numericColumns = ['duration', 'revenue', 'longitude', 'latitude'];
+  return numericColumns.includes(columnName);
+}
+
 export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
   const where: Record<string, string> = {};
   filters.forEach((filter, index) => {
@@ -537,6 +542,78 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
           }
           break;
         }
+        case 'gt': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(x) > toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(${whereFrom}) > toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          }
+          break;
+        }
+        case 'lt': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(x) < toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(${whereFrom}) < toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          }
+          break;
+        }
+        case 'gte': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(x) >= toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(${whereFrom}) >= toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          }
+          break;
+        }
+        case 'lte': {
+          if (isWildcard) {
+            where[id] = `arrayExists(x -> ${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(x) <= toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')}, ${whereFrom})`;
+          } else {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64OrZero(${whereFrom}) <= toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          }
+          break;
+        }
       }
     } else {
       switch (operator) {
@@ -613,6 +690,70 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
                 `match(${name}, ${sqlstring.escape(stripLeadingAndTrailingSlashes(String(val)).trim())})`,
             )
             .join(' OR ')})`;
+          break;
+        }
+        case 'gt': {
+          if (isNumericColumn(name)) {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64(${name}) > toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          } else {
+            where[id] = `(${value
+              .map((val) => `${name} > ${sqlstring.escape(String(val).trim())}`)
+              .join(' OR ')})`;
+          }
+          break;
+        }
+        case 'lt': {
+          if (isNumericColumn(name)) {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64(${name}) < toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          } else {
+            where[id] = `(${value
+              .map((val) => `${name} < ${sqlstring.escape(String(val).trim())}`)
+              .join(' OR ')})`;
+          }
+          break;
+        }
+        case 'gte': {
+          if (isNumericColumn(name)) {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64(${name}) >= toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          } else {
+            where[id] = `(${value
+              .map(
+                (val) => `${name} >= ${sqlstring.escape(String(val).trim())}`,
+              )
+              .join(' OR ')})`;
+          }
+          break;
+        }
+        case 'lte': {
+          if (isNumericColumn(name)) {
+            where[id] = `(${value
+              .map(
+                (val) =>
+                  `toFloat64(${name}) <= toFloat64(${sqlstring.escape(String(val).trim())})`,
+              )
+              .join(' OR ')})`;
+          } else {
+            where[id] = `(${value
+              .map(
+                (val) => `${name} <= ${sqlstring.escape(String(val).trim())}`,
+              )
+              .join(' OR ')})`;
+          }
           break;
         }
       }

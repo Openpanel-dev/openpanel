@@ -67,7 +67,7 @@ function Component() {
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 p-8 pt-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4 pt-4 md:p-8 md:pt-0">
           <div>
             <RealtimeGeo projectId={projectId} />
           </div>

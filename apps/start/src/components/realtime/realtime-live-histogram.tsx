@@ -58,7 +58,7 @@ export function RealtimeLiveHistogram({
       count={totalVisitors}
       icons={
         liveData.referrers && liveData.referrers.length > 0 ? (
-          <div className="row gap-2">
+          <div className="row gap-2 shrink-0">
             {liveData.referrers.slice(0, 3).map((ref, index) => (
               <div
                 key={`${ref.referrer}-${ref.count}-${index}`}

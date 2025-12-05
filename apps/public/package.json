@@ -12,7 +12,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@nivo/funnel": "^0.87.0",
+    "@nivo/funnel": "^0.99.0",
     "@number-flow/react": "0.5.10",
     "@openpanel/common": "workspace:*",
     "@openpanel/nextjs": "^1.1.1",
@@ -26,13 +26,13 @@
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "dotted-map": "2.2.3",
-    "framer-motion": "12.23.24",
-    "fumadocs-core": "16.1.0",
-    "fumadocs-mdx": "14.0.3",
-    "fumadocs-ui": "16.1.0",
+    "framer-motion": "12.23.25",
+    "fumadocs-core": "16.2.2",
+    "fumadocs-mdx": "14.0.4",
+    "fumadocs-ui": "16.2.2",
     "geist": "1.5.1",
-    "lucide-react": "^0.552.0",
-    "next": "16.0.5",
+    "lucide-react": "^0.555.0",
+    "next": "16.0.7",
     "next-themes": "^0.4.6",
     "react": "catalog:",
     "react-dom": "catalog:",
@@ -44,7 +44,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.16",
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/mdx": "^2.0.13",
     "@types/node": "catalog:",
     "@types/react": "catalog:",

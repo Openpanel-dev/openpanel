@@ -1,4 +1,3 @@
-import { LogoSquare } from '@/components/logo';
 import {
   Carousel,
   CarouselContent,
@@ -64,18 +63,8 @@ const sellingPoints = [
 export function LoginLeftPanel() {
   return (
     <div className="relative h-screen overflow-hidden">
-      <div className="row justify-between items-center p-8">
-        <LogoSquare className="h-8 w-8" />
-        <a
-          href="https://openpanel.dev"
-          className="text-sm text-muted-foreground"
-        >
-          Back to website →
-        </a>
-      </div>
-
       {/* Carousel */}
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full mt-24">
         <Carousel
           className="w-full h-full [&>div]:h-full [&>div]:min-h-full"
           opts={{

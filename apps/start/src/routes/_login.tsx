@@ -1,4 +1,5 @@
 import { LoginLeftPanel } from '@/components/login-left-panel';
+import { LoginNavbar } from '@/components/login-navbar';
 import { SkeletonDashboard } from '@/components/skeleton-dashboard';
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router';
 
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/_login')({
 function AuthLayout() {
   return (
     <div className="relative min-h-screen grid md:grid-cols-2">
+      <LoginNavbar />
       <div className="hidden md:block">
         <LoginLeftPanel />
       </div>
