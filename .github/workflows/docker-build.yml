@@ -77,8 +77,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/api:${{ steps.short-sha.outputs.sha }}
-            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/api:latest
+            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/openpanel-api:${{ steps.short-sha.outputs.sha }}
+            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/openpanel-api:latest
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
@@ -114,8 +114,8 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/worker:${{ steps.short-sha.outputs.sha }}
-            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/worker:latest
+            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/openpanel-worker:${{ steps.short-sha.outputs.sha }}
+            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/openpanel-worker:latest
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
@@ -151,7 +151,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/dashboard:${{ steps.short-sha.outputs.sha }}
-            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/dashboard:latest
+            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/openpanel-dashboard:${{ steps.short-sha.outputs.sha }}
+            ${{ secrets.AZURE_DASH_REGISTRY_URL }}/openpanel-dashboard:latest
           build-args: |
             NO_CLOUDFLARE=1
