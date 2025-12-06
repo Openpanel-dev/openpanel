@@ -157,21 +157,8 @@ export function getChartSql({
   if (anyFilterOnProfile || anyBreakdownOnProfile) {
     const profileFields = getProfileFields();
     const selectFields = profileFields.map((field) => {
-      if (field === 'id') {
-        return 'id as "profile.id"';
-      }
-      if (field === 'properties') {
-        return 'properties as "profile.properties"';
-      }
-      if (field === 'email') {
-        return 'email as "profile.email"';
-      }
-      if (field === 'first_name') {
-        return 'first_name as "profile.first_name"';
-      }
-      if (field === 'last_name') {
-        return 'last_name as "profile.last_name"';
-      }
+      // Keep original column names without aliases
+      // so they can be accessed as profile.properties, profile.email, etc.
       return field;
     });
 
@@ -179,7 +166,7 @@ export function getChartSql({
     addCte(
       'profile',
       `SELECT ${selectFields.join(', ')}
-      FROM ${TABLE_NAMES.profiles} FINAL 
+      FROM ${TABLE_NAMES.profiles} FINAL
       WHERE project_id = ${sqlstring.escape(projectId)}`,
     );
 

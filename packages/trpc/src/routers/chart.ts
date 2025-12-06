@@ -526,12 +526,12 @@ export const chartRouter = createTRPCRouter({
           GROUP BY cohort_interval
         )
         SELECT
-          cohort_interval,
-          cohort_sizes.total_first_event_count,
+          interval_users.cohort_interval,
+          cs.total_first_event_count,
           ${countsSelect}
         FROM interval_users
-        LEFT JOIN cohort_sizes AS cs ON cohort_interval = cs.cohort_interval
-        ORDER BY cohort_interval ASC
+        LEFT JOIN cohort_sizes AS cs ON interval_users.cohort_interval = cs.cohort_interval
+        ORDER BY interval_users.cohort_interval ASC
       `;
 
       const cohortData = await chQuery<{
