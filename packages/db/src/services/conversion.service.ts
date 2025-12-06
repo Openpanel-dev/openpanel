@@ -101,10 +101,9 @@ export class ConversionService {
           a.a_time,
           a.event_day,
           ${breakdownGroupBy.length ? `${breakdownGroupBy.join(', ')},` : ''}
-          nullIf(min(b.b_time), '1970-01-01 00:00:00.000') AS conversion_time
+          nullIf(min(CASE WHEN b.b_time BETWEEN a.a_time AND a.a_time + INTERVAL ${funnelWindow} HOUR THEN b.b_time END), '1970-01-01 00:00:00.000') AS conversion_time
         FROM event_a AS a
         LEFT JOIN event_b AS b ON a.${group} = b.${group}
-          WHERE b.b_time BETWEEN a.a_time AND a.a_time + INTERVAL ${funnelWindow} HOUR
         GROUP BY a.${group}, a.a_time, a.event_day${breakdownGroupBy.length ? `, ${breakdownGroupBy.join(', ')}` : ''})
       `),
       )
