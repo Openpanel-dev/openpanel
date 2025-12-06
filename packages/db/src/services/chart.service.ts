@@ -314,13 +314,16 @@ export function getChartSql({
   // Note: The profile CTE (if it exists) is available in subqueries, so we can reference it directly
   if (breakdowns.length > 0) {
     // Match breakdown properties in subquery with outer query's grouped values
-    // Since outer query groups by label_X, we reference those in the correlation
+    // Since outer query groups by label_X, we need to use the actual property expression
+    // in both the outer query and the subquery for correlation
     const breakdownMatches = breakdowns
       .map((b, index) => {
         const propertyKey = getSelectPropertyKey(b.name);
-        // Correlate: match the property expression with outer query's label_X value
-        // ClickHouse allows referencing outer query columns in correlated subqueries
-        return `${propertyKey} = label_${index + 1}`;
+        const outerPropertyKey = propertyKey.replace(/\be\./g, 'e.');
+        const innerPropertyKey = propertyKey.replace(/\be\./g, 'e2.');
+        // Correlate: match inner query's property with outer query's same property
+        // Reference the outer query's table using e. prefix
+        return `${innerPropertyKey} = ${outerPropertyKey}`;
       })
       .join(' AND ');
 
