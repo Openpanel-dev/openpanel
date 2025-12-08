@@ -4,13 +4,16 @@ import { HeroContainer } from '@/app/(home)/_sections/hero';
 import { Pricing } from '@/app/(home)/_sections/pricing';
 import { Testimonials } from '@/app/(home)/_sections/testimonials';
 import { Section, SectionHeader } from '@/components/section';
+import { Button } from '@/components/ui/button';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
+import { compareSource } from '@/lib/source';
 import { formatEventsCount } from '@/lib/utils';
 import { PRICING } from '@openpanel/payments/prices';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
+import { CompareCard } from '../compare/_components/compare-card';
 
 const title = 'OpenPanel Cloud Pricing';
 const description =
@@ -111,6 +114,14 @@ function PricingTable() {
 }
 
 function ComparisonSection() {
+  const comparisons = compareSource
+    .filter((item) =>
+      ['plausible', 'mixpanel', 'google', 'posthog', 'matomo', 'umami'].some(
+        (name) => item.competitor.name.toLowerCase().includes(name),
+      ),
+    )
+    .sort((a, b) => a.competitor.name.localeCompare(b.competitor.name));
+
   return (
     <Section className="container">
       <SectionHeader
@@ -128,6 +139,21 @@ function ComparisonSection() {
           </>
         }
       />
+
+      <Button asChild className="mt-8 self-start">
+        <Link href="/compare">View all comparisons</Link>
+      </Button>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+        {comparisons.map((comparison) => (
+          <CompareCard
+            key={comparison.slug}
+            url={comparison.url}
+            name={`OpenPanel vs ${comparison.competitor.name}`}
+            description={comparison.competitor.short_description}
+          />
+        ))}
+      </div>
     </Section>
   );
 }
