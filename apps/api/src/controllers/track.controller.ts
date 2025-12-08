@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';
 
-import { generateId } from '@openpanel/common';
+import { generateId, slug } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
@@ -254,7 +254,13 @@ async function track({
       ? `${projectId}:${payload.profileId}`
       : `${projectId}:${generateId()}`
     : currentDeviceId;
-  const jobId = [payload.name, timestamp, projectId, currentDeviceId, groupId]
+  const jobId = [
+    slug(payload.name),
+    timestamp,
+    projectId,
+    currentDeviceId,
+    groupId,
+  ]
     .filter(Boolean)
     .join('-');
   await getEventsGroupQueueShard(groupId).add({

@@ -3,12 +3,13 @@ import _slugify from 'slugify';
 const slugify = (str: string) => {
   return _slugify(
     str
-      .replace('å', 'a')
-      .replace('ä', 'a')
-      .replace('ö', 'o')
-      .replace('Å', 'A')
-      .replace('Ä', 'A')
-      .replace('Ö', 'O'),
+      .replaceAll('å', 'a')
+      .replaceAll('ä', 'a')
+      .replaceAll('ö', 'o')
+      .replaceAll('Å', 'A')
+      .replaceAll('Ä', 'A')
+      .replaceAll('Ö', 'O')
+      .replace(/\|+/g, '-'),
     { lower: true, strict: true, trim: true },
   );
 };
