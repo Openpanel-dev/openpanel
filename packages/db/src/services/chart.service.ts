@@ -38,6 +38,11 @@ export function getSelectPropertyKey(property: string) {
     return `if(profile_id != device_id, 'true', 'false')`;
   }
 
+  // Handle profile.created_at - it's stored as created_at in the profiles table
+  if (property === 'profile.created_at') {
+    return 'profile.created_at';
+  }
+
   const propertyPatterns = ['properties', 'profile.properties'];
 
   const match = propertyPatterns.find((pattern) =>
@@ -123,7 +128,7 @@ export function getChartSql({
           fields.add('properties');
         } else if (
           fieldName &&
-          ['email', 'first_name', 'last_name'].includes(fieldName)
+          ['email', 'first_name', 'last_name', 'created_at'].includes(fieldName)
         ) {
           fields.add(fieldName);
         }
@@ -138,7 +143,7 @@ export function getChartSql({
           fields.add('properties');
         } else if (
           fieldName &&
-          ['email', 'first_name', 'last_name'].includes(fieldName)
+          ['email', 'first_name', 'last_name', 'created_at'].includes(fieldName)
         ) {
           fields.add(fieldName);
         }
