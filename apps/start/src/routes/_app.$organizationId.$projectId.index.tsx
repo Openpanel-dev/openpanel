@@ -32,19 +32,21 @@ function ProjectDashboard() {
   const { projectId } = Route.useParams();
   return (
     <div>
-      <div className="col gap-2 p-4">
-        <div className="flex justify-between gap-2">
-          <div className="flex gap-2">
-            <OverviewRange />
-            <OverviewInterval />
-            <OverviewFilterButton mode="events" />
+      <div className="sticky-header -top-px!">
+        <div className="col gap-2 p-4">
+          <div className="flex justify-between gap-2">
+            <div className="flex gap-2">
+              <OverviewRange />
+              <OverviewInterval />
+              <OverviewFilterButton mode="events" />
+            </div>
+            <div className="flex gap-2">
+              <LiveCounter projectId={projectId} />
+              <OverviewShare projectId={projectId} />
+            </div>
           </div>
-          <div className="flex gap-2">
-            <LiveCounter projectId={projectId} />
-            <OverviewShare projectId={projectId} />
-          </div>
+          <OverviewFiltersButtons />
         </div>
-        <OverviewFiltersButtons />
       </div>
       <div className="grid grid-cols-6 gap-4 p-4 pt-0">
         <OverviewMetrics projectId={projectId} />
