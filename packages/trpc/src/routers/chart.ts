@@ -696,6 +696,20 @@ export const chartRouter = createTRPCRouter({
         additionalGroupBy: ['profile_id'],
       });
 
+      // Check for profile filters and add profile join if needed
+      const profileFilters = funnelService.getProfileFilters(
+        eventSeries as IChartEvent[],
+      );
+      if (profileFilters.length > 0) {
+        const fieldsToSelect = uniq(
+          profileFilters.map((f) => f.split('.')[0]),
+        ).join(', ');
+        funnelCte.leftJoin(
+          `(SELECT id, ${fieldsToSelect} FROM ${TABLE_NAMES.profiles} FINAL WHERE project_id = ${sqlstring.escape(projectId)}) as profile`,
+          'profile.id = events.profile_id',
+        );
+      }
+
       // Build main query
       const query = clix(ch, timezone);
 
