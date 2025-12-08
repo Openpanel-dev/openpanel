@@ -55,7 +55,7 @@ code {
 }
 
 @utility container {
-  @apply mx-auto;
+  @apply mx-auto px-4;
   @media (width >= 40rem) {
     @apply max-w-[1000px]
   }

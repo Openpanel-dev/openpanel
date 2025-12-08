@@ -1,0 +1,276 @@
+---
+title: Better compliance with self-hosted analytics
+description: A practical guide to GDPR, CCPA, HIPAA, and other privacy regulations for analytics. Learn how OpenPanel and self-hosting can simplify compliance.
+tag: Guide
+team: OpenPanel Team
+date: 2025-12-08
+cover: /content/compliance.jpg
+---
+
+Privacy regulations are everywhere now. GDPR in Europe, CCPA in California, HIPAA for healthcare, and the list keeps growing. If you're running a website or app, you've probably wondered: "Am I actually compliant with all this stuff?"
+
+The good news? Analytics compliance doesn't have to be complicated or expensive. The bad news? Most traditional analytics tools make it way harder than it needs to be.
+
+In this guide, we'll break down the major compliance frameworks, explain what they actually mean for your analytics setup, and show you how [OpenPanel](/) can help you stay compliant without the headache.
+
+## Why Analytics Compliance Matters
+
+Let's start with the basics. When someone visits your website, you're collecting data about them. Maybe it's their location, what pages they viewed, how long they stayed, or what buttons they clicked. Under most privacy laws, this counts as personal data.
+
+The consequences of getting compliance wrong are real. GDPR fines can reach €20 million or 4% of global revenue, whichever is higher. CCPA violations cost up to $7,988 per intentional violation. And beyond the fines, there's the reputation damage and loss of customer trust.
+
+Here's the thing though: most compliance issues with analytics come down to a few core problems.
+
+**Third-party data sharing.** When you use Google Analytics or similar tools, your visitors' data flows through their servers. That creates a chain of custody problem. You're responsible for what happens to that data, even when it's sitting on someone else's infrastructure.
+
+**Cookies and consent.** Traditional analytics tools rely heavily on cookies. Under GDPR, PECR, and similar regulations, you need explicit consent before dropping most cookies. That means cookie banners, consent management, and all the friction that comes with it.
+
+**International data transfers.** If you're collecting data from EU residents and it ends up on US servers, you've got a potential compliance issue. This is exactly why Google Analytics has been ruled illegal in several EU countries.
+
+The solution? Either use a [privacy-first analytics tool](/articles/cookieless-analytics) that sidesteps these issues, or self-host your analytics so data never leaves your infrastructure.
+
+## GDPR: The One Everyone Knows About
+
+The General Data Protection Regulation is the big one. It applies to any organization that processes personal data of EU residents, regardless of where that organization is based. So if you have visitors from Europe, GDPR applies to you.
+
+### What GDPR Requires for Analytics
+
+GDPR is built around a few key principles that directly impact how you can do analytics.
+
+**Lawful basis for processing.** You need a legal reason to collect and process personal data. For analytics, this usually means either getting consent or demonstrating "legitimate interest." Consent is cleaner but requires those annoying cookie banners. Legitimate interest is possible but requires documentation and balancing tests.
+
+**Data minimization.** Only collect what you actually need. If you're tracking 50 different user properties but only looking at 5 of them, you've got a problem.
+
+**Right to erasure.** Users can request that you delete their data. You need to be able to actually do this, which is tricky when your data is sitting in a third-party's database.
+
+**Transparency.** Users need to know what you're collecting and why. This means clear privacy policies and, in most cases, cookie consent interfaces.
+
+### Why Google Analytics Keeps Getting Banned
+
+Google Analytics has been declared non-compliant with GDPR by data protection authorities in Austria, France, Italy, and other EU countries. The core issue is that GA transfers personal data (including IP addresses) to US servers, where it can potentially be accessed by US intelligence agencies. This violates Chapter V of GDPR, which governs international data transfers.
+
+Even with IP anonymization enabled, the data still hits Google's servers before being anonymized. That's a problem.
+
+<WindowImage
+  srcDark="/screenshots/overview-dark.webp"
+  srcLight="/screenshots/overview-light.webp"
+  alt="OpenPanel Dashboard Overview"
+  caption="This is how OpenPanel dashboard looks like, the self-hosting version has all features that our cloud version has. The release lifecycle is 2-3 months behind cloud version."
+/>
+
+### How OpenPanel Handles GDPR
+
+OpenPanel takes a different approach. We built it with privacy as the foundation, not an afterthought.
+
+**Cookieless by default.** OpenPanel doesn't use cookies for tracking. No cookies means no cookie consent banners required for basic analytics. Your visitors get a cleaner experience, and you avoid the consent management complexity. Learn more about how this works in our [cookieless analytics guide](/articles/cookieless-analytics).
+
+**No third-party data sharing.** With OpenPanel Cloud, your data stays in our EU-based infrastructure. With [self-hosting](/articles/how-to-self-host-openpanel), data never leaves your servers at all.
+
+**Built-in data export and deletion.** Need to handle a data subject request? OpenPanel's [Export API](/docs/api/export) makes it straightforward to export user data. You can delete your entire project's data through the dashboard, and if you need to delete a specific identified profile, you can request that from us.
+
+**Transparent and open source.** You can [audit the code yourself](https://github.com/Openpanel-dev/openpanel) to see exactly what's being collected and how it's processed.
+
+## CCPA: California's Privacy Law
+
+The California Consumer Privacy Act (and its amendment, CPRA) gives California residents specific rights over their personal information. If you do business in California or collect data from California residents, this one matters.
+
+### Key CCPA Requirements
+
+**Right to know.** Consumers can ask what personal information you've collected about them, where it came from, and who you've shared it with.
+
+**Right to delete.** Similar to GDPR, consumers can request deletion of their personal information.
+
+**Right to opt-out.** Here's the big one for analytics. Consumers can opt out of the "sale" or "sharing" of their personal information. And under CCPA, "sharing" includes providing data to third parties for cross-context behavioral advertising, which is exactly what many analytics tools do.
+
+**No discrimination.** You can't treat consumers differently because they exercised their privacy rights.
+
+### The "Do Not Sell" Problem
+
+Many traditional analytics tools technically "share" your user data with third parties. When you use Google Analytics, user data flows through Google's systems and can be used for their own purposes. Under CCPA, this could be considered sharing, which means you need to honor "Do Not Sell or Share" requests.
+
+This creates a real operational burden. You need systems to track opt-out requests, communicate them to all your vendors, and verify compliance.
+
+### How OpenPanel Simplifies CCPA
+
+With OpenPanel, there's no sharing to opt out of.
+
+When you use OpenPanel Cloud, your data is processed solely for your analytics purposes. We don't sell or share your data with anyone. When you [self-host OpenPanel](/docs/self-hosting/self-hosting), you control the entire data pipeline. There's no third party involved at all.
+
+This architectural difference eliminates most CCPA complexity. You still need proper privacy disclosures, but you don't need to worry about vendor management for your analytics data.
+
+## HIPAA: Healthcare's Special Rules
+
+If you're in healthcare or handle Protected Health Information (PHI), HIPAA adds another layer of compliance requirements. This is where things get expensive with traditional analytics providers.
+
+### The BAA Requirement
+
+HIPAA requires that any third party with access to PHI must sign a Business Associate Agreement (BAA). This is a legal contract that establishes what the vendor can and can't do with health information.
+
+The problem? Most analytics providers either don't offer BAAs at all, or charge significant premiums for them. We're talking enterprise-tier pricing that can run into tens of thousands of dollars annually.
+
+Google Analytics doesn't offer a BAA. Mixpanel does, but only on enterprise plans. The same goes for most major analytics platforms.
+
+### What Counts as PHI in Analytics
+
+This is where many healthcare organizations get tripped up. PHI isn't just medical records. Under HHS guidance, when someone visits a healthcare website's authenticated pages, their IP address combined with the fact that they're viewing health-related content can constitute PHI.
+
+This means that if you're using cookie-based tracking on a patient portal or healthcare app, you might be sharing PHI with your analytics provider without realizing it.
+
+### The Self-Hosting Solution
+
+Here's where self-hosting completely changes the equation: if you host your own analytics, you don't need a BAA.
+
+Think about it. A BAA is required when you're sharing PHI with a business associate. But if you [self-host OpenPanel](/articles/how-to-self-host-openpanel) on your own HIPAA-compliant infrastructure, there's no third party involved. The data never leaves your environment. There's no business associate relationship to manage.
+
+This approach lets you get meaningful analytics from your healthcare applications without the enterprise pricing or legal complexity. You deploy OpenPanel on your existing HIPAA-compliant servers using [Docker Compose](/docs/self-hosting/deploy-docker-compose), [Kubernetes](/docs/self-hosting/deploy-kubernetes), or your preferred deployment method, and you're done.
+
+## PECR: The UK's Cookie Law
+
+If you have visitors from the UK, you need to think about PECR (Privacy and Electronic Communications Regulations) alongside UK GDPR. PECR specifically regulates cookies and similar tracking technologies.
+
+### What PECR Requires
+
+PECR has a simple but strict rule: you need consent before storing or accessing information on a user's device. This includes cookies, local storage, and similar technologies.
+
+There are only two exemptions. The "communication exemption" covers technologies essential for transmitting a communication. The "strictly necessary exemption" covers technologies essential for providing a service the user explicitly requested.
+
+Here's the important part: **analytics cookies are not exempt.** The UK's Information Commissioner's Office has been clear about this. If you're using cookie-based analytics, you need consent.
+
+### Fines Are Increasing
+
+PECR fines used to be capped at £500,000. The new Data (Use and Access) Act aligns PECR penalties with UK GDPR, meaning potential fines of up to £17.5 million. The ICO has also been increasingly active in enforcing cookie compliance.
+
+### Cookieless Analytics Bypasses PECR
+
+Since [OpenPanel's tracking is cookieless](/articles/cookieless-analytics), the PECR consent requirement simply doesn't apply to basic analytics. You're not storing anything on the user's device, so there's nothing to consent to.
+
+This doesn't mean you can track whatever you want. UK GDPR still applies to the processing of personal data. But it does mean you can skip the cookie banners and consent management platforms that PECR would otherwise require.
+
+## The Self-Hosting Advantage
+
+We've mentioned self-hosting several times now, and for good reason. It's the single most effective way to simplify analytics compliance across almost every framework.
+
+### What Self-Hosting Actually Means
+
+When you self-host OpenPanel, you run the entire analytics platform on your own infrastructure. This could be your own servers, your cloud account (AWS, GCP, Azure, etc.), or even a simple VPS.
+
+The data flow is completely different from traditional analytics.
+
+**Traditional analytics:** User → Your website → Analytics provider's servers → Provider dashboard
+
+**Self-hosted analytics:** User → Your website → Your servers → Your dashboard
+
+That middle step makes all the difference. With traditional analytics, you're sharing data with a third party. With self-hosting, data never leaves your control.
+
+### Compliance Benefits Across Frameworks
+
+**GDPR:** No international data transfers if you host in the EU. Full control over data retention and deletion. No third-party data sharing to manage.
+
+**CCPA:** No "selling" or "sharing" by definition. You're not providing data to any third party.
+
+**HIPAA:** No BAA required because there's no business associate. PHI stays within your HIPAA-compliant environment.
+
+**PECR:** Cookieless tracking means no consent requirements for basic analytics.
+
+**SOC 2:** Easier vendor risk management when you control the analytics infrastructure. Your existing security controls apply.
+
+### Beyond Compliance
+
+Self-hosting isn't just about compliance. There are real practical benefits too.
+
+**Cost predictability.** No per-event pricing surprises. Your costs are your server costs, which are typically much lower than SaaS analytics pricing at scale.
+
+**No vendor lock-in.** Your data is in your database. You can query it however you want, integrate it with other systems, or migrate away anytime.
+
+**Performance.** Data stays close to your users. No external requests that might get blocked by ad blockers.
+
+**Full transparency.** OpenPanel is [open source](https://github.com/Openpanel-dev/openpanel). You can audit exactly what's being collected and how.
+
+### Getting Started with Self-Hosting
+
+We've tried to make self-hosting as simple as possible. The basic process is:
+
+```bash
+git clone https://github.com/openpanel-dev/openpanel.git
+cd openpanel/self-hosting
+./setup
+./start
+```
+
+We have detailed guides for different deployment options including [Docker Compose](/docs/self-hosting/deploy-docker-compose), [Coolify](/docs/self-hosting/deploy-coolify), [Dokploy](/docs/self-hosting/deploy-dokploy), and [Kubernetes](/docs/self-hosting/deploy-kubernetes).
+
+Check out our full [self-hosting guide](/articles/how-to-self-host-openpanel) for a walkthrough of the entire process.
+
+## The Hidden Cost of "Free" Analytics
+
+Let's talk about Google Analytics for a moment. It's free, which is great. But that "free" comes with significant compliance costs that most organizations don't account for.
+
+**Cookie consent management.** You need a consent management platform, ongoing maintenance, and likely degraded data quality from users who opt out.
+
+**Privacy policy and legal review.** Your lawyers need to review how GA processes data and update your privacy documentation accordingly.
+
+**Vendor assessment overhead.** For regulated industries, you need to continuously assess Google's practices and compliance posture.
+
+**GDPR risk.** Given the ongoing regulatory actions against GA in Europe, you're taking on legal risk that's hard to quantify.
+
+**Data subject requests.** Handling deletion requests through GA's tools is cumbersome and incomplete.
+
+When you add up these costs, "free" analytics often isn't free at all. A transparent, paid solution like [OpenPanel](/pricing) or a self-hosted setup frequently works out cheaper while being more compliant.
+
+## Other Regulations Worth Knowing
+
+While GDPR, CCPA, HIPAA, and PECR are the big ones, there are others depending on your audience.
+
+**LGPD (Brazil):** Similar to GDPR, with requirements for consent, data minimization, and user rights.
+
+**PIPEDA (Canada):** Requires consent for collection and use of personal information, with some exceptions.
+
+**US State Laws:** Over 20 US states now have comprehensive privacy laws, including Virginia, Colorado, Connecticut, and more. Most follow patterns similar to CCPA.
+
+The good news is that if you're compliant with GDPR and CCPA, you're probably in good shape for most of these. And if you're using cookieless, self-hosted analytics, you're ahead of the game for all of them.
+
+## Getting Started
+
+Ready to simplify your analytics compliance? You have two paths with OpenPanel.
+
+**OpenPanel Cloud** is the fastest way to get started. We handle the infrastructure, and your data is processed in compliance with GDPR and CCPA. You can be up and running in minutes with just a [simple script tag](/docs/get-started/install-openpanel).
+
+**Self-hosted OpenPanel** gives you maximum control and compliance flexibility. It's ideal for healthcare organizations, enterprises with strict data residency requirements, or anyone who wants complete ownership of their analytics data.
+
+Either way, you get [cookieless tracking](/articles/cookieless-analytics), [real-time dashboards](/docs), [funnels](/articles/how-to-create-a-funnel), user profiles, and all the features you need to understand your users without the compliance complexity.
+
+[Get started with OpenPanel Cloud](https://dashboard.openpanel.dev/onboarding) or check out our [self-hosting documentation](/docs/self-hosting/self-hosting).
+
+<Faqs>
+<FaqItem question="Does OpenPanel use cookies?">
+No. OpenPanel uses cookieless tracking by default. This means you don't need cookie consent banners for basic analytics under most privacy regulations, including GDPR and PECR.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with cookieless tracking, data minimization, and full support for data subject rights. With self-hosting, you also eliminate international data transfer concerns entirely.
+</FaqItem>
+
+<FaqItem question="Do I need a BAA to use OpenPanel for healthcare analytics?">
+If you use OpenPanel Cloud, you would need to discuss BAA requirements with us. However, if you self-host OpenPanel on your own HIPAA-compliant infrastructure, no BAA is required because the data never leaves your environment.
+</FaqItem>
+
+<FaqItem question="Can I use OpenPanel without a cookie banner?">
+Yes. Since OpenPanel doesn't use cookies, you don't need a cookie consent banner for your analytics. However, you should still have a privacy policy that explains what data you collect.
+</FaqItem>
+
+<FaqItem question="Where is OpenPanel Cloud data stored?">
+OpenPanel Cloud infrastructure is based in the EU. For specific data residency requirements, self-hosting gives you complete control over where your data lives.
+</FaqItem>
+
+<FaqItem question="How does self-hosting help with compliance?">
+Self-hosting eliminates third-party data sharing, which simplifies compliance with GDPR, CCPA, HIPAA, and other regulations. Your data never leaves your infrastructure, so there's no vendor management, no international data transfers to worry about, and no BAAs required.
+</FaqItem>
+
+<FaqItem question="Can I migrate from Google Analytics to OpenPanel?">
+Yes. OpenPanel can replace Google Analytics for most use cases. We offer both web analytics and product analytics features. Check our comparison with other platforms like the [Google Analytics alternative](/compare/google-analytics-alternative) page.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel open source?">
+Yes. OpenPanel is fully open source and available on GitHub. You can audit the code, contribute, or fork it for your own needs.
+</FaqItem>
+</Faqs>
