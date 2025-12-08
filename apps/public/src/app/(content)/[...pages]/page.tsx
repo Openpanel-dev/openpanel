@@ -3,6 +3,7 @@ import { SectionHeader } from '@/components/section';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { pageSource } from '@/lib/source';
+import { getMDXComponents } from '@/mdx-components';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
@@ -81,9 +82,11 @@ export default async function Page({
           description={page.data.description}
         />
       </HeroContainer>
-      <article className="container col prose">
-        <Body />
-      </article>
+      <main className="container">
+        <article className="prose">
+          <Body components={getMDXComponents()} />
+        </article>
+      </main>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { FaqItem, Faqs } from '@/components/faq';
+import { Figure } from '@/components/figure';
 import { WindowImage } from '@/components/window-image';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import * as FilesComponents from 'fumadocs-ui/components/files';
@@ -19,6 +20,7 @@ export function getMDXComponents(components?: MDXComponents) {
     Faqs,
     FaqItem,
     WindowImage,
+    Figure,
   } satisfies MDXComponents;
 }
 

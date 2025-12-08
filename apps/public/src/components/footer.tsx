@@ -36,6 +36,7 @@ export async function Footer() {
                 { title: 'Documentation', url: '/docs' },
                 { title: 'SDKs', url: '/docs/sdks' },
                 { title: 'Articles', url: '/articles' },
+                { title: 'Compare', url: '/compare' },
               ]}
             />
           </div>
