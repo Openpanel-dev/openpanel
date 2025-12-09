@@ -30,7 +30,7 @@
     "fumadocs-ui": "14.1.1",
     "geist": "1.3.1",
     "lucide-react": "0.454.0",
-    "next": "15.0.3",
+    "next": "15.0.5",
     "react": "catalog:",
     "react-dom": "catalog:",
     "rehype-external-links": "3.0.0",
