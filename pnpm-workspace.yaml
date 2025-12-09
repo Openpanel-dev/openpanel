@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/**"
   - "tooling/*"
+  - "admin"
 
 # Define a catalog of version ranges.
 catalog:

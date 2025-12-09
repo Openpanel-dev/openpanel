@@ -113,7 +113,13 @@ export function KeyValueGrid({
           <div className={cn('flex-1 min-w-0 text-sm', keyClassName)}>
             {renderKey ? renderKey(item) : defaultRenderKey(item)}
           </div>
-          <div className={cn('text-right text-sm font-mono', valueClassName)}>
+          <div
+            className={cn(
+              'text-right text-sm font-mono truncate',
+              valueClassName,
+            )}
+            title={typeof item.value === 'string' ? item.value : undefined}
+          >
             {renderValue ? renderValue(item) : defaultRenderValue(item)}
           </div>
         </div>

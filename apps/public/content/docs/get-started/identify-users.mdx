@@ -1,0 +1,47 @@
+---
+title: Identify Users
+description: Connect anonymous events to specific users.
+---
+
+By default, OpenPanel tracks visitors anonymously. To connect these events to a specific user in your database, you need to identify them.
+
+## How it works
+
+When a user logs in or signs up, you should call the `identify` method. This associates their current session and all future events with their unique ID from your system.
+
+```javascript
+op.identify({
+  profileId: 'user_123'
+});
+```
+
+## Adding user traits
+
+You can also pass user traits (like name, email, or plan type) when you identify them. These traits will appear in the user's profile in your dashboard.
+
+```javascript
+op.identify({
+  profileId: 'user_123',
+  firstName: 'Jane',
+  lastName: 'Doe',
+  email: 'jane@example.com',
+  company: 'Acme Inc'
+});
+```
+
+### Standard traits
+
+We recommend using these standard keys for common user information so they display correctly in the OpenPanel dashboard:
+
+- `firstName`
+- `lastName`
+- `email`
+- `phone`
+- `avatar`
+
+## Best Practices
+
+1.  **Call on login**: Always identify the user immediately after they log in.
+2.  **Call on update**: If a user updates their profile, call identify again with the new information.
+3.  **Unique IDs**: Use a stable, unique ID from your database (like a UUID) rather than an email address or username that might change.
+

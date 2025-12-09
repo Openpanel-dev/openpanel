@@ -1,11 +1,27 @@
-import { remarkGfm } from 'fumadocs-core/mdx-plugins';
 import {
   defineCollections,
   defineConfig,
   defineDocs,
+  frontmatterSchema,
+  metaSchema,
 } from 'fumadocs-mdx/config';
-import rehypeExternalLinks from 'rehype-external-links';
 import { z } from 'zod';
+
+// You can customise Zod schemas for frontmatter and `meta.json` here
+// see https://fumadocs.dev/docs/mdx/collections
+export const docs = defineDocs({
+  dir: 'content/docs',
+  docs: {
+    schema: frontmatterSchema,
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
+  meta: {
+    schema: metaSchema,
+  },
+});
+
 const zArticle = z.object({
   title: z.string().min(1),
   description: z.string(),
@@ -13,14 +29,11 @@ const zArticle = z.object({
   team: z.string().optional(),
   date: z.date(),
   cover: z.string().default('/content/cover-default.jpg'),
+  updated: z.date().optional(),
 });
 const zPage = z.object({
   title: z.string().min(1),
   description: z.string(),
-});
-
-export const { docs, meta } = defineDocs({
-  dir: 'content/docs',
 });
 
 export const articleCollection = defineCollections({
@@ -49,7 +62,6 @@ export const pageMeta = defineCollections({
 
 export default defineConfig({
   mdxOptions: {
-    remarkPlugins: [remarkGfm],
-    rehypePlugins: [rehypeExternalLinks],
+    // MDX options
   },
 });

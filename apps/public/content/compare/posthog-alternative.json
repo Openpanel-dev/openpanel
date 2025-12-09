@@ -1,0 +1,484 @@
+{
+  "slug": "posthog-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "PostHog Alternative: Why Teams Switch to OpenPanel",
+    "description": "Compare OpenPanel vs PostHog. Discover why teams choose OpenPanel as their PostHog alternative for simpler analytics with better privacy, lighter SDK, and no complex pricing tiers.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "PostHog Alternative",
+    "subheading": "Get powerful product analytics without the complexity. OpenPanel delivers essential insights with a lighter footprint, true cookie-free tracking, and transparent pricing - no enterprise sales calls required.",
+    "badges": [
+      "Open-source",
+      "Cookie-free",
+      "Lightweight SDK",
+      "Simple Pricing"
+    ]
+  },
+  "competitor": {
+    "name": "PostHog",
+    "logo": "/logos/posthog.svg",
+    "url": "https://posthog.com",
+    "short_description": "All-in-one product analytics platform for developers with features like analytics, feature flags, session replay, and surveys.",
+    "founded": 2020,
+    "headquarters": "San Francisco, California, USA"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs PostHog: Which is right for you?",
+    "intro": "Both are open-source analytics platforms. PostHog is an all-in-one platform with many products. OpenPanel focuses on analytics with simplicity.",
+    "one_liner": "PostHog is an all-in-one platform with 10+ products; OpenPanel focuses on analytics with a lighter footprint.",
+    "best_for_openpanel": [
+      "Teams wanting focused analytics without feature flags, session replay, or surveys",
+      "Privacy-conscious products needing cookie-free tracking by default",
+      "Performance-conscious applications (2.3KB SDK vs 52KB+)",
+      "Teams preferring simple Docker deployment over multi-service architecture"
+    ],
+    "best_for_competitor": [
+      "Teams needing all-in-one platform (analytics, feature flags, session replay, surveys)",
+      "Developers wanting SQL access (HogQL) for custom queries",
+      "Y Combinator companies leveraging PostHog's ecosystem",
+      "Teams requiring extensive CDP capabilities with 60+ connectors"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and PostHog compare on key factors.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB",
+        "competitor": "52+ KB",
+        "notes": "OpenPanel's SDK is over 20x smaller than PostHog's core library, resulting in faster page loads and better Core Web Vitals."
+      },
+      {
+        "label": "Cookie-Free by Default",
+        "openpanel": "Yes",
+        "competitor": "Requires Configuration",
+        "notes": "OpenPanel is truly cookie-free out of the box. PostHog requires specific configuration for cookieless tracking with reduced functionality."
+      },
+      {
+        "label": "Pricing Complexity",
+        "openpanel": "Simple Event-Based",
+        "competitor": "Multi-Product Metering",
+        "notes": "OpenPanel has straightforward pricing. PostHog bills separately for events, recordings, feature flags, surveys, and more - each with different tiers."
+      },
+      {
+        "label": "Self-Hosting Complexity",
+        "openpanel": "Simple Docker Setup",
+        "competitor": "ClickHouse + Kafka + Redis + PostgreSQL",
+        "notes": "OpenPanel self-hosting requires just Docker. PostHog needs multiple services including ClickHouse, Kafka, Redis, and PostgreSQL."
+      },
+      {
+        "label": "Focus",
+        "openpanel": "Analytics-First",
+        "competitor": "All-in-One Platform",
+        "notes": "OpenPanel focuses on doing analytics exceptionally well. PostHog bundles 10+ products which can create complexity for teams just needing analytics."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "PostHog is an all-in-one platform. OpenPanel focuses purely on analytics.",
+    "groups": [
+      {
+        "group": "Web Analytics",
+        "features": [
+          {
+            "name": "Page Views & Visitors",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Traffic Sources",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Geographic Data",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Device & Browser",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "UTM Campaign Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "User Path Analysis",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Advanced Features",
+        "features": [
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Feature Flags",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "PostHog includes feature flags; OpenPanel focuses on analytics"
+          },
+          {
+            "name": "Session Replay",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "PostHog includes session replay for web, Android (beta), iOS (alpha)"
+          },
+          {
+            "name": "Surveys",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "PostHog includes in-app surveys; OpenPanel integrates with survey tools"
+          },
+          {
+            "name": "Custom Dashboards",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "SQL Query Access",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "PostHog offers HogQL, their SQL variant"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "Cookie-Free by Default",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "PostHog uses cookies by default, cookieless requires configuration"
+          },
+          {
+            "name": "No Consent Banner Required",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "PostHog's default tracking requires consent banners under GDPR"
+          },
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "EU Data Hosting Option",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "PostHog offers EU Cloud hosted in Frankfurt"
+          },
+          {
+            "name": "Self-Hosting Option",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "IP Anonymization",
+            "openpanel": true,
+            "competitor": true
+          }
+        ]
+      },
+      {
+        "group": "Integrations & Export",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Data Export",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Webhook Support",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Data Warehouse Sync",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "PostHog has extensive CDP capabilities with 60+ connectors"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's the technical breakdown.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "52+ KB core library (gzipped), lazy-loads additional features",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Ruby",
+          "Java",
+          "Flutter",
+          "Rust"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "Yes - MIT License",
+        "notes": "Both are open source. PostHog is MIT licensed."
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (simple single-container setup)",
+        "competitor": "Docker with multiple services (ClickHouse, Kafka, Redis, PostgreSQL) or Kubernetes",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "ClickHouse",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "7 years (paid plans), 1 year (free plan), 3 months for recordings",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "PostHog has generous free tiers but complex multi-product pricing. OpenPanel offers simpler event-based pricing.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. All features included at every tier."
+    },
+    "competitor": {
+      "model": "Multi-product usage-based",
+      "description": "1 million events/month (product analytics), 5,000 recordings/month, 1 million feature flag requests/month, 1,500 survey responses/month free. $0.00005/event (anonymous), $0.000248/event (identified), $0.005/recording, $0.0001/flag request. Add-ons like HIPAA ($250/mo) available. 90%+ of customers use free tier.",
+      "free_tier": "1M events/month (analytics), 5K recordings/month",
+      "pricing_url": "https://posthog.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from PostHog to OpenPanel",
+    "intro": "Both use event-based tracking, making migration straightforward for analytics.",
+    "difficulty": "easy",
+    "estimated_time": "1-4 hours for basic setup, longer if migrating feature flags or session replay workflows",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the lightweight OpenPanel SDK to your application. At 2.3KB, it's significantly smaller than PostHog's library."
+      },
+      {
+        "title": "Map Your Events",
+        "description": "Both platforms use event-based tracking. Map your PostHog event names to OpenPanel - most can remain the same."
+      },
+      {
+        "title": "Configure User Identification",
+        "description": "Replace PostHog's identify() calls with OpenPanel's identification methods. The API is similar."
+      },
+      {
+        "title": "Set Up Dashboards",
+        "description": "Recreate your key dashboards in OpenPanel. Import historical data if needed using our migration tools."
+      },
+      {
+        "title": "Verify & Go Live",
+        "description": "Run both platforms in parallel briefly to verify data accuracy, then disable PostHog tracking."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use event-based tracking with similar APIs."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Most teams start fresh with OpenPanel and run both tools in parallel briefly."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than PostHog",
+    "intro": "Choose OpenPanel when you want analytics without the complexity of an all-in-one platform.",
+    "items": [
+      {
+        "title": "Teams Who Want Analytics Without Feature Bloat",
+        "description": "If you need product analytics but don't use PostHog's feature flags, session replay, surveys, or experiments, OpenPanel gives you exactly what you need without the overhead.",
+        "icon": "target"
+      },
+      {
+        "title": "Privacy-First Products",
+        "description": "OpenPanel is cookie-free by default with no configuration needed. PostHog requires explicit setup for cookieless tracking and loses some functionality in that mode.",
+        "icon": "shield"
+      },
+      {
+        "title": "Performance-Conscious Applications",
+        "description": "OpenPanel's 2.3KB SDK vs PostHog's 52KB+ library means faster page loads and better Core Web Vitals - critical for SEO and user experience.",
+        "icon": "zap"
+      },
+      {
+        "title": "Simple Self-Hosting Needs",
+        "description": "OpenPanel runs in a single Docker container. PostHog requires ClickHouse, Kafka, Redis, and PostgreSQL - significantly more infrastructure to manage.",
+        "icon": "server"
+      },
+      {
+        "title": "Predictable Budgeting",
+        "description": "OpenPanel's simple event-based pricing is easy to predict. PostHog's multi-product metering across events, recordings, flags, and surveys can lead to unexpected costs.",
+        "icon": "dollar-sign"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from PostHog to OpenPanel.",
+    "items": [
+      {
+        "question": "Is OpenPanel really free?",
+        "answer": "Yes! OpenPanel offers a generous free tier with 10,000 events per month. Self-hosting is completely free with no limits. PostHog also has generous free tiers (1M events, 5K recordings) but costs can scale quickly with usage."
+      },
+      {
+        "question": "Why switch from PostHog to OpenPanel?",
+        "answer": "Teams switch for several reasons: simpler pricing without multi-product metering, smaller SDK size (2.3KB vs 52KB+), true cookie-free tracking by default, easier self-hosting, and a focused analytics experience without feature bloat."
+      },
+      {
+        "question": "What features will I lose switching from PostHog?",
+        "answer": "PostHog includes feature flags, session replay, surveys, and A/B experiments in their platform. If you actively use these, you'd need separate tools. If you primarily use PostHog for analytics, OpenPanel provides everything you need with less complexity."
+      },
+      {
+        "question": "How does OpenPanel compare on privacy?",
+        "answer": "OpenPanel is cookie-free by default - no configuration needed. PostHog uses cookies by default and requires specific setup for cookieless mode, which disables some features like cross-session user identification."
+      },
+      {
+        "question": "Can I self-host OpenPanel?",
+        "answer": "Yes! OpenPanel runs in a simple Docker container with ClickHouse. PostHog self-hosting requires multiple services (ClickHouse, Kafka, Redis, PostgreSQL) and has official limitations of around 100k events/month for single-server hobby deployments."
+      },
+      {
+        "question": "Is PostHog more feature-rich than OpenPanel?",
+        "answer": "PostHog offers more products (10+ including feature flags, session replay, surveys, A/B testing, data warehouse). However, this comes with added complexity. OpenPanel focuses on doing analytics exceptionally well with a simpler, more focused experience."
+      },
+      {
+        "question": "How do SDK sizes compare?",
+        "answer": "OpenPanel's SDK is 2.3KB gzipped. PostHog's core library is 52KB+ gzipped, though they lazy-load additional features like session replay. The difference impacts page load times and Core Web Vitals."
+      },
+      {
+        "question": "Which is better for startups?",
+        "answer": "Both offer generous free tiers. PostHog provides more features out of the box (feature flags, etc.) but with more complexity. OpenPanel is simpler to set up and understand, making it ideal for teams that want focused analytics without the overhead of an all-in-one platform."
+      }
+    ]
+  },
+  "related_links": {
+    "articles": [
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      },
+      {
+        "title": "Self-hosted web analytics",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Plausible",
+        "url": "/compare/plausible-alternative"
+      },
+      {
+        "name": "Matomo",
+        "url": "/compare/matomo-alternative"
+      },
+      {
+        "name": "Umami",
+        "url": "/compare/umami-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

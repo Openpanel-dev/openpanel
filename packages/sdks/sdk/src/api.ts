@@ -50,7 +50,7 @@ export class Api {
       const response = await fetch(url, {
         method: 'POST',
         headers: await this.resolveHeaders(),
-        body: JSON.stringify(data ?? {}),
+        body: data ? JSON.stringify(data ?? {}) : undefined,
         keepalive: true,
         ...options,
       });

@@ -172,17 +172,18 @@ model Invite {
 }
 
 model Project {
-  id             String        @id @default(dbgenerated("gen_random_uuid()"))
-  name           String
-  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String
-  eventsCount    Int           @default(0)
-  types          ProjectType[] @default([])
-  domain         String?
-  cors           String[]      @default([])
-  crossDomain    Boolean       @default(false)
+  id                         String        @id @default(dbgenerated("gen_random_uuid()"))
+  name                       String
+  organization               Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId             String
+  eventsCount                Int           @default(0)
+  types                      ProjectType[] @default([])
+  domain                     String?
+  cors                       String[]      @default([])
+  crossDomain                Boolean       @default(false)
+  allowUnsafeRevenueTracking Boolean       @default(false)
   /// [IPrismaProjectFilters]
-  filters        Json          @default("[]")
+  filters                    Json          @default("[]")
 
   clients    Client[]
   reports    Report[]

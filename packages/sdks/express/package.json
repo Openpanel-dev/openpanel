@@ -1,14 +1,14 @@
 {
   "name": "@openpanel/express",
-  "version": "1.0.0-local",
+  "version": "1.0.3-local",
   "module": "index.ts",
   "scripts": {
     "build": "rm -rf dist && tsup",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "workspace:1.0.0-local",
-    "request-ip": "^3.3.0"
+    "@openpanel/sdk": "workspace:1.0.2-local",
+    "@openpanel/common": "workspace:*"
   },
   "peerDependencies": {
     "express": "^4.17.0 || ^5.0.0"

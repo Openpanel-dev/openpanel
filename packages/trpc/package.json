@@ -4,6 +4,7 @@
   "type": "module",
   "main": "index.ts",
   "scripts": {
+    "test": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

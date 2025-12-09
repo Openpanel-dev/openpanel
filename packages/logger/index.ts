@@ -6,9 +6,12 @@ export { winston };
 export type ILogger = winston.Logger;
 
 const logLevel = process.env.LOG_LEVEL ?? 'info';
+const silent = process.env.LOG_SILENT === 'true';
 
 export function createLogger({ name }: { name: string }): ILogger {
-  const service = `${name}-${process.env.NODE_ENV ?? 'dev'}`;
+  const service = [process.env.LOG_PREFIX, name, process.env.NODE_ENV ?? 'dev']
+    .filter(Boolean)
+    .join('-');
 
   const prettyError = (error: Error) => ({
     ...error,
@@ -64,18 +67,34 @@ export function createLogger({ name }: { name: string }): ILogger {
     return Object.assign({}, info, redactObject(info));
   });
 
-  const format = winston.format.combine(
-    errorFormatter(),
-    redactSensitiveInfo(),
-    winston.format.json(),
-  );
+  const transports: winston.transport[] = [];
+  let format: winston.Logform.Format;
 
-  const transports: winston.transport[] = [new winston.transports.Console()];
   if (process.env.HYPERDX_API_KEY) {
     transports.push(
       HyperDX.getWinstonTransport(logLevel, {
         detectResources: true,
         service,
+      }),
+    );
+    format = winston.format.combine(
+      errorFormatter(),
+      redactSensitiveInfo(),
+      winston.format.json(),
+    );
+  } else {
+    transports.push(new winston.transports.Console());
+    format = winston.format.combine(
+      errorFormatter(),
+      redactSensitiveInfo(),
+      winston.format.colorize({
+        all: true,
+      }),
+      winston.format.printf((info) => {
+        const { level, message, service, ...meta } = info;
+        const metaStr =
+          Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+        return `${level} ${message}${metaStr}`;
       }),
     );
   }
@@ -85,7 +104,7 @@ export function createLogger({ name }: { name: string }): ILogger {
     level: logLevel,
     format,
     transports,
-    silent: process.env.NODE_ENV === 'test',
+    silent,
     // Add ISO levels of logging from PINO
     levels: Object.assign(
       { fatal: 0, warn: 4, trace: 7 },

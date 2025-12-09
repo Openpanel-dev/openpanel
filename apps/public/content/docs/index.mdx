@@ -1,111 +1,83 @@
 ---
-title: Introduction to OpenPanel
-description: Get started with OpenPanel's powerful analytics platform that combines the best of product and web analytics in one simple solution.
+title: What is OpenPanel?
+description: OpenPanel is an open-source web and product analytics platform that combines the power of Mixpanel with the ease of Plausible. Whether you're tracking website visitors or analyzing user behavior in your app, OpenPanel provides the insights you need without the complexity.
 ---
 
-## What is OpenPanel?
+import { UserIcon,HardDriveIcon } from 'lucide-react'
 
-OpenPanel is an open-source analytics platform that combines product analytics (like Mixpanel) with web analytics (like Plausible) into one simple solution. Whether you're tracking website visitors or analyzing user behavior in your app, OpenPanel provides the insights you need without the complexity.
+## ✨ Key Features
 
-## Key Features
+- **🔍 Advanced Analytics**: Funnels, cohorts, user profiles, and session history
+- **📊 Real-time Dashboards**: Live data updates and interactive charts
+- **🎯 A/B Testing**: Built-in variant testing with detailed breakdowns
+- **🔔 Smart Notifications**: Event and funnel-based alerts
+- **🌍 Privacy-First**: Cookieless tracking and GDPR compliance
+- **🚀 Developer-Friendly**: Comprehensive SDKs and API access
+- **📦 Self-Hosted**: Full control over your data and infrastructure
+- **💸 Transparent Pricing**: No hidden costs
+- **🛠️ Custom Dashboards**: Flexible chart creation and data visualization
+- **📱 Multi-Platform**: Web, mobile (iOS/Android), and server-side tracking
 
-### Web Analytics
-- **Real-time data**: See visitor activity as it happens
-- **Traffic sources**: Understand where your visitors come from
-- **Geographic insights**: Track visitor locations and trends
-- **Device analytics**: Monitor usage across different devices
-- **Page performance**: Analyze your most visited pages
+## 📊 Analytics Platform Comparison
 
-### Product Analytics
-- **Event tracking**: Monitor user actions and interactions
-- **User profiles**: Build detailed user journey insights
-- **Funnels**: Analyze conversion paths
-- **Retention**: Track user engagement over time
-- **Custom properties**: Add context to your events
+| Feature                                | OpenPanel | Mixpanel | GA4       | Plausible |
+|----------------------------------------|-----------|----------|-----------|-----------|
+| ✅ Open-source                         | ✅         | ❌        | ❌        | ✅         |
+| 🧩 Self-hosting supported              | ✅         | ❌        | ❌        | ✅         |
+| 🔒 Cookieless by default               | ✅         | ❌        | ❌        | ✅         |
+| 🔁 Real-time dashboards                | ✅         | ✅        | ❌        | ✅         |
+| 🔍 Funnels & cohort analysis           | ✅         | ✅        | ✅*       | ✅***         |
+| 👤 User profiles & session history     | ✅         | ✅        | ❌        | ❌         |
+| 📈 Custom dashboards & charts          | ✅         | ✅        | ✅        | ❌         |
+| 💬 Event & funnel notifications        | ✅         | ✅        | ❌        | ❌         |
+| 🌍 GDPR-compliant tracking             | ✅         | ✅        | ❌**      | ✅         |
+| 📦 SDKs (Web, Swift, Kotlin, ReactNative) | ✅      | ✅        | ✅        | ❌         |
+| 💸 Transparent pricing                 | ✅         | ❌        | ✅*       | ✅         |
+| 🚀 Built for developers                | ✅         | ✅        | ❌        | ✅         |
+| 🔧 A/B testing & variant breakdowns    | ✅         | ✅        | ❌        | ❌         |
 
-## Getting Started
+✅* GA4 has a free tier but often requires BigQuery (paid) for raw data access.  
+❌** GA4 has faced GDPR bans in several EU countries due to data transfers to US-based servers.  
+✅*** Plausible has simple goals
 
-1. **Installation**: Choose your preferred method:
-   - [Script tag](/docs/sdks/script) - Quickest way to get started
-   - [Web SDK](/docs/sdks/web) - For more control and TypeScript support
-   - [React](/docs/sdks/react) - Native React integration
-   - [Next.js](/docs/sdks/nextjs) - Optimized for Next.js apps
+## 🚀 Quick Start
 
-2. **Core Methods**:
-   ```js
-   // Track an event
-   track('button_clicked', { 
-     buttonId: 'signup',
-     location: 'header'
-   });
+Before you can start tracking your events you'll need to create an account or spin up your own instance of OpenPanel.
 
-   // Identify a user
-   identify({
-     profileId: 'user123',
-     email: 'user@example.com',
-     firstName: 'John'
-   });
-   ```
+<Cards>
+  <Card
+    href="https://dashboard.openpanel.dev/onboarding"
+    title="Create an account"
+    icon={<UserIcon />}
+    description="Create your account and workspace"
+  />
+  <Card
+    href="/docs/self-hosting/self-hosting"
+    title="Self-hosted OpenPanel"
+    icon={<HardDriveIcon />}
+    description="Get full control and start self-host"
+  />
+</Cards>
 
-## Privacy First
+1. **[Install OpenPanel](/docs/get-started/install-openpanel)** - Add the script tag or use one of our SDKs
+2. **[Track Events](/docs/get-started/track-events)** - Start measuring user actions
+3. **[Identify Users](/docs/get-started/identify-users)** - Connect events to specific users
+4. **[Track Revenue](/docs/revenue-tracking)** - Monitor purchases and subscriptions
+
+## 🔒 Privacy First
 
 OpenPanel is built with privacy in mind:
-- No cookies required
-- GDPR and CCPA compliant
-- Self-hosting option available
-- Full control over your data
+- **No cookies required** - Cookieless tracking by default
+- **GDPR and CCPA compliant** - Built for privacy regulations
+- **Self-hosting option** - Full control over your data
+- **Transparent data handling** - You own your data
 
-## Open Source
+## 🌐 Open Source
 
 OpenPanel is fully open-source and available on [GitHub](https://github.com/Openpanel-dev/openpanel). We believe in transparency and community-driven development.
 
-## Need Help?
+## 💬 Need Help?
 
 - Join our [Discord community](https://go.openpanel.dev/discord)
 - Check our [GitHub issues](https://github.com/Openpanel-dev/openpanel/issues)
 - Email us at [hello@openpanel.dev](mailto:hello@openpanel.dev)
-
-## Core Methods
-
-### Set global properties
-
-Sets global properties that will be included with every subsequent event.
-
-### Track
-
-Tracks a custom event with the given name and optional properties. 
-
-#### Tips
-
-You can identify the user directly with this method.
-
-```js title="Example shown in JavaScript"
-track('your_event_name', {
-  foo: 'bar',
-  baz: 'qux',
-  // reserved property name
-  __identify: {
-    profileId: 'your_user_id', // required
-    email: 'your_user_email',
-    firstName: 'your_user_name',
-    lastName: 'your_user_name',
-    avatar: 'your_user_avatar',
-  }
-});
-```
-
-### Identify
-
-Associates the current user with a unique identifier and optional traits.
-
-### Increment
-
-Increments a numeric property for a user.
-
-### Decrement
-
-Decrements a numeric property for a user.
-
-### Clear
-
-Clears the current user identifier and ends the session.

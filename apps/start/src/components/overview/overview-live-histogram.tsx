@@ -57,7 +57,7 @@ export function OverviewLiveHistogram({
     <Wrapper
       count={totalSessions}
       icons={
-        <div className="row gap-2">
+        <div className="row gap-2 shrink-0">
           {liveData.referrers.slice(0, 3).map((ref, index) => (
             <div
               key={`${ref.referrer}-${ref.count}-${index}`}
@@ -107,11 +107,11 @@ interface WrapperProps {
 function Wrapper({ children, count, icons }: WrapperProps) {
   return (
     <div className="flex h-full flex-col">
-      <div className="row gap-2 justify-between">
-        <div className="relative mb-1 text-sm font-medium text-muted-foreground">
-          {count} sessions last 30 minutes
+      <div className="row gap-2 justify-between items-center">
+        <div className="relative text-xs font-medium text-muted-foreground">
+          {count} sessions last 30 min
         </div>
-        <div>{icons}</div>
+        {icons}
       </div>
       <div className="relative flex h-full w-full flex-1 items-end justify-center gap-2">
         {children}

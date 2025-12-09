@@ -53,7 +53,7 @@ export function RealtimeActiveSessions({
   const sessions = state.length > 0 ? state : (activeSessionsQuery.data ?? []);
 
   return (
-    <div className="col h-full">
+    <div className="col h-full max-md:hidden">
       <div className="hide-scrollbar h-full overflow-y-auto pb-10">
         <AnimatePresence mode="popLayout" initial={false}>
           <div className="col gap-4">

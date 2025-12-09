@@ -731,6 +731,7 @@ clix.toInterval = (node: string, interval: IInterval) => {
 };
 clix.toDate = (node: string, interval: IInterval) => {
   switch (interval) {
+    case 'day':
     case 'week':
     case 'month': {
       return `toDate(${node})`;

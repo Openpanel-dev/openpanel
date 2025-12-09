@@ -5,7 +5,8 @@
   "main": "index.ts",
   "exports": {
     ".": "./index.ts",
-    "./server": "./server/index.ts"
+    "./server": "./server/index.ts",
+    "./server/get-client-ip": "./server/get-client-ip.ts"
   },
   "scripts": {
     "test": "vitest",
@@ -15,19 +16,20 @@
   "dependencies": {
     "@openpanel/constants": "workspace:*",
     "date-fns": "^3.3.1",
-    "luxon": "^3.6.1",
+    "lru-cache": "^11.2.4",
+    "luxon": "^3.7.2",
     "mathjs": "^12.3.2",
-    "nanoid": "^5.0.7",
+    "nanoid": "^5.1.6",
     "ramda": "^0.29.1",
     "slugify": "^1.6.6",
     "superjson": "^1.13.3",
-    "ua-parser-js": "^1.0.37",
+    "ua-parser-js": "^2.0.6",
     "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
-    "@types/luxon": "^3.6.2",
+    "@types/luxon": "^3.7.1",
     "@types/node": "catalog:",
     "@types/ramda": "^0.29.6",
     "@types/ua-parser-js": "^0.7.39",

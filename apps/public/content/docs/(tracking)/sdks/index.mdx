@@ -1,0 +1,153 @@
+---
+title: SDKs Overview
+description: Choose the right OpenPanel SDK for your project. We support web, mobile, server-side, and framework-specific integrations.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+OpenPanel provides SDKs for a wide range of platforms and frameworks, making it easy to integrate analytics into your application regardless of your tech stack.
+
+## Quick Start
+
+For most web projects, we recommend starting with one of these:
+
+- **[Script Tag](/docs/sdks/script)** - The quickest way to get started, no build step required
+- **[Web SDK](/docs/sdks/web)** - For TypeScript support and more control
+- **[Next.js](/docs/sdks/nextjs)** - Optimized for Next.js applications
+
+## Web & Browser SDKs
+
+### Simple Integration
+
+- **[Script Tag](/docs/sdks/script)** - Add analytics with a simple `<script>` tag
+  - ✅ No build step required
+  - ✅ Works with any website
+  - ✅ Automatic page view tracking
+
+### JavaScript & TypeScript
+
+- **[Web SDK](/docs/sdks/web)** - Full-featured browser SDK with TypeScript support
+  - ✅ Type-safe API
+  - ✅ Tree-shakeable
+  - ✅ Modern browsers support
+
+- **[JavaScript (Node / Generic)](/docs/sdks/javascript)** - Universal JavaScript SDK
+  - ✅ Works in Node.js and browsers
+  - ✅ Framework agnostic
+  - ✅ Full API access
+
+### Frontend Frameworks
+
+- **[Next.js](/docs/sdks/nextjs)** - Optimized for Next.js
+  - ✅ Server and client side tracking
+  - ✅ App Router support
+  - ✅ Automatic route tracking
+
+- **[Astro](/docs/sdks/astro)** - Astro framework integration
+  - ✅ Static and SSR support
+  - ✅ Component-based tracking
+  - ✅ Island architecture compatible
+
+- **[React](/docs/sdks/react)** - React integration
+  - 📝 Use Script Tag or Web SDK for now
+
+- **[Vue](/docs/sdks/vue)** - Vue.js integration
+  - 📝 Use Script Tag or Web SDK for now
+
+- **[Remix](/docs/sdks/remix)** - Remix framework integration
+  - 📝 Use Script Tag or Web SDK for now
+
+- **Svelte** - Svelte integration
+  - 📝 Use [Script Tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) for now
+
+- **Angular** - Angular integration
+  - 📝 Use [Script Tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) for now
+
+- **Solid.js** - Solid.js integration
+  - 📝 Use [Script Tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) for now
+
+- **Nuxt** - Nuxt.js integration
+  - 📝 Use [Script Tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) for now
+
+## Server-Side SDKs
+
+- **[Node.js (Express)](/docs/sdks/express)** - Express.js middleware
+  - ✅ Request tracking
+  - ✅ Error tracking
+  - ✅ Custom middleware support
+
+- **[Python](/docs/sdks/python)** - Python SDK for server-side tracking
+  - ✅ Thread-safe
+  - ✅ Async support
+  - ✅ Django and Flask compatible
+
+- **[Rust](/docs/sdks/rust)** - Rust SDK for server-side tracking
+  - ✅ Async/await support
+  - ✅ Type-safe API
+  - ✅ Environment variable configuration
+
+- **[Ruby](/docs/sdks/ruby)** - Ruby SDK for server-side tracking
+  - ✅ Rails integration
+  - ✅ Gem-based installation
+  - ✅ Simple API
+
+## Mobile SDKs
+
+- **[React Native](/docs/sdks/react-native)** - Cross-platform mobile analytics
+  - ✅ iOS and Android support
+  - ✅ Native performance
+  - ✅ Offline support
+
+- **[Swift](/docs/sdks/swift)** - Native iOS, macOS, tvOS, and watchOS SDK
+  - ✅ Apple platform support
+  - ✅ Swift Package Manager
+  - ✅ Thread-safe API
+  - ✅ Automatic lifecycle tracking
+
+- **[Kotlin / Android](/docs/sdks/kotlin)** - Native Android SDK
+  - ✅ Android support
+  - ✅ System information collection
+  - ✅ Thread-safe API
+  - ⚠️ Not yet published to Maven
+
+## Need Help Choosing?
+
+<Callout>
+Not sure which SDK to use? Here are some recommendations:
+
+- **Static website or HTML?** → Use [Script Tag](/docs/sdks/script)
+- **React app?** → Use [Web SDK](/docs/sdks/web) or [Script Tag](/docs/sdks/script)
+- **Next.js app?** → Use [Next.js SDK](/docs/sdks/nextjs)
+- **Server-side tracking?** → Use [Python](/docs/sdks/python), [Rust](/docs/sdks/rust), [Ruby](/docs/sdks/ruby), or [Node](/docs/sdks/javascript)
+- **Mobile app?** → Use [React Native](/docs/sdks/react-native), [Swift](/docs/sdks/swift), or [Kotlin](/docs/sdks/kotlin)
+</Callout>
+
+## Core Features
+
+All OpenPanel SDKs support these core features:
+
+### Event Tracking
+Track custom events with properties to understand user behavior.
+
+### User Identification
+Associate events with specific users and build user profiles.
+
+### Global Properties
+Set properties that are automatically included with every event.
+
+### Increment/Decrement
+Update numeric properties on user profiles.
+
+### Privacy First
+All SDKs are built with privacy in mind - no cookies required, GDPR compliant.
+
+## API Reference
+
+For advanced integrations, check out our [API documentation](/docs/api/track) to track events directly via HTTP requests.
+
+## Community & Support
+
+- Join our [Discord community](https://go.openpanel.dev/discord)
+- Report issues on [GitHub](https://github.com/Openpanel-dev/openpanel/issues)
+- Email us at [hello@openpanel.dev](mailto:hello@openpanel.dev)
+

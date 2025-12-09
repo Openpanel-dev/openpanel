@@ -1,0 +1,364 @@
+---
+title: Revenue tracking
+description: Learn how to easily track your revenue with OpenPanel and how to get it shown directly in your dashboard.
+---
+
+import { FlowStep } from '@/components/flow-step';
+
+Revenue tracking is a great way to get a better understanding of what your best revenue source is. On this page we'll break down how to get started.
+
+Before we start, we need to know some fundamentals about how OpenPanel and your payment provider work and how we can link a payment to a visitor.
+
+### Payment providers
+
+Usually, you create your checkout from your backend, which then returns a payment link that your visitor will be redirected to. When creating the checkout link, you usually add additional fields such as metadata, customer information, or order details. We'll add the device ID information in this metadata field to be able to link your payment to a visitor.
+
+### OpenPanel
+
+OpenPanel is a cookieless analytics tool that identifies visitors using a `device_id`. To link a payment to a visitor, you need to capture their `device_id` before they complete checkout. This `device_id` will be stored in your payment provider's metadata, and when the payment webhook arrives, you'll use it to associate the revenue with the correct visitor.
+
+## Some typical flows
+
+- [Revenue tracking from your backend (not identified)](#revenue-tracking-from-your-backend-webhook)
+- [Revenue tracking from your backend (identified)](#revenue-tracking-from-your-backend-webhook-identified)
+- [Revenue tracking from your frontend](#revenue-tracking-from-your-frontend)
+- [Revenue tracking without linking it to a identity or device](#revenue-tracking-without-linking-it-to-an-identity-or-device)
+
+### Revenue tracking from your backend (webhook)
+
+This is the most common flow and most secure one. Your backend receives webhooks from your payment provider, and here is the best opportunity to do revenue tracking. 
+
+<FlowStep step={1} actor="Visitor" description="Visits your website" icon="visitor" />
+
+<FlowStep step={2} actor="Visitor" description="Makes a purchase" icon="visitor" />
+
+<FlowStep step={3} actor="Your website" description="Does a POST request to get the checkout URL" icon="website">
+When you create the checkout, you should first call `op.fetchDeviceId()`, which will return your visitor's current `deviceId`. Pass this to your checkout endpoint.
+
+```javascript
+fetch('https://domain.com/api/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    deviceId: await op.fetchDeviceId(), // ✅ since deviceId is here we can link the payment now
+    // ... other checkout data
+  }),
+})
+  .then(response => response.json())
+  .then(data => {
+    // Handle checkout response, e.g., redirect to payment link
+    window.location.href = data.paymentUrl;
+  })
+```
+</FlowStep>
+
+<FlowStep step={4} actor="Your backend" description="Will generate and return the checkout URL" icon="backend">
+```javascript
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(req: Request) {
+  const { deviceId, amount, currency } = await req.json();
+  
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: currency,
+          product_data: { name: 'Product Name' },
+          unit_amount: amount * 100, // Convert to cents
+        },
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    metadata: {
+      deviceId: deviceId, // ✅ since deviceId is here we can link the payment now
+    },
+    success_url: 'https://domain.com/success',
+    cancel_url: 'https://domain.com/cancel',
+  });
+  
+  return Response.json({
+    paymentUrl: session.url,
+  });
+} 
+```
+</FlowStep>
+
+<FlowStep step={5} actor="Visitor" description="Gets redirected to payment link" icon="visitor" />
+
+<FlowStep step={6} actor="Visitor" description="Pays on your payment provider" icon="payment" />
+
+<FlowStep step={7} actor="Your backend" description="Receives a webhook for a successful payment" icon="backend">
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+  
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const deviceId = session.metadata.deviceId;
+    const amount = session.amount_total;
+    
+    op.revenue(amount, { deviceId }); // ✅ since deviceId is here we can link the payment now
+  }
+  
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+<FlowStep step={8} actor="Visitor" description="Redirected to your website with payment confirmation" icon="success" isLast />
+
+---
+
+### Revenue tracking from your backend (webhook) - Identified users
+
+If your visitors are identified (meaning you have called `identify` with a `profileId`), this process gets a bit easier. You don't need to pass the `deviceId` when creating your checkout, and you only need to provide the `profileId` (in backend) to the revenue call.
+
+<FlowStep step={1} actor="Visitor" description="Visits your website" icon="visitor" />
+
+<FlowStep step={2} actor="Your website" description="Identifies the visitor" icon="website">
+When a visitor logs in or is identified, call `op.identify()` with their unique `profileId`.
+
+```javascript
+op.identify({
+  profileId: 'user-123', // Unique identifier for this user
+  email: 'user@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+});
+```
+</FlowStep>
+
+<FlowStep step={3} actor="Visitor" description="Makes a purchase" icon="visitor" />
+
+<FlowStep step={4} actor="Your website" description="Does a POST request to get the checkout URL" icon="website">
+Since the visitor is already identified, you don't need to fetch or pass the `deviceId`. Just send the checkout data.
+
+```javascript
+fetch('https://domain.com/api/checkout', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    // ✅ No deviceId needed - user is already identified
+    // ... other checkout data
+  }),
+})
+  .then(response => response.json())
+  .then(data => {
+    // Handle checkout response, e.g., redirect to payment link
+    window.location.href = data.paymentUrl;
+  })
+```
+</FlowStep>
+
+<FlowStep step={5} actor="Your backend" description="Will generate and return the checkout URL" icon="backend">
+Since the user is authenticated, you can get their `profileId` from the session and store it in metadata for easy retrieval in the webhook.
+
+```javascript
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+export async function POST(req: Request) {
+  const { amount, currency } = await req.json();
+  
+  // Get profileId from authenticated session
+  const profileId = req.session.userId; // or however you get the user ID
+  
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ['card'],
+    line_items: [
+      {
+        price_data: {
+          currency: currency,
+          product_data: { name: 'Product Name' },
+          unit_amount: amount * 100, // Convert to cents
+        },
+        quantity: 1,
+      },
+    ],
+    mode: 'payment',
+    metadata: {
+      profileId: profileId, // ✅ Store profileId instead of deviceId
+    },
+    success_url: 'https://domain.com/success',
+    cancel_url: 'https://domain.com/cancel',
+  });
+  
+  return Response.json({
+    paymentUrl: session.url,
+  });
+} 
+```
+</FlowStep>
+
+<FlowStep step={6} actor="Visitor" description="Gets redirected to payment link" icon="visitor" />
+
+<FlowStep step={7} actor="Visitor" description="Pays on your payment provider" icon="payment" />
+
+<FlowStep step={8} actor="Your backend" description="Receives a webhook for a successful payment" icon="backend">
+In the webhook handler, retrieve the `profileId` from the session metadata.
+
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+  
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const profileId = session.metadata.profileId;
+    const amount = session.amount_total;
+    
+    op.revenue(amount, { profileId }); // ✅ Use profileId instead of deviceId
+  }
+  
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+<FlowStep step={9} actor="Visitor" description="Redirected to your website with payment confirmation" icon="success" isLast />
+
+---
+
+### Revenue tracking from your frontend
+
+This flow tracks revenue directly from your frontend. Since the success page doesn't have access to the payment amount (payment happens on Stripe's side), we track revenue when checkout is initiated and then confirm it on the success page.
+
+<FlowStep step={1} actor="Visitor" description="Visits your website" icon="visitor" />
+
+<FlowStep step={2} actor="Visitor" description="Clicks to purchase" icon="visitor" />
+
+<FlowStep step={3} actor="Your website" description="Track revenue when checkout is initiated" icon="website">
+When the visitor clicks the checkout button, track the revenue with the amount.
+
+```javascript
+async function handleCheckout() {
+  const amount = 2000; // Amount in cents
+
+  // Create a pending revenue (stored in sessionStorage)
+  op.pendingRevenue(amount, {
+    productId: '123',
+    // ... other properties
+  });
+   
+  // Redirect to Stripe checkout
+  window.location.href = 'https://checkout.stripe.com/...';
+}
+```
+</FlowStep>
+
+<FlowStep step={4} actor="Visitor" description="Gets redirected to payment link" icon="visitor" />
+
+<FlowStep step={5} actor="Visitor" description="Pays on your payment provider" icon="payment" />
+
+<FlowStep step={6} actor="Visitor" description="Redirected back to your success page" icon="visitor" />
+
+<FlowStep step={7} actor="Your website" description="Confirm/flush the revenue on success page" icon="website" isLast>
+On your success page, flush all pending revenue events. This will send all pending revenues tracked during checkout and clear them from sessionStorage.
+
+```javascript
+// Flush all pending revenues
+await op.flushRevenue();
+
+// Or if you want to clear without sending (e.g., payment was cancelled)
+op.clearRevenue();
+```
+</FlowStep>
+
+#### Pros:
+- Quick way to get going
+- No backend required
+- Can track revenue immediately when checkout starts
+
+#### Cons:
+- Less accurate (visitor might not complete payment)
+- Less "secure" meaning anyone could post revenue data
+
+---
+
+### Revenue tracking without linking it to an identity or device
+
+If you simply want to track revenue totals without linking payments to specific visitors or devices, you can call `op.revenue()` directly from your backend without providing a `deviceId` or `profileId`. This is the simplest approach and works well when you only need aggregate revenue data.
+
+<FlowStep step={1} actor="Visitor" description="Makes a purchase" icon="visitor" />
+
+<FlowStep step={2} actor="Visitor" description="Pays on your payment provider" icon="payment" />
+
+<FlowStep step={3} actor="Your backend" description="Receives a webhook for a successful payment" icon="backend" isLast>
+Simply call `op.revenue()` with the amount. No `deviceId` or `profileId` is needed.
+
+```javascript
+export async function POST(req: Request) {
+  const event = await req.json();
+  
+  // Stripe sends events with type and data.object structure
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const amount = session.amount_total;
+    
+    op.revenue(amount); // ✅ Simple revenue tracking without linking to a visitor
+  }
+  
+  return Response.json({ received: true });
+}
+```
+</FlowStep>
+
+#### Pros:
+- Simplest implementation
+- No need to capture or pass device IDs
+- Works well for aggregate revenue tracking
+
+#### Cons:
+- **You can't dive deeper into where this revenue came from.** For instance, you won't be able to see which source generates the best revenue, which campaigns are most profitable, or which visitors are your highest-value customers.
+- Revenue events won't be linked to specific user journeys or sessions
+
+## Available methods
+
+### Revenue 
+
+The revenue method will create a revenue event. It's important to know that this method will not work if your OpenPanel instance didn't receive a client secret (for security reasons). You can enable frontend revenue tracking within your project settings.
+
+```javascript
+op.revenue(amount: number, properties: Record<string, unknown>): Promise<void>
+```
+
+### Add a pending revenue
+
+This method will create a pending revenue item and store it in sessionStorage. It will not be sent to OpenPanel until you call `flushRevenue()`. Pending revenues are automatically restored from sessionStorage when the SDK initializes.
+
+```javascript
+op.pendingRevenue(amount: number, properties?: Record<string, unknown>): void
+```
+
+### Send all pending revenues
+
+This method will send all pending revenues to OpenPanel and then clear them from sessionStorage. Returns a Promise that resolves when all revenues have been sent.
+
+```javascript
+await op.flushRevenue(): Promise<void>
+```
+
+### Clear any pending revenue
+
+This method will clear all pending revenues from memory and sessionStorage without sending them to OpenPanel. Useful if a payment was cancelled or you want to discard pending revenues.
+
+```javascript
+op.clearRevenue(): void
+```
+
+### Fetch your current users device id
+
+```javascript
+op.fetchDeviceId(): Promise<string>
+```

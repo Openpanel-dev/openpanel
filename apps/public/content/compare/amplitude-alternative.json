@@ -1,0 +1,492 @@
+{
+  "slug": "amplitude-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Amplitude alternative",
+    "description": "Compare OpenPanel with Amplitude: open-source, privacy-first analytics with a lighter SDK. Get web and product analytics without the complexity or enterprise pricing.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Amplitude alternative",
+    "subheading": "OpenPanel is an open-source, privacy-first alternative to Amplitude. Get powerful product analytics with web analytics built in, cookie-free tracking, and the freedom to self-host or use our cloud.",
+    "badges": [
+      "Open-source",
+      "Cookie-free",
+      "EU-only hosting",
+      "Self-hostable"
+    ]
+  },
+  "competitor": {
+    "name": "Amplitude",
+    "logo": "/logos/amplitude.svg",
+    "url": "https://amplitude.com",
+    "short_description": "Enterprise digital analytics platform for product teams, offering behavioral analytics, experimentation, and customer data management.",
+    "founded": 2012,
+    "headquarters": "San Francisco, CA"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Amplitude: Which is right for you?",
+    "intro": "Both platforms help product teams understand user behavior. The key differences are pricing model, complexity, privacy approach, and deployment options.",
+    "one_liner": "OpenPanel is simpler, open-source, and privacy-focused; Amplitude is an enterprise-grade platform with a steep learning curve.",
+    "best_for_openpanel": [
+      "Teams that want powerful analytics without enterprise complexity",
+      "Privacy-conscious organizations that need cookie-free tracking",
+      "Developers who want to self-host or need a lightweight SDK",
+      "Startups and SMBs looking for transparent, predictable pricing"
+    ],
+    "best_for_competitor": [
+      "Large enterprises with dedicated analytics teams",
+      "Organizations that need advanced experimentation and feature flags",
+      "Teams requiring sophisticated behavioral cohorts and predictive analytics",
+      "Companies wanting an all-in-one platform with session replay and guides"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Amplitude compare on the factors that matter most.",
+    "items": [
+      {
+        "label": "Price",
+        "openpanel": "From $2.50/month (or free self-hosted)",
+        "competitor": "Free tier (50K MTUs), then $49+/month"
+      },
+      {
+        "label": "Cookies required",
+        "openpanel": "No (cookie-free by default)",
+        "competitor": "Yes (first-party cookies)"
+      },
+      {
+        "label": "Consent banner needed",
+        "openpanel": "No",
+        "competitor": "Yes (for GDPR/ePrivacy)"
+      },
+      {
+        "label": "Data location",
+        "openpanel": "EU-only (or your own servers)",
+        "competitor": "US or EU (Frankfurt)"
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (AGPL-3.0)",
+        "competitor": "No"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "OpenPanel combines web analytics with product analytics in a simpler interface. Amplitude focuses on deep behavioral analytics for enterprise product teams.",
+    "groups": [
+      {
+        "group": "Web analytics",
+        "features": [
+          {
+            "name": "Page views & visitors",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Traffic sources",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Geographic data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Device & browser stats",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "UTM tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude has advanced marketing attribution"
+          },
+          {
+            "name": "Real-time dashboard",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Product analytics",
+        "features": [
+          {
+            "name": "Custom event tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Funnels",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude has advanced conversion funnels"
+          },
+          {
+            "name": "Retention analysis",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude has multiple retention views"
+          },
+          {
+            "name": "User profiles",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Cohorts",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude has behavioral and predictive cohorts"
+          },
+          {
+            "name": "Revenue tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Advanced features",
+        "features": [
+          {
+            "name": "A/B testing",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude Experiment is full-featured"
+          },
+          {
+            "name": "Feature flags",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Amplitude includes unlimited feature flags"
+          },
+          {
+            "name": "Session replay",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Included in Amplitude platform"
+          },
+          {
+            "name": "Custom dashboards",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Pathfinder/Journey maps",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude pathfinder is highly advanced"
+          },
+          {
+            "name": "Predictive analytics",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Amplitude has ML-powered predictions (Growth+)"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & compliance",
+        "features": [
+          {
+            "name": "Cookie-free tracking",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Amplitude uses first-party cookies"
+          },
+          {
+            "name": "No consent banner needed",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Amplitude requires consent under GDPR"
+          },
+          {
+            "name": "EU data residency",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude offers EU data center in Frankfurt"
+          },
+          {
+            "name": "IP anonymization",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude can disable IP storage"
+          },
+          {
+            "name": "Self-hosting option",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Amplitude is cloud-only"
+          },
+          {
+            "name": "DPA available",
+            "openpanel": "on request",
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Integrations",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Data export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude supports S3, Snowflake, BigQuery"
+          },
+          {
+            "name": "CDP integrations",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Amplitude has its own CDP product"
+          },
+          {
+            "name": "Webhook notifications",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's how the SDKs and technical implementations compare.",
+    "items": [
+      {
+        "label": "SDK size (JS)",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "~36 KB gzipped (analytics only), ~96 KB unified",
+        "notes": "Amplitude's unified SDK includes analytics, experiment, session replay, and guides"
+      },
+      {
+        "label": "Supported platforms",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "Node.js",
+          "Python",
+          "Swift",
+          "Kotlin",
+          "React Native",
+          "Astro",
+          "Remix",
+          "Express"
+        ],
+        "competitor": [
+          "JavaScript",
+          "TypeScript",
+          "React Native",
+          "iOS",
+          "Android",
+          "Flutter",
+          "Unity",
+          "Node.js",
+          "Python",
+          "Go",
+          "JRE/Java"
+        ],
+        "notes": "Both have comprehensive SDK coverage"
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (AGPL-3.0)",
+        "competitor": "No (SDKs are open, platform is not)",
+        "notes": null
+      },
+      {
+        "label": "Self-hosted deployment",
+        "openpanel": "Docker, simple setup script",
+        "competitor": "Not available",
+        "notes": "Amplitude is cloud-only"
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "Proprietary (AWS-hosted)",
+        "notes": "OpenPanel gives you direct SQL access to your data"
+      },
+      {
+        "label": "Data retention",
+        "openpanel": "Unlimited (self-hosted) or plan-based",
+        "competitor": "Unlimited storage, 3-year query limit on charts",
+        "notes": "Amplitude stores data but limits chart date ranges"
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Amplitude has a free tier but pricing scales quickly. OpenPanel offers simpler, more predictable costs.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing starting at $2.50/month for 5,000 events. 100,000 events costs $20/month. Self-host for free with unlimited events. No limits on users, dashboards, or data retention."
+    },
+    "competitor": {
+      "model": "MTU-based with event limits",
+      "description": "Starter (Free): Up to 50K MTUs and 10M events. Plus: $49-1,000+/month based on MTUs (1K-300K). Growth: Custom pricing, typically $22K-254K/year. Enterprise: Custom pricing for large organizations. Overages charged at 1.2x rate.",
+      "free_tier": "Yes (50K MTUs, limited features)",
+      "pricing_url": "https://amplitude.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Amplitude to OpenPanel",
+    "intro": "Switching from Amplitude to OpenPanel is straightforward. The event tracking APIs are similar, and you can run both tools in parallel during transition.",
+    "difficulty": "easy",
+    "estimated_time": "2-4 hours",
+    "steps": [
+      {
+        "title": "Install the OpenPanel SDK",
+        "description": "Add the lightweight OpenPanel SDK to your app. At 2.3 KB, it's significantly smaller than Amplitude's SDK."
+      },
+      {
+        "title": "Map your events",
+        "description": "Review your Amplitude tracking plan and map events to OpenPanel. The track() API is similar: amplitude.track('event') becomes op.track('event')."
+      },
+      {
+        "title": "Configure user identification",
+        "description": "Set up user identification in OpenPanel. The identify() method works similarly to Amplitude's."
+      },
+      {
+        "title": "Set up dashboards",
+        "description": "Create your key reports in OpenPanel. While you'll lose Amplitude's advanced features like predictive cohorts, core analytics translate directly."
+      },
+      {
+        "title": "Run in parallel and validate",
+        "description": "Keep both tools running for a week to compare data and ensure accuracy before removing Amplitude."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use event-based tracking with similar APIs. amplitude.track('Purchase', {amount: 99}) becomes op.track('Purchase', {amount: 99})."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Amplitude data export is available for paid plans but requires manual transformation. Most teams start fresh with OpenPanel."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Amplitude",
+    "intro": "OpenPanel shines for teams that want powerful analytics without enterprise complexity, pricing, or privacy concerns.",
+    "items": [
+      {
+        "title": "Startups and growing teams",
+        "description": "Get the product analytics you need without Amplitude's complexity or enterprise pricing. Start free and scale predictably.",
+        "icon": "rocket"
+      },
+      {
+        "title": "Privacy-first products",
+        "description": "Cookie-free tracking means no consent banners and happier users. Perfect for GDPR compliance without compromise.",
+        "icon": "shield"
+      },
+      {
+        "title": "Self-hosted requirements",
+        "description": "Deploy OpenPanel on your own infrastructure for complete data ownership. Amplitude is cloud-only with no self-hosting option.",
+        "icon": "server"
+      },
+      {
+        "title": "Faster websites and apps",
+        "description": "OpenPanel's 2.3 KB SDK vs Amplitude's 36-96 KB means better performance, faster loads, and improved user experience.",
+        "icon": "zap"
+      },
+      {
+        "title": "Simpler analytics needs",
+        "description": "If you don't need predictive ML models, feature flags, or session replay, OpenPanel gives you core analytics without the bloat.",
+        "icon": "target"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Amplitude to OpenPanel.",
+    "items": [
+      {
+        "question": "Is Amplitude free?",
+        "answer": "Amplitude offers a free Starter plan with up to 50,000 Monthly Tracked Users (MTUs) and 10 million events. However, it has limited features, no customer support, and you'll need to upgrade quickly as you grow. The Plus plan starts at $49/month for just 1,000 MTUs."
+      },
+      {
+        "question": "Why switch from Amplitude?",
+        "answer": "Common reasons include: pricing that escalates quickly as you grow, complexity that requires dedicated analysts to use effectively, privacy concerns with cookies and consent requirements, no self-hosting option, and a heavy SDK that impacts page performance."
+      },
+      {
+        "question": "Do I need a cookie consent banner with OpenPanel?",
+        "answer": "No. OpenPanel is cookie-free by default and doesn't collect personal data, so no consent banner is required for analytics. Amplitude requires cookies and therefore needs consent under GDPR."
+      },
+      {
+        "question": "Does Amplitude offer EU data hosting?",
+        "answer": "Yes, Amplitude has an EU data center in Frankfurt, Germany. However, you still need cookie consent because Amplitude uses first-party cookies. OpenPanel offers EU-only hosting plus cookie-free tracking."
+      },
+      {
+        "question": "What Amplitude features will I lose?",
+        "answer": "OpenPanel doesn't have feature flags, session replay, predictive cohorts, or the Guides & Surveys product. If you rely heavily on these enterprise features, Amplitude may still be the better fit."
+      },
+      {
+        "question": "How does the SDK size affect my app?",
+        "answer": "OpenPanel's JavaScript SDK is ~2.3 KB gzipped compared to Amplitude's 36 KB (analytics only) or 96 KB (unified). This means faster initial page loads, better Core Web Vitals, and reduced bandwidth costs."
+      },
+      {
+        "question": "Can I import my Amplitude data?",
+        "answer": "Amplitude allows data export on paid plans (to S3, Snowflake, etc.), but there's no direct import into OpenPanel. Most teams run both tools briefly in parallel, then start fresh with OpenPanel."
+      },
+      {
+        "question": "Is OpenPanel as powerful as Amplitude?",
+        "answer": "OpenPanel covers core product analytics (events, funnels, retention, cohorts, user profiles) and adds web analytics. Amplitude has more advanced features like predictive analytics and feature flags, but many teams don't need that complexity."
+      }
+    ]
+  },
+  "related_links": {
+    "articles": [
+      {
+        "title": "Find an alternative to Mixpanel",
+        "url": "/articles/alternatives-to-mixpanel"
+      },
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      },
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

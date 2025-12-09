@@ -5,13 +5,26 @@ import { pick } from 'ramda';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
-const VALID_COOKIES = ['ui-theme', 'chartType', 'range'] as const;
+const VALID_COOKIES = [
+  'ui-theme',
+  'chartType',
+  'range',
+  'supporter-prompt-closed',
+] as const;
 const COOKIE_EVENT_NAME = '__cookie-change';
 
 const setCookieFn = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ key: z.enum(VALID_COOKIES), value: z.string() }))
   .handler(({ data: { key, value } }) => {
-    setCookie(key, value);
+    if (!VALID_COOKIES.includes(key)) {
+      return;
+    }
+    const maxAge = 60 * 60 * 24 * 365 * 10;
+    setCookie(key, value, {
+      maxAge,
+      path: '/',
+      expires: new Date(Date.now() + maxAge),
+    });
   });
 
 // Called in __root.tsx beforeLoad hook to get cookies from the server

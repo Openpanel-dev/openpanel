@@ -328,3 +328,75 @@ button {
   animation: float-2 3.5s ease-in-out infinite;
   animation-delay: 1s;
 }
+
+/* Slow ping animation for success modal */
+@keyframes ping-slow {
+  75%, 100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.scrollarea {
+  position: relative;
+  width: 100%;
+  height: 300px; /* set any height */
+  overflow: hidden; /* hide native scrollbars */
+}
+
+.scrollarea-content {
+  height: 100%;
+  width: 100%;
+  overflow-y: scroll;
+  padding-right: 16px;         /* preserve space for custom scrollbar */
+  scrollbar-width: none;       /* hide Firefox scrollbar */
+}
+
+.scrollarea-content::-webkit-scrollbar {
+  width: 8px;                  /* size of custom scrollbar */
+}
+
+.scrollarea-content::-webkit-scrollbar-track {
+  background: transparent;     /* no visible track, like shadcn */
+}
+
+.scrollarea-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 9999px;       /* fully rounded */
+  transition: background 0.2s;
+}
+
+.scrollarea-content:hover::-webkit-scrollbar-thumb,
+.scrollarea-content:active::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.4);  /* darken on hover/scroll */
+}
+
+/* Scroll-driven animation for sticky header */
+@keyframes sticky-shadow {
+  0% {
+    box-shadow: none;
+    border-bottom-color: transparent;
+    border-bottom-width: 1px;
+    background-color: transparent;
+  }
+  100% {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    border-bottom-color: var(--color-border);
+    border-bottom-width: 1px;
+    background-color: var(--color-def-100);
+  }
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid transparent;
+  animation: sticky-shadow linear both;
+  animation-timeline: scroll();
+  animation-range: 0 1px;
+}

@@ -1,5 +1,6 @@
 ---
 import type { OpenPanelMethodNames, OpenPanelOptions } from '@openpanel/web';
+import { getInitSnippet } from '@openpanel/web';
 
 type Props = Omit<OpenPanelOptions, 'filter'> & {
   profileId?: string;
@@ -32,7 +33,7 @@ const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
     value: {
       ...options,
       sdk: 'astro',
-      sdkVersion: '1.0.2',
+      sdkVersion: '1.0.5',
     },
   },
 ];
@@ -51,7 +52,7 @@ if (globalProperties) {
   });
 }
 
-const scriptContent = `window.op = window.op || function(...args) {(window.op.q = window.op.q || []).push(args)};
+const scriptContent = `${getInitSnippet()}
 ${methods
   .map((method) => {
     return `window.op('${method.name}', ${stringify(method.value)});`;

@@ -48,6 +48,7 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
           {
             name: 'Path',
             width: 'w-full',
+            responsive: { priority: 1 },
             render(item) {
               return (
                 <Tooltiper
@@ -76,18 +77,34 @@ export function RealtimePaths({ projectId }: RealtimePathsProps) {
           {
             name: 'Duration',
             width: '75px',
+            responsive: { priority: 7 },
             render(item) {
               return number.shortWithUnit(item.avg_duration, 'min');
             },
           },
           {
             name: 'Events',
-            width: '84px',
+            width: '60px',
+            responsive: { priority: 4 },
             render(item) {
               return (
                 <div className="row gap-2 justify-end">
                   <span className="font-semibold">
                     {number.short(item.count)}
+                  </span>
+                </div>
+              );
+            },
+          },
+          {
+            name: 'Sessions',
+            width: '82px',
+            responsive: { priority: 2 },
+            render(item) {
+              return (
+                <div className="row gap-2 justify-end">
+                  <span className="font-semibold">
+                    {number.short(item.unique_sessions)}
                   </span>
                 </div>
               );

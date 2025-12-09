@@ -5,18 +5,24 @@ import {
 } from '@openpanel/constants';
 import type {
   IChartBreakdown,
-  IChartEvent,
   IChartEventFilter,
+  IChartEventItem,
   IChartLineType,
   IChartProps,
   IChartRange,
   ICriteria,
 } from '@openpanel/validation';
 
-import { db } from '../prisma-client';
 import type { Report as DbReport, ReportLayout } from '../prisma-client';
+import { db } from '../prisma-client';
 
 export type IServiceReport = Awaited<ReturnType<typeof getReportById>>;
+
+export const onlyReportEvents = (
+  series: NonNullable<IServiceReport>['series'],
+) => {
+  return series.filter((item) => item.type === 'event');
+};
 
 export function transformFilter(
   filter: Partial<IChartEventFilter>,
@@ -31,17 +37,29 @@ export function transformFilter(
   };
 }
 
-export function transformReportEvent(
-  event: Partial<IChartEvent>,
+export function transformReportEventItem(
+  item: IChartEventItem,
   index: number,
-): IChartEvent {
+): IChartEventItem {
+  if (item.type === 'formula') {
+    // Transform formula
+    return {
+      type: 'formula',
+      id: item.id ?? alphabetIds[index]!,
+      formula: item.formula || '',
+      displayName: item.displayName,
+    };
+  }
+
+  // Transform event with type field
   return {
-    segment: event.segment ?? 'event',
-    filters: (event.filters ?? []).map(transformFilter),
-    id: event.id ?? alphabetIds[index]!,
-    name: event.name || 'unknown_event',
-    displayName: event.displayName,
-    property: event.property,
+    type: 'event',
+    segment: item.segment ?? 'event',
+    filters: (item.filters ?? []).map(transformFilter),
+    id: item.id ?? alphabetIds[index]!,
+    name: item.name || 'unknown_event',
+    displayName: item.displayName,
+    property: item.property,
   };
 }
 
@@ -51,7 +69,8 @@ export function transformReport(
   return {
     id: report.id,
     projectId: report.projectId,
-    events: (report.events as IChartEvent[]).map(transformReportEvent),
+    series:
+      (report.events as IChartEventItem[]).map(transformReportEventItem) ?? [],
     breakdowns: report.breakdowns as IChartBreakdown[],
     chartType: report.chartType,
     lineType: (report.lineType as IChartLineType) ?? lineTypes.monotone,

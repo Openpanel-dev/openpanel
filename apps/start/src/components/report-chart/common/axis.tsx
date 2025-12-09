@@ -6,7 +6,6 @@ import { useRef, useState } from 'react';
 import type { AxisDomain } from 'recharts/types/util/types';
 
 import type { IInterval } from '@openpanel/validation';
-
 export const AXIS_FONT_PROPS = {
   fontSize: 8,
   className: 'font-mono',
@@ -69,9 +68,11 @@ export const useXAxisProps = (
     interval: 'auto',
   },
 ) => {
-  const formatDate = useFormatDateInterval(
-    interval === 'auto' ? 'day' : interval,
-  );
+  const formatDate = useFormatDateInterval({
+    interval: interval === 'auto' ? 'day' : interval,
+    short: true,
+  });
+
   return {
     ...X_AXIS_STYLE_PROPS,
     height: hide ? 0 : X_AXIS_STYLE_PROPS.height,

@@ -1,0 +1,529 @@
+{
+  "slug": "ackee-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Ackee Alternative: Why Teams Choose OpenPanel",
+    "description": "Compare OpenPanel vs Ackee Analytics. Discover why teams choose OpenPanel as their Ackee alternative for product analytics, user identification, and scalable analytics while maintaining privacy.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Ackee Alternative",
+    "subheading": "Love Ackee's privacy-first approach and self-hosting simplicity? OpenPanel adds product analytics capabilities - funnels, cohorts, retention, and user identification - with a modern architecture built for scale.",
+    "badges": [
+      "Open-source",
+      "Privacy-first",
+      "Product Analytics",
+      "Self-hostable"
+    ]
+  },
+  "competitor": {
+    "name": "Ackee",
+    "logo": "/logos/ackee.svg",
+    "url": "https://ackee.electerious.com",
+    "short_description": "Minimalist, self-hosted, privacy-focused web analytics with anonymous tracking and a clean interface.",
+    "founded": 2016,
+    "headquarters": "Germany"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Ackee: Which is right for you?",
+    "intro": "Both are privacy-focused open source analytics tools. Ackee focuses on simple web metrics with anonymous tracking. OpenPanel adds product analytics capabilities with user identification.",
+    "one_liner": "Ackee is ultra-minimal web analytics; OpenPanel adds product analytics features like funnels, retention, and user identification.",
+    "best_for_openpanel": [
+      "Teams needing product analytics (funnels, retention, cohorts)",
+      "Apps requiring user identification and tracking",
+      "Projects that need to scale with ClickHouse architecture",
+      "Mobile app analytics with native iOS, Android, React Native SDKs"
+    ],
+    "best_for_competitor": [
+      "Personal blogs and small sites wanting simple stats",
+      "Privacy maximalists who want zero user identification",
+      "Developers comfortable with GraphQL API customization",
+      "Sites that can run on MongoDB for analytics"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Ackee compare on the factors that matter most.",
+    "items": [
+      {
+        "label": "Analytics Depth",
+        "openpanel": "Web + Product Analytics",
+        "competitor": "Web Analytics Only",
+        "notes": "OpenPanel combines web analytics with product analytics - funnels, retention, cohorts, and user profiles. Ackee provides essential web metrics like page views, referrers, and durations."
+      },
+      {
+        "label": "User Identification",
+        "openpanel": "Yes - Track individual users",
+        "competitor": "No - Anonymous aggregate only",
+        "notes": "OpenPanel lets you identify and track individual users across sessions. Ackee intentionally anonymizes all data and cannot track returning users for individual pages."
+      },
+      {
+        "label": "Database Architecture",
+        "openpanel": "ClickHouse (optimized for analytics)",
+        "competitor": "MongoDB (general purpose)",
+        "notes": "OpenPanel uses ClickHouse, purpose-built for analytical queries. Ackee uses MongoDB, which works well for small sites but may struggle with high-volume analytics workloads."
+      },
+      {
+        "label": "Deployment Options",
+        "openpanel": "Cloud + Self-hosted",
+        "competitor": "Self-hosted only",
+        "notes": "OpenPanel offers both managed cloud and self-hosted options. Ackee is self-hosted only - you must run your own server and MongoDB instance."
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes (MIT License)",
+        "competitor": "Yes (MIT License)",
+        "notes": "Both platforms are fully open source under the MIT license, allowing complete code inspection and modification."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "Both are open source and privacy-focused, but with different capabilities and depth.",
+    "groups": [
+      {
+        "group": "Web Analytics",
+        "features": [
+          {
+            "name": "Page Views",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Referrers",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Visit Duration",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee tracks duration by updating records constantly"
+          },
+          {
+            "name": "Device & Browser",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee requires 'detailed' mode for full device info"
+          },
+          {
+            "name": "Screen Sizes",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee requires 'detailed' mode enabled"
+          },
+          {
+            "name": "Real-Time Dashboard",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee shows active visitors in real-time"
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Custom Event Tracking",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee supports custom events with key-value data"
+          },
+          {
+            "name": "Funnel Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee has no funnel visualization or analysis"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee cannot track returning users by design"
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee intentionally anonymizes all user data"
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee's anonymous model doesn't support cohorts"
+          },
+          {
+            "name": "User Path Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee cannot reconstruct user browsing history"
+          }
+        ]
+      },
+      {
+        "group": "Advanced Features",
+        "features": [
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee is analytics-only, no experimentation"
+          },
+          {
+            "name": "GraphQL API",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Ackee's entire UI is powered by its GraphQL API"
+          },
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel uses REST; Ackee uses GraphQL only"
+          },
+          {
+            "name": "Email Reports",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee has no built-in reporting - requires custom tools"
+          },
+          {
+            "name": "Multiple Domains",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both support unlimited domains from one instance"
+          },
+          {
+            "name": "Ignore Own Visits",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee can ignore logged-in dashboard visits"
+          }
+        ]
+      },
+      {
+        "group": "Privacy & Compliance",
+        "features": [
+          {
+            "name": "Cookie-Free by Default",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both are cookieless by default"
+          },
+          {
+            "name": "No Consent Banner Required",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both claim no consent needed for basic analytics"
+          },
+          {
+            "name": "GDPR Compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee uses daily-rotating salt hashes for anonymization"
+          },
+          {
+            "name": "Data Anonymization",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee uses multi-step anonymization with daily salt rotation"
+          },
+          {
+            "name": "Self-Hosted Option",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Ackee is self-hosted ONLY; OpenPanel offers both"
+          },
+          {
+            "name": "EU Data Residency",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both can be hosted anywhere; Ackee requires self-hosting"
+          }
+        ]
+      },
+      {
+        "group": "Integrations & SDKs",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "ackee-tracker available via npm or self-served"
+          },
+          {
+            "name": "React Integration",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "use-ackee React hook available"
+          },
+          {
+            "name": "Vue/Nuxt Integration",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "nuxt-ackee module available"
+          },
+          {
+            "name": "Gatsby Plugin",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "gatsby-plugin-ackee-tracker available"
+          },
+          {
+            "name": "Native iOS SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee is web-focused only"
+          },
+          {
+            "name": "Native Android SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Ackee has no official mobile SDKs"
+          },
+          {
+            "name": "WordPress Plugin",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Soapberry plugin available for WordPress"
+          },
+          {
+            "name": "Flutter/Dart SDK",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "ackee_dart community package available"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's how the implementations compare.",
+    "items": [
+      {
+        "label": "SDK Size",
+        "openpanel": "2.3 KB (gzipped)",
+        "competitor": "~6 KB (gzipped), served from your Ackee instance",
+        "notes": null
+      },
+      {
+        "label": "Platforms",
+        "openpanel": [
+          "JavaScript/TypeScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Node.js",
+          "Python",
+          "PHP",
+          "Go",
+          "Rust"
+        ],
+        "competitor": [
+          "JavaScript (browser)",
+          "React (use-ackee)",
+          "Nuxt.js",
+          "Vue",
+          "Gatsby",
+          "Svelte",
+          "Angular",
+          "WordPress",
+          "Dart/Flutter"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "Yes - MIT License",
+        "notes": "Both are MIT licensed and fully open source"
+      },
+      {
+        "label": "Self Hosting",
+        "openpanel": "Docker (simple single-container setup)",
+        "competitor": "Docker with MongoDB required, or deploy to Vercel/Netlify/Heroku with MongoDB Atlas",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse (columnar, analytics-optimized)",
+        "competitor": "MongoDB (document database)",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "Unlimited (depends on your MongoDB storage)",
+        "notes": null
+      },
+      {
+        "label": "Language",
+        "openpanel": "TypeScript/Node.js",
+        "competitor": "Node.js",
+        "notes": null
+      },
+      {
+        "label": "API",
+        "openpanel": "REST API",
+        "competitor": "GraphQL API",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "Both offer free self-hosting. OpenPanel also offers managed cloud options.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. Self-host for free with unlimited events. All features included at every tier."
+    },
+    "competitor": {
+      "model": "100% Free (self-hosted only)",
+      "description": "Completely free - no paid tiers exist. You pay only for your own infrastructure (MongoDB and server hosting). MongoDB Atlas free tier (512MB) works for small sites.",
+      "free_tier": "Self-hosted: Free forever, no paid option",
+      "pricing_url": null
+    }
+  },
+  "migration": {
+    "title": "Migrating from Ackee to OpenPanel",
+    "intro": "Switching from Ackee to OpenPanel is straightforward. Both are lightweight with similar integration approaches.",
+    "difficulty": "easy",
+    "estimated_time": "30 minutes to 2 hours",
+    "steps": [
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Add the OpenPanel SDK to your application. Replace the ackee-tracker script with OpenPanel's lightweight tracking code."
+      },
+      {
+        "title": "Map Events to OpenPanel",
+        "description": "Ackee events translate to OpenPanel events. Replace instance.action() calls with op.track() - the structure is similar."
+      },
+      {
+        "title": "Add User Identification (New)",
+        "description": "Unlike Ackee, OpenPanel can identify users. Add op.identify() calls to unlock retention, cohorts, and user profiles - a major upgrade from Ackee's anonymous-only model."
+      },
+      {
+        "title": "Configure Dashboards",
+        "description": "Set up your OpenPanel dashboards. You'll now have access to funnels, retention charts, and cohort analysis that weren't possible in Ackee."
+      },
+      {
+        "title": "Remove Ackee",
+        "description": "Once verified, remove the Ackee tracker script and optionally decommission your Ackee server and MongoDB instance."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": true,
+      "notes": "Both use simple event tracking APIs. Ackee's instance.action() becomes OpenPanel's op.track()."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Ackee intentionally anonymizes data, making historical import challenging. Most teams start fresh with OpenPanel."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Ackee",
+    "intro": "Choose OpenPanel when you need more than simple web stats - funnels, retention, user identification, and scalability.",
+    "items": [
+      {
+        "title": "Scaling Beyond MongoDB",
+        "description": "Ackee uses MongoDB which works for small sites but isn't optimized for analytical queries at scale. OpenPanel's ClickHouse backend is purpose-built for analytics workloads.",
+        "icon": "trending-up"
+      },
+      {
+        "title": "Teams Needing Product Analytics",
+        "description": "Ackee provides basic web metrics. If you need funnels, retention analysis, cohort breakdowns, or user journey mapping, OpenPanel adds these capabilities while maintaining privacy.",
+        "icon": "bar-chart"
+      },
+      {
+        "title": "Wanting a Cloud Option",
+        "description": "Ackee is self-hosted only with no managed cloud option. If you want analytics without managing servers, MongoDB, and backups, OpenPanel offers a free cloud tier.",
+        "icon": "cloud"
+      },
+      {
+        "title": "Apps Requiring User Identification",
+        "description": "Ackee intentionally cannot identify users or track returning visitors. If you need to understand individual user behavior or measure retention, OpenPanel provides these features.",
+        "icon": "user-check"
+      },
+      {
+        "title": "Mobile App Analytics",
+        "description": "Ackee is designed for websites with no official mobile SDKs. OpenPanel offers native SDKs for iOS, Android, and React Native with full product analytics capabilities.",
+        "icon": "smartphone"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Ackee to OpenPanel.",
+    "items": [
+      {
+        "question": "Is OpenPanel as privacy-friendly as Ackee?",
+        "answer": "Yes! Both are cookie-free by default and can be GDPR compliant without consent banners. The key difference is that OpenPanel allows optional user identification for product analytics, while Ackee is strictly anonymous. You control whether to identify users in OpenPanel."
+      },
+      {
+        "question": "Why switch from Ackee to OpenPanel?",
+        "answer": "Teams typically switch when they need: product analytics (funnels, retention, cohorts), user identification, a managed cloud option, mobile SDKs, or a database optimized for analytics. Ackee excels at simple, anonymous web stats but lacks these capabilities."
+      },
+      {
+        "question": "Is Ackee really free?",
+        "answer": "Yes, Ackee itself is 100% free and open source. However, you must pay for your own hosting - a server to run Ackee and MongoDB. Using free tiers (Vercel + MongoDB Atlas 512MB), you can run Ackee at zero cost for small sites."
+      },
+      {
+        "question": "Does OpenPanel have a GraphQL API like Ackee?",
+        "answer": "No, OpenPanel uses a REST API while Ackee uses GraphQL. Both approaches allow building custom tools and integrations. Ackee's entire UI is powered by its GraphQL API, making it very extensible."
+      },
+      {
+        "question": "Can Ackee track mobile apps?",
+        "answer": "Not officially. Ackee is designed for web analytics. There's a community Dart/Flutter package, but no official iOS or Android SDKs. OpenPanel offers native mobile SDKs with full product analytics."
+      },
+      {
+        "question": "What will I lose switching from Ackee?",
+        "answer": "Ackee's GraphQL API (OpenPanel uses REST), the ability to host on platforms like Vercel/Netlify as serverless functions, and the community plugins like Svelte and Angular integrations. You'll gain product analytics, user identification, and a managed cloud option."
+      },
+      {
+        "question": "How does the database compare?",
+        "answer": "Ackee uses MongoDB (general-purpose document database) while OpenPanel uses ClickHouse (columnar database optimized for analytics). ClickHouse is significantly faster for analytical queries, especially at scale."
+      },
+      {
+        "question": "Can Ackee track unique visitors?",
+        "answer": "Yes, but with limitations. Ackee uses a daily-rotating salt hash (IP + user-agent + domain + salt) to identify visitors within a single day. It cannot track returning visitors across days or track unique views per page - this is by design for privacy."
+      }
+    ]
+  },
+  "related_links": {
+    "articles": [
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      },
+      {
+        "title": "Self-hosted web analytics",
+        "url": "/articles/self-hosted-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "Umami",
+        "url": "/compare/umami-alternative"
+      },
+      {
+        "name": "GoatCounter",
+        "url": "/compare/goatcounter-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

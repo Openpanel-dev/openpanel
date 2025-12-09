@@ -135,9 +135,12 @@ export function SidebarContainer({
               <ProfileToggle />
             </div>
             {isSelfHosted && (
-              <div className={cn('text-sm w-full text-left mt-2')}>
-                Self-hosted instance
-              </div>
+              <a
+                href="https://openpanel.dev/supporter"
+                className="text-center text-sm w-full mt-2 border rounded p-2 font-medium block hover:underline hover:text-primary outline-none"
+              >
+                Self-hosted instance, support us!
+              </a>
             )}
           </div>
         </div>

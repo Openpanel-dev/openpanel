@@ -3,23 +3,17 @@ import { SheetClose, SheetFooter } from '@/components/ui/sheet';
 import { useSelector } from '@/redux';
 
 import { ReportBreakdowns } from './ReportBreakdowns';
-import { ReportEvents } from './ReportEvents';
-import { ReportFormula } from './ReportFormula';
+import { ReportSeries } from './ReportSeries';
 import { ReportSettings } from './ReportSettings';
 
 export function ReportSidebar() {
   const { chartType } = useSelector((state) => state.report);
-  const showFormula =
-    chartType !== 'conversion' &&
-    chartType !== 'funnel' &&
-    chartType !== 'retention';
   const showBreakdown = chartType !== 'retention';
   return (
     <>
       <div className="flex flex-col gap-8">
-        <ReportEvents />
+        <ReportSeries />
         {showBreakdown && <ReportBreakdowns />}
-        {showFormula && <ReportFormula />}
         <ReportSettings />
       </div>
       <SheetFooter>

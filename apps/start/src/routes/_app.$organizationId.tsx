@@ -1,8 +1,8 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import SupporterPrompt from '@/components/organization/supporter-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { FREE_PRODUCT_IDS } from '@openpanel/payments';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import {
   Outlet,
@@ -106,24 +106,9 @@ function Component() {
           </LinkButton>
         </Alert>
       )}
-      {organization.subscriptionEndsAt && organization.isExpired && (
-        <Alert
-          title="Subscription expired"
-          description={`Your subscription has expired. You can reactivate it by choosing a new plan below. It expired on ${format(organization.subscriptionEndsAt, 'PPP')}`}
-        >
-          <LinkButton
-            to="/$organizationId/billing"
-            params={{
-              organizationId: organizationId,
-            }}
-          >
-            Reactivate
-          </LinkButton>
-        </Alert>
-      )}
       {organization.subscriptionEndsAt && organization.isWillBeCanceled && (
         <Alert
-          title="Subscription will becanceled"
+          title="Subscription will be canceled"
           description={`You have canceled your subscription. You can reactivate it by choosing a new plan below. It'll expire on ${format(organization.subscriptionEndsAt, 'PPP')}`}
         >
           <LinkButton
@@ -151,25 +136,24 @@ function Component() {
           </LinkButton>
         </Alert>
       )}
-      {organization.subscriptionProductId &&
-        FREE_PRODUCT_IDS.includes(organization.subscriptionProductId) && (
+      {organization.subscriptionPeriodEventsCountExceededAt &&
+        organization.isActive && (
           <Alert
-            title="Free plan is removed"
-            description="We've removed the free plan. You can upgrade to a paid plan to continue using OpenPanel."
-            className="bg-orange-400/40 border-orange-400/50"
+            title="Events limit exceeded"
+            description={`Your subscription has exceeded the limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}`}
           >
             <LinkButton
-              className="bg-orange-400 text-white hover:bg-orange-400/80"
               to="/$organizationId/billing"
               params={{
                 organizationId: organizationId,
               }}
             >
-              Upgrade
+              Upgrade now
             </LinkButton>
           </Alert>
         )}
       <Outlet />
+      <SupporterPrompt />
     </>
   );
 }

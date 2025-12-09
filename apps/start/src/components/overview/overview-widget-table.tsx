@@ -8,6 +8,43 @@ import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
 import { WidgetTable, type Props as WidgetTableProps } from '../widget-table';
 
+function RevenuePieChart({ percentage }: { percentage: number }) {
+  const size = 16;
+  const strokeWidth = 2;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - percentage * circumference;
+
+  return (
+    <svg width={size} height={size} className="flex-shrink-0">
+      {/* Background circle */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        className="text-def-200"
+      />
+      {/* Revenue arc */}
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke="#3ba974"
+        strokeWidth={strokeWidth}
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        className="transition-all"
+      />
+    </svg>
+  );
+}
+
 type Props<T> = WidgetTableProps<T> & {
   getColumnPercentage: (item: T) => number;
 };
@@ -45,9 +82,7 @@ export const OverviewWidgetTable = <T,>({
               index === 0
                 ? 'text-left w-full font-medium min-w-0'
                 : 'text-right font-mono',
-              index !== 0 &&
-                index !== columns.length - 1 &&
-                'hidden @[310px]:table-cell',
+              // Remove old responsive logic - now handled by responsive prop
               column.className,
             ),
           };
@@ -119,12 +154,15 @@ export function OverviewWidgetTablePages({
     avg_duration: number;
     bounce_rate: number;
     sessions: number;
+    revenue: number;
   }[];
   showDomain?: boolean;
 }) {
   const [_filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
+  const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
+  const hasRevenue = data.some((item) => item.revenue > 0);
   return (
     <OverviewWidgetTable
       className={className}
@@ -135,6 +173,7 @@ export function OverviewWidgetTablePages({
         {
           name: 'Path',
           width: 'w-full',
+          responsive: { priority: 1 }, // Always visible
           render(item) {
             return (
               <Tooltiper asChild content={item.origin + item.path} side="left">
@@ -178,6 +217,7 @@ export function OverviewWidgetTablePages({
         {
           name: 'BR',
           width: '60px',
+          responsive: { priority: 6 }, // Hidden when space is tight
           render(item) {
             return number.shortWithUnit(item.bounce_rate, '%');
           },
@@ -185,13 +225,41 @@ export function OverviewWidgetTablePages({
         {
           name: 'Duration',
           width: '75px',
+          responsive: { priority: 7 }, // Hidden when space is tight
           render(item) {
             return number.shortWithUnit(item.avg_duration, 'min');
           },
         },
+        ...(hasRevenue
+          ? [
+              {
+                name: 'Revenue',
+                width: '100px',
+                responsive: { priority: 3 }, // Always show if possible
+                render(item: (typeof data)[number]) {
+                  const revenuePercentage =
+                    totalRevenue > 0 ? item.revenue / totalRevenue : 0;
+                  return (
+                    <div className="row gap-2 items-center justify-end">
+                      <span
+                        className="font-semibold"
+                        style={{ color: '#3ba974' }}
+                      >
+                        {item.revenue > 0
+                          ? number.currency(item.revenue / 100)
+                          : '-'}
+                      </span>
+                      <RevenuePieChart percentage={revenuePercentage} />
+                    </div>
+                  );
+                },
+              } as const,
+            ]
+          : []),
         {
           name: lastColumnName,
           width: '84px',
+          responsive: { priority: 2 }, // Always show if possible
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -303,20 +371,24 @@ export function OverviewWidgetTableGeneric({
 }) {
   const number = useNumber();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
+  const totalRevenue = data.reduce((sum, item) => sum + (item.revenue ?? 0), 0);
+  const hasRevenue = data.some((item) => (item.revenue ?? 0) > 0);
   return (
     <OverviewWidgetTable
       className={className}
       data={data ?? []}
-      keyExtractor={(item) => item.name}
+      keyExtractor={(item) => item.prefix + item.name}
       getColumnPercentage={(item) => item.sessions / maxSessions}
       columns={[
         {
           ...column,
           width: 'w-full',
+          responsive: { priority: 1 }, // Always visible
         },
         {
           name: 'BR',
           width: '60px',
+          responsive: { priority: 6 }, // Hidden when space is tight
           render(item) {
             return number.shortWithUnit(item.bounce_rate, '%');
           },
@@ -327,9 +399,38 @@ export function OverviewWidgetTableGeneric({
         //     return number.shortWithUnit(item.avg_session_duration, 'min');
         //   },
         // },
+
+        ...(hasRevenue
+          ? [
+              {
+                name: 'Revenue',
+                width: '100px',
+                responsive: { priority: 3 }, // Always show if possible
+                render(item: RouterOutputs['overview']['topGeneric'][number]) {
+                  const revenue = item.revenue ?? 0;
+                  const revenuePercentage =
+                    totalRevenue > 0 ? revenue / totalRevenue : 0;
+                  return (
+                    <div className="row gap-2 items-center justify-end">
+                      <span
+                        className="font-semibold"
+                        style={{ color: '#3ba974' }}
+                      >
+                        {revenue > 0
+                          ? number.currency(revenue / 100, { short: true })
+                          : '-'}
+                      </span>
+                      <RevenuePieChart percentage={revenuePercentage} />
+                    </div>
+                  );
+                },
+              } as const,
+            ]
+          : []),
         {
           name: 'Sessions',
           width: '84px',
+          responsive: { priority: 2 }, // Always show if possible
           render(item) {
             return (
               <div className="row gap-2 justify-end">

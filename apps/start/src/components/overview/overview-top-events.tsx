@@ -7,6 +7,7 @@ import type { IChartType } from '@openpanel/validation';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
+import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
@@ -37,8 +38,9 @@ export default function OverviewTopEvents({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'event',
               filters: [
                 ...filters,
@@ -78,8 +80,9 @@ export default function OverviewTopEvents({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'event',
               filters: [...filters],
               id: 'A',
@@ -112,8 +115,9 @@ export default function OverviewTopEvents({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'event',
               filters: [
                 ...filters,
@@ -168,7 +172,13 @@ export default function OverviewTopEvents({
         </WidgetHead>
         <WidgetBody className="p-3">
           <ReportChart
-            options={{ hideID: true, columns: ['Event', 'Count'] }}
+            options={{
+              hideID: true,
+              columns: ['Event'],
+              renderSerieName(names) {
+                return names[1];
+              },
+            }}
             report={{
               ...widget.chart.report,
               previous: false,

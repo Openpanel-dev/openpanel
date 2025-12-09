@@ -1,13 +1,12 @@
-import { getClientIp } from '@/utils/get-client-ip';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { path, assocPath, pathOr, pick } from 'ramda';
+import { assocPath, pathOr, pick } from 'ramda';
 
-import { checkDuplicatedEvent } from '@/utils/deduplicate';
-import { generateId } from '@openpanel/common';
+import { generateId, slug } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
-import { eventsGroupQueue } from '@openpanel/queue';
+import { getEventsGroupQueueShard } from '@openpanel/queue';
+import { getRedisCache } from '@openpanel/redis';
 import type {
   DecrementPayload,
   IdentifyPayload,
@@ -38,10 +37,10 @@ export function getStringHeaders(headers: FastifyRequest['headers']) {
 }
 
 function getIdentity(body: TrackHandlerPayload): IdentifyPayload | undefined {
-  const identity = path<IdentifyPayload>(
-    ['properties', '__identify'],
-    body.payload,
-  );
+  const identity =
+    'properties' in body.payload
+      ? (body.payload?.properties?.__identify as IdentifyPayload | undefined)
+      : undefined;
 
   return (
     identity ||
@@ -57,28 +56,38 @@ export function getTimestamp(
   timestamp: FastifyRequest['timestamp'],
   payload: TrackHandlerPayload['payload'],
 ) {
-  const safeTimestamp = new Date(timestamp || Date.now()).toISOString();
-  const userDefinedTimestamp = path<string>(
-    ['properties', '__timestamp'],
-    payload,
-  );
+  const safeTimestamp = timestamp || Date.now();
+  const userDefinedTimestamp =
+    'properties' in payload
+      ? (payload?.properties?.__timestamp as string | undefined)
+      : undefined;
 
   if (!userDefinedTimestamp) {
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
   const clientTimestamp = new Date(userDefinedTimestamp);
+  const clientTimestampNumber = clientTimestamp.getTime();
 
+  // Constants for time validation
+  const ONE_MINUTE_MS = 60 * 1000;
+  const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
+
+  // Use safeTimestamp if invalid or more than 1 minute in the future
   if (
-    Number.isNaN(clientTimestamp.getTime()) ||
-    clientTimestamp > new Date(safeTimestamp)
+    Number.isNaN(clientTimestampNumber) ||
+    clientTimestampNumber > safeTimestamp + ONE_MINUTE_MS
   ) {
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
+  // isTimestampFromThePast is true only if timestamp is older than 1 hour
+  const isTimestampFromThePast =
+    clientTimestampNumber < safeTimestamp - FIFTEEN_MINUTES_MS;
+
   return {
-    timestamp: clientTimestamp.toISOString(),
-    isTimestampFromThePast: true,
+    timestamp: clientTimestampNumber,
+    isTimestampFromThePast,
   };
 }
 
@@ -90,22 +99,33 @@ export async function handler(
 ) {
   const timestamp = getTimestamp(request.timestamp, request.body.payload);
   const ip =
-    path<string>(['properties', '__ip'], request.body.payload) ||
-    getClientIp(request)!;
-  const ua = request.headers['user-agent']!;
+    'properties' in request.body.payload &&
+    request.body.payload.properties?.__ip
+      ? (request.body.payload.properties.__ip as string)
+      : request.clientIp;
+  const ua = request.headers['user-agent'];
   const projectId = request.client?.projectId;
 
   if (!projectId) {
-    reply.status(400).send({
+    return reply.status(400).send({
       status: 400,
       error: 'Bad Request',
       message: 'Missing projectId',
     });
-    return;
   }
 
   const identity = getIdentity(request.body);
   const profileId = identity?.profileId;
+  const overrideDeviceId = (() => {
+    const deviceId =
+      'properties' in request.body.payload
+        ? request.body.payload.properties?.__deviceId
+        : undefined;
+    if (typeof deviceId === 'string') {
+      return deviceId;
+    }
+    return undefined;
+  })();
 
   // We might get a profileId from the alias table
   // If we do, we should use that instead of the one from the payload
@@ -116,14 +136,16 @@ export async function handler(
   switch (request.body.type) {
     case 'track': {
       const [salts, geo] = await Promise.all([getSalts(), getGeoLocation(ip)]);
-      const currentDeviceId = ua
-        ? generateDeviceId({
-            salt: salts.current,
-            origin: projectId,
-            ip,
-            ua,
-          })
-        : '';
+      const currentDeviceId =
+        overrideDeviceId ||
+        (ua
+          ? generateDeviceId({
+              salt: salts.current,
+              origin: projectId,
+              ip,
+              ua,
+            })
+          : '');
       const previousDeviceId = ua
         ? generateDeviceId({
             salt: salts.previous,
@@ -133,33 +155,7 @@ export async function handler(
           })
         : '';
 
-      if (
-        await checkDuplicatedEvent({
-          reply,
-          payload: {
-            ...request.body,
-            timestamp,
-            previousDeviceId,
-            currentDeviceId,
-          },
-          projectId,
-        })
-      ) {
-        return;
-      }
-
-      const promises = [
-        track({
-          payload: request.body.payload,
-          currentDeviceId,
-          previousDeviceId,
-          projectId,
-          geo,
-          headers: getStringHeaders(request.headers),
-          timestamp: timestamp.timestamp,
-          isTimestampFromThePast: timestamp.isTimestampFromThePast,
-        }),
-      ];
+      const promises = [];
 
       // If we have more than one property in the identity object, we should identify the user
       // Otherwise its only a profileId and we should not identify the user
@@ -174,23 +170,23 @@ export async function handler(
         );
       }
 
+      promises.push(
+        track({
+          payload: request.body.payload,
+          currentDeviceId,
+          previousDeviceId,
+          projectId,
+          geo,
+          headers: getStringHeaders(request.headers),
+          timestamp: timestamp.timestamp,
+          isTimestampFromThePast: timestamp.isTimestampFromThePast,
+        }),
+      );
+
       await Promise.all(promises);
       break;
     }
     case 'identify': {
-      if (
-        await checkDuplicatedEvent({
-          reply,
-          payload: {
-            ...request.body,
-            timestamp,
-          },
-          projectId,
-        })
-      ) {
-        return;
-      }
-
       const geo = await getGeoLocation(ip);
       await identify({
         payload: request.body.payload,
@@ -201,27 +197,13 @@ export async function handler(
       break;
     }
     case 'alias': {
-      reply.status(400).send({
+      return reply.status(400).send({
         status: 400,
         error: 'Bad Request',
         message: 'Alias is not supported',
       });
-      break;
     }
     case 'increment': {
-      if (
-        await checkDuplicatedEvent({
-          reply,
-          payload: {
-            ...request.body,
-            timestamp,
-          },
-          projectId,
-        })
-      ) {
-        return;
-      }
-
       await increment({
         payload: request.body.payload,
         projectId,
@@ -229,19 +211,6 @@ export async function handler(
       break;
     }
     case 'decrement': {
-      if (
-        await checkDuplicatedEvent({
-          reply,
-          payload: {
-            ...request.body,
-            timestamp,
-          },
-          projectId,
-        })
-      ) {
-        return;
-      }
-
       await decrement({
         payload: request.body.payload,
         projectId,
@@ -249,12 +218,11 @@ export async function handler(
       break;
     }
     default: {
-      reply.status(400).send({
+      return reply.status(400).send({
         status: 400,
         error: 'Bad Request',
         message: 'Invalid type',
       });
-      break;
     }
   }
 
@@ -277,7 +245,7 @@ async function track({
   projectId: string;
   geo: GeoLocation;
   headers: Record<string, string | undefined>;
-  timestamp: string;
+  timestamp: number;
   isTimestampFromThePast: boolean;
 }) {
   const uaInfo = parseUserAgent(headers['user-agent'], payload.properties);
@@ -286,8 +254,17 @@ async function track({
       ? `${projectId}:${payload.profileId}`
       : `${projectId}:${generateId()}`
     : currentDeviceId;
-  await eventsGroupQueue.add({
-    orderMs: new Date(timestamp).getTime(),
+  const jobId = [
+    slug(payload.name),
+    timestamp,
+    projectId,
+    currentDeviceId,
+    groupId,
+  ]
+    .filter(Boolean)
+    .join('-');
+  await getEventsGroupQueueShard(groupId).add({
+    orderMs: timestamp,
     data: {
       projectId,
       headers,
@@ -296,11 +273,13 @@ async function track({
         timestamp,
         isTimestampFromThePast,
       },
+      uaInfo,
       geo,
       currentDeviceId,
       previousDeviceId,
     },
     groupId,
+    jobId,
   });
 }
 
@@ -323,8 +302,18 @@ async function identify({
     projectId,
     properties: {
       ...(payload.properties ?? {}),
-      ...(geo ?? {}),
-      ...uaInfo,
+      country: geo.country,
+      city: geo.city,
+      region: geo.region,
+      longitude: geo.longitude,
+      latitude: geo.latitude,
+      os: uaInfo.os,
+      os_version: uaInfo.osVersion,
+      browser: uaInfo.browser,
+      browser_version: uaInfo.browserVersion,
+      device: uaInfo.device,
+      brand: uaInfo.brand,
+      model: uaInfo.model,
     },
   });
 }
@@ -398,5 +387,67 @@ async function decrement({
     projectId,
     properties: profile.properties,
     isExternal: true,
+  });
+}
+
+export async function fetchDeviceId(
+  request: FastifyRequest,
+  reply: FastifyReply,
+) {
+  const salts = await getSalts();
+  const projectId = request.client?.projectId;
+  if (!projectId) {
+    return reply.status(400).send('No projectId');
+  }
+
+  const ip = request.clientIp;
+  if (!ip) {
+    return reply.status(400).send('Missing ip address');
+  }
+
+  const ua = request.headers['user-agent'];
+  if (!ua) {
+    return reply.status(400).send('Missing header: user-agent');
+  }
+
+  const currentDeviceId = generateDeviceId({
+    salt: salts.current,
+    origin: projectId,
+    ip,
+    ua,
+  });
+  const previousDeviceId = generateDeviceId({
+    salt: salts.previous,
+    origin: projectId,
+    ip,
+    ua,
+  });
+
+  try {
+    const multi = getRedisCache().multi();
+    multi.exists(`bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`);
+    multi.exists(`bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`);
+    const res = await multi.exec();
+
+    if (res?.[0]?.[1]) {
+      return reply.status(200).send({
+        deviceId: currentDeviceId,
+        message: 'current session exists for this device id',
+      });
+    }
+
+    if (res?.[1]?.[1]) {
+      return reply.status(200).send({
+        deviceId: previousDeviceId,
+        message: 'previous session exists for this device id',
+      });
+    }
+  } catch (error) {
+    request.log.error('Error getting session end GET /track/device-id', error);
+  }
+
+  return reply.status(200).send({
+    deviceId: currentDeviceId,
+    message: 'No session exists for this device id',
   });
 }

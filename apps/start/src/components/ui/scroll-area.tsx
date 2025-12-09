@@ -1,7 +1,35 @@
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
-import type * as React from 'react';
+import * as React from 'react';
 
 import { cn } from '@/lib/utils';
+
+export const VirtualScrollArea = React.forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode;
+    className?: string;
+  }
+>(({ children, className }, ref) => {
+  // The ref MUST point directly to the scrollable element
+  // This element MUST have:
+  // 1. overflow-y-auto (or overflow: auto)
+  // 2. A constrained height (via flex-1 min-h-0 or fixed height)
+  return (
+    <div
+      ref={ref}
+      className={cn('overflow-y-auto w-full', className)}
+      style={{
+        // Ensure height is constrained by flex parent
+        height: '100%',
+        maxHeight: '100%',
+      }}
+    >
+      {children}
+    </div>
+  );
+});
+
+VirtualScrollArea.displayName = 'VirtualScrollArea';
 
 function ScrollArea({
   className,

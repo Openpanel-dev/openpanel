@@ -7,7 +7,7 @@ type ChartRootShortcutProps = Omit<ReportChartProps, 'report'> & {
   previous?: ReportChartProps['report']['previous'];
   chartType?: ReportChartProps['report']['chartType'];
   interval?: ReportChartProps['report']['interval'];
-  events: ReportChartProps['report']['events'];
+  series: ReportChartProps['report']['series'];
   breakdowns?: ReportChartProps['report']['breakdowns'];
   lineType?: ReportChartProps['report']['lineType'];
 };
@@ -18,7 +18,7 @@ export const ReportChartShortcut = ({
   previous = false,
   chartType = 'linear',
   interval = 'day',
-  events,
+  series,
   breakdowns,
   lineType = 'monotone',
   options,
@@ -33,7 +33,7 @@ export const ReportChartShortcut = ({
         previous,
         chartType,
         interval,
-        events,
+        series,
         lineType,
         metric: 'sum',
       }}

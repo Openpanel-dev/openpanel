@@ -1,6 +1,8 @@
 import { ColorSquare } from '@/components/color-square';
+import { Button } from '@/components/ui/button';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Input } from '@/components/ui/input';
+import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useDebounceFn } from '@/hooks/use-debounce-fn';
 import { useEventNames } from '@/hooks/use-event-names';
@@ -23,11 +25,11 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { shortId } from '@openpanel/common';
 import { alphabetIds } from '@openpanel/constants';
-import type { IChartEvent } from '@openpanel/validation';
-import { FilterIcon, HandIcon } from 'lucide-react';
+import type { IChartEventItem, IChartFormula } from '@openpanel/validation';
+import { FilterIcon, HandIcon, PlusIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import {
-  addEvent,
+  addSerie,
   changeEvent,
   duplicateEvent,
   removeEvent,
@@ -47,7 +49,7 @@ function SortableEvent({
   isSelectManyEvents,
   ...props
 }: {
-  event: IChartEvent;
+  event: IChartEventItem;
   index: number;
   showSegment: boolean;
   showAddFilter: boolean;
@@ -61,6 +63,8 @@ function SortableEvent({
     transform: CSS.Transform.toString(transform),
     transition,
   };
+
+  const isEvent = event.type === 'event';
 
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...props}>
@@ -76,8 +80,8 @@ function SortableEvent({
         {props.children}
       </div>
 
-      {/* Segment and Filter buttons */}
-      {(showSegment || showAddFilter) && (
+      {/* Segment and Filter buttons - only for events */}
+      {isEvent && (showSegment || showAddFilter) && (
         <div className="flex gap-2 p-2 pt-0">
           {showSegment && (
             <ReportSegment
@@ -130,14 +134,14 @@ function SortableEvent({
         </div>
       )}
 
-      {/* Filters */}
-      {!isSelectManyEvents && <FiltersList event={event} />}
+      {/* Filters - only for events */}
+      {isEvent && !isSelectManyEvents && <FiltersList event={event} />}
     </div>
   );
 }
 
 export function ReportEvents() {
-  const selectedEvents = useSelector((state) => state.report.events);
+  const selectedEvents = useSelector((state) => state.report.series);
   const chartType = useSelector((state) => state.report.chartType);
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
@@ -151,7 +155,7 @@ export function ReportEvents() {
   const isAddEventDisabled =
     (chartType === 'retention' || chartType === 'conversion') &&
     selectedEvents.length >= 2;
-  const dispatchChangeEvent = useDebounceFn((event: IChartEvent) => {
+  const dispatchChangeEvent = useDebounceFn((event: IChartEventItem) => {
     dispatch(changeEvent(event));
   });
   const isSelectManyEvents = chartType === 'retention';
@@ -174,11 +178,15 @@ export function ReportEvents() {
     }
   };
 
-  const handleMore = (event: IChartEvent) => {
+  const handleMore = (event: IChartEventItem) => {
     const callback: ReportEventMoreProps['onClick'] = (action) => {
       switch (action) {
         case 'remove': {
-          return dispatch(removeEvent(event));
+          return dispatch(
+            removeEvent({
+              id: event.id,
+            }),
+          );
         }
         case 'duplicate': {
           return dispatch(duplicateEvent(event));
@@ -189,20 +197,31 @@ export function ReportEvents() {
     return callback;
   };
 
+  const dispatchChangeFormula = useDebounceFn((formula: IChartFormula) => {
+    dispatch(changeEvent(formula));
+  });
+
+  const showFormula =
+    chartType !== 'conversion' &&
+    chartType !== 'funnel' &&
+    chartType !== 'retention';
+
   return (
     <div>
-      <h3 className="mb-2 font-medium">Events</h3>
+      <h3 className="mb-2 font-medium">Metrics</h3>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={selectedEvents.map((e) => ({ id: e.id ?? '' }))}
+          items={selectedEvents.map((e) => ({ id: e.id! }))}
           strategy={verticalListSortingStrategy}
         >
           <div className="flex flex-col gap-4">
             {selectedEvents.map((event, index) => {
+              const isFormula = event.type === 'formula';
+
               return (
                 <SortableEvent
                   key={event.id}
@@ -213,95 +232,151 @@ export function ReportEvents() {
                   isSelectManyEvents={isSelectManyEvents}
                   className="rounded-lg border bg-def-100"
                 >
-                  <ComboboxEvents
-                    className="flex-1"
-                    searchable
-                    multiple={isSelectManyEvents as false}
-                    value={
-                      (isSelectManyEvents
-                        ? (event.filters[0]?.value ?? [])
-                        : event.name) as any
-                    }
-                    onChange={(value) => {
-                      dispatch(
-                        changeEvent(
-                          Array.isArray(value)
-                            ? {
-                                id: event.id,
-                                segment: 'user',
-                                filters: [
-                                  {
-                                    name: 'name',
-                                    operator: 'is',
-                                    value: value,
-                                  },
-                                ],
-                                name: '*',
-                              }
-                            : {
+                  {isFormula ? (
+                    <>
+                      <div className="flex-1 flex flex-col gap-2">
+                        <InputEnter
+                          placeholder="eg: A+B, A/B"
+                          value={event.formula}
+                          onChangeValue={(value) => {
+                            dispatchChangeFormula({
+                              ...event,
+                              formula: value,
+                            });
+                          }}
+                        />
+                        {showDisplayNameInput && (
+                          <Input
+                            placeholder={`Formula (${alphabetIds[index]})`}
+                            defaultValue={event.displayName}
+                            onChange={(e) => {
+                              dispatchChangeFormula({
                                 ...event,
-                                name: value,
-                                filters: [],
-                              },
-                        ),
-                      );
-                    }}
-                    items={eventNames}
-                    placeholder="Select event"
-                  />
-                  {showDisplayNameInput && (
-                    <Input
-                      placeholder={
-                        event.name
-                          ? `${event.name} (${alphabetIds[index]})`
-                          : 'Display name'
-                      }
-                      defaultValue={event.displayName}
-                      onChange={(e) => {
-                        dispatchChangeEvent({
-                          ...event,
-                          displayName: e.target.value,
-                        });
-                      }}
-                    />
+                                displayName: e.target.value,
+                              });
+                            }}
+                          />
+                        )}
+                      </div>
+                      <ReportEventMore onClick={handleMore(event)} />
+                    </>
+                  ) : (
+                    <>
+                      <ComboboxEvents
+                        className="flex-1"
+                        searchable
+                        multiple={isSelectManyEvents as false}
+                        value={
+                          isSelectManyEvents
+                            ? (event.filters[0]?.value ?? [])
+                            : (event.name as any)
+                        }
+                        onChange={(value) => {
+                          dispatch(
+                            changeEvent(
+                              Array.isArray(value)
+                                ? {
+                                    id: event.id,
+                                    type: 'event',
+                                    segment: 'user',
+                                    filters: [
+                                      {
+                                        name: 'name',
+                                        operator: 'is',
+                                        value: value,
+                                      },
+                                    ],
+                                    name: '*',
+                                  }
+                                : {
+                                    ...event,
+                                    type: 'event',
+                                    name: value,
+                                    filters: [],
+                                  },
+                            ),
+                          );
+                        }}
+                        items={eventNames}
+                        placeholder="Select event"
+                      />
+                      {showDisplayNameInput && (
+                        <Input
+                          placeholder={
+                            event.name
+                              ? `${event.name} (${alphabetIds[index]})`
+                              : 'Display name'
+                          }
+                          defaultValue={event.displayName}
+                          onChange={(e) => {
+                            dispatchChangeEvent({
+                              ...event,
+                              displayName: e.target.value,
+                            });
+                          }}
+                        />
+                      )}
+                      <ReportEventMore onClick={handleMore(event)} />
+                    </>
                   )}
-                  <ReportEventMore onClick={handleMore(event)} />
                 </SortableEvent>
               );
             })}
 
-            <ComboboxEvents
-              disabled={isAddEventDisabled}
-              value={''}
-              searchable
-              onChange={(value) => {
-                if (isSelectManyEvents) {
-                  dispatch(
-                    addEvent({
-                      segment: 'user',
-                      name: value,
-                      filters: [
-                        {
-                          name: 'name',
-                          operator: 'is',
-                          value: [value],
-                        },
-                      ],
-                    }),
-                  );
-                } else {
-                  dispatch(
-                    addEvent({
-                      name: value,
-                      segment: 'event',
-                      filters: [],
-                    }),
-                  );
-                }
-              }}
-              placeholder="Select event"
-              items={eventNames}
-            />
+            <div className="flex gap-2">
+              <ComboboxEvents
+                disabled={isAddEventDisabled}
+                value={''}
+                searchable
+                onChange={(value) => {
+                  if (isSelectManyEvents) {
+                    dispatch(
+                      addSerie({
+                        type: 'event',
+                        segment: 'user',
+                        name: value,
+                        filters: [
+                          {
+                            name: 'name',
+                            operator: 'is',
+                            value: [value],
+                          },
+                        ],
+                      }),
+                    );
+                  } else {
+                    dispatch(
+                      addSerie({
+                        type: 'event',
+                        name: value,
+                        segment: 'event',
+                        filters: [],
+                      }),
+                    );
+                  }
+                }}
+                placeholder="Select event"
+                items={eventNames}
+              />
+              {showFormula && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  icon={PlusIcon}
+                  onClick={() => {
+                    dispatch(
+                      addSerie({
+                        type: 'formula',
+                        formula: '',
+                        displayName: '',
+                      }),
+                    );
+                  }}
+                >
+                  Add Formula
+                </Button>
+              )}
+            </div>
           </div>
         </SortableContext>
       </DndContext>

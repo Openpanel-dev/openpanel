@@ -1,4 +1,4 @@
-import { shortNumber } from '@/hooks/use-numer-formatter';
+import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -7,11 +7,11 @@ import type { IServiceProject } from '@openpanel/db';
 
 import { cn } from '@/utils/cn';
 import { SettingsIcon, TrendingDownIcon, TrendingUpIcon } from 'lucide-react';
-import { ChartSSR } from '../chart-ssr';
 import { FadeIn } from '../fade-in';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Skeleton } from '../skeleton';
 import { LinkButton } from '../ui/button';
+import { ProjectChart } from './project-chart';
 
 export function ProjectCardRoot({
   children,
@@ -60,7 +60,7 @@ function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
           </div>
         </div>
         <div className="-mx-4 aspect-[8/1] mb-4">
-          <ProjectChart id={id} />
+          <ProjectChartOuter id={id} />
         </div>
         <div className="flex flex-1 gap-4 h-9 md:h-4">
           <ProjectMetrics id={id} />
@@ -77,7 +77,7 @@ function ProjectCard({ id, domain, name, organizationId }: IServiceProject) {
   );
 }
 
-function ProjectChart({ id }: { id: string }) {
+function ProjectChartOuter({ id }: { id: string }) {
   const trpc = useTRPC();
   const { data } = useQuery(
     trpc.chart.projectCard.queryOptions({
@@ -87,7 +87,7 @@ function ProjectChart({ id }: { id: string }) {
 
   return (
     <FadeIn className="h-full w-full">
-      <ChartSSR data={data?.chart || []} color={'blue'} />
+      <ProjectChart data={data?.chart || []} color={'blue'} />
     </FadeIn>
   );
 }
@@ -102,6 +102,7 @@ function Metric({ value, label }: { value: React.ReactNode; label: string }) {
 }
 
 function ProjectMetrics({ id }: { id: string }) {
+  const number = useNumber();
   const trpc = useTRPC();
   const { data } = useQuery(
     trpc.chart.projectCard.queryOptions({
@@ -138,16 +139,18 @@ function ProjectMetrics({ id }: { id: string }) {
             }
           />
         )}
+        {!!data?.metrics?.revenue && (
+          <Metric
+            label="Revenue"
+            value={number.currency(data?.metrics?.revenue / 100, {
+              short: true,
+            })}
+          />
+        )}
       </div>
-      <Metric
-        label="3M"
-        value={shortNumber('en')(data?.metrics?.months_3 ?? 0)}
-      />
-      <Metric
-        label="30D"
-        value={shortNumber('en')(data?.metrics?.month ?? 0)}
-      />
-      <Metric label="24H" value={shortNumber('en')(data?.metrics?.day ?? 0)} />
+      <Metric label="3M" value={number.short(data?.metrics?.months_3 ?? 0)} />
+      <Metric label="30D" value={number.short(data?.metrics?.month ?? 0)} />
+      <Metric label="24H" value={number.short(data?.metrics?.day ?? 0)} />
     </FadeIn>
   );
 }

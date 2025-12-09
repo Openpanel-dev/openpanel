@@ -1,1 +1,1 @@
-export { createNextRouteHandler } from './createNextRouteHandler';
+export { createRouteHandler } from './createNextRouteHandler';

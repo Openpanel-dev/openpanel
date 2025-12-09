@@ -3,7 +3,11 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import type { IRechartPayloadItem } from '@/hooks/use-rechart-data-model';
 import React from 'react';
 
-import { createChartTooltip } from '@/components/charts/chart-tooltip';
+import {
+  ChartTooltipHeader,
+  ChartTooltipItem,
+  createChartTooltip,
+} from '@/components/charts/chart-tooltip';
 import type { RouterOutputs } from '@/trpc/client';
 import type { IInterval } from '@openpanel/validation';
 import {
@@ -58,7 +62,10 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
     const {
       report: { interval, unit },
     } = useReportChartContext();
-    const formatDate = useFormatDateInterval(interval);
+    const formatDate = useFormatDateInterval({
+      interval,
+      short: false,
+    });
     const number = useNumber();
 
     if (!data || data.length === 0) {
@@ -88,37 +95,31 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
     const hidden = sorted.slice(limit);
 
     return (
-      <div className="flex min-w-[180px] flex-col gap-2">
+      <>
         {visible.map((item, index) => (
           <React.Fragment key={item.id}>
             {index === 0 && item.date && (
-              <div className="flex justify-between gap-8">
+              <ChartTooltipHeader>
                 <div>{formatDate(new Date(item.date))}</div>
-              </div>
+              </ChartTooltipHeader>
             )}
-            <div className="flex gap-2">
-              <div
-                className="w-[3px] rounded-full"
-                style={{ background: item.color }}
-              />
-              <div className="col flex-1 gap-1">
-                <div className="flex items-center gap-1">
-                  <SerieIcon name={item.names} />
-                  <SerieName name={item.names} />
-                </div>
-                <div className="flex justify-between gap-8 font-mono font-medium">
-                  <div className="row gap-1">
-                    {number.formatWithUnit(item.count, unit)}
-                    {!!item.previous && (
-                      <span className="text-muted-foreground">
-                        ({number.formatWithUnit(item.previous.value, unit)})
-                      </span>
-                    )}
-                  </div>
-                  <PreviousDiffIndicator {...item.previous} />
-                </div>
+            <ChartTooltipItem color={item.color}>
+              <div className="flex items-center gap-1">
+                <SerieIcon name={item.names} />
+                <SerieName name={item.names} />
               </div>
-            </div>
+              <div className="flex justify-between gap-8 font-mono font-medium">
+                <div className="row gap-1">
+                  {number.formatWithUnit(item.count, unit)}
+                  {!!item.previous && (
+                    <span className="text-muted-foreground">
+                      ({number.formatWithUnit(item.previous.value, unit)})
+                    </span>
+                  )}
+                </div>
+                <PreviousDiffIndicator {...item.previous} />
+              </div>
+            </ChartTooltipItem>
           </React.Fragment>
         ))}
         {hidden.length > 0 && (
@@ -142,7 +143,7 @@ export const ReportChartTooltip = createChartTooltip<Data, Context>(
             ))}
           </>
         )}
-      </div>
+      </>
     );
   },
 );

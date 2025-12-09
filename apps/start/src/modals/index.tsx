@@ -2,6 +2,7 @@ import { createPushModal } from 'pushmodal';
 
 import OverviewTopGenericModal from '@/components/overview/overview-top-generic-modal';
 import OverviewTopPagesModal from '@/components/overview/overview-top-pages-modal';
+import { op } from '@/utils/op';
 import Instructions from './Instructions';
 import AddClient from './add-client';
 import AddDashboard from './add-dashboard';
@@ -10,6 +11,7 @@ import AddIntegration from './add-integration';
 import AddNotificationRule from './add-notification-rule';
 import AddProject from './add-project';
 import AddReference from './add-reference';
+import BillingSuccess from './billing-success';
 import Confirm from './confirm';
 import type { ConfirmProps } from './confirm';
 import CreateInvite from './create-invite';
@@ -27,7 +29,9 @@ import OverviewChartDetails from './overview-chart-details';
 import OverviewFilters from './overview-filters';
 import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
+import SelectBillingPlan from './select-billing-plan';
 import ShareOverviewModal from './share-overview-modal';
+import ViewChartUsers from './view-chart-users';
 
 const modals = {
   OverviewTopPagesModal: OverviewTopPagesModal,
@@ -48,6 +52,7 @@ const modals = {
   EditReference: EditReference,
   ShareOverviewModal: ShareOverviewModal,
   AddReference: AddReference,
+  ViewChartUsers: ViewChartUsers,
   Instructions: Instructions,
   OnboardingTroubleshoot: OnboardingTroubleshoot,
   DateRangerPicker: DateRangerPicker,
@@ -57,6 +62,8 @@ const modals = {
   AddNotificationRule: AddNotificationRule,
   OverviewFilters: OverviewFilters,
   CreateInvite: CreateInvite,
+  SelectBillingPlan: SelectBillingPlan,
+  BillingSuccess: BillingSuccess,
 };
 
 export const {
@@ -66,8 +73,13 @@ export const {
   popAllModals,
   ModalProvider,
   useOnPushModal,
+  onPushModal,
 } = createPushModal({
   modals,
+});
+
+onPushModal('*', (open, props, name) => {
+  op.screenView(`modal:${name}`, props as Record<string, unknown>);
 });
 
 export const showConfirm = (props: ConfirmProps) => pushModal('Confirm', props);

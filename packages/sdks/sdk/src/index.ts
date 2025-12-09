@@ -183,6 +183,28 @@ export class OpenPanel {
     });
   }
 
+  async revenue(
+    amount: number,
+    properties?: TrackProperties & { deviceId?: string },
+  ) {
+    const deviceId = properties?.deviceId;
+    delete properties?.deviceId;
+    return this.track('revenue', {
+      ...(properties ?? {}),
+      ...(deviceId ? { __deviceId: deviceId } : {}),
+      __revenue: amount,
+    });
+  }
+
+  async fetchDeviceId(): Promise<string> {
+    const result = await this.api.fetch<undefined, { deviceId: string }>(
+      '/track/device-id',
+      undefined,
+      { method: 'GET', keepalive: false },
+    );
+    return result?.deviceId ?? '';
+  }
+
   clear() {
     this.profileId = undefined;
     // should we force a session end here?

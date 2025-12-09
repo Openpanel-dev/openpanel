@@ -1,0 +1,494 @@
+{
+  "slug": "funnelio-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Funnel.io Alternative: Why Teams Choose OpenPanel for Product Analytics",
+    "description": "Compare OpenPanel vs Funnel.io. Understand the key differences between product analytics and marketing data integration, and discover why teams choose OpenPanel for tracking user behavior.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Funnel.io Alternative",
+    "subheading": "Funnel.io aggregates marketing data from ad platforms. OpenPanel tracks user behavior in your product. Different tools for different needs - discover which is right for you.",
+    "badges": [
+      "Open-source",
+      "Product Analytics",
+      "User Behavior Tracking",
+      "Self-hostable"
+    ]
+  },
+  "competitor": {
+    "name": "Funnel.io",
+    "logo": "/logos/funnelio.svg",
+    "url": "https://funnel.io",
+    "short_description": "Marketing data integration platform that aggregates data from 500+ ad platforms and marketing tools into unified reports.",
+    "founded": 2014,
+    "headquarters": "Stockholm, Sweden"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Funnel.io: Which is right for you?",
+    "intro": "Funnel.io and OpenPanel serve fundamentally different purposes. Funnel.io aggregates marketing spend and campaign data from external platforms (Google Ads, Facebook Ads, etc.). OpenPanel tracks user behavior within your product.",
+    "one_liner": "OpenPanel is for product analytics (how users interact with your product); Funnel.io is for marketing data integration (aggregating ad platform data).",
+    "best_for_openpanel": [
+      "Product teams who need to track user behavior in their website or app",
+      "Startups needing affordable analytics with a generous free tier",
+      "Teams requiring self-hosting for data privacy or compliance",
+      "Mobile app developers needing native iOS, Android, React Native SDKs"
+    ],
+    "best_for_competitor": [
+      "Marketing teams aggregating data from multiple ad platforms",
+      "Agencies managing hundreds of marketing data sources for clients",
+      "Organizations needing cross-platform marketing spend reporting",
+      "Teams requiring sophisticated marketing mix modeling"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Funnel.io and OpenPanel solve different problems. Here's how they compare:",
+    "items": [
+      {
+        "label": "Primary Use Case",
+        "openpanel": "Product analytics - track user behavior",
+        "competitor": "Marketing data aggregation - collect ad data",
+        "notes": "OpenPanel tracks how users interact with your product (clicks, events, conversions). Funnel.io aggregates marketing spend and performance data from ad platforms like Google Ads and Facebook Ads."
+      },
+      {
+        "label": "User Behavior Tracking",
+        "openpanel": "Yes - events, funnels, retention",
+        "competitor": "No - aggregates external platform data",
+        "notes": "OpenPanel provides SDKs to track user behavior on your website or app. Funnel.io does not track user behavior - it imports data from external marketing platforms via API connectors."
+      },
+      {
+        "label": "Self-Hosting & Open Source",
+        "openpanel": "Yes - MIT License, Docker deployment",
+        "competitor": "No - Cloud-only SaaS",
+        "notes": "OpenPanel is fully open source and can be self-hosted. Funnel.io is proprietary cloud-only software with no self-hosting option."
+      },
+      {
+        "label": "Marketing Platform Connectors",
+        "openpanel": "Limited - focused on product data",
+        "competitor": "500+ connectors to ad platforms",
+        "notes": "Funnel.io excels at connecting to 500+ marketing data sources (Google Ads, Facebook Ads, LinkedIn, etc.). OpenPanel focuses on tracking your own product data, not importing external marketing data."
+      },
+      {
+        "label": "Pricing Transparency",
+        "openpanel": "Public pricing, free tier",
+        "competitor": "Starts at $399/month, no free tier",
+        "notes": "OpenPanel offers transparent pricing with a free tier. Funnel.io starts at $399/month (Essentials) with enterprise plans reaching $1,999+/month."
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "These platforms serve different purposes and have different feature sets optimized for their respective use cases.",
+    "groups": [
+      {
+        "group": "User Behavior Tracking",
+        "features": [
+          {
+            "name": "Event Tracking SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io does not track user behavior - it imports data from external platforms"
+          },
+          {
+            "name": "Session Tracking",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io aggregates session data from Google Analytics, not direct tracking"
+          },
+          {
+            "name": "User Identification",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel identifies users in your product; Funnel.io works with aggregate marketing data"
+          },
+          {
+            "name": "Custom Event Properties",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel tracks custom events; Funnel.io imports predefined metrics from ad platforms"
+          },
+          {
+            "name": "Real-Time Event Tracking",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io syncs external data on schedules, not real-time user tracking"
+          }
+        ]
+      },
+      {
+        "group": "Product Analytics",
+        "features": [
+          {
+            "name": "Funnel Analysis (User Behavior)",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel tracks conversion funnels in your product; Funnel.io reports on marketing funnels from ad platforms"
+          },
+          {
+            "name": "Retention Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel tracks user retention over time"
+          },
+          {
+            "name": "Cohort Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel analyzes user cohorts based on behavior"
+          },
+          {
+            "name": "User Profiles",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel creates profiles of individual users"
+          },
+          {
+            "name": "User Path/Journey Analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel tracks user journeys through your product"
+          },
+          {
+            "name": "A/B Testing",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io does not provide experimentation features"
+          }
+        ]
+      },
+      {
+        "group": "Marketing Data Aggregation",
+        "features": [
+          {
+            "name": "Ad Platform Connectors",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io connects to 500+ marketing platforms (Google Ads, Facebook Ads, etc.)"
+          },
+          {
+            "name": "Marketing Spend Tracking",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io aggregates ad spend across all platforms"
+          },
+          {
+            "name": "Cross-Platform Marketing Reports",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io creates unified reports from multiple ad platforms"
+          },
+          {
+            "name": "Marketing ROI/ROAS Calculation",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io calculates marketing ROI across channels"
+          },
+          {
+            "name": "Marketing Mix Modeling",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io offers advanced MMM for enterprise customers"
+          },
+          {
+            "name": "Data Transformation Rules",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io provides data normalization and transformation"
+          }
+        ]
+      },
+      {
+        "group": "Data Export & Integration",
+        "features": [
+          {
+            "name": "API Access",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Webhooks",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Data Warehouse Export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both export to BigQuery, Snowflake, etc."
+          },
+          {
+            "name": "Looker Studio Integration",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io has native Looker Studio connector"
+          },
+          {
+            "name": "Power BI Integration",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io has native Power BI connector"
+          },
+          {
+            "name": "Tableau Integration",
+            "openpanel": false,
+            "competitor": true,
+            "notes": "Funnel.io is a Tableau partner"
+          }
+        ]
+      },
+      {
+        "group": "SDKs & Platforms",
+        "features": [
+          {
+            "name": "JavaScript SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io does not provide tracking SDKs"
+          },
+          {
+            "name": "iOS SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io does not track mobile apps directly"
+          },
+          {
+            "name": "Android SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io does not track mobile apps directly"
+          },
+          {
+            "name": "React Native SDK",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io does not provide mobile SDKs"
+          },
+          {
+            "name": "Server-Side SDKs",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "OpenPanel supports backend tracking"
+          }
+        ]
+      },
+      {
+        "group": "Deployment & Hosting",
+        "features": [
+          {
+            "name": "Cloud Hosted",
+            "openpanel": true,
+            "competitor": true
+          },
+          {
+            "name": "Self-Hosted Option",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io is cloud-only with no self-hosting"
+          },
+          {
+            "name": "Open Source",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Funnel.io is proprietary closed-source"
+          },
+          {
+            "name": "EU Data Residency",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "Both offer EU hosting options"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "These platforms use fundamentally different technical approaches because they solve different problems.",
+    "items": [
+      {
+        "label": "Deployment",
+        "openpanel": "Docker (self-hosted) or managed cloud",
+        "competitor": "Cloud SaaS only - no self-hosting",
+        "notes": null
+      },
+      {
+        "label": "Open Source",
+        "openpanel": "Yes - MIT License",
+        "competitor": "No - Proprietary closed-source",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse",
+        "competitor": "Proprietary (Parquet-based storage)",
+        "notes": null
+      },
+      {
+        "label": "Data Retention",
+        "openpanel": "Unlimited (self-hosted), configurable (cloud)",
+        "competitor": "Up to 2-3 years historical data import",
+        "notes": null
+      },
+      {
+        "label": "Integrations",
+        "openpanel": "Segment, webhooks, API, data warehouse export",
+        "competitor": "500+ marketing connectors, Looker Studio, Power BI, Tableau, BigQuery, Snowflake, Redshift",
+        "notes": null
+      },
+      {
+        "label": "Primary Data Source",
+        "openpanel": "Your website/app (via SDK tracking)",
+        "competitor": "External marketing platforms (via API connectors)",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "OpenPanel and Funnel.io have very different pricing models reflecting their different use cases.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Simple pricing with 10,000 free events per month. $0.00005 per event after free tier. All features included at every tier. No limits on users, dashboards, or data retention."
+    },
+    "competitor": {
+      "model": "Flexpoint-based, no free tier",
+      "description": "Free plan with limited connectors (100+ Starter connectors). Paid plans: Essentials ($399/month), Plus ($999/month), Enterprise ($1,999+/month). Pricing based on 'flexpoints' which depend on accounts connected and report types. Enterprise customers report spending $12,000-100,000+/year. Agency plans also available.",
+      "free_tier": "Free plan with 100+ Starter connectors and limited features",
+      "pricing_url": "https://funnel.io/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Funnel.io to OpenPanel",
+    "intro": "Funnel.io and OpenPanel serve different purposes. You may need both tools rather than replacing one with the other.",
+    "difficulty": "not-applicable",
+    "estimated_time": "Varies - these tools serve different purposes",
+    "steps": [
+      {
+        "title": "Understand the Difference",
+        "description": "Funnel.io and OpenPanel serve different purposes. Funnel.io aggregates marketing data from ad platforms. OpenPanel tracks user behavior in your product. You may need both tools rather than replacing one with the other."
+      },
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "If you need product analytics (user behavior tracking), add the OpenPanel SDK to your website or app. This gives you event tracking, funnels, retention analysis."
+      },
+      {
+        "title": "Keep Funnel.io for Marketing Data",
+        "description": "If you need cross-platform marketing reporting (aggregating Google Ads, Facebook Ads, etc.), you may want to keep Funnel.io. OpenPanel doesn't replace marketing data aggregation."
+      },
+      {
+        "title": "Connect Data Sources",
+        "description": "OpenPanel tracks your own product data. If you were using Funnel.io to import Google Analytics data, OpenPanel can replace that tracking directly with better product analytics features."
+      },
+      {
+        "title": "Set Up Product Analytics",
+        "description": "Configure funnels, retention analysis, and user identification in OpenPanel. These are product analytics features that Funnel.io does not provide."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "These tools serve completely different purposes. Funnel.io imports data from external platforms via API connectors. OpenPanel tracks user behavior with client-side SDKs."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Funnel.io and OpenPanel track different types of data. Funnel.io stores marketing platform data (ad spend, impressions, clicks from external sources). OpenPanel tracks user behavior within your product."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Funnel.io",
+    "intro": "Choose OpenPanel when you need to understand user behavior within your product. Funnel.io is for aggregating marketing data from external ad platforms.",
+    "items": [
+      {
+        "title": "Product Teams Needing User Behavior Analytics",
+        "description": "Funnel.io does not track user behavior - it imports data from external platforms. If you need to understand how users interact with your product (clicks, conversions, retention), OpenPanel provides the tracking SDKs and analytics Funnel.io lacks.",
+        "icon": "users"
+      },
+      {
+        "title": "Startups Wanting Affordable Analytics",
+        "description": "Funnel.io starts at $399/month with no free tier. OpenPanel offers a generous free tier (10,000 events/month) and transparent pricing, making it accessible for startups and small teams.",
+        "icon": "dollar-sign"
+      },
+      {
+        "title": "Teams Requiring Self-Hosting",
+        "description": "Funnel.io is cloud-only with no self-hosting option. If you need to host analytics on your own infrastructure for data privacy, compliance, or cost reasons, OpenPanel can be self-hosted via Docker.",
+        "icon": "server"
+      },
+      {
+        "title": "Open Source Requirements",
+        "description": "Funnel.io is proprietary closed-source software. If your organization requires open source tools for security audits or compliance, OpenPanel is fully open source under the MIT license.",
+        "icon": "code"
+      },
+      {
+        "title": "Mobile App Analytics",
+        "description": "Funnel.io does not provide mobile SDKs or track mobile app behavior. OpenPanel offers native iOS, Android, and React Native SDKs for tracking user behavior in mobile apps.",
+        "icon": "smartphone"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about the differences between Funnel.io and OpenPanel.",
+    "items": [
+      {
+        "question": "Is Funnel.io a product analytics tool?",
+        "answer": "No. Funnel.io is a marketing data integration platform that aggregates data from ad platforms (Google Ads, Facebook Ads, etc.) and exports it to BI tools. It does not track user behavior on your website or app. OpenPanel is a product analytics tool that tracks user behavior with SDKs."
+      },
+      {
+        "question": "Can Funnel.io replace OpenPanel?",
+        "answer": "No - they serve different purposes. Funnel.io aggregates marketing spend and campaign data from external platforms. OpenPanel tracks how users interact with your product. Most teams need both: OpenPanel for product analytics and something like Funnel.io for marketing reporting."
+      },
+      {
+        "question": "Does Funnel.io track user events on my website?",
+        "answer": "No. Funnel.io imports data from external platforms like Google Analytics, Google Ads, and Facebook Ads via API connectors. It does not provide tracking SDKs or directly track user behavior. For event tracking, you need a product analytics tool like OpenPanel."
+      },
+      {
+        "question": "Why is Funnel.io so expensive compared to OpenPanel?",
+        "answer": "Funnel.io's pricing (starting at $399/month) reflects its value proposition: maintaining 500+ API connectors to marketing platforms, handling data transformation, and providing BI tool integrations. OpenPanel tracks your own product data with lightweight SDKs, which has different cost structures."
+      },
+      {
+        "question": "Can I self-host Funnel.io?",
+        "answer": "No. Funnel.io is cloud-only SaaS with no self-hosting option. OpenPanel is open source (MIT license) and can be self-hosted via Docker for full data control."
+      },
+      {
+        "question": "Does Funnel.io have mobile SDKs?",
+        "answer": "No. Funnel.io does not provide tracking SDKs for any platform. It imports data from external sources via API connectors. OpenPanel provides native iOS, Android, and React Native SDKs for mobile app analytics."
+      },
+      {
+        "question": "Which tool should I use for conversion funnels?",
+        "answer": "It depends on what you're measuring. OpenPanel tracks user conversion funnels in your product (signup to purchase, onboarding completion). Funnel.io reports on marketing funnel metrics imported from ad platforms. They measure different things."
+      },
+      {
+        "question": "Can OpenPanel replace Funnel.io for marketing reporting?",
+        "answer": "Not directly. OpenPanel doesn't have connectors to import data from Google Ads, Facebook Ads, or other marketing platforms. If you need cross-platform marketing spend reporting, you'll still need a tool like Funnel.io or Supermetrics."
+      }
+    ]
+  },
+  "related_links": {
+    "articles": [
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "PostHog",
+        "url": "/compare/posthog-alternative"
+      },
+      {
+        "name": "Mixpanel",
+        "url": "/compare/mixpanel-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

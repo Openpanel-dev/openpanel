@@ -45,8 +45,9 @@ export default function OverviewTopDevices({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'user',
               filters,
               id: 'A',
@@ -81,8 +82,9 @@ export default function OverviewTopDevices({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'user',
               filters,
               id: 'A',
@@ -120,8 +122,9 @@ export default function OverviewTopDevices({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'user',
               filters,
               id: 'A',
@@ -160,8 +163,9 @@ export default function OverviewTopDevices({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'user',
               filters,
               id: 'A',
@@ -199,8 +203,9 @@ export default function OverviewTopDevices({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'user',
               filters,
               id: 'A',
@@ -239,8 +244,9 @@ export default function OverviewTopDevices({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'user',
               filters,
               id: 'A',
@@ -278,8 +284,9 @@ export default function OverviewTopDevices({
           projectId,
           startDate,
           endDate,
-          events: [
+          series: [
             {
+              type: 'event',
               segment: 'user',
               filters,
               id: 'A',

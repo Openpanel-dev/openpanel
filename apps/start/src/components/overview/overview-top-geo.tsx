@@ -7,6 +7,7 @@ import type { IChartType } from '@openpanel/validation';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
+import { countries } from '@/translations/countries';
 import { NOT_SET_VALUE } from '@openpanel/constants';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
@@ -108,13 +109,19 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
                       >
                         {item.prefix && (
                           <span className="mr-1 row inline-flex items-center gap-1">
-                            <span>{item.prefix}</span>
+                            <span>
+                              {countries[
+                                item.prefix as keyof typeof countries
+                              ] ?? item.prefix}
+                            </span>
                             <span>
                               <ChevronRightIcon className="size-3" />
                             </span>
                           </span>
                         )}
-                        {item.name || 'Not set'}
+                        {(countries[item.name as keyof typeof countries] ??
+                          item.name) ||
+                          'Not set'}
                       </button>
                     </div>
                   );
@@ -146,8 +153,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
               projectId,
               startDate,
               endDate,
-              events: [
+              series: [
                 {
+                  type: 'event',
                   segment: 'event',
                   filters,
                   id: 'A',

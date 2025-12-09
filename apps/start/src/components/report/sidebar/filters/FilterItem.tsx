@@ -39,14 +39,12 @@ interface PureFilterProps {
 }
 
 export function FilterItem({ filter, event }: FilterProps) {
-  // const { range, startDate, endDate, interval } = useSelector(
-  //   (state) => state.report,
-  // );
   const onRemove = ({ id }: IChartEventFilter) => {
     dispatch(
       changeEvent({
         ...event,
         filters: event.filters.filter((item) => item.id !== id),
+        type: 'event',
       }),
     );
   };
@@ -58,6 +56,7 @@ export function FilterItem({ filter, event }: FilterProps) {
     dispatch(
       changeEvent({
         ...event,
+        type: 'event',
         filters: event.filters.map((item) => {
           if (item.id === id) {
             return {
@@ -79,6 +78,7 @@ export function FilterItem({ filter, event }: FilterProps) {
     dispatch(
       changeEvent({
         ...event,
+        type: 'event',
         filters: event.filters.map((item) => {
           if (item.id === id) {
             return {

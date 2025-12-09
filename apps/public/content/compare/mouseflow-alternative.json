@@ -1,0 +1,444 @@
+{
+  "slug": "mouseflow-alternative",
+  "page_type": "alternative",
+  "seo": {
+    "title": "Mouseflow Alternative",
+    "description": "Compare OpenPanel with Mouseflow: pricing, features, and deployment. OpenPanel offers product analytics with mobile SDKs; Mouseflow excels at visual website optimization.",
+    "noindex": false
+  },
+  "hero": {
+    "heading": "Mouseflow alternative",
+    "subheading": "Need product analytics beyond heatmaps? OpenPanel provides event-based analytics, mobile SDKs, and self-hosting—fully open source with transparent pricing.",
+    "badges": [
+      "Open-source",
+      "Self-hostable",
+      "Mobile SDKs",
+      "Event-based analytics"
+    ]
+  },
+  "competitor": {
+    "name": "Mouseflow",
+    "logo": "/logos/mouseflow.svg",
+    "url": "https://mouseflow.com",
+    "short_description": "Behavior analytics platform with session replay, heatmaps, friction detection, and form analytics for website optimization.",
+    "founded": 2009,
+    "headquarters": "Copenhagen, Denmark"
+  },
+  "summary_comparison": {
+    "title": "OpenPanel vs Mouseflow: Which is right for you?",
+    "intro": "Mouseflow excels at visual website optimization with heatmaps and session replay. OpenPanel focuses on product analytics with mobile support.",
+    "one_liner": "OpenPanel is for product analytics with mobile SDKs and self-hosting; Mouseflow is for visual website optimization with heatmaps.",
+    "best_for_openpanel": [
+      "Teams needing mobile app analytics with native SDKs",
+      "Product analytics focus (funnels, retention, cohorts)",
+      "Organizations requiring self-hosting for data ownership",
+      "Open source requirements for transparency",
+      "Teams tracking user-level behavior across platforms"
+    ],
+    "best_for_competitor": [
+      "UX designers needing visual behavior analytics",
+      "Website conversion rate optimization teams",
+      "Teams requiring comprehensive heatmaps and session replay",
+      "Form analytics and feedback survey needs",
+      "Visual optimization without mobile app requirements"
+    ]
+  },
+  "highlights": {
+    "title": "Key differences at a glance",
+    "intro": "Here's how OpenPanel and Mouseflow compare on the factors that matter most.",
+    "items": [
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "No (proprietary)"
+      },
+      {
+        "label": "Self-hosting",
+        "openpanel": "Yes, with Docker",
+        "competitor": "No (cloud only)"
+      },
+      {
+        "label": "Mobile SDKs",
+        "openpanel": "iOS, Android, RN, Flutter",
+        "competitor": "Web only"
+      },
+      {
+        "label": "Heatmaps",
+        "openpanel": "Not available",
+        "competitor": "7 types of heatmaps"
+      },
+      {
+        "label": "Data model",
+        "openpanel": "Event-based",
+        "competitor": "Session-based"
+      }
+    ]
+  },
+  "feature_comparison": {
+    "title": "Feature comparison",
+    "intro": "OpenPanel focuses on product analytics; Mouseflow focuses on visual website behavior.",
+    "groups": [
+      {
+        "group": "Core analytics",
+        "features": [
+          {
+            "name": "Event tracking",
+            "openpanel": true,
+            "competitor": "Limited",
+            "notes": null
+          },
+          {
+            "name": "Funnels",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Retention analysis",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "User profiles",
+            "openpanel": true,
+            "competitor": "Limited",
+            "notes": null
+          },
+          {
+            "name": "Cohorts",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Custom dashboards",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Real-time data",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Visual analytics",
+        "features": [
+          {
+            "name": "Session replay",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Click heatmaps",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Scroll heatmaps",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Movement heatmaps",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Form analytics",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Friction score",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Rage click detection",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Feedback & surveys",
+        "features": [
+          {
+            "name": "On-site surveys",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "NPS surveys",
+            "openpanel": false,
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Privacy & compliance",
+        "features": [
+          {
+            "name": "Self-hosting",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "Open source",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "GDPR compliant",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Cookie-free option",
+            "openpanel": true,
+            "competitor": false,
+            "notes": null
+          },
+          {
+            "name": "EU data residency",
+            "openpanel": "Via self-hosting",
+            "competitor": true,
+            "notes": null
+          }
+        ]
+      },
+      {
+        "group": "Integrations & data",
+        "features": [
+          {
+            "name": "REST API",
+            "openpanel": true,
+            "competitor": "Growth plan+",
+            "notes": null
+          },
+          {
+            "name": "Data export",
+            "openpanel": true,
+            "competitor": true,
+            "notes": null
+          },
+          {
+            "name": "Mobile SDKs",
+            "openpanel": true,
+            "competitor": false,
+            "notes": "Mouseflow is web only"
+          }
+        ]
+      }
+    ]
+  },
+  "technical_comparison": {
+    "title": "Technical comparison",
+    "intro": "For developers evaluating analytics tools, here's how the implementations compare.",
+    "items": [
+      {
+        "label": "SDK size (JS)",
+        "openpanel": "~2.3 KB gzipped",
+        "competitor": "Larger (includes recording)",
+        "notes": null
+      },
+      {
+        "label": "Supported platforms",
+        "openpanel": [
+          "JavaScript",
+          "React",
+          "Next.js",
+          "Vue",
+          "React Native",
+          "iOS",
+          "Android",
+          "Flutter"
+        ],
+        "competitor": [
+          "JavaScript (web only)"
+        ],
+        "notes": null
+      },
+      {
+        "label": "Open source",
+        "openpanel": "Yes (MIT)",
+        "competitor": "No",
+        "notes": null
+      },
+      {
+        "label": "Self-hosted deployment",
+        "openpanel": "Docker, simple setup",
+        "competitor": "Not available",
+        "notes": null
+      },
+      {
+        "label": "Database",
+        "openpanel": "ClickHouse + PostgreSQL",
+        "competitor": "Proprietary cloud",
+        "notes": null
+      },
+      {
+        "label": "Data retention",
+        "openpanel": "Unlimited (self-hosted)",
+        "competitor": "1-12 months depending on plan",
+        "notes": null
+      }
+    ]
+  },
+  "pricing": {
+    "title": "Pricing comparison",
+    "intro": "OpenPanel offers event-based pricing with free self-hosting. Mouseflow uses session-based pricing.",
+    "openpanel": {
+      "model": "Event-based, transparent",
+      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. All features included at every tier."
+    },
+    "competitor": {
+      "model": "Session-based",
+      "description": "Free: 500 sessions/month. Starter: $31/month for 5,000 sessions. Growth: $109/month for 15,000 sessions. Business: $219/month for 50,000 sessions. All features included on all plans.",
+      "free_tier": "Yes (500 sessions/month)",
+      "pricing_url": "https://mouseflow.com/pricing"
+    }
+  },
+  "migration": {
+    "title": "Migrating from Mouseflow to OpenPanel",
+    "intro": "Moving from Mouseflow involves transitioning from visual behavior analytics to event-based product analytics.",
+    "difficulty": "moderate",
+    "estimated_time": "2-4 hours",
+    "steps": [
+      {
+        "title": "Understand feature differences",
+        "description": "Mouseflow excels at visual behavior analytics. If you rely on heatmaps and session replay, consider complementary tools like Microsoft Clarity."
+      },
+      {
+        "title": "Create OpenPanel account or self-host",
+        "description": "Sign up for OpenPanel cloud or deploy self-hosted using Docker. Configure your project settings."
+      },
+      {
+        "title": "Install OpenPanel SDK",
+        "description": "Replace the Mouseflow snippet with OpenPanel's SDK. For mobile apps, install native SDKs."
+      },
+      {
+        "title": "Map events and properties",
+        "description": "Convert Mouseflow's implicit tracking to OpenPanel's explicit event tracking. Set up user identification."
+      },
+      {
+        "title": "Build analytics dashboards",
+        "description": "Create funnels, retention charts, and cohort analyses in OpenPanel."
+      }
+    ],
+    "sdk_compatibility": {
+      "similar_api": false,
+      "notes": "Different tracking philosophies: Mouseflow is session-based, OpenPanel is event-based."
+    },
+    "historical_data": {
+      "can_import": false,
+      "notes": "Historical session recordings from Mouseflow cannot be migrated."
+    }
+  },
+  "use_cases": {
+    "title": "Where OpenPanel is a better fit than Mouseflow",
+    "intro": "OpenPanel excels when you need product analytics with mobile support and data ownership.",
+    "items": [
+      {
+        "title": "Mobile app analytics",
+        "description": "Mouseflow is web-only. OpenPanel provides native SDKs for iOS, Android, React Native, and Flutter.",
+        "icon": "smartphone"
+      },
+      {
+        "title": "Product analytics & user tracking",
+        "description": "Track user behavior across platforms with funnels, retention analysis, cohorts, and user identification.",
+        "icon": "chart"
+      },
+      {
+        "title": "Data ownership & self-hosting",
+        "description": "Complete data control with self-hosting. Mouseflow is cloud-only.",
+        "icon": "server"
+      },
+      {
+        "title": "Open source requirements",
+        "description": "Full transparency and customization with MIT license. Mouseflow is proprietary.",
+        "icon": "code"
+      },
+      {
+        "title": "Unlimited data retention",
+        "description": "Self-hosted OpenPanel has unlimited retention. Mouseflow limits data retention.",
+        "icon": "database"
+      }
+    ]
+  },
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about switching from Mouseflow to OpenPanel.",
+    "items": [
+      {
+        "question": "Can OpenPanel replace Mouseflow's heatmaps and session replay?",
+        "answer": "No, OpenPanel does not provide heatmaps. If you need visual behavior analytics, consider using Mouseflow alongside OpenPanel, or explore alternatives like Hotjar or Microsoft Clarity."
+      },
+      {
+        "question": "Does Mouseflow work with mobile apps?",
+        "answer": "No, Mouseflow is web-only. OpenPanel provides native SDKs for iOS, Android, React Native, and Flutter for mobile app analytics."
+      },
+      {
+        "question": "Which tool is better for e-commerce?",
+        "answer": "It depends on needs. Mouseflow excels at visual checkout optimization. OpenPanel is better for tracking customer journeys and retention. Many e-commerce teams use both."
+      },
+      {
+        "question": "Can I self-host Mouseflow?",
+        "answer": "No, Mouseflow is cloud-only. OpenPanel offers both cloud hosting and self-hosted deployment via Docker."
+      },
+      {
+        "question": "How does pricing compare?",
+        "answer": "Mouseflow uses session-based pricing starting at $31/month for 5,000 sessions. OpenPanel uses event-based pricing with 10,000 free events/month. OpenPanel's self-hosted option is completely free."
+      },
+      {
+        "question": "Can I use both tools together?",
+        "answer": "Yes, and this is often recommended. Use Mouseflow for visual behavior analytics and OpenPanel for product analytics. The tools serve complementary purposes."
+      }
+    ]
+  },
+  "related_links": {
+    "articles": [
+      {
+        "title": "9 best open source web analytics tools",
+        "url": "/articles/open-source-web-analytics"
+      }
+    ],
+    "alternatives": [
+      {
+        "name": "FullStory",
+        "url": "/compare/fullstory-alternative"
+      },
+      {
+        "name": "Smartlook",
+        "url": "/compare/smartlook-alternative"
+      }
+    ]
+  },
+  "ctas": {
+    "primary": {
+      "label": "Start with OpenPanel",
+      "href": "/onboarding"
+    },
+    "secondary": {
+      "label": "View on GitHub",
+      "href": "https://github.com/Openpanel-dev/openpanel"
+    }
+  }
+}

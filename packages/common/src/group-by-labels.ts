@@ -4,12 +4,14 @@ export interface ISerieDataItem {
   label_2?: string | null | undefined;
   label_3?: string | null | undefined;
   count: number;
+  total_count?: number;
   date: string;
 }
 
 interface GroupedDataPoint {
   date: string;
   count: number;
+  total_count?: number;
 }
 
 interface GroupedResult {
@@ -45,6 +47,7 @@ export function groupByLabels(data: ISerieDataItem[]): GroupedResult[] {
     group.data.push({
       date: row.date,
       count: row.count,
+      total_count: row.total_count,
     });
   });
 
@@ -63,7 +66,7 @@ export function groupByLabels(data: ISerieDataItem[]): GroupedResult[] {
         // This will ensure that all dates are present in the data array
         data: Array.from(timestamps).map((date) => {
           const dataPoint = group.data.find((dp) => dp.date === date);
-          return dataPoint || { date, count: 0 };
+          return dataPoint || { date, count: 0, total_count: 0 };
         }),
       };
     });

@@ -37,6 +37,8 @@ COPY packages/integrations/package.json packages/integrations/
 COPY packages/sdks/sdk/package.json packages/sdks/sdk/
 COPY packages/sdks/_info/package.json packages/sdks/_info/
 COPY patches ./patches
+# Copy tracking script to self-hosting dashboard
+COPY apps/public/public/op1.js ./apps/start/public/op1.js
 
 # BUILD
 FROM base AS build

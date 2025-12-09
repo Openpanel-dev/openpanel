@@ -117,6 +117,22 @@ const getPrismaClient = () => {
               return new Date(Date.now() + 1000 * 60 * 60 * 24);
             },
           },
+          isActive: {
+            needs: {
+              subscriptionStatus: true,
+              subscriptionEndsAt: true,
+              subscriptionCanceledAt: true,
+            },
+            compute(org) {
+              return (
+                org.subscriptionStatus === 'active' &&
+                org.subscriptionEndsAt &&
+                org.subscriptionEndsAt > new Date() &&
+                !isCanceled(org) &&
+                !isWillBeCanceled(org)
+              );
+            },
+          },
           isTrial: {
             needs: { subscriptionStatus: true, subscriptionEndsAt: true },
             compute(org) {

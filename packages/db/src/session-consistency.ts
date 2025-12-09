@@ -209,12 +209,27 @@ export function sessionConsistency() {
           // Since the check probably goes to the primary anyways it will always be true,
           // Not sure how to check LSN on the actual replica that will be used for the read.
           if (
+            model !== 'Session' &&
             isReadOperation(operation) &&
             sessionId &&
             (await getCachedWalLsn(sessionId))
           ) {
-            // This will force readReplicas extension to use primary
-            __internalParams.transaction = true;
+            const MAX_RETRIES = 3;
+            const INITIAL_RETRY_DELAY_MS = 50;
+
+            for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+              const result = await query(args);
+
+              if (result !== null) {
+                return result;
+              }
+
+              // If not the last attempt, wait with exponential backoff before retrying
+              if (attempt < MAX_RETRIES - 1) {
+                const delayMs = INITIAL_RETRY_DELAY_MS * 2 ** attempt;
+                await sleep(delayMs);
+              }
+            }
           }
 
           return query(args);

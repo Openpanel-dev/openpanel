@@ -23,9 +23,12 @@ const chartColors = [
 ];
 
 export function getChartColor(index: number): string {
-  return chartColors[index % chartColors.length]!.main;
+  return chartColors[index % chartColors.length]?.main || chartColors[0].main;
 }
 
 export function getChartTranslucentColor(index: number): string {
-  return chartColors[index % chartColors.length]!.translucent;
+  return (
+    chartColors[index % chartColors.length]?.translucent ||
+    chartColors[0].translucent
+  );
 }

@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   op-db:
@@ -12,24 +12,37 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
 
+  op-df:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: op-df
+    restart: always
+    ports:
+      - "6380:6379"
+    ulimits:
+      memlock: -1
+      nofile: 65535
+    command:
+      - "--cluster_mode=emulated"
+      - "--lock_on_hashtags"
+
   op-kv:
     image: redis:7.2.5-alpine
     restart: always
     volumes:
       - ./docker/data/op-kv-data:/data
-    command: [ 'redis-server', '--maxmemory-policy', 'noeviction' ]
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
     ports:
       - 6379:6379
 
   op-ch:
-    image: clickhouse/clickhouse-server:24.12.2.29-alpine
+    image: clickhouse/clickhouse-server:25.10.2.65
     restart: always
     volumes:
       - ./docker/data/op-ch-data:/var/lib/clickhouse
       - ./docker/data/op-ch-logs:/var/log/clickhouse-server
-      - ./self-hosting/clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml
-      - ./self-hosting/clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml
-      - ./self-hosting/clickhouse/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - ./docker/clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml
+      - ./docker/clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml
+      - ./docker/clickhouse/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     ulimits:
       nofile:
         soft: 262144

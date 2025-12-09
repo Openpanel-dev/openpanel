@@ -1,3 +1,4 @@
+import { DEFAULT_IP_HEADER_ORDER } from '@openpanel/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { path, pick } from 'ramda';
 
@@ -37,12 +38,15 @@ export async function requestLoggingHook(
       url: request.url,
       method: request.method,
       elapsed: reply.elapsedTime,
+      clientIp: request.clientIp,
+      clientIpHeader: request.clientIpHeader,
       headers: pick(
         [
           'openpanel-client-id',
           'openpanel-sdk-name',
           'openpanel-sdk-version',
           'user-agent',
+          ...DEFAULT_IP_HEADER_ORDER,
         ],
         request.headers,
       ),

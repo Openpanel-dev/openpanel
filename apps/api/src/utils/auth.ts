@@ -3,6 +3,7 @@ import type { FastifyRequest, RawRequestDefaultExpression } from 'fastify';
 import { verifyPassword } from '@openpanel/common/server';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
+import { getCache } from '@openpanel/redis';
 import type { PostEventPayload, TrackHandlerPayload } from '@openpanel/sdk';
 import type {
   IProjectFilterIp,
@@ -104,6 +105,22 @@ export async function validateSdkRequest(
     throw createError('Ingestion: Profile id is blocked by project filter');
   }
 
+  const revenue =
+    path(['payload', 'properties', '__revenue'], req.body) ??
+    path(['properties', '__revenue'], req.body);
+
+  // Only allow revenue tracking if it was sent with a client secret
+  // or if the project has allowUnsafeRevenueTracking enabled
+  if (
+    !client.project.allowUnsafeRevenueTracking &&
+    !clientSecret &&
+    typeof revenue !== 'undefined'
+  ) {
+    throw createError(
+      'Ingestion: Revenue tracking is not allowed without a client secret',
+    );
+  }
+
   if (client.ignoreCorsAndSecret) {
     return client;
   }
@@ -135,7 +152,13 @@ export async function validateSdkRequest(
   }
 
   if (client.secret && clientSecret) {
-    if (await verifyPassword(clientSecret, client.secret)) {
+    const isVerified = await getCache(
+      `client:auth:${clientId}:${Buffer.from(clientSecret).toString('base64')}`,
+      60 * 5,
+      async () => await verifyPassword(clientSecret, client.secret!),
+      true,
+    );
+    if (isVerified) {
       return client;
     }
   }

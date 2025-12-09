@@ -4,9 +4,12 @@ import { parseUrlMeta } from '@/utils/parseUrlMeta';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import sharp from 'sharp';
 
-import { getClientIp } from '@/utils/get-client-ip';
+import {
+  DEFAULT_IP_HEADER_ORDER,
+  getClientIpFromHeaders,
+} from '@openpanel/common/server/get-client-ip';
 import { TABLE_NAMES, ch, chQuery, formatClickhouseDate } from '@openpanel/db';
-import { getGeoLocation } from '@openpanel/geo';
+import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getCache, getRedisCache } from '@openpanel/redis';
 
 interface GetFaviconParams {
@@ -129,7 +132,7 @@ async function processImage(
 ): Promise<Buffer> {
   // If it's an ICO file, just return it as-is (no conversion needed)
   if (originalUrl && isIcoFile(originalUrl, contentType)) {
-    logger.info('Serving ICO file directly', {
+    logger.debug('Serving ICO file directly', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -137,7 +140,7 @@ async function processImage(
   }
 
   if (originalUrl && isSvgFile(originalUrl, contentType)) {
-    logger.info('Serving SVG file directly', {
+    logger.debug('Serving SVG file directly', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -146,7 +149,7 @@ async function processImage(
 
   // If buffer isnt to big just return it as well
   if (buffer.length < 5000) {
-    logger.info('Serving image directly without processing', {
+    logger.debug('Serving image directly without processing', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -190,7 +193,7 @@ async function processOgImage(
 ): Promise<Buffer> {
   // If buffer is small enough, return it as-is
   if (buffer.length < 10000) {
-    logger.info('Serving OG image directly without processing', {
+    logger.debug('Serving OG image directly without processing', {
       originalUrl,
       bufferSize: buffer.length,
     });
@@ -394,12 +397,36 @@ export async function stats(request: FastifyRequest, reply: FastifyReply) {
 }
 
 export async function getGeo(request: FastifyRequest, reply: FastifyReply) {
-  const ip = getClientIp(request);
+  const { ip, header } = getClientIpFromHeaders(request.headers);
+  const others = await Promise.all(
+    DEFAULT_IP_HEADER_ORDER.map(async (header) => {
+      const { ip } = getClientIpFromHeaders(request.headers, header);
+      return {
+        header,
+        ip,
+        geo: await getGeoLocation(ip),
+      };
+    }),
+  );
+
   if (!ip) {
     return reply.status(400).send('Bad Request');
   }
   const geo = await getGeoLocation(ip);
-  return reply.status(200).send(geo);
+  return reply.status(200).send({
+    selected: {
+      geo,
+      ip,
+      header,
+    },
+    ...others.reduce(
+      (acc, other) => {
+        acc[other.header] = other;
+        return acc;
+      },
+      {} as Record<string, { ip: string; header: string; geo: GeoLocation }>,
+    ),
+  });
 }
 
 export async function getOgImage(
