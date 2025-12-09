@@ -15,22 +15,31 @@ const dbPath = path.join(__dirname, `../../../packages/geo/${filename}`);
 // From local package
 const dbPathLocal = path.join(__dirname, `../${filename}`);
 
-let reader: ReaderModel | null = null;
+// Singleton promise - initialized once, awaited on every call
+let readerPromise: Promise<ReaderModel | null> | null = null;
 
-async function loadDatabase(dbPath: string) {
+async function loadDatabase(): Promise<ReaderModel | null> {
   try {
     const dbBuffer = await readFile(dbPath);
-    reader = Reader.openBuffer(dbBuffer);
     console.log('GeoLite2-City.mmdb loaded (dist)');
-  } catch (error) {
+    return Reader.openBuffer(dbBuffer);
+  } catch {
     try {
       const dbBuffer = await readFile(dbPathLocal);
-      reader = Reader.openBuffer(dbBuffer);
       console.log('GeoLite2-City.mmdb loaded (local)');
-    } catch (error) {
+      return Reader.openBuffer(dbBuffer);
+    } catch {
       console.error('GeoLite2-City.mmdb not found');
+      return null;
     }
   }
+}
+
+function getReader(): Promise<ReaderModel | null> {
+  if (!readerPromise) {
+    readerPromise = loadDatabase();
+  }
+  return readerPromise;
 }
 
 export interface GeoLocation {
@@ -67,12 +76,10 @@ export async function getGeoLocation(ip?: string): Promise<GeoLocation> {
     return cached;
   }
 
-  if (!reader) {
-    await loadDatabase(dbPath);
-  }
+  const reader = await getReader();
 
   try {
-    const response = await reader?.city(ip);
+    const response = reader?.city(ip);
     const res = {
       city: response?.city?.names.en,
       country: response?.country?.isoCode,
