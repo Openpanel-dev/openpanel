@@ -88,13 +88,17 @@ export default function OverviewFilters({
         </div>
         <PropertiesCombobox
           mode={mode}
-          exclude={[
-            'properties.*',
-            'name',
-            'duration',
-            'created_at',
-            'has_profile',
-          ]}
+          exclude={
+            enableEventsFilter
+              ? []
+              : [
+                  'properties.*',
+                  'name',
+                  'duration',
+                  'created_at',
+                  'has_profile',
+                ]
+          }
           onSelect={(action) => {
             setFilter(action.value, [], 'is');
           }}
