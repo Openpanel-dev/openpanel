@@ -272,8 +272,8 @@ export function getChartSql({
       sb.select.count = 'sum(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      sb.select.count = `sum(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
     }
   }
 
@@ -282,8 +282,8 @@ export function getChartSql({
       sb.select.count = 'avg(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      sb.select.count = `avg(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
     }
   }
 
@@ -292,8 +292,8 @@ export function getChartSql({
       sb.select.count = 'max(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `max(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      sb.select.count = `max(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
     }
   }
 
@@ -302,8 +302,8 @@ export function getChartSql({
       sb.select.count = 'min(revenue) as count';
       sb.where.property = 'revenue > 0';
     } else {
-      sb.select.count = `min(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      sb.select.count = `min(toFloat64OrNull(${getSelectPropertyKey(event.property)})) as count`;
+      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL`;
     }
   }
 
