@@ -8,7 +8,7 @@ const config = {
   images: {
     domains: ['localhost', 'openpanel.dev', 'api.openpanel.dev'],
   },
-  serverExternalPackages: ['@hyperdx/node-opentelemetry'],
+  serverExternalPackages: ['@hyperdx/node-opentelemetry', '@openpanel/geo'],
   redirects: [
     {
       source: '/articles/top-7-open-source-web-analytics-tools',

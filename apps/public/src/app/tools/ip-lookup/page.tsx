@@ -152,6 +152,7 @@ export default function IPLookupPage() {
         title="IP Lookup Tool"
         description="Find detailed information about any IP address including geolocation, ISP, and network details."
         variant="default"
+        as="h1"
       />
 
       <form onSubmit={handleSubmit} className="mt-8">

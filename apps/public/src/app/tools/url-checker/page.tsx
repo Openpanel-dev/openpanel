@@ -197,6 +197,7 @@ export default function SiteCheckerPage() {
         title="URL Checker"
         description="Analyze any website for SEO, social media, technical, and security information. Get comprehensive insights about any URL."
         variant="default"
+        as="h1"
       />
 
       <form onSubmit={handleSubmit} className="mt-8">
