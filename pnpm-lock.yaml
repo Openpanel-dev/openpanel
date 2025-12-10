@@ -271,6 +271,9 @@ importers:
       '@openpanel/common':
         specifier: workspace:*
         version: link:../../packages/common
+      '@openpanel/geo':
+        specifier: workspace:*
+        version: link:../../packages/geo
       '@openpanel/nextjs':
         specifier: ^1.1.1
         version: 1.1.1(next@16.0.7(@opentelemetry/api@1.9.0)(react-dom@19.1.1(react@19.1.1))(react@19.1.1))(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
@@ -295,6 +298,9 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: 1.2.8
         version: 1.2.8(@types/react-dom@19.1.8(@types/react@19.1.11))(@types/react@19.1.11)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      cheerio:
+        specifier: ^1.0.0
+        version: 1.1.2
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -25412,7 +25418,7 @@ snapshots:
       css-what: 6.1.0
       domelementtype: 2.3.0
       domhandler: 5.0.3
-      domutils: 3.1.0
+      domutils: 3.2.2
 
   cheerio@1.0.0-rc.12:
     dependencies:
@@ -25794,7 +25800,7 @@ snapshots:
       boolbase: 1.0.0
       css-what: 6.1.0
       domhandler: 5.0.3
-      domutils: 3.1.0
+      domutils: 3.2.2
       nth-check: 2.1.1
 
   css-tree@3.1.0:
@@ -28136,7 +28142,7 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
       domhandler: 5.0.3
-      domutils: 3.1.0
+      domutils: 3.2.2
       entities: 4.5.0
 
   http-cache-semantics@4.1.1: {}

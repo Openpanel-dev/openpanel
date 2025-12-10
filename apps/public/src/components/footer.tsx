@@ -1,3 +1,4 @@
+import { TOOLS } from '@/app/tools/tools';
 import { baseOptions } from '@/lib/layout.shared';
 import { articleSource, compareSource } from '@/lib/source';
 import { MailIcon } from 'lucide-react';
@@ -38,6 +39,14 @@ export async function Footer() {
                 { title: 'Articles', url: '/articles' },
                 { title: 'Compare', url: '/compare' },
               ]}
+            />
+            <div className="h-5" />
+            <h3 className="font-medium">Tools</h3>
+            <Links
+              data={TOOLS.map((tool) => ({
+                title: tool.name,
+                url: tool.url,
+              }))}
             />
           </div>
 
