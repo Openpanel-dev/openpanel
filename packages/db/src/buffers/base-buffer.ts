@@ -1,5 +1,6 @@
 import { generateSecureId } from '@openpanel/common/server';
 import { type ILogger, createLogger } from '@openpanel/logger';
+import { cronQueue } from '@openpanel/queue';
 import { getRedisCache, runEvery } from '@openpanel/redis';
 
 export class BaseBuffer {
@@ -94,6 +95,11 @@ export class BaseBuffer {
 
   async tryFlush() {
     const now = performance.now();
+    const isCronQueuePaused = await cronQueue.isPaused();
+    if (isCronQueuePaused) {
+      this.logger.info('Cron queue is paused, skipping flush');
+      return;
+    }
 
     // Parallel mode: No locking, multiple workers can process simultaneously
     if (this.enableParallelProcessing) {
