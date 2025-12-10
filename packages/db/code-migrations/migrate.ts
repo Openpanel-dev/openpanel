@@ -59,6 +59,8 @@ async function migrate() {
     if (!getIsDry()) {
       printBoxMessage('🕒 Migrations starts in 10 seconds', []);
       await new Promise((resolve) => setTimeout(resolve, 10000));
+    } else {
+      printBoxMessage('🕒 Migrations starts now (dry run)', []);
     }
   }
 

@@ -142,12 +142,18 @@ export async function up() {
   const firstEventDate = new Date(firstEventDateJson[0]?.created_at ?? '');
   if (firstEventDate) {
     // Step 2: Copy data from old tables to new tables (partitioned by month for efficiency)
+    // Set endDate to first of next month to ensure we capture all data in the current month
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+    endDate.setDate(1);
+
     sqls.push(
       ...moveDataBetweenTables({
         from: 'events',
         to: 'events_new_20251123',
         batch: {
           startDate: firstEventDate,
+          endDate: endDate,
           column: 'toDate(created_at)',
           interval: 'month',
           transform: (date: Date) => {
@@ -170,6 +176,11 @@ export async function up() {
 
   const firstSessionDate = new Date(firstSessionDateJson[0]?.created_at ?? '');
   if (firstSessionDate) {
+    // Set endDate to first of next month to ensure we capture all data in the current month
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+    endDate.setDate(1);
+
     sqls.push(
       ...moveDataBetweenTables({
         from: 'sessions',
@@ -215,6 +226,7 @@ export async function up() {
         ],
         batch: {
           startDate: firstSessionDate,
+          endDate: endDate,
           column: 'toDate(created_at)',
           interval: 'month',
           transform: (date: Date) => {
