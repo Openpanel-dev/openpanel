@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,8 +30,32 @@ async function loadDatabase(): Promise<ReaderModel | null> {
       console.log('GeoLite2-City.mmdb loaded (local)', dbPathLocal);
       return Reader.openBuffer(dbBuffer);
     } catch {
-      console.error('GeoLite2-City.mmdb not found', { dbPath, dbPathLocal });
-      return null;
+      // Try node_modules resolution (for Vercel/serverless environments)
+      try {
+        const require = createRequire(import.meta.url);
+        // Resolve the package entry point, then find package.json relative to it
+        const packageEntry = require.resolve('@openpanel/geo');
+        let packageDir = path.dirname(packageEntry);
+        // Walk up to find package.json (package entry might be in src/ or dist/)
+        for (let i = 0; i < 3; i++) {
+          try {
+            await readFile(path.join(packageDir, 'package.json'));
+            break; // Found package.json
+          } catch {
+            packageDir = path.dirname(packageDir);
+          }
+        }
+        const nodeModulesPath = path.join(packageDir, filename);
+        const dbBuffer = await readFile(nodeModulesPath);
+        console.log(
+          'GeoLite2-City.mmdb loaded (node_modules)',
+          nodeModulesPath,
+        );
+        return Reader.openBuffer(dbBuffer);
+      } catch {
+        console.error('GeoLite2-City.mmdb not found (node_modules)');
+        return null;
+      }
     }
   }
 }
