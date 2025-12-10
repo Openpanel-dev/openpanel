@@ -21,15 +21,15 @@ let readerPromise: Promise<ReaderModel | null> | null = null;
 async function loadDatabase(): Promise<ReaderModel | null> {
   try {
     const dbBuffer = await readFile(dbPath);
-    console.log('GeoLite2-City.mmdb loaded (dist)');
+    console.log('GeoLite2-City.mmdb loaded (dist)', dbPath);
     return Reader.openBuffer(dbBuffer);
   } catch {
     try {
       const dbBuffer = await readFile(dbPathLocal);
-      console.log('GeoLite2-City.mmdb loaded (local)');
+      console.log('GeoLite2-City.mmdb loaded (local)', dbPathLocal);
       return Reader.openBuffer(dbBuffer);
     } catch {
-      console.error('GeoLite2-City.mmdb not found');
+      console.error('GeoLite2-City.mmdb not found', { dbPath, dbPathLocal });
       return null;
     }
   }
