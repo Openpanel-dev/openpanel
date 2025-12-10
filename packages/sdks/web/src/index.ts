@@ -38,7 +38,7 @@ export class OpenPanel extends OpenPanelBase {
     });
 
     if (!this.isServer()) {
-      console.log('OpenPanel.dev - Initialized', this.options);
+      console.log('OpenPanel.dev - Initialized');
 
       try {
         const pending = sessionStorage.getItem('openpanel-pending-revenues');
