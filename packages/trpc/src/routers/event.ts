@@ -107,7 +107,9 @@ export const eventRouter = createTRPCRouter({
 
       let session: IServiceSession | undefined;
       if (res?.sessionId) {
-        session = await sessionService.byId(res?.sessionId, projectId);
+        session = await sessionService
+          .byId(res?.sessionId, projectId)
+          .catch(() => undefined);
       }
 
       return {

@@ -5,7 +5,7 @@ import { getSalts } from '@openpanel/db';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
 import type { PostEventPayload } from '@openpanel/sdk';
 
-import { generateId } from '@openpanel/common';
+import { generateId, slug } from '@openpanel/common';
 import { getGeoLocation } from '@openpanel/geo';
 import { getStringHeaders, getTimestamp } from './track.controller';
 
@@ -54,7 +54,7 @@ export async function postEvent(
       : `${projectId}:${generateId()}`
     : currentDeviceId;
   const jobId = [
-    request.body.name,
+    slug(request.body.name),
     timestamp,
     projectId,
     currentDeviceId,

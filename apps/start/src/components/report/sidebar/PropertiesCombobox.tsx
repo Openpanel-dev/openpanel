@@ -128,7 +128,7 @@ export function PropertiesCombobox({
         {/* <SearchHeader onSearch={() => {}} value={search} /> */}
         {/* <DropdownMenuSeparator /> */}
         <DropdownMenuItem
-          className="group justify-between"
+          className="group justify-between gap-2"
           onClick={(e) => {
             e.preventDefault();
             handleStateChange('event');
@@ -138,7 +138,7 @@ export function PropertiesCombobox({
           <DatabaseIcon className="size-4 group-hover:text-blue-500 group-hover:scale-125 transition-all group-hover:rotate-12" />
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="group justify-between"
+          className="group justify-between gap-2"
           onClick={(e) => {
             e.preventDefault();
             handleStateChange('profile');

@@ -7,7 +7,6 @@ import type { IChartType } from '@openpanel/validation';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
-import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
 import { OverviewChartToggle } from './overview-chart-toggle';
 import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
@@ -142,6 +141,40 @@ export default function OverviewTopEvents({
           lineType: 'monotone',
           interval: interval,
           name: 'Conversions',
+          range: range,
+          previous: previous,
+          metric: 'sum',
+        },
+      },
+    },
+    link_out: {
+      title: 'Link out',
+      btn: 'Link out',
+      chart: {
+        report: {
+          limit: 10,
+          projectId,
+          startDate,
+          endDate,
+          series: [
+            {
+              type: 'event',
+              segment: 'event',
+              id: 'A',
+              name: 'link_out',
+              filters: [],
+            },
+          ],
+          breakdowns: [
+            {
+              id: 'A',
+              name: 'properties.href',
+            },
+          ],
+          chartType,
+          lineType: 'monotone',
+          interval: interval,
+          name: 'Link out',
           range: range,
           previous: previous,
           metric: 'sum',

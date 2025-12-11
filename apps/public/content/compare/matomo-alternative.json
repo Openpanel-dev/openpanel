@@ -459,7 +459,7 @@
   "ctas": {
     "primary": {
       "label": "Start with OpenPanel",
-      "href": "/onboarding"
+      "href": "https://dashboard.openpanel.dev/onboarding"
     },
     "secondary": {
       "label": "View on GitHub",

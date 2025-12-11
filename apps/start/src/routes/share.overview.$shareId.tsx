@@ -104,24 +104,26 @@ function RouteComponent() {
           <LoginNavbar className="relative p-4" />
         </div>
       )}
-      <div className="">
-        <div className="mx-auto max-w-7xl justify-between row gap-4 p-4 pb-0">
-          <div className="flex gap-2">
-            <OverviewRange />
+      <div className="sticky-header [animation-range:50px_100px]!">
+        <div className="p-4 col gap-2 mx-auto max-w-7xl">
+          <div className="row justify-between">
+            <div className="flex gap-2">
+              <OverviewRange />
+            </div>
+            <div className="flex gap-2">
+              <LiveCounter projectId={projectId} />
+            </div>
           </div>
-          <div className="flex gap-2">
-            <LiveCounter projectId={projectId} />
-          </div>
+          <OverviewFiltersButtons />
         </div>
-        <OverviewFiltersButtons />
-        <div className="mx-auto grid max-w-7xl grid-cols-6 gap-4 p-4">
-          <OverviewMetrics projectId={projectId} />
-          <OverviewTopSources projectId={projectId} />
-          <OverviewTopPages projectId={projectId} />
-          <OverviewTopDevices projectId={projectId} />
-          <OverviewTopEvents projectId={projectId} />
-          <OverviewTopGeo projectId={projectId} />
-        </div>
+      </div>
+      <div className="mx-auto grid max-w-7xl grid-cols-6 gap-4 p-4">
+        <OverviewMetrics projectId={projectId} />
+        <OverviewTopSources projectId={projectId} />
+        <OverviewTopPages projectId={projectId} />
+        <OverviewTopDevices projectId={projectId} />
+        <OverviewTopEvents projectId={projectId} />
+        <OverviewTopGeo projectId={projectId} />
       </div>
     </div>
   );

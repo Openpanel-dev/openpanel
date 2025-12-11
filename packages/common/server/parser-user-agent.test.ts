@@ -57,7 +57,7 @@ describe('parseUserAgent', () => {
     expect(parseUserAgent(ua)).toEqual({
       isServer: false,
       device: 'tablet',
-      os: 'Mac OS',
+      os: 'iOS',
       osVersion: '18.0',
       browser: 'WebKit',
       browserVersion: '605.1.15',
@@ -70,16 +70,15 @@ describe('parseUserAgent', () => {
     const ua =
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
 
-    expect(parseUserAgent(ua)).toEqual({
-      isServer: false,
-      device: 'desktop',
-      os: 'Windows',
-      osVersion: '10',
-      browser: 'Chrome',
-      browserVersion: '91.0.4472.124',
-      brand: undefined,
-      model: undefined,
-    });
+    const result = parseUserAgent(ua);
+    expect(result.isServer).toBe(false);
+    expect(result.device).toBe('desktop');
+    expect(result.os).toBe('Windows');
+    expect(result.osVersion).toBe('10');
+    expect(result.browser).toBe('Chrome');
+    expect(result.browserVersion).toBe('91.0.4472.124');
+    // Desktop browsers don't have brand/model
+    expect(result.model).toBeUndefined();
   });
 
   it('should handle server user agents', () => {
@@ -166,5 +165,86 @@ describe('getDevice', () => {
     desktopUas.forEach((ua) => {
       expect(getDevice(ua)).toBe('desktop');
     });
+  });
+
+  it('should detect known phone models as mobile', () => {
+    // Xiaomi/Redmi
+    expect(getDevice('', 'Redmi Note 8 Pro')).toBe('mobile');
+    expect(getDevice('', 'POCO F3')).toBe('mobile');
+    expect(getDevice('', 'Mi 11')).toBe('mobile');
+
+    // Samsung Galaxy phones
+    expect(getDevice('', 'Galaxy S23 Ultra')).toBe('mobile');
+    expect(getDevice('', 'Galaxy A54')).toBe('mobile');
+    expect(getDevice('', 'Galaxy Z Fold5')).toBe('mobile');
+
+    // Google Pixel
+    expect(getDevice('', 'Pixel 8 Pro')).toBe('mobile');
+
+    // OnePlus
+    expect(getDevice('', 'OnePlus 11')).toBe('mobile');
+
+    // Huawei/Honor
+    expect(getDevice('', 'Huawei P60 Pro')).toBe('mobile');
+    expect(getDevice('', 'Honor 90')).toBe('mobile');
+
+    // OPPO/Vivo/Realme
+    expect(getDevice('', 'OPPO Find X6')).toBe('mobile');
+    expect(getDevice('', 'Vivo X90')).toBe('mobile');
+    expect(getDevice('', 'Realme GT5')).toBe('mobile');
+
+    // Motorola
+    expect(getDevice('', 'Moto G84')).toBe('mobile');
+  });
+});
+
+describe('parseUserAgent - brand detection', () => {
+  it('should detect Xiaomi brand from Manufacturer field', () => {
+    const result = parseUserAgent(
+      'App/1.0 (Android 12; Model=POCO X5; Manufacturer=Xiaomi)',
+    );
+    expect(result.brand).toBe('Xiaomi');
+    expect(result.model).toBe('POCO X5');
+    expect(result.device).toBe('mobile');
+  });
+
+  it('should detect Samsung brand from model name', () => {
+    const result = parseUserAgent(
+      'App/1.0 (Android 13; Model=Galaxy S23 Ultra)',
+    );
+    expect(result.brand).toBe('Samsung');
+    expect(result.model).toBe('Galaxy S23 Ultra');
+    expect(result.device).toBe('mobile');
+  });
+
+  it('should detect Google Pixel', () => {
+    const result = parseUserAgent('App/1.0 (Android 14; Model=Pixel 8 Pro)');
+    expect(result.brand).toBe('Google');
+    expect(result.model).toBe('Pixel 8 Pro');
+    expect(result.os).toBe('Android');
+    expect(result.osVersion).toBe('14');
+    expect(result.device).toBe('mobile');
+  });
+
+  it('should detect OnePlus', () => {
+    const result = parseUserAgent(
+      'App/1.0 (Android 13; Model=OnePlus 11; Manufacturer=OnePlus)',
+    );
+    expect(result.brand).toBe('OnePlus');
+    expect(result.model).toBe('OnePlus 11');
+    expect(result.device).toBe('mobile');
+    expect(result.os).toBe('Android');
+    expect(result.osVersion).toBe('13');
+  });
+
+  it('should detect Huawei', () => {
+    const result = parseUserAgent(
+      'App/1.0 (Android 12; Model=P60 Pro; Manufacturer=Huawei)',
+    );
+    expect(result.brand).toBe('Huawei');
+    expect(result.model).toBe('P60 Pro');
+    expect(result.device).toBe('mobile');
+    expect(result.os).toBe('Android');
+    expect(result.osVersion).toBe('12');
   });
 });

@@ -374,3 +374,29 @@ button {
 .scrollarea-content:active::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.4);  /* darken on hover/scroll */
 }
+
+/* Scroll-driven animation for sticky header */
+@keyframes sticky-shadow {
+  0% {
+    box-shadow: none;
+    border-bottom-color: transparent;
+    border-bottom-width: 1px;
+    background-color: transparent;
+  }
+  100% {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+    border-bottom-color: var(--color-border);
+    border-bottom-width: 1px;
+    background-color: var(--color-def-100);
+  }
+}
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid transparent;
+  animation: sticky-shadow linear both;
+  animation-timeline: scroll();
+  animation-range: 0 1px;
+}
