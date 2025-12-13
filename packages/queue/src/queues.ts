@@ -151,8 +151,8 @@ export const eventsGroupQueues = Array.from({
         list.length === 1 ? 'group_events' : `group_events_${index}`,
       ),
       redis: getRedisGroupQueue(),
-      keepCompleted: 1_000,
-      keepFailed: 10_000,
+      keepCompleted: 0,
+      keepFailed: 0,
       orderingDelayMs: orderingDelayMs,
       autoBatch:
         autoBatchMaxWaitMs && autoBatchSize
