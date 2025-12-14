@@ -44,6 +44,12 @@ export async function bootCron() {
     });
   }
 
+  jobs.push({
+    name: 'insightsDaily',
+    type: 'insightsDaily',
+    pattern: '0 2 * * *', // 2 AM daily
+  });
+
   logger.info('Updating cron jobs');
 
   const jobSchedulers = await cronQueue.getJobSchedulers();

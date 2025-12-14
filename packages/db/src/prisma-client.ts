@@ -42,11 +42,11 @@ const getPrismaClient = () => {
             operation === 'update' ||
             operation === 'delete'
           ) {
-            logger.info('Prisma operation', {
-              operation,
-              args,
-              model,
-            });
+            // logger.info('Prisma operation', {
+            //   operation,
+            //   args,
+            //   model,
+            // });
           }
           return query(args);
         },

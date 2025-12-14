@@ -6,6 +6,7 @@ import {
   cronQueue,
   eventsGroupQueues,
   importQueue,
+  insightsQueue,
   miscQueue,
   notificationQueue,
   sessionsQueue,
@@ -13,10 +14,13 @@ import {
 import express from 'express';
 import client from 'prom-client';
 
+import { getRedisQueue } from '@openpanel/redis';
+import { Worker } from 'bullmq';
 import { BullBoardGroupMQAdapter } from 'groupmq';
 import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
 import { bootWorkers } from './boot-workers';
+import { insightsProjectJob } from './jobs/insights';
 import { register } from './metrics';
 import { logger } from './utils/logger';
 
@@ -42,6 +46,7 @@ async function start() {
         new BullMQAdapter(notificationQueue),
         new BullMQAdapter(miscQueue),
         new BullMQAdapter(importQueue),
+        new BullMQAdapter(insightsQueue),
       ],
       serverAdapter: serverAdapter,
     });
@@ -74,6 +79,11 @@ async function start() {
     await bootCron();
   } else {
     logger.warn('Workers are disabled');
+
+    // Start insights worker
+    const insightsWorker = new Worker(insightsQueue.name, insightsProjectJob, {
+      connection: getRedisQueue(),
+    });
   }
 
   await createInitialSalts();

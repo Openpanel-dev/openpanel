@@ -38,6 +38,7 @@ import { Route as AppOrganizationIdProjectIdReportsRouteImport } from './routes/
 import { Route as AppOrganizationIdProjectIdReferencesRouteImport } from './routes/_app.$organizationId.$projectId.references'
 import { Route as AppOrganizationIdProjectIdRealtimeRouteImport } from './routes/_app.$organizationId.$projectId.realtime'
 import { Route as AppOrganizationIdProjectIdPagesRouteImport } from './routes/_app.$organizationId.$projectId.pages'
+import { Route as AppOrganizationIdProjectIdInsightsRouteImport } from './routes/_app.$organizationId.$projectId.insights'
 import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId.$projectId.dashboards'
 import { Route as AppOrganizationIdProjectIdChatRouteImport } from './routes/_app.$organizationId.$projectId.chat'
 import { Route as AppOrganizationIdMembersTabsIndexRouteImport } from './routes/_app.$organizationId.members._tabs.index'
@@ -273,6 +274,12 @@ const AppOrganizationIdProjectIdPagesRoute =
     path: '/pages',
     getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
+const AppOrganizationIdProjectIdInsightsRoute =
+  AppOrganizationIdProjectIdInsightsRouteImport.update({
+    id: '/insights',
+    path: '/insights',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
+  } as any)
 const AppOrganizationIdProjectIdDashboardsRoute =
   AppOrganizationIdProjectIdDashboardsRouteImport.update({
     id: '/dashboards',
@@ -495,6 +502,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/': typeof AppOrganizationIdIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
+  '/$organizationId/$projectId/insights': typeof AppOrganizationIdProjectIdInsightsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
   '/$organizationId/$projectId/references': typeof AppOrganizationIdProjectIdReferencesRoute
@@ -552,6 +560,7 @@ export interface FileRoutesByTo {
   '/$organizationId': typeof AppOrganizationIdIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
+  '/$organizationId/$projectId/insights': typeof AppOrganizationIdProjectIdInsightsRoute
   '/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
   '/$organizationId/$projectId/references': typeof AppOrganizationIdProjectIdReferencesRoute
@@ -609,6 +618,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/': typeof AppOrganizationIdIndexRoute
   '/_app/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/_app/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
+  '/_app/$organizationId/$projectId/insights': typeof AppOrganizationIdProjectIdInsightsRoute
   '/_app/$organizationId/$projectId/pages': typeof AppOrganizationIdProjectIdPagesRoute
   '/_app/$organizationId/$projectId/realtime': typeof AppOrganizationIdProjectIdRealtimeRoute
   '/_app/$organizationId/$projectId/references': typeof AppOrganizationIdProjectIdReferencesRoute
@@ -677,6 +687,7 @@ export interface FileRouteTypes {
     | '/$organizationId/'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
+    | '/$organizationId/$projectId/insights'
     | '/$organizationId/$projectId/pages'
     | '/$organizationId/$projectId/realtime'
     | '/$organizationId/$projectId/references'
@@ -734,6 +745,7 @@ export interface FileRouteTypes {
     | '/$organizationId'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
+    | '/$organizationId/$projectId/insights'
     | '/$organizationId/$projectId/pages'
     | '/$organizationId/$projectId/realtime'
     | '/$organizationId/$projectId/references'
@@ -790,6 +802,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/'
     | '/_app/$organizationId/$projectId/chat'
     | '/_app/$organizationId/$projectId/dashboards'
+    | '/_app/$organizationId/$projectId/insights'
     | '/_app/$organizationId/$projectId/pages'
     | '/_app/$organizationId/$projectId/realtime'
     | '/_app/$organizationId/$projectId/references'
@@ -1083,6 +1096,13 @@ declare module '@tanstack/react-router' {
       path: '/pages'
       fullPath: '/$organizationId/$projectId/pages'
       preLoaderRoute: typeof AppOrganizationIdProjectIdPagesRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
+    }
+    '/_app/$organizationId/$projectId/insights': {
+      id: '/_app/$organizationId/$projectId/insights'
+      path: '/insights'
+      fullPath: '/$organizationId/$projectId/insights'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdInsightsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
     '/_app/$organizationId/$projectId/dashboards': {
@@ -1528,6 +1548,7 @@ const AppOrganizationIdProjectIdSettingsRouteWithChildren =
 interface AppOrganizationIdProjectIdRouteChildren {
   AppOrganizationIdProjectIdChatRoute: typeof AppOrganizationIdProjectIdChatRoute
   AppOrganizationIdProjectIdDashboardsRoute: typeof AppOrganizationIdProjectIdDashboardsRoute
+  AppOrganizationIdProjectIdInsightsRoute: typeof AppOrganizationIdProjectIdInsightsRoute
   AppOrganizationIdProjectIdPagesRoute: typeof AppOrganizationIdProjectIdPagesRoute
   AppOrganizationIdProjectIdRealtimeRoute: typeof AppOrganizationIdProjectIdRealtimeRoute
   AppOrganizationIdProjectIdReferencesRoute: typeof AppOrganizationIdProjectIdReferencesRoute
@@ -1548,6 +1569,8 @@ const AppOrganizationIdProjectIdRouteChildren: AppOrganizationIdProjectIdRouteCh
     AppOrganizationIdProjectIdChatRoute: AppOrganizationIdProjectIdChatRoute,
     AppOrganizationIdProjectIdDashboardsRoute:
       AppOrganizationIdProjectIdDashboardsRoute,
+    AppOrganizationIdProjectIdInsightsRoute:
+      AppOrganizationIdProjectIdInsightsRoute,
     AppOrganizationIdProjectIdPagesRoute: AppOrganizationIdProjectIdPagesRoute,
     AppOrganizationIdProjectIdRealtimeRoute:
       AppOrganizationIdProjectIdRealtimeRoute,

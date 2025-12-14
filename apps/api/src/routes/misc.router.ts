@@ -1,4 +1,5 @@
 import * as controller from '@/controllers/misc.controller';
+import { insightsQueue } from '@openpanel/queue';
 import type { FastifyPluginCallback } from 'fastify';
 
 const miscRouter: FastifyPluginCallback = async (fastify) => {
@@ -42,6 +43,27 @@ const miscRouter: FastifyPluginCallback = async (fastify) => {
     method: 'GET',
     url: '/geo',
     handler: controller.getGeo,
+  });
+
+  fastify.route({
+    method: 'GET',
+    url: '/insights/test',
+    handler: async (req, reply) => {
+      const projectId = req.query.projectId as string;
+      const job = await insightsQueue.add(
+        'insightsProject',
+        {
+          type: 'insightsProject',
+          payload: {
+            projectId: projectId,
+            date: new Date().toISOString().slice(0, 10),
+          },
+        },
+        { jobId: `manual:${Date.now()}:${projectId}` },
+      );
+
+      return { jobId: job.id };
+    },
   });
 };
 

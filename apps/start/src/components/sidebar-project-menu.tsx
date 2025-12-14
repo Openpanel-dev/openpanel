@@ -17,6 +17,7 @@ import {
   LayoutPanelTopIcon,
   PlusIcon,
   SparklesIcon,
+  TrendingUpDownIcon,
   UndoDotIcon,
   UsersIcon,
   WallpaperIcon,
@@ -39,12 +40,17 @@ export default function SidebarProjectMenu({
 }: SidebarProjectMenuProps) {
   return (
     <>
-      <div className="mb-2 font-medium text-muted-foreground">Insights</div>
+      <div className="mb-2 font-medium text-muted-foreground">Analytics</div>
       <SidebarLink icon={WallpaperIcon} label="Overview" href={'/'} />
       <SidebarLink
         icon={LayoutPanelTopIcon}
         label="Dashboards"
         href={'/dashboards'}
+      />
+      <SidebarLink
+        icon={TrendingUpDownIcon}
+        label="Insights"
+        href={'/insights'}
       />
       <SidebarLink icon={LayersIcon} label="Pages" href={'/pages'} />
       <SidebarLink icon={Globe2Icon} label="Realtime" href={'/realtime'} />

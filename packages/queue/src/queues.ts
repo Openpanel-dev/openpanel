@@ -111,13 +111,18 @@ export type CronQueuePayloadProject = {
   type: 'deleteProjects';
   payload: undefined;
 };
+export type CronQueuePayloadInsightsDaily = {
+  type: 'insightsDaily';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
   | CronQueuePayloadFlushSessions
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadPing
-  | CronQueuePayloadProject;
+  | CronQueuePayloadProject
+  | CronQueuePayloadInsightsDaily;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';
@@ -231,6 +236,21 @@ export const importQueue = new Queue<ImportQueuePayload>(
     defaultJobOptions: {
       removeOnComplete: 10,
       removeOnFail: 50,
+    },
+  },
+);
+
+export type InsightsQueuePayloadProject = {
+  type: 'insightsProject';
+  payload: { projectId: string; date: string };
+};
+
+export const insightsQueue = new Queue<InsightsQueuePayloadProject>(
+  getQueueName('insights'),
+  {
+    connection: getRedisQueue(),
+    defaultJobOptions: {
+      removeOnComplete: 100,
     },
   },
 );
