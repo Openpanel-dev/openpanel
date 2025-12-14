@@ -13,3 +13,4 @@ catalog:
   "@types/react-dom": ^19.0.0
   "@types/node": ^24.7.1
   typescript: ^5.9.3
+  groupmq: 1.1.1-next.2
