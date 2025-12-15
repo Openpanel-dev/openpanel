@@ -1,7 +1,10 @@
 import {
+  type EventHandlerRequest,
+  type H3Event,
   createError,
   defineEventHandler,
   getHeader,
+  getRequestIP,
   getRequestURL,
   readBody,
   setResponseStatus,
@@ -9,14 +12,14 @@ import {
 
 const API_URL = 'https://api.openpanel.dev';
 
-function getClientHeaders(event: any): Headers {
+function getClientHeaders(event: H3Event<EventHandlerRequest>): Headers {
   const headers = new Headers();
 
   // Get IP from multiple possible headers (like Next.js does)
   const ip =
     getHeader(event, 'cf-connecting-ip') ||
     getHeader(event, 'x-forwarded-for')?.split(',')[0] ||
-    getHeader(event, 'x-vercel-forwarded-for');
+    getRequestIP(event);
 
   headers.set('Content-Type', 'application/json');
   headers.set(
@@ -42,21 +45,14 @@ function getClientHeaders(event: any): Headers {
   return headers;
 }
 
-export default defineEventHandler(async (event) => {
-  const path = event.context.params?._ || '';
-
-  // Only handle /track routes
-  if (!path.includes('track')) {
-    throw createError({ statusCode: 404, message: 'Not found' });
-  }
-
-  const apiPath = `/track${path.split('track')[1] || ''}`;
-  const headers = getClientHeaders(event);
-
+async function handleApiRoute(
+  event: H3Event<EventHandlerRequest>,
+  apiPath: string,
+) {
   try {
     const res = await fetch(`${API_URL}${apiPath}`, {
       method: event.method,
-      headers,
+      headers: getClientHeaders(event),
       body:
         event.method === 'POST'
           ? JSON.stringify(await readBody(event))
@@ -77,4 +73,18 @@ export default defineEventHandler(async (event) => {
       data: e instanceof Error ? e.message : String(e),
     });
   }
+}
+
+export default defineEventHandler(async (event) => {
+  const url = getRequestURL(event);
+  const pathname = url.pathname;
+
+  // Handle API routes: /track/*
+  const apiPathMatch = pathname.indexOf('/track');
+  if (apiPathMatch === -1) {
+    throw createError({ statusCode: 404, message: 'Not found' });
+  }
+
+  const apiPath = pathname.substring(apiPathMatch);
+  return handleApiRoute(event, apiPath);
 });
