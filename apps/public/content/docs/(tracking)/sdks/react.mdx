@@ -2,4 +2,244 @@
 title: React
 ---
 
-Use [script tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) for now. We'll add a dedicated react sdk soon.
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+## Good to know
+
+Keep in mind that all tracking here happens on the client!
+
+For React SPAs, you can use `@openpanel/web` directly - no need for a separate React SDK. Simply create an OpenPanel instance and use it throughout your application.
+
+## Installation
+
+<Steps>
+### Step 1: Install
+
+```bash
+npm install @openpanel/web
+```
+
+### Step 2: Initialize
+
+Create a shared OpenPanel instance in your project:
+
+```ts title="src/openpanel.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+#### Options
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+- `clientId` - Your OpenPanel client ID (required)
+- `apiUrl` - The API URL to send events to (default: `https://api.openpanel.dev`)
+- `trackScreenViews` - Automatically track screen views (default: `true`)
+- `trackOutgoingLinks` - Automatically track outgoing links (default: `true`)
+- `trackAttributes` - Automatically track elements with `data-track` attributes (default: `true`)
+- `trackHashChanges` - Track hash changes in URL (default: `false`)
+- `disabled` - Disable tracking (default: `false`)
+
+### Step 3: Usage
+
+Import and use the instance in your React components:
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  const handleClick = () => {
+    op.track('button_click', { button: 'signup' });
+  };
+
+  return <button onClick={handleClick}>Trigger event</button>;
+}
+```
+
+</Steps>
+
+## Usage
+
+### Tracking Events
+
+You can track events with two different methods: by calling the `op.track()` method directly or by adding `data-track` attributes to your HTML elements.
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  useEffect(() => {
+    op.track('my_event', { foo: 'bar' });
+  }, []);
+
+  return <div>My Component</div>;
+}
+```
+
+### Identifying Users
+
+To identify a user, call the `op.identify()` method with a unique identifier.
+
+```tsx
+import { op } from '@/openpanel';
+
+function LoginComponent() {
+  const handleLogin = (user: User) => {
+    op.identify({
+      profileId: user.id, // Required
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      properties: {
+        tier: 'premium',
+      },
+    });
+  };
+
+  return <button onClick={() => handleLogin(user)}>Login</button>;
+}
+```
+
+### Setting Global Properties
+
+To set properties that will be sent with every event:
+
+```tsx
+import { op } from '@/openpanel';
+
+function App() {
+  useEffect(() => {
+    op.setGlobalProperties({
+      app_version: '1.0.2',
+      environment: 'production',
+    });
+  }, []);
+
+  return <div>App</div>;
+}
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile.
+
+- `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  const handleAction = () => {
+    op.increment({
+      profileId: '1',
+      property: 'visits',
+      value: 1, // optional
+    });
+  };
+
+  return <button onClick={handleAction}>Increment</button>;
+}
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile.
+
+- `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
+
+```tsx
+import { op } from '@/openpanel';
+
+function MyComponent() {
+  const handleAction = () => {
+    op.decrement({
+      profileId: '1',
+      property: 'visits',
+      value: 1, // optional
+    });
+  };
+
+  return <button onClick={handleAction}>Decrement</button>;
+}
+```
+
+### Clearing User Data
+
+To clear the current user's data:
+
+```tsx
+import { op } from '@/openpanel';
+
+function LogoutComponent() {
+  const handleLogout = () => {
+    op.clear();
+    // ... logout logic
+  };
+
+  return <button onClick={handleLogout}>Logout</button>;
+}
+```
+
+### Revenue Tracking
+
+Track revenue events:
+
+```tsx
+import { op } from '@/openpanel';
+
+function CheckoutComponent() {
+  const handlePurchase = async () => {
+    // Track revenue immediately
+    await op.revenue(29.99, { currency: 'USD' });
+
+    // Or accumulate revenue and flush later
+    op.pendingRevenue(29.99, { currency: 'USD' });
+    op.pendingRevenue(19.99, { currency: 'USD' });
+    await op.flushRevenue(); // Sends both revenue events
+
+    // Clear pending revenue
+    op.clearRevenue();
+  };
+
+  return <button onClick={handlePurchase}>Purchase</button>;
+}
+```
+
+### Optional: Create a Hook
+
+If you prefer using a React hook pattern, you can create your own wrapper:
+
+```ts title="src/hooks/useOpenPanel.ts"
+import { op } from '@/openpanel';
+
+export function useOpenPanel() {
+  return op;
+}
+```
+
+Then use it in your components:
+
+```tsx
+import { useOpenPanel } from '@/hooks/useOpenPanel';
+
+function MyComponent() {
+  const op = useOpenPanel();
+  
+  useEffect(() => {
+    op.track('my_event', { foo: 'bar' });
+  }, []);
+
+  return <div>My Component</div>;
+}
+```

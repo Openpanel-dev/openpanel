@@ -2,4 +2,219 @@
 title: Vue
 ---
 
-Use [script tag](/docs/sdks/script) or [Web SDK](/docs/sdks/web) for now. We'll add a dedicated vue sdk soon.
+import Link from 'next/link';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+<Callout>
+Looking for a step-by-step tutorial? Check out the [Vue analytics guide](/guides/vue-analytics).
+</Callout>
+
+## Good to know
+
+Keep in mind that all tracking here happens on the client!
+
+For Vue SPAs, you can use `@openpanel/web` directly - no need for a separate Vue SDK. Simply create an OpenPanel instance and use it throughout your application.
+
+## Installation
+
+<Steps>
+### Step 1: Install
+
+```bash
+pnpm install @openpanel/web
+```
+
+### Step 2: Initialize
+
+Create a shared OpenPanel instance in your project:
+
+```ts title="src/openpanel.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+#### Options
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+- `clientId` - Your OpenPanel client ID (required)
+- `apiUrl` - The API URL to send events to (default: `https://api.openpanel.dev`)
+- `trackScreenViews` - Automatically track screen views (default: `true`)
+- `trackOutgoingLinks` - Automatically track outgoing links (default: `true`)
+- `trackAttributes` - Automatically track elements with `data-track` attributes (default: `true`)
+- `trackHashChanges` - Track hash changes in URL (default: `false`)
+- `disabled` - Disable tracking (default: `false`)
+
+### Step 3: Usage
+
+Import and use the instance in your Vue components:
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+function handleClick() {
+  op.track('button_click', { button: 'signup' });
+}
+</script>
+
+<template>
+  <button @click="handleClick">Trigger event</button>
+</template>
+```
+
+</Steps>
+
+## Usage
+
+### Tracking Events
+
+You can track events with two different methods: by calling the `op.track()` method directly or by adding `data-track` attributes to your HTML elements.
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.track('my_event', { foo: 'bar' });
+</script>
+```
+
+### Identifying Users
+
+To identify a user, call the `op.identify()` method with a unique identifier.
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+</script>
+```
+
+### Setting Global Properties
+
+To set properties that will be sent with every event:
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+</script>
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile.
+
+- `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile.
+
+- `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### Clearing User Data
+
+To clear the current user's data:
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+op.clear();
+</script>
+```
+
+### Revenue Tracking
+
+Track revenue events:
+
+```vue
+<script setup>
+import { op } from '@/openpanel';
+
+// Track revenue immediately
+await op.revenue(29.99, { currency: 'USD' });
+
+// Or accumulate revenue and flush later
+op.pendingRevenue(29.99, { currency: 'USD' });
+op.pendingRevenue(19.99, { currency: 'USD' });
+await op.flushRevenue(); // Sends both revenue events
+
+// Clear pending revenue
+op.clearRevenue();
+</script>
+```
+
+### Optional: Create a Composable
+
+If you prefer using a composable pattern, you can create your own wrapper:
+
+```ts title="src/composables/useOpenPanel.ts"
+import { op } from '@/openpanel';
+
+export function useOpenPanel() {
+  return op;
+}
+```
+
+Then use it in your components:
+
+```vue
+<script setup>
+import { useOpenPanel } from '@/composables/useOpenPanel';
+
+const op = useOpenPanel();
+op.track('my_event', { foo: 'bar' });
+</script>
+```
