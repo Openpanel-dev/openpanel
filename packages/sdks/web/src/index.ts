@@ -38,8 +38,6 @@ export class OpenPanel extends OpenPanelBase {
     });
 
     if (!this.isServer()) {
-      console.log('OpenPanel.dev - Initialized', this.options);
-
       try {
         const pending = sessionStorage.getItem('openpanel-pending-revenues');
         if (pending) {
@@ -202,7 +200,6 @@ export class OpenPanel extends OpenPanelBase {
     }
 
     this.lastPath = path;
-    console.log('OpenPanel.dev - Track page view');
     super.track('screen_view', {
       ...(properties ?? {}),
       __path: path,
