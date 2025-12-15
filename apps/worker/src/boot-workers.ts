@@ -64,6 +64,76 @@ function getEnabledQueues(): QueueName[] {
   return queues;
 }
 
+function getPodIndex(): number {
+  const hostname = process.env.HOSTNAME || '';
+
+  // Extract numeric index from StatefulSet pod name (e.g., openpanel-worker-0 -> 0)
+  const match = hostname.match(/-(\d+)$/);
+  if (match) {
+    return Number.parseInt(match[1], 10);
+  }
+
+  // Fallback to 0 if no numeric suffix found
+  logger.warn('Could not extract pod index from hostname, defaulting to 0', {
+    hostname,
+  });
+  return 0;
+}
+
+function getAutoPartitionedQueues(): QueueName[] {
+  const enabledQueues = getEnabledQueues();
+
+  const enableShardDistribution =
+    process.env.ENABLE_SHARD_DISTRIBUTION === 'true';
+
+  if (!enableShardDistribution) {
+    return enabledQueues;
+  }
+
+  if (!enabledQueues.includes('events')) {
+    return enabledQueues;
+  }
+
+  const totalPods = Number.parseInt(process.env.TOTAL_POD || '1', 10);
+
+  if (totalPods <= 1) {
+    logger.info('Shard distribution disabled: TOTAL_POD not set or = 1', {
+      totalShards: EVENTS_GROUP_QUEUES_SHARDS,
+    });
+    return enabledQueues;
+  }
+
+  const podIndex = getPodIndex();
+  const shardsPerPod = Math.floor(EVENTS_GROUP_QUEUES_SHARDS / totalPods);
+  const remainderShards = EVENTS_GROUP_QUEUES_SHARDS % totalPods;
+  const extraShard = podIndex < remainderShards ? 1 : 0;
+  const startShard =
+    podIndex * shardsPerPod + Math.min(podIndex, remainderShards);
+  const endShard = startShard + shardsPerPod + extraShard;
+
+  const specificShards = Array.from(
+    { length: endShard - startShard },
+    (_, i) => `events_${startShard + i}`,
+  );
+
+  const partitionedQueues = [
+    ...enabledQueues.filter((q) => q !== 'events'),
+    ...specificShards,
+  ];
+
+  logger.info('Shard distribution enabled', {
+    hostname: process.env.HOSTNAME,
+    podIndex,
+    totalPods,
+    totalShards: EVENTS_GROUP_QUEUES_SHARDS,
+    assignedShards: `${startShard}-${endShard - 1}`,
+    shardsCount: endShard - startShard,
+    queues: partitionedQueues,
+  });
+
+  return partitionedQueues;
+}
+
 /**
  * Gets the concurrency setting for a queue from environment variables.
  * Env var format: {QUEUE_NAME}_CONCURRENCY (e.g., EVENTS_0_CONCURRENCY=32)
@@ -83,7 +153,11 @@ function getConcurrencyFor(queueName: string, defaultValue = 1): number {
 }
 
 export async function bootWorkers() {
-  const enabledQueues = getEnabledQueues();
+  const enableShardDistribution =
+    process.env.ENABLE_SHARD_DISTRIBUTION === 'true';
+  const enabledQueues = enableShardDistribution
+    ? getAutoPartitionedQueues()
+    : getEnabledQueues();
 
   const workers: (Worker | GroupWorker<any>)[] = [];
 
