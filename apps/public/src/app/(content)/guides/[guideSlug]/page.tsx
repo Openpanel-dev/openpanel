@@ -121,7 +121,7 @@ export default async function Page({
           />
           <div className="row gap-4 items-center mt-8">
             <div className="size-10 center-center bg-black rounded-full">
-              {author.image ? (
+              {author?.image ? (
                 <Image
                   className="size-10 object-cover rounded-full"
                   src={author.image}
@@ -134,7 +134,7 @@ export default async function Page({
               )}
             </div>
             <div className="col flex-1">
-              <p className="font-medium">{author.name}</p>
+              <p className="font-medium">{author?.name || 'OpenPanel Team'}</p>
               <div className="row gap-4 items-center">
                 <p className="text-muted-foreground text-sm">
                   {guide?.data.date.toLocaleDateString()}
