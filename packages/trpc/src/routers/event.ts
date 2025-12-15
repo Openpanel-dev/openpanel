@@ -10,12 +10,10 @@ import {
   convertClickhouseDateToJs,
   db,
   eventService,
-  formatClickhouseDate,
   getChartStartEndDate,
   getConversionEventNames,
   getEventList,
   getEventMetasCached,
-  getEvents,
   getSettingsForProject,
   overviewService,
   sessionService,
@@ -143,6 +141,7 @@ export const eventRouter = createTRPCRouter({
           path: columnVisibility?.name ?? true,
           duration: columnVisibility?.name ?? true,
           projectId: false,
+          revenue: true,
         },
       });
 
@@ -221,6 +220,7 @@ export const eventRouter = createTRPCRouter({
           path: columnVisibility?.name ?? true,
           duration: columnVisibility?.name ?? true,
           projectId: false,
+          revenue: true,
         },
         custom: (sb) => {
           sb.where.name = `name IN (${filteredConversions.map((event) => sqlstring.escape(event.name)).join(',')})`;

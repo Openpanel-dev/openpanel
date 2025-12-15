@@ -27,7 +27,7 @@ export function useColumns() {
       accessorKey: 'name',
       header: 'Name',
       cell({ row }) {
-        const { name, path, duration, properties } = row.original;
+        const { name, path, duration, properties, revenue } = row.original;
         const renderName = () => {
           if (name === 'screen_view') {
             if (path.includes('/')) {
@@ -40,6 +40,10 @@ export function useColumns() {
                 <span className="max-w-md truncate">{path}</span>
               </>
             );
+          }
+
+          if (name === 'revenue' && revenue) {
+            return `${name} (${number.currency(revenue / 100)})`;
           }
 
           return name.replace(/_/g, ' ');

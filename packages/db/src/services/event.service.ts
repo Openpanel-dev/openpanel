@@ -592,6 +592,9 @@ export async function getEventList(options: GetEventListOptions) {
   if (select.sdkVersion) {
     sb.select.sdkVersion = 'sdk_version';
   }
+  if (select.revenue) {
+    sb.select.revenue = 'revenue';
+  }
 
   if (profileId) {
     sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND device_id != '' AND profile_id = ${sqlstring.escape(profileId)} group by did) OR profile_id = ${sqlstring.escape(profileId)})`;
