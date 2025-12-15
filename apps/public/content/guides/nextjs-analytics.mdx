@@ -1,0 +1,255 @@
+---
+title: "How to add analytics to Next.js"
+description: "Add privacy-first analytics to your Next.js app in under 5 minutes with OpenPanel."
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-15
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Add OpenPanel to your layout"
+    anchor: "setup"
+  - name: "Track custom events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to add analytics to Next.js
+
+This guide walks you through adding OpenPanel to a Next.js application. By the end, you'll have automatic page view tracking, custom event tracking, and user identification working in your app.
+
+OpenPanel works with both the App Router and Pages Router. It uses cookieless tracking by default, so you won't need cookie consent banners for basic analytics. If you're looking for a privacy-focused alternative to Mixpanel or Google Analytics, this is a straightforward setup.
+
+## Prerequisites
+
+- A Next.js project (App Router or Pages Router)
+- An OpenPanel account
+- Your Client ID from the [OpenPanel dashboard](https://dashboard.openpanel.dev/onboarding)
+
+## Install the SDK [#install]
+
+Start by installing the OpenPanel Next.js package. This SDK is a thin wrapper around the core OpenPanel library with Next.js-specific components for easier integration.
+
+```bash
+npm install @openpanel/nextjs
+```
+
+If you prefer pnpm or yarn, those work too.
+
+## Add OpenPanel to your layout [#setup]
+
+Before tracking anything, you need to add the OpenPanelComponent to your app's root. This loads the tracking script and makes the SDK available throughout your application.
+
+For App Router projects, add the component to your root layout file. The component should be placed inside the body tag, and setting `trackScreenViews` to true enables automatic page view tracking as users navigate your app.
+
+```tsx
+// app/layout.tsx
+import { OpenPanelComponent } from '@openpanel/nextjs';
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>
+        <OpenPanelComponent
+          clientId="your-client-id"
+          trackScreenViews={true}
+        />
+        {children}
+      </body>
+    </html>
+  );
+}
+```
+
+For Pages Router projects, the setup is nearly identical. Add the component to your `_app.tsx` file instead.
+
+```tsx
+// pages/_app.tsx
+import { OpenPanelComponent } from '@openpanel/nextjs';
+import type { AppProps } from 'next/app';
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <>
+      <OpenPanelComponent
+        clientId="your-client-id"
+        trackScreenViews={true}
+      />
+      <Component {...pageProps} />
+    </>
+  );
+}
+```
+
+You can also enable `trackOutgoingLinks` to automatically track when users click external links, or `trackAttributes` to track elements with data attributes.
+
+## Track custom events [#events]
+
+Page views only tell part of the story. To understand how users interact with your product, you'll want to track custom events like button clicks, form submissions, or feature usage.
+
+In client components, use the `useOpenPanel` hook. This gives you access to the tracking methods anywhere in your component tree.
+
+```tsx
+'use client';
+
+import { useOpenPanel } from '@openpanel/nextjs';
+
+export function SignupButton() {
+  const op = useOpenPanel();
+
+  return (
+    <button
+      type="button"
+      onClick={() => op.track('signup_clicked', { location: 'header' })}
+    >
+      Sign up
+    </button>
+  );
+}
+```
+
+For server-side tracking, you'll need to create an SDK instance with your client secret. This is useful for tracking events in API routes, webhooks, or server actions.
+
+```tsx
+// lib/op.ts
+import { OpenPanel } from '@openpanel/nextjs';
+
+export const op = new OpenPanel({
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+});
+```
+
+Never expose your client secret on the client side. Keep it in server-only code.
+
+With the instance created, you can track events from anywhere on the server.
+
+```tsx
+// app/api/webhook/route.ts
+import { op } from '@/lib/op';
+
+export async function POST(request: Request) {
+  const data = await request.json();
+
+  op.track('webhook_received', {
+    source: data.source,
+    event_type: data.type,
+  });
+
+  return Response.json({ success: true });
+}
+```
+
+If you're running on Vercel or another serverless platform, wrap your tracking calls with `waitUntil` to ensure events are sent before the function terminates.
+
+## Identify users [#identify]
+
+Anonymous tracking is useful, but identifying users unlocks more valuable insights. You can track behavior across sessions, segment users by properties, and build cohort analyses.
+
+In client components, call `identify` after a user logs in or when you have their information available.
+
+```tsx
+'use client';
+
+import { useOpenPanel } from '@openpanel/nextjs';
+import { useEffect } from 'react';
+
+export function UserProfile({ user }) {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.identify({
+      profileId: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      properties: {
+        plan: user.plan,
+      },
+    });
+  }, [user]);
+
+  return <div>Welcome, {user.firstName}!</div>;
+}
+```
+
+If you already have user data on the server, the `IdentifyComponent` is a cleaner approach. It renders nothing visible but handles identification when the component mounts.
+
+```tsx
+// app/dashboard/layout.tsx
+import { IdentifyComponent } from '@openpanel/nextjs';
+
+export default async function DashboardLayout({ children }) {
+  const user = await getCurrentUser();
+
+  return (
+    <>
+      <IdentifyComponent
+        profileId={user.id}
+        firstName={user.firstName}
+        lastName={user.lastName}
+        email={user.email}
+        properties={{
+          plan: user.plan,
+        }}
+      />
+      {children}
+    </>
+  );
+}
+```
+
+## Verify your setup [#verify]
+
+Open your Next.js app in the browser and navigate between a few pages. Then open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and check the real-time view. You should see page view events appearing within seconds.
+
+If events aren't showing up, check the browser console for errors. The most common issues are an incorrect client ID or ad blockers intercepting requests. You can solve the ad blocker problem by proxying events through your own server.
+
+To set up a proxy, create a catch-all API route that forwards requests to OpenPanel.
+
+```tsx
+// app/api/[...op]/route.ts
+import { createRouteHandler } from '@openpanel/nextjs/server';
+
+export const { GET, POST } = createRouteHandler();
+```
+
+Then update your OpenPanelComponent to use the proxy endpoint.
+
+```tsx
+<OpenPanelComponent
+  apiUrl="/api/op"
+  cdnUrl="/api/op/op1.js"
+  clientId="your-client-id"
+  trackScreenViews={true}
+/>
+```
+
+This routes all tracking requests through your domain, making them invisible to browser extensions that block third-party analytics.
+
+## Next steps
+
+The [Next.js SDK reference](/docs/sdks/nextjs) covers additional features like global properties, event filtering, and incrementing user properties. If you're interested in understanding how OpenPanel handles privacy, read our article on [cookieless analytics](/articles/cookieless-analytics).
+
+<Faqs>
+<FaqItem question="Does OpenPanel work with both App Router and Pages Router?">
+Yes. The setup is nearly identical for both. Add OpenPanelComponent to your root layout for App Router or to _app.tsx for Pages Router. All tracking features work the same way regardless of which router you use.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel use cookies?">
+No. OpenPanel uses cookieless tracking by default. This means you don't need cookie consent banners for basic analytics under most privacy regulations, including GDPR and PECR.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with cookieless tracking, data minimization, and full support for data subject rights. With self-hosting, you also eliminate international data transfer concerns entirely.
+</FaqItem>
+
+<FaqItem question="How do I avoid ad blockers?">
+Set up the proxy route handler as shown in the verification section. This routes tracking requests through your own domain, which ad blockers don't typically block.
+</FaqItem>
+</Faqs>

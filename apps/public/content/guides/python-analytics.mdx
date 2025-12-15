@@ -1,0 +1,208 @@
+---
+title: "How to add analytics to Python"
+description: "Add server-side analytics to your Python application with OpenPanel's Python SDK."
+type: guide
+difficulty: beginner
+timeToComplete: 7
+date: 2025-12-15
+lastUpdated: 2025-12-15
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Initialize OpenPanel"
+    anchor: "initialize"
+  - name: "Track events"
+    anchor: "track-events"
+  - name: "Identify users"
+    anchor: "identify-users"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to add analytics to Python
+
+This guide walks you through adding server-side analytics to any Python application. You'll install the OpenPanel SDK, configure it with your credentials, track custom events, and identify users.
+
+Server-side tracking gives you complete control over what data you collect and ensures events are never blocked by browser extensions or ad blockers. The Python SDK works with Django, Flask, FastAPI, and any other Python framework or script.
+
+## Prerequisites
+
+- A Python project
+- An OpenPanel account
+- Your Client ID and Client Secret from the dashboard
+
+## Install the SDK [#install]
+
+Start by installing the OpenPanel package from PyPI.
+
+```bash
+pip install openpanel
+```
+
+If you're using Poetry, you can run `poetry add openpanel` instead.
+
+## Initialize OpenPanel [#initialize]
+
+Create a shared module for your OpenPanel instance. This approach lets you import the same configured instance throughout your application.
+
+```python
+# lib/op.py
+import os
+from openpanel import OpenPanel
+
+op = OpenPanel(
+    client_id=os.getenv("OPENPANEL_CLIENT_ID"),
+    client_secret=os.getenv("OPENPANEL_CLIENT_SECRET")
+)
+```
+
+Server-side tracking requires both a client ID and client secret for authentication. Add these to your environment variables.
+
+```bash
+# .env
+OPENPANEL_CLIENT_ID=your-client-id
+OPENPANEL_CLIENT_SECRET=your-client-secret
+```
+
+You can also pass global properties during initialization. These properties are included with every event automatically.
+
+```python
+op = OpenPanel(
+    client_id=os.getenv("OPENPANEL_CLIENT_ID"),
+    client_secret=os.getenv("OPENPANEL_CLIENT_SECRET"),
+    global_properties={
+        "app_version": "1.0.0",
+        "environment": os.getenv("ENVIRONMENT", "production")
+    }
+)
+```
+
+## Track events [#track-events]
+
+Use the `track` method to record events. The first argument is the event name, and the second is an optional dictionary of properties.
+
+```python
+from lib.op import op
+
+# Track a simple event
+op.track("button_clicked")
+
+# Track with properties
+op.track("purchase_completed", {
+    "product_id": "123",
+    "price": 99.99,
+    "currency": "USD"
+})
+```
+
+When tracking events in request handlers, you'll typically pull data from the request and track it alongside your business logic. Here's an example in a Django view.
+
+```python
+from lib.op import op
+
+def signup_view(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        name = request.POST.get('name')
+        
+        user = create_user(email, name)
+        
+        op.track("user_signed_up", {
+            "email": email,
+            "source": "website"
+        })
+        
+        return JsonResponse({"success": True})
+```
+
+The same pattern works in Flask and FastAPI. Import your OpenPanel instance and call `track` wherever you need to record an event.
+
+You can also track events from background tasks. This is useful for monitoring async jobs, email delivery, and scheduled tasks.
+
+```python
+from celery import shared_task
+from lib.op import op
+
+@shared_task
+def send_email_task(user_id, email_type):
+    try:
+        send_email(user_id, email_type)
+        op.track("email_sent", {
+            "user_id": user_id,
+            "email_type": email_type
+        })
+    except Exception as e:
+        op.track("email_failed", {
+            "user_id": user_id,
+            "error": str(e)
+        })
+```
+
+## Identify users [#identify-users]
+
+The `identify` method associates a user profile with their ID. Call this after authentication to link subsequent events to that user.
+
+```python
+from lib.op import op
+
+def login_view(request):
+    user = authenticate_user(request)
+    
+    op.identify(user.id, {
+        "firstName": user.first_name,
+        "lastName": user.last_name,
+        "email": user.email,
+        "tier": user.plan
+    })
+    
+    op.track("user_logged_in", {"method": "email"})
+    
+    return JsonResponse({"success": True})
+```
+
+To track an event for a specific user without calling identify first, pass the `profile_id` parameter to the track method.
+
+```python
+op.track("purchase_completed", {
+    "product_id": "123",
+    "amount": 99.99
+}, profile_id="user_456")
+```
+
+You can increment numeric properties on user profiles. This is useful for counters like login count or total purchases.
+
+```python
+op.increment({
+    "profile_id": "user_456",
+    "property": "login_count",
+    "value": 1
+})
+```
+
+## Verify your setup [#verify]
+
+Run your Python application and trigger a few events. Open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and navigate to the real-time view. You should see your events appearing within seconds.
+
+If events aren't showing up, check that your client ID and client secret are correct. Server-side tracking won't work without the client secret. Review your application logs for any error messages from the SDK.
+
+## Next steps
+
+The [Python SDK reference](/docs/sdks/python) covers additional configuration options like event filtering and disabling tracking. If you're also tracking client-side events, you might want to read about [cookieless analytics](/articles/cookieless-analytics) to understand how OpenPanel handles privacy without cookies.
+
+<Faqs>
+<FaqItem question="Why do I need a client secret for server-side tracking?">
+Server-side tracking can't rely on browser-based authentication like CORS headers. The client secret authenticates your requests and prevents unauthorized parties from sending events to your project.
+</FaqItem>
+
+<FaqItem question="Is the SDK thread-safe?">
+Yes. The OpenPanel Python SDK is thread-safe and you can use a single instance across multiple threads. This makes it safe to use in threaded web servers and background task workers.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel work with async Python?">
+Yes. The SDK tracks events asynchronously by default, so it won't block your async request handlers. Events are queued and sent in the background.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with cookieless tracking, data minimization, and support for data subject rights. Server-side tracking gives you complete control over what data you collect.
+</FaqItem>
+</Faqs>

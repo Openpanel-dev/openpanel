@@ -1,0 +1,263 @@
+---
+title: "How to Add Analytics to Swift Apps"
+description: "Add privacy-first analytics to your iOS, macOS, tvOS, and watchOS apps with OpenPanel's Swift SDK."
+difficulty: beginner
+timeToComplete: 10
+date: 2025-12-15
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Add Swift package"
+    anchor: "install"
+  - name: "Initialize OpenPanel"
+    anchor: "setup"
+  - name: "Track events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Track screen views"
+    anchor: "screenviews"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+
+## Introduction
+
+Understanding how users interact with your native Apple apps requires solid analytics. OpenPanel's Swift SDK gives you event tracking, user identification, and screen view analytics across iOS, macOS, tvOS, and watchOS platforms.
+
+Since native apps can't rely on CORS headers for authentication like web apps do, the Swift SDK uses a client secret for secure server-side authentication. This makes it suitable for production apps where you need reliable, privacy-respecting analytics. OpenPanel is an open-source alternative to Mixpanel and Amplitude that you can self-host for complete data ownership.
+
+## Prerequisites
+
+- Xcode project set up (iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 6.0+)
+- OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Your Client ID and Client Secret from the OpenPanel dashboard
+
+> **Important:** Native app tracking requires a `clientSecret` for authentication.
+
+## Step 1: Add Swift package
+
+The OpenPanel Swift SDK is distributed through Swift Package Manager. Open your project in Xcode, then go to File and select Add Packages. Enter the repository URL and click Add Package.
+
+```
+https://github.com/Openpanel-dev/swift-sdk
+```
+
+If you're working with a Package.swift file directly, add OpenPanel as a dependency instead.
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/Openpanel-dev/swift-sdk")
+]
+```
+
+## Step 2: Initialize OpenPanel
+
+Before tracking any events, you need to initialize the SDK when your app launches. This should happen early in your app's lifecycle so the SDK is available throughout your application.
+
+For UIKit apps, add the initialization to your AppDelegate's `application(_:didFinishLaunchingWithOptions:)` method.
+
+```swift title="AppDelegate.swift"
+import UIKit
+import OpenPanel
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
+        OpenPanel.initialize(options: .init(
+            clientId: "YOUR_CLIENT_ID",
+            clientSecret: "YOUR_CLIENT_SECRET"
+        ))
+        
+        return true
+    }
+}
+```
+
+For SwiftUI apps, initialize the SDK in your App struct's initializer.
+
+```swift title="MyApp.swift"
+import SwiftUI
+import OpenPanel
+
+@main
+struct MyApp: App {
+    init() {
+        OpenPanel.initialize(options: .init(
+            clientId: "YOUR_CLIENT_ID",
+            clientSecret: "YOUR_CLIENT_SECRET"
+        ))
+    }
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### Automatic lifecycle tracking
+
+You can enable automatic lifecycle tracking by setting `automaticTracking: true`. This will track `app_opened` and `app_closed` events for you.
+
+```swift
+OpenPanel.initialize(options: .init(
+    clientId: "YOUR_CLIENT_ID",
+    clientSecret: "YOUR_CLIENT_SECRET",
+    automaticTracking: true
+))
+```
+
+## Step 3: Track events
+
+Once initialized, you can track events anywhere in your app by calling `OpenPanel.track`. Each event has a name and optional properties that provide additional context.
+
+```swift title="SignupButton.swift"
+import SwiftUI
+import OpenPanel
+
+struct SignupButton: View {
+    var body: some View {
+        Button("Sign Up") {
+            OpenPanel.track(
+                name: "button_clicked",
+                properties: [
+                    "button_name": "signup",
+                    "button_location": "hero"
+                ]
+            )
+        }
+    }
+}
+```
+
+Properties can be any key-value pairs relevant to the event. Common patterns include tracking form submissions, purchases, and feature usage. Keep event names consistent across your app by using snake_case and being descriptive about what action occurred.
+
+### Set global properties
+
+If you have properties that should be sent with every event, set them once using `setGlobalProperties`. This is useful for app version, build number, or device information.
+
+```swift
+OpenPanel.setGlobalProperties([
+    "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "",
+    "platform": UIDevice.current.systemName
+])
+```
+
+## Step 4: Identify users
+
+When a user signs in, call `identify` to associate their events with their profile. This enables you to track user journeys across sessions and understand individual user behavior.
+
+```swift title="AuthService.swift"
+OpenPanel.identify(payload: IdentifyPayload(
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: [
+        "plan": user.plan,
+        "signup_date": user.createdAt.ISO8601Format()
+    ]
+))
+```
+
+The `profileId` should be a unique identifier for the user, typically from your authentication system. Additional properties like `firstName`, `lastName`, and `email` help you recognize users in your dashboard.
+
+### Clear user data on logout
+
+When a user logs out, call `clear` to reset the local state. This ensures subsequent events aren't incorrectly attributed to the previous user.
+
+```swift
+func logout() {
+    OpenPanel.clear()
+}
+```
+
+### Increment user properties
+
+You can also increment numeric properties on user profiles. This is useful for tracking counts like logins or purchases without needing to fetch and update the current value.
+
+```swift
+OpenPanel.increment(payload: IncrementPayload(
+    profileId: user.id,
+    property: "login_count"
+))
+```
+
+## Step 5: Track screen views
+
+Tracking screen views helps you understand how users navigate through your app. In SwiftUI, use the `onAppear` modifier to track when a view becomes visible.
+
+```swift title="HomeView.swift"
+struct HomeView: View {
+    var body: some View {
+        VStack {
+            Text("Home")
+        }
+        .onAppear {
+            OpenPanel.track(
+                name: "screen_view",
+                properties: ["screen_name": "HomeScreen"]
+            )
+        }
+    }
+}
+```
+
+In UIKit, override `viewDidAppear` in your view controllers.
+
+```swift title="HomeViewController.swift"
+class HomeViewController: UIViewController {
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        OpenPanel.track(
+            name: "screen_view",
+            properties: [
+                "screen_name": "HomeScreen",
+                "screen_class": String(describing: type(of: self))
+            ]
+        )
+    }
+}
+```
+
+The OpenPanel SDK is designed to be thread-safe. You can call its methods from any thread without additional synchronization.
+
+## Verify your setup
+
+Run your app in the simulator or on a physical device and perform some actions. Navigate between screens and tap a few buttons to generate events. Then open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and check the real-time view.
+
+**Not seeing events?**
+
+- Check the Xcode console for any error messages
+- Verify that your Client ID and Client Secret are correct
+- Confirm that you included the `clientSecret` parameter (required for native apps)
+- Test with a stable network connection first
+
+## Next steps
+
+The [Swift SDK reference](/docs/sdks/swift) covers additional configuration options like event filtering and disabling tracking. If you're building a cross-platform mobile app, the [React Native analytics guide](/guides/react-native-analytics) shows how to set up OpenPanel in that environment.
+
+## FAQ
+
+### Why do I need a clientSecret for native apps?
+
+Native apps can't use CORS headers for authentication like web applications can. The clientSecret provides secure server-side authentication for your events, ensuring they're properly validated before being recorded.
+
+### Does OpenPanel work with both SwiftUI and UIKit?
+
+Yes. OpenPanel works with both UIKit and SwiftUI. Use the `.onAppear` modifier in SwiftUI views or lifecycle methods like `viewDidAppear` in UIKit view controllers to track screen views and other events.
+
+### Can I track events when the user is offline?
+
+OpenPanel queues events locally and sends them when network connectivity is restored. Events won't be lost if the user temporarily goes offline.
+
+### Is OpenPanel GDPR compliant?
+
+Yes. OpenPanel is designed for GDPR compliance with data minimization and support for data subject rights. With self-hosting, you also eliminate international data transfer concerns entirely. See the [cookieless analytics article](/articles/cookieless-analytics) for more details.

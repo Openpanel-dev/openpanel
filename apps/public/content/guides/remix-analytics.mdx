@@ -1,0 +1,387 @@
+---
+title: "How to add analytics to Remix"
+description: "Add privacy-first analytics to your Remix application with OpenPanel's Web SDK. Track page views, custom events, and user behavior."
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Create an OpenPanel instance"
+    anchor: "setup"
+  - name: "Track page views"
+    anchor: "pageviews"
+  - name: "Track custom events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+Adding analytics to your Remix application helps you understand how users interact with your app. OpenPanel's Web SDK works seamlessly with Remix's client-side navigation, providing automatic page view tracking, custom events, and user identification.
+
+OpenPanel is an open-source alternative to Mixpanel and Google Analytics. It delivers powerful insights while respecting user privacy through cookieless tracking by default.
+
+## Prerequisites
+
+- A Remix project
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Your Client ID from the OpenPanel dashboard
+
+## Install the SDK [#install]
+
+The OpenPanel Web SDK is a lightweight package that works in any JavaScript environment. Install it using npm, and pnpm or yarn work the same way.
+
+```bash
+npm install @openpanel/web
+```
+
+## Create an OpenPanel instance [#setup]
+
+Create a dedicated file for your OpenPanel instance. Since this runs in the browser, place it in your app directory and ensure it only executes on the client.
+
+```ts title="app/lib/op.client.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+The `.client.ts` suffix tells Remix this module should only run in the browser. The `trackScreenViews` option automatically tracks page views when the URL changes, which works with Remix's client-side navigation. The `trackAttributes` option enables declarative tracking using `data-track` attributes.
+
+### Using environment variables
+
+For production applications, pass your Client ID from the server to the client using Remix's loader pattern.
+
+```ts title="app/root.tsx"
+import { json } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  return json({
+    ENV: {
+      OPENPANEL_CLIENT_ID: process.env.OPENPANEL_CLIENT_ID,
+    },
+  });
+}
+```
+
+Then initialize OpenPanel with the environment variable in a client component.
+
+### Initialize in root.tsx
+
+Import and initialize OpenPanel in your root component using a `useEffect` hook to ensure it only runs on the client.
+
+```tsx title="app/root.tsx"
+import { useEffect } from 'react';
+import {
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  useLoaderData,
+} from '@remix-run/react';
+
+export default function App() {
+  const { ENV } = useLoaderData<typeof loader>();
+
+  useEffect(() => {
+    // Dynamic import ensures this only runs on the client
+    import('./lib/op.client').then(({ op }) => {
+      // OpenPanel is now initialized and tracking
+    });
+  }, []);
+
+  return (
+    <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <Meta />
+        <Links />
+      </head>
+      <body>
+        <Outlet />
+        <ScrollRestoration />
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+```
+
+## Track page views [#pageviews]
+
+With `trackScreenViews: true`, OpenPanel automatically tracks page views when the browser's URL changes. This works with Remix's client-side navigation using `<Link>` components.
+
+If you need more control over page view tracking or want to include additional route metadata, you can create a component that uses Remix's `useLocation` hook.
+
+```tsx title="app/components/PageTracker.tsx"
+import { useEffect } from 'react';
+import { useLocation } from '@remix-run/react';
+
+export function PageTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    import('../lib/op.client').then(({ op }) => {
+      op.track('screen_view', {
+        path: location.pathname,
+        search: location.search,
+      });
+    });
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+```
+
+Add this component to your root layout. If you use this approach, set `trackScreenViews: false` in your OpenPanel configuration to avoid duplicate tracking.
+
+## Track custom events [#events]
+
+Import the OpenPanel instance in your components to track events. Since the SDK only works in the browser, use dynamic imports or ensure your tracking code runs in `useEffect` hooks.
+
+```tsx title="app/components/SignupButton.tsx"
+export function SignupButton() {
+  const handleClick = () => {
+    import('../lib/op.client').then(({ op }) => {
+      op.track('button_clicked', {
+        button_name: 'signup',
+        button_location: 'hero',
+      });
+    });
+  };
+
+  return (
+    <button type="button" onClick={handleClick}>
+      Sign Up
+    </button>
+  );
+}
+```
+
+### Create a tracking hook
+
+For cleaner code, create a custom hook that handles the dynamic import.
+
+```tsx title="app/hooks/useOpenPanel.ts"
+import { useCallback } from 'react';
+import type { OpenPanel } from '@openpanel/web';
+
+type TrackFn = OpenPanel['track'];
+type IdentifyFn = OpenPanel['identify'];
+
+export function useTrack() {
+  return useCallback<TrackFn>((name, properties) => {
+    import('../lib/op.client').then(({ op }) => {
+      op.track(name, properties);
+    });
+  }, []);
+}
+
+export function useIdentify() {
+  return useCallback<IdentifyFn>((payload) => {
+    import('../lib/op.client').then(({ op }) => {
+      op.identify(payload);
+    });
+  }, []);
+}
+```
+
+Now your components become cleaner.
+
+```tsx title="app/components/SignupButton.tsx"
+import { useTrack } from '../hooks/useOpenPanel';
+
+export function SignupButton() {
+  const track = useTrack();
+
+  const handleClick = () => {
+    track('button_clicked', {
+      button_name: 'signup',
+      button_location: 'hero',
+    });
+  };
+
+  return (
+    <button type="button" onClick={handleClick}>
+      Sign Up
+    </button>
+  );
+}
+```
+
+### Track form submissions
+
+Remix encourages using form actions for data mutations. You can track form submissions in your action handlers or on the client.
+
+```tsx title="app/routes/contact.tsx"
+import { Form } from '@remix-run/react';
+import { useTrack } from '../hooks/useOpenPanel';
+
+export default function Contact() {
+  const track = useTrack();
+
+  const handleSubmit = () => {
+    track('form_submitted', {
+      form_name: 'contact',
+      form_location: 'contact-page',
+    });
+  };
+
+  return (
+    <Form method="post" onSubmit={handleSubmit}>
+      <input type="email" name="email" placeholder="Your email" required />
+      <button type="submit">Submit</button>
+    </Form>
+  );
+}
+```
+
+### Use data attributes for declarative tracking
+
+The Web SDK supports declarative tracking using `data-track` attributes. This is useful for simple click tracking without writing JavaScript.
+
+```tsx
+<button
+  data-track="button_clicked"
+  data-track-button_name="signup"
+  data-track-button_location="hero"
+>
+  Sign Up
+</button>
+```
+
+When a user clicks this button, OpenPanel automatically sends a `button_clicked` event with the specified properties. This requires `trackAttributes: true` in your configuration.
+
+## Identify users [#identify]
+
+Once a user logs in, call `identify` to associate their activity with a profile. In Remix, you typically have user data available from a loader.
+
+```tsx title="app/routes/dashboard.tsx"
+import { useEffect } from 'react';
+import { useLoaderData } from '@remix-run/react';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+import { json } from '@remix-run/node';
+import { getUser } from '../lib/auth.server';
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const user = await getUser(request);
+  return json({ user });
+}
+
+export default function Dashboard() {
+  const { user } = useLoaderData<typeof loader>();
+
+  useEffect(() => {
+    if (user) {
+      import('../lib/op.client').then(({ op }) => {
+        op.identify({
+          profileId: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          properties: {
+            plan: user.plan,
+          },
+        });
+      });
+    }
+  }, [user]);
+
+  return <div>Welcome, {user?.firstName}!</div>;
+}
+```
+
+### Clear user data on logout
+
+When users log out, clear the stored profile data to ensure subsequent events aren't associated with the previous user.
+
+```tsx title="app/components/LogoutButton.tsx"
+import { Form } from '@remix-run/react';
+
+export function LogoutButton() {
+  const handleClick = () => {
+    import('../lib/op.client').then(({ op }) => {
+      op.clear();
+    });
+  };
+
+  return (
+    <Form method="post" action="/logout">
+      <button type="submit" onClick={handleClick}>
+        Logout
+      </button>
+    </Form>
+  );
+}
+```
+
+## Server-side tracking [#server-side]
+
+For tracking events in loaders, actions, or API routes, use the `@openpanel/sdk` package instead of the web SDK. Server-side tracking requires a client secret.
+
+```ts title="app/lib/op.server.ts"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID!,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+});
+```
+
+```ts title="app/routes/api.webhook.ts"
+import type { ActionFunctionArgs } from '@remix-run/node';
+import { json } from '@remix-run/node';
+import { op } from '../lib/op.server';
+
+export async function action({ request }: ActionFunctionArgs) {
+  const payload = await request.json();
+
+  op.track('webhook_received', {
+    source: payload.source,
+    event_type: payload.type,
+  });
+
+  return json({ success: true });
+}
+```
+
+## Verify your setup [#verify]
+
+Open your Remix app in the browser and navigate between a few pages. Interact with elements that trigger custom events. Then open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and check the Real-time view to see events appearing.
+
+If events aren't appearing, check the browser console for errors. Verify your Client ID is correct and ensure ad blockers aren't blocking requests to the OpenPanel API. The Network tab in your browser's developer tools can help you confirm that requests are being sent.
+
+## Next steps
+
+The Web SDK has additional features like property incrementing and event filtering. Read the full [Web SDK documentation](/docs/sdks/web) for the complete API reference.
+
+For comprehensive server-side tracking, see the [Node.js analytics guide](/guides/nodejs-analytics) which covers the `@openpanel/sdk` package in detail.
+
+<Faqs>
+<FaqItem question="Does OpenPanel work with Remix's SSR?">
+Yes. OpenPanel's client-side SDK tracks events in the browser after hydration. For server-side events in loaders and actions, use the `@openpanel/sdk` package with your client secret.
+</FaqItem>
+
+<FaqItem question="Why do I need a client secret for server-side tracking?">
+Server-side tracking requires authentication since we can't use CORS headers. The client secret ensures your events are properly authenticated and prevents unauthorized tracking.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel use cookies?">
+No. OpenPanel uses cookieless tracking by default. This means you don't need cookie consent banners for basic analytics under most privacy regulations, including GDPR and PECR.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with cookieless tracking, data minimization, and full support for data subject rights. With self-hosting, you also eliminate international data transfer concerns entirely.
+</FaqItem>
+</Faqs>

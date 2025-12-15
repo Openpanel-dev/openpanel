@@ -1,0 +1,219 @@
+---
+title: "How to add analytics to Express"
+description: "Add server-side analytics to your Express application with OpenPanel middleware. Track API requests, user actions, and custom events."
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-15
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Add the middleware"
+    anchor: "middleware"
+  - name: "Track events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to add analytics to Express
+
+Server-side analytics gives you reliable event tracking that cannot be blocked by ad blockers or browser extensions. The OpenPanel Express middleware wraps the JavaScript SDK and attaches it to every request, making it simple to track events throughout your application.
+
+OpenPanel is an open-source alternative to Mixpanel and Amplitude. You get powerful analytics with full control over your data, and you can [self-host](/articles/how-to-self-host-openpanel) if privacy requirements demand it.
+
+## Prerequisites
+
+- An Express application
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Your Client ID and Client Secret from the OpenPanel dashboard
+
+Server-side tracking requires a `clientSecret` for authentication since the server cannot rely on browser CORS headers to verify the request origin.
+
+## Install the SDK [#install]
+
+The Express SDK is a lightweight middleware that creates an OpenPanel instance for each request. Install it with npm (pnpm and yarn work too).
+
+```bash
+npm install @openpanel/express
+```
+
+## Add the middleware [#middleware]
+
+The middleware attaches the OpenPanel SDK to every request as `req.op`. Add it early in your middleware chain so it is available in all your route handlers.
+
+```ts
+import express from 'express';
+import createOpenpanelMiddleware from '@openpanel/express';
+
+const app = express();
+
+app.use(express.json());
+
+app.use(
+  createOpenpanelMiddleware({
+    clientId: 'YOUR_CLIENT_ID',
+    clientSecret: 'YOUR_CLIENT_SECRET',
+  })
+);
+
+app.listen(3000, () => {
+  console.log('Server running on http://localhost:3000');
+});
+```
+
+You should store your credentials in environment variables rather than hardcoding them. This keeps secrets out of version control and makes it easy to use different credentials in development and production.
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+  })
+);
+```
+
+The middleware also forwards the client IP address and user-agent from incoming requests, so geographic and device data will be accurate even though events originate from your server.
+
+## Track events [#events]
+
+Once the middleware is in place, you can track events in any route handler by calling `req.op.track()`. The first argument is the event name and the second is an object of properties you want to attach.
+
+```ts
+app.post('/signup', async (req, res) => {
+  const { email, name } = req.body;
+
+  req.op.track('user_signed_up', {
+    email,
+    name,
+    source: 'website',
+  });
+
+  const user = await createUser({ email, name });
+  res.json({ success: true, user });
+});
+```
+
+You can track any event that matters to your business. Common examples include form submissions, purchases, feature usage, and API errors.
+
+```ts
+app.post('/contact', async (req, res) => {
+  const { email, message } = req.body;
+
+  req.op.track('contact_form_submitted', {
+    email,
+    message_length: message.length,
+  });
+
+  await sendContactEmail(email, message);
+  res.json({ success: true });
+});
+```
+
+### Automatic request tracking
+
+The middleware can automatically track every request if you provide a `trackRequest` function. This is useful for monitoring API usage without manually adding tracking calls to each route.
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+    trackRequest: (url) => url.startsWith('/api/'),
+  })
+);
+```
+
+When `trackRequest` returns true, the middleware sends a `request` event with the URL, method, and query parameters.
+
+## Identify users [#identify]
+
+To associate events with specific users, use the `getProfileId` option in the middleware configuration. This function receives the request object and should return the user's ID.
+
+```ts
+app.use(
+  createOpenpanelMiddleware({
+    clientId: process.env.OPENPANEL_CLIENT_ID!,
+    clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+    getProfileId: (req) => req.user?.id,
+  })
+);
+```
+
+You can also send user profile data with `req.op.identify()`. This updates the user's profile in OpenPanel with properties like name, email, and any custom attributes.
+
+```ts
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await authenticateUser(email, password);
+
+  req.op.identify({
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: {
+      plan: user.plan,
+      signupDate: user.createdAt,
+    },
+  });
+
+  req.op.track('user_logged_in', { method: 'email' });
+  res.json({ success: true, user });
+});
+```
+
+### Increment profile properties
+
+If you want to track cumulative values on a user profile, like login count or total purchases, use the `increment` method.
+
+```ts
+req.op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1,
+});
+```
+
+## Verify your setup [#verify]
+
+Start your Express server and trigger a few events by making requests to your endpoints. Open the [OpenPanel dashboard](https://dashboard.openpanel.dev) and navigate to the Real-time view to see events as they arrive.
+
+If events are not appearing, check your server logs for error responses from OpenPanel. Verify that both `clientId` and `clientSecret` are correct and that the middleware is added before your routes.
+
+## TypeScript support
+
+The Express SDK automatically extends the `Request` interface to include `req.op`. If your TypeScript configuration does not pick this up, you can extend the interface manually in a declaration file.
+
+```ts
+import { OpenPanel } from '@openpanel/express';
+
+declare global {
+  namespace Express {
+    export interface Request {
+      op: OpenPanel;
+    }
+  }
+}
+```
+
+## Next steps
+
+The [Express SDK reference](/docs/sdks/express) covers all available options and methods. If you are using a different Node.js framework, the [Node.js tracking guide](/guides/nodejs-analytics) shows how to use the base SDK directly. For comparing OpenPanel to other analytics tools, see the [Mixpanel alternative](/compare/mixpanel-alternative) page.
+
+<Faqs>
+<FaqItem question="Why do I need a clientSecret for server-side tracking?">
+Server-side tracking requires authentication because requests come from your server, not a browser with CORS restrictions. The clientSecret ensures events are properly authenticated and prevents unauthorized tracking from other sources.
+</FaqItem>
+
+<FaqItem question="Can I track events asynchronously?">
+Yes. The OpenPanel SDK sends events asynchronously by default. Events are queued and dispatched in the background, so tracking calls will not block your route handlers or slow down response times.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with cookieless tracking and data minimization. Server-side tracking gives you full control over what data you collect. With self-hosting, you eliminate international data transfer concerns entirely.
+</FaqItem>
+</Faqs>
