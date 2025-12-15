@@ -1,0 +1,295 @@
+---
+title: "How to add analytics to React"
+description: "Add privacy-first analytics to your React application with OpenPanel's Web SDK. Track page views, custom events, and user behavior."
+difficulty: beginner
+timeToComplete: 8
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Create an OpenPanel instance"
+    anchor: "setup"
+  - name: "Track page views"
+    anchor: "pageviews"
+  - name: "Track custom events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+Adding analytics to your React application helps you understand how users interact with your app. OpenPanel's Web SDK works seamlessly with React and React Router, giving you page view tracking, custom events, and user identification without the complexity of dedicated React bindings.
+
+OpenPanel is an open-source alternative to Mixpanel and Google Analytics. It provides powerful insights while respecting user privacy through cookieless tracking by default.
+
+## Prerequisites
+
+- A React project (Create React App, Vite, or similar)
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Your Client ID from the OpenPanel dashboard
+
+## Install the SDK [#install]
+
+The OpenPanel Web SDK is a lightweight package that works in any JavaScript environment, including React. Install it using npm, and pnpm or yarn work the same way.
+
+```bash
+npm install @openpanel/web
+```
+
+## Create an OpenPanel instance [#setup]
+
+Create a dedicated file for your OpenPanel instance. This keeps your analytics configuration centralized and makes the instance easy to import throughout your application.
+
+```ts title="src/lib/op.ts"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+The `trackScreenViews` option automatically tracks page views when the URL changes. This works with React Router, TanStack Router, and other client-side routing solutions. The `trackAttributes` option enables declarative tracking using `data-track` attributes on HTML elements.
+
+### Using environment variables
+
+For production applications, store your Client ID in environment variables. Vite and Create React App handle these differently.
+
+```ts title="src/lib/op.ts (Vite)"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: import.meta.env.VITE_OPENPANEL_CLIENT_ID,
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+```ts title="src/lib/op.ts (Create React App)"
+import { OpenPanel } from '@openpanel/web';
+
+export const op = new OpenPanel({
+  clientId: process.env.REACT_APP_OPENPANEL_CLIENT_ID,
+  trackScreenViews: true,
+  trackOutgoingLinks: true,
+  trackAttributes: true,
+});
+```
+
+### Initialize on app load
+
+Import the OpenPanel instance in your app's entry point to ensure it initializes when your application loads. This is all you need to start tracking page views automatically.
+
+```tsx title="src/main.tsx"
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './lib/op'; // Initialize OpenPanel
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+```
+
+## Track page views [#pageviews]
+
+With `trackScreenViews: true`, OpenPanel automatically tracks page views when the browser's URL changes. This works out of the box with React Router and other routing libraries that use the History API.
+
+If you need to track page views manually or want more control over the data sent with each view, you can create a component that listens to route changes.
+
+```tsx title="src/components/PageTracker.tsx"
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import { op } from '../lib/op';
+
+export function PageTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    op.track('screen_view', {
+      path: location.pathname,
+      search: location.search,
+    });
+  }, [location.pathname, location.search]);
+
+  return null;
+}
+```
+
+Add this component near the root of your application, inside your router context. Note that if you use this approach, you should set `trackScreenViews: false` in your OpenPanel configuration to avoid duplicate tracking.
+
+## Track custom events [#events]
+
+Import the OpenPanel instance wherever you need to track events. The `track` method accepts an event name and an optional properties object.
+
+```tsx title="src/components/SignupButton.tsx"
+import { op } from '../lib/op';
+
+export function SignupButton() {
+  const handleClick = () => {
+    op.track('button_clicked', {
+      button_name: 'signup',
+      button_location: 'hero',
+    });
+  };
+
+  return (
+    <button type="button" onClick={handleClick}>
+      Sign Up
+    </button>
+  );
+}
+```
+
+### Track form submissions
+
+Form tracking helps you understand conversion rates and identify where users drop off.
+
+```tsx title="src/components/ContactForm.tsx"
+import { useState } from 'react';
+import { op } from '../lib/op';
+
+export function ContactForm() {
+  const [email, setEmail] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    op.track('form_submitted', {
+      form_name: 'contact',
+      form_location: 'homepage',
+    });
+
+    // Your form submission logic
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+      />
+      <button type="submit">Submit</button>
+    </form>
+  );
+}
+```
+
+### Use data attributes for declarative tracking
+
+The Web SDK supports declarative tracking using `data-track` attributes. This is useful for simple click tracking without writing JavaScript.
+
+```tsx
+<button
+  data-track="button_clicked"
+  data-track-button_name="signup"
+  data-track-button_location="hero"
+>
+  Sign Up
+</button>
+```
+
+When a user clicks this button, OpenPanel automatically sends a `button_clicked` event with the specified properties. This requires `trackAttributes: true` in your configuration.
+
+## Identify users [#identify]
+
+Once a user logs in or provides identifying information, call `identify` to associate their activity with a profile. This enables user-level analytics and cohort analysis.
+
+```tsx title="src/hooks/useAuth.ts"
+import { useEffect } from 'react';
+import { op } from '../lib/op';
+
+export function useAuth(user: User | null) {
+  useEffect(() => {
+    if (user) {
+      op.identify({
+        profileId: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        properties: {
+          plan: user.plan,
+          signupDate: user.createdAt,
+        },
+      });
+    }
+  }, [user]);
+}
+```
+
+### Clear user data on logout
+
+When users log out, clear the stored profile data to ensure subsequent events aren't associated with the previous user.
+
+```tsx title="src/components/LogoutButton.tsx"
+import { op } from '../lib/op';
+
+export function LogoutButton({ onLogout }: { onLogout: () => void }) {
+  const handleLogout = () => {
+    op.clear();
+    onLogout();
+  };
+
+  return <button onClick={handleLogout}>Logout</button>;
+}
+```
+
+### Set global properties
+
+Properties set with `setGlobalProperties` are included with every event. This is useful for app version tracking, feature flags, or A/B test variants.
+
+```tsx title="src/App.tsx"
+import { useEffect } from 'react';
+import { op } from './lib/op';
+
+export default function App() {
+  useEffect(() => {
+    op.setGlobalProperties({
+      app_version: '1.0.0',
+      environment: import.meta.env.MODE,
+    });
+  }, []);
+
+  return <div>{/* Your app */}</div>;
+}
+```
+
+## Verify your setup [#verify]
+
+Open your React app in the browser and navigate between a few pages. Interact with elements that trigger custom events. Then open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and check the Real-time view to see events appearing.
+
+If events aren't appearing, check the browser console for errors. Verify your Client ID is correct and ensure ad blockers aren't blocking requests to the OpenPanel API. The Network tab in your browser's developer tools can help you confirm that requests are being sent.
+
+## Next steps
+
+The Web SDK has additional features like property incrementing and event filtering. Read the full [Web SDK documentation](/docs/sdks/web) for the complete API reference.
+
+For server-side tracking in your React application's API routes, see the [Node.js analytics guide](/guides/nodejs-analytics) which covers the `@openpanel/sdk` package.
+
+<Faqs>
+<FaqItem question="Does OpenPanel work with React Router?">
+Yes. OpenPanel automatically tracks page views when the URL changes, which works with React Router and other routing libraries that use the History API. Set `trackScreenViews: true` in your configuration.
+</FaqItem>
+
+<FaqItem question="Can I use OpenPanel with class components?">
+Yes. Import the OpenPanel instance directly and call its methods. The instance is framework-agnostic and works in any JavaScript context.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel use cookies?">
+No. OpenPanel uses cookieless tracking by default. This means you don't need cookie consent banners for basic analytics under most privacy regulations, including GDPR and PECR.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with cookieless tracking, data minimization, and full support for data subject rights. With self-hosting, you also eliminate international data transfer concerns entirely.
+</FaqItem>
+</Faqs>

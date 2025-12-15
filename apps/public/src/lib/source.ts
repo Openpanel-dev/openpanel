@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   articleCollection,
   docs,
+  guideCollection,
   pageCollection,
 } from 'fumadocs-mdx:collections/server';
 import { type InferPageType, loader } from 'fumadocs-core/source';
@@ -27,6 +28,12 @@ export const articleSource = loader({
 export const pageSource = loader({
   baseUrl: '/',
   source: toFumadocsSource(pageCollection, []),
+});
+
+export const guideSource = loader({
+  baseUrl: '/guides',
+  source: toFumadocsSource(guideCollection, []),
+  plugins: [lucideIconsPlugin()],
 });
 
 export function getPageImage(page: InferPageType<typeof source>) {

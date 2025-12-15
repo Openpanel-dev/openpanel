@@ -1,6 +1,6 @@
 import { getAllCompareSlugs, getCompareData } from '@/lib/compare';
 import { url as baseUrl } from '@/lib/layout.shared';
-import { articleSource, pageSource, source } from '@/lib/source';
+import { articleSource, guideSource, pageSource, source } from '@/lib/source';
 import { ImageResponse } from 'next/og';
 import type { NextRequest } from 'next/server';
 
@@ -60,6 +60,20 @@ async function getOgData(
       return {
         title: data?.seo.title || data?.hero.heading || 'Compare',
         description: data?.seo.description || data?.hero.subheading,
+      };
+    }
+    case 'guides': {
+      if (segments.length > 1) {
+        const data = await guideSource.getPage(segments.slice(1));
+        return {
+          title: data?.data.title ?? 'Guide Not Found',
+          description:
+            data?.data.description || 'Whooops, could not find this guide',
+        };
+      }
+      return {
+        title: 'Implementation Guides',
+        description: 'Step-by-step tutorials for adding analytics to your app',
       };
     }
     case 'docs': {

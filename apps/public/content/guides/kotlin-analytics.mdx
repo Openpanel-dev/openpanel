@@ -1,0 +1,266 @@
+---
+title: "How to add analytics to Android apps"
+description: "Add privacy-first analytics to Android applications using OpenPanel's Kotlin SDK. Track events, identify users, and analyze behavior."
+type: guide
+difficulty: intermediate
+timeToComplete: 10
+date: 2025-12-15
+lastUpdated: 2025-12-15
+steps:
+  - name: "Add the dependency"
+    anchor: "install"
+  - name: "Initialize OpenPanel"
+    anchor: "setup"
+  - name: "Track events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Track screen views"
+    anchor: "screenviews"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to add analytics to Android apps
+
+This guide walks you through adding OpenPanel analytics to an Android application using the Kotlin SDK. You'll learn how to track events, identify users, and monitor screen views across your app.
+
+OpenPanel works well for Android apps because it provides a lightweight, privacy-focused SDK that handles offline queuing and automatic system information collection. Unlike web SDKs, native apps require a client secret for authentication since CORS headers aren't available.
+
+## Prerequisites
+
+- An Android project (minSdkVersion 21+)
+- An OpenPanel account
+- Your Client ID and Client Secret from the [dashboard](https://dashboard.openpanel.dev)
+
+## Add the dependency [#install]
+
+Start by adding the OpenPanel SDK to your app's `build.gradle.kts` file. The SDK is available through standard Gradle dependency management.
+
+```kotlin
+dependencies {
+    implementation("dev.openpanel:openpanel:0.0.1")
+}
+```
+
+The Kotlin SDK is currently in development, so check the [GitHub repository](https://github.com/Openpanel-dev/kotlin-sdk) for the latest version number before adding it to your project.
+
+## Initialize OpenPanel [#setup]
+
+Before you can track events, you need to initialize OpenPanel in your Application class. This ensures the SDK is available throughout your app and can properly manage its lifecycle.
+
+```kotlin
+import android.app.Application
+import dev.openpanel.OpenPanel
+
+class MyApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        
+        OpenPanel.create(
+            context = this,
+            options = OpenPanel.Options(
+                clientId = "YOUR_CLIENT_ID",
+                clientSecret = "YOUR_CLIENT_SECRET"
+            )
+        )
+    }
+}
+```
+
+You also need to register your Application class in the Android manifest so the system knows to use it.
+
+```xml
+<application
+    android:name=".MyApplication"
+    ...>
+</application>
+```
+
+If you're using dependency injection with Hilt or Dagger, you can provide OpenPanel as a singleton instead. This approach integrates better with modern Android architecture patterns.
+
+```kotlin
+import android.content.Context
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import dev.openpanel.OpenPanel
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
+    @Provides
+    @Singleton
+    fun provideOpenPanel(@ApplicationContext context: Context): OpenPanel {
+        return OpenPanel.create(
+            context,
+            OpenPanel.Options(
+                clientId = "YOUR_CLIENT_ID",
+                clientSecret = "YOUR_CLIENT_SECRET"
+            )
+        )
+    }
+}
+```
+
+## Track events [#events]
+
+Once OpenPanel is initialized, you can track events anywhere in your app by getting the SDK instance and calling the `track` method. Each event has a name and an optional map of properties.
+
+```kotlin
+import dev.openpanel.OpenPanel
+
+class MainActivity : AppCompatActivity() {
+    private lateinit var op: OpenPanel
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+        
+        op = OpenPanel.getInstance(this)
+        
+        findViewById<Button>(R.id.signupButton).setOnClickListener {
+            op.track(
+                "button_clicked",
+                mapOf(
+                    "button_name" to "signup",
+                    "button_location" to "hero"
+                )
+            )
+        }
+    }
+}
+```
+
+The SDK is thread-safe, so you can call `track` from any thread without additional synchronization. This is particularly useful when tracking events from background operations or coroutines.
+
+If you want to attach properties to every event automatically, use `setGlobalProperties`. This is helpful for including app version, build number, or environment information.
+
+```kotlin
+op.setGlobalProperties(
+    mapOf(
+        "app_version" to BuildConfig.VERSION_NAME,
+        "build_number" to BuildConfig.VERSION_CODE.toString(),
+        "platform" to "Android"
+    )
+)
+```
+
+## Identify users [#identify]
+
+When a user logs in or you have information about who they are, call `identify` to associate their profile with tracked events. This enables user-level analytics and cohort analysis in your dashboard.
+
+```kotlin
+op.identify(
+    user.id,
+    mapOf(
+        "firstName" to user.firstName,
+        "lastName" to user.lastName,
+        "email" to user.email,
+        "plan" to user.plan
+    )
+)
+```
+
+When a user logs out, clear their data so subsequent events aren't attributed to them.
+
+```kotlin
+fun logout() {
+    op.clear()
+}
+```
+
+You can also increment numeric properties on user profiles. This is useful for tracking things like login counts or credits without needing to know the current value.
+
+```kotlin
+op.increment(user.id, "login_count", 1)
+```
+
+## Track screen views [#screenviews]
+
+Screen view tracking helps you understand navigation patterns and which parts of your app get the most attention. The simplest approach is to create a base activity that tracks screen views automatically.
+
+```kotlin
+import androidx.appcompat.app.AppCompatActivity
+import dev.openpanel.OpenPanel
+
+abstract class BaseActivity : AppCompatActivity() {
+    protected lateinit var op: OpenPanel
+    
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        op = OpenPanel.getInstance(this)
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        op.track(
+            "screen_view",
+            mapOf("screen_name" to this::class.simpleName ?: "Unknown")
+        )
+    }
+}
+```
+
+For Jetpack Compose, use a `LaunchedEffect` to track when a composable screen appears.
+
+```kotlin
+import androidx.compose.runtime.LaunchedEffect
+import dev.openpanel.OpenPanel
+
+@Composable
+fun MainScreen(op: OpenPanel) {
+    LaunchedEffect(Unit) {
+        op.track(
+            "screen_view",
+            mapOf("screen_name" to "MainScreen")
+        )
+    }
+    
+    // Your composable content
+}
+```
+
+If you want the SDK to automatically track app lifecycle events like `app_opened` and `app_closed`, enable automatic tracking during initialization.
+
+```kotlin
+OpenPanel.create(
+    context,
+    OpenPanel.Options(
+        clientId = "YOUR_CLIENT_ID",
+        clientSecret = "YOUR_CLIENT_SECRET",
+        automaticTracking = true
+    )
+)
+```
+
+## Verify your setup [#verify]
+
+Run your Android app in an emulator or on a physical device and interact with a few screens and buttons. Open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and check the real-time view to see events arriving.
+
+If events aren't appearing, check Logcat for error messages from the SDK. The most common issues are incorrect credentials or missing the `clientSecret` parameter. You can also use Android Studio's Network Profiler to verify that requests are being sent to OpenPanel's servers.
+
+## Next steps
+
+The [full Kotlin SDK reference](/docs/sdks/kotlin) covers additional options like event filtering and verbose logging. If you're building for multiple platforms, the [React Native guide](/guides/react-native-analytics) shows how to share analytics code across iOS and Android.
+
+<Faqs>
+<FaqItem question="Why do I need a client secret for native apps?">
+Native apps can't use CORS headers for authentication like web apps do. The client secret provides server-side authentication to ensure your events are properly validated. Keep this secret secure and never expose it in client-side web code.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel work with Jetpack Compose?">
+Yes. OpenPanel works with both traditional Views and Jetpack Compose. For Compose, use LaunchedEffect to track screen views when a composable appears, as shown in the screen tracking section above.
+</FaqItem>
+
+<FaqItem question="Can I track events when the device is offline?">
+Yes. The SDK queues events locally when there's no network connection and sends them automatically when connectivity is restored. You won't lose events if users go through tunnels or airplane mode.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with data minimization and full support for data subject rights. With self-hosting, you also eliminate international data transfer concerns entirely. See the [cookieless analytics guide](/articles/cookieless-analytics) for more details.
+</FaqItem>
+</Faqs>

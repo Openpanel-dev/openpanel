@@ -1,0 +1,200 @@
+---
+title: "How to track e-commerce events and revenue"
+description: "Track product views, cart activity, and purchases with OpenPanel to understand your e-commerce funnel and revenue."
+difficulty: intermediate
+timeToComplete: 10
+date: 2025-12-15
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Track product views"
+    anchor: "track-product-views"
+  - name: "Track cart activity"
+    anchor: "track-cart-activity"
+  - name: "Track purchases and revenue"
+    anchor: "track-purchases-and-revenue"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to track e-commerce events and revenue
+
+E-commerce tracking gives you visibility into how users interact with your products and what drives purchases. By the end of this guide, you'll have product views, cart events, and revenue tracking working in your store.
+
+OpenPanel tracks revenue using a dedicated `revenue()` method that links payments to visitor sessions. This lets you see which traffic sources, campaigns, and pages generate the most revenue. You can track from your frontend for quick setup, or from your backend via webhooks for more accurate data.
+
+## Prerequisites
+
+- An OpenPanel account
+- Your Client ID from the [dashboard](https://dashboard.openpanel.dev)
+- The OpenPanel SDK installed in your project
+
+## Track product views [#track-product-views]
+
+Product view tracking helps you understand which items attract attention. When a user lands on a product page, fire an event with the product details so you can later analyze which products get viewed but not purchased.
+
+```tsx
+function ProductPage({ product }) {
+  const op = useOpenPanel();
+
+  useEffect(() => {
+    op.track('product_viewed', {
+      product_id: product.id,
+      product_name: product.name,
+      product_category: product.category,
+      product_price: product.price,
+      currency: 'USD',
+    });
+  }, [product.id]);
+
+  return <div>{product.name}</div>;
+}
+```
+
+Include consistent properties across all your product events. Using the same `product_id` format everywhere makes it easy to build reports that connect views to purchases.
+
+## Track cart activity [#track-cart-activity]
+
+Cart events reveal where users drop off in the purchase process. Track both additions and removals to understand cart abandonment patterns.
+
+When a user adds an item, capture the product details along with the current cart value. This gives you context about order sizes at different stages of the funnel.
+
+```tsx
+function ProductCard({ product, cart }) {
+  const op = useOpenPanel();
+
+  const handleAddToCart = () => {
+    op.track('product_added_to_cart', {
+      product_id: product.id,
+      product_name: product.name,
+      product_price: product.price,
+      quantity: 1,
+      cart_value: cart.total + product.price,
+      currency: 'USD',
+    });
+    
+    addToCart(product);
+  };
+
+  return (
+    <button onClick={handleAddToCart}>Add to Cart</button>
+  );
+}
+```
+
+Track removals the same way. The symmetry between add and remove events makes it straightforward to calculate net cart changes.
+
+```tsx
+const handleRemoveFromCart = (item) => {
+  op.track('product_removed_from_cart', {
+    product_id: item.id,
+    product_name: item.name,
+    product_price: item.price,
+    quantity: item.quantity,
+    currency: 'USD',
+  });
+  
+  removeFromCart(item);
+};
+```
+
+## Track purchases and revenue [#track-purchases-and-revenue]
+
+Revenue tracking is where e-commerce analytics becomes actionable. OpenPanel provides dedicated methods for revenue that link payments back to visitor sessions, so you can see which traffic sources generate the most value.
+
+For frontend tracking, use `pendingRevenue()` before redirecting to checkout, then `flushRevenue()` on your success page. This approach works well when you want to get started quickly without backend changes.
+
+```tsx
+async function handleCheckout(cart) {
+  const op = useOpenPanel();
+  
+  op.pendingRevenue(cart.total, {
+    order_items: cart.items.length,
+    currency: 'USD',
+  });
+  
+  window.location.href = await createCheckoutUrl(cart);
+}
+```
+
+On your success page, flush the pending revenue to send it to OpenPanel.
+
+```tsx
+function SuccessPage() {
+  const op = useOpenPanel();
+  
+  useEffect(() => {
+    op.flushRevenue();
+  }, []);
+  
+  return <div>Thank you for your purchase!</div>;
+}
+```
+
+For more accurate tracking, handle revenue in your backend webhook. This ensures you only record completed payments. Pass the visitor's `deviceId` when creating the checkout so you can link the payment back to their session.
+
+```tsx
+// Frontend: include deviceId when starting checkout
+const deviceId = await op.fetchDeviceId();
+
+const response = await fetch('/api/checkout', {
+  method: 'POST',
+  body: JSON.stringify({
+    deviceId,
+    items: cart.items,
+  }),
+});
+```
+
+In your webhook handler, use that `deviceId` to attribute the revenue.
+
+```javascript
+// Backend: webhook handler
+export async function POST(req) {
+  const event = await req.json();
+  
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    
+    op.revenue(session.amount_total, {
+      deviceId: session.metadata.deviceId,
+    });
+  }
+  
+  return Response.json({ received: true });
+}
+```
+
+If your users are logged in, you can use `profileId` instead of `deviceId`. This simplifies the flow since you don't need to capture the device ID during checkout.
+
+## Verify your setup [#verify]
+
+Open your OpenPanel dashboard and trigger a few events manually. Add a product to your cart, then check the live events view to confirm the events are arriving with the correct properties.
+
+For revenue tracking, you can test with a small transaction or use your payment provider's test mode. Look for your revenue events in the dashboard and verify the amounts match what you expect.
+
+If events aren't appearing, check that your Client ID is correct and that ad blockers aren't interfering. The browser's network tab can help you confirm requests are being sent.
+
+## Next steps
+
+Once you have basic e-commerce tracking working, you can build purchase funnels to visualize conversion rates at each step. The [revenue tracking documentation](/docs/revenue-tracking) covers advanced patterns like subscription tracking and refunds. For a deeper understanding of attribution, read about how OpenPanel's [cookieless tracking](/articles/cookieless-analytics) works.
+
+To learn more about tracking custom events in general, check out the [track custom events guide](/guides/track-custom-events) which covers event structure, properties, and common patterns.
+
+<Faqs>
+<FaqItem question="Does OpenPanel automatically calculate revenue metrics?">
+Yes. Once you track revenue using the `revenue()` or `flushRevenue()` methods, OpenPanel calculates totals, averages, and breakdowns by source automatically. You can view these in the revenue section of your dashboard.
+</FaqItem>
+
+<FaqItem question="Should I track revenue from the frontend or backend?">
+Backend tracking via webhooks is more accurate since it only records completed payments. Frontend tracking is faster to implement but may count abandoned checkouts. For production stores, backend tracking is recommended.
+</FaqItem>
+
+<FaqItem question="Can I track subscription revenue?">
+Yes. Track subscription events like any other revenue event, including properties for plan name and billing period. The revenue tracking documentation covers subscription-specific patterns in detail.
+</FaqItem>
+
+<FaqItem question="How do I handle refunds?">
+Track refunds as separate events with the refund amount. This lets you calculate net revenue by subtracting refunds from gross revenue in your reports.
+</FaqItem>
+</Faqs>

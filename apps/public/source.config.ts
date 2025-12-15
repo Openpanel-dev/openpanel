@@ -36,6 +36,23 @@ const zPage = z.object({
   description: z.string(),
 });
 
+const zGuide = z.object({
+  title: z.string().min(1),
+  description: z.string(),
+  difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
+  timeToComplete: z.number(), // minutes
+  date: z.date(),
+  updated: z.date().optional(),
+  cover: z.string().default('/content/cover-default.jpg'),
+  team: z.string().optional(),
+  steps: z.array(
+    z.object({
+      name: z.string(),
+      anchor: z.string(),
+    }),
+  ),
+});
+
 export const articleCollection = defineCollections({
   type: 'doc',
   dir: './content/articles',
@@ -58,6 +75,18 @@ export const pageMeta = defineCollections({
   type: 'meta',
   dir: './content/pages',
   schema: zPage,
+});
+
+export const guideCollection = defineCollections({
+  type: 'doc',
+  dir: './content/guides',
+  schema: zGuide,
+});
+
+export const guideMeta = defineCollections({
+  type: 'meta',
+  dir: './content/guides',
+  schema: zGuide,
 });
 
 export default defineConfig({
