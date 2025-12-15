@@ -22,7 +22,6 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "next": "14.2.1",
     "react": "catalog:"
   }
 }
