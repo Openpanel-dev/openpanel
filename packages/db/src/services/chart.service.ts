@@ -267,43 +267,22 @@ export function getChartSql({
       'COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count';
   }
 
-  if (event.segment === 'property_sum' && event.property) {
-    if (event.property === 'revenue') {
-      sb.select.count = 'sum(revenue) as count';
-      sb.where.property = 'revenue > 0';
-    } else {
-      sb.select.count = `sum(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
-    }
-  }
+  const mathFunction = {
+    property_sum: 'sum',
+    property_average: 'avg',
+    property_max: 'max',
+    property_min: 'min',
+  }[event.segment as string];
 
-  if (event.segment === 'property_average' && event.property) {
-    if (event.property === 'revenue') {
-      sb.select.count = 'avg(revenue) as count';
-      sb.where.property = 'revenue > 0';
-    } else {
-      sb.select.count = `avg(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
-    }
-  }
+  if (mathFunction && event.property) {
+    const propertyKey = getSelectPropertyKey(event.property);
 
-  if (event.segment === 'property_max' && event.property) {
-    if (event.property === 'revenue') {
-      sb.select.count = 'max(revenue) as count';
-      sb.where.property = 'revenue > 0';
+    if (isNumericColumn(event.property)) {
+      sb.select.count = `${mathFunction}(${propertyKey}) as count`;
+      sb.where.property = `${propertyKey} IS NOT NULL`;
     } else {
-      sb.select.count = `max(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
-    }
-  }
-
-  if (event.segment === 'property_min' && event.property) {
-    if (event.property === 'revenue') {
-      sb.select.count = 'min(revenue) as count';
-      sb.where.property = 'revenue > 0';
-    } else {
-      sb.select.count = `min(toFloat64(${getSelectPropertyKey(event.property)})) as count`;
-      sb.where.property = `${getSelectPropertyKey(event.property)} IS NOT NULL AND notEmpty(${getSelectPropertyKey(event.property)})`;
+      sb.select.count = `${mathFunction}(toFloat64OrNull(${propertyKey})) as count`;
+      sb.where.property = `${propertyKey} IS NOT NULL AND notEmpty(${propertyKey})`;
     }
   }
 
