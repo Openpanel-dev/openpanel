@@ -84,6 +84,34 @@ async function getOgData(
           data?.data.description || 'Whooops, could not find this page',
       };
     }
+    case 'tools': {
+      if (segments.length > 1) {
+        const tool = segments[1];
+        switch (tool) {
+          case 'ip-lookup':
+            return {
+              title: 'IP Lookup Tool',
+              description:
+                'Find detailed information about any IP address including geolocation, ISP, and network details.',
+            };
+          case 'url-checker':
+            return {
+              title: 'URL Checker',
+              description:
+                'Analyze any website for SEO, social media, technical, and security information. Get comprehensive insights about any URL.',
+            };
+          default:
+            return {
+              title: 'Tools',
+              description: 'Free web tools for developers and website owners',
+            };
+        }
+      }
+      return {
+        title: 'Tools',
+        description: 'Free web tools for developers and website owners',
+      };
+    }
     default: {
       const data = await pageSource.getPage(segments);
       return {
