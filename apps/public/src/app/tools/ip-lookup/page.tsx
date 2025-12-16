@@ -275,49 +275,6 @@ export default function IPLookupPage() {
             </div>
           )}
 
-          {/* Network Information */}
-          {(result.isp ||
-            result.asn ||
-            result.organization ||
-            result.hostname) && (
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Network className="size-5" />
-                Network Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {result.isp && (
-                  <InfoCard
-                    icon={<Building2 className="size-5" />}
-                    label="ISP"
-                    value={result.isp}
-                  />
-                )}
-                {result.asn && (
-                  <InfoCard
-                    icon={<Network className="size-5" />}
-                    label="ASN"
-                    value={result.asn}
-                  />
-                )}
-                {result.organization && (
-                  <InfoCard
-                    icon={<Building2 className="size-5" />}
-                    label="Organization"
-                    value={result.organization}
-                  />
-                )}
-                {result.hostname && (
-                  <InfoCard
-                    icon={<Server className="size-5" />}
-                    label="Hostname"
-                    value={result.hostname}
-                  />
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Map Preview */}
           {result.location.latitude && result.location.longitude && (
             <div>
