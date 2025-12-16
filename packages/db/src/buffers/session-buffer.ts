@@ -1,6 +1,5 @@
 import { type Redis, getRedisCache } from '@openpanel/redis';
 
-import { toDots } from '@openpanel/common';
 import { getSafeJson } from '@openpanel/json';
 import { assocPath, clone } from 'ramda';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
@@ -91,10 +90,6 @@ export class SessionBuffer extends BaseBuffer {
           session: newSession,
         });
       }
-      newSession.properties = toDots({
-        ...(event.properties || {}),
-        ...(newSession.properties || {}),
-      });
 
       const addedRevenue = event.name === 'revenue' ? (event.revenue ?? 0) : 0;
       newSession.revenue = (newSession.revenue ?? 0) + addedRevenue;
@@ -168,7 +163,6 @@ export class SessionBuffer extends BaseBuffer {
           : '',
         sign: 1,
         version: 1,
-        properties: toDots(event.properties || {}),
       },
     ];
   }

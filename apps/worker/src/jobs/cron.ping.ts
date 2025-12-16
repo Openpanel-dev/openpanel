@@ -1,6 +1,10 @@
 import { TABLE_NAMES, chQuery } from '@openpanel/db';
 
 export async function ping() {
+  if (process.env.DISABLE_PING) {
+    return;
+  }
+
   const [res] = await chQuery<{ count: number }>(
     `SELECT COUNT(*) as count FROM ${TABLE_NAMES.events}`,
   );

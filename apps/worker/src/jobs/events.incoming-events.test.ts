@@ -319,7 +319,6 @@ describe('incomingEvent', () => {
       utm_content: '',
       utm_medium: '',
       revenue: 0,
-      properties: {},
       project_id: projectId,
       device_id: 'last-device-123',
       profile_id: 'profile-123',

@@ -1,12 +1,12 @@
-version: '3'
+version: "3"
 
 services:
   op-proxy:
     image: caddy:2-alpine
     restart: always
     ports:
-      - '80:80'
-      - '443:443'
+      - "80:80"
+      - "443:443"
     volumes:
       - op-proxy-data:/data
       - op-proxy-config:/config
@@ -28,7 +28,7 @@ services:
     volumes:
       - op-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: [ 'CMD-SHELL', 'pg_isready -U postgres' ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -49,9 +49,9 @@ services:
     restart: always
     volumes:
       - op-kv-data:/data
-    command: [ 'redis-server', '--maxmemory-policy', 'noeviction' ]
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
     healthcheck:
-      test: [ 'CMD-SHELL', 'redis-cli ping' ]
+      test: ["CMD-SHELL", "redis-cli ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -65,7 +65,7 @@ services:
     #   - 6379:6379
 
   op-ch:
-    image: clickhouse/clickhouse-server:24.3.2-alpine
+    image: clickhouse/clickhouse-server:25.10.2.65
     restart: always
     volumes:
       - op-ch-data:/var/lib/clickhouse
@@ -74,7 +74,7 @@ services:
       - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
       - ./clickhouse/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
     healthcheck:
-      test: [ 'CMD-SHELL', 'clickhouse-client --query "SELECT 1"' ]
+      test: ["CMD-SHELL", 'clickhouse-client --query "SELECT 1"']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -99,7 +99,7 @@ services:
         pnpm start
       "
     healthcheck:
-      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/healthcheck || exit 1' ]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -127,7 +127,8 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/api/healthcheck || exit 1' ]
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:3000/api/healthcheck || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -146,7 +147,7 @@ services:
     env_file:
       - .env
     healthcheck:
-      test: [ 'CMD-SHELL', 'curl -f http://localhost:3000/healthcheck || exit 1' ]
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

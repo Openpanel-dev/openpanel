@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { assocPath, pathOr, pick } from 'ramda';
 
+import { HttpError } from '@/utils/errors';
 import { generateId, slug } from '@openpanel/common';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
@@ -187,9 +188,16 @@ export async function handler(
       break;
     }
     case 'identify': {
+      const payload = request.body.payload;
       const geo = await getGeoLocation(ip);
+      if (!payload.profileId) {
+        throw new HttpError('Missing profileId', {
+          status: 400,
+        });
+      }
+
       await identify({
-        payload: request.body.payload,
+        payload,
         projectId,
         geo,
         ua,
