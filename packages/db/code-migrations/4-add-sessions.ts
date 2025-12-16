@@ -100,6 +100,9 @@ async function createOldSessions() {
       if (!row || row.count === '0') {
         return null;
       }
+      if (row.created_at.startsWith('1970')) {
+        return null;
+      }
       return new Date(row.created_at);
     } catch (e) {
       return defaultDate;

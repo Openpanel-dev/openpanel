@@ -139,7 +139,10 @@ export async function up() {
   const firstEventDateJson = await firstEventDateResponse.json<{
     created_at: string;
   }>();
-  if (firstEventDateJson[0]?.created_at) {
+  if (
+    firstEventDateJson[0]?.created_at &&
+    !firstEventDateJson[0]?.created_at.startsWith('1970')
+  ) {
     const firstEventDate = new Date(firstEventDateJson[0]?.created_at);
     // Step 2: Copy data from old tables to new tables (partitioned by month for efficiency)
     // Set endDate to first of next month to ensure we capture all data in the current month
@@ -174,7 +177,10 @@ export async function up() {
     created_at: string;
   }>();
 
-  if (firstSessionDateJson[0]?.created_at) {
+  if (
+    firstSessionDateJson[0]?.created_at &&
+    !firstSessionDateJson[0]?.created_at.startsWith('1970')
+  ) {
     const firstSessionDate = new Date(
       firstSessionDateJson[0]?.created_at ?? '',
     );
