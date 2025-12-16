@@ -54,8 +54,8 @@ Edit the `.env` file or environment variables in Dokploy. You **must** set these
 
 ```bash
 # Required: Set these to your actual domain
-NEXT_PUBLIC_API_URL=https://yourdomain.com/api
-NEXT_PUBLIC_DASHBOARD_URL=https://yourdomain.com
+API_URL=https://yourdomain.com/api
+DASHBOARD_URL=https://yourdomain.com
 
 # Database Configuration (automatically set by Dokploy)
 OPENPANEL_POSTGRES_DB=openpanel-db
@@ -71,7 +71,7 @@ OPENPANEL_EMAIL_SENDER=noreply@yourdomain.com
 ```
 
 <Callout type="warn">
-⚠️ **Critical**: Unlike Coolify, Dokploy does not support `SERVICE_FQDN_*` variables. You **must** hardcode `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_DASHBOARD_URL` with your actual domain values.
+⚠️ **Critical**: Unlike Coolify, Dokploy does not support `SERVICE_FQDN_*` variables. You **must** hardcode `API_URL` and `DASHBOARD_URL` with your actual domain values.
 </Callout>
 </Step>
 
@@ -133,8 +133,8 @@ If you're using Cloudflare in front of Dokploy, remember to purge the Cloudflare
 
 For Dokploy, you **must** hardcode these variables (unlike Coolify, Dokploy doesn't support `SERVICE_FQDN_*` variables):
 
-- `NEXT_PUBLIC_API_URL` - Full API URL (e.g., `https://analytics.example.com/api`)
-- `NEXT_PUBLIC_DASHBOARD_URL` - Full Dashboard URL (e.g., `https://analytics.example.com`)
+- `API_URL` - Full API URL (e.g., `https://analytics.example.com/api`)
+- `DASHBOARD_URL` - Full Dashboard URL (e.g., `https://analytics.example.com`)
 
 Dokploy automatically sets:
 - `OPENPANEL_POSTGRES_DB` - PostgreSQL database name
@@ -166,9 +166,9 @@ If API requests fail after deployment:
 
 1. **Verify environment variables**:
    ```bash
-   # Check that NEXT_PUBLIC_API_URL is set correctly
-   docker exec <op-api-container> env | grep NEXT_PUBLIC_API_URL
-   docker exec <op-dashboard-container> env | grep NEXT_PUBLIC_API_URL
+   # Check that API_URL is set correctly
+   docker exec <op-api-container> env | grep API_URL
+   docker exec <op-dashboard-container> env | grep API_URL
    ```
 
 2. **Check "Strip external path" setting**:
@@ -188,7 +188,7 @@ If account creation fails:
    # In Dokploy, view logs for op-api service
    ```
 
-2. Verify `NEXT_PUBLIC_API_URL` matches your domain:
+2. Verify `API_URL` matches your domain:
    - Should be `https://yourdomain.com/api`
    - Not `http://localhost:3000` or similar
 
@@ -240,7 +240,7 @@ The Dokploy template differs from Coolify in these ways:
 
 1. **Environment Variables**: 
    - Dokploy does not support `SERVICE_FQDN_*` variables
-   - Must hardcode `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_DASHBOARD_URL`
+   - Must hardcode `API_URL` and `DASHBOARD_URL`
 
 2. **Domain Configuration**:
    - Must manually configure domain paths

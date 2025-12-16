@@ -3,6 +3,20 @@ title: Changelog for self-hosting
 description: This is a list of changes that have been made to the self-hosting setup.
 ---
 
+## 2.0.0
+
+We have released the first stable version of OpenPanel v2. This is a big one!
+
+Read more about it in our [migration guide](/docs/migration/migrate-v1-to-v2).
+
+TLDR;
+
+- Clickhouse upgraded from 24.3.2-alpine to 25.10.2.65
+- Add `CLICKHOUSE_SKIP_USER_SETUP=1` to op-ch service
+- `NEXT_PUBLIC_DASHBOARD_URL` -> `DASHBOARD_URL`
+- `NEXT_PUBLIC_API_URL` -> `API_URL`
+- `NEXT_PUBLIC_SELF_HOSTED` -> `SELF_HOSTED`
+
 ## 1.2.0 
 
 We have renamed `SELF_HOSTED` to `NEXT_PUBLIC_SELF_HOSTED`. It's important to rename this env before your upgrade to this version.
@@ -30,7 +44,7 @@ If you upgrading from a previous version, you'll need to edit your `.env` file i
 
 ### Removed Clickhouse Keeper
 
-In 0.0.6 we introduced a cluster mode for Clickhouse. This was a misstake and we have removed it. 
+In 0.0.6 we introduced a cluster mode for Clickhouse. This was a mistake and we have removed it. 
 
 Remove op-zk from services and volumes
 

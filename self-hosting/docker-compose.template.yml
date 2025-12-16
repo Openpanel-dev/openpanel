@@ -73,6 +73,8 @@ services:
       - ./clickhouse/clickhouse-config.xml:/etc/clickhouse-server/config.d/op-config.xml:ro
       - ./clickhouse/clickhouse-user-config.xml:/etc/clickhouse-server/users.d/op-user-config.xml:ro
       - ./clickhouse/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
     healthcheck:
       test: ["CMD-SHELL", 'clickhouse-client --query "SELECT 1"']
       interval: 10s
@@ -89,7 +91,7 @@ services:
         max-file: "3"
 
   op-api:
-    image: lindesvard/openpanel-api:latest
+    image: lindesvard/openpanel-api:2.0.0
     restart: always
     command: >
       sh -c "
@@ -119,7 +121,7 @@ services:
         max-file: "3"
 
   op-dashboard:
-    image: lindesvard/openpanel-dashboard:latest
+    image: lindesvard/openpanel-dashboard:2.0.0
     restart: always
     depends_on:
       op-api:
@@ -139,7 +141,7 @@ services:
         max-file: "3"
 
   op-worker:
-    image: lindesvard/openpanel-worker:latest
+    image: lindesvard/openpanel-worker:2.0.0
     restart: always
     depends_on:
       op-api:

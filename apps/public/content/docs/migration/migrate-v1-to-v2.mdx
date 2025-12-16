@@ -1,0 +1,101 @@
+---
+title: Migration from v1 to v2
+description: Finally we feel ready to release v2 for all self-hostings. This is a big one!
+---
+
+## What's New in v2
+
+- **Redesigned dashboard** - New UI built with Tanstack
+- **Revenue tracking** - Track revenue alongside your analytics
+- **Sessions** - View individual user sessions
+- **Real-time view** - Live event stream
+- **Customizable dashboards** - Grafana-style widget layouts
+- **Improved report builder** - Faster and more flexible
+- **General improvements** - We have also made a bunch of bug fixes, minor improvements and much more
+
+## Migrating from v1
+
+### Ensure you're on the self-hosting branch
+
+Sometimes we add new helper scripts and what not. Always make sure you're on the latest commit before continuing.
+
+```bash
+cd ./self-hosting
+git fetch origin
+git checkout self-hosting
+git pull origin self-hosting
+```
+
+### Envs
+
+Since we have migrated to tanstack from nextjs we first need to update our envs. We have added a dedicated page for the [environment variables here](/docs/self-hosting/environment-variables).
+
+```js title=".env"
+NEXT_PUBLIC_DASHBOARD_URL="..." // [!code --]
+NEXT_PUBLIC_API_URL="..." // [!code --]
+NEXT_PUBLIC_SELF_HOSTED="..." // [!code --]
+
+DASHBOARD_URL="..." // [!code ++]
+API_URL="..." // [!code ++]
+SELF_HOSTED="..." // [!code ++]
+```
+
+### Clickhouse 24 -> 25
+
+We have updated Clickhouse to 25, this is important to not skip, otherwise your OpenPanel instance wont work.
+
+You should edit your `./self-hosting/docker-compose.yml`
+
+```js title="./self-hosting/docker-compose.yml"
+services:
+  op-ch:
+    image: clickhouse/clickhouse-server:24.3.2-alpine // [!code --]
+    image: clickhouse/clickhouse-server:25.10.2.65 // [!code ++]
+```
+
+Since version 25 clickhouse enabled default user setup, this means that we need to disable it to avoid connection issues. With this setting we can still access our clickhouse instance (internally) without having a user.
+
+```
+services:
+  op-ch:
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+```
+
+### Use our latest docker images
+
+Last thing to do is to start using our latest docker images.
+
+> Note: Before you might have been using the latest tag, which is not recommended. Change it to the actual latest version instead.
+
+```js title="./self-hosting/docker-compose.yml"
+services:
+  op-api:
+    image: lindesvard/openpanel-api:latest // [!code --]
+    image: lindesvard/openpanel-api:2.0.0 // [!code ++]
+
+  op-worker:
+    image: lindesvard/openpanel-worker:latest // [!code --]
+    image: lindesvard/openpanel-worker:2.0.0 // [!code ++]
+
+  op-dashboard:
+    image: lindesvard/openpanel-dashboard:latest // [!code --]
+    image: lindesvard/openpanel-dashboard:2.0.0 // [!code ++]
+```
+
+### Done?
+
+When you're done with above steps you should need to restart all services. This will take quite some time depending on your hardware and how many events you have. Since we have made significant changes to the database schema and data we need to run migrations.
+
+```bash
+./stop
+./start
+```
+
+## Using Coolify?
+
+If you're using Coolify and running OpenPanel v1 you'll need to apply the above changes. You can take a look at our [Coolify PR](https://github.com/coollabsio/coolify/pull/7653) which shows what you need to change.
+
+## Any issues with migrations?
+
+If you stumble upon any issues during migrations, please reach out to us on [Discord](https://discord.gg/openpanel) and we'll try our best to help you out.

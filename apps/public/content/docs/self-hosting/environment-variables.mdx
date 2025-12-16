@@ -116,7 +116,7 @@ Remove `convert_any_join` from ClickHouse settings. Used for compatibility with 
 
 ## Application URLs
 
-### NEXT_PUBLIC_API_URL
+### API_URL
 
 **Type**: `string`  
 **Required**: Yes  
@@ -126,10 +126,10 @@ Public API URL exposed to the browser. Used by the dashboard frontend and API se
 
 **Example**:
 ```bash
-NEXT_PUBLIC_API_URL=https://analytics.example.com/api
+API_URL=https://analytics.example.com/api
 ```
 
-### NEXT_PUBLIC_DASHBOARD_URL
+### DASHBOARD_URL
 
 **Type**: `string`  
 **Required**: Yes  
@@ -139,7 +139,7 @@ Public dashboard URL exposed to the browser. Used by the dashboard frontend and 
 
 **Example**:
 ```bash
-NEXT_PUBLIC_DASHBOARD_URL=https://analytics.example.com
+DASHBOARD_URL=https://analytics.example.com
 ```
 
 ### API_CORS_ORIGINS
@@ -368,7 +368,7 @@ SLACK_STATE_SECRET=your-state-secret
 
 ## Self-hosting
 
-### NEXT_PUBLIC_SELF_HOSTED
+### SELF_HOSTED
 
 **Type**: `boolean`  
 **Required**: No  
@@ -378,7 +378,7 @@ Enable self-hosted mode. Set to `true` or `1` to enable self-hosting features. U
 
 **Example**:
 ```bash
-NEXT_PUBLIC_SELF_HOSTED=true
+SELF_HOSTED=true
 ```
 
 ## Worker & Queue
@@ -784,8 +784,8 @@ For a basic self-hosted installation, these variables are required:
 - `DATABASE_URL` - PostgreSQL connection
 - `REDIS_URL` - Redis connection
 - `CLICKHOUSE_URL` - ClickHouse connection
-- `NEXT_PUBLIC_API_URL` - API endpoint URL
-- `NEXT_PUBLIC_DASHBOARD_URL` - Dashboard URL
+- `API_URL` - API endpoint URL
+- `DASHBOARD_URL` - Dashboard URL
 - `COOKIE_SECRET` - Session encryption secret
 
 ### Optional but Recommended
