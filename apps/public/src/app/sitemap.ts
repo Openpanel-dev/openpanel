@@ -1,11 +1,18 @@
 import { url } from '@/lib/layout.shared';
-import { articleSource, compareSource, pageSource, source } from '@/lib/source';
+import {
+  articleSource,
+  compareSource,
+  guideSource,
+  pageSource,
+  source,
+} from '@/lib/source';
 import type { MetadataRoute } from 'next';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const articles = await articleSource.getPages();
   const docs = await source.getPages();
   const pages = await pageSource.getPages();
+  const guides = await guideSource.getPages();
   return [
     {
       url: url('/'),
@@ -47,6 +54,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: url(item.url),
       lastModified: item.data.date,
       changeFrequency: 'yearly' as const,
+      priority: 0.5,
+    })),
+    ...guides.map((item) => ({
+      url: url(item.url),
+      lastModified: item.data.date,
+      changeFrequency: 'monthly' as const,
       priority: 0.5,
     })),
     ...docs.map((item) => ({

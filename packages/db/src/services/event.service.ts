@@ -131,7 +131,6 @@ export function transformSessionToEvent(
     duration: 0,
     revenue: session.revenue,
     properties: {
-      ...session.properties,
       is_bounce: session.is_bounce,
       __query: {
         utm_medium: session.utm_medium,
@@ -592,6 +591,9 @@ export async function getEventList(options: GetEventListOptions) {
   if (select.sdkVersion) {
     sb.select.sdkVersion = 'sdk_version';
   }
+  if (select.revenue) {
+    sb.select.revenue = 'revenue';
+  }
 
   if (profileId) {
     sb.where.deviceId = `(device_id IN (SELECT device_id as did FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND device_id != '' AND profile_id = ${sqlstring.escape(profileId)} group by did) OR profile_id = ${sqlstring.escape(profileId)})`;
@@ -628,8 +630,7 @@ export async function getEventList(options: GetEventListOptions) {
     }
   }
 
-  sb.orderBy.created_at =
-    'toDate(created_at) DESC, created_at DESC, profile_id DESC, name DESC';
+  sb.orderBy.created_at = 'created_at DESC';
 
   if (custom) {
     custom(sb);

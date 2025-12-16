@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = getRootMetadata();
 
-export default function Layout({ children }: LayoutProps<'/'>) {
+export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"

@@ -217,6 +217,7 @@ export function moveDataBetweenTables({
   from,
   to,
   batch,
+  columns,
 }: {
   from: string;
   to: string;
@@ -227,11 +228,15 @@ export function moveDataBetweenTables({
     endDate?: Date;
     startDate?: Date;
   };
+  columns?: string[];
 }): string[] {
   const sqls: string[] = [];
 
+  // Build the SELECT clause
+  const selectClause = columns && columns.length > 0 ? columns.join(', ') : '*';
+
   if (!batch) {
-    return [`INSERT INTO ${to} SELECT * FROM ${from}`];
+    return [`INSERT INTO ${to} SELECT ${selectClause} FROM ${from}`];
   }
 
   // Start from today and go back 3 years
@@ -247,31 +252,108 @@ export function moveDataBetweenTables({
   let currentDate = endDate;
   const interval = batch.interval || 'day';
 
-  while (currentDate > startDate) {
+  // Helper function to get the start of the week (Monday) for a given date
+  const getWeekStart = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+    d.setDate(diff);
+    d.setHours(0, 0, 0, 0); // Normalize to start of day
+    return d;
+  };
+
+  // Helper function to compare dates based on interval
+  const shouldContinue = (
+    current: Date,
+    start: Date,
+    intervalType: string,
+  ): boolean => {
+    if (intervalType === 'month') {
+      // For months, compare by year and month
+      // Continue if current month is >= start month
+      const currentYear = current.getFullYear();
+      const currentMonth = current.getMonth();
+      const startYear = start.getFullYear();
+      const startMonth = start.getMonth();
+      return (
+        currentYear > startYear ||
+        (currentYear === startYear && currentMonth >= startMonth)
+      );
+    }
+    if (intervalType === 'week') {
+      // For weeks, compare by week start dates
+      const currentWeekStart = getWeekStart(current);
+      const startWeekStart = getWeekStart(start);
+      return currentWeekStart >= startWeekStart;
+    }
+    return current > start;
+  };
+
+  while (shouldContinue(currentDate, startDate, interval)) {
     const previousDate = new Date(currentDate);
 
     switch (interval) {
       case 'month':
         previousDate.setMonth(previousDate.getMonth() - 1);
-        break;
-      case 'week':
-        previousDate.setDate(previousDate.getDate() - 7);
-        // Ensure we don't go below startDate
-        if (previousDate < startDate) {
-          previousDate.setTime(startDate.getTime());
+        // If we've gone below startDate's month, adjust to start of startDate's month
+        // This ensures we generate SQL for the month containing startDate
+        if (
+          previousDate.getFullYear() < startDate.getFullYear() ||
+          (previousDate.getFullYear() === startDate.getFullYear() &&
+            previousDate.getMonth() < startDate.getMonth())
+        ) {
+          previousDate.setFullYear(startDate.getFullYear());
+          previousDate.setMonth(startDate.getMonth());
+          previousDate.setDate(1);
         }
         break;
+      case 'week': {
+        previousDate.setDate(previousDate.getDate() - 7);
+        // If we've gone below startDate's week, adjust to start of startDate's week
+        const startWeekStart = getWeekStart(startDate);
+        const prevWeekStart = getWeekStart(previousDate);
+        if (prevWeekStart < startWeekStart) {
+          previousDate.setTime(startWeekStart.getTime());
+        }
+        break;
+      }
       // day
       default:
         previousDate.setDate(previousDate.getDate() - 1);
         break;
     }
 
+    // For monthly/weekly intervals with transform, upperBoundDate should be currentDate
+    // because currentDate already represents the start of the period we're processing
+    // The WHERE clause uses > previousDate AND <= currentDate to get exactly one period
+    let upperBoundDate = currentDate;
+    // Don't exceed the endDate
+    if (upperBoundDate > endDate) {
+      upperBoundDate = endDate;
+    }
+
     const sql = `INSERT INTO ${to} 
-      SELECT * FROM ${from} 
+      SELECT ${selectClause} FROM ${from} 
       WHERE ${batch.column} > '${batch.transform ? batch.transform(previousDate) : formatClickhouseDate(previousDate, true)}' 
-      AND ${batch.column} <= '${batch.transform ? batch.transform(currentDate) : formatClickhouseDate(currentDate, true)}'`;
+      AND ${batch.column} <= '${batch.transform ? batch.transform(upperBoundDate) : formatClickhouseDate(upperBoundDate, true)}'`;
     sqls.push(sql);
+
+    // For monthly/weekly intervals, stop if we've reached the start period
+    if (interval === 'month') {
+      const prevYear = previousDate.getFullYear();
+      const prevMonth = previousDate.getMonth();
+      const startYear = startDate.getFullYear();
+      const startMonth = startDate.getMonth();
+      if (prevYear === startYear && prevMonth === startMonth) {
+        break;
+      }
+    } else if (interval === 'week') {
+      const prevWeekStart = getWeekStart(previousDate);
+      const startWeekStart = getWeekStart(startDate);
+      if (prevWeekStart.getTime() === startWeekStart.getTime()) {
+        break;
+      }
+    }
 
     currentDate = previousDate;
   }

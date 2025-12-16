@@ -27,10 +27,6 @@ interface IPInfoResponse {
     latitude: number | undefined;
     longitude: number | undefined;
   };
-  isp: string | null;
-  asn: string | null;
-  organization: string | null;
-  hostname: string | null;
   isLocalhost: boolean;
   isPrivate: boolean;
 }
@@ -90,84 +86,6 @@ function isPrivateIP(ip: string): boolean {
   return false;
 }
 
-async function getIPInfo(ip: string): Promise<IPInfo> {
-  if (!ip || ip === '127.0.0.1' || ip === '::1') {
-    return {
-      ip,
-      location: {
-        country: undefined,
-        city: undefined,
-        region: undefined,
-        latitude: undefined,
-        longitude: undefined,
-      },
-      isp: null,
-      asn: null,
-      organization: null,
-      hostname: null,
-    };
-  }
-
-  // Get geolocation
-  const geo = await getGeoLocation(ip);
-
-  // Get ISP/ASN info
-  let isp: string | null = null;
-  let asn: string | null = null;
-  let organization: string | null = null;
-
-  if (!isPrivateIP(ip)) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
-
-      const response = await fetch(
-        `https://ip-api.com/json/${ip}?fields=isp,as,org,query,reverse`,
-        {
-          signal: controller.signal,
-        },
-      );
-
-      clearTimeout(timeout);
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status !== 'fail') {
-          isp = data.isp || null;
-          asn = data.as ? `AS${data.as.split(' ')[0]}` : null;
-          organization = data.org || null;
-        }
-      }
-    } catch {
-      // Ignore errors
-    }
-  }
-
-  // Reverse DNS lookup for hostname
-  let hostname: string | null = null;
-  try {
-    const hostnames = await dns.reverse(ip);
-    hostname = hostnames[0] || null;
-  } catch {
-    // Ignore errors
-  }
-
-  return {
-    ip,
-    location: {
-      country: geo.country,
-      city: geo.city,
-      region: geo.region,
-      latitude: geo.latitude,
-      longitude: geo.longitude,
-    },
-    isp,
-    asn,
-    organization,
-    hostname,
-  };
-}
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const ipParam = searchParams.get('ip');
@@ -209,12 +127,17 @@ export async function GET(request: Request) {
   }
 
   try {
-    const info = await getIPInfo(ipToLookup);
+    const geo = await fetch('https://api.openpanel.dev/misc/geo', {
+      headers: request.headers,
+    })
+      .then((res) => res.json())
+      .then((data) => data.selected.geo);
     const isLocalhost = ipToLookup === '127.0.0.1' || ipToLookup === '::1';
     const isPrivate = isPrivateIP(ipToLookup);
 
     const response: IPInfoResponse = {
-      ...info,
+      location: geo,
+      ip: ipToLookup,
       isLocalhost,
       isPrivate,
     };

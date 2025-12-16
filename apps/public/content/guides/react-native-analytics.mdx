@@ -1,0 +1,216 @@
+---
+title: "How to add analytics to React Native"
+description: "Add privacy-first analytics to your React Native app with OpenPanel. Track screen views, custom events, and user behavior across iOS and Android."
+difficulty: intermediate
+timeToComplete: 10
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Initialize OpenPanel"
+    anchor: "setup"
+  - name: "Track screen views"
+    anchor: "screenviews"
+  - name: "Track custom events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to add analytics to React Native
+
+Adding analytics to your React Native app helps you understand how users interact with your product across both iOS and Android. This guide walks you through setting up OpenPanel to track screen views, custom events, and user behavior in about ten minutes.
+
+OpenPanel works well with React Native because it handles the complexities of native environments for you. The SDK automatically captures app version, build number, and install referrer on Android. It also queues events when the device is offline and sends them when connectivity returns.
+
+## Prerequisites
+
+- A React Native project (Expo or bare React Native)
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Your Client ID and Client Secret from the OpenPanel dashboard
+
+## Install the SDK [#install]
+
+Start by adding the OpenPanel React Native package and its Expo dependencies. The SDK relies on `expo-application` for version information and `expo-constants` for user-agent data.
+
+```bash
+npm install @openpanel/react-native
+npx expo install expo-application expo-constants
+```
+
+You can also use pnpm or yarn if that's your preference. The Expo packages work in both Expo and bare React Native projects.
+
+## Initialize OpenPanel [#setup]
+
+Create an OpenPanel instance that you'll use throughout your app. React Native requires a `clientSecret` for authentication since native apps can't use CORS headers like web browsers do.
+
+```typescript
+import { OpenPanel } from '@openpanel/react-native';
+
+export const op = new OpenPanel({
+  clientId: 'your-client-id',
+  clientSecret: 'your-client-secret',
+});
+```
+
+Put this in a shared file like `lib/op.ts` so you can import it from anywhere in your app. The SDK automatically sets up listeners for app state changes and configures default properties like version and build number.
+
+## Track screen views [#screenviews]
+
+Screen view tracking requires hooking into your navigation library. The approach differs slightly depending on whether you use Expo Router or React Navigation.
+
+If you're using Expo Router, add the tracking call to your root layout component. The `usePathname` hook gives you the current route, and `useSegments` provides the route segments which can be useful for grouping dynamic routes together.
+
+```typescript
+import { usePathname, useSegments } from 'expo-router';
+import { useEffect } from 'react';
+import { op } from '@/lib/op';
+
+export default function RootLayout() {
+  const pathname = usePathname();
+  const segments = useSegments();
+
+  useEffect(() => {
+    op.screenView(pathname, {
+      segments: segments.join('/'),
+    });
+  }, [pathname, segments]);
+
+  return (
+    // Your layout JSX
+  );
+}
+```
+
+For React Navigation, track screen changes using the navigation container's state change callbacks. Create a navigation ref and pass handlers to `onReady` and `onStateChange`.
+
+```tsx
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
+import { op } from '@/lib/op';
+
+const navigationRef = createNavigationContainerRef();
+
+export function App() {
+  const handleNavigationStateChange = () => {
+    const current = navigationRef.getCurrentRoute();
+    if (current) {
+      op.screenView(current.name, {
+        params: current.params,
+      });
+    }
+  };
+
+  return (
+    <NavigationContainer
+      ref={navigationRef}
+      onReady={handleNavigationStateChange}
+      onStateChange={handleNavigationStateChange}
+    >
+      {/* Your navigators */}
+    </NavigationContainer>
+  );
+}
+```
+
+The `onReady` callback fires on initial load, and `onStateChange` fires on subsequent navigations. This ensures you capture every screen view including the first one.
+
+## Track custom events [#events]
+
+Beyond screen views, you'll want to track specific interactions that matter to your business. Call `op.track` with an event name and optional properties wherever you need to record user actions.
+
+```tsx
+import { op } from '@/lib/op';
+
+function SignupButton() {
+  const handlePress = () => {
+    op.track('button_clicked', {
+      button_name: 'signup',
+      screen: 'home',
+    });
+    // Continue with signup logic
+  };
+
+  return <Button onPress={handlePress} title="Sign Up" />;
+}
+```
+
+Keep event names consistent across your codebase. Using snake_case and a verb-noun pattern like `button_clicked` or `form_submitted` makes your analytics easier to query later.
+
+You can also set global properties that attach to every event. This is useful for metadata like app version or user plan that you want on all events without passing them manually each time.
+
+```tsx
+op.setGlobalProperties({
+  app_version: '1.0.0',
+  platform: Platform.OS,
+});
+```
+
+## Identify users [#identify]
+
+When a user logs in, associate their activity with a profile so you can track their behavior across sessions and devices. Call `op.identify` with the user's ID and any profile properties you want to store.
+
+```tsx
+import { useEffect } from 'react';
+import { op } from '@/lib/op';
+
+function UserProfile({ user }) {
+  useEffect(() => {
+    if (user) {
+      op.identify({
+        profileId: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        properties: {
+          plan: user.plan,
+        },
+      });
+    }
+  }, [user]);
+
+  return <Text>Welcome, {user?.firstName}!</Text>;
+}
+```
+
+When the user logs out, call `op.clear()` to reset the identity. This ensures subsequent events aren't incorrectly attributed to the previous user.
+
+```tsx
+function handleLogout() {
+  op.clear();
+  // Continue with logout logic
+}
+```
+
+## Verify your setup [#verify]
+
+Run your app and navigate between a few screens to trigger screen view events. Interact with any buttons or forms you've added custom tracking to. Then open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and check the Real-time view. You should see events appearing within seconds.
+
+If events aren't showing up, open React Native Debugger or your browser's developer tools (if using Expo web) and check the console for errors. The most common issue is an incorrect Client ID or Client Secret. Make sure both values match what's shown in your OpenPanel dashboard, and remember that React Native requires the client secret whereas web SDKs do not.
+
+## Next steps
+
+The [React Native SDK reference](/docs/sdks/react-native) covers additional configuration options. If you're also building for web, the [JavaScript SDK](/docs/sdks/javascript) shares the same tracking API so your event naming can stay consistent across platforms.
+
+If you're building native iOS or Android apps without React Native, check out the [Swift analytics guide](/guides/swift-analytics) for iOS apps or the [Kotlin analytics guide](/guides/kotlin-analytics) for Android apps.
+
+<Faqs>
+<FaqItem question="Why does React Native require a client secret?">
+React Native apps can't use CORS headers for authentication like web browsers do. The client secret provides server-side authentication to ensure your events come from a legitimate source. Keep it bundled in your app binary rather than fetching it from an API.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel work with Expo?">
+Yes. The SDK uses Expo packages for version information and user-agent data, but these work in bare React Native projects too. No special configuration is needed for Expo-managed workflows.
+</FaqItem>
+
+<FaqItem question="What happens when the device is offline?">
+OpenPanel queues events locally and sends them when the app comes back online. Events won't be lost if the user temporarily loses connectivity.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with data minimization and full support for data subject rights. With self-hosting, you also eliminate international data transfer concerns. Read more about [cookieless analytics](/articles/cookieless-analytics).
+</FaqItem>
+</Faqs>

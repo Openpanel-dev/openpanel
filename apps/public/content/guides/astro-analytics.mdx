@@ -1,0 +1,171 @@
+---
+title: "How to add analytics to Astro"
+description: "Add privacy-first analytics to your Astro site with OpenPanel. Track page views, custom events, and user behavior without cookies."
+difficulty: beginner
+timeToComplete: 5
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Add the component to your layout"
+    anchor: "setup"
+  - name: "Track custom events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to add analytics to Astro
+
+Adding analytics to your Astro site helps you understand how visitors interact with your content. This guide walks you through setting up OpenPanel to track page views, custom events, and user behavior in about five minutes.
+
+OpenPanel works well with Astro because it's a lightweight script that loads asynchronously and doesn't block your site's rendering. It tracks page views automatically across both static and server-rendered pages, and the component-based API fits naturally into Astro's architecture.
+
+## Prerequisites
+
+- An Astro project
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Your Client ID from the OpenPanel dashboard
+
+## Install the SDK [#install]
+
+Start by adding the OpenPanel Astro package to your project. This package provides Astro components that handle initialization and tracking.
+
+```bash
+npm install @openpanel/astro
+```
+
+You can also use pnpm or yarn if that's your preference.
+
+## Add the component to your layout [#setup]
+
+The `OpenPanelComponent` initializes tracking and should be placed in your root layout so it loads on every page. Add it inside the `<head>` tag to ensure it initializes before any user interactions.
+
+```astro
+---
+import { OpenPanelComponent } from '@openpanel/astro';
+---
+
+<html>
+  <head>
+    <OpenPanelComponent
+      clientId="your-client-id"
+      trackScreenViews={true}
+      trackOutgoingLinks={true}
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+The `trackScreenViews` option automatically records a page view event whenever someone navigates to a new page. The `trackOutgoingLinks` option tracks when visitors click links that take them to external sites. Both are optional but recommended for most sites.
+
+You can also pass a `profileId` prop if you already know the user's identity at render time, and `globalProperties` to attach metadata to every event.
+
+## Track custom events [#events]
+
+Beyond automatic page views, you'll want to track specific interactions that matter to your business. OpenPanel exposes a global `op` function that you can call from any event handler.
+
+```astro
+<button onclick="window.op('track', 'button_clicked', {button_name: 'signup'})">
+  Sign up
+</button>
+```
+
+The first argument is always `'track'`, the second is your event name, and the third is an optional object of properties you want to attach to the event. Keep event names consistent across your codebase, using snake_case is a good convention.
+
+For elements where you'd rather not write JavaScript, you can use data attributes instead. Any element with a `data-track` attribute will automatically fire an event when clicked.
+
+```astro
+<button data-track="button_clicked" data-button-name="signup">
+  Sign up
+</button>
+```
+
+Properties are pulled from any `data-*` attributes on the element. The `data-track` value becomes the event name, and other data attributes become event properties.
+
+### Tracking form submissions
+
+Forms are a common tracking target. You can fire an event in the `onsubmit` handler while still allowing the form to submit normally.
+
+```astro
+<form onsubmit="window.op('track', 'form_submitted', {form_name: 'contact'}); return true;">
+  <input type="email" name="email" placeholder="Your email" required />
+  <button type="submit">Submit</button>
+</form>
+```
+
+The `return true` ensures the form submission continues after the tracking call.
+
+## Identify users [#identify]
+
+When a user logs in or you otherwise learn their identity, you can associate their activity with a profile. The `IdentifyComponent` handles this declaratively.
+
+```astro
+---
+import { IdentifyComponent } from '@openpanel/astro';
+
+const user = await getCurrentUser();
+---
+
+<IdentifyComponent
+  profileId={user.id}
+  firstName={user.firstName}
+  lastName={user.lastName}
+  email={user.email}
+  properties={{
+    plan: user.plan,
+  }}
+/>
+```
+
+Place this component on pages where the user is authenticated. Once identified, all subsequent events from that browser session will be linked to this profile until they clear their browser data or you explicitly clear the identity.
+
+### Setting global properties
+
+Sometimes you want to attach the same properties to every event, like an app version or environment. The `SetGlobalPropertiesComponent` lets you do this once rather than repeating it in every tracking call.
+
+```astro
+---
+import { SetGlobalPropertiesComponent } from '@openpanel/astro';
+---
+
+<SetGlobalPropertiesComponent
+  properties={{
+    app_version: '1.0.2',
+    environment: import.meta.env.MODE,
+  }}
+/>
+```
+
+These properties merge with any event-specific properties you pass to individual tracking calls.
+
+## Verify your setup [#verify]
+
+Open your Astro site in the browser and navigate between a few pages. Then open your [OpenPanel dashboard](https://dashboard.openpanel.dev) and check the Real-time view. You should see page view events appearing within seconds.
+
+If events aren't showing up, open your browser's developer console and look for errors. The most common issues are an incorrect Client ID or an ad blocker preventing the tracking script from loading. You can also check the Network tab to confirm requests are being sent to OpenPanel's servers.
+
+## Next steps
+
+The [Astro SDK reference](/docs/sdks/astro) covers additional configuration options like filtering events and customizing the CDN URL. If you're interested in running OpenPanel on your own infrastructure, the [self-hosting guide](/articles/how-to-self-host-openpanel) walks through the setup process.
+
+<Faqs>
+<FaqItem question="Does OpenPanel work with Astro Islands?">
+Yes. The OpenPanelComponent is a client-side script that hydrates independently of your island components. It will track interactions across your entire page regardless of which parts are hydrated.
+</FaqItem>
+
+<FaqItem question="Can I use OpenPanel with Astro's SSR mode?">
+Yes. OpenPanel works with both static and server-rendered Astro sites. The tracking script runs in the browser regardless of how the page was rendered.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel use cookies?">
+No. OpenPanel uses cookieless tracking by default, which means you don't need cookie consent banners for basic analytics under most privacy regulations including GDPR. Read more about [cookieless analytics](/articles/cookieless-analytics).
+</FaqItem>
+</Faqs>

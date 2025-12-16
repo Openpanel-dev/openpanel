@@ -12,7 +12,11 @@ import {
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-export default async function Page(props: PageProps<'/docs/[[...slug]]'>) {
+type PageProps = {
+  params: Promise<{ slug: string[] }>;
+};
+
+export default async function Page(props: PageProps) {
   const params = await props.params;
   const page = source.getPage(params.slug);
   if (!page) notFound();
@@ -39,9 +43,7 @@ export async function generateStaticParams() {
   return source.generateParams();
 }
 
-export async function generateMetadata(
-  props: PageProps<'/docs/[[...slug]]'>,
-): Promise<Metadata> {
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const params = await props.params;
   const page = source.getPage(params.slug);
   if (!page) notFound();

@@ -1,0 +1,324 @@
+---
+title: "How to Track Events with Node.js"
+description: "Add server-side analytics to your Node.js application. Track events, identify users, and analyze behavior with OpenPanel's JavaScript SDK."
+difficulty: beginner
+timeToComplete: 7
+date: 2025-12-14
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install the SDK"
+    anchor: "install"
+  - name: "Initialize OpenPanel"
+    anchor: "setup"
+  - name: "Track events"
+    anchor: "events"
+  - name: "Identify users"
+    anchor: "identify"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+## Introduction
+
+Server-side analytics gives you complete control over what data you track and ensures events are never blocked by ad blockers. OpenPanel's JavaScript SDK works perfectly in Node.js environments, allowing you to track events from your backend, API routes, and background jobs.
+
+OpenPanel is an open-source alternative to Mixpanel and Amplitude, giving you powerful server-side analytics without compromising user privacy.
+
+## Prerequisites
+
+- Node.js project set up
+- OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Your Client ID and Client Secret from the OpenPanel dashboard
+
+> **Important:** Server-side tracking requires a `clientSecret` for authentication.
+
+## Step 1: Install the SDK
+
+Install the OpenPanel JavaScript SDK:
+
+```bash
+npm install @openpanel/sdk
+```
+
+Or with pnpm:
+
+```bash
+pnpm install @openpanel/sdk
+```
+
+## Step 2: Initialize OpenPanel
+
+Create an OpenPanel instance with your credentials:
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET', // Required for server-side
+});
+```
+
+> **Security Note:** Never expose your `clientSecret` in client-side code. Use environment variables in production.
+
+### Using environment variables
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET,
+});
+```
+
+```bash title=".env"
+OPENPANEL_CLIENT_ID=your-client-id
+OPENPANEL_CLIENT_SECRET=your-client-secret
+```
+
+## Step 3: Track events
+
+Track events throughout your Node.js application:
+
+```js title="routes/api/signup.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { email, name } = await request.json();
+
+  // Track signup event
+  op.track('user_signed_up', {
+    email,
+    name,
+    source: 'website',
+  });
+
+  // Your signup logic
+  const user = await createUser({ email, name });
+
+  return Response.json({ success: true, user });
+}
+```
+
+### Track API requests
+
+```js title="middleware/analytics.js"
+import { op } from '@/lib/op';
+
+export function analyticsMiddleware(req, res, next) {
+  // Track API request
+  op.track('api_request', {
+    method: req.method,
+    path: req.path,
+    status_code: res.statusCode,
+  });
+
+  next();
+}
+```
+
+### Track background jobs
+
+```js title="jobs/send-email.js"
+import { op } from '@/lib/op';
+
+export async function sendEmailJob(userId, emailData) {
+  try {
+    await sendEmail(emailData);
+    
+    op.track('email_sent', {
+      user_id: userId,
+      email_type: emailData.type,
+      success: true,
+    });
+  } catch (error) {
+    op.track('email_failed', {
+      user_id: userId,
+      email_type: emailData.type,
+      error: error.message,
+    });
+  }
+}
+```
+
+## Step 4: Identify users
+
+To identify users and track their behavior:
+
+```js title="routes/api/login.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { email, password } = await request.json();
+  
+  const user = await authenticateUser(email, password);
+
+  // Identify the user
+  op.identify({
+    profileId: user.id,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    email: user.email,
+    properties: {
+      plan: user.plan,
+      signupDate: user.createdAt,
+    },
+  });
+
+  // Track login event
+  op.track('user_logged_in', {
+    user_id: user.id,
+    method: 'email',
+  });
+
+  return Response.json({ success: true, user });
+}
+```
+
+### Track user actions
+
+```js title="routes/api/purchase.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const { userId, productId, amount } = await request.json();
+
+  // Track purchase event
+  op.track('purchase_completed', {
+    user_id: userId,
+    product_id: productId,
+    amount,
+    currency: 'USD',
+  }, {
+    profileId: userId, // Associate event with user
+  });
+
+  // Your purchase logic
+  await processPurchase(userId, productId, amount);
+
+  return Response.json({ success: true });
+}
+```
+
+## Verify your setup
+
+1. Make requests to your API endpoints that trigger events
+2. Run background jobs that track events
+3. Open your [OpenPanel dashboard](https://dashboard.openpanel.dev)
+4. Check the Real-time view to see events coming in
+
+**Not seeing events?**
+
+- Check server logs for errors
+- Verify your Client ID and Client Secret are correct
+- Ensure `clientSecret` is provided (required for server-side)
+- Check network requests in your server logs
+
+## Common Patterns
+
+### Track webhook events
+
+```js title="routes/api/webhook.js"
+import { op } from '@/lib/op';
+
+export async function POST(request) {
+  const payload = await request.json();
+
+  op.track('webhook_received', {
+    source: payload.source,
+    event_type: payload.type,
+    timestamp: new Date().toISOString(),
+  });
+
+  // Process webhook
+  await processWebhook(payload);
+
+  return Response.json({ success: true });
+}
+```
+
+### Set global properties
+
+```js title="lib/op.js"
+import { OpenPanel } from '@openpanel/sdk';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET,
+  globalProperties: {
+    app_version: process.env.APP_VERSION,
+    environment: process.env.NODE_ENV,
+    server_region: process.env.SERVER_REGION,
+  },
+});
+```
+
+### Track errors
+
+```js title="middleware/error-handler.js"
+import { op } from '@/lib/op';
+
+export function errorHandler(err, req, res, next) {
+  // Track error event
+  op.track('error_occurred', {
+    error_message: err.message,
+    error_stack: err.stack,
+    path: req.path,
+    method: req.method,
+  });
+
+  // Your error handling logic
+  res.status(500).json({ error: 'Internal server error' });
+}
+```
+
+### Increment user properties
+
+```js
+import { op } from '@/lib/op';
+
+// Increment login count
+op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1,
+});
+```
+
+## Serverless & Vercel
+
+If you're using serverless functions (like Vercel), use `waitUntil` to ensure events are tracked before the function completes:
+
+```js title="api/track.js"
+import { waitUntil } from '@vercel/functions';
+import { op } from '@/lib/op';
+
+export default async function handler(req, res) {
+  // Returns response immediately while keeping function alive
+  waitUntil(op.track('important_event', { foo: 'bar' }));
+  
+  return res.status(200).json({ success: true });
+}
+```
+
+## Next Steps
+
+- [Full JavaScript SDK reference](/docs/sdks/javascript)
+- [How to Add Analytics to Express](/guides/express-analytics)
+- [Compare OpenPanel to Mixpanel](/compare/mixpanel-alternative)
+
+## FAQ
+
+### Why do I need a clientSecret for server-side tracking?
+
+Server-side tracking requires authentication since we can't use CORS headers. The `clientSecret` ensures your events are properly authenticated and prevents unauthorized tracking.
+
+### Can I track events asynchronously?
+
+Yes! The OpenPanel SDK tracks events asynchronously by default. Events are queued and sent in the background, so they won't block your application.
+
+### Is OpenPanel GDPR compliant?
+
+Yes! OpenPanel is designed with privacy in mind. Server-side tracking gives you complete control over what data you collect. Check out our [cookieless analytics guide](/articles/cookieless-analytics) for more information.

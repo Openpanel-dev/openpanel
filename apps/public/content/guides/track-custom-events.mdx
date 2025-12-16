@@ -1,0 +1,226 @@
+---
+title: "How to track custom events with OpenPanel"
+description: "Learn how to track custom events like button clicks, form submissions, and user interactions in OpenPanel."
+difficulty: beginner
+timeToComplete: 5
+date: 2025-12-15
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Understand event structure"
+    anchor: "event-structure"
+  - name: "Track simple events"
+    anchor: "track-simple-events"
+  - name: "Track events with properties"
+    anchor: "track-events-with-properties"
+  - name: "Use data attributes"
+    anchor: "data-attributes"
+  - name: "Verify your setup"
+    anchor: "verify"
+---
+
+# How to track custom events with OpenPanel
+
+Custom events are the foundation of product analytics. They let you track specific user actions like button clicks, form submissions, video plays, and purchases. This guide walks you through tracking custom events in OpenPanel across different platforms.
+
+OpenPanel provides a consistent API for event tracking across all SDKs. Once you understand the pattern, you can apply it to any integration.
+
+## Prerequisites
+
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- OpenPanel SDK installed in your project
+- Your Client ID from the dashboard
+
+## Understand event structure [#event-structure]
+
+Every event in OpenPanel consists of two parts: a name and optional properties. The name describes what happened, while properties add context about how, where, and when it happened.
+
+A well-named event reads like a sentence in past tense. Instead of naming an event "click" or "button", use descriptive names like `signup_button_clicked` or `purchase_completed`. This makes your analytics dashboard immediately understandable.
+
+For property names, use snake_case and keep them consistent across your application. If you track `button_name` on one event, use the same property name on similar events rather than switching to `buttonName` or `name`.
+
+## Track simple events [#track-simple-events]
+
+The simplest event is just a name with no properties. This works well for actions where the context is obvious, like clicking a specific button that only appears in one place.
+
+If you're using the Web SDK with npm, import your OpenPanel instance and call the track method.
+
+```typescript
+import { op } from './op';
+
+op.track('signup_button_clicked');
+```
+
+For the script tag integration, use the global `window.op` function with 'track' as the first argument.
+
+```html
+<button onclick="window.op('track', 'signup_button_clicked')">
+  Sign Up
+</button>
+```
+
+If you're tracking events server-side with the JavaScript SDK, the pattern is identical.
+
+```typescript
+import { op } from './op';
+
+op.track('order_placed');
+```
+
+The track method queues events and sends them asynchronously, so it won't block your application logic.
+
+## Track events with properties [#track-events-with-properties]
+
+Properties transform raw events into actionable data. Instead of knowing that someone clicked a button, you can know which button, where it was located, and what the user was doing at the time.
+
+Pass properties as the second argument to the track method. Include any context that will help you segment and analyze the data later.
+
+```typescript
+import { op } from './op';
+
+op.track('button_clicked', {
+  button_name: 'signup',
+  button_location: 'hero_section',
+  page: 'homepage',
+});
+```
+
+With the script tag, pass the properties object as the third argument.
+
+```html
+<button onclick="window.op('track', 'button_clicked', {button_name: 'signup', button_location: 'hero_section'})">
+  Sign Up
+</button>
+```
+
+Think carefully about which properties to include. Track data that helps you answer questions about user behavior, like understanding which signup button performs best or which page drives the most conversions.
+
+Here's an example of tracking a purchase with meaningful properties.
+
+```typescript
+op.track('purchase_completed', {
+  product_id: 'prod_123',
+  product_name: 'Premium Plan',
+  amount: 99.99,
+  currency: 'USD',
+  payment_method: 'credit_card',
+  previous_plan: 'free',
+});
+```
+
+Never include sensitive data in event properties. Passwords, credit card numbers, and personally identifiable information should never appear in your analytics.
+
+## Use data attributes [#data-attributes]
+
+For HTML elements, OpenPanel supports declarative tracking with `data-track` attributes. This approach works well when you want to add tracking without writing JavaScript handlers.
+
+Add `data-track` with the event name, then use additional `data-*` attributes for properties.
+
+```html
+<button 
+  data-track="button_clicked"
+  data-button-name="signup"
+  data-button-location="hero_section"
+>
+  Sign Up
+</button>
+```
+
+The SDK automatically converts kebab-case attribute names to snake_case properties. So `data-button-name` becomes `button_name` in your event data.
+
+For complex or nested properties, use `data-track-properties` with a JSON string.
+
+```html
+<button 
+  data-track="feature_used"
+  data-track-properties='{"feature_name": "export", "export_format": "csv", "row_count": 500}'
+>
+  Export Data
+</button>
+```
+
+Data attributes require the `trackAttributes: true` option in your SDK initialization. If you're not seeing events from data attributes, check that this option is enabled.
+
+## Common event patterns
+
+Form submissions benefit from tracking both the submission and key context about what was submitted.
+
+```typescript
+function handleSubmit(event) {
+  event.preventDefault();
+  
+  op.track('form_submitted', {
+    form_name: 'contact',
+    form_location: 'footer',
+    fields_completed: 3,
+  });
+
+  // Submit the form
+}
+```
+
+For video interactions, track play, pause, and completion events with timing information.
+
+```typescript
+function handleVideoPlay(video) {
+  op.track('video_played', {
+    video_id: video.id,
+    video_title: video.title,
+    video_duration: video.duration,
+  });
+}
+
+function handleVideoComplete(video) {
+  op.track('video_completed', {
+    video_id: video.id,
+    watch_time: video.currentTime,
+  });
+}
+```
+
+Search events should include the query and results count to help you understand what users are looking for.
+
+```typescript
+function handleSearch(query, results) {
+  op.track('search_performed', {
+    query: query,
+    query_length: query.length,
+    results_count: results.length,
+    has_results: results.length > 0,
+  });
+}
+```
+
+## Verify your setup [#verify]
+
+After implementing event tracking, open your OpenPanel dashboard and navigate to the Real-time view. Trigger the events in your application and confirm they appear within a few seconds.
+
+If events aren't showing up, check that your Client ID is correct and that the SDK initialized without errors. Browser developer tools can help you verify that tracking requests are being sent. Look for network requests to `openpanel.dev` or your self-hosted endpoint.
+
+## Next steps
+
+Now that you're tracking custom events, you can identify users to connect events to specific people. For analyzing your event data, the [funnel analysis guide](/articles/how-to-create-a-funnel) shows you how to measure conversion rates across multi-step flows. You can also explore the [SDK documentation](/docs/sdks/web) for advanced features like global properties and event filtering.
+
+For framework-specific examples and setup instructions, check out:
+- [Next.js analytics guide](/guides/nextjs-analytics) for Next.js applications
+- [React analytics guide](/guides/react-analytics) for React applications
+- [Node.js analytics guide](/guides/nodejs-analytics) for server-side tracking
+- [Python analytics guide](/guides/python-analytics) for Python applications
+
+<Faqs>
+<FaqItem question="How many events can I track?">
+OpenPanel doesn't limit the number of events you can track. Focus on tracking meaningful events that help you understand user behavior and make product decisions.
+</FaqItem>
+
+<FaqItem question="Should I track every click?">
+No. Track events that help you make decisions. Tracking every click creates noise and makes it harder to find insights. Focus on actions that indicate user intent or progress toward a goal.
+</FaqItem>
+
+<FaqItem question="Can I track events server-side?">
+Yes. The [Node.js SDK](/docs/sdks/javascript) supports server-side tracking with the same API. Server-side tracking is useful for events that happen outside the browser, like webhook callbacks or background jobs.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel use cookies for event tracking?">
+No. OpenPanel uses cookieless tracking by default, so you don't need cookie consent banners for basic analytics under most privacy regulations.
+</FaqItem>
+</Faqs>

@@ -1,6 +1,5 @@
 import { cacheable } from '@openpanel/redis';
 import type { IChartEventFilter } from '@openpanel/validation';
-import { uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 import {
   TABLE_NAMES,
@@ -53,7 +52,6 @@ export type IClickhouseSession = {
   revenue: number;
   sign: 1 | 0;
   version: number;
-  properties: Record<string, string>;
 };
 
 export interface IServiceSession {
@@ -92,7 +90,6 @@ export interface IServiceSession {
   utmContent: string;
   utmTerm: string;
   revenue: number;
-  properties: Record<string, string>;
   profile?: IServiceProfile;
 }
 
@@ -144,7 +141,6 @@ export function transformSession(session: IClickhouseSession): IServiceSession {
     utmContent: session.utm_content,
     utmTerm: session.utm_term,
     revenue: session.revenue,
-    properties: session.properties,
     profile: undefined,
   };
 }
@@ -200,12 +196,13 @@ export async function getSessionList({
 
   if (cursor) {
     const cAt = sqlstring.escape(cursor.createdAt);
+    // TODO: remove id from cursor
     const cId = sqlstring.escape(cursor.id);
-    sb.where.cursor = `(created_at < toDateTime64(${cAt}, 3) OR (created_at = toDateTime64(${cAt}, 3) AND id < ${cId}))`;
+    sb.where.cursor = `created_at < toDateTime64(${cAt}, 3)`;
     sb.where.cursorWindow = `created_at >= toDateTime64(${cAt}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
-    sb.orderBy.created_at = 'toDate(created_at) DESC, created_at DESC, id DESC';
+    sb.orderBy.created_at = 'created_at DESC';
   } else {
-    sb.orderBy.created_at = 'toDate(created_at) DESC, created_at DESC, id DESC';
+    sb.orderBy.created_at = 'created_at DESC';
     sb.where.created_at = `created_at > now() - INTERVAL ${dateIntervalInDays} DAY`;
   }
 

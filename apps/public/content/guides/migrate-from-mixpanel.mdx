@@ -1,0 +1,251 @@
+---
+title: "How to migrate from Mixpanel to OpenPanel"
+description: "Switch from Mixpanel to OpenPanel in under 2 hours with this step-by-step migration guide."
+difficulty: intermediate
+timeToComplete: 90
+date: 2025-12-15
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Export Mixpanel data"
+    anchor: "export"
+  - name: "Install OpenPanel SDK"
+    anchor: "install"
+  - name: "Map your events"
+    anchor: "map-events"
+  - name: "Import historical data"
+    anchor: "import"
+  - name: "Run in parallel"
+    anchor: "parallel"
+  - name: "Remove Mixpanel"
+    anchor: "remove"
+---
+
+# How to migrate from Mixpanel to OpenPanel
+
+Migrating analytics tools sounds painful, but OpenPanel's API closely mirrors Mixpanel's patterns. Most implementations translate with minimal code changes. You'll map your existing events, optionally import historical data, and run both tools in parallel before cutting over.
+
+OpenPanel gives you better privacy controls with cookieless tracking by default, transparent pricing without surprise overages, and the option to self-host. The migration typically takes 1-2 hours for code changes, plus a week or two of parallel tracking to verify data consistency.
+
+## Prerequisites
+
+- An existing Mixpanel implementation
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Access to your Mixpanel project settings for data export
+- Access to your application codebase
+
+## Export Mixpanel data [#export]
+
+Before migrating, you'll want to export your historical data from Mixpanel. This step is optional if you're okay starting fresh, but most teams prefer to preserve their historical events for comparison.
+
+Mixpanel provides an export API that returns events in JSON format. You'll need your API credentials from Project Settings in Mixpanel.
+
+```bash
+curl https://mixpanel.com/api/2.0/export \
+  -u YOUR_API_SECRET: \
+  -d 'from_date=2024-01-01' \
+  -d 'to_date=2024-12-15' \
+  -d 'event=["event1","event2"]' \
+  > mixpanel_export.json
+```
+
+Alternatively, you can export through Mixpanel's dashboard by navigating to Data Management, then Export. Select your date range and events, then download the file. Keep this export handy for the import step later.
+
+## Install OpenPanel SDK [#install]
+
+Install the OpenPanel SDK alongside Mixpanel. You'll remove Mixpanel later after verifying the migration.
+
+For web applications, install the web SDK. This handles browser-specific features like automatic page view tracking and outgoing link tracking.
+
+```bash
+npm install @openpanel/web
+```
+
+For server-side applications or Node.js, use the core SDK instead. This version requires a client secret and is meant for trusted environments.
+
+```bash
+npm install @openpanel/sdk
+```
+
+If you're using Next.js, there's a dedicated package that handles both client and server tracking with proper component integration. Check the [SDK documentation](/docs/sdks/nextjs) for framework-specific setup.
+
+## Map your events [#map-events]
+
+OpenPanel's API follows similar patterns to Mixpanel, with a few naming convention differences. Mixpanel uses Title Case for events and properties, while OpenPanel uses snake_case.
+
+Here's how basic event tracking translates. In Mixpanel, you might track a button click like this:
+
+```js
+mixpanel.track('Button Clicked', {
+  'Button Name': 'Sign Up',
+  'Button Location': 'Hero'
+});
+```
+
+The equivalent in OpenPanel uses snake_case naming:
+
+```js
+op.track('button_clicked', {
+  button_name: 'Sign Up',
+  button_location: 'Hero'
+});
+```
+
+User identification works similarly, but OpenPanel uses a structured object instead of separate method calls. Mixpanel's pattern splits identify and people.set:
+
+```js
+mixpanel.identify('user_123');
+mixpanel.people.set({
+  '$email': 'user@example.com',
+  '$name': 'John Doe',
+  'Plan': 'Premium'
+});
+```
+
+OpenPanel combines this into a single identify call with built-in fields for common properties:
+
+```js
+op.identify({
+  profileId: 'user_123',
+  email: 'user@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  properties: {
+    plan: 'Premium'
+  }
+});
+```
+
+For super properties (global properties that attach to every event), Mixpanel uses `register` or `registerSuperProperties`. OpenPanel calls this `setGlobalProperties`, but the concept is identical:
+
+```js
+op.setGlobalProperties({
+  app_version: '1.0.0',
+  environment: 'production'
+});
+```
+
+Incrementing user properties works the same way, just with different method names:
+
+```js
+op.increment({
+  profileId: user.id,
+  property: 'login_count',
+  value: 1
+});
+```
+
+## Import historical data [#import]
+
+OpenPanel can import your Mixpanel export using the SDK's server-side client. You'll need to transform the Mixpanel format slightly since Mixpanel uses Unix timestamps and different property names.
+
+```js
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+});
+
+const mixpanelEvents = await loadMixpanelExport();
+
+for (const event of mixpanelEvents) {
+  op.track(event.event, event.properties, {
+    profileId: event.distinct_id,
+    timestamp: new Date(event.time * 1000),
+  });
+}
+```
+
+For user profiles, map Mixpanel's dollar-prefixed properties to OpenPanel's built-in fields:
+
+```js
+const mixpanelUsers = await loadMixpanelUsers();
+
+for (const user of mixpanelUsers) {
+  op.identify({
+    profileId: user.distinct_id,
+    email: user.$email,
+    firstName: user.$first_name,
+    lastName: user.$last_name,
+    properties: {
+      plan: user.Plan,
+      signupDate: user['Signup Date'],
+    },
+  });
+}
+```
+
+For large migrations, contact support. OpenPanel has tooling to help with bulk imports.
+
+## Run in parallel [#parallel]
+
+Before removing Mixpanel, run both tools simultaneously for 1-2 weeks. This lets you verify that event counts match and user identification is working correctly.
+
+Create a simple wrapper function that sends events to both platforms:
+
+```js
+function trackEvent(eventName, properties) {
+  if (typeof mixpanel !== 'undefined') {
+    mixpanel.track(eventName, properties);
+  }
+  
+  if (op) {
+    op.track(eventName, properties);
+  }
+}
+
+trackEvent('button_clicked', { button_name: 'Sign Up' });
+```
+
+After a week, compare Mixpanel's Live View with OpenPanel's real-time dashboard. Check that event counts are close (they won't be exact due to timing differences), user profiles are being created correctly, and any funnels you've set up show similar conversion rates.
+
+## Remove Mixpanel [#remove]
+
+Once you've verified data consistency, remove the Mixpanel SDK from your project. For npm packages, uninstall the dependency:
+
+```bash
+npm uninstall mixpanel-browser
+```
+
+Then search your codebase for any remaining `mixpanel.*` calls and replace them with the OpenPanel equivalents. If you were using the wrapper function from the parallel tracking step, you can now remove it and call OpenPanel directly.
+
+```js
+op.track('button_clicked', { button_name: 'Sign Up' });
+```
+
+Don't forget to remove any Mixpanel script tags if you were loading their SDK via CDN.
+
+## Verify your setup [#verify]
+
+After removing Mixpanel, monitor OpenPanel for a few days to ensure everything is tracking correctly. Check the real-time view to confirm events are flowing, verify that user profiles show the expected properties, and test any funnels or reports you've configured.
+
+If events aren't appearing, double-check that you're using the correct client ID and that the SDK is initialized before any tracking calls. The browser console will show network requests to `api.openpanel.dev` if tracking is working.
+
+## Next steps
+
+The [SDK documentation](/docs) covers advanced features like custom event properties, server-side tracking, and framework-specific integrations. If you're coming from Mixpanel because of pricing concerns, you might also want to explore [self-hosting](/articles/how-to-self-host-openpanel) for complete control over your data and costs.
+
+For framework-specific setup instructions, check out our guides:
+- [Next.js analytics guide](/guides/nextjs-analytics) for Next.js applications
+- [React analytics guide](/guides/react-analytics) for React applications
+- [Express analytics guide](/guides/express-analytics) for Express.js applications
+- [Python analytics guide](/guides/python-analytics) for Python applications
+
+<Faqs>
+<FaqItem question="Can I import my Mixpanel historical data?">
+Yes. OpenPanel can import Mixpanel exports using the SDK's server-side client. For large migrations with millions of events, contact support for assistance with bulk imports.
+</FaqItem>
+
+<FaqItem question="Will my Mixpanel funnels work in OpenPanel?">
+You'll need to recreate funnels in OpenPanel's dashboard, but the concepts map directly. Select the same events in sequence and configure your date range and filters. Conversion logic works the same way.
+</FaqItem>
+
+<FaqItem question="How long does the full migration take?">
+Most migrations take 1-2 hours for code changes. Plan for an additional 1-2 weeks of parallel tracking to verify data consistency before fully switching over.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel uses cookieless tracking by default, which means you don't need cookie consent banners for basic analytics under most privacy regulations. With self-hosting, you also eliminate international data transfer concerns entirely.
+</FaqItem>
+</Faqs>

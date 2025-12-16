@@ -96,7 +96,6 @@ export async function createSessionEnd(
     ...payload,
     properties: {
       ...payload.properties,
-      ...(session?.properties ?? {}),
       __bounce: session.is_bounce,
     },
     name: 'session_end',

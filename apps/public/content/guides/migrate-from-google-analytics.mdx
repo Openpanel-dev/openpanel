@@ -1,0 +1,232 @@
+---
+title: "How to migrate from Google Analytics to OpenPanel"
+description: "Switch from Google Analytics to OpenPanel in under an hour. Learn how to map GA4 events, set up parallel tracking, and gain privacy-first analytics."
+difficulty: intermediate
+timeToComplete: 45
+date: 2025-12-15
+cover: /content/cover-default.jpg
+team: OpenPanel Team
+steps:
+  - name: "Install OpenPanel"
+    anchor: "install"
+  - name: "Map your GA4 events"
+    anchor: "map-events"
+  - name: "Run parallel tracking"
+    anchor: "parallel"
+  - name: "Verify and compare data"
+    anchor: "verify"
+  - name: "Remove Google Analytics"
+    anchor: "remove"
+---
+
+# How to migrate from Google Analytics to OpenPanel
+
+Migrating from Google Analytics to OpenPanel takes about 45 minutes for most websites. You'll end up with privacy-first analytics that doesn't require cookie consent banners, a simpler interface than GA4, and full ownership of your data.
+
+OpenPanel uses a similar event-based tracking model to GA4, which makes the migration straightforward. The biggest difference is that OpenPanel is designed for privacy by default, using cookieless tracking that doesn't require consent under most privacy regulations.
+
+## Prerequisites
+
+- Existing Google Analytics 4 (GA4) setup
+- An OpenPanel account ([sign up free](https://dashboard.openpanel.dev/onboarding))
+- Access to your website's code or Google Tag Manager
+
+## Install OpenPanel [#install]
+
+The first step is adding OpenPanel to your website alongside your existing Google Analytics installation. You'll run both in parallel during the migration to ensure nothing is lost.
+
+Add the OpenPanel script to your website's HTML, replacing `YOUR_CLIENT_ID` with the client ID from your OpenPanel dashboard.
+
+```html
+<script>
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op('init', {
+    clientId: 'YOUR_CLIENT_ID',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  });
+</script>
+<script src="https://openpanel.dev/op1.js" defer async></script>
+```
+
+The `trackScreenViews` option automatically tracks page views, similar to GA4's automatic page view tracking. The `trackOutgoingLinks` option tracks clicks to external domains, and `trackAttributes` enables declarative tracking via `data-track` attributes on HTML elements.
+
+If you're using Google Tag Manager, create a new Custom HTML tag, paste the script above, set the trigger to All Pages, and publish your container.
+
+For projects using a build system, you can also install the npm package with `npm install @openpanel/web`. See the full [Script Tag SDK documentation](/docs/sdks/script) for detailed configuration options.
+
+## Map your GA4 events [#map-events]
+
+OpenPanel uses a `track()` API that closely mirrors GA4's event structure. Most of your existing event tracking can be migrated with minimal changes.
+
+### Page views
+
+GA4 tracks page views automatically, and so does OpenPanel when you set `trackScreenViews: true`. If you need to track page views manually for single-page applications or specific scenarios, use the `screen_view` event.
+
+```js
+window.op('track', 'screen_view', {
+  path: window.location.pathname,
+  title: document.title,
+});
+```
+
+### Custom events
+
+The syntax for custom events is nearly identical between GA4 and OpenPanel. Your GA4 event that looks like this:
+
+```js
+gtag('event', 'button_click', {
+  button_name: 'signup',
+  button_location: 'hero'
+});
+```
+
+Becomes this in OpenPanel:
+
+```js
+window.op('track', 'button_click', {
+  button_name: 'signup',
+  button_location: 'hero'
+});
+```
+
+The event name and properties carry over directly. OpenPanel doesn't have the reserved event restrictions that GA4 has, so you can use any event name that makes sense for your application.
+
+### User identification
+
+GA4 uses `set user_properties` for user identification, while OpenPanel uses a dedicated `identify` method. This gives you richer user profiles and session history.
+
+```js
+window.op('identify', {
+  profileId: 'user_123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+```
+
+The `profileId` is required and should be a unique identifier for the user, typically their user ID from your database.
+
+### E-commerce events
+
+GA4's e-commerce events like `purchase` and `add_to_cart` map directly to OpenPanel. The property structure stays the same.
+
+```js
+window.op('track', 'purchase', {
+  transaction_id: 'T12345',
+  value: 99.99,
+  currency: 'USD',
+  items: [{
+    item_id: 'SKU123',
+    item_name: 'Widget',
+    price: 99.99,
+    quantity: 1
+  }]
+});
+```
+
+You can use the same event names and property structure you're already using in GA4, or take the opportunity to simplify your naming conventions.
+
+## Run parallel tracking [#parallel]
+
+Running both analytics tools simultaneously for one to two weeks lets you compare data and catch any gaps before fully migrating. Create a wrapper function that sends events to both platforms.
+
+```js
+function trackEvent(eventName, properties) {
+  // Send to GA4
+  if (typeof gtag !== 'undefined') {
+    gtag('event', eventName, properties);
+  }
+  
+  // Send to OpenPanel
+  if (window.op) {
+    window.op('track', eventName, properties);
+  }
+}
+
+// Use this wrapper for all event tracking
+trackEvent('button_click', { button_name: 'signup' });
+```
+
+Replace your existing `gtag()` calls with this wrapper function. This approach ensures you're capturing the same events in both systems and makes the final migration a simple change to the wrapper.
+
+## Verify and compare data [#verify]
+
+After a week of parallel tracking, compare the data between GA4 and OpenPanel to ensure everything is being captured correctly. Check both systems' real-time views to confirm events are flowing in.
+
+In OpenPanel, navigate to the real-time view to see events as they happen. Compare the event counts and property values against GA4's Realtime report. Small discrepancies (within 5-10%) are normal due to differences in how each platform handles bot filtering and session attribution.
+
+Pay particular attention to custom events and user identification. Open a few user profiles in OpenPanel to verify that the `identify` calls are linking events correctly across sessions.
+
+If you're seeing significant discrepancies, check that your wrapper function is being called everywhere, that there are no JavaScript errors preventing tracking, and that both scripts are loading on all pages.
+
+## Remove Google Analytics [#remove]
+
+Once you've verified that OpenPanel is tracking correctly and you're comfortable with the data, remove Google Analytics from your site.
+
+If you added the GA4 script directly to your HTML, remove the gtag.js script and initialization code.
+
+```html
+<!-- Remove this entire block -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+```
+
+If you're using Google Tag Manager, disable or delete the GA4 Configuration tag and publish your container. You can keep GTM for other purposes if needed.
+
+Update your wrapper function to only send to OpenPanel.
+
+```js
+function trackEvent(eventName, properties) {
+  if (window.op) {
+    window.op('track', eventName, properties);
+  }
+}
+```
+
+Since OpenPanel doesn't use cookies by default, you may be able to remove your cookie consent banner entirely. This depends on whether you have other cookies or tracking scripts that require consent. Check the [cookieless analytics guide](/articles/cookieless-analytics) for details on GDPR compliance without cookie banners.
+
+## What changes after migration
+
+Moving from GA4 to OpenPanel means gaining some things and losing others. You'll get privacy-first tracking without cookies, full ownership of your data (especially if you [self-host](/articles/how-to-self-host-openpanel)), and a simpler interface for day-to-day analytics.
+
+On the other hand, you won't be able to import historical data from GA4 since Google doesn't provide an easy export mechanism. If you rely heavily on Google Ads conversion tracking, you'll need to either keep GA4 running for that specific use case or use Google Ads' standalone conversion tracking pixel.
+
+GA4's attribution modeling is more sophisticated than OpenPanel's, so if you depend on multi-touch attribution for ad spend optimization, consider your requirements carefully before fully migrating.
+
+## Next steps
+
+Once you're up and running with OpenPanel, explore the [funnel analysis](/articles/how-to-create-a-funnel) feature to track user journeys through your conversion paths. If you're interested in maximum data privacy and ownership, the self-hosting guide walks through running OpenPanel on your own infrastructure.
+
+For framework-specific setup instructions, check out our guides:
+- [Next.js analytics guide](/guides/nextjs-analytics) for Next.js applications
+- [React analytics guide](/guides/react-analytics) for React applications
+- [Node.js analytics guide](/guides/nodejs-analytics) for server-side tracking
+- [Python analytics guide](/guides/python-analytics) for Python applications
+
+<Faqs>
+<FaqItem question="Can I import historical data from Google Analytics?">
+Google Analytics doesn't provide an easy way to export historical event data. Most teams start fresh with OpenPanel, which gives you cleaner, privacy-compliant data going forward. Your GA4 data remains accessible in Google Analytics for the retention period you've configured.
+</FaqItem>
+
+<FaqItem question="How do I handle GA4 custom dimensions?">
+OpenPanel uses properties instead of dimensions. Map your GA4 custom dimensions directly to OpenPanel event properties. For example, if you had a `user_type` custom dimension in GA4, include it as a property in your track calls: `window.op('track', 'event_name', { user_type: 'premium' })`.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel use cookies?">
+No. OpenPanel uses cookieless tracking by default. This means you don't need cookie consent banners for basic analytics under most privacy regulations, including GDPR and PECR.
+</FaqItem>
+
+<FaqItem question="Is OpenPanel GDPR compliant?">
+Yes. OpenPanel is designed for GDPR compliance with cookieless tracking, data minimization, and full support for data subject rights. With self-hosting, you also eliminate international data transfer concerns entirely.
+</FaqItem>
+</Faqs>

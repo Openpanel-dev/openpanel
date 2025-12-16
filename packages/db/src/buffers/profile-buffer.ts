@@ -68,6 +68,30 @@ export class ProfileBuffer extends BaseBuffer {
 
       const existingProfile = await this.fetchProfile(profile, logger);
 
+      // Delete any properties that are not server related if we have a non-server profile
+      if (
+        existingProfile?.properties.device !== 'server' &&
+        profile.properties.device === 'server'
+      ) {
+        profile.properties = omit(
+          [
+            'city',
+            'country',
+            'region',
+            'longitude',
+            'latitude',
+            'os',
+            'osVersion',
+            'browser',
+            'device',
+            'isServer',
+            'os_version',
+            'browser_version',
+          ],
+          profile.properties,
+        );
+      }
+
       const mergedProfile: IClickhouseProfile = existingProfile
         ? deepMergeObjects(existingProfile, omit(['created_at'], profile))
         : profile;

@@ -68,6 +68,7 @@ export type OpenPanelOptions = {
   waitForProfile?: boolean;
   filter?: (payload: TrackHandlerPayload) => boolean;
   disabled?: boolean;
+  debug?: boolean;
 };
 
 export class OpenPanel {
@@ -129,6 +130,7 @@ export class OpenPanel {
   }
 
   async track(name: string, properties?: TrackProperties) {
+    this.log('track event', name, properties);
     return this.send({
       type: 'track',
       payload: {
@@ -143,6 +145,7 @@ export class OpenPanel {
   }
 
   async identify(payload: IdentifyPayload) {
+    this.log('identify user', payload);
     if (payload.profileId) {
       this.profileId = payload.profileId;
       this.flush();
@@ -162,12 +165,10 @@ export class OpenPanel {
     }
   }
 
-  async alias(payload: AliasPayload) {
-    return this.send({
-      type: 'alias',
-      payload,
-    });
-  }
+  /**
+   * @deprecated This method is deprecated and will be removed in a future version.
+   */
+  async alias(payload: AliasPayload) {}
 
   async increment(payload: IncrementPayload) {
     return this.send({
@@ -223,5 +224,11 @@ export class OpenPanel {
       });
     });
     this.queue = [];
+  }
+
+  log(...args: any[]) {
+    if (this.options.debug) {
+      console.log('[OpenPanel.dev]', ...args);
+    }
   }
 }
