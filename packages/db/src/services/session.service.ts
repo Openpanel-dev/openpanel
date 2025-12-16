@@ -196,8 +196,9 @@ export async function getSessionList({
 
   if (cursor) {
     const cAt = sqlstring.escape(cursor.createdAt);
+    // TODO: remove id from cursor
     const cId = sqlstring.escape(cursor.id);
-    sb.where.cursor = `(created_at < toDateTime64(${cAt}, 3) OR (created_at = toDateTime64(${cAt}, 3) AND id < ${cId}))`;
+    sb.where.cursor = `created_at < toDateTime64(${cAt}, 3)`;
     sb.where.cursorWindow = `created_at >= toDateTime64(${cAt}, 3) - INTERVAL ${dateIntervalInDays} DAY`;
     sb.orderBy.created_at = 'created_at DESC';
   } else {

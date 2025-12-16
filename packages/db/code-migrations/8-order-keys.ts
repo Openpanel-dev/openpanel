@@ -139,8 +139,8 @@ export async function up() {
   const firstEventDateJson = await firstEventDateResponse.json<{
     created_at: string;
   }>();
-  const firstEventDate = new Date(firstEventDateJson[0]?.created_at ?? '');
-  if (firstEventDate) {
+  if (firstEventDateJson[0]?.created_at) {
+    const firstEventDate = new Date(firstEventDateJson[0]?.created_at);
     // Step 2: Copy data from old tables to new tables (partitioned by month for efficiency)
     // Set endDate to first of next month to ensure we capture all data in the current month
     const endDate = new Date();
@@ -174,8 +174,10 @@ export async function up() {
     created_at: string;
   }>();
 
-  const firstSessionDate = new Date(firstSessionDateJson[0]?.created_at ?? '');
-  if (firstSessionDate) {
+  if (firstSessionDateJson[0]?.created_at) {
+    const firstSessionDate = new Date(
+      firstSessionDateJson[0]?.created_at ?? '',
+    );
     // Set endDate to first of next month to ensure we capture all data in the current month
     const endDate = new Date();
     endDate.setMonth(endDate.getMonth() + 1);
@@ -249,11 +251,11 @@ export async function up() {
   if (isClustered && sessionTables[1] && eventTables[1]) {
     sqls.push(
       // Drop temporary DISTRIBUTED tables (will be recreated)
-      'DROP TABLE IF EXISTS events_new_20251123 ON CLUSTER "{cluster}"',
-      'DROP TABLE IF EXISTS sessions_new_20251123 ON CLUSTER "{cluster}"',
+      `DROP TABLE IF EXISTS events_new_20251123 ON CLUSTER '{cluster}'`,
+      `DROP TABLE IF EXISTS sessions_new_20251123 ON CLUSTER '{cluster}'`,
       // Rename new tables to correct names
-      'RENAME TABLE events_new_20251123_replicated TO events_replicated ON CLUSTER "{cluster}"',
-      'RENAME TABLE sessions_new_20251123_replicated TO sessions_replicated ON CLUSTER "{cluster}"',
+      `RENAME TABLE events_new_20251123_replicated TO events_replicated ON CLUSTER '{cluster}'`,
+      `RENAME TABLE sessions_new_20251123_replicated TO sessions_replicated ON CLUSTER '{cluster}'`,
       // Create new distributed tables
       eventTables[1].replaceAll('events_new_20251123', 'events'), // creates a new distributed table
       sessionTables[1].replaceAll('sessions_new_20251123', 'sessions'), // creates a new distributed table
