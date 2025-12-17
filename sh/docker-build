@@ -38,7 +38,7 @@ docker buildx create --name multi-arch-builder --use || true
 build_image() {
     local app=$1
     local image_name="lindesvard/openpanel-$app"
-    local full_version="$image_name:$VERSION-$PRERELEASE"
+    local full_version="$image_name:$VERSION"
     
     # Use apps/start/Dockerfile for dashboard app
     local dockerfile="apps/$app/Dockerfile"
@@ -47,10 +47,10 @@ build_image() {
     fi
 
     if [ -n "$PRERELEASE" ]; then
-        echo "(pre-release) Building multi-architecture image for $full_version"
+        echo "(pre-release) Building multi-architecture image for $full_version-$PRERELEASE"
         docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t "$full_version" \
+            -t "$full_version-$PRERELEASE" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
             -f "$dockerfile" \
             --push \
