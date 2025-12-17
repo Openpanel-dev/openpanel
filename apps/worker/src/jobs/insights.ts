@@ -16,7 +16,7 @@ import { insightsQueue } from '@openpanel/queue';
 import type { Job } from 'bullmq';
 
 const defaultEngineConfig = {
-  keepTopNPerModuleWindow: 5,
+  keepTopNPerModuleWindow: 20,
   closeStaleAfterDays: 7,
   dimensionBatchSize: 50,
   globalThresholds: {
@@ -24,8 +24,6 @@ const defaultEngineConfig = {
     minAbsDelta: 80,
     minPct: 0.15,
   },
-  enableExplain: false,
-  explainTopNPerProjectPerDay: 3,
 };
 
 export async function insightsDailyJob(job: Job<CronQueuePayload>) {
@@ -63,9 +61,12 @@ export async function insightsProjectJob(
     config: defaultEngineConfig,
   });
 
+  const projectCreatedAt = await insightStore.getProjectCreatedAt(projectId);
+
   await engine.runProject({
     projectId,
     cadence: 'daily',
     now: new Date(date),
+    projectCreatedAt,
   });
 }

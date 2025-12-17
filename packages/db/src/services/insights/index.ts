@@ -4,6 +4,5 @@ export * from './scoring';
 export * from './material';
 export * from './engine';
 export * from './store';
-export * from './normalize';
 export * from './utils';
 export * from './modules';

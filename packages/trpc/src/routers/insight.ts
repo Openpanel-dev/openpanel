@@ -35,22 +35,6 @@ export const insightRouter = createTRPCRouter({
           impactScore: 'desc',
         },
         take: limit * 3, // Fetch 3x to account for deduplication
-        select: {
-          id: true,
-          title: true,
-          summary: true,
-          payload: true,
-          currentValue: true,
-          compareValue: true,
-          changePct: true,
-          direction: true,
-          moduleKey: true,
-          dimensionKey: true,
-          windowKind: true,
-          severityBand: true,
-          firstDetectedAt: true,
-          impactScore: true,
-        },
       });
 
       // WindowKind priority: yesterday (1) > rolling_7d (2) > rolling_30d (3)
@@ -111,22 +95,6 @@ export const insightRouter = createTRPCRouter({
           impactScore: 'desc',
         },
         take: limit,
-        select: {
-          id: true,
-          title: true,
-          summary: true,
-          payload: true,
-          currentValue: true,
-          compareValue: true,
-          changePct: true,
-          direction: true,
-          moduleKey: true,
-          dimensionKey: true,
-          windowKind: true,
-          severityBand: true,
-          firstDetectedAt: true,
-          impactScore: true,
-        },
       });
 
       return insights;

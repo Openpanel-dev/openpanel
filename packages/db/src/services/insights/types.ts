@@ -1,4 +1,11 @@
-export type Cadence = 'hourly' | 'daily' | 'weekly';
+import type {
+  InsightDimension,
+  InsightMetricEntry,
+  InsightMetricKey,
+  InsightPayload,
+} from '@openpanel/validation';
+
+export type Cadence = 'daily';
 
 export type WindowKind = 'yesterday' | 'rolling_7d' | 'rolling_30d';
 
@@ -17,6 +24,12 @@ export interface ComputeContext {
   db: any; // your DB client
   now: Date;
   logger: Pick<Console, 'info' | 'warn' | 'error'>;
+  /**
+   * Cached clix function that automatically caches query results based on query hash.
+   * This eliminates duplicate queries within the same module+window context.
+   * Use this instead of importing clix directly to benefit from automatic caching.
+   */
+  clix: ReturnType<typeof import('./cached-clix').createCachedClix>;
 }
 
 export interface ComputeResult {
@@ -29,31 +42,22 @@ export interface ComputeResult {
   extra?: Record<string, unknown>; // share delta pp, rank, sparkline, etc.
 }
 
+// Types imported from @openpanel/validation:
+// - InsightMetricKey
+// - InsightMetricEntry
+// - InsightDimension
+// - InsightPayload
+
 /**
  * Render should be deterministic and safe to call multiple times.
- * Raw computed values (currentValue, compareValue, changePct, direction)
- * are stored in top-level DB fields. The payload only contains display
- * metadata and module-specific extra data for frontend flexibility.
+ * Returns the shape that matches ProjectInsight create input.
+ * The payload contains all metric data and display metadata.
  */
 export interface RenderedCard {
-  kind?: 'insight_v1';
   title: string;
   summary?: string;
-  tags?: string[];
-  primaryDimension?: { type: string; key: string; displayName?: string };
-
-  /**
-   * What metric this insight measures - frontend uses this to format values.
-   * 'sessions' | 'pageviews' for absolute counts
-   * 'share' for percentage-based (geo, devices)
-   */
-  metric?: 'sessions' | 'pageviews' | 'share';
-
-  /**
-   * Module-specific extra data (e.g., share values for geo/devices).
-   * Frontend can use this based on moduleKey.
-   */
-  extra?: Record<string, unknown>;
+  displayName: string;
+  payload: InsightPayload; // Contains dimensions, primaryMetric, metrics, extra
 }
 
 /** Optional per-module thresholds (the engine can still apply global defaults) */
@@ -67,7 +71,8 @@ export interface ModuleThresholds {
 export interface InsightModule {
   key: string;
   cadence: Cadence[];
-  windows: WindowKind[];
+  /** Optional per-module override; engine applies a default if omitted. */
+  windows?: WindowKind[];
   thresholds?: ModuleThresholds;
   enumerateDimensions?(ctx: ComputeContext): Promise<string[]>;
   /** Preferred path: batch compute many dimensions in one go. */
@@ -99,7 +104,6 @@ export interface PersistedInsight {
   lastSeenAt: Date;
   lastUpdatedAt: Date;
   direction?: string | null;
-  changePct?: number | null;
   severityBand?: string | null;
 }
 
@@ -124,6 +128,8 @@ export interface MaterialDecision {
  */
 export interface InsightStore {
   listProjectIdsForCadence(cadence: Cadence): Promise<string[]>;
+  /** Used by the engine/worker to decide if a window has enough baseline history. */
+  getProjectCreatedAt(projectId: string): Promise<Date | null>;
   getActiveInsightByIdentity(args: {
     projectId: string;
     moduleKey: string;
@@ -137,9 +143,6 @@ export interface InsightStore {
     window: WindowRange;
     card: RenderedCard;
     metrics: {
-      currentValue?: number;
-      compareValue?: number;
-      changePct?: number;
       direction?: 'up' | 'down' | 'flat';
       impactScore: number;
       severityBand?: string | null;
@@ -185,16 +188,4 @@ export interface InsightStore {
     keepTopN: number;
     now: Date;
   }): Promise<{ suppressed: number; unsuppressed: number }>;
-}
-
-export interface ExplainQueue {
-  enqueueExplain(job: {
-    insightId: string;
-    projectId: string;
-    moduleKey: string;
-    dimensionKey: string;
-    windowKind: WindowKind;
-    evidence: Record<string, unknown>;
-    evidenceHash: string;
-  }): Promise<void>;
 }

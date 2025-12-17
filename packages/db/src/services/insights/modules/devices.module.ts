@@ -1,77 +1,42 @@
-import { TABLE_NAMES } from '../../../clickhouse/client';
-import { clix } from '../../../clickhouse/query-builder';
-import type { ComputeResult, InsightModule, RenderedCard } from '../types';
-import { computeWeekdayMedians, getEndOfDay, getWeekday } from '../utils';
+import { TABLE_NAMES, formatClickhouseDate } from '../../../clickhouse/client';
+import type {
+  ComputeContext,
+  ComputeResult,
+  InsightModule,
+  RenderedCard,
+} from '../types';
+import {
+  buildLookupMap,
+  computeChangePct,
+  computeDirection,
+  computeMedian,
+  getEndOfDay,
+  getWeekday,
+  selectTopDimensions,
+} from '../utils';
 
-function normalizeDevice(device: string): string {
-  const d = (device || '').toLowerCase().trim();
-  if (d.includes('mobile') || d === 'phone') return 'mobile';
-  if (d.includes('tablet')) return 'tablet';
-  if (d.includes('desktop')) return 'desktop';
-  return d || 'unknown';
-}
-
-export const devicesModule: InsightModule = {
-  key: 'devices',
-  cadence: ['daily'],
-  windows: ['yesterday', 'rolling_7d', 'rolling_30d'],
-  thresholds: { minTotal: 100, minAbsDelta: 0, minPct: 0.08, maxDims: 5 },
-
-  async enumerateDimensions(ctx) {
-    // Query devices from current window (limited set, no need for baseline merge)
-    const results = await clix(ctx.db)
-      .select<{ device: string; cnt: number }>(['device', 'count(*) as cnt'])
-      .from(TABLE_NAMES.sessions)
-      .where('project_id', '=', ctx.projectId)
-      .where('sign', '=', 1)
-      .where('created_at', 'BETWEEN', [
-        ctx.window.start,
-        getEndOfDay(ctx.window.end),
-      ])
-      .where('device', '!=', '')
-      .groupBy(['device'])
-      .orderBy('cnt', 'DESC')
-      .execute();
-
-    // Normalize and dedupe device types
-    const dims = new Set<string>();
-    for (const r of results) {
-      dims.add(`device:${normalizeDevice(r.device)}`);
-    }
-
-    return Array.from(dims);
-  },
-
-  async computeMany(ctx, dimensionKeys): Promise<ComputeResult[]> {
-    // Single query for ALL current values
-    const currentResults = await clix(ctx.db)
-      .select<{ device: string; cnt: number }>(['device', 'count(*) as cnt'])
-      .from(TABLE_NAMES.sessions)
-      .where('project_id', '=', ctx.projectId)
-      .where('sign', '=', 1)
-      .where('created_at', 'BETWEEN', [
-        ctx.window.start,
-        getEndOfDay(ctx.window.end),
-      ])
-      .groupBy(['device'])
-      .execute();
-
-    // Build current lookup map (normalized) and total
-    const currentMap = new Map<string, number>();
-    let totalCurrentValue = 0;
-    for (const r of currentResults) {
-      const key = normalizeDevice(r.device);
-      const cnt = Number(r.cnt ?? 0);
-      currentMap.set(key, (currentMap.get(key) ?? 0) + cnt);
-      totalCurrentValue += cnt;
-    }
-
-    // Single query for baseline
-    let baselineMap: Map<string, number>;
-    let totalBaselineValue = 0;
-
-    if (ctx.window.kind === 'yesterday') {
-      const baselineResults = await clix(ctx.db)
+async function fetchDeviceAggregates(ctx: ComputeContext): Promise<{
+  currentMap: Map<string, number>;
+  baselineMap: Map<string, number>;
+  totalCurrent: number;
+  totalBaseline: number;
+}> {
+  if (ctx.window.kind === 'yesterday') {
+    const [currentResults, baselineResults, totals] = await Promise.all([
+      ctx
+        .clix()
+        .select<{ device: string; cnt: number }>(['device', 'count(*) as cnt'])
+        .from(TABLE_NAMES.sessions)
+        .where('project_id', '=', ctx.projectId)
+        .where('sign', '=', 1)
+        .where('created_at', 'BETWEEN', [
+          ctx.window.start,
+          getEndOfDay(ctx.window.end),
+        ])
+        .groupBy(['device'])
+        .execute(),
+      ctx
+        .clix()
         .select<{ date: string; device: string; cnt: number }>([
           'toDate(created_at) as date',
           'device',
@@ -85,77 +50,144 @@ export const devicesModule: InsightModule = {
           getEndOfDay(ctx.window.baselineEnd),
         ])
         .groupBy(['date', 'device'])
-        .execute();
-
-      const targetWeekday = getWeekday(ctx.window.start);
-
-      // Group by normalized device type before computing medians
-      const normalizedResults = baselineResults.map((r) => ({
-        date: r.date,
-        device: normalizeDevice(r.device),
-        cnt: r.cnt,
-      }));
-
-      // Aggregate by date + normalized device first
-      const aggregated = new Map<string, { date: string; cnt: number }[]>();
-      for (const r of normalizedResults) {
-        const key = `${r.date}|${r.device}`;
-        if (!aggregated.has(r.device)) {
-          aggregated.set(r.device, []);
-        }
-        // Find existing entry for this date+device or add new
-        const entries = aggregated.get(r.device)!;
-        const existing = entries.find((e) => e.date === r.date);
-        if (existing) {
-          existing.cnt += Number(r.cnt ?? 0);
-        } else {
-          entries.push({ date: r.date, cnt: Number(r.cnt ?? 0) });
-        }
-      }
-
-      // Compute weekday medians per device type
-      baselineMap = new Map<string, number>();
-      for (const [deviceType, entries] of aggregated) {
-        const sameWeekdayValues = entries
-          .filter((e) => getWeekday(new Date(e.date)) === targetWeekday)
-          .map((e) => e.cnt)
-          .sort((a, b) => a - b);
-
-        if (sameWeekdayValues.length > 0) {
-          const mid = Math.floor(sameWeekdayValues.length / 2);
-          const median =
-            sameWeekdayValues.length % 2 === 0
-              ? ((sameWeekdayValues[mid - 1] ?? 0) +
-                  (sameWeekdayValues[mid] ?? 0)) /
-                2
-              : (sameWeekdayValues[mid] ?? 0);
-          baselineMap.set(deviceType, median);
-          totalBaselineValue += median;
-        }
-      }
-    } else {
-      const baselineResults = await clix(ctx.db)
-        .select<{ device: string; cnt: number }>(['device', 'count(*) as cnt'])
+        .execute(),
+      ctx
+        .clix()
+        .select<{ cur_total: number }>([
+          ctx.clix.exp(
+            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`,
+          ),
+        ])
         .from(TABLE_NAMES.sessions)
         .where('project_id', '=', ctx.projectId)
         .where('sign', '=', 1)
         .where('created_at', 'BETWEEN', [
           ctx.window.baselineStart,
-          getEndOfDay(ctx.window.baselineEnd),
+          getEndOfDay(ctx.window.end),
         ])
-        .groupBy(['device'])
-        .execute();
+        .execute(),
+    ]);
 
-      baselineMap = new Map<string, number>();
-      for (const r of baselineResults) {
-        const key = normalizeDevice(r.device);
-        const cnt = Number(r.cnt ?? 0);
-        baselineMap.set(key, (baselineMap.get(key) ?? 0) + cnt);
-        totalBaselineValue += cnt;
+    const currentMap = buildLookupMap(currentResults, (r) => r.device);
+
+    const targetWeekday = getWeekday(ctx.window.start);
+    const aggregated = new Map<string, { date: string; cnt: number }[]>();
+    for (const r of baselineResults) {
+      if (!aggregated.has(r.device)) {
+        aggregated.set(r.device, []);
+      }
+      const entries = aggregated.get(r.device)!;
+      const existing = entries.find((e) => e.date === r.date);
+      if (existing) {
+        existing.cnt += Number(r.cnt ?? 0);
+      } else {
+        entries.push({ date: r.date, cnt: Number(r.cnt ?? 0) });
       }
     }
 
-    // Build results from maps
+    const baselineMap = new Map<string, number>();
+    for (const [deviceType, entries] of aggregated) {
+      const sameWeekdayValues = entries
+        .filter((e) => getWeekday(new Date(e.date)) === targetWeekday)
+        .map((e) => e.cnt)
+        .sort((a, b) => a - b);
+
+      if (sameWeekdayValues.length > 0) {
+        baselineMap.set(deviceType, computeMedian(sameWeekdayValues));
+      }
+    }
+
+    const totalCurrent = totals[0]?.cur_total ?? 0;
+    const totalBaseline =
+      baselineMap.size > 0
+        ? Array.from(baselineMap.values()).reduce((sum, val) => sum + val, 0)
+        : 0;
+
+    return { currentMap, baselineMap, totalCurrent, totalBaseline };
+  }
+
+  const curStart = formatClickhouseDate(ctx.window.start);
+  const curEnd = formatClickhouseDate(getEndOfDay(ctx.window.end));
+  const baseStart = formatClickhouseDate(ctx.window.baselineStart);
+  const baseEnd = formatClickhouseDate(getEndOfDay(ctx.window.baselineEnd));
+
+  const [results, totals] = await Promise.all([
+    ctx
+      .clix()
+      .select<{ device: string; cur: number; base: number }>([
+        'device',
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`,
+        ),
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`,
+        ),
+      ])
+      .from(TABLE_NAMES.sessions)
+      .where('project_id', '=', ctx.projectId)
+      .where('sign', '=', 1)
+      .where('created_at', 'BETWEEN', [
+        ctx.window.baselineStart,
+        getEndOfDay(ctx.window.end),
+      ])
+      .groupBy(['device'])
+      .execute(),
+    ctx
+      .clix()
+      .select<{ cur_total: number; base_total: number }>([
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`,
+        ),
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`,
+        ),
+      ])
+      .from(TABLE_NAMES.sessions)
+      .where('project_id', '=', ctx.projectId)
+      .where('sign', '=', 1)
+      .where('created_at', 'BETWEEN', [
+        ctx.window.baselineStart,
+        getEndOfDay(ctx.window.end),
+      ])
+      .execute(),
+  ]);
+
+  const currentMap = buildLookupMap(
+    results,
+    (r) => r.device,
+    (r) => Number(r.cur ?? 0),
+  );
+
+  const baselineMap = buildLookupMap(
+    results,
+    (r) => r.device,
+    (r) => Number(r.base ?? 0),
+  );
+
+  const totalCurrent = totals[0]?.cur_total ?? 0;
+  const totalBaseline = totals[0]?.base_total ?? 0;
+
+  return { currentMap, baselineMap, totalCurrent, totalBaseline };
+}
+
+export const devicesModule: InsightModule = {
+  key: 'devices',
+  cadence: ['daily'],
+  thresholds: { minTotal: 100, minAbsDelta: 0, minPct: 0.08, maxDims: 5 },
+
+  async enumerateDimensions(ctx) {
+    const { currentMap, baselineMap } = await fetchDeviceAggregates(ctx);
+    const topDims = selectTopDimensions(
+      currentMap,
+      baselineMap,
+      this.thresholds?.maxDims ?? 5,
+    );
+    return topDims.map((dim) => `device:${dim}`);
+  },
+
+  async computeMany(ctx, dimensionKeys): Promise<ComputeResult[]> {
+    const { currentMap, baselineMap, totalCurrent, totalBaseline } =
+      await fetchDeviceAggregates(ctx);
     const results: ComputeResult[] = [];
 
     for (const dimKey of dimensionKeys) {
@@ -165,23 +197,12 @@ export const devicesModule: InsightModule = {
       const currentValue = currentMap.get(deviceType) ?? 0;
       const compareValue = baselineMap.get(deviceType) ?? 0;
 
-      const currentShare =
-        totalCurrentValue > 0 ? currentValue / totalCurrentValue : 0;
-      const compareShare =
-        totalBaselineValue > 0 ? compareValue / totalBaselineValue : 0;
+      const currentShare = totalCurrent > 0 ? currentValue / totalCurrent : 0;
+      const compareShare = totalBaseline > 0 ? compareValue / totalBaseline : 0;
 
-      // Share shift in percentage points
       const shareShiftPp = (currentShare - compareShare) * 100;
-      const changePct =
-        compareShare > 0
-          ? (currentShare - compareShare) / compareShare
-          : currentShare > 0
-            ? 1
-            : 0;
-
-      // Direction should match the sign of the pp shift (so title + delta agree)
-      const direction: 'up' | 'down' | 'flat' =
-        shareShiftPp > 0 ? 'up' : shareShiftPp < 0 ? 'down' : 'flat';
+      const changePct = computeChangePct(currentValue, compareValue);
+      const direction = computeDirection(changePct);
 
       results.push({
         ok: true,
@@ -203,20 +224,51 @@ export const devicesModule: InsightModule = {
 
   render(result, ctx): RenderedCard {
     const device = result.dimensionKey.replace('device:', '');
-    const shareShiftPp = (result.extra?.shareShiftPp as number) ?? 0;
-    const isIncrease = shareShiftPp >= 0;
+    const changePct = result.changePct ?? 0;
+    const isIncrease = changePct >= 0;
+
+    const sessionsCurrent = result.currentValue ?? 0;
+    const sessionsCompare = result.compareValue ?? 0;
+    const shareCurrent = Number(result.extra?.currentShare ?? 0);
+    const shareCompare = Number(result.extra?.compareShare ?? 0);
 
     return {
-      kind: 'insight_v1',
-      title: `${device} ${isIncrease ? '↑' : '↓'} ${Math.abs(shareShiftPp).toFixed(1)}pp`,
-      summary: `${ctx.window.label}. Device share shift.`,
-      primaryDimension: { type: 'device', key: device, displayName: device },
-      tags: ['devices', ctx.window.kind, isIncrease ? 'increase' : 'decrease'],
-      metric: 'share',
-      extra: {
-        currentShare: result.extra?.currentShare,
-        compareShare: result.extra?.compareShare,
-        shareShiftPp: result.extra?.shareShiftPp,
+      title: `${device} ${isIncrease ? '↑' : '↓'} ${Math.abs(changePct * 100).toFixed(0)}%`,
+      summary: `${ctx.window.label}. Device traffic change.`,
+      displayName: device,
+      payload: {
+        kind: 'insight_v1',
+        dimensions: [{ key: 'device', value: device, displayName: device }],
+        primaryMetric: 'sessions',
+        metrics: {
+          sessions: {
+            current: sessionsCurrent,
+            compare: sessionsCompare,
+            delta: sessionsCurrent - sessionsCompare,
+            changePct: sessionsCompare > 0 ? (result.changePct ?? 0) : null,
+            direction: result.direction ?? 'flat',
+            unit: 'count',
+          },
+          share: {
+            current: shareCurrent,
+            compare: shareCompare,
+            delta: shareCurrent - shareCompare,
+            changePct:
+              shareCompare > 0
+                ? (shareCurrent - shareCompare) / shareCompare
+                : null,
+            direction:
+              shareCurrent - shareCompare > 0.0005
+                ? 'up'
+                : shareCurrent - shareCompare < -0.0005
+                  ? 'down'
+                  : 'flat',
+            unit: 'ratio',
+          },
+        },
+        extra: {
+          // keep module-specific flags/fields if needed later
+        },
       },
     };
   },

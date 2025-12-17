@@ -29,9 +29,7 @@ export function computeMedian(sortedValues: number[]): number {
  * @param getDimension - Function to extract normalized dimension from row
  * @returns Map of dimension -> median value
  */
-export function computeWeekdayMedians<
-  T extends { date: string; cnt: number | string },
->(
+export function computeWeekdayMedians<T>(
   data: T[],
   targetWeekday: number,
   getDimension: (row: T) => string,
@@ -40,12 +38,12 @@ export function computeWeekdayMedians<
   const byDimension = new Map<string, number[]>();
 
   for (const row of data) {
-    const rowWeekday = getWeekday(new Date(row.date));
+    const rowWeekday = getWeekday(new Date((row as any).date));
     if (rowWeekday !== targetWeekday) continue;
 
     const dim = getDimension(row);
     const values = byDimension.get(dim) ?? [];
-    values.push(Number(row.cnt ?? 0));
+    values.push(Number((row as any).cnt ?? 0));
     byDimension.set(dim, values);
   }
 
@@ -88,19 +86,6 @@ export function computeDirection(
 }
 
 /**
- * Merge dimension sets from current and baseline to detect new/gone dimensions
- */
-export function mergeDimensionSets(
-  currentDims: Set<string>,
-  baselineDims: Set<string>,
-): string[] {
-  const merged = new Set<string>();
-  for (const dim of currentDims) merged.add(dim);
-  for (const dim of baselineDims) merged.add(dim);
-  return Array.from(merged);
-}
-
-/**
  * Get end of day timestamp (23:59:59.999) for a given date.
  * Used to ensure BETWEEN queries include the full day.
  */
@@ -108,4 +93,59 @@ export function getEndOfDay(date: Date): Date {
   const end = new Date(date);
   end.setUTCHours(23, 59, 59, 999);
   return end;
+}
+
+/**
+ * Build a lookup map from query results.
+ * Aggregates counts by key, handling duplicate keys by summing values.
+ *
+ * @param results - Array of result rows
+ * @param getKey - Function to extract the key from each row
+ * @param getCount - Function to extract the count from each row (defaults to 'cnt' field)
+ * @returns Map of key -> aggregated count
+ */
+export function buildLookupMap<T>(
+  results: T[],
+  getKey: (row: T) => string,
+  getCount: (row: T) => number = (row) => Number((row as any).cnt ?? 0),
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const row of results) {
+    const key = getKey(row);
+    const cnt = getCount(row);
+    map.set(key, (map.get(key) ?? 0) + cnt);
+  }
+  return map;
+}
+
+/**
+ * Select top-N dimensions by ranking on greatest(current, baseline).
+ * This preserves union behavior: dimensions with high values in either period are included.
+ *
+ * @param currentMap - Map of dimension -> current value
+ * @param baselineMap - Map of dimension -> baseline value
+ * @param maxDims - Maximum number of dimensions to return
+ * @returns Array of dimension keys, ranked by greatest(current, baseline)
+ */
+export function selectTopDimensions(
+  currentMap: Map<string, number>,
+  baselineMap: Map<string, number>,
+  maxDims: number,
+): string[] {
+  // Merge all dimensions from both maps
+  const allDims = new Set<string>();
+  for (const dim of currentMap.keys()) allDims.add(dim);
+  for (const dim of baselineMap.keys()) allDims.add(dim);
+
+  // Rank by greatest(current, baseline)
+  const ranked = Array.from(allDims)
+    .map((dim) => ({
+      dim,
+      maxValue: Math.max(currentMap.get(dim) ?? 0, baselineMap.get(dim) ?? 0),
+    }))
+    .sort((a, b) => b.maxValue - a.maxValue)
+    .slice(0, maxDims)
+    .map((x) => x.dim);
+
+  return ranked;
 }

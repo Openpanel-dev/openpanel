@@ -13,6 +13,8 @@ export const insightStore: InsightStore = {
     const projects = await db.project.findMany({
       where: {
         deleteAt: null,
+        eventsCount: { gt: 10_000 },
+        updatedAt: { gt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
         organization: {
           subscriptionStatus: 'active',
         },
@@ -20,6 +22,14 @@ export const insightStore: InsightStore = {
       select: { id: true },
     });
     return projects.map((p) => p.id);
+  },
+
+  async getProjectCreatedAt(projectId: string): Promise<Date | null> {
+    const project = await db.project.findFirst({
+      where: { id: projectId, deleteAt: null },
+      select: { createdAt: true },
+    });
+    return project?.createdAt ?? null;
   },
 
   async getActiveInsightByIdentity({
@@ -52,7 +62,6 @@ export const insightStore: InsightStore = {
       lastSeenAt: insight.lastSeenAt,
       lastUpdatedAt: insight.lastUpdatedAt,
       direction: insight.direction,
-      changePct: insight.changePct,
       severityBand: insight.severityBand,
     };
   },
@@ -68,8 +77,6 @@ export const insightStore: InsightStore = {
     decision,
     prev,
   }): Promise<PersistedInsight> {
-    const payloadData = (card.payload ?? card) as Prisma.InputJsonValue;
-
     const baseData = {
       projectId,
       moduleKey,
@@ -78,10 +85,8 @@ export const insightStore: InsightStore = {
       state: prev?.state === 'closed' ? 'active' : (prev?.state ?? 'active'),
       title: card.title,
       summary: card.summary ?? null,
-      payload: payloadData as Prisma.InputJsonValue,
-      currentValue: metrics.currentValue ?? null,
-      compareValue: metrics.compareValue ?? null,
-      changePct: metrics.changePct ?? null,
+      displayName: card.displayName,
+      payload: card.payload,
       direction: metrics.direction ?? null,
       impactScore: metrics.impactScore,
       severityBand: metrics.severityBand ?? null,
@@ -161,7 +166,6 @@ export const insightStore: InsightStore = {
       lastSeenAt: insight.lastSeenAt,
       lastUpdatedAt: insight.lastUpdatedAt,
       direction: insight.direction,
-      changePct: insight.changePct,
       severityBand: insight.severityBand,
     };
   },

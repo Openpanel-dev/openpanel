@@ -1,26 +1,34 @@
-import { TABLE_NAMES } from '../../../clickhouse/client';
-import { clix } from '../../../clickhouse/query-builder';
-import { normalizePath } from '../normalize';
-import type { ComputeResult, InsightModule, RenderedCard } from '../types';
+import { TABLE_NAMES, formatClickhouseDate } from '../../../clickhouse/client';
+import type {
+  ComputeContext,
+  ComputeResult,
+  InsightModule,
+  RenderedCard,
+} from '../types';
 import {
+  buildLookupMap,
   computeChangePct,
   computeDirection,
   computeWeekdayMedians,
   getEndOfDay,
   getWeekday,
+  selectTopDimensions,
 } from '../utils';
 
-export const entryPagesModule: InsightModule = {
-  key: 'entry-pages',
-  cadence: ['daily'],
-  windows: ['yesterday', 'rolling_7d', 'rolling_30d'],
-  thresholds: { minTotal: 100, minAbsDelta: 30, minPct: 0.2, maxDims: 100 },
+const DELIMITER = '|||';
 
-  async enumerateDimensions(ctx) {
-    // Query top entry pages from BOTH current and baseline windows
-    const [currentResults, baselineResults] = await Promise.all([
-      clix(ctx.db)
-        .select<{ entry_path: string; cnt: number }>([
+async function fetchEntryPageAggregates(ctx: ComputeContext): Promise<{
+  currentMap: Map<string, number>;
+  baselineMap: Map<string, number>;
+  totalCurrent: number;
+  totalBaseline: number;
+}> {
+  if (ctx.window.kind === 'yesterday') {
+    const [currentResults, baselineResults, totals] = await Promise.all([
+      ctx
+        .clix()
+        .select<{ entry_origin: string; entry_path: string; cnt: number }>([
+          'entry_origin',
           'entry_path',
           'count(*) as cnt',
         ])
@@ -31,12 +39,18 @@ export const entryPagesModule: InsightModule = {
           ctx.window.start,
           getEndOfDay(ctx.window.end),
         ])
-        .groupBy(['entry_path'])
-        .orderBy('cnt', 'DESC')
-        .limit(this.thresholds?.maxDims ?? 100)
+        .groupBy(['entry_origin', 'entry_path'])
         .execute(),
-      clix(ctx.db)
-        .select<{ entry_path: string; cnt: number }>([
+      ctx
+        .clix()
+        .select<{
+          date: string;
+          entry_origin: string;
+          entry_path: string;
+          cnt: number;
+        }>([
+          'toDate(created_at) as date',
+          'entry_origin',
           'entry_path',
           'count(*) as cnt',
         ])
@@ -47,104 +61,147 @@ export const entryPagesModule: InsightModule = {
           ctx.window.baselineStart,
           getEndOfDay(ctx.window.baselineEnd),
         ])
-        .groupBy(['entry_path'])
-        .orderBy('cnt', 'DESC')
-        .limit(this.thresholds?.maxDims ?? 100)
+        .groupBy(['date', 'entry_origin', 'entry_path'])
+        .execute(),
+      ctx
+        .clix()
+        .select<{ cur_total: number }>([
+          ctx.clix.exp(
+            `countIf(created_at BETWEEN '${formatClickhouseDate(ctx.window.start)}' AND '${formatClickhouseDate(getEndOfDay(ctx.window.end))}') as cur_total`,
+          ),
+        ])
+        .from(TABLE_NAMES.sessions)
+        .where('project_id', '=', ctx.projectId)
+        .where('sign', '=', 1)
+        .where('created_at', 'BETWEEN', [
+          ctx.window.baselineStart,
+          getEndOfDay(ctx.window.end),
+        ])
         .execute(),
     ]);
 
-    // Merge both sets
-    const dims = new Set<string>();
-    for (const r of currentResults) {
-      dims.add(`entry:${normalizePath(r.entry_path || '/')}`);
-    }
-    for (const r of baselineResults) {
-      dims.add(`entry:${normalizePath(r.entry_path || '/')}`);
-    }
+    const currentMap = buildLookupMap(
+      currentResults,
+      (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
+    );
 
-    return Array.from(dims);
-  },
+    const targetWeekday = getWeekday(ctx.window.start);
+    const baselineMap = computeWeekdayMedians(
+      baselineResults,
+      targetWeekday,
+      (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
+    );
 
-  async computeMany(ctx, dimensionKeys): Promise<ComputeResult[]> {
-    // Single query for ALL current values
-    const currentResults = await clix(ctx.db)
-      .select<{ entry_path: string; cnt: number }>([
+    const totalCurrent = totals[0]?.cur_total ?? 0;
+    const totalBaseline = Array.from(baselineMap.values()).reduce(
+      (sum, val) => sum + val,
+      0,
+    );
+
+    return { currentMap, baselineMap, totalCurrent, totalBaseline };
+  }
+
+  const curStart = formatClickhouseDate(ctx.window.start);
+  const curEnd = formatClickhouseDate(getEndOfDay(ctx.window.end));
+  const baseStart = formatClickhouseDate(ctx.window.baselineStart);
+  const baseEnd = formatClickhouseDate(getEndOfDay(ctx.window.baselineEnd));
+
+  const [results, totals] = await Promise.all([
+    ctx
+      .clix()
+      .select<{
+        entry_origin: string;
+        entry_path: string;
+        cur: number;
+        base: number;
+      }>([
+        'entry_origin',
         'entry_path',
-        'count(*) as cnt',
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur`,
+        ),
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base`,
+        ),
       ])
       .from(TABLE_NAMES.sessions)
       .where('project_id', '=', ctx.projectId)
       .where('sign', '=', 1)
       .where('created_at', 'BETWEEN', [
-        ctx.window.start,
+        ctx.window.baselineStart,
         getEndOfDay(ctx.window.end),
       ])
-      .groupBy(['entry_path'])
-      .execute();
+      .groupBy(['entry_origin', 'entry_path'])
+      .execute(),
+    ctx
+      .clix()
+      .select<{ cur_total: number; base_total: number }>([
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${curStart}' AND '${curEnd}') as cur_total`,
+        ),
+        ctx.clix.exp(
+          `countIf(created_at BETWEEN '${baseStart}' AND '${baseEnd}') as base_total`,
+        ),
+      ])
+      .from(TABLE_NAMES.sessions)
+      .where('project_id', '=', ctx.projectId)
+      .where('sign', '=', 1)
+      .where('created_at', 'BETWEEN', [
+        ctx.window.baselineStart,
+        getEndOfDay(ctx.window.end),
+      ])
+      .execute(),
+  ]);
 
-    // Build current lookup map
-    const currentMap = new Map<string, number>();
-    for (const r of currentResults) {
-      const key = normalizePath(r.entry_path || '/');
-      currentMap.set(key, (currentMap.get(key) ?? 0) + Number(r.cnt ?? 0));
-    }
+  const currentMap = buildLookupMap(
+    results,
+    (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
+    (r) => Number(r.cur ?? 0),
+  );
 
-    // Single query for baseline
-    let baselineMap: Map<string, number>;
+  const baselineMap = buildLookupMap(
+    results,
+    (r) => `${r.entry_origin || ''}${DELIMITER}${r.entry_path || '/'}`,
+    (r) => Number(r.base ?? 0),
+  );
 
-    if (ctx.window.kind === 'yesterday') {
-      const baselineResults = await clix(ctx.db)
-        .select<{ date: string; entry_path: string; cnt: number }>([
-          'toDate(created_at) as date',
-          'entry_path',
-          'count(*) as cnt',
-        ])
-        .from(TABLE_NAMES.sessions)
-        .where('project_id', '=', ctx.projectId)
-        .where('sign', '=', 1)
-        .where('created_at', 'BETWEEN', [
-          ctx.window.baselineStart,
-          getEndOfDay(ctx.window.baselineEnd),
-        ])
-        .groupBy(['date', 'entry_path'])
-        .execute();
+  const totalCurrent = totals[0]?.cur_total ?? 0;
+  const totalBaseline = totals[0]?.base_total ?? 0;
 
-      const targetWeekday = getWeekday(ctx.window.start);
-      baselineMap = computeWeekdayMedians(baselineResults, targetWeekday, (r) =>
-        normalizePath(r.entry_path || '/'),
-      );
-    } else {
-      const baselineResults = await clix(ctx.db)
-        .select<{ entry_path: string; cnt: number }>([
-          'entry_path',
-          'count(*) as cnt',
-        ])
-        .from(TABLE_NAMES.sessions)
-        .where('project_id', '=', ctx.projectId)
-        .where('sign', '=', 1)
-        .where('created_at', 'BETWEEN', [
-          ctx.window.baselineStart,
-          getEndOfDay(ctx.window.baselineEnd),
-        ])
-        .groupBy(['entry_path'])
-        .execute();
+  return { currentMap, baselineMap, totalCurrent, totalBaseline };
+}
 
-      baselineMap = new Map<string, number>();
-      for (const r of baselineResults) {
-        const key = normalizePath(r.entry_path || '/');
-        baselineMap.set(key, (baselineMap.get(key) ?? 0) + Number(r.cnt ?? 0));
-      }
-    }
+export const entryPagesModule: InsightModule = {
+  key: 'entry-pages',
+  cadence: ['daily'],
+  thresholds: { minTotal: 100, minAbsDelta: 30, minPct: 0.2, maxDims: 100 },
 
-    // Build results from maps
+  async enumerateDimensions(ctx) {
+    const { currentMap, baselineMap } = await fetchEntryPageAggregates(ctx);
+    const topDims = selectTopDimensions(
+      currentMap,
+      baselineMap,
+      this.thresholds?.maxDims ?? 100,
+    );
+    return topDims.map((dim) => `entry:${dim}`);
+  },
+
+  async computeMany(ctx, dimensionKeys): Promise<ComputeResult[]> {
+    const { currentMap, baselineMap, totalCurrent, totalBaseline } =
+      await fetchEntryPageAggregates(ctx);
     const results: ComputeResult[] = [];
 
     for (const dimKey of dimensionKeys) {
       if (!dimKey.startsWith('entry:')) continue;
-      const entryPath = dimKey.replace('entry:', '');
+      const originPath = dimKey.replace('entry:', '');
 
-      const currentValue = currentMap.get(entryPath) ?? 0;
-      const compareValue = baselineMap.get(entryPath) ?? 0;
+      const currentValue = currentMap.get(originPath) ?? 0;
+      const compareValue = baselineMap.get(originPath) ?? 0;
+
+      const currentShare = totalCurrent > 0 ? currentValue / totalCurrent : 0;
+      const compareShare = totalBaseline > 0 ? compareValue / totalBaseline : 0;
+
+      const shareShiftPp = (currentShare - compareShare) * 100;
       const changePct = computeChangePct(currentValue, compareValue);
       const direction = computeDirection(changePct);
 
@@ -156,6 +213,9 @@ export const entryPagesModule: InsightModule = {
         changePct,
         direction,
         extra: {
+          shareShiftPp,
+          currentShare,
+          compareShare,
           isNew: compareValue === 0 && currentValue > 0,
         },
       });
@@ -165,28 +225,62 @@ export const entryPagesModule: InsightModule = {
   },
 
   render(result, ctx): RenderedCard {
-    const path = result.dimensionKey.replace('entry:', '');
+    const originPath = result.dimensionKey.replace('entry:', '');
+    const [origin, path] = originPath.split(DELIMITER);
+    const displayValue = origin ? `${origin}${path}` : path || '/';
     const pct = ((result.changePct ?? 0) * 100).toFixed(1);
     const isIncrease = (result.changePct ?? 0) >= 0;
     const isNew = result.extra?.isNew as boolean | undefined;
 
     const title = isNew
-      ? `New entry page: ${path}`
-      : `Entry page ${path} ${isIncrease ? '↑' : '↓'} ${Math.abs(Number(pct))}%`;
+      ? `New entry page: ${displayValue}`
+      : `Entry page ${displayValue} ${isIncrease ? '↑' : '↓'} ${Math.abs(Number(pct))}%`;
+
+    const sessionsCurrent = result.currentValue ?? 0;
+    const sessionsCompare = result.compareValue ?? 0;
+    const shareCurrent = Number(result.extra?.currentShare ?? 0);
+    const shareCompare = Number(result.extra?.compareShare ?? 0);
 
     return {
-      kind: 'insight_v1',
       title,
-      summary: `${ctx.window.label}. Sessions ${result.currentValue ?? 0} vs ${result.compareValue ?? 0}.`,
-      primaryDimension: { type: 'entry', key: path, displayName: path },
-      tags: [
-        'entry-pages',
-        ctx.window.kind,
-        isNew ? 'new' : isIncrease ? 'increase' : 'decrease',
-      ],
-      metric: 'sessions',
-      extra: {
-        isNew: result.extra?.isNew,
+      summary: `${ctx.window.label}. Sessions ${sessionsCurrent} vs ${sessionsCompare}.`,
+      displayName: displayValue,
+      payload: {
+        kind: 'insight_v1',
+        dimensions: [
+          { key: 'origin', value: origin ?? '', displayName: origin ?? '' },
+          { key: 'path', value: path ?? '', displayName: path ?? '' },
+        ],
+        primaryMetric: 'sessions',
+        metrics: {
+          sessions: {
+            current: sessionsCurrent,
+            compare: sessionsCompare,
+            delta: sessionsCurrent - sessionsCompare,
+            changePct: sessionsCompare > 0 ? (result.changePct ?? 0) : null,
+            direction: result.direction ?? 'flat',
+            unit: 'count',
+          },
+          share: {
+            current: shareCurrent,
+            compare: shareCompare,
+            delta: shareCurrent - shareCompare,
+            changePct:
+              shareCompare > 0
+                ? (shareCurrent - shareCompare) / shareCompare
+                : null,
+            direction:
+              shareCurrent - shareCompare > 0.0005
+                ? 'up'
+                : shareCurrent - shareCompare < -0.0005
+                  ? 'down'
+                  : 'flat',
+            unit: 'ratio',
+          },
+        },
+        extra: {
+          isNew: result.extra?.isNew,
+        },
       },
     };
   },

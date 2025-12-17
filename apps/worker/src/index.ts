@@ -79,11 +79,6 @@ async function start() {
     await bootCron();
   } else {
     logger.warn('Workers are disabled');
-
-    // Start insights worker
-    const insightsWorker = new Worker(insightsQueue.name, insightsProjectJob, {
-      connection: getRedisQueue(),
-    });
   }
 
   await createInitialSalts();

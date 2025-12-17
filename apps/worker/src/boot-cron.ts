@@ -34,6 +34,11 @@ export async function bootCron() {
       type: 'flushSessions',
       pattern: 1000 * 10,
     },
+    {
+      name: 'insightsDaily',
+      type: 'insightsDaily',
+      pattern: '0 2 * * *',
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {
@@ -43,12 +48,6 @@ export async function bootCron() {
       pattern: '0 0 * * *',
     });
   }
-
-  jobs.push({
-    name: 'insightsDaily',
-    type: 'insightsDaily',
-    pattern: '0 2 * * *', // 2 AM daily
-  });
 
   logger.info('Updating cron jobs');
 

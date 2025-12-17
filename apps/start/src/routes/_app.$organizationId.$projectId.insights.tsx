@@ -3,6 +3,13 @@ import { InsightCard } from '@/components/insights/insight-card';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/skeleton';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -13,10 +20,12 @@ import {
 } from '@/components/ui/select';
 import { TableButtons } from '@/components/ui/table';
 import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { useMemo, useState } from 'react';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
+import { useMemo } from 'react';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/insights',
@@ -26,7 +35,7 @@ export const Route = createFileRoute(
     return {
       meta: [
         {
-          title: createProjectTitle('Insights'),
+          title: createProjectTitle(PAGE_TITLES.INSIGHTS),
         },
       ],
     };
@@ -40,6 +49,19 @@ type SortOption =
   | 'severity-asc'
   | 'recent';
 
+function getModuleDisplayName(moduleKey: string): string {
+  const displayNames: Record<string, string> = {
+    geo: 'Geographic',
+    devices: 'Devices',
+    referrers: 'Referrers',
+    'entry-pages': 'Entry Pages',
+    'page-trends': 'Page Trends',
+    'exit-pages': 'Exit Pages',
+    'traffic-anomalies': 'Anomalies',
+  };
+  return displayNames[moduleKey] || moduleKey.replace('-', ' ');
+}
+
 function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
@@ -49,13 +71,45 @@ function Component() {
       limit: 500,
     }),
   );
+  const navigate = useNavigate();
 
-  const [search, setSearch] = useState('');
-  const [moduleFilter, setModuleFilter] = useState<string>('all');
-  const [windowKindFilter, setWindowKindFilter] = useState<string>('all');
-  const [severityFilter, setSeverityFilter] = useState<string>('all');
-  const [directionFilter, setDirectionFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<SortOption>('impact-desc');
+  const [search, setSearch] = useQueryState(
+    'search',
+    parseAsString.withDefault(''),
+  );
+  const [moduleFilter, setModuleFilter] = useQueryState(
+    'module',
+    parseAsString.withDefault('all'),
+  );
+  const [windowKindFilter, setWindowKindFilter] = useQueryState(
+    'window',
+    parseAsStringEnum([
+      'all',
+      'yesterday',
+      'rolling_7d',
+      'rolling_30d',
+    ]).withDefault('all'),
+  );
+  const [severityFilter, setSeverityFilter] = useQueryState(
+    'severity',
+    parseAsStringEnum(['all', 'severe', 'moderate', 'low', 'none']).withDefault(
+      'all',
+    ),
+  );
+  const [directionFilter, setDirectionFilter] = useQueryState(
+    'direction',
+    parseAsStringEnum(['all', 'up', 'down', 'flat']).withDefault('all'),
+  );
+  const [sortBy, setSortBy] = useQueryState(
+    'sort',
+    parseAsStringEnum<SortOption>([
+      'impact-desc',
+      'impact-asc',
+      'severity-desc',
+      'severity-asc',
+      'recent',
+    ]).withDefault('impact-desc'),
+  );
 
   const filteredAndSorted = useMemo(() => {
     if (!insights) return [];
@@ -155,18 +209,60 @@ function Component() {
     sortBy,
   ]);
 
-  const uniqueModules = useMemo(() => {
-    if (!insights) return [];
-    return Array.from(new Set(insights.map((i) => i.moduleKey))).sort();
-  }, [insights]);
+  // Group insights by module
+  const groupedByModule = useMemo(() => {
+    const groups = new Map<string, typeof filteredAndSorted>();
+
+    for (const insight of filteredAndSorted) {
+      const existing = groups.get(insight.moduleKey) ?? [];
+      existing.push(insight);
+      groups.set(insight.moduleKey, existing);
+    }
+
+    // Sort modules by impact (referrers first, then by average impact score)
+    return Array.from(groups.entries()).sort(
+      ([keyA, insightsA], [keyB, insightsB]) => {
+        // Referrers always first
+        if (keyA === 'referrers') return -1;
+        if (keyB === 'referrers') return 1;
+
+        // Calculate average impact for each module
+        const avgImpactA =
+          insightsA.reduce((sum, i) => sum + (i.impactScore ?? 0), 0) /
+          insightsA.length;
+        const avgImpactB =
+          insightsB.reduce((sum, i) => sum + (i.impactScore ?? 0), 0) /
+          insightsB.length;
+
+        // Sort by average impact (high to low)
+        return avgImpactB - avgImpactA;
+      },
+    );
+  }, [filteredAndSorted]);
 
   if (isLoading) {
     return (
       <PageContainer>
         <PageHeader title="Insights" className="mb-8" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }, (_, i) => `skeleton-${i}`).map((key) => (
-            <Skeleton key={key} className="h-48" />
+        <div className="space-y-8">
+          {Array.from({ length: 3 }, (_, i) => `section-${i}`).map((key) => (
+            <div key={key} className="space-y-4">
+              <Skeleton className="h-8 w-32" />
+              <Carousel opts={{ align: 'start' }} className="w-full">
+                <CarouselContent className="-ml-4">
+                  {Array.from({ length: 4 }, (_, i) => `skeleton-${i}`).map(
+                    (cardKey) => (
+                      <CarouselItem
+                        key={cardKey}
+                        className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
+                      >
+                        <Skeleton className="h-48 w-full" />
+                      </CarouselItem>
+                    ),
+                  )}
+                </CarouselContent>
+              </Carousel>
+            </div>
           ))}
         </div>
       </PageContainer>
@@ -180,27 +276,19 @@ function Component() {
         description="Discover trends and changes in your analytics"
         className="mb-8"
       />
-      <TableButtons>
+      <TableButtons className="mb-8">
         <Input
           placeholder="Search insights..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={search ?? ''}
+          onChange={(e) => void setSearch(e.target.value || null)}
           className="max-w-xs"
         />
-        <Select value={moduleFilter} onValueChange={setModuleFilter}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Module" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Modules</SelectItem>
-            {uniqueModules.map((module) => (
-              <SelectItem key={module} value={module}>
-                {module.replace('-', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={windowKindFilter} onValueChange={setWindowKindFilter}>
+        <Select
+          value={windowKindFilter ?? 'all'}
+          onValueChange={(v) =>
+            void setWindowKindFilter(v as typeof windowKindFilter)
+          }
+        >
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Time Window" />
           </SelectTrigger>
@@ -211,7 +299,12 @@ function Component() {
             <SelectItem value="rolling_30d">30 Days</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={severityFilter} onValueChange={setSeverityFilter}>
+        <Select
+          value={severityFilter ?? 'all'}
+          onValueChange={(v) =>
+            void setSeverityFilter(v as typeof severityFilter)
+          }
+        >
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Severity" />
           </SelectTrigger>
@@ -223,7 +316,12 @@ function Component() {
             <SelectItem value="none">No Severity</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={directionFilter} onValueChange={setDirectionFilter}>
+        <Select
+          value={directionFilter ?? 'all'}
+          onValueChange={(v) =>
+            void setDirectionFilter(v as typeof directionFilter)
+          }
+        >
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Direction" />
           </SelectTrigger>
@@ -235,8 +333,8 @@ function Component() {
           </SelectContent>
         </Select>
         <Select
-          value={sortBy}
-          onValueChange={(v) => setSortBy(v as SortOption)}
+          value={sortBy ?? 'impact-desc'}
+          onValueChange={(v) => void setSortBy(v as SortOption)}
         >
           <SelectTrigger className="w-[160px]">
             <SelectValue placeholder="Sort by" />
@@ -262,14 +360,69 @@ function Component() {
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredAndSorted.map((insight) => (
-          <InsightCard key={insight.id} insight={insight} />
-        ))}
-      </div>
+      {groupedByModule.length > 0 && (
+        <div className="space-y-8">
+          {groupedByModule.map(([moduleKey, moduleInsights]) => (
+            <div key={moduleKey} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold capitalize">
+                  {getModuleDisplayName(moduleKey)}
+                </h2>
+                <span className="text-sm text-muted-foreground">
+                  {moduleInsights.length}{' '}
+                  {moduleInsights.length === 1 ? 'insight' : 'insights'}
+                </span>
+              </div>
+              <div className="-mx-8">
+                <Carousel
+                  opts={{ align: 'start', dragFree: true }}
+                  className="w-full group"
+                >
+                  <CarouselContent className="mx-4 mr-8">
+                    {moduleInsights.map((insight, index) => (
+                      <CarouselItem
+                        key={insight.id}
+                        className={cn(
+                          'pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4',
+                        )}
+                      >
+                        <InsightCard
+                          insight={insight}
+                          onFilter={(() => {
+                            const filterString = insight.payload?.dimensions
+                              .map(
+                                (dim) =>
+                                  `${dim.key},is,${encodeURIComponent(dim.value)}`,
+                              )
+                              .join(';');
+                            if (filterString) {
+                              return () => {
+                                navigate({
+                                  to: '/$organizationId/$projectId',
+                                  from: Route.fullPath,
+                                  search: {
+                                    f: filterString,
+                                  },
+                                });
+                              };
+                            }
+                            return undefined;
+                          })()}
+                        />
+                      </CarouselItem>
+                    ))}
+                  </CarouselContent>
+                  <CarouselPrevious className="opacity-0 [&:disabled]:opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto left-3" />
+                  <CarouselNext className="opacity-0 &:disabled:opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto right-3" />
+                </Carousel>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {filteredAndSorted.length > 0 && (
-        <div className="mt-4 text-sm text-muted-foreground text-center">
+        <div className="mt-8 text-sm text-muted-foreground text-center">
           Showing {filteredAndSorted.length} of {insights?.length ?? 0} insights
         </div>
       )}

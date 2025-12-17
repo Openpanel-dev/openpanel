@@ -123,7 +123,7 @@ export function SidebarContainer({
         </div>
         <div
           className={cn([
-            'flex flex-grow col gap-1 overflow-auto p-4',
+            'flex flex-grow col gap-1 overflow-auto p-4 hide-scrollbar',
             "[&_a[data-status='active']]:bg-def-200",
           ])}
         >

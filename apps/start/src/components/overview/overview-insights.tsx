@@ -1,3 +1,4 @@
+import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { InsightCard } from '../insights/insight-card';
@@ -16,6 +17,7 @@ interface OverviewInsightsProps {
 
 export default function OverviewInsights({ projectId }: OverviewInsightsProps) {
   const trpc = useTRPC();
+  const [filters, setFilter] = useEventQueryFilters();
   const { data: insights, isLoading } = useQuery(
     trpc.insight.list.queryOptions({
       projectId,
@@ -54,7 +56,14 @@ export default function OverviewInsights({ projectId }: OverviewInsightsProps) {
               key={insight.id}
               className="pl-4 basis-full sm:basis-1/2 lg:basis-1/4"
             >
-              <InsightCard insight={insight} />
+              <InsightCard
+                insight={insight}
+                onFilter={() => {
+                  insight.payload.dimensions.forEach((dim) => {
+                    void setFilter(dim.key, dim.value, 'is');
+                  });
+                }}
+              />
             </CarouselItem>
           ))}
         </CarouselContent>

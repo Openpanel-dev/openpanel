@@ -1,16 +1,21 @@
-import crypto from 'node:crypto';
+import { createCachedClix } from './cached-clix';
 import { materialDecision } from './material';
 import { defaultImpactScore, severityBand } from './scoring';
 import type {
   Cadence,
   ComputeContext,
   ComputeResult,
-  ExplainQueue,
   InsightModule,
   InsightStore,
   WindowKind,
 } from './types';
 import { resolveWindow } from './windows';
+
+const DEFAULT_WINDOWS: WindowKind[] = [
+  'yesterday',
+  'rolling_7d',
+  'rolling_30d',
+];
 
 export interface EngineConfig {
   keepTopNPerModuleWindow: number; // e.g. 5
@@ -21,8 +26,6 @@ export interface EngineConfig {
     minAbsDelta: number; // e.g. 80
     minPct: number; // e.g. 0.15
   };
-  enableExplain: boolean;
-  explainTopNPerProjectPerDay: number; // e.g. 3
 }
 
 /** Simple gating to cut noise; modules can override via thresholds. */
@@ -53,64 +56,84 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return out;
 }
 
-function sha256(x: string) {
-  return crypto.createHash('sha256').update(x).digest('hex');
-}
-
-/**
- * Engine entrypoint: runs all projects for a cadence.
- * Recommended: call this from a per-project worker (fanout), but it can also run directly.
- */
 export function createEngine(args: {
   store: InsightStore;
   modules: InsightModule[];
   db: any;
   logger?: Pick<Console, 'info' | 'warn' | 'error'>;
-  explainQueue?: ExplainQueue;
   config: EngineConfig;
 }) {
-  const { store, modules, db, explainQueue, config } = args;
+  const { store, modules, db, config } = args;
   const logger = args.logger ?? console;
 
-  async function runCadence(cadence: Cadence, now: Date): Promise<void> {
-    const projectIds = await store.listProjectIdsForCadence(cadence);
-    for (const projectId of projectIds) {
-      await runProject({ projectId, cadence, now });
-    }
+  function isProjectOldEnoughForWindow(
+    projectCreatedAt: Date | null | undefined,
+    baselineStart: Date,
+  ): boolean {
+    if (!projectCreatedAt) return true; // best-effort; don't block if unknown
+    return projectCreatedAt.getTime() <= baselineStart.getTime();
   }
 
   async function runProject(opts: {
     projectId: string;
     cadence: Cadence;
     now: Date;
+    projectCreatedAt?: Date | null;
   }): Promise<void> {
-    const { projectId, cadence, now } = opts;
+    const { projectId, cadence, now, projectCreatedAt } = opts;
     const projLogger = logger;
     const eligible = modules.filter((m) => m.cadence.includes(cadence));
 
-    // Track top insights (by impact) for optional explain step across all modules/windows
-    const explainCandidates: Array<{
-      insightId: string;
-      impact: number;
-      evidence: any;
-      evidenceHash: string;
-    }> = [];
-
     for (const mod of eligible) {
-      for (const windowKind of mod.windows) {
-        const window = resolveWindow(windowKind as WindowKind, now);
-        const ctx: ComputeContext = {
-          projectId,
-          window,
-          db,
-          now,
-          logger: projLogger,
-        };
+      const windows = mod.windows ?? DEFAULT_WINDOWS;
+      for (const windowKind of windows) {
+        let window: ReturnType<typeof resolveWindow>;
+        let ctx: ComputeContext;
+        try {
+          window = resolveWindow(windowKind, now);
+          if (
+            !isProjectOldEnoughForWindow(projectCreatedAt, window.baselineStart)
+          ) {
+            continue;
+          }
+          // Initialize cache for this module+window combination.
+          // Cache is automatically garbage collected when context goes out of scope.
+          const cache = new Map<string, any>();
+          ctx = {
+            projectId,
+            window,
+            db,
+            now,
+            logger: projLogger,
+            clix: createCachedClix(db, cache),
+          };
+        } catch (e) {
+          projLogger.error('[insights] failed to create compute context', {
+            projectId,
+            module: mod.key,
+            windowKind,
+            err: e,
+          });
+          continue;
+        }
 
         // 1) enumerate dimensions
-        let dims = mod.enumerateDimensions
-          ? await mod.enumerateDimensions(ctx)
-          : [];
+        let dims: string[] = [];
+        try {
+          dims = mod.enumerateDimensions
+            ? await mod.enumerateDimensions(ctx)
+            : [];
+        } catch (e) {
+          // Important: enumeration failures should not abort the whole project run.
+          // Also avoid lifecycle close/suppression when we didn't actually evaluate dims.
+          projLogger.error('[insights] module enumerateDimensions failed', {
+            projectId,
+            module: mod.key,
+            windowKind,
+            err: e,
+          });
+          continue;
+        }
         const maxDims = mod.thresholds?.maxDims ?? 25;
         if (dims.length > maxDims) dims = dims.slice(0, maxDims);
 
@@ -190,9 +213,6 @@ export function createEngine(args: {
               window,
               card,
               metrics: {
-                currentValue: r.currentValue,
-                compareValue: r.compareValue,
-                changePct: r.changePct,
                 direction: r.direction,
                 impactScore: impact,
                 severityBand: sev,
@@ -241,7 +261,6 @@ export function createEngine(args: {
                 windowKind,
                 eventKind,
                 changeFrom: {
-                  changePct: prev.changePct,
                   direction: prev.direction,
                   impactScore: prev.impactScore,
                   severityBand: prev.severityBand,
@@ -254,48 +273,6 @@ export function createEngine(args: {
                 },
                 now,
               });
-            }
-
-            // 9) optional AI explain candidates (only for top-impact insights)
-            if (config.enableExplain && explainQueue && mod.drivers) {
-              // compute evidence deterministically (drivers)
-              try {
-                const drivers = await mod.drivers(r, ctx);
-                const evidence = {
-                  insight: {
-                    moduleKey: mod.key,
-                    dimensionKey: r.dimensionKey,
-                    windowKind,
-                    currentValue: r.currentValue,
-                    compareValue: r.compareValue,
-                    changePct: r.changePct,
-                    direction: r.direction,
-                  },
-                  drivers,
-                  window: {
-                    start: window.start.toISOString().slice(0, 10),
-                    end: window.end.toISOString().slice(0, 10),
-                    baselineStart: window.baselineStart
-                      .toISOString()
-                      .slice(0, 10),
-                    baselineEnd: window.baselineEnd.toISOString().slice(0, 10),
-                  },
-                };
-                const evidenceHash = sha256(JSON.stringify(evidence));
-                explainCandidates.push({
-                  insightId: persisted.id,
-                  impact,
-                  evidence,
-                  evidenceHash,
-                });
-              } catch (e) {
-                projLogger.warn('[insights] drivers() failed', {
-                  projectId,
-                  module: mod.key,
-                  dimensionKey: r.dimensionKey,
-                  err: e,
-                });
-              }
             }
           }
         }
@@ -320,27 +297,7 @@ export function createEngine(args: {
         });
       }
     }
-
-    // 12) enqueue explains for top insights across the whole project run
-    if (config.enableExplain && explainQueue) {
-      explainCandidates.sort((a, b) => b.impact - a.impact);
-      const top = explainCandidates.slice(
-        0,
-        config.explainTopNPerProjectPerDay,
-      );
-      for (const c of top) {
-        await explainQueue.enqueueExplain({
-          insightId: c.insightId,
-          projectId,
-          moduleKey: 'n/a', // optional; you can include it in evidence instead
-          dimensionKey: 'n/a',
-          windowKind: 'yesterday',
-          evidence: c.evidence,
-          evidenceHash: c.evidenceHash,
-        });
-      }
-    }
   }
 
-  return { runCadence, runProject };
+  return { runProject };
 }

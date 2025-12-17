@@ -1,40 +1,12 @@
 import { countries } from '@/translations/countries';
+import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { ArrowDown, ArrowUp } from 'lucide-react';
+import type { InsightPayload } from '@openpanel/validation';
+import { ArrowDown, ArrowUp, FilterIcon, RotateCcwIcon } from 'lucide-react';
+import { last } from 'ramda';
+import { useState } from 'react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Badge } from '../ui/badge';
-
-type InsightPayload = {
-  metric?: 'sessions' | 'pageviews' | 'share';
-  primaryDimension?: {
-    type: string;
-    displayName: string;
-  };
-  extra?: {
-    currentShare?: number;
-    compareShare?: number;
-    shareShiftPp?: number;
-    isNew?: boolean;
-    isGone?: boolean;
-  };
-};
-
-type Insight = {
-  id: string;
-  title: string;
-  summary: string | null;
-  payload: unknown;
-  currentValue: number | null;
-  compareValue: number | null;
-  changePct: number | null;
-  direction: string | null;
-  moduleKey: string;
-  dimensionKey: string;
-  windowKind: string;
-  severityBand: string | null;
-  impactScore?: number | null;
-  firstDetectedAt?: string | Date;
-};
 
 function formatWindowKind(windowKind: string): string {
   switch (windowKind) {
@@ -49,82 +21,95 @@ function formatWindowKind(windowKind: string): string {
 }
 
 interface InsightCardProps {
-  insight: Insight;
+  insight: RouterOutputs['insight']['list'][number];
   className?: string;
+  onFilter?: () => void;
 }
 
-export function InsightCard({ insight, className }: InsightCardProps) {
-  const payload = insight.payload as InsightPayload | null;
-  const dimension = payload?.primaryDimension;
-  const metric = payload?.metric ?? 'sessions';
-  const extra = payload?.extra;
+export function InsightCard({
+  insight,
+  className,
+  onFilter,
+}: InsightCardProps) {
+  const payload = insight.payload;
+  const dimensions = payload?.dimensions;
+  const availableMetrics = Object.entries(payload?.metrics ?? {});
 
-  // Determine if this is a share-based insight (geo, devices)
-  const isShareBased = metric === 'share';
+  // Pick what to display: prefer share if available (geo/devices), else primaryMetric
+  const [metricIndex, setMetricIndex] = useState(
+    availableMetrics.findIndex(([key]) => key === payload?.primaryMetric),
+  );
+  const currentMetricKey = availableMetrics[metricIndex][0];
+  const currentMetricEntry = availableMetrics[metricIndex][1];
 
-  // Get the values to display based on metric type
-  const currentValue = isShareBased
-    ? (extra?.currentShare ?? null)
-    : (insight.currentValue ?? null);
-  const compareValue = isShareBased
-    ? (extra?.compareShare ?? null)
-    : (insight.compareValue ?? null);
+  const metricUnit = currentMetricEntry?.unit;
+  const currentValue = currentMetricEntry?.current ?? null;
+  const compareValue = currentMetricEntry?.compare ?? null;
 
-  // Get direction and change
-  const direction = insight.direction ?? 'flat';
+  const direction = currentMetricEntry?.direction ?? 'flat';
   const isIncrease = direction === 'up';
   const isDecrease = direction === 'down';
 
-  // Format the delta display
-  const deltaText = isShareBased
-    ? `${Math.abs(extra?.shareShiftPp ?? 0).toFixed(1)}pp`
-    : `${Math.abs((insight.changePct ?? 0) * 100).toFixed(1)}%`;
+  const deltaText =
+    metricUnit === 'ratio'
+      ? `${Math.abs((currentMetricEntry?.delta ?? 0) * 100).toFixed(1)}pp`
+      : `${Math.abs((currentMetricEntry?.changePct ?? 0) * 100).toFixed(1)}%`;
 
   // Format metric values
   const formatValue = (value: number | null): string => {
     if (value == null) return '-';
-    if (isShareBased) return `${(value * 100).toFixed(1)}%`;
+    if (metricUnit === 'ratio') return `${(value * 100).toFixed(1)}%`;
     return Math.round(value).toLocaleString();
   };
 
   // Get the metric label
-  const metricLabel = isShareBased
-    ? 'Share'
-    : metric === 'pageviews'
-      ? 'Pageviews'
-      : 'Sessions';
+  const metricKeyToLabel = (key: string) =>
+    key === 'share' ? 'Share' : key === 'pageviews' ? 'Pageviews' : 'Sessions';
+
+  const metricLabel = metricKeyToLabel(currentMetricKey);
 
   const renderTitle = () => {
-    const t = insight.title.replace(/↑.*$/, '').replace(/↓.*$/, '').trim();
     if (
-      dimension &&
-      (dimension.type === 'country' ||
-        dimension.type === 'referrer' ||
-        dimension.type === 'device')
+      dimensions[0]?.key === 'country' ||
+      dimensions[0]?.key === 'referrer_name' ||
+      dimensions[0]?.key === 'device'
     ) {
       return (
         <span className="capitalize flex items-center gap-2">
-          <SerieIcon name={dimension.displayName} />{' '}
-          {countries[dimension.displayName as keyof typeof countries] || t}
+          <SerieIcon name={dimensions[0]?.value} /> {insight.displayName}
         </span>
       );
     }
 
-    return t;
+    if (insight.displayName.startsWith('http')) {
+      return (
+        <span className="flex items-center gap-2">
+          <SerieIcon
+            name={dimensions[0]?.displayName ?? dimensions[0]?.value}
+          />
+          <span className="line-clamp-2">{dimensions[1]?.displayName}</span>
+        </span>
+      );
+    }
+
+    return insight.displayName;
   };
 
   return (
     <div
       className={cn(
-        'card p-4 h-full flex flex-col hover:bg-def-50 transition-colors',
+        'card p-4 h-full flex flex-col hover:bg-def-50 transition-colors group/card',
         className,
       )}
     >
-      <div className="row justify-between">
+      <div
+        className={cn(
+          'row justify-between h-4 items-center',
+          onFilter && 'group-hover/card:hidden',
+        )}
+      >
         <Badge variant="outline" className="-ml-2">
           {formatWindowKind(insight.windowKind)}
-          <span className="text-muted-foreground mx-1">/</span>
-          <span className="capitalize">{dimension?.type ?? 'unknown'}</span>
         </Badge>
         {/* Severity: subtle dot instead of big pill */}
         {insight.severityBand && (
@@ -145,6 +130,36 @@ export function InsightCard({ insight, className }: InsightCardProps) {
           </div>
         )}
       </div>
+      {onFilter && (
+        <div className="row group-hover/card:flex hidden h-4 justify-between gap-2">
+          {availableMetrics.length > 1 ? (
+            <button
+              type="button"
+              className="text-[11px] text-muted-foreground capitalize flex items-center gap-1"
+              onClick={() =>
+                setMetricIndex((metricIndex + 1) % availableMetrics.length)
+              }
+            >
+              <RotateCcwIcon className="size-2" />
+              Show{' '}
+              {metricKeyToLabel(
+                availableMetrics[
+                  (metricIndex + 1) % availableMetrics.length
+                ][0],
+              )}
+            </button>
+          ) : (
+            <div />
+          )}
+          <button
+            type="button"
+            className="text-[11px] text-muted-foreground capitalize flex items-center gap-1"
+            onClick={onFilter}
+          >
+            Filter <FilterIcon className="size-2" />
+          </button>
+        </div>
+      )}
       <div className="font-semibold text-sm leading-snug line-clamp-2 mt-2">
         {renderTitle()}
       </div>
@@ -157,7 +172,7 @@ export function InsightCard({ insight, className }: InsightCardProps) {
               {metricLabel}
             </div>
 
-            <div className="flex items-baseline gap-2">
+            <div className="col gap-1">
               <div className="text-2xl font-semibold tracking-tight">
                 {formatValue(currentValue)}
               </div>

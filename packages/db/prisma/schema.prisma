@@ -512,13 +512,12 @@ model ProjectInsight {
   windowKind   String // "yesterday" | "rolling_7d" | "rolling_30d"
   state        InsightState @default(active)
 
-  title   String
-  summary String?
-  payload Json? // RenderedCard blocks, extra data
+  title       String
+  summary     String?
+  displayName String  @default("")
+  /// [IPrismaProjectInsightPayload]
+  payload     Json    @default("{}") // Rendered insight payload (typed)
 
-  currentValue Float?
-  compareValue Float?
-  changePct    Float?
   direction    String? // "up" | "down" | "flat"
   impactScore  Float   @default(0)
   severityBand String? // "low" | "moderate" | "severe"

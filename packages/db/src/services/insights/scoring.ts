@@ -11,8 +11,8 @@ export function severityBand(
   changePct?: number | null,
 ): 'low' | 'moderate' | 'severe' | null {
   const p = Math.abs(changePct ?? 0);
-  if (p < 0.05) return null;
-  if (p < 0.15) return 'low';
-  if (p < 0.3) return 'moderate';
+  if (p < 0.1) return null;
+  if (p < 0.5) return 'low';
+  if (p < 1) return 'moderate';
   return 'severe';
 }

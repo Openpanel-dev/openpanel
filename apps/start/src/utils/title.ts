@@ -90,6 +90,7 @@ export const PAGE_TITLES = {
   CHAT: 'AI Assistant',
   REALTIME: 'Realtime',
   REFERENCES: 'References',
+  INSIGHTS: 'Insights',
   // Profiles
   PROFILES: 'Profiles',
   PROFILE_EVENTS: 'Profile events',
