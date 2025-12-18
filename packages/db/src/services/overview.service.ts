@@ -1,4 +1,5 @@
 import { average, sum } from '@openpanel/common';
+import { chartColors } from '@openpanel/constants';
 import { getCache } from '@openpanel/redis';
 import { type IChartEventFilter, zTimeInterval } from '@openpanel/validation';
 import { omit } from 'ramda';
@@ -101,6 +102,18 @@ export const zGetTopGenericInput = z.object({
 });
 
 export type IGetTopGenericInput = z.infer<typeof zGetTopGenericInput> & {
+  timezone: string;
+};
+
+export const zGetUserJourneyInput = z.object({
+  projectId: z.string(),
+  filters: z.array(z.any()),
+  startDate: z.string(),
+  endDate: z.string(),
+  steps: z.number().min(2).max(10).default(5),
+});
+
+export type IGetUserJourneyInput = z.infer<typeof zGetUserJourneyInput> & {
   timezone: string;
 };
 
@@ -728,6 +741,345 @@ export class OverviewService {
     });
 
     return mainQuery.execute();
+  }
+
+  async getUserJourney({
+    projectId,
+    filters,
+    startDate,
+    endDate,
+    steps = 5,
+    timezone,
+  }: IGetUserJourneyInput): Promise<{
+    nodes: Array<{
+      id: string;
+      label: string;
+      nodeColor: string;
+      percentage?: number;
+      value?: number;
+      step?: number;
+    }>;
+    links: Array<{ source: string; target: string; value: number }>;
+  }> {
+    // Config
+    const TOP_ENTRIES = 3; // Only show top 3 entry pages
+    const TOP_DESTINATIONS_PER_NODE = 3; // Top 3 destinations from each node
+
+    // Color palette - each entry page gets a consistent color
+    const COLORS = chartColors.map((color) => color.main);
+
+    // Step 1: Get session paths (deduped consecutive pages)
+    const orderedEventsQuery = clix(this.client, timezone)
+      .select<{
+        session_id: string;
+        path: string;
+        created_at: string;
+      }>(['session_id', 'concat(origin, path) as path', 'created_at'])
+      .from(TABLE_NAMES.events)
+      .where('project_id', '=', projectId)
+      .where('name', '=', 'screen_view')
+      .where('path', '!=', '')
+      .where('path', 'IS NOT NULL')
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .rawWhere(this.getRawWhereClause('events', filters))
+      .orderBy('session_id', 'ASC')
+      .orderBy('created_at', 'ASC');
+
+    // Intermediate CTE to compute deduped paths
+    const pathsDedupedCTE = clix(this.client, timezone)
+      .with('ordered_events', orderedEventsQuery)
+      .select<{
+        session_id: string;
+        paths_deduped: string[];
+      }>([
+        'session_id',
+        `arraySlice(
+          arrayFilter(
+            (x, i) -> i = 1 OR x != paths_raw[i - 1],
+            groupArray(path) as paths_raw,
+            arrayEnumerate(paths_raw)
+          ),
+          1, ${steps}
+        ) as paths_deduped`,
+      ])
+      .from('ordered_events')
+      .groupBy(['session_id']);
+
+    const sessionPathsQuery = clix(this.client, timezone)
+      .with('paths_deduped_cte', pathsDedupedCTE)
+      .select<{
+        session_id: string;
+        entry_page: string;
+        paths: string[];
+      }>([
+        'session_id',
+        // Truncate at first repeat
+        `if(
+          arrayFirstIndex(x -> x > 1, arrayEnumerateUniq(paths_deduped)) = 0,
+          paths_deduped,
+          arraySlice(
+            paths_deduped,
+            1,
+            arrayFirstIndex(x -> x > 1, arrayEnumerateUniq(paths_deduped)) - 1
+          )
+        ) as paths`,
+        // Entry page is first element
+        'paths[1] as entry_page',
+      ])
+      .from('paths_deduped_cte')
+      .having('length(paths)', '>=', 2);
+
+    // Step 2: Find top 3 entry pages
+    const topEntriesQuery = clix(this.client, timezone)
+      .with('session_paths', sessionPathsQuery)
+      .select<{ entry_page: string; count: number }>([
+        'entry_page',
+        'count() as count',
+      ])
+      .from('session_paths')
+      .groupBy(['entry_page'])
+      .orderBy('count', 'DESC')
+      .limit(TOP_ENTRIES);
+
+    const topEntries = await topEntriesQuery.execute();
+
+    if (topEntries.length === 0) {
+      return { nodes: [], links: [] };
+    }
+
+    const topEntryPages = topEntries.map((e) => e.entry_page);
+    const totalSessions = topEntries.reduce((sum, e) => sum + e.count, 0);
+
+    // Step 3: Get all transitions, but ONLY for sessions starting with top entries
+    const transitionsQuery = clix(this.client, timezone)
+      .with('paths_deduped_cte', pathsDedupedCTE)
+      .with(
+        'session_paths',
+        clix(this.client, timezone)
+          .select([
+            'session_id',
+            // Truncate at first repeat
+            `if(
+              arrayFirstIndex(x -> x > 1, arrayEnumerateUniq(paths_deduped)) = 0,
+              paths_deduped,
+              arraySlice(
+                paths_deduped,
+                1,
+                arrayFirstIndex(x -> x > 1, arrayEnumerateUniq(paths_deduped)) - 1
+              )
+            ) as paths`,
+          ])
+          .from('paths_deduped_cte')
+          .having('length(paths)', '>=', 2)
+          // ONLY sessions starting with top entry pages
+          .having('paths[1]', 'IN', topEntryPages),
+      )
+      .select<{
+        source: string;
+        target: string;
+        step: number;
+        value: number;
+      }>([
+        'pair.1 as source',
+        'pair.2 as target',
+        'pair.3 as step',
+        'count() as value',
+      ])
+      .from(
+        clix.exp(
+          '(SELECT arrayJoin(arrayMap(i -> (paths[i], paths[i + 1], i), range(1, length(paths)))) as pair FROM session_paths WHERE length(paths) >= 2)',
+        ),
+      )
+      .groupBy(['source', 'target', 'step'])
+      .orderBy('step', 'ASC')
+      .orderBy('value', 'DESC');
+
+    const transitions = await transitionsQuery.execute();
+
+    if (transitions.length === 0) {
+      return { nodes: [], links: [] };
+    }
+
+    // Step 4: Build the sankey progressively step by step
+    // Start with entry nodes, then follow top destinations at each step
+    // Use unique node IDs by combining path with step to prevent circular references
+    const nodes = new Map<
+      string,
+      { path: string; value: number; step: number; color: string }
+    >();
+    const links: Array<{ source: string; target: string; value: number }> = [];
+
+    // Helper to create unique node ID
+    const getNodeId = (path: string, step: number) => `${path}::step${step}`;
+
+    // Group transitions by step
+    const transitionsByStep = new Map<number, typeof transitions>();
+    for (const t of transitions) {
+      if (!transitionsByStep.has(t.step)) {
+        transitionsByStep.set(t.step, []);
+      }
+      transitionsByStep.get(t.step)!.push(t);
+    }
+
+    // Initialize with entry pages (step 1)
+    const activeNodes = new Map<string, string>(); // path -> nodeId
+    topEntries.forEach((entry, idx) => {
+      const nodeId = getNodeId(entry.entry_page, 1);
+      nodes.set(nodeId, {
+        path: entry.entry_page,
+        value: entry.count,
+        step: 1,
+        color: COLORS[idx % COLORS.length]!,
+      });
+      activeNodes.set(entry.entry_page, nodeId);
+    });
+
+    // Process each step: from active nodes, find top destinations
+    for (let step = 1; step < steps; step++) {
+      const stepTransitions = transitionsByStep.get(step) || [];
+      const nextActiveNodes = new Map<string, string>();
+
+      // For each currently active node, find its top destinations
+      for (const [sourcePath, sourceNodeId] of activeNodes) {
+        // Get transitions FROM this source path
+        const fromSource = stepTransitions
+          .filter((t) => t.source === sourcePath)
+          .sort((a, b) => b.value - a.value)
+          .slice(0, TOP_DESTINATIONS_PER_NODE);
+
+        for (const t of fromSource) {
+          // Skip self-loops
+          if (t.source === t.target) continue;
+
+          const targetNodeId = getNodeId(t.target, step + 1);
+
+          // Add link using unique node IDs
+          links.push({
+            source: sourceNodeId,
+            target: targetNodeId,
+            value: t.value,
+          });
+
+          // Add/update target node
+          const existing = nodes.get(targetNodeId);
+          if (existing) {
+            existing.value += t.value;
+          } else {
+            // Inherit color from source or assign new
+            const sourceData = nodes.get(sourceNodeId);
+            nodes.set(targetNodeId, {
+              path: t.target,
+              value: t.value,
+              step: step + 1,
+              color: sourceData?.color || COLORS[nodes.size % COLORS.length]!,
+            });
+          }
+
+          nextActiveNodes.set(t.target, targetNodeId);
+        }
+      }
+
+      // Update active nodes for next iteration
+      activeNodes.clear();
+      for (const [path, nodeId] of nextActiveNodes) {
+        activeNodes.set(path, nodeId);
+      }
+
+      // Stop if no more nodes to process
+      if (activeNodes.size === 0) break;
+    }
+
+    // Step 5: Filter links by threshold (0.25% of total sessions)
+    const MIN_LINK_PERCENT = 0.25;
+    const minLinkValue = Math.ceil((totalSessions * MIN_LINK_PERCENT) / 100);
+    const filteredLinks = links.filter((link) => link.value >= minLinkValue);
+
+    // Step 6: Find all nodes referenced by remaining links
+    const referencedNodeIds = new Set<string>();
+    filteredLinks.forEach((link) => {
+      referencedNodeIds.add(link.source);
+      referencedNodeIds.add(link.target);
+    });
+
+    // Step 7: Recompute node values from filtered links (sum of incoming links)
+    const nodeValuesFromLinks = new Map<string, number>();
+    filteredLinks.forEach((link) => {
+      // Add to target node value
+      const current = nodeValuesFromLinks.get(link.target) || 0;
+      nodeValuesFromLinks.set(link.target, current + link.value);
+    });
+
+    // For entry nodes (step 1), only keep them if they have outgoing links after filtering
+    nodes.forEach((nodeData, nodeId) => {
+      if (nodeData.step === 1) {
+        const hasOutgoing = filteredLinks.some((l) => l.source === nodeId);
+        if (!hasOutgoing) {
+          // No outgoing links, remove entry node
+          referencedNodeIds.delete(nodeId);
+        }
+      }
+    });
+
+    // Step 8: Build final nodes array sorted by step then value
+    // Only include nodes that are referenced by filtered links
+    const finalNodes = Array.from(nodes.entries())
+      .filter(([id]) => referencedNodeIds.has(id))
+      .map(([id, data]) => {
+        // Use value from links for non-entry nodes, or original value for entry nodes with outgoing links
+        const value =
+          data.step === 1
+            ? data.value
+            : nodeValuesFromLinks.get(id) || data.value;
+        return {
+          id,
+          label: data.path, // Add label for display
+          nodeColor: data.color,
+          percentage: (value / totalSessions) * 100,
+          value,
+          step: data.step,
+        };
+      })
+      .sort((a, b) => {
+        // Sort by step first, then by value descending
+        if (a.step !== b.step) return a.step - b.step;
+        return b.value - a.value;
+      });
+
+    // Sanity check: Ensure all link endpoints exist in nodes
+    const nodeIds = new Set(finalNodes.map((n) => n.id));
+    const invalidLinks = filteredLinks.filter(
+      (link) => !nodeIds.has(link.source) || !nodeIds.has(link.target),
+    );
+    if (invalidLinks.length > 0) {
+      console.warn(
+        `UserJourney: Found ${invalidLinks.length} links with missing nodes`,
+      );
+      // Remove invalid links
+      const validLinks = filteredLinks.filter(
+        (link) => nodeIds.has(link.source) && nodeIds.has(link.target),
+      );
+      return {
+        nodes: finalNodes,
+        links: validLinks,
+      };
+    }
+
+    // Sanity check: Ensure steps are monotonic (should always be true, but verify)
+    const stepsValid = finalNodes.every((node, idx, arr) => {
+      if (idx === 0) return true;
+      return node.step! >= arr[idx - 1]!.step!;
+    });
+    if (!stepsValid) {
+      console.warn('UserJourney: Steps are not monotonic');
+    }
+
+    return {
+      nodes: finalNodes,
+      links: filteredLinks,
+    };
   }
 }
 

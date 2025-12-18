@@ -25,6 +25,7 @@
     "@faker-js/faker": "^9.6.0",
     "@hookform/resolvers": "^3.3.4",
     "@hyperdx/node-opentelemetry": "^0.8.1",
+    "@nivo/sankey": "^0.99.0",
     "@number-flow/react": "0.3.5",
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",

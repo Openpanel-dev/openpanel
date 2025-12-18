@@ -13,6 +13,7 @@ import OverviewTopEvents from '@/components/overview/overview-top-events';
 import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
+import OverviewUserJourney from '@/components/overview/overview-user-journey';
 import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
 import { createFileRoute } from '@tanstack/react-router';
 
@@ -57,6 +58,7 @@ function ProjectDashboard() {
         <OverviewTopDevices projectId={projectId} />
         <OverviewTopEvents projectId={projectId} />
         <OverviewTopGeo projectId={projectId} />
+        <OverviewUserJourney projectId={projectId} />
       </div>
     </div>
   );

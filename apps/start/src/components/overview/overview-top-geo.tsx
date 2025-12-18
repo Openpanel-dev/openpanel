@@ -130,7 +130,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             />
           )}
         </WidgetBody>
-        <WidgetFooter>
+        <WidgetFooter className="row items-center justify-between">
           <OverviewDetailsButton
             onClick={() =>
               pushModal('OverviewTopGenericModal', {
@@ -140,6 +140,17 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
             }
           />
           {/* <OverviewChartToggle {...{ chartType, setChartType }} /> */}
+          <span className="text-sm text-muted-foreground pr-2">
+            Geo data provided by{' '}
+            <a
+              href="https://ipdata.co"
+              target="_blank"
+              rel="noopener noreferrer nofollow"
+              className="hover:underline"
+            >
+              MaxMind
+            </a>
+          </span>
         </WidgetFooter>
       </Widget>
       <Widget className="col-span-6 md:col-span-3">

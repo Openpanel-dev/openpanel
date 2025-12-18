@@ -5,9 +5,15 @@ import { Tooltip as RechartsTooltip, type TooltipProps } from 'recharts';
 
 export const ChartTooltipContainer = ({
   children,
-}: { children: React.ReactNode }) => {
+  className,
+}: { children: React.ReactNode; className?: string }) => {
   return (
-    <div className="min-w-[180px] col gap-2 rounded-xl border bg-background/80 p-3  shadow-xl backdrop-blur-sm">
+    <div
+      className={cn(
+        'min-w-[180px] col gap-2 rounded-xl border bg-background/80 p-3  shadow-xl backdrop-blur-sm',
+        className,
+      )}
+    >
       {children}
     </div>
   );
