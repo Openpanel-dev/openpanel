@@ -1,5 +1,4 @@
 import * as controller from '@/controllers/misc.controller';
-import { insightsQueue } from '@openpanel/queue';
 import type { FastifyPluginCallback } from 'fastify';
 
 const miscRouter: FastifyPluginCallback = async (fastify) => {

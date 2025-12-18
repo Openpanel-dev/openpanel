@@ -247,13 +247,76 @@ export const insightStore: InsightStore = {
       return { suppressed: 0, unsuppressed: 0 };
     }
 
+    let suppressed = 0;
+    let unsuppressed = 0;
+
+    // For "yesterday" insights, suppress any that are stale (windowEnd is not actually yesterday)
+    // This prevents showing confusing insights like "Yesterday traffic dropped" when it's from 2+ days ago
+    if (windowKind === 'yesterday') {
+      const yesterday = new Date(now);
+      yesterday.setUTCHours(0, 0, 0, 0);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      const yesterdayTime = yesterday.getTime();
+
+      for (const insight of insights) {
+        // If windowEnd is null, consider it stale
+        const isStale = insight.windowEnd
+          ? new Date(insight.windowEnd).setUTCHours(0, 0, 0, 0) !==
+            yesterdayTime
+          : true;
+
+        if (isStale && insight.state === 'active') {
+          await db.projectInsight.update({
+            where: { id: insight.id },
+            data: { state: 'suppressed', lastUpdatedAt: now },
+          });
+          suppressed++;
+        }
+      }
+
+      // Filter to only non-stale insights for top-N logic
+      const freshInsights = insights.filter((insight) => {
+        if (!insight.windowEnd) return false;
+        const windowEndTime = new Date(insight.windowEnd).setUTCHours(
+          0,
+          0,
+          0,
+          0,
+        );
+        return windowEndTime === yesterdayTime;
+      });
+
+      const topN = freshInsights.slice(0, keepTopN);
+      const belowN = freshInsights.slice(keepTopN);
+
+      for (const insight of belowN) {
+        if (insight.state === 'active') {
+          await db.projectInsight.update({
+            where: { id: insight.id },
+            data: { state: 'suppressed', lastUpdatedAt: now },
+          });
+          suppressed++;
+        }
+      }
+
+      for (const insight of topN) {
+        if (insight.state === 'suppressed') {
+          await db.projectInsight.update({
+            where: { id: insight.id },
+            data: { state: 'active', lastUpdatedAt: now },
+          });
+          unsuppressed++;
+        }
+      }
+
+      return { suppressed, unsuppressed };
+    }
+
+    // For non-yesterday windows, apply standard top-N suppression
     const topN = insights.slice(0, keepTopN);
     const belowN = insights.slice(keepTopN);
 
     // Suppress those below top N
-    let suppressed = 0;
-    let unsuppressed = 0;
-
     for (const insight of belowN) {
       if (insight.state === 'active') {
         await db.projectInsight.update({

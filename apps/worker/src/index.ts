@@ -14,13 +14,10 @@ import {
 import express from 'express';
 import client from 'prom-client';
 
-import { getRedisQueue } from '@openpanel/redis';
-import { Worker } from 'bullmq';
 import { BullBoardGroupMQAdapter } from 'groupmq';
 import sourceMapSupport from 'source-map-support';
 import { bootCron } from './boot-cron';
 import { bootWorkers } from './boot-workers';
-import { insightsProjectJob } from './jobs/insights';
 import { register } from './metrics';
 import { logger } from './utils/logger';
 
