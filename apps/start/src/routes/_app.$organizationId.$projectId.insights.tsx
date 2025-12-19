@@ -413,7 +413,7 @@ function Component() {
                     ))}
                   </CarouselContent>
                   <CarouselPrevious className="opacity-0 [&:disabled]:opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto left-3" />
-                  <CarouselNext className="opacity-0 &:disabled:opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto right-3" />
+                  <CarouselNext className="opacity-0  [&:disabled]:opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto right-3" />
                 </Carousel>
               </div>
             </div>
