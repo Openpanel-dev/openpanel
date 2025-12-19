@@ -1,0 +1,256 @@
+---
+title: Nuxt
+---
+
+import Link from 'next/link';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+import { DeviceIdWarning } from '@/components/device-id-warning';
+import { PersonalDataWarning } from '@/components/personal-data-warning';
+import { Callout } from 'fumadocs-ui/components/callout';
+import CommonSdkConfig from '@/components/common-sdk-config.mdx';
+import WebSdkConfig from '@/components/web-sdk-config.mdx';
+
+<Callout>
+Looking for a step-by-step tutorial? Check out the [Nuxt analytics guide](/guides/nuxt-analytics).
+</Callout>
+
+## Good to know
+
+Keep in mind that all tracking here happens on the client!
+
+Read more about server side tracking in the [Server Side Tracking](#track-server-events) section.
+
+## Installation
+
+<Steps>
+### Install dependencies
+
+```bash
+pnpm install @openpanel/nuxt
+```
+
+### Initialize
+
+Add the module to your `nuxt.config.ts`:
+
+```typescript
+export default defineNuxtConfig({
+  modules: ['@openpanel/nuxt'],
+  openpanel: {
+    clientId: 'your-client-id',
+    trackScreenViews: true,
+    trackOutgoingLinks: true,
+    trackAttributes: true,
+  },
+});
+```
+
+#### Options
+
+<CommonSdkConfig />
+<WebSdkConfig />
+
+##### Nuxt options
+
+- `clientId` - Your OpenPanel client ID (required)
+- `apiUrl` - The API URL to send events to (default: `https://api.openpanel.dev`)
+- `trackScreenViews` - Automatically track screen views (default: `true`)
+- `trackOutgoingLinks` - Automatically track outgoing links (default: `true`)
+- `trackAttributes` - Automatically track elements with `data-track` attributes (default: `true`)
+- `trackHashChanges` - Track hash changes in URL (default: `false`)
+- `disabled` - Disable tracking (default: `false`)
+- `proxy` - Enable server-side proxy to avoid adblockers (default: `false`)
+
+</Steps>
+
+## Usage
+
+### Using the composable
+
+The `useOpenPanel` composable is auto-imported, so you can use it directly in any component:
+
+```vue
+<script setup>
+const op = useOpenPanel(); // Auto-imported!
+
+function handleClick() {
+  op.track('button_click', { button: 'signup' });
+}
+</script>
+
+<template>
+  <button @click="handleClick">Trigger event</button>
+</template>
+```
+
+### Accessing via useNuxtApp
+
+You can also access the OpenPanel instance directly via `useNuxtApp()`:
+
+```vue
+<script setup>
+const { $openpanel } = useNuxtApp();
+
+$openpanel.track('my_event', { foo: 'bar' });
+</script>
+```
+
+### Tracking Events
+
+You can track events with two different methods: by calling the `op.track()` method directly or by adding `data-track` attributes to your HTML elements.
+
+```vue
+<script setup>
+const op = useOpenPanel();
+op.track('my_event', { foo: 'bar' });
+</script>
+```
+
+### Identifying Users
+
+To identify a user, call the `op.identify()` method with a unique identifier.
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.identify({
+  profileId: '123', // Required
+  firstName: 'Joe',
+  lastName: 'Doe',
+  email: 'joe@doe.com',
+  properties: {
+    tier: 'premium',
+  },
+});
+</script>
+```
+
+### Setting Global Properties
+
+To set properties that will be sent with every event:
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.setGlobalProperties({
+  app_version: '1.0.2',
+  environment: 'production',
+});
+</script>
+```
+
+### Incrementing Properties
+
+To increment a numeric property on a user profile.
+
+- `value` is the amount to increment the property by. If not provided, the property will be incremented by 1.
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.increment({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### Decrementing Properties
+
+To decrement a numeric property on a user profile.
+
+- `value` is the amount to decrement the property by. If not provided, the property will be decremented by 1.
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.decrement({
+  profileId: '1',
+  property: 'visits',
+  value: 1, // optional
+});
+</script>
+```
+
+### Clearing User Data
+
+To clear the current user's data:
+
+```vue
+<script setup>
+const op = useOpenPanel();
+
+op.clear();
+</script>
+```
+
+## Server side
+
+If you want to track server-side events, you should create an instance of our Javascript SDK. Import `OpenPanel` from `@openpanel/sdk`
+
+<Callout>
+When using server events it's important that you use a secret to authenticate the request. This is to prevent unauthorized requests since we cannot use cors headers.
+
+You can use the same clientId but you should pass the associated client secret to the SDK.
+
+</Callout>
+
+```typescript
+import { OpenPanel } from '@openpanel/sdk';
+
+const opServer = new OpenPanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+
+opServer.track('my_server_event', { ok: '✅' });
+
+// Pass `profileId` to track events for a specific user
+opServer.track('my_server_event', { profileId: '123', ok: '✅' });
+```
+
+### Serverless & Edge Functions
+
+If you log events in a serverless environment, make sure to await the event call to ensure it completes before the function terminates.
+
+```typescript
+import { OpenPanel } from '@openpanel/sdk';
+
+const opServer = new OpenPanel({
+  clientId: '{YOUR_CLIENT_ID}',
+  clientSecret: '{YOUR_CLIENT_SECRET}',
+});
+
+export default defineEventHandler(async (event) => {
+  // Await to ensure event is logged before function completes
+  await opServer.track('my_server_event', { foo: 'bar' });
+  return { message: 'Event logged!' };
+});
+```
+
+### Proxy events
+
+With the `proxy` option enabled, you can proxy your events through your server, which ensures all events are tracked since many adblockers block requests to third-party domains.
+
+```typescript title="nuxt.config.ts"
+export default defineNuxtConfig({
+  modules: ['@openpanel/nuxt'],
+  openpanel: {
+    clientId: 'your-client-id',
+    proxy: true, // Enables proxy at /api/openpanel/*
+  },
+});
+```
+
+When `proxy: true` is set:
+- The module automatically sets `apiUrl` to `/api/openpanel`
+- A server handler is registered at `/api/openpanel/**`
+- All tracking requests route through your server
+
+This helps bypass adblockers that might block requests to `api.openpanel.dev`.

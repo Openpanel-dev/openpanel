@@ -1,0 +1,17 @@
+{
+  "extends": "@openpanel/tsconfig/sdk.json",
+  "compilerOptions": {
+    "incremental": false,
+    "outDir": "dist",
+    "paths": {
+      "#app": [
+        "./node_modules/nuxt/dist/app/index"
+      ]
+    },
+    "types": [
+      "@types/node",
+      "@nuxt/types"
+    ]
+  },
+  "exclude": ["dist"]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "@openpanel/nuxt",
+  "version": "0.0.2-local",
+  "type": "module",
+  "main": "./dist/module.mjs",
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.mts",
+      "import": "./dist/module.mjs"
+    }
+  },
+  "files": ["dist"],
+  "config": {
+    "transformPackageJson": false,
+    "transformEnvs": false
+  },
+  "scripts": {
+    "build": "npx nuxt-module-build build",
+    "dev:prepare": "npx nuxt-module-build build --stub",
+    "prepack": "npx nuxt-module-build build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openpanel/web": "workspace:1.0.6-local"
+  },
+  "peerDependencies": {
+    "h3": "^1.0.0",
+    "nuxt": "^3.0.0 || ^4.0.0"
+  },
+  "devDependencies": {
+    "@nuxt/kit": "^3.0.0",
+    "@nuxt/module-builder": "^1.0.2",
+    "@nuxt/types": "^2.18.1",
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "@vue/runtime-core": "^3.5.25",
+    "typescript": "catalog:",
+    "unbuild": "^3.6.1"
+  }
+}
