@@ -3,6 +3,7 @@ import {
   OverviewFiltersButtons,
 } from '@/components/overview/filters/overview-filters-buttons';
 import { LiveCounter } from '@/components/overview/live-counter';
+import OverviewInsights from '@/components/overview/overview-insights';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import OverviewMetrics from '@/components/overview/overview-metrics';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -50,6 +51,7 @@ function ProjectDashboard() {
       </div>
       <div className="grid grid-cols-6 gap-4 p-4 pt-0">
         <OverviewMetrics projectId={projectId} />
+        <OverviewInsights projectId={projectId} />
         <OverviewTopSources projectId={projectId} />
         <OverviewTopPages projectId={projectId} />
         <OverviewTopDevices projectId={projectId} />

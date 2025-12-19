@@ -43,7 +43,7 @@ class Expression {
 }
 
 export class Query<T = any> {
-  private _select: string[] = [];
+  private _select: (string | Expression)[] = [];
   private _except: string[] = [];
   private _from?: string | Expression;
   private _where: WhereCondition[] = [];
@@ -81,17 +81,19 @@ export class Query<T = any> {
 
   // Select methods
   select<U>(
-    columns: (string | null | undefined | false)[],
+    columns: (string | Expression | null | undefined | false)[],
     type: 'merge' | 'replace' = 'replace',
   ): Query<U> {
     if (this._skipNext) return this as unknown as Query<U>;
     if (type === 'merge') {
       this._select = [
         ...this._select,
-        ...columns.filter((col): col is string => Boolean(col)),
+        ...columns.filter((col): col is string | Expression => Boolean(col)),
       ];
     } else {
-      this._select = columns.filter((col): col is string => Boolean(col));
+      this._select = columns.filter((col): col is string | Expression =>
+        Boolean(col),
+      );
     }
     return this as unknown as Query<U>;
   }
@@ -372,7 +374,14 @@ export class Query<T = any> {
     if (this._select.length > 0) {
       parts.push(
         'SELECT',
-        this._select.map((col) => this.escapeDate(col)).join(', '),
+        this._select
+          // Important: Expressions are treated as raw SQL; do not run escapeDate()
+          // on them, otherwise any embedded date strings get double-escaped
+          // (e.g. ''2025-12-16 23:59:59'') which ClickHouse rejects.
+          .map((col) =>
+            col instanceof Expression ? col.toString() : this.escapeDate(col),
+          )
+          .join(', '),
       );
     } else {
       parts.push('SELECT *');

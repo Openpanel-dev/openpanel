@@ -7,6 +7,7 @@ import {
   cronQueue,
   eventsGroupQueues,
   importQueue,
+  insightsQueue,
   miscQueue,
   notificationQueue,
   queueLogger,
@@ -21,6 +22,7 @@ import { Worker as GroupWorker } from 'groupmq';
 import { cronJob } from './jobs/cron';
 import { incomingEvent } from './jobs/events.incoming-event';
 import { importJob } from './jobs/import';
+import { insightsProjectJob } from './jobs/insights';
 import { miscJob } from './jobs/misc';
 import { notificationJob } from './jobs/notification';
 import { sessionsJob } from './jobs/sessions';
@@ -49,7 +51,15 @@ function getEnabledQueues(): QueueName[] {
     logger.info('No ENABLED_QUEUES specified, starting all queues', {
       totalEventShards: EVENTS_GROUP_QUEUES_SHARDS,
     });
-    return ['events', 'sessions', 'cron', 'notification', 'misc', 'import'];
+    return [
+      'events',
+      'sessions',
+      'cron',
+      'notification',
+      'misc',
+      'import',
+      'insights',
+    ];
   }
 
   const queues = enabledQueuesEnv
@@ -185,6 +195,17 @@ export async function bootWorkers() {
     });
     workers.push(importWorker);
     logger.info('Started worker for import', { concurrency });
+  }
+
+  // Start insights worker
+  if (enabledQueues.includes('insights')) {
+    const concurrency = getConcurrencyFor('insights', 5);
+    const insightsWorker = new Worker(insightsQueue.name, insightsProjectJob, {
+      ...workerOptions,
+      concurrency,
+    });
+    workers.push(insightsWorker);
+    logger.info('Started worker for insights', { concurrency });
   }
 
   if (workers.length === 0) {

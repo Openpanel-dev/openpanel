@@ -180,11 +180,11 @@ export function sessionConsistency() {
 
           // For write operations with session: cache WAL LSN after write
           if (isWriteOperation(operation)) {
-            logger.info('Prisma operation', {
-              operation,
-              args,
-              model,
-            });
+            // logger.info('Prisma operation', {
+            //   operation,
+            //   args,
+            //   model,
+            // });
 
             const result = await query(args);
 

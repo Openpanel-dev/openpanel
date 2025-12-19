@@ -497,3 +497,58 @@ model Import {
 
   @@map("imports")
 }
+
+enum InsightState {
+  active
+  suppressed
+  closed
+}
+
+model ProjectInsight {
+  id           String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  projectId    String
+  moduleKey    String // e.g. "referrers", "entry-pages"
+  dimensionKey String // e.g. "referrer:instagram", "page:/pricing"
+  windowKind   String // "yesterday" | "rolling_7d" | "rolling_30d"
+  state        InsightState @default(active)
+
+  title       String
+  summary     String?
+  displayName String  @default("")
+  /// [IPrismaProjectInsightPayload]
+  payload     Json    @default("{}") // Rendered insight payload (typed)
+
+  direction    String? // "up" | "down" | "flat"
+  impactScore  Float   @default(0)
+  severityBand String? // "low" | "moderate" | "severe"
+
+  version  Int    @default(1)
+  threadId String @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  windowStart DateTime?
+  windowEnd   DateTime?
+
+  firstDetectedAt DateTime @default(now())
+  lastUpdatedAt   DateTime @default(now()) @updatedAt
+  lastSeenAt      DateTime @default(now())
+
+  events InsightEvent[]
+
+  @@unique([projectId, moduleKey, dimensionKey, windowKind, state])
+  @@index([projectId, impactScore(sort: Desc)])
+  @@index([projectId, moduleKey, windowKind, state])
+  @@map("project_insights")
+}
+
+model InsightEvent {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  insightId  String         @db.Uuid
+  insight    ProjectInsight @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  eventKind  String // "created" | "updated" | "severity_up" | "direction_flip" | "closed" | etc
+  changeFrom Json?
+  changeTo   Json?
+  createdAt  DateTime       @default(now())
+
+  @@index([insightId, createdAt])
+  @@map("insight_events")
+}

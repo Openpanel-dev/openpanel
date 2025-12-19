@@ -6,6 +6,7 @@ import {
   cronQueue,
   eventsGroupQueues,
   importQueue,
+  insightsQueue,
   miscQueue,
   notificationQueue,
   sessionsQueue,
@@ -42,6 +43,7 @@ async function start() {
         new BullMQAdapter(notificationQueue),
         new BullMQAdapter(miscQueue),
         new BullMQAdapter(importQueue),
+        new BullMQAdapter(insightsQueue),
       ],
       serverAdapter: serverAdapter,
     });

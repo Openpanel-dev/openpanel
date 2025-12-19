@@ -6,6 +6,7 @@ import type { CronQueuePayload } from '@openpanel/queue';
 import { jobdeleteProjects } from './cron.delete-projects';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
+import { insightsDailyJob } from './insights';
 
 export async function cronJob(job: Job<CronQueuePayload>) {
   switch (job.data.type) {
@@ -26,6 +27,9 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'deleteProjects': {
       return await jobdeleteProjects(job);
+    }
+    case 'insightsDaily': {
+      return await insightsDailyJob(job);
     }
   }
 }
