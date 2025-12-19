@@ -17,6 +17,16 @@ const DEFAULT_WINDOWS: WindowKind[] = [
   'rolling_30d',
 ];
 
+/**
+ * Sanitize a string for PostgreSQL by removing null bytes (0x00).
+ * PostgreSQL text columns don't accept null bytes in UTF-8 encoding.
+ */
+function sanitizeForPostgres(str: string): string {
+  // Remove null bytes which cause "invalid byte sequence for encoding UTF8: 0x00"
+  // Using String.fromCharCode(0) to avoid linter warnings about control characters in regex
+  return str.split(String.fromCharCode(0)).join('');
+}
+
 export interface EngineConfig {
   keepTopNPerModuleWindow: number; // e.g. 5
   closeStaleAfterDays: number; // e.g. 7
@@ -120,9 +130,11 @@ export function createEngine(args: {
         // 1) enumerate dimensions
         let dims: string[] = [];
         try {
-          dims = mod.enumerateDimensions
+          const rawDims = mod.enumerateDimensions
             ? await mod.enumerateDimensions(ctx)
             : [];
+          // Sanitize dimension keys to remove null bytes that PostgreSQL can't handle
+          dims = rawDims.map(sanitizeForPostgres);
         } catch (e) {
           // Important: enumeration failures should not abort the whole project run.
           // Also avoid lifecycle close/suppression when we didn't actually evaluate dims.
@@ -179,6 +191,9 @@ export function createEngine(args: {
           for (const r of results) {
             if (!r?.ok) continue;
             if (!r.dimensionKey) continue;
+
+            // Sanitize dimensionKey to remove null bytes that PostgreSQL can't handle
+            r.dimensionKey = sanitizeForPostgres(r.dimensionKey);
 
             // 3) gate noise
             if (!passesThresholds(r, mod, config)) continue;
