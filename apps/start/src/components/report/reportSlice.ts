@@ -78,6 +78,7 @@ export const reportSlice = createSlice({
       return {
         ...state,
         ...action.payload,
+        limit: action.payload.limit ?? state.limit,
         startDate: null,
         endDate: null,
         dirty: false,
