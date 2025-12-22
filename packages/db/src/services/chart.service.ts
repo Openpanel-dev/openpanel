@@ -303,10 +303,12 @@ export function getChartSql({
     const breakdownMatches = breakdowns
       .map((b, index) => {
         const propertyKey = getSelectPropertyKey(b.name);
-        const outerPropertyKey = propertyKey.replace(/\be\./g, 'e.');
-        const innerPropertyKey = propertyKey.replace(/\be\./g, 'e2.');
-        // Correlate: match inner query's property with outer query's same property
-        // Reference the outer query's table using e. prefix
+        const outerPropertyKey = propertyKey.startsWith('e.')
+          ? propertyKey
+          : `e.${propertyKey}`;
+        const innerPropertyKey = propertyKey.startsWith('e.')
+          ? propertyKey.replace(/^e\./, 'e2.')
+          : `e2.${propertyKey}`;
         return `${innerPropertyKey} = ${outerPropertyKey}`;
       })
       .join(' AND ');
