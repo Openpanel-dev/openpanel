@@ -182,7 +182,7 @@ export const zChartInputBase = z.object({
   limit: z
     .number()
     .optional()
-    .default(500)
+    .default(20)
     .describe('Limit how many series should be returned'),
   offset: z
     .number()
