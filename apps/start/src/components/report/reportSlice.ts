@@ -49,7 +49,7 @@ const initialState: InitialState = {
   formula: undefined,
   unit: undefined,
   metric: 'sum',
-  limit: 500,
+  limit: 20,
   criteria: 'on_or_after',
   funnelGroup: undefined,
   funnelWindow: undefined,
