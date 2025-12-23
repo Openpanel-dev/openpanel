@@ -17,7 +17,9 @@ export function OriginFilter() {
       {
         projectId: projectId,
       },
-      {},
+      {
+        staleTime: 1000 * 60 * 60,
+      },
     ),
   );
 

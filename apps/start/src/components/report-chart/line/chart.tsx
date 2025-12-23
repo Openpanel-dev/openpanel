@@ -65,7 +65,9 @@ export function Chart({ data }: Props) {
         endDate,
         range,
       },
-      {},
+      {
+        staleTime: 1000 * 60 * 10,
+      },
     ),
   );
   const { series, setVisibleSeries } = useVisibleSeries(data);

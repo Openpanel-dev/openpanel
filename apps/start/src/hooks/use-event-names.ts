@@ -6,6 +6,7 @@ export function useEventNames(params: any) {
   const query = useQuery(
     trpc.chart.events.queryOptions(params, {
       enabled: !!params.projectId,
+      staleTime: 1000 * 60 * 10,
     }),
   );
   return query.data ?? [];
