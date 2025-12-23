@@ -41,9 +41,18 @@ export function getContext(apiUrl: string) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5,
-        gcTime: 1000 * 60 * 10,
+        // Cache data for 1 hour before considering it stale
+        staleTime: 1000 * 60 * 60,
+        // Keep unused data in cache for 2 hours
+        gcTime: 1000 * 60 * 120,
+        // Don't refetch on reconnect (reduces unnecessary queries)
         refetchOnReconnect: false,
+        // Don't refetch on window focus (reduces unnecessary queries)
+        refetchOnWindowFocus: false,
+        // Don't refetch on mount if data is fresh (reduces unnecessary queries)
+        refetchOnMount: false,
+        // Retry failed queries only once
+        retry: 1,
       },
       dehydrate: { serializeData: superjson.serialize },
       hydrate: { deserializeData: superjson.deserialize },
