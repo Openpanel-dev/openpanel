@@ -41,7 +41,7 @@ export function getContext(apiUrl: string) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 1000 * 60 * 5,
+        staleTime: Infinity,
         gcTime: 1000 * 60 * 10,
         refetchOnReconnect: false,
       },

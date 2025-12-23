@@ -17,7 +17,6 @@ export function ReportConversionChart() {
   const res = useQuery(
     trpc.chart.conversion.queryOptions(report, {
       placeholderData: keepPreviousData,
-      staleTime: 1000 * 60 * 1,
       enabled: !isLazyLoading,
     }),
   );

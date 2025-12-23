@@ -286,9 +286,7 @@ function Chart({
         endDate,
         range,
       },
-      {
-        staleTime: 1000 * 60 * 10,
-      },
+      {},
     ),
   );
 
