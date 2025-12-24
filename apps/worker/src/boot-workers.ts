@@ -256,9 +256,15 @@ export async function bootWorkers() {
     const importWorker = new Worker(importQueue.name, importJob, {
       ...workerOptions,
       concurrency,
+      lockDuration: 600000,      // 10 minutes - prevents job stalling during long ClickHouse operations
+      stalledInterval: 300000,   // 5 minutes - check for stalled jobs
     });
     workers.push(importWorker);
-    logger.info('Started worker for import', { concurrency });
+    logger.info('Started worker for import', {
+      concurrency,
+      lockDuration: 600000,
+      stalledInterval: 300000,
+    });
   }
 
   if (workers.length === 0) {
