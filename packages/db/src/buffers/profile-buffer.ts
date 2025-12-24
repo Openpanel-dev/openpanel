@@ -6,6 +6,7 @@ import shallowEqual from 'fast-deep-equal';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch, chQuery } from '../clickhouse/client';
 import type { IClickhouseProfile } from '../services/profile.service';
+import { createEvent } from '../services/event.service';
 import { BaseBuffer } from './base-buffer';
 
 export class ProfileBuffer extends BaseBuffer {
@@ -67,6 +68,20 @@ export class ProfileBuffer extends BaseBuffer {
       }
 
       const existingProfile = await this.fetchProfile(profile, logger);
+
+      // Create _firstSeen event for new profiles
+      if (!existingProfile) {
+        logger.info('New profile detected, creating _firstSeen event', {
+          profileId: profile.id,
+          projectId: profile.project_id,
+        });
+        await this.createFirstSeenEvent(profile).catch((error) => {
+          logger.error('Failed to create _firstSeen event', {
+            error,
+            profileId: profile.id,
+          });
+        });
+      }
 
       // Delete any properties that are not server related if we have a non-server profile
       if (
@@ -253,5 +268,53 @@ export class ProfileBuffer extends BaseBuffer {
 
   async getBufferSize() {
     return this.getBufferSizeWithCounter(() => this.redis.llen(this.redisKey));
+  }
+
+  /**
+   * Creates a _firstSeen event when a new profile is detected
+   * This event only fires once per user in their entire journey
+   * The underscore prefix marks it as a system-generated event
+   */
+  private async createFirstSeenEvent(profile: IClickhouseProfile) {
+    const createdAt = new Date(profile.created_at);
+
+    await createEvent({
+      name: '_firstSeen',
+      deviceId: profile.id,
+      profileId: profile.id,
+      projectId: profile.project_id,
+      sessionId: '', // No session for system events
+      properties: {
+        isExternal: profile.is_external,
+        source: 'system',
+        // Include initial profile properties
+        ...profile.properties,
+      },
+      createdAt,
+      path: profile.properties.path || '',
+      origin: profile.properties.origin || '',
+      country: profile.properties.country || '',
+      city: profile.properties.city || '',
+      region: profile.properties.region || '',
+      longitude: profile.properties.longitude
+        ? Number(profile.properties.longitude)
+        : undefined,
+      latitude: profile.properties.latitude
+        ? Number(profile.properties.latitude)
+        : undefined,
+      os: profile.properties.os || '',
+      osVersion: profile.properties.os_version || '',
+      browser: profile.properties.browser || '',
+      browserVersion: profile.properties.browser_version || '',
+      device: profile.properties.device || '',
+      brand: profile.properties.brand || '',
+      model: profile.properties.model || '',
+      referrer: profile.properties.referrer || '',
+      referrerName: profile.properties.referrer_name || '',
+      referrerType: profile.properties.referrer_type || '',
+      duration: 0,
+      sdkName: '',
+      sdkVersion: '',
+    });
   }
 }
