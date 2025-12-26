@@ -179,6 +179,8 @@ export async function createSessionsStartEndEvents(
   importId: string,
   from: string,
 ): Promise<void> {
+  console.log('[Phase 3] Starting createSessionsStartEndEvents', { importId, from });
+
   // First, let's identify session boundaries and get first/last events for each session
   const rangeWhere = [
     'import_id = {importId:String}',
@@ -188,6 +190,8 @@ export async function createSessionsStartEndEvents(
   ]
     .filter(Boolean)
     .join(' AND ');
+
+  console.log('[Phase 3] WHERE clause:', rangeWhere);
 
   // Use window functions to efficiently get first event (all fields) and last event (only changing fields)
   // session_end only needs: properties, path, origin, created_at - the rest can be inherited from session_start
@@ -207,6 +211,7 @@ export async function createSessionsStartEndEvents(
     GROUP BY session_id, device_id, project_id, profile_id
   `;
 
+  console.log('[Phase 3] Querying session boundaries...');
   const sessionEventsResult = await ch.query({
     query: sessionEventsQuery,
     query_params: { importId, from },
@@ -254,6 +259,8 @@ export async function createSessionsStartEndEvents(
     first_timestamp: string;
     last_timestamp: string;
   }>;
+
+  console.log('[Phase 3] Found sessions:', sessionData.length);
 
   // Create session_start and session_end events
   const sessionEvents: IClickhouseEvent[] = [];
@@ -381,10 +388,22 @@ export async function createSessionsStartEndEvents(
     });
   }
 
+  console.log('[Phase 3] Created session events:', {
+    total: sessionEvents.length,
+    sessionStarts: sessionEvents.filter(e => e.name === 'session_start').length,
+    sessionEnds: sessionEvents.filter(e => e.name === 'session_end').length,
+  });
+
   // Insert session events into imports table
   if (sessionEvents.length > 0) {
+    console.log('[Phase 3] Inserting session events...');
     await insertImportBatch(sessionEvents, importId);
+    console.log('[Phase 3] Session events inserted successfully');
+  } else {
+    console.log('[Phase 3] No session events to insert');
   }
+
+  console.log('[Phase 3] Completed createSessionsStartEndEvents');
 }
 
 /**
@@ -395,6 +414,8 @@ export async function moveImportsToProduction(
   importId: string,
   from: string,
 ): Promise<void> {
+  console.log('[Phase 4] Starting moveImportsToProduction', { importId, from });
+
   // Build the WHERE clause for migration
   // For session events (session_start/session_end), we don't filter by their created_at
   // because they're created with adjusted timestamps (±1 second) that might fall outside
@@ -407,15 +428,17 @@ export async function moveImportsToProduction(
       (
         name IN ('session_start', 'session_end') AND
         session_id IN (
-          SELECT DISTINCT session_id 
+          SELECT DISTINCT session_id
           FROM ${TABLE_NAMES.events_imports}
           WHERE import_id = {importId:String}
-            AND toDate(created_at) = {from:String} 
+            AND toDate(created_at) = {from:String}
             AND name NOT IN ('session_start', 'session_end')
         )
       )
     )`;
   }
+
+  console.log('[Phase 4] WHERE clause:', whereClause);
 
   const migrationQuery = `
     INSERT INTO ${TABLE_NAMES.events} (
@@ -484,6 +507,7 @@ export async function moveImportsToProduction(
     ORDER BY created_at ASC
   `;
 
+  console.log('[Phase 4] Executing migration query...');
   await ch.command({
     query: migrationQuery,
     query_params: { importId, from },
@@ -495,12 +519,15 @@ export async function moveImportsToProduction(
       http_headers_progress_interval_ms: '50000',
     },
   });
+  console.log('[Phase 4] Migration completed successfully');
 }
 
 export async function backfillSessionsToProduction(
   importId: string,
   from: string,
 ): Promise<void> {
+  console.log('[Phase 5] Starting backfillSessionsToProduction', { importId, from });
+
   // After migrating events, populate the sessions table based on the migrated sessions
   // We detect all session_ids involved in this import from the imports table,
   // then aggregate over the production events to construct session rows.
@@ -608,6 +635,7 @@ export async function backfillSessionsToProduction(
     GROUP BY e.session_id
   `;
 
+  console.log('[Phase 5] Executing sessions backfill query...');
   await ch.command({
     query: sessionsInsertQuery,
     clickhouse_settings: {
@@ -618,6 +646,7 @@ export async function backfillSessionsToProduction(
       http_headers_progress_interval_ms: '50000',
     },
   });
+  console.log('[Phase 5] Sessions backfill completed successfully');
 }
 
 /**
