@@ -96,6 +96,17 @@ export async function generateSessionIds(
   importId: string,
   from: string,
 ): Promise<void> {
+  console.log('ALTER TABLE session_id generation starting', {
+    importId,
+    from,
+    settings: {
+      mutations_sync: '2',
+      wait_end_of_query: 1,
+    },
+  });
+
+  const startTime = Date.now();
+
   const rangeWhere = [
     'import_id = {importId:String}',
     "import_status = 'pending'",
@@ -120,16 +131,42 @@ export async function generateSessionIds(
     WHERE ${rangeWhere}
   `;
 
-  await ch.command({
-    query: updateQuery,
-    query_params: { importId, from },
-    clickhouse_settings: {
-      wait_end_of_query: 1,
-      mutations_sync: '2', // Wait for mutation to complete on all replicas (critical!)
-      send_progress_in_http_headers: 1,
-      http_headers_progress_interval_ms: '50000',
-    },
-  });
+  try {
+    await ch.command({
+      query: updateQuery,
+      query_params: { importId, from },
+      clickhouse_settings: {
+        wait_end_of_query: 1,
+        mutations_sync: '2', // Wait for mutation to complete on all replicas (critical!)
+        send_progress_in_http_headers: 1,
+        http_headers_progress_interval_ms: '50000',
+      },
+    });
+
+    const elapsed = Date.now() - startTime;
+
+    console.log('ALTER TABLE session_id generation completed', {
+      importId,
+      from,
+      elapsedMs: elapsed,
+      elapsedSec: Math.round(elapsed / 1000),
+      elapsedMin: (elapsed / 60000).toFixed(2),
+      status: 'success',
+    });
+  } catch (error) {
+    const elapsed = Date.now() - startTime;
+
+    console.error('ALTER TABLE session_id generation failed', {
+      importId,
+      from,
+      elapsedMs: elapsed,
+      elapsedSec: Math.round(elapsed / 1000),
+      error: (error as Error).message,
+      status: 'failed',
+    });
+
+    throw error;
+  }
 }
 
 /**
