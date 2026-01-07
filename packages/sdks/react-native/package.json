@@ -1,6 +1,6 @@
 {
   "name": "@openpanel/react-native",
-  "version": "1.0.4-local",
+  "version": "1.0.5-local",
   "module": "index.ts",
   "config": {
     "docPath": "apps/public/content/docs/(tracking)/sdks/react-native.mdx"
@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/sdk": "workspace:1.0.3-local"
+    "@openpanel/sdk": "workspace:1.0.4-local"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
