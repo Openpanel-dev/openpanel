@@ -1491,8 +1491,8 @@ importers:
   packages/sdks/nuxt:
     dependencies:
       '@openpanel/web':
-        specifier: 1.0.6
-        version: 1.0.6
+        specifier: workspace:1.0.6-local
+        version: link:../web
       h3:
         specifier: ^1.0.0
         version: 1.15.4
@@ -5329,17 +5329,11 @@ packages:
   '@openpanel/sdk@1.0.2':
     resolution: {integrity: sha512-WvVWCBcJvJhM5MYKO5Hxjo4G/E0tnK5XK2UC+hKDHtoF+iKvtUWa5bz18pFAPQprq0u/Ev2YqirPsrMQJy5g2g==}
 
-  '@openpanel/sdk@1.0.3':
-    resolution: {integrity: sha512-VzxHN4wfMd6iP7Amq572plQKvj6bnsp+KgVK/7sbqEvzJ2N505a3Sn/wCwectBYiJ0QPRi2djeqU5tdacm6hhg==}
-
   '@openpanel/web@1.0.1':
     resolution: {integrity: sha512-cVZ7Kr9SicczJ/RDIfEtZs8+1iGDzwkabVA/j3NqSl8VSucsC8m1+LVbjmCDzCJNnK4yVn6tEcc9PJRi2rtllw==}
 
   '@openpanel/web@1.0.5':
     resolution: {integrity: sha512-n/A9fKiHWcDTH2N6N8MM214ET7aoNJjgpLux0GRW+CD0KDEwI8UosQvvz3UOGHZ3jWqMMsUNdU2B7eYk2W87mg==}
-
-  '@openpanel/web@1.0.6':
-    resolution: {integrity: sha512-82D/pP6SIpHrQn2Q9JshlU4cg8LLx+we/DdrXNBdy1qLXuty1jhA2TqIH7UAG4pJrHvG4se+hhlNUYclRDD7MQ==}
 
   '@openstatus/react@0.0.3':
     resolution: {integrity: sha512-uDiegz7e3H67pG8lTT+op+6w5keTT7XpcENrREaqlWl5j53TYyO8nheOG1PeNw2/Qgd5KaGeRJJFn1crhTUSYw==}
@@ -22336,8 +22330,6 @@ snapshots:
 
   '@openpanel/sdk@1.0.2': {}
 
-  '@openpanel/sdk@1.0.3': {}
-
   '@openpanel/web@1.0.1':
     dependencies:
       '@openpanel/sdk': 1.0.0
@@ -22345,10 +22337,6 @@ snapshots:
   '@openpanel/web@1.0.5':
     dependencies:
       '@openpanel/sdk': 1.0.2
-
-  '@openpanel/web@1.0.6':
-    dependencies:
-      '@openpanel/sdk': 1.0.3
 
   '@openstatus/react@0.0.3(react@19.2.3)':
     dependencies:
