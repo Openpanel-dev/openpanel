@@ -1,6 +1,5 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
-import { endOfDay, format, isSameDay, isSameMonth, startOfDay } from 'date-fns';
 
 import { shortId } from '@openpanel/common';
 import {
@@ -12,12 +11,12 @@ import {
 import type {
   IChartBreakdown,
   IChartEventItem,
-  IChartFormula,
   IChartLineType,
   IChartProps,
   IChartRange,
   IChartType,
   IInterval,
+  IReportOptions,
   UnionOmit,
   zCriteria,
 } from '@openpanel/validation';
@@ -28,6 +27,7 @@ type InitialState = IChartProps & {
   ready: boolean;
   startDate: string | null;
   endDate: string | null;
+  options?: IReportOptions;
 };
 
 // First approach: define the initial state using that type
@@ -53,6 +53,7 @@ const initialState: InitialState = {
   criteria: 'on_or_after',
   funnelGroup: undefined,
   funnelWindow: undefined,
+  options: undefined,
 };
 
 export const reportSlice = createSlice({
@@ -187,6 +188,16 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.chartType = action.payload;
 
+      // Initialize sankey options if switching to sankey
+      if (action.payload === 'sankey' && !state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: 5,
+          exclude: [],
+        };
+      }
+
       if (
         !isMinuteIntervalEnabledByRange(state.range) &&
         state.interval === 'minute'
@@ -271,6 +282,66 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.funnelWindow = action.payload || undefined;
     },
+    changeOptions(state, action: PayloadAction<IReportOptions | undefined>) {
+      state.dirty = true;
+      state.options = action.payload || undefined;
+    },
+    changeSankeyMode(
+      state,
+      action: PayloadAction<'between' | 'after' | 'before'>,
+    ) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: action.payload,
+          steps: 5,
+          exclude: [],
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.mode = action.payload;
+      }
+    },
+    changeSankeySteps(state, action: PayloadAction<number>) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: action.payload,
+          exclude: [],
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.steps = action.payload;
+      }
+    },
+    changeSankeyExclude(state, action: PayloadAction<string[]>) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: 5,
+          exclude: action.payload,
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.exclude = action.payload;
+      }
+    },
+    changeSankeyInclude(state, action: PayloadAction<string[] | undefined>) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: 5,
+          exclude: [],
+          include: action.payload,
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.include = action.payload;
+      }
+    },
     reorderEvents(
       state,
       action: PayloadAction<{ fromIndex: number; toIndex: number }>,
@@ -311,6 +382,11 @@ export const {
   changeUnit,
   changeFunnelGroup,
   changeFunnelWindow,
+  changeOptions,
+  changeSankeyMode,
+  changeSankeySteps,
+  changeSankeyExclude,
+  changeSankeyInclude,
   reorderEvents,
 } = reportSlice.actions;
 

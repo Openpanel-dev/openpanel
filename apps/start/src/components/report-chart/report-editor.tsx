@@ -11,7 +11,6 @@ import {
   changeStartDate,
   ready,
   reset,
-  setName,
   setReport,
 } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
@@ -20,7 +19,6 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useDispatch, useSelector } from '@/redux';
-import { bind } from 'bind-event-listener';
 import { GanttChartSquareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 

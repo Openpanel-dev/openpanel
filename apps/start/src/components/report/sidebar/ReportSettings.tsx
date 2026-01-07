@@ -1,15 +1,22 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useDispatch, useSelector } from '@/redux';
 
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { InputEnter } from '@/components/ui/input-enter';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useEventNames } from '@/hooks/use-event-names';
 import { useMemo } from 'react';
 import {
   changeCriteria,
   changeFunnelGroup,
   changeFunnelWindow,
   changePrevious,
+  changeSankeyExclude,
+  changeSankeyInclude,
+  changeSankeyMode,
+  changeSankeySteps,
   changeUnit,
 } from '../reportSlice';
 
@@ -20,13 +27,16 @@ export function ReportSettings() {
   const unit = useSelector((state) => state.report.unit);
   const funnelGroup = useSelector((state) => state.report.funnelGroup);
   const funnelWindow = useSelector((state) => state.report.funnelWindow);
+  const options = useSelector((state) => state.report.options);
 
   const dispatch = useDispatch();
+  const { projectId } = useAppParams();
+  const eventNames = useEventNames({ projectId });
 
   const fields = useMemo(() => {
     const fields = [];
 
-    if (chartType !== 'retention') {
+    if (chartType !== 'retention' && chartType !== 'sankey') {
       fields.push('previous');
     }
 
@@ -38,6 +48,13 @@ export function ReportSettings() {
     if (chartType === 'funnel' || chartType === 'conversion') {
       fields.push('funnelGroup');
       fields.push('funnelWindow');
+    }
+
+    if (chartType === 'sankey') {
+      fields.push('sankeyMode');
+      fields.push('sankeySteps');
+      fields.push('sankeyExclude');
+      fields.push('sankeyInclude');
     }
 
     return fields;
@@ -146,6 +163,89 @@ export function ReportSettings() {
                   dispatch(changeFunnelWindow(parsed));
                 }
               }}
+            />
+          </div>
+        )}
+        {fields.includes('sankeyMode') && options?.type === 'sankey' && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium">Mode</span>
+            <Combobox
+              align="end"
+              placeholder="Select mode"
+              value={options?.mode || 'after'}
+              onChange={(val) => {
+                dispatch(
+                  changeSankeyMode(val as 'between' | 'after' | 'before'),
+                );
+              }}
+              items={[
+                {
+                  label: 'After',
+                  value: 'after',
+                },
+                {
+                  label: 'Before',
+                  value: 'before',
+                },
+                {
+                  label: 'Between',
+                  value: 'between',
+                },
+              ]}
+            />
+          </div>
+        )}
+        {fields.includes('sankeySteps') && options?.type === 'sankey' && (
+          <div className="flex items-center justify-between gap-4">
+            <span className="whitespace-nowrap font-medium">Steps</span>
+            <InputEnter
+              type="number"
+              value={options?.steps ? String(options.steps) : '5'}
+              placeholder="Default: 5"
+              onChangeValue={(value) => {
+                const parsed = Number.parseInt(value, 10);
+                if (Number.isNaN(parsed) || parsed < 2 || parsed > 10) {
+                  dispatch(changeSankeySteps(5));
+                } else {
+                  dispatch(changeSankeySteps(parsed));
+                }
+              }}
+            />
+          </div>
+        )}
+        {fields.includes('sankeyExclude') && options?.type === 'sankey' && (
+          <div className="flex flex-col gap-2">
+            <span className="whitespace-nowrap font-medium">
+              Exclude Events
+            </span>
+            <ComboboxEvents
+              multiple
+              searchable
+              value={options?.exclude || []}
+              onChange={(value) => {
+                dispatch(changeSankeyExclude(value));
+              }}
+              items={eventNames.filter((item) => item.name !== '*')}
+              placeholder="Select events to exclude"
+            />
+          </div>
+        )}
+        {fields.includes('sankeyInclude') && options?.type === 'sankey' && (
+          <div className="flex flex-col gap-2">
+            <span className="whitespace-nowrap font-medium">
+              Include events
+            </span>
+            <ComboboxEvents
+              multiple
+              searchable
+              value={options?.include || []}
+              onChange={(value) => {
+                dispatch(
+                  changeSankeyInclude(value.length > 0 ? value : undefined),
+                );
+              }}
+              items={eventNames.filter((item) => item.name !== '*')}
+              placeholder="Leave empty to include all"
             />
           </div>
         )}

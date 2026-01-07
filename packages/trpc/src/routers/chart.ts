@@ -22,11 +22,10 @@ import {
   getSelectPropertyKey,
   getSettingsForProject,
   onlyReportEvents,
+  sankeyService,
 } from '@openpanel/db';
 import {
   type IChartEvent,
-  zChartEvent,
-  zChartEventFilter,
   zChartInput,
   zChartSeries,
   zCriteria,
@@ -377,6 +376,38 @@ export const chartRouter = createTRPCRouter({
       })),
       previous,
     };
+  }),
+
+  sankey: protectedProcedure.input(zChartInput).query(async ({ input }) => {
+    const { timezone } = await getSettingsForProject(input.projectId);
+    const currentPeriod = getChartStartEndDate(input, timezone);
+
+    // Extract sankey options
+    const options = input.options;
+
+    if (!options || options.type !== 'sankey') {
+      throw new Error('Sankey options are required');
+    }
+
+    // Extract start/end events from series based on mode
+    const eventSeries = onlyReportEvents(input.series);
+
+    if (!eventSeries[0]) {
+      throw new Error('Start and end events are required');
+    }
+
+    return sankeyService.getSankey({
+      projectId: input.projectId,
+      startDate: currentPeriod.startDate,
+      endDate: currentPeriod.endDate,
+      steps: options.steps,
+      mode: options.mode,
+      startEvent: eventSeries[0],
+      endEvent: eventSeries[1],
+      exclude: options.exclude || [],
+      include: options.include,
+      timezone,
+    });
   }),
 
   chart: publicProcedure

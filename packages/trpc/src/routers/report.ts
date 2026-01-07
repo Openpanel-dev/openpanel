@@ -59,6 +59,7 @@ export const reportRouter = createTRPCRouter({
           metric: report.metric === 'count' ? 'sum' : report.metric,
           funnelGroup: report.funnelGroup,
           funnelWindow: report.funnelWindow,
+          options: report.options,
         },
       });
     }),
@@ -104,6 +105,7 @@ export const reportRouter = createTRPCRouter({
           metric: report.metric === 'count' ? 'sum' : report.metric,
           funnelGroup: report.funnelGroup,
           funnelWindow: report.funnelWindow,
+          options: report.options,
         },
       });
     }),
@@ -175,6 +177,7 @@ export const reportRouter = createTRPCRouter({
           metric: report.metric,
           funnelGroup: report.funnelGroup,
           funnelWindow: report.funnelWindow,
+          options: report.options,
         },
       });
     }),

@@ -279,6 +279,7 @@ enum ChartType {
   funnel
   retention
   conversion
+  sankey
 }
 
 model Dashboard {
@@ -321,6 +322,8 @@ model Report {
   criteria     String?
   funnelGroup  String?
   funnelWindow Float?
+  /// [IReportOptions]
+  options      Json?
 
   dashboardId String
   dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)

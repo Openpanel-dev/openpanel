@@ -88,36 +88,11 @@ export const zChartBreakdown = z.object({
 
 // Support both old format (array of events without type) and new format (array of event/formula items)
 // Preprocess to normalize: if item has 'type' field, use discriminated union; otherwise, add type: 'event'
-export const zChartSeries = z.preprocess((val) => {
-  if (!val) return val;
-  let processedVal = val;
-
-  // If the input is an object with numeric keys, convert it to an array
-  if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-    const keys = Object.keys(val).sort(
-      (a, b) => Number.parseInt(a) - Number.parseInt(b),
-    );
-    processedVal = keys.map((key) => (val as any)[key]);
-  }
-
-  if (!Array.isArray(processedVal)) return processedVal;
-
-  return processedVal.map((item: any) => {
-    // If item already has type field, return as-is
-    if (item && typeof item === 'object' && 'type' in item) {
-      return item;
-    }
-    // Otherwise, add type: 'event' for backward compatibility
-    if (item && typeof item === 'object' && 'name' in item) {
-      return { ...item, type: 'event' };
-    }
-    return item;
-  });
-}, z
+export const zChartSeries = z
   .array(zChartEventItem)
   .describe(
     'Array of series (events or formulas) to be tracked and displayed in the chart',
-  ));
+  );
 
 // Keep zChartEvents as an alias for backward compatibility during migration
 export const zChartEvents = zChartSeries;
@@ -134,6 +109,35 @@ export const zMetric = z.enum(objectToZodEnums(metrics));
 export const zRange = z.enum(objectToZodEnums(timeWindows));
 
 export const zCriteria = z.enum(['on_or_after', 'on']);
+
+// Report Options - Discriminated union based on chart type
+export const zFunnelOptions = z.object({
+  type: z.literal('funnel'),
+  funnelGroup: z.string().optional(),
+  funnelWindow: z.number().optional(),
+});
+
+export const zRetentionOptions = z.object({
+  type: z.literal('retention'),
+  criteria: zCriteria.optional(),
+});
+
+export const zSankeyOptions = z.object({
+  type: z.literal('sankey'),
+  mode: z.enum(['between', 'after', 'before']),
+  steps: z.number().min(2).max(10).default(5),
+  exclude: z.array(z.string()).default([]),
+  include: z.array(z.string()).optional(),
+});
+
+export const zReportOptions = z.discriminatedUnion('type', [
+  zFunnelOptions,
+  zRetentionOptions,
+  zSankeyOptions,
+]);
+
+export type IReportOptions = z.infer<typeof zReportOptions>;
+export type ISankeyOptions = z.infer<typeof zSankeyOptions>;
 
 export const zChartInputBase = z.object({
   chartType: zChartType
@@ -200,15 +204,10 @@ export const zChartInputBase = z.object({
     .number()
     .optional()
     .describe('Time window in hours for funnel analysis'),
+  options: zReportOptions.optional(),
 });
 
-export const zChartInput = z.preprocess((val) => {
-  if (val && typeof val === 'object' && 'events' in val && !('series' in val)) {
-    // Migrate old 'events' field to 'series'
-    return { ...val, series: val.events };
-  }
-  return val;
-}, zChartInputBase);
+export const zChartInput = zChartInputBase;
 
 export const zReportInput = zChartInputBase.extend({
   name: z.string().describe('The user-defined name for the report'),

@@ -178,7 +178,7 @@ export function ComboboxEvents<
 
             <CommandEmpty>Nothing selected</CommandEmpty>
             <VirtualList
-              height={400}
+              height={300}
               data={items.filter((item) => {
                 if (search === '') return true;
                 return item.name.toLowerCase().includes(search.toLowerCase());

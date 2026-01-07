@@ -16,6 +16,7 @@ export * from './src/services/share.service';
 export * from './src/services/session.service';
 export * from './src/services/funnel.service';
 export * from './src/services/conversion.service';
+export * from './src/services/sankey.service';
 export * from './src/services/user.service';
 export * from './src/services/reference.service';
 export * from './src/services/id.service';

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Primary Meta Tags -->
+  <title>Just Fucking Use OpenPanel - Stop Overpaying for Analytics</title>
+  <meta name="title" content="Just Fucking Use OpenPanel - Stop Overpaying for Analytics">
+  <meta name="description" content="Mixpanel costs $2,300/month at scale. PostHog costs $1,982/month. Web-only tools tell you nothing about user behavior. OpenPanel gives you full product analytics for a fraction of the cost, or FREE self-hosted.">
+  <meta name="keywords" content="openpanel, analytics, mixpanel alternative, posthog alternative, product analytics, web analytics, open source analytics, self-hosted analytics">
+  <meta name="author" content="OpenPanel">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://justfuckinguseopenpanel.dev/">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://justfuckinguseopenpanel.dev/">
+  <meta property="og:title" content="Just Fucking Use OpenPanel - Stop Overpaying for Analytics">
+  <meta property="og:description" content="Mixpanel costs $2,300/month at scale. PostHog costs $1,982/month. Web-only tools tell you nothing about user behavior. OpenPanel gives you full product analytics for a fraction of the cost, or FREE self-hosted.">
+  <meta property="og:image" content="/ogimage.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="Just Fucking Use OpenPanel">
+  
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://justfuckinguseopenpanel.dev/">
+  <meta name="twitter:title" content="Just Fucking Use OpenPanel - Stop Overpaying for Analytics">
+  <meta name="twitter:description" content="Mixpanel costs $2,300/month at scale. PostHog costs $1,982/month. Web-only tools tell you nothing about user behavior. OpenPanel gives you full product analytics for a fraction of the cost, or FREE self-hosted.">
+  <meta name="twitter:image" content="/ogimage.png">
+  
+  <!-- Additional Meta Tags -->
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="color-scheme" content="dark">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0a0a0a;
+      color: #e5e5e5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 18px;
+      line-height: 1.75;
+      padding: 2rem 1.5rem;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      color: #ffffff;
+    }
+
+    h2 {
+      font-size: 1.875rem;
+      font-weight: 800;
+      line-height: 1.3;
+      margin-top: 3rem;
+      margin-bottom: 1.5rem;
+      color: #ffffff;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+      color: #ffffff;
+    }
+
+    p {
+      margin-bottom: 1.25em;
+    }
+
+    strong {
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    a {
+      color: #3b82f6;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    a:hover {
+      color: #60a5fa;
+    }
+
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.25em;
+    }
+
+    li {
+      margin-bottom: 0.5em;
+    }
+
+    blockquote {
+      border-left: 4px solid #3b82f6;
+      padding-left: 1.5rem;
+      margin: 1.5rem 0;
+      font-style: italic;
+      color: #d1d5db;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #374151;
+    }
+
+    th {
+      font-weight: 700;
+      color: #ffffff;
+      background: #131313;
+    }
+
+    tr:hover {
+      background: #131313;
+    }
+
+    .screenshot {
+      margin: 0 -4rem 4rem;
+      position: relative;
+      z-index: 10;
+    }
+
+    @media (max-width: 840px) {
+      .screenshot {
+        margin: 0;
+      }
+    }
+
+    .screenshot-inner {
+      border-radius: 8px;
+      overflow: hidden;
+      padding: 0.5rem;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+    }
+
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      padding: 0 0.25rem;
+    }
+
+    .window-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .window-dot.red {
+      background: #ef4444;
+    }
+
+    .window-dot.yellow {
+      background: #eab308;
+    }
+
+    .window-dot.green {
+      background: #22c55e;
+    }
+
+    .screenshot-image-wrapper {
+      width: 100%;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #0a0a0a;
+    }
+
+    .screenshot img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .cta {
+      background: #131313;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 2rem;
+      margin: 3rem 0;
+      text-align: center;
+      margin: 0 -4rem 4rem;
+    }
+
+    @media (max-width: 840px) {
+      .cta {
+        margin: 0;
+      }
+    }
+
+    .cta h2 {
+      margin-top: 0;
+    }
+
+    .cta a {
+      display: inline-block;
+      background: #fff;
+      color: #000;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      margin: 0.5rem;
+      transition: background 0.2s;
+    }
+
+    .cta a:hover {
+      background: #fff;
+      color: #000;
+    }
+
+    footer {
+      margin-top: 4rem;
+      padding-top: 2rem;
+      border-top: 1px solid #374151;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.875rem;
+    }
+
+    .hero {
+      text-align: left;
+      margin-top: 4rem;
+      line-height: 1.5;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: #8f8f8f;
+      margin-top: 1rem;
+    }
+
+    figcaption {
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      text-align: center;
+      color: #9ca3af;
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>Just Fucking Use OpenPanel</h1>
+      <p>Stop settling for basic metrics. Get real insights that actually help you build a better product.</p>
+    </div>
+
+    <figure class="screenshot">
+      <div class="screenshot-inner">
+        <div class="window-controls">
+          <div class="window-dot red"></div>
+          <div class="window-dot yellow"></div>
+          <div class="window-dot green"></div>
+        </div>
+        <div class="screenshot-image-wrapper">
+          <img src="screenshots/realtime-dark.webp" alt="OpenPanel Real-time Analytics" width="1400" height="800">
+        </div>
+      </div>
+      <figcaption>Real-time analytics - see events as they happen. No waiting, no delays.</figcaption>
+    </figure>
+
+    <h2>The PostHog/Mixpanel Problem (Volume Pricing Hell)</h2>
+
+    <p>Let's talk about what happens when you have a <strong>real product</strong> with <strong>real users</strong>.</p>
+
+    <p><strong>Real pricing at scale (20M+ events/month):</strong></p>
+    <ul>
+      <li><strong>Mixpanel</strong>: $2,300/month (and more with add-ons)</li>
+      <li><strong>PostHog</strong>: $1,982/month (and more with add-ons)</li>
+    </ul>
+
+    <p>"1 million free events!" they scream. Cute. Until you have an actual product with actual users doing actual things. Then suddenly you need to "talk to sales" and your wallet starts bleeding.</p>
+
+    <p>Add-ons, add-ons everywhere. Session replay? +$X. Feature flags? +$X. HIPAA compliance? +$250/month. A/B testing? That'll be extra. You're hemorrhaging money just to understand what your users are doing, you magnificent fool.</p>
+
+    <h2>The Web-Only Analytics Trap</h2>
+
+    <p>You built a great fucking product. You have real traffic. Thousands, tens of thousands of visitors. But you're flying blind.</p>
+
+    <blockquote>
+      "Congrats, 50,000 visitors from France this month. Why didn't a single one buy your baguette?"
+    </blockquote>
+
+    <p>You see the traffic. You see the bounce rate. You see the referrers. You see where they're from. You have <strong>NO FUCKING IDEA</strong> what users actually do.</p>
+
+    <p>Where do they drop off? Do they come back? What features do they use? Why didn't they convert? Who the fuck knows! You're using a glorified hit counter with a pretty dashboard that tells you everything about geography and nothing about behavior.</p>
+
+    <p>Plausible. Umami. Fathom. Simple Analytics. GoatCounter. Cabin. Pirsch. They're all the same story: simple analytics with some goals you can define. Page views, visitors, countries, basic funnels. That's it. No retention analysis. No user profiles. No event tracking. No cohorts. No revenue tracking. Just... basic web analytics.</p>
+
+    <p>And when you finally need to understand your users—when you need to see where they drop off in your signup flow, or which features drive retention, or why your conversion rate is shit—you end up paying for a <strong>SECOND tool</strong> on top. Now you're paying for two subscriptions, managing two dashboards, and your users' data is split across two platforms like a bad divorce.</p>
+
+    <h2>Counter One Dollar Stats</h2>
+
+    <p>"$1/month for page views. Adorable."</p>
+
+    <p>Look, I get it. A dollar is cheap. But you're getting exactly what you pay for: page views. That's it. No funnels. No retention. No user profiles. No event tracking. Just... page views.</p>
+
+    <p>Here's the thing: if you want to make <strong>good decisions</strong> about your product, you need to understand <strong>what your users are actually doing</strong>, not just where the fuck they're from.</p>
+
+    <p>OpenPanel gives you the full product analytics suite. Or self-host for <strong>FREE</strong> with <strong>UNLIMITED events</strong>.</p>
+
+    <p>You get:</p>
+    <ul>
+      <li>Funnels to see where users drop off</li>
+      <li>Retention analysis to see who comes back</li>
+      <li>Cohorts to segment your users</li>
+      <li>User profiles to understand individual behavior</li>
+      <li>Custom dashboards to see what matters to YOU</li>
+      <li>Revenue tracking to see what actually makes money</li>
+      <li>All the web analytics (page views, visitors, referrers) that the other tools give you</li>
+    </ul>
+
+    <p>One Dollar Stats tells you 50,000 people visited from France. OpenPanel tells you why they didn't buy your baguette. That's the difference between vanity metrics and actual insights.</p>
+
+    <h2>Why OpenPanel is the Answer</h2>
+
+    <p>You want analytics that actually help you build a better product. Not vanity metrics. Not enterprise pricing. Not two separate tools.</p>
+
+    <p>To make good decisions, you need to understand <strong>what your users are doing</strong>, not just where they're from. You need to see where they drop off. You need to know which features they use. You need to understand why they convert or why they don't.</p>
+
+    <ul>
+      <li><strong>Open Source & Self-Hostable</strong>: AGPL-3.0 - fork it, audit it, own it. Self-host for FREE with unlimited events, or use our cloud</li>
+      <li><strong>Price</strong>: Affordable pricing that scales, or FREE self-hosted (unlimited events, forever)</li>
+      <li><strong>SDK Size</strong>: 2.3KB (PostHog is 52KB+ - that's 22x bigger, you performance-obsessed maniac)</li>
+      <li><strong>Privacy</strong>: Cookie-free by default, EU-only hosting (or your own servers if you self-host)</li>
+      <li><strong>Full Suite</strong>: Web analytics + product analytics in one tool. No need for two subscriptions.</li>
+    </ul>
+
+    <figure class="screenshot">
+      <div class="screenshot-inner">
+        <div class="window-controls">
+          <div class="window-dot red"></div>
+          <div class="window-dot yellow"></div>
+          <div class="window-dot green"></div>
+        </div>
+        <div class="screenshot-image-wrapper">
+          <img src="screenshots/overview-dark.webp" alt="OpenPanel Overview Dashboard" width="1400" height="800">
+        </div>
+      </div>
+      <figcaption>OpenPanel overview showing web analytics and product analytics in one clean interface</figcaption>
+    </figure>
+
+    <h2>Open Source & Self-Hosting: The Ultimate Fuck You to Pricing Hell</h2>
+
+    <p>Tired of watching your analytics bill grow every month? Tired of "talk to sales" when you hit their arbitrary limits? Tired of paying $2,000+/month just to understand your users?</p>
+
+    <p><strong>OpenPanel is open source.</strong> AGPL-3.0 licensed. You can fork it. You can audit it. You can own it. And you can <strong>self-host it for FREE with UNLIMITED events</strong>.</p>
+
+    <p>That's right. Zero dollars. Unlimited events. All the features. Your data on your servers. No vendor lock-in. No surprise bills. No "enterprise sales" calls.</p>
+
+    <p>Mixpanel at 20M events? $2,300/month. PostHog? $1,982/month. OpenPanel self-hosted? <strong>$0/month</strong>. Forever.</p>
+
+    <p>Don't want to manage infrastructure? That's fine. Use our cloud. But if you want to escape the pricing hell entirely, self-hosting is a Docker command away. Your data, your rules, your wallet.</p>
+
+    <h2>The Comparison Table (The Brutal Truth)</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Price at 20M events</th>
+          <th>What You Get</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Mixpanel</strong></td>
+          <td>$2,300+/month</td>
+          <td>Not all feautres... since addons are extra</td>
+        </tr>
+        <tr>
+          <td><strong>PostHog</strong></td>
+          <td>$1,982+/month</td>
+          <td>Not all feautres... since addons are extra</td>
+        </tr>
+        <tr>
+          <td><strong>Plausible</strong></td>
+          <td>Various pricing</td>
+          <td>Simple analytics with basic goals. Page views and visitors. That's it.</td>
+        </tr>
+        <tr>
+          <td><strong>One Dollar Stats</strong></td>
+          <td>$1/month</td>
+          <td>Page views (but cheaper!)</td>
+        </tr>
+        <tr style="background: #131313; border: 2px solid #3b82f6;">
+          <td><strong>OpenPanel</strong></td>
+          <td><strong>~$530/mo or FREE (self-hosted)</strong></td>
+          <td><strong>Web + Product analytics. The full package. Open source. Your data.</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <figure class="screenshot">
+      <div class="screenshot-inner">
+        <div class="window-controls">
+          <div class="window-dot red"></div>
+          <div class="window-dot yellow"></div>
+          <div class="window-dot green"></div>
+        </div>
+        <div class="screenshot-image-wrapper">
+          <img src="screenshots/profile-dark.webp" alt="OpenPanel User Profiles" width="1400" height="800">
+        </div>
+      </div>
+      <figcaption>User profiles - see individual user journeys and behavior. Something web-only tools can't give you.</figcaption>
+    </figure>
+
+    <figure class="screenshot">
+      <div class="screenshot-inner">
+        <div class="window-controls">
+          <div class="window-dot red"></div>
+          <div class="window-dot yellow"></div>
+          <div class="window-dot green"></div>
+        </div>
+        <div class="screenshot-image-wrapper">
+          <img src="screenshots/report-dark.webp" alt="OpenPanel Reports and Funnels" width="1400" height="800">
+        </div>
+      </div>
+      <figcaption>Funnels, retention, and custom reports - the features you CAN'T get with web-only tools</figcaption>
+    </figure>
+
+    <h2>The Bottom Fucking Line</h2>
+
+    <p>If you want to make good decisions about your product, you need to understand what your users are actually doing. Not just where they're from. Not just how many page views you got. You need to see the full picture: funnels, retention, user behavior, conversion paths.</p>
+
+    <p>You have three choices:</p>
+
+    <ol>
+      <li>Keep using Google Analytics like a data-harvesting accomplice, adding cookie banners, annoying your users, and contributing to the dystopian surveillance economy</li>
+      <li>Pay $2,000+/month for Mixpanel or PostHog when you scale, or use simple web-only analytics that tell you nothing about user behavior—just where they're from</li>
+      <li>Use OpenPanel (affordable pricing or FREE self-hosted) and get the full analytics suite: web analytics AND product analytics in one tool, so you can actually understand what your users do</li>
+    </ol>
+
+    <p>If you picked option 1 or 2, I can't help you. You're beyond saving. Go enjoy your complicated, privacy-violating, overpriced analytics life where you know everything about where your users are from but nothing about what they actually do.</p>
+
+    <p>But if you have even one functioning brain cell, you'll realize that OpenPanel gives you everything you need—web analytics AND product analytics—for a fraction of what the enterprise tools cost. You'll finally understand what your users are doing, not just where the fuck they're from.</p>
+
+    <div class="cta">
+      <h2>Ready to understand what your users actually do?</h2>
+      <p>Stop settling for vanity metrics. Get the full analytics suite—web analytics AND product analytics—so you can make better decisions. Or self-host for free.</p>
+      <a href="https://openpanel.dev" target="_blank">Get Started with OpenPanel</a>
+      <a href="https://openpanel.dev/docs/self-hosting/self-hosting" target="_blank">Self-Host Guide</a>
+    </div>
+
+    <figure class="screenshot">
+      <div class="screenshot-inner">
+        <div class="window-controls">
+          <div class="window-dot red"></div>
+          <div class="window-dot yellow"></div>
+          <div class="window-dot green"></div>
+        </div>
+        <div class="screenshot-image-wrapper">
+          <img src="screenshots/dashboard-dark.webp" alt="OpenPanel Custom Dashboards" width="1400" height="800">
+        </div>
+      </div>
+      <figcaption>Custom dashboards - build exactly what you need to understand your product</figcaption>
+    </figure>
+
+    <footer>
+      <p><strong>Just Fucking Use OpenPanel</strong></p>
+      <p>Inspired by <a href="https://justfuckingusereact.com" target="_blank" rel="nofollow">justfuckingusereact.com</a>, <a href="https://justfuckingusehtml.com" target="_blank" rel="nofollow">justfuckingusehtml.com</a>, and <a href="https://justfuckinguseonedollarstats.com" target="_blank" rel="nofollow">justfuckinguseonedollarstats.com</a> and all other just fucking use sites.</p>
+      <p style="margin-top: 1rem;">This is affiliated with <a href="https://openpanel.dev" target="_blank" rel="nofollow">OpenPanel</a>. We still love all products mentioned in this website, and we're grateful for them and what they do 🫶</p>
+    </footer>
+  </div>
+
+  <script>
+    window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+    window.op('init', {
+      clientId: '59d97757-9449-44cf-a8c1-8f213843b4f0',
+      trackScreenViews: true,
+      trackOutgoingLinks: true,
+      trackAttributes: true,
+    });
+  </script>
+  <script src="https://openpanel.dev/op1.js" defer async></script>
+</body>
+</html>

@@ -10,7 +10,7 @@ import type {
   IChartLineType,
   IChartProps,
   IChartRange,
-  ICriteria,
+  IReportOptions,
 } from '@openpanel/validation';
 
 import type { Report as DbReport, ReportLayout } from '../prisma-client';
@@ -65,7 +65,13 @@ export function transformReportEventItem(
 
 export function transformReport(
   report: DbReport & { layout?: ReportLayout | null },
-): IChartProps & { id: string; layout?: ReportLayout | null } {
+): IChartProps & {
+  id: string;
+  layout?: ReportLayout | null;
+} {
+  // Parse options from JSON field, fallback to legacy fields for backward compatibility
+  const options = report.options as IReportOptions | null | undefined;
+
   return {
     id: report.id,
     projectId: report.projectId,
@@ -84,9 +90,13 @@ export function transformReport(
     formula: report.formula ?? undefined,
     metric: report.metric ?? 'sum',
     unit: report.unit ?? undefined,
-    criteria: (report.criteria as ICriteria) ?? undefined,
+    criteria: (report.criteria ?? 'on_or_after') as
+      | 'on_or_after'
+      | 'on'
+      | undefined,
     funnelGroup: report.funnelGroup ?? undefined,
     funnelWindow: report.funnelWindow ?? undefined,
+    options: options ?? undefined,
     layout: report.layout ?? undefined,
   };
 }

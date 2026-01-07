@@ -203,6 +203,13 @@ export class Query<T = any> {
     return this;
   }
 
+  rawHaving(condition: string): this {
+    if (condition) {
+      this._having.push({ condition, operator: 'AND' });
+    }
+    return this;
+  }
+
   andHaving(column: string, operator: Operator, value: SqlParam): this {
     const condition = this.buildCondition(column, operator, value);
     this._having.push({ condition, operator: 'AND' });
