@@ -3,12 +3,13 @@ import fs from 'node:fs';
 import { join, resolve } from 'node:path';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 import arg from 'arg';
 import type { ReleaseType } from 'semver';
 import semver, { RELEASE_TYPES } from 'semver';
+import { generateReadme } from './generate-readme';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Types
 interface PackageJson {
@@ -20,11 +21,12 @@ interface PackageJson {
   [key: string]: unknown;
   config?: {
     transformPackageJson?: boolean;
-    transformEnvs: boolean;
+    transformEnvs?: boolean;
+    docPath?: string;
   };
 }
 
-interface PackageInfo extends PackageJson {
+export interface PackageInfo extends PackageJson {
   nextVersion: string;
   localPath: string;
 }
@@ -146,7 +148,7 @@ const updatePackageJsonForRelease = (
       main: './dist/index.js',
       module: './dist/index.js',
       types: './dist/index.d.ts',
-      files: ['dist'],
+      files: ['dist', 'README.md'],
       exports: restPkgJson.exports ?? {
         '.': {
           import: './dist/index.js',
@@ -266,12 +268,21 @@ const publishPackages = (
 const restoreAndUpdateLocal = (
   packages: Record<string, PackageInfo>,
   dependents: string[],
+  generatedReadmes: string[],
 ): void => {
   const filesToRestore = dependents
     .map((dep) => join(workspacePath(packages[dep]!.localPath), 'package.json'))
     .join(' ');
 
   execSync(`git checkout ${filesToRestore}`);
+
+  // Clean up auto-generated README files
+  for (const readmePath of generatedReadmes) {
+    if (fs.existsSync(readmePath)) {
+      console.log(`🧹 Removing auto-generated README: ${readmePath}`);
+      fs.unlinkSync(readmePath);
+    }
+  }
 
   for (const dep of dependents) {
     const { nextVersion, localPath, ...restPkgJson } = packages[dep]!;
@@ -356,6 +367,8 @@ function main() {
 
   buildPackages(packages, dependents);
 
+  const generatedReadmes = generateReadme(packages, dependents);
+
   if (args['--publish']) {
     const config: PublishConfig = {
       registry: args['--npm']
@@ -365,7 +378,7 @@ function main() {
     };
 
     publishPackages(packages, dependents, config);
-    restoreAndUpdateLocal(originalPackages, dependents);
+    restoreAndUpdateLocal(originalPackages, dependents, generatedReadmes);
   }
 
   console.log('✅ All done!');

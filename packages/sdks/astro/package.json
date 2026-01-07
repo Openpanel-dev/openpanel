@@ -3,7 +3,8 @@
   "version": "1.0.6-local",
   "config": {
     "transformPackageJson": false,
-    "transformEnvs": true
+    "transformEnvs": true,
+    "docPath": "apps/public/content/docs/(tracking)/sdks/astro.mdx"
   },
   "exports": {
     ".": "./index.ts"

@@ -12,7 +12,8 @@
   "files": ["dist"],
   "config": {
     "transformPackageJson": false,
-    "transformEnvs": false
+    "transformEnvs": false,
+    "docPath": "apps/public/content/docs/(tracking)/sdks/nuxt.mdx"
   },
   "scripts": {
     "build": "npx nuxt-module-build build",

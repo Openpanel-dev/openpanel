@@ -2,6 +2,9 @@
   "name": "@openpanel/nextjs",
   "version": "1.1.2-local",
   "module": "index.ts",
+  "config": {
+    "docPath": "apps/public/content/docs/(tracking)/sdks/nextjs.mdx"
+  },
   "scripts": {
     "build": "rm -rf dist && tsup",
     "typecheck": "tsc --noEmit"

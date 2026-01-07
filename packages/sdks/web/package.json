@@ -2,6 +2,9 @@
   "name": "@openpanel/web",
   "version": "1.0.6-local",
   "module": "index.ts",
+  "config": {
+    "docPath": "apps/public/content/docs/(tracking)/sdks/web.mdx"
+  },
   "scripts": {
     "build": "rm -rf dist && tsup",
     "typecheck": "tsc --noEmit"

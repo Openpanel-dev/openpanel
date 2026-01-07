@@ -2,6 +2,9 @@
   "name": "@openpanel/express",
   "version": "1.0.4-local",
   "module": "index.ts",
+  "config": {
+    "docPath": "apps/public/content/docs/(tracking)/sdks/express.mdx"
+  },
   "scripts": {
     "build": "rm -rf dist && tsup",
     "typecheck": "tsc --noEmit"
