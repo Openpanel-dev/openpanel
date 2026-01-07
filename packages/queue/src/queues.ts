@@ -8,8 +8,8 @@ import type {
 } from '@openpanel/db';
 import { createLogger } from '@openpanel/logger';
 import { getRedisGroupQueue, getRedisQueue } from '@openpanel/redis';
-import type { TrackPayload } from '@openpanel/sdk';
 import { Queue as GroupQueue } from 'groupmq';
+import type { ITrackPayload } from '../../validation';
 
 export const EVENTS_GROUP_QUEUES_SHARDS = Number.parseInt(
   process.env.EVENTS_GROUP_QUEUES_SHARDS || '1',
@@ -32,7 +32,7 @@ export interface EventsQueuePayloadIncomingEvent {
   type: 'incomingEvent';
   payload: {
     projectId: string;
-    event: TrackPayload & {
+    event: ITrackPayload & {
       timestamp: string | number;
       isTimestampFromThePast: boolean;
     };

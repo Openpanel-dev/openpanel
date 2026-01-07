@@ -14,7 +14,6 @@
     "groupmq": "catalog:"
   },
   "devDependencies": {
-    "@openpanel/sdk": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"

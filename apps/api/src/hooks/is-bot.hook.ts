@@ -1,17 +1,15 @@
 import { isBot } from '@/bots';
 import { createBotEvent } from '@openpanel/db';
-import type { TrackHandlerPayload } from '@openpanel/sdk';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type {
+  DeprecatedPostEventPayload,
+  ITrackHandlerPayload,
+} from '@openpanel/validation';
 
-type DeprecatedEventPayload = {
-  name: string;
-  properties: Record<string, unknown>;
-  timestamp: string;
-};
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 export async function isBotHook(
   req: FastifyRequest<{
-    Body: TrackHandlerPayload | DeprecatedEventPayload;
+    Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
   }>,
   reply: FastifyReply,
 ) {

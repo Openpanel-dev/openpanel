@@ -1,62 +1,25 @@
+import type {
+  IAliasPayload as AliasPayload,
+  IDecrementPayload as DecrementPayload,
+  IIdentifyPayload as IdentifyPayload,
+  IIncrementPayload as IncrementPayload,
+  ITrackHandlerPayload as TrackHandlerPayload,
+  ITrackPayload as TrackPayload,
+} from '@openpanel/validation';
 import { Api } from './api';
 
-export type TrackHandlerPayload =
-  | {
-      type: 'track';
-      payload: TrackPayload;
-    }
-  | {
-      type: 'increment';
-      payload: IncrementPayload;
-    }
-  | {
-      type: 'decrement';
-      payload: DecrementPayload;
-    }
-  | {
-      type: 'alias';
-      payload: AliasPayload;
-    }
-  | {
-      type: 'identify';
-      payload: IdentifyPayload;
-    };
-
-export type TrackPayload = {
-  name: string;
-  properties?: Record<string, unknown>;
-  profileId?: string;
+export type {
+  AliasPayload,
+  DecrementPayload,
+  IdentifyPayload,
+  IncrementPayload,
+  TrackHandlerPayload,
+  TrackPayload,
 };
 
 export type TrackProperties = {
   [key: string]: unknown;
   profileId?: string;
-};
-
-export type IdentifyPayload = {
-  profileId: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  avatar?: string;
-  properties?: Record<string, unknown>;
-};
-
-export type AliasPayload = {
-  profileId: string;
-  alias: string;
-};
-
-export type IncrementPayload = {
-  profileId: string;
-  property: string;
-  value?: number;
-};
-
-export type DecrementPayload = {
-  profileId: string;
-  property: string;
-  value?: number;
 };
 
 export type OpenPanelOptions = {

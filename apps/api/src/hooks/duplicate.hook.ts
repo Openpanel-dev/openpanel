@@ -1,10 +1,13 @@
 import { isDuplicatedEvent } from '@/utils/deduplicate';
-import type { PostEventPayload, TrackHandlerPayload } from '@openpanel/sdk';
+import type {
+  DeprecatedPostEventPayload,
+  ITrackHandlerPayload,
+} from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 export async function duplicateHook(
   req: FastifyRequest<{
-    Body: PostEventPayload | TrackHandlerPayload;
+    Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
   }>,
   reply: FastifyReply,
 ) {

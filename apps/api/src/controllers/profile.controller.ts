@@ -5,13 +5,13 @@ import { parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, upsertProfile } from '@openpanel/db';
 import { getGeoLocation } from '@openpanel/geo';
 import type {
-  IncrementProfilePayload,
-  UpdateProfilePayload,
-} from '@openpanel/sdk';
+  DeprecatedIncrementProfilePayload,
+  DeprecatedUpdateProfilePayload,
+} from '@openpanel/validation';
 
 export async function updateProfile(
   request: FastifyRequest<{
-    Body: UpdateProfilePayload;
+    Body: DeprecatedUpdateProfilePayload;
   }>,
   reply: FastifyReply,
 ) {
@@ -52,7 +52,7 @@ export async function updateProfile(
 
 export async function incrementProfileProperty(
   request: FastifyRequest<{
-    Body: IncrementProfilePayload;
+    Body: DeprecatedIncrementProfilePayload;
   }>,
   reply: FastifyReply,
 ) {
@@ -94,7 +94,7 @@ export async function incrementProfileProperty(
 
 export async function decrementProfileProperty(
   request: FastifyRequest<{
-    Body: IncrementProfilePayload;
+    Body: DeprecatedIncrementProfilePayload;
   }>,
   reply: FastifyReply,
 ) {

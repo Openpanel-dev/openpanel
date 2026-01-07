@@ -3,15 +3,15 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getSalts } from '@openpanel/db';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
-import type { PostEventPayload } from '@openpanel/sdk';
 
 import { generateId, slug } from '@openpanel/common';
 import { getGeoLocation } from '@openpanel/geo';
+import type { DeprecatedPostEventPayload } from '@openpanel/validation';
 import { getStringHeaders, getTimestamp } from './track.controller';
 
 export async function postEvent(
   request: FastifyRequest<{
-    Body: PostEventPayload;
+    Body: DeprecatedPostEventPayload;
   }>,
   reply: FastifyReply,
 ) {

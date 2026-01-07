@@ -1,10 +1,13 @@
 import { SdkAuthError, validateSdkRequest } from '@/utils/auth';
-import type { PostEventPayload, TrackHandlerPayload } from '@openpanel/sdk';
+import type {
+  DeprecatedPostEventPayload,
+  ITrackHandlerPayload,
+} from '@openpanel/validation';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 export async function clientHook(
   req: FastifyRequest<{
-    Body: PostEventPayload | TrackHandlerPayload;
+    Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
   }>,
   reply: FastifyReply,
 ) {

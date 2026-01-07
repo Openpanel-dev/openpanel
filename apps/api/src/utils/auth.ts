@@ -4,10 +4,11 @@ import { verifyPassword } from '@openpanel/common/server';
 import type { IServiceClientWithProject } from '@openpanel/db';
 import { ClientType, getClientByIdCached } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
-import type { PostEventPayload, TrackHandlerPayload } from '@openpanel/sdk';
 import type {
+  DeprecatedPostEventPayload,
   IProjectFilterIp,
   IProjectFilterProfileId,
+  ITrackHandlerPayload,
 } from '@openpanel/validation';
 import { path } from 'ramda';
 
@@ -41,7 +42,7 @@ export class SdkAuthError extends Error {
 
 export async function validateSdkRequest(
   req: FastifyRequest<{
-    Body: PostEventPayload | TrackHandlerPayload;
+    Body: ITrackHandlerPayload | DeprecatedPostEventPayload;
   }>,
 ): Promise<IServiceClientWithProject> {
   const { headers, clientIp } = req;

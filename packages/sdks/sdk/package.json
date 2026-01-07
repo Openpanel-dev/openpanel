@@ -9,6 +9,7 @@
   "dependencies": {},
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
+    "@openpanel/validation": "workspace:*",
     "@types/node": "catalog:",
     "tsup": "^7.2.0",
     "typescript": "catalog:"

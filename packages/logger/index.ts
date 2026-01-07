@@ -8,6 +8,13 @@ export type ILogger = winston.Logger;
 const logLevel = process.env.LOG_LEVEL ?? 'info';
 const silent = process.env.LOG_SILENT === 'true';
 
+// Add colors for custom levels (fatal, warn, trace) that aren't in default color schemes
+winston.addColors({
+  fatal: 'red',
+  warn: 'yellow',
+  trace: 'gray',
+});
+
 export function createLogger({ name }: { name: string }): ILogger {
   const service = [process.env.LOG_PREFIX, name, process.env.NODE_ENV ?? 'dev']
     .filter(Boolean)

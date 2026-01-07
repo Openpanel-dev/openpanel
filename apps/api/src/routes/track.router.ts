@@ -14,22 +14,6 @@ const trackRouter: FastifyPluginCallback = async (fastify) => {
     method: 'POST',
     url: '/',
     handler: handler,
-    schema: {
-      body: {
-        type: 'object',
-        required: ['type', 'payload'],
-        properties: {
-          type: {
-            type: 'string',
-            enum: ['track', 'increment', 'decrement', 'alias', 'identify'],
-          },
-          payload: {
-            type: 'object',
-            additionalProperties: true,
-          },
-        },
-      },
-    },
   });
 
   fastify.route({
