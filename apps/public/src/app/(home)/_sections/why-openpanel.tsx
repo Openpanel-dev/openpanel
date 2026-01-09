@@ -7,10 +7,9 @@ import Image from 'next/image';
 
 const images = [
   {
-    name: 'Helpy UI',
-    url: 'https://helpy-ui.com',
-    logo: '/logos/helpy-ui.png',
-    className: 'size-12',
+    name: 'Lucide Animated',
+    url: 'https://lucide-animated.com',
+    logo: '/logos/lucide-animated.png',
   },
   {
     name: 'KiddoKitchen',
@@ -67,10 +66,7 @@ export function WhyOpenPanel() {
                   alt={image.name}
                   width={64}
                   height={64}
-                  className={cn(
-                    'size-16 object-contain dark:invert',
-                    image.className,
-                  )}
+                  className={cn('size-16 object-contain dark:invert')}
                 />
               </a>
             </div>
