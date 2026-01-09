@@ -386,6 +386,7 @@ export function ReportSeries() {
                 }}
                 placeholder="Select event"
                 items={eventNames}
+                className="flex-1"
               />
               {showFormula && (
                 <Button
@@ -401,6 +402,7 @@ export function ReportSeries() {
                       }),
                     );
                   }}
+                  className="px-4"
                 >
                   Add Formula
                 </Button>

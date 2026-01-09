@@ -1,5 +1,4 @@
 import { useTRPC } from '@/integrations/trpc/react';
-import { cn } from '@/utils/cn';
 import { useQuery } from '@tanstack/react-query';
 
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -8,18 +7,14 @@ import * as Portal from '@radix-ui/react-portal';
 import { bind } from 'bind-event-listener';
 import throttle from 'lodash.throttle';
 import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Bar,
   BarChart,
-  CartesianGrid,
-  Customized,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
-import { BarShapeBlue } from '../charts/common-bar';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 interface OverviewLiveHistogramProps {
   projectId: string;
@@ -86,10 +81,8 @@ export function OverviewLiveHistogram({
             <YAxis hide domain={[0, maxDomain]} />
             <Bar
               dataKey="sessionCount"
-              fill="rgba(59, 121, 255, 0.2)"
+              className="fill-chart-0"
               isAnimationActive={false}
-              shape={BarShapeBlue}
-              activeBar={BarShapeBlue}
             />
           </BarChart>
         </ResponsiveContainer>

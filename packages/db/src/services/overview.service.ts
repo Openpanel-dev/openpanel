@@ -11,6 +11,12 @@ import { getEventFiltersWhereClause } from './chart.service';
 // Constants
 const ROLLUP_DATE_PREFIX = '1970-01-01';
 
+// Toggle revenue tracking in overview queries
+const INCLUDE_REVENUE = true; // TODO: Make this configurable later
+
+// Maximum number of records to return (for detail modals)
+const MAX_RECORDS_LIMIT = 1000;
+
 const COLUMN_PREFIX_MAP: Record<string, string> = {
   region: 'country',
   city: 'country',
@@ -47,8 +53,6 @@ export const zGetTopPagesInput = z.object({
   filters: z.array(z.any()),
   startDate: z.string(),
   endDate: z.string(),
-  cursor: z.number().optional(),
-  limit: z.number().optional(),
 });
 
 export type IGetTopPagesInput = z.infer<typeof zGetTopPagesInput> & {
@@ -61,8 +65,6 @@ export const zGetTopEntryExitInput = z.object({
   startDate: z.string(),
   endDate: z.string(),
   mode: z.enum(['entry', 'exit']),
-  cursor: z.number().optional(),
-  limit: z.number().optional(),
 });
 
 export type IGetTopEntryExitInput = z.infer<typeof zGetTopEntryExitInput> & {
@@ -97,11 +99,17 @@ export const zGetTopGenericInput = z.object({
     'os',
     'os_version',
   ]),
-  cursor: z.number().optional(),
-  limit: z.number().optional(),
 });
 
 export type IGetTopGenericInput = z.infer<typeof zGetTopGenericInput> & {
+  timezone: string;
+};
+
+export const zGetTopGenericSeriesInput = zGetTopGenericInput.extend({
+  interval: zTimeInterval,
+});
+
+export type IGetTopGenericSeriesInput = z.infer<typeof zGetTopGenericSeriesInput> & {
   timezone: string;
 };
 
@@ -543,18 +551,27 @@ export class OverviewService {
     filters,
     startDate,
     endDate,
-    cursor = 1,
-    limit = 10,
     timezone,
   }: IGetTopPagesInput) {
-    const pageStatsQuery = clix(this.client, timezone)
-      .select([
-        'origin',
-        'path',
-        `last_value(properties['__title']) as title`,
-        'uniq(session_id) as count',
-        'round(avg(duration)/1000, 2) as avg_duration',
-      ])
+    const selectColumns: (string | null | undefined | false)[] = [
+      'origin',
+      'path',
+      'uniq(session_id) as sessions',
+      'count() as pageviews',
+    ];
+
+    if (INCLUDE_REVENUE) {
+      selectColumns.push('sum(revenue) as revenue');
+    }
+
+    const query = clix(this.client, timezone)
+      .select<{
+        origin: string;
+        path: string;
+        sessions: number;
+        pageviews: number;
+        revenue?: number;
+      }>(selectColumns)
       .from(TABLE_NAMES.events, false)
       .where('project_id', '=', projectId)
       .where('name', '=', 'screen_view')
@@ -563,57 +580,12 @@ export class OverviewService {
         clix.datetime(startDate, 'toDateTime'),
         clix.datetime(endDate, 'toDateTime'),
       ])
+      .rawWhere(this.getRawWhereClause('events', filters))
       .groupBy(['origin', 'path'])
-      .orderBy('count', 'DESC')
-      .limit(limit)
-      .offset((cursor - 1) * limit);
-
-    const bounceStatsQuery = clix(this.client, timezone)
-      .select([
-        'entry_path',
-        'entry_origin',
-        'coalesce(round(countIf(is_bounce = 1 AND sign = 1) * 100.0 / countIf(sign = 1), 2), 0) as bounce_rate',
-      ])
-      .from(TABLE_NAMES.sessions, true)
-      .where('sign', '=', 1)
-      .where('project_id', '=', projectId)
-      .where('created_at', 'BETWEEN', [
-        clix.datetime(startDate, 'toDateTime'),
-        clix.datetime(endDate, 'toDateTime'),
-      ])
-      .groupBy(['entry_path', 'entry_origin']);
-
-    pageStatsQuery.rawWhere(this.getRawWhereClause('events', filters));
-    bounceStatsQuery.rawWhere(this.getRawWhereClause('sessions', filters));
-
-    const mainQuery = clix(this.client, timezone)
-      .with('page_stats', pageStatsQuery)
-      .with('bounce_stats', bounceStatsQuery)
-      .select<{
-        title: string;
-        origin: string;
-        path: string;
-        avg_duration: number;
-        bounce_rate: number;
-        sessions: number;
-        revenue: number;
-      }>([
-        'p.title',
-        'p.origin',
-        'p.path',
-        'p.avg_duration',
-        'p.count as sessions',
-        'b.bounce_rate',
-      ])
-      .from('page_stats p', false)
-      .leftJoin(
-        'bounce_stats b',
-        'p.path = b.entry_path AND p.origin = b.entry_origin',
-      )
       .orderBy('sessions', 'DESC')
-      .limit(limit);
+      .limit(MAX_RECORDS_LIMIT);
 
-    return mainQuery.execute();
+    return query.execute();
   }
 
   async getTopEntryExit({
@@ -622,28 +594,27 @@ export class OverviewService {
     startDate,
     endDate,
     mode,
-    cursor = 1,
-    limit = 10,
     timezone,
   }: IGetTopEntryExitInput) {
-    const offset = (cursor - 1) * limit;
+    const selectColumns: (string | null | undefined | false)[] = [
+      `${mode}_origin AS origin`,
+      `${mode}_path AS path`,
+      'sum(sign) as sessions',
+      'sum(sign * screen_view_count) as pageviews',
+    ];
+
+    if (INCLUDE_REVENUE) {
+      selectColumns.push('sum(revenue * sign) as revenue');
+    }
 
     const query = clix(this.client, timezone)
       .select<{
         origin: string;
         path: string;
-        avg_duration: number;
-        bounce_rate: number;
         sessions: number;
-        revenue: number;
-      }>([
-        `${mode}_origin AS origin`,
-        `${mode}_path AS path`,
-        'round(avg(duration * sign)/1000, 2) as avg_duration',
-        'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) as bounce_rate',
-        'sum(sign) as sessions',
-        'sum(revenue * sign) as revenue',
-      ])
+        pageviews: number;
+        revenue?: number;
+      }>(selectColumns)
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
@@ -653,8 +624,7 @@ export class OverviewService {
       .groupBy([`${mode}_origin`, `${mode}_path`])
       .having('sum(sign)', '>', 0)
       .orderBy('sessions', 'DESC')
-      .limit(limit)
-      .offset(offset);
+      .limit(MAX_RECORDS_LIMIT);
 
     const mainQuery = this.withDistinctSessionsIfNeeded(query, {
       projectId,
@@ -697,29 +667,29 @@ export class OverviewService {
     startDate,
     endDate,
     column,
-    cursor = 1,
-    limit = 10,
     timezone,
   }: IGetTopGenericInput) {
     const prefixColumn = COLUMN_PREFIX_MAP[column] ?? null;
-    const offset = (cursor - 1) * limit;
+
+    const selectColumns: (string | null | undefined | false)[] = [
+      prefixColumn && `${prefixColumn} as prefix`,
+      `nullIf(${column}, '') as name`,
+      'sum(sign) as sessions',
+      'sum(sign * screen_view_count) as pageviews',
+    ];
+
+    if (INCLUDE_REVENUE) {
+      selectColumns.push('sum(revenue * sign) as revenue');
+    }
 
     const query = clix(this.client, timezone)
       .select<{
         prefix?: string;
         name: string;
         sessions: number;
-        bounce_rate: number;
-        avg_session_duration: number;
-        revenue: number;
-      }>([
-        prefixColumn && `${prefixColumn} as prefix`,
-        `nullIf(${column}, '') as name`,
-        'sum(sign) as sessions',
-        'round(sum(sign * is_bounce) * 100.0 / sum(sign), 2) AS bounce_rate',
-        'round(avgIf(duration, duration > 0 AND sign > 0), 2)/1000 AS avg_session_duration',
-        'sum(revenue * sign) as revenue',
-      ])
+        pageviews: number;
+        revenue?: number;
+      }>(selectColumns)
       .from(TABLE_NAMES.sessions, true)
       .where('project_id', '=', projectId)
       .where('created_at', 'BETWEEN', [
@@ -729,8 +699,7 @@ export class OverviewService {
       .groupBy([prefixColumn, column].filter(Boolean))
       .having('sum(sign)', '>', 0)
       .orderBy('sessions', 'DESC')
-      .limit(limit)
-      .offset(offset);
+      .limit(MAX_RECORDS_LIMIT);
 
     const mainQuery = this.withDistinctSessionsIfNeeded(query, {
       projectId,
@@ -741,6 +710,177 @@ export class OverviewService {
     });
 
     return mainQuery.execute();
+  }
+
+  async getTopGenericSeries({
+    projectId,
+    filters,
+    startDate,
+    endDate,
+    column,
+    interval,
+    timezone,
+  }: IGetTopGenericSeriesInput): Promise<{
+    items: Array<{
+      name: string;
+      prefix?: string;
+      data: Array<{
+        date: string;
+        sessions: number;
+        pageviews: number;
+        revenue?: number;
+      }>;
+      total: { sessions: number; pageviews: number; revenue?: number };
+    }>;
+  }> {
+    const prefixColumn = COLUMN_PREFIX_MAP[column] ?? null;
+    const TOP_LIMIT = 15;
+    const fillConfig = this.getFillConfig(interval, startDate, endDate);
+
+    // Step 1: Get top 15 items
+    const selectColumns: (string | null | undefined | false)[] = [
+      prefixColumn && `${prefixColumn} as prefix`,
+      `nullIf(${column}, '') as name`,
+      'sum(sign) as sessions',
+      'sum(sign * screen_view_count) as pageviews',
+    ];
+
+    if (INCLUDE_REVENUE) {
+      selectColumns.push('sum(revenue * sign) as revenue');
+    }
+
+    const topItemsQuery = clix(this.client, timezone)
+      .select<{
+        prefix?: string;
+        name: string;
+        sessions: number;
+        pageviews: number;
+        revenue?: number;
+      }>(selectColumns)
+      .from(TABLE_NAMES.sessions, true)
+      .where('project_id', '=', projectId)
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .groupBy([prefixColumn, column].filter(Boolean))
+      .having('sum(sign)', '>', 0)
+      .orderBy('sessions', 'DESC')
+      .limit(TOP_LIMIT);
+
+    const mainTopItemsQuery = this.withDistinctSessionsIfNeeded(topItemsQuery, {
+      projectId,
+      filters,
+      startDate,
+      endDate,
+      timezone,
+    });
+
+    const topItems = await mainTopItemsQuery.execute();
+
+    if (topItems.length === 0) {
+      return { items: [] };
+    }
+
+    // Step 2: Build time-series query for each top item
+    const where = this.getRawWhereClause('sessions', filters);
+    const timeSeriesSelectColumns: (string | null | undefined | false)[] = [
+      `${clix.toStartOf('created_at', interval as any, timezone)} AS date`,
+      prefixColumn && `${prefixColumn} as prefix`,
+      `nullIf(${column}, '') as name`,
+      'sum(sign) as sessions',
+      'sum(sign * screen_view_count) as pageviews',
+    ];
+
+    if (INCLUDE_REVENUE) {
+      timeSeriesSelectColumns.push('sum(revenue * sign) as revenue');
+    }
+
+    const timeSeriesQuery = clix(this.client, timezone)
+      .select<{
+        date: string;
+        prefix?: string;
+        name: string;
+        sessions: number;
+        pageviews: number;
+        revenue?: number;
+      }>(timeSeriesSelectColumns)
+      .from(TABLE_NAMES.sessions, true)
+      .where('project_id', '=', projectId)
+      .where('created_at', 'BETWEEN', [
+        clix.datetime(startDate, 'toDateTime'),
+        clix.datetime(endDate, 'toDateTime'),
+      ])
+      .rawWhere(where)
+      .groupBy(['date', prefixColumn, column].filter(Boolean))
+      .having('sum(sign)', '>', 0)
+      .orderBy('date', 'ASC')
+      .fill(fillConfig.from, fillConfig.to, fillConfig.step)
+      .transform({
+        date: (item) => new Date(item.date).toISOString(),
+      });
+
+    const mainTimeSeriesQuery = this.withDistinctSessionsIfNeeded(
+      timeSeriesQuery,
+      {
+        projectId,
+        filters,
+        startDate,
+        endDate,
+        timezone,
+      },
+    );
+
+    const timeSeriesData = await mainTimeSeriesQuery.execute();
+
+    // Step 3: Group time-series data by item and calculate totals
+    const itemsMap = new Map<
+      string,
+      {
+        name: string;
+        prefix?: string;
+        data: Array<{
+          date: string;
+          sessions: number;
+          pageviews: number;
+          revenue?: number;
+        }>;
+        total: { sessions: number; pageviews: number; revenue?: number };
+      }
+    >();
+
+    // Initialize items from topItems
+    for (const item of topItems) {
+      const key = `${item.prefix || ''}:${item.name}`;
+      itemsMap.set(key, {
+        name: item.name,
+        prefix: item.prefix,
+        data: [],
+        total: {
+          sessions: item.sessions,
+          pageviews: item.pageviews,
+          revenue: item.revenue ?? 0,
+        },
+      });
+    }
+
+    // Populate time-series data
+    for (const row of timeSeriesData) {
+      const key = `${row.prefix || ''}:${row.name}`;
+      const item = itemsMap.get(key);
+      if (item) {
+        item.data.push({
+          date: row.date,
+          sessions: row.sessions,
+          pageviews: row.pageviews,
+          revenue: row.revenue,
+        });
+      }
+    }
+
+    return {
+      items: Array.from(itemsMap.values()),
+    };
   }
 
   async getUserJourney({

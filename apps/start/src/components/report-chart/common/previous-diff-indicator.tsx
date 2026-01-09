@@ -2,6 +2,7 @@ import { useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react';
 
+import { DeltaChip } from '@/components/delta-chip';
 import { useReportChartContext } from '../context';
 
 export function getDiffIndicator<A, B, C>(
@@ -29,7 +30,7 @@ interface PreviousDiffIndicatorProps {
   children?: React.ReactNode;
   inverted?: boolean;
   className?: string;
-  size?: 'sm' | 'lg' | 'md' | 'xs';
+  size?: 'sm' | 'lg' | 'md';
 }
 
 export function PreviousDiffIndicator({
@@ -81,7 +82,6 @@ export function PreviousDiffIndicator({
             variant,
             size === 'lg' && 'size-8',
             size === 'md' && 'size-6',
-            size === 'xs' && 'size-3',
           )}
         >
           {renderIcon()}
@@ -97,7 +97,7 @@ interface PreviousDiffIndicatorPureProps {
   diff?: number | null | undefined;
   state?: string | null | undefined;
   inverted?: boolean;
-  size?: 'sm' | 'lg' | 'md' | 'xs';
+  size?: 'sm' | 'lg' | 'md';
   className?: string;
   showPrevious?: boolean;
 }
@@ -133,25 +133,35 @@ export function PreviousDiffIndicatorPure({
   };
 
   return (
-    <div
-      className={cn(
-        'flex items-center gap-1 font-mono font-medium',
-        size === 'lg' && 'gap-2',
-        className,
-      )}
+    <DeltaChip
+      variant={state === 'positive' ? 'inc' : 'dec'}
+      size={size}
+      inverted={inverted}
     >
-      <div
-        className={cn(
-          'flex size-2.5 items-center justify-center rounded-full',
-          variant,
-          size === 'lg' && 'size-8',
-          size === 'md' && 'size-6',
-          size === 'xs' && 'size-3',
-        )}
-      >
-        {renderIcon()}
-      </div>
       {diff.toFixed(1)}%
-    </div>
+    </DeltaChip>
   );
+
+  // return (
+  //   <div
+  //     className={cn(
+  //       'flex items-center gap-1 font-mono font-medium',
+  //       size === 'lg' && 'gap-2',
+  //       className,
+  //     )}
+  //   >
+  //     <div
+  //       className={cn(
+  //         'flex size-2.5 items-center justify-center rounded-full',
+  //         variant,
+  //         size === 'lg' && 'size-8',
+  //         size === 'md' && 'size-6',
+  //         size === 'xs' && 'size-3',
+  //       )}
+  //     >
+  //       {renderIcon()}
+  //     </div>
+  //     {diff.toFixed(1)}%
+  //   </div>
+  // );
 }

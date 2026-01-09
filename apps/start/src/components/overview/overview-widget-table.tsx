@@ -61,7 +61,7 @@ export const OverviewWidgetTable = <T,>({
       <WidgetTable
         data={data ?? []}
         keyExtractor={keyExtractor}
-        className={'text-sm min-h-[358px] @container [&_.head]:pt-3'}
+        className={'text-sm min-h-[358px] @container'}
         columnClassName="[&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4"
         eachRow={(item) => {
           return (
@@ -110,15 +110,6 @@ export function OverviewWidgetTableLoading({
           width: 'w-full',
         },
         {
-          name: 'BR',
-          render: () => <Skeleton className="h-4 w-[30px]" />,
-          width: '60px',
-        },
-        // {
-        //   name: 'Duration',
-        //   render: () => <Skeleton className="h-4 w-[30px]" />,
-        // },
-        {
           name: 'Sessions',
           render: () => <Skeleton className="h-4 w-[30px]" />,
           width: '84px',
@@ -142,27 +133,24 @@ function getPath(path: string, showDomain = false) {
 
 export function OverviewWidgetTablePages({
   data,
-  lastColumnName,
   className,
   showDomain = false,
 }: {
   className?: string;
-  lastColumnName: string;
   data: {
     origin: string;
     path: string;
-    avg_duration: number;
-    bounce_rate: number;
     sessions: number;
-    revenue: number;
+    pageviews: number;
+    revenue?: number;
   }[];
   showDomain?: boolean;
 }) {
   const [_filters, setFilter] = useEventQueryFilters();
   const number = useNumber();
   const maxSessions = Math.max(...data.map((item) => item.sessions));
-  const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
-  const hasRevenue = data.some((item) => item.revenue > 0);
+  const totalRevenue = data.reduce((sum, item) => sum + (item.revenue ?? 0), 0);
+  const hasRevenue = data.some((item) => (item.revenue ?? 0) > 0);
   return (
     <OverviewWidgetTable
       className={className}
@@ -214,20 +202,135 @@ export function OverviewWidgetTablePages({
             );
           },
         },
+        ...(hasRevenue
+          ? [
+              {
+                name: 'Revenue',
+                width: '100px',
+                responsive: { priority: 3 }, // Always show if possible
+                render(item: (typeof data)[number]) {
+                  const revenue = item.revenue ?? 0;
+                  const revenuePercentage =
+                    totalRevenue > 0 ? revenue / totalRevenue : 0;
+                  return (
+                    <div className="row gap-2 items-center justify-end">
+                      <span
+                        className="font-semibold"
+                        style={{ color: '#3ba974' }}
+                      >
+                        {revenue > 0 ? number.currency(revenue / 100) : '-'}
+                      </span>
+                      <RevenuePieChart percentage={revenuePercentage} />
+                    </div>
+                  );
+                },
+              } as const,
+            ]
+          : []),
         {
-          name: 'BR',
-          width: '60px',
-          responsive: { priority: 6 }, // Hidden when space is tight
+          name: 'Views',
+          width: '84px',
+          responsive: { priority: 2 }, // Always show if possible
           render(item) {
-            return number.shortWithUnit(item.bounce_rate, '%');
+            return (
+              <div className="row gap-2 justify-end">
+                <span className="font-semibold">
+                  {number.short(item.pageviews)}
+                </span>
+              </div>
+            );
           },
         },
         {
-          name: 'Duration',
-          width: '75px',
-          responsive: { priority: 7 }, // Hidden when space is tight
+          name: 'Sess.',
+          width: '84px',
+          responsive: { priority: 2 }, // Always show if possible
           render(item) {
-            return number.shortWithUnit(item.avg_duration, 'min');
+            return (
+              <div className="row gap-2 justify-end">
+                <span className="font-semibold">
+                  {number.short(item.sessions)}
+                </span>
+              </div>
+            );
+          },
+        },
+      ]}
+    />
+  );
+}
+
+export function OverviewWidgetTableEntries({
+  data,
+  lastColumnName,
+  className,
+  showDomain = false,
+}: {
+  className?: string;
+  lastColumnName: string;
+  data: {
+    origin: string;
+    path: string;
+    sessions: number;
+    pageviews: number;
+    revenue?: number;
+  }[];
+  showDomain?: boolean;
+}) {
+  const [_filters, setFilter] = useEventQueryFilters();
+  const number = useNumber();
+  const maxSessions = Math.max(...data.map((item) => item.sessions));
+  const totalRevenue = data.reduce((sum, item) => sum + (item.revenue ?? 0), 0);
+  const hasRevenue = data.some((item) => (item.revenue ?? 0) > 0);
+  return (
+    <OverviewWidgetTable
+      className={className}
+      data={data ?? []}
+      keyExtractor={(item) => item.path + item.origin}
+      getColumnPercentage={(item) => item.sessions / maxSessions}
+      columns={[
+        {
+          name: 'Path',
+          width: 'w-full',
+          responsive: { priority: 1 }, // Always visible
+          render(item) {
+            return (
+              <Tooltiper asChild content={item.origin + item.path} side="left">
+                <div className="row items-center gap-2 min-w-0 relative">
+                  <SerieIcon name={item.origin} />
+                  <button
+                    type="button"
+                    className="truncate"
+                    onClick={() => {
+                      setFilter('path', item.path);
+                      setFilter('origin', item.origin);
+                    }}
+                  >
+                    {item.path ? (
+                      <>
+                        {showDomain ? (
+                          <>
+                            <span className="opacity-40">{item.origin}</span>
+                            <span>{item.path}</span>
+                          </>
+                        ) : (
+                          item.path
+                        )}
+                      </>
+                    ) : (
+                      <span className="opacity-40">Not set</span>
+                    )}
+                  </button>
+                  <a
+                    href={item.origin + item.path}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <ExternalLinkIcon className="size-3 group-hover/row:opacity-100 opacity-0 transition-opacity" />
+                  </a>
+                </div>
+              </Tooltiper>
+            );
           },
         },
         ...(hasRevenue
@@ -237,17 +340,16 @@ export function OverviewWidgetTablePages({
                 width: '100px',
                 responsive: { priority: 3 }, // Always show if possible
                 render(item: (typeof data)[number]) {
+                  const revenue = item.revenue ?? 0;
                   const revenuePercentage =
-                    totalRevenue > 0 ? item.revenue / totalRevenue : 0;
+                    totalRevenue > 0 ? revenue / totalRevenue : 0;
                   return (
                     <div className="row gap-2 items-center justify-end">
                       <span
                         className="font-semibold"
                         style={{ color: '#3ba974' }}
                       >
-                        {item.revenue > 0
-                          ? number.currency(item.revenue / 100)
-                          : '-'}
+                        {revenue > 0 ? number.currency(revenue / 100) : '-'}
                       </span>
                       <RevenuePieChart percentage={revenuePercentage} />
                     </div>
@@ -373,6 +475,7 @@ export function OverviewWidgetTableGeneric({
   const maxSessions = Math.max(...data.map((item) => item.sessions));
   const totalRevenue = data.reduce((sum, item) => sum + (item.revenue ?? 0), 0);
   const hasRevenue = data.some((item) => (item.revenue ?? 0) > 0);
+  const hasPageviews = data.some((item) => item.pageviews > 0);
   return (
     <OverviewWidgetTable
       className={className}
@@ -385,27 +488,12 @@ export function OverviewWidgetTableGeneric({
           width: 'w-full',
           responsive: { priority: 1 }, // Always visible
         },
-        {
-          name: 'BR',
-          width: '60px',
-          responsive: { priority: 6 }, // Hidden when space is tight
-          render(item) {
-            return number.shortWithUnit(item.bounce_rate, '%');
-          },
-        },
-        // {
-        //   name: 'Duration',
-        //   render(item) {
-        //     return number.shortWithUnit(item.avg_session_duration, 'min');
-        //   },
-        // },
-
         ...(hasRevenue
           ? [
               {
                 name: 'Revenue',
                 width: '100px',
-                responsive: { priority: 3 }, // Always show if possible
+                responsive: { priority: 3 },
                 render(item: RouterOutputs['overview']['topGeneric'][number]) {
                   const revenue = item.revenue ?? 0;
                   const revenuePercentage =
@@ -427,15 +515,95 @@ export function OverviewWidgetTableGeneric({
               } as const,
             ]
           : []),
+        ...(hasPageviews
+          ? [
+              {
+                name: 'Views',
+                width: '84px',
+                responsive: { priority: 2 },
+                render(item: RouterOutputs['overview']['topGeneric'][number]) {
+                  return (
+                    <div className="row gap-2 justify-end">
+                      <span className="font-semibold">
+                        {number.short(item.pageviews)}
+                      </span>
+                    </div>
+                  );
+                },
+              } as const,
+            ]
+          : []),
         {
-          name: 'Sessions',
+          name: 'Sess.',
           width: '84px',
-          responsive: { priority: 2 }, // Always show if possible
+          responsive: { priority: 2 },
           render(item) {
             return (
               <div className="row gap-2 justify-end">
                 <span className="font-semibold">
                   {number.short(item.sessions)}
+                </span>
+              </div>
+            );
+          },
+        },
+      ]}
+    />
+  );
+}
+
+export type EventTableItem = {
+  id: string;
+  name: string;
+  count: number;
+};
+
+export function OverviewWidgetTableEvents({
+  data,
+  className,
+  onItemClick,
+}: {
+  className?: string;
+  data: EventTableItem[];
+  onItemClick?: (name: string) => void;
+}) {
+  const number = useNumber();
+  const maxCount = Math.max(...data.map((item) => item.count), 1);
+  return (
+    <OverviewWidgetTable
+      className={className}
+      data={data ?? []}
+      keyExtractor={(item) => item.id}
+      getColumnPercentage={(item) => item.count / maxCount}
+      columns={[
+        {
+          name: 'Event',
+          width: 'w-full',
+          responsive: { priority: 1 },
+          render(item) {
+            return (
+              <div className="row items-center gap-2 min-w-0 relative">
+                <SerieIcon name={item.name} />
+                <button
+                  type="button"
+                  className="truncate"
+                  onClick={() => onItemClick?.(item.name)}
+                >
+                  {item.name || 'Not set'}
+                </button>
+              </div>
+            );
+          },
+        },
+        {
+          name: 'Count',
+          width: '84px',
+          responsive: { priority: 2 },
+          render(item) {
+            return (
+              <div className="row gap-2 justify-end">
+                <span className="font-semibold">
+                  {number.short(item.count)}
                 </span>
               </div>
             );

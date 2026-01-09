@@ -1,3 +1,4 @@
+import { LazyComponent } from '@/components/lazy-component';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
@@ -58,7 +59,9 @@ function ProjectDashboard() {
         <OverviewTopDevices projectId={projectId} />
         <OverviewTopEvents projectId={projectId} />
         <OverviewTopGeo projectId={projectId} />
-        <OverviewUserJourney projectId={projectId} />
+        <LazyComponent className="col-span-6">
+          <OverviewUserJourney projectId={projectId} />
+        </LazyComponent>
       </div>
     </div>
   );

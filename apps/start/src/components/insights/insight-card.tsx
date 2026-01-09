@@ -5,6 +5,7 @@ import type { InsightPayload } from '@openpanel/validation';
 import { ArrowDown, ArrowUp, FilterIcon, RotateCcwIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { useState } from 'react';
+import { DeltaChip } from '../delta-chip';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Badge } from '../ui/badge';
 
@@ -188,42 +189,13 @@ export function InsightCard({
 
           {/* Delta chip */}
           <DeltaChip
-            isIncrease={isIncrease}
-            isDecrease={isDecrease}
-            deltaText={deltaText}
-          />
+            variant={isIncrease ? 'inc' : isDecrease ? 'dec' : 'default'}
+            size="sm"
+          >
+            {deltaText}
+          </DeltaChip>
         </div>
       </div>
-    </div>
-  );
-}
-
-function DeltaChip({
-  isIncrease,
-  isDecrease,
-  deltaText,
-}: {
-  isIncrease: boolean;
-  isDecrease: boolean;
-  deltaText: string;
-}) {
-  return (
-    <div
-      className={cn(
-        'flex items-center gap-1 rounded-full px-2 py-1 text-sm font-semibold',
-        isIncrease
-          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-          : isDecrease
-            ? 'bg-red-500/10 text-red-600 dark:text-red-400'
-            : 'bg-muted text-muted-foreground',
-      )}
-    >
-      {isIncrease ? (
-        <ArrowUp size={16} className="shrink-0" />
-      ) : isDecrease ? (
-        <ArrowDown size={16} className="shrink-0" />
-      ) : null}
-      <span>{deltaText}</span>
     </div>
   );
 }

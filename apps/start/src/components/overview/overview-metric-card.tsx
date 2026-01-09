@@ -1,7 +1,7 @@
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { Area, AreaChart, Tooltip } from 'recharts';
+import { Area, AreaChart, Bar, BarChart, Tooltip } from 'recharts';
 
 import { formatDate, timeAgo } from '@/utils/date';
 import { getChartColor } from '@/utils/theme';
@@ -144,51 +144,33 @@ export function OverviewMetricCard({
         <div className={cn('group relative p-4')}>
           <div
             className={cn(
-              'absolute -left-1 -right-1 bottom-0 top-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
+              'absolute left-4 right-4 bottom-0 z-0 opacity-50 transition-opacity duration-300 group-hover:opacity-100',
             )}
           >
-            <AutoSizer>
-              {({ width, height }) => (
-                <AreaChart
+            <AutoSizer style={{ height: 20 }}>
+              {({ width }) => (
+                <BarChart
                   width={width}
-                  height={height / 4}
+                  height={20}
                   data={data}
-                  style={{ marginTop: (height / 4) * 3, background: 'transparent' }}
+                  style={{
+                    background: 'transparent',
+                  }}
                   onMouseMove={(event) => {
                     setCurrentIndex(event.activeTooltipIndex ?? null);
                   }}
+                  margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
                 >
-                  <defs>
-                    <linearGradient
-                      id={`colorUv${id}`}
-                      x1="0"
-                      y1="0"
-                      x2="0"
-                      y2="1"
-                    >
-                      <stop
-                        offset="0%"
-                        stopColor={graphColors}
-                        stopOpacity={0.2}
-                      />
-                      <stop
-                        offset="100%"
-                        stopColor={graphColors}
-                        stopOpacity={0.05}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <Tooltip content={() => null} />
-                  <Area
+                  <Tooltip content={() => null} cursor={false} />
+                  <Bar
                     dataKey={'current'}
                     type="step"
-                    fill={`url(#colorUv${id})`}
+                    fill={graphColors}
                     fillOpacity={1}
-                    stroke={graphColors}
-                    strokeWidth={1}
+                    strokeWidth={0}
                     isAnimationActive={false}
                   />
-                </AreaChart>
+                </BarChart>
               )}
             </AutoSizer>
           </div>
@@ -225,13 +207,11 @@ export function OverviewMetricCardNumber({
   isLoading?: boolean;
 }) {
   return (
-    <div className={cn('flex min-w-0 flex-col gap-2', className)}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2 text-left">
-          <span className="truncate text-sm font-medium text-muted-foreground leading-[1.1]">
-            {label}
-          </span>
-        </div>
+    <div className={cn('min-w-0 col gap-2 items-start', className)}>
+      <div className="flex min-w-0 items-center gap-2 text-left">
+        <span className="truncate text-sm font-medium text-muted-foreground leading-[1.1]">
+          {label}
+        </span>
       </div>
       {isLoading ? (
         <div className="flex items-end justify-between gap-4">
@@ -239,13 +219,13 @@ export function OverviewMetricCardNumber({
           <Skeleton className="h-6 w-12" />
         </div>
       ) : (
-        <div className="flex items-end justify-between gap-4">
-          <div className="truncate font-mono text-3xl leading-[1.1] font-bold">
-            {value}
-          </div>
-          {enhancer}
+        <div className="truncate font-mono text-3xl leading-[1.1] font-bold">
+          {value}
         </div>
       )}
+      <div className="absolute right-0 top-0 bottom-0 center justify-center col pr-4">
+        {enhancer}
+      </div>
     </div>
   );
 }

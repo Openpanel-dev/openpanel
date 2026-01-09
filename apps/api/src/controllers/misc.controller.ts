@@ -118,7 +118,11 @@ async function fetchImage(
 
 // Check if URL is an ICO file
 function isIcoFile(url: string, contentType?: string): boolean {
-  return url.toLowerCase().endsWith('.ico') || contentType === 'image/x-icon';
+  return (
+    url.toLowerCase().endsWith('.ico') ||
+    contentType === 'image/x-icon' ||
+    contentType === 'image/vnd.microsoft.icon'
+  );
 }
 function isSvgFile(url: string, contentType?: string): boolean {
   return url.toLowerCase().endsWith('.svg') || contentType === 'image/svg+xml';
@@ -239,7 +243,9 @@ export async function getFavicon(
   try {
     const url = validateUrl(request.query.url);
     if (!url) {
-      return createFallbackImage();
+      reply.header('Content-Type', 'image/png');
+      reply.header('Cache-Control', 'public, max-age=3600');
+      return reply.send(createFallbackImage());
     }
 
     const cacheKey = createCacheKey(url.toString());
@@ -260,21 +266,65 @@ export async function getFavicon(
     } else {
       // For website URLs, extract favicon from HTML
       const meta = await parseUrlMeta(url.toString());
+      logger.info('parseUrlMeta result', {
+        url: url.toString(),
+        favicon: meta?.favicon,
+      });
       if (meta?.favicon) {
         imageUrl = new URL(meta.favicon);
       } else {
-        // Fallback to Google's favicon service
-        const { hostname } = url;
-        imageUrl = new URL(
-          `https://www.google.com/s2/favicons?domain=${hostname}&sz=256`,
-        );
+        // Try standard favicon location first
+        const { origin } = url;
+        imageUrl = new URL(`${origin}/favicon.ico`);
       }
     }
 
-    // Fetch the image
-    const { buffer, contentType, status } = await fetchImage(imageUrl);
+    logger.info('Fetching favicon', {
+      originalUrl: url.toString(),
+      imageUrl: imageUrl.toString(),
+    });
 
-    if (status !== 200 || buffer.length === 0) {
+    // Fetch the image
+    let { buffer, contentType, status } = await fetchImage(imageUrl);
+
+    logger.info('Favicon fetch result', {
+      originalUrl: url.toString(),
+      imageUrl: imageUrl.toString(),
+      status,
+      bufferLength: buffer.length,
+      contentType,
+    });
+
+    // If the direct favicon fetch failed and it's not from DuckDuckGo's service,
+    // try DuckDuckGo's favicon service as a fallback
+    if (buffer.length === 0 && !imageUrl.hostname.includes('duckduckgo.com')) {
+      const { hostname } = url;
+      const duckduckgoUrl = new URL(
+        `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+      );
+
+      logger.info('Trying DuckDuckGo favicon service', {
+        originalUrl: url.toString(),
+        duckduckgoUrl: duckduckgoUrl.toString(),
+      });
+
+      const duckduckgoResult = await fetchImage(duckduckgoUrl);
+      buffer = duckduckgoResult.buffer;
+      contentType = duckduckgoResult.contentType;
+      status = duckduckgoResult.status;
+      imageUrl = duckduckgoUrl;
+
+      logger.info('DuckDuckGo favicon result', {
+        status,
+        bufferLength: buffer.length,
+        contentType,
+      });
+    }
+
+    // Accept any response as long as we have valid image data
+    if (buffer.length === 0) {
+      reply.header('Content-Type', 'image/png');
+      reply.header('Cache-Control', 'public, max-age=3600');
       return reply.send(createFallbackImage());
     }
 
@@ -285,9 +335,31 @@ export async function getFavicon(
       contentType,
     );
 
+    logger.info('Favicon processing result', {
+      originalUrl: url.toString(),
+      originalBufferLength: buffer.length,
+      processedBufferLength: processedBuffer.length,
+    });
+
     // Determine the correct content type for caching and response
     const isIco = isIcoFile(imageUrl.toString(), contentType);
-    const responseContentType = isIco ? 'image/x-icon' : contentType;
+    const isSvg = isSvgFile(imageUrl.toString(), contentType);
+    let responseContentType = contentType;
+
+    if (isIco) {
+      responseContentType = 'image/x-icon';
+    } else if (isSvg) {
+      responseContentType = 'image/svg+xml';
+    } else if (
+      processedBuffer.length < 5000 &&
+      buffer.length === processedBuffer.length
+    ) {
+      // Image was returned as-is, keep original content type
+      responseContentType = contentType;
+    } else {
+      // Image was processed by Sharp, it's now a PNG
+      responseContentType = 'image/png';
+    }
 
     // Cache the result with correct content type
     await setToCacheBinary(cacheKey, processedBuffer, responseContentType);

@@ -348,6 +348,246 @@ export function getChartSql({
   return sql;
 }
 
+export function getAggregateChartSql({
+  event,
+  breakdowns,
+  startDate,
+  endDate,
+  projectId,
+  limit,
+  timezone,
+}: Omit<IGetChartDataInput, 'interval' | 'chartType'> & {
+  timezone: string;
+}) {
+  const {
+    sb,
+    join,
+    getWhere,
+    getFrom,
+    getJoins,
+    getSelect,
+    getOrderBy,
+    getGroupBy,
+    getWith,
+    with: addCte,
+    getSql,
+  } = createSqlBuilder();
+
+  sb.where = getEventFiltersWhereClause(event.filters);
+  sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+
+  if (event.name !== '*') {
+    sb.select.label_0 = `${sqlstring.escape(event.name)} as label_0`;
+    sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
+  } else {
+    sb.select.label_0 = `'*' as label_0`;
+  }
+
+  const anyFilterOnProfile = event.filters.some((filter) =>
+    filter.name.startsWith('profile.'),
+  );
+  const anyBreakdownOnProfile = breakdowns.some((breakdown) =>
+    breakdown.name.startsWith('profile.'),
+  );
+
+  // Build WHERE clause without the bar filter (for use in subqueries and CTEs)
+  const getWhereWithoutBar = () => {
+    const whereWithoutBar = { ...sb.where };
+    delete whereWithoutBar.bar;
+    return Object.keys(whereWithoutBar).length
+      ? `WHERE ${join(whereWithoutBar, ' AND ')}`
+      : '';
+  };
+
+  // Collect all profile fields used in filters and breakdowns
+  const getProfileFields = () => {
+    const fields = new Set<string>();
+
+    // Always need id for the join
+    fields.add('id');
+
+    // Collect from filters
+    event.filters
+      .filter((f) => f.name.startsWith('profile.'))
+      .forEach((f) => {
+        const fieldName = f.name.replace('profile.', '').split('.')[0];
+        if (fieldName && fieldName === 'properties') {
+          fields.add('properties');
+        } else if (
+          fieldName &&
+          ['email', 'first_name', 'last_name'].includes(fieldName)
+        ) {
+          fields.add(fieldName);
+        }
+      });
+
+    // Collect from breakdowns
+    breakdowns
+      .filter((b) => b.name.startsWith('profile.'))
+      .forEach((b) => {
+        const fieldName = b.name.replace('profile.', '').split('.')[0];
+        if (fieldName && fieldName === 'properties') {
+          fields.add('properties');
+        } else if (
+          fieldName &&
+          ['email', 'first_name', 'last_name'].includes(fieldName)
+        ) {
+          fields.add(fieldName);
+        }
+      });
+
+    return Array.from(fields);
+  };
+
+  // Create profiles CTE if profiles are needed
+  const profilesJoinRef =
+    anyFilterOnProfile || anyBreakdownOnProfile
+      ? 'LEFT ANY JOIN profile ON profile.id = profile_id'
+      : '';
+
+  if (anyFilterOnProfile || anyBreakdownOnProfile) {
+    const profileFields = getProfileFields();
+    const selectFields = profileFields.map((field) => {
+      if (field === 'id') {
+        return 'id as "profile.id"';
+      }
+      if (field === 'properties') {
+        return 'properties as "profile.properties"';
+      }
+      if (field === 'email') {
+        return 'email as "profile.email"';
+      }
+      if (field === 'first_name') {
+        return 'first_name as "profile.first_name"';
+      }
+      if (field === 'last_name') {
+        return 'last_name as "profile.last_name"';
+      }
+      return field;
+    });
+
+    addCte(
+      'profile',
+      `SELECT ${selectFields.join(', ')}
+      FROM ${TABLE_NAMES.profiles} FINAL 
+      WHERE project_id = ${sqlstring.escape(projectId)}`,
+    );
+
+    sb.joins.profiles = profilesJoinRef;
+  }
+
+  // Date range filters
+  if (startDate) {
+    sb.where.startDate = `created_at >= toDateTime('${formatClickhouseDate(startDate)}')`;
+  }
+
+  if (endDate) {
+    sb.where.endDate = `created_at <= toDateTime('${formatClickhouseDate(endDate)}')`;
+  }
+
+  // Add a constant date field for aggregate charts (groupByLabels expects it)
+  // Use startDate as the date value since we're aggregating across the entire range
+  sb.select.date = `${sqlstring.escape(startDate)} as date`;
+
+  // Use CTE to define top breakdown values once, then reference in WHERE clause
+  if (breakdowns.length > 0 && limit) {
+    const breakdownSelects = breakdowns
+      .map((b) => getSelectPropertyKey(b.name))
+      .join(', ');
+
+    addCte(
+      'top_breakdowns',
+      `SELECT ${breakdownSelects}
+      FROM ${TABLE_NAMES.events} e
+      ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${getWhereWithoutBar()}
+      GROUP BY ${breakdownSelects}
+      ORDER BY count(*) DESC
+      LIMIT ${limit}`,
+    );
+
+    // Filter main query to only include top breakdown values
+    sb.where.bar = `(${breakdowns.map((b) => getSelectPropertyKey(b.name)).join(',')}) IN (SELECT * FROM top_breakdowns)`;
+  }
+
+  // Add breakdowns to SELECT and GROUP BY
+  breakdowns.forEach((breakdown, index) => {
+    // Breakdowns start at label_1 (label_0 is reserved for event name)
+    const key = `label_${index + 1}`;
+    sb.select[key] = `${getSelectPropertyKey(breakdown.name)} as ${key}`;
+    sb.groupBy[key] = `${key}`;
+  });
+
+  // Always group by label_0 (event name) for aggregate charts
+  sb.groupBy.label_0 = 'label_0';
+
+  // Default count aggregation
+  sb.select.count = 'count(*) as count';
+
+  // Handle different segments
+  if (event.segment === 'user') {
+    sb.select.count = 'countDistinct(profile_id) as count';
+  }
+
+  if (event.segment === 'session') {
+    sb.select.count = 'countDistinct(session_id) as count';
+  }
+
+  if (event.segment === 'user_average') {
+    sb.select.count =
+      'COUNT(*)::float / COUNT(DISTINCT profile_id)::float as count';
+  }
+
+  const mathFunction = {
+    property_sum: 'sum',
+    property_average: 'avg',
+    property_max: 'max',
+    property_min: 'min',
+  }[event.segment as string];
+
+  if (mathFunction && event.property) {
+    const propertyKey = getSelectPropertyKey(event.property);
+
+    if (isNumericColumn(event.property)) {
+      sb.select.count = `${mathFunction}(${propertyKey}) as count`;
+      sb.where.property = `${propertyKey} IS NOT NULL`;
+    } else {
+      sb.select.count = `${mathFunction}(toFloat64OrNull(${propertyKey})) as count`;
+      sb.where.property = `${propertyKey} IS NOT NULL AND notEmpty(${propertyKey})`;
+    }
+  }
+
+  if (event.segment === 'one_event_per_user') {
+    sb.from = `(
+      SELECT DISTINCT ON (profile_id) * from ${TABLE_NAMES.events} ${getJoins()} WHERE ${join(
+        sb.where,
+        ' AND ',
+      )}
+        ORDER BY profile_id, created_at DESC
+      ) as subQuery`;
+    sb.joins = {};
+
+    const sql = getSql();
+    console.log('-- Aggregate Chart --');
+    console.log(sql.replaceAll(/[\n\r]/g, ' '));
+    console.log('-- End --');
+    return sql;
+  }
+
+  // Order by count DESC (biggest first) for aggregate charts
+  sb.orderBy.count = 'count DESC';
+
+  // Apply limit if specified
+  if (limit) {
+    sb.limit = limit;
+  }
+
+  const sql = getSql();
+  console.log('-- Aggregate Chart --');
+  console.log(sql.replaceAll(/[\n\r]/g, ' '));
+  console.log('-- End --');
+  return sql;
+}
+
 function isNumericColumn(columnName: string): boolean {
   const numericColumns = ['duration', 'revenue', 'longitude', 'latitude'];
   return numericColumns.includes(columnName);

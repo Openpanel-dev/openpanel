@@ -32,7 +32,7 @@ export function ReportChartEmpty({
         </div>
         <ForkliftIcon
           strokeWidth={1.2}
-          className="mb-4 size-1/3 animate-pulse text-muted-foreground"
+          className="mb-4 size-1/3 max-w-40 animate-pulse text-muted-foreground"
         />
         <div className="font-medium text-muted-foreground">
           Ready when you're

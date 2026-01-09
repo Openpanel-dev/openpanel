@@ -519,7 +519,7 @@ export class Query<T = any> {
     const query = this.buildQuery();
     console.log(
       'query',
-      `${query} SETTINGS session_timezone = '${this.timezone}'`,
+      `${query.replaceAll('\n', ' ').replaceAll('\t', ' ').replaceAll('\r', ' ')} SETTINGS session_timezone = '${this.timezone}'`,
     );
 
     const result = await this.client.query({

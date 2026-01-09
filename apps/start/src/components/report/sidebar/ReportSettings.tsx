@@ -50,7 +50,7 @@ export function ReportSettings() {
   return (
     <div>
       <h3 className="mb-2 font-medium">Settings</h3>
-      <div className="col rounded-lg border bg-def-100 p-4 gap-2">
+      <div className="col rounded-lg border bg-card p-4 gap-2">
         {fields.includes('previous') && (
           <Label className="flex items-center justify-between mb-0">
             <span className="whitespace-nowrap">

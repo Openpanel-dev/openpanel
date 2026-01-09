@@ -1,4 +1,5 @@
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import FeedbackPrompt from '@/components/organization/feedback-prompt';
 import SupporterPrompt from '@/components/organization/supporter-prompt';
 import { LinkButton } from '@/components/ui/button';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -154,6 +155,7 @@ function Component() {
         )}
       <Outlet />
       <SupporterPrompt />
+      <FeedbackPrompt />
     </>
   );
 }

@@ -90,6 +90,7 @@ function getClickhouseSettings(): ClickHouseSettings {
     {};
 
   return {
+    distributed_product_mode: 'allow',
     date_time_input_format: 'best_effort',
     ...(!process.env.CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
       ? {

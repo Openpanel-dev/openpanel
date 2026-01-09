@@ -16,7 +16,6 @@ import {
   YAxis,
 } from 'recharts';
 import { AnimatedNumber } from '../animated-number';
-import { BarShapeBlue } from '../charts/common-bar';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 
 interface RealtimeLiveHistogramProps {
@@ -87,10 +86,8 @@ export function RealtimeLiveHistogram({
           <YAxis hide domain={[0, maxDomain]} />
           <Bar
             dataKey="visitorCount"
-            fill="rgba(59, 121, 255, 0.2)"
+            className="fill-chart-0"
             isAnimationActive={false}
-            shape={BarShapeBlue}
-            activeBar={BarShapeBlue}
           />
         </BarChart>
       </ResponsiveContainer>

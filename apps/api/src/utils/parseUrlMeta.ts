@@ -1,7 +1,13 @@
 import urlMetadata from 'url-metadata';
 
 function fallbackFavicon(url: string) {
-  return `https://www.google.com/s2/favicons?domain=${url}&sz=256`;
+  try {
+    const hostname = new URL(url).hostname;
+    return `https://icons.duckduckgo.com/ip3/${hostname}.ico`;
+  } catch {
+    // If URL parsing fails, use the original string
+    return `https://icons.duckduckgo.com/ip3/${url}.ico`;
+  }
 }
 
 function findBestFavicon(favicons: UrlMetaData['favicons']) {

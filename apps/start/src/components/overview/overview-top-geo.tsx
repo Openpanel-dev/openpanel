@@ -1,10 +1,8 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { cn } from '@/utils/cn';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { IChartType } from '@openpanel/validation';
 
-import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { countries } from '@/translations/countries';
@@ -16,7 +14,16 @@ import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
 import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
-import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
+import {
+  OverviewLineChart,
+  OverviewLineChartLoading,
+} from './overview-line-chart';
+import { OverviewViewToggle, useOverviewView } from './overview-view-toggle';
+import {
+  WidgetFooter,
+  WidgetHead,
+  WidgetHeadSearchable,
+} from './overview-widget';
 import {
   OverviewWidgetTableGeneric,
   OverviewWidgetTableLoading,
@@ -32,6 +39,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
     useOverviewOptions();
   const [chartType, setChartType] = useState<IChartType>('bar');
   const [filters, setFilter] = useEventQueryFilters();
+  const [searchQuery, setSearchQuery] = useState('');
   const isPageFilter = filters.find((filter) => filter.name === 'path');
   const [widget, setWidget, widgets] = useOverviewWidgetV2('geo', {
     country: {
@@ -48,8 +56,8 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
     },
   });
 
-  const number = useNumber();
   const trpc = useTRPC();
+  const [view] = useOverviewView();
 
   const query = useQuery(
     trpc.overview.topGeneric.queryOptions({
@@ -62,31 +70,74 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
     }),
   );
 
+  const seriesQuery = useQuery(
+    trpc.overview.topGenericSeries.queryOptions(
+      {
+        projectId,
+        range,
+        filters,
+        column: widget.key,
+        startDate,
+        endDate,
+        interval,
+      },
+      {
+        enabled: view === 'chart',
+      },
+    ),
+  );
+
+  const filteredData = useMemo(() => {
+    const data = (query.data ?? []).slice(0, 15);
+    if (!searchQuery.trim()) {
+      return data;
+    }
+    const queryLower = searchQuery.toLowerCase();
+    return data.filter(
+      (item) =>
+        item.name?.toLowerCase().includes(queryLower) ||
+        item.prefix?.toLowerCase().includes(queryLower) ||
+        countries[item.name as keyof typeof countries]
+          ?.toLowerCase()
+          .includes(queryLower),
+    );
+  }, [query.data, searchQuery]);
+
+  const tabs = widgets.map((w) => ({
+    key: w.key,
+    label: w.btn,
+  }));
+
   return (
     <>
       <Widget className="col-span-6 md:col-span-3">
-        <WidgetHead>
-          <div className="title">{widget.title}</div>
-
-          <WidgetButtons>
-            {widgets.map((w) => (
-              <button
-                type="button"
-                key={w.key}
-                onClick={() => setWidget(w.key)}
-                className={cn(w.key === widget.key && 'active')}
-              >
-                {w.btn}
-              </button>
-            ))}
-          </WidgetButtons>
-        </WidgetHead>
+        <WidgetHeadSearchable
+          tabs={tabs}
+          activeTab={widget.key}
+          onTabChange={setWidget}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          className="border-b-0 pb-2"
+        />
         <WidgetBody className="p-0">
-          {query.isLoading ? (
+          {view === 'chart' ? (
+            seriesQuery.isLoading ? (
+              <OverviewLineChartLoading />
+            ) : seriesQuery.data ? (
+              <OverviewLineChart
+                data={seriesQuery.data}
+                interval={interval}
+                searchQuery={searchQuery}
+              />
+            ) : (
+              <OverviewLineChartLoading />
+            )
+          ) : query.isLoading ? (
             <OverviewWidgetTableLoading />
           ) : (
             <OverviewWidgetTableGeneric
-              data={query.data ?? []}
+              data={filteredData}
               column={{
                 name: OVERVIEW_COLUMNS_NAME[widget.key],
                 render(item) {
@@ -139,8 +190,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
               })
             }
           />
-          {/* <OverviewChartToggle {...{ chartType, setChartType }} /> */}
-          <span className="text-sm text-muted-foreground pr-2">
+          <div className="flex-1" />
+          <OverviewViewToggle />
+          <span className="text-sm text-muted-foreground pr-2 ml-2">
             Geo data provided by{' '}
             <a
               href="https://ipdata.co"

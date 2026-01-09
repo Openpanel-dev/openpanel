@@ -13,7 +13,7 @@ export function ReportPieChart() {
   const trpc = useTRPC();
 
   const res = useQuery(
-    trpc.chart.chart.queryOptions(report, {
+    trpc.chart.aggregate.queryOptions(report, {
       placeholderData: keepPreviousData,
       staleTime: 1000 * 60 * 1,
       enabled: !isLazyLoading,

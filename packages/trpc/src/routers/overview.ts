@@ -10,6 +10,7 @@ import {
   overviewService,
   zGetMetricsInput,
   zGetTopGenericInput,
+  zGetTopGenericSeriesInput,
   zGetTopPagesInput,
   zGetUserJourneyInput,
 } from '@openpanel/db';
@@ -301,6 +302,26 @@ export const overviewRouter = createTRPCRouter({
         false,
         timezone,
       )(overviewService.getTopGeneric.bind(overviewService));
+
+      return current;
+    }),
+
+  topGenericSeries: publicProcedure
+    .input(
+      zGetTopGenericSeriesInput.omit({ startDate: true, endDate: true }).extend({
+        startDate: z.string().nullish(),
+        endDate: z.string().nullish(),
+        range: zRange,
+      }),
+    )
+    .use(cacher)
+    .query(async ({ input }) => {
+      const { timezone } = await getSettingsForProject(input.projectId);
+      const { current } = await getCurrentAndPrevious(
+        { ...input, timezone },
+        false,
+        timezone,
+      )(overviewService.getTopGenericSeries.bind(overviewService));
 
       return current;
     }),

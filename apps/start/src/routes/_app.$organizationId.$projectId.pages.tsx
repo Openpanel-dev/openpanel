@@ -1,18 +1,15 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { OverviewFilterButton } from '@/components/overview/filters/overview-filters-buttons';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
-import { Pagination } from '@/components/pagination';
 import { FloatingPagination } from '@/components/pagination-floating';
 import { ReportChart } from '@/components/report-chart';
 import { Skeleton } from '@/components/skeleton';
 import { Input } from '@/components/ui/input';
 import { TableButtons } from '@/components/ui/table';
 import { useAppContext } from '@/hooks/use-app-context';
-import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -22,7 +19,7 @@ import type { IChartRange, IInterval } from '@openpanel/validation';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { parseAsInteger, useQueryState } from 'nuqs';
-import { memo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 
 export const Route = createFileRoute('/_app/$organizationId/$projectId/pages')({
   component: Component,
@@ -42,30 +39,102 @@ function Component() {
   const trpc = useTRPC();
   const take = 20;
   const { range, interval } = useOverviewOptions();
-  const [filters] = useEventQueryFilters();
   const [cursor, setCursor] = useQueryState(
     'cursor',
     parseAsInteger.withDefault(1),
   );
 
   const { debouncedSearch, setSearch, search } = useSearchQueryState();
-  const query = useQuery(
+
+  // Track if we should use backend search (when client-side filtering finds nothing)
+  const [useBackendSearch, setUseBackendSearch] = useState(false);
+
+  // Reset to client-side filtering when search changes
+  useEffect(() => {
+    setUseBackendSearch(false);
+    setCursor(1);
+  }, [debouncedSearch, setCursor]);
+
+  // Query for all pages (without search) - used for client-side filtering
+  const allPagesQuery = useQuery(
     trpc.event.pages.queryOptions(
       {
         projectId,
-        cursor,
-        take,
-        search: debouncedSearch,
+        cursor: 1,
+        take: 1000,
+        search: undefined, // No search - get all pages
         range,
         interval,
-        filters,
       },
       {
         placeholderData: keepPreviousData,
       },
     ),
   );
-  const data = query.data ?? [];
+
+  // Query for backend search (only when client-side filtering finds nothing)
+  const backendSearchQuery = useQuery(
+    trpc.event.pages.queryOptions(
+      {
+        projectId,
+        cursor: 1,
+        take: 1000,
+        search: debouncedSearch || undefined,
+        range,
+        interval,
+      },
+      {
+        placeholderData: keepPreviousData,
+        enabled: useBackendSearch && !!debouncedSearch,
+      },
+    ),
+  );
+
+  // Client-side filtering: filter all pages by search query
+  const clientSideFiltered = useMemo(() => {
+    if (!debouncedSearch || useBackendSearch) {
+      return allPagesQuery.data ?? [];
+    }
+    const searchLower = debouncedSearch.toLowerCase();
+    return (allPagesQuery.data ?? []).filter(
+      (page) =>
+        page.path.toLowerCase().includes(searchLower) ||
+        page.origin.toLowerCase().includes(searchLower),
+    );
+  }, [allPagesQuery.data, debouncedSearch, useBackendSearch]);
+
+  // Check if client-side filtering found results
+  useEffect(() => {
+    if (
+      debouncedSearch &&
+      !useBackendSearch &&
+      allPagesQuery.isSuccess &&
+      clientSideFiltered.length === 0
+    ) {
+      // No results from client-side filtering, switch to backend search
+      setUseBackendSearch(true);
+    }
+  }, [
+    debouncedSearch,
+    useBackendSearch,
+    allPagesQuery.isSuccess,
+    clientSideFiltered.length,
+  ]);
+
+  // Determine which data source to use
+  const allData = useBackendSearch
+    ? (backendSearchQuery.data ?? [])
+    : clientSideFiltered;
+
+  const isLoading = useBackendSearch
+    ? backendSearchQuery.isLoading
+    : allPagesQuery.isLoading;
+
+  // Client-side pagination: slice the items based on cursor
+  const startIndex = (cursor - 1) * take;
+  const endIndex = startIndex + take;
+  const data = allData.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(allData.length / take);
 
   return (
     <PageContainer>
@@ -77,24 +146,27 @@ function Component() {
       <TableButtons>
         <OverviewRange />
         <OverviewInterval />
-        <OverviewFilterButton enableEventsFilter />
         <Input
           className="self-auto"
           placeholder="Search path"
           value={search ?? ''}
           onChange={(e) => {
             setSearch(e.target.value);
-            setCursor(0);
+            setCursor(1);
           }}
         />
       </TableButtons>
-      {data.length === 0 && !query.isLoading && (
+      {data.length === 0 && !isLoading && (
         <FullPageEmptyState
           title="No pages"
-          description={'Integrate our web sdk to your site to get pages here.'}
+          description={
+            debouncedSearch
+              ? `No pages found matching "${debouncedSearch}"`
+              : 'Integrate our web sdk to your site to get pages here.'
+          }
         />
       )}
-      {query.isLoading && (
+      {isLoading && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <PageCardSkeleton />
           <PageCardSkeleton />
@@ -105,7 +177,7 @@ function Component() {
         {data.map((page) => {
           return (
             <PageCard
-              key={page.path}
+              key={page.origin + page.path}
               page={page}
               range={range}
               interval={interval}
@@ -114,18 +186,18 @@ function Component() {
           );
         })}
       </div>
-      {data.length !== 0 && (
+      {allData.length !== 0 && (
         <div className="p-4">
           <FloatingPagination
             firstPage={cursor > 1 ? () => setCursor(1) : undefined}
-            canNextPage={true}
-            canPreviousPage={cursor > 0}
+            canNextPage={cursor < totalPages}
+            canPreviousPage={cursor > 1}
             pageIndex={cursor - 1}
             nextPage={() => {
-              setCursor((p) => p + 1);
+              setCursor((p) => Math.min(p + 1, totalPages));
             }}
             previousPage={() => {
-              setCursor((p) => p - 1);
+              setCursor((p) => Math.max(p - 1, 1));
             }}
           />
         </div>

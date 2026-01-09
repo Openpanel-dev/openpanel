@@ -1,7 +1,7 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { cn } from '@/utils/cn';
 import { Globe2Icon } from 'lucide-react';
 import { parseAsBoolean, useQueryState } from 'nuqs';
+import { useMemo, useState } from 'react';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
@@ -9,8 +9,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { Widget, WidgetBody } from '../widget';
 import OverviewDetailsButton from './overview-details-button';
-import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
+import { WidgetFooter, WidgetHeadSearchable } from './overview-widget';
 import {
+  OverviewWidgetTableEntries,
   OverviewWidgetTableLoading,
   OverviewWidgetTablePages,
 } from './overview-widget-table';
@@ -25,15 +26,11 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
   const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
   const [domain, setDomain] = useQueryState('d', parseAsBoolean);
+  const [searchQuery, setSearchQuery] = useState('');
   const [widget, setWidget, widgets] = useOverviewWidgetV2('pages', {
     page: {
       title: 'Top pages',
-      btn: 'Top pages',
-      meta: {
-        columns: {
-          sessions: 'Sessions',
-        },
-      },
+      btn: 'Pages',
     },
     entry: {
       title: 'Entry Pages',
@@ -53,10 +50,6 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
         },
       },
     },
-    // bot: {
-    //   title: 'Bots',
-    //   btn: 'Bots',
-    // },
   });
   const trpc = useTRPC();
 
@@ -71,37 +64,53 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
     }),
   );
 
-  const data = query.data;
+  const filteredData = useMemo(() => {
+    const data = query.data?.slice(0, 15) ?? [];
+    if (!searchQuery.trim()) {
+      return data;
+    }
+    const queryLower = searchQuery.toLowerCase();
+    return data.filter(
+      (item) =>
+        item.path.toLowerCase().includes(queryLower) ||
+        item.origin.toLowerCase().includes(queryLower),
+    );
+  }, [query.data, searchQuery]);
+
+  const tabs = widgets.map((w) => ({
+    key: w.key,
+    label: w.btn,
+  }));
 
   return (
     <>
       <Widget className="col-span-6 md:col-span-3">
-        <WidgetHead>
-          <div className="title">{widget.title}</div>
-          <WidgetButtons>
-            {widgets.map((w) => (
-              <button
-                type="button"
-                key={w.key}
-                onClick={() => setWidget(w.key)}
-                className={cn(w.key === widget.key && 'active')}
-              >
-                {w.btn}
-              </button>
-            ))}
-          </WidgetButtons>
-        </WidgetHead>
+        <WidgetHeadSearchable
+          tabs={tabs}
+          activeTab={widget.key}
+          onTabChange={setWidget}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          className="border-b-0 pb-2"
+        />
         <WidgetBody className="p-0">
           {query.isLoading ? (
             <OverviewWidgetTableLoading />
           ) : (
             <>
-              {/*<OverviewWidgetTableBots data={data ?? []} />*/}
-              <OverviewWidgetTablePages
-                data={data ?? []}
-                lastColumnName={widget.meta.columns.sessions}
-                showDomain={!!domain}
-              />
+              {widget.meta?.columns.sessions ? (
+                <OverviewWidgetTableEntries
+                  data={filteredData}
+                  lastColumnName={widget.meta.columns.sessions}
+                  showDomain={!!domain}
+                />
+              ) : (
+                <OverviewWidgetTablePages
+                  data={filteredData}
+                  showDomain={!!domain}
+                />
+              )}
             </>
           )}
         </WidgetBody>
@@ -109,7 +118,6 @@ export default function OverviewTopPages({ projectId }: OverviewTopPagesProps) {
           <OverviewDetailsButton
             onClick={() => pushModal('OverviewTopPagesModal', { projectId })}
           />
-          {/* <OverviewChartToggle {...{ chartType, setChartType }} /> */}
           <div className="flex-1" />
           <Button
             variant={'ghost'}

@@ -35,7 +35,7 @@ import {
 } from '@openpanel/validation';
 
 import { round } from '@openpanel/common';
-import { ChartEngine } from '@openpanel/db';
+import { AggregateChartEngine, ChartEngine } from '@openpanel/db';
 import {
   differenceInDays,
   differenceInMonths,
@@ -414,6 +414,42 @@ export const chartRouter = createTRPCRouter({
       // Use new chart engine
       return ChartEngine.execute(input);
     }),
+
+  aggregate: publicProcedure
+    .input(zChartInput)
+    .query(async ({ input, ctx }) => {
+      if (ctx.session.userId) {
+        const access = await getProjectAccess({
+          projectId: input.projectId,
+          userId: ctx.session.userId,
+        });
+        if (!access) {
+          const share = await db.shareOverview.findFirst({
+            where: {
+              projectId: input.projectId,
+            },
+          });
+
+          if (!share) {
+            throw TRPCAccessError('You do not have access to this project');
+          }
+        }
+      } else {
+        const share = await db.shareOverview.findFirst({
+          where: {
+            projectId: input.projectId,
+          },
+        });
+
+        if (!share) {
+          throw TRPCAccessError('You do not have access to this project');
+        }
+      }
+
+      // Use aggregate chart engine (optimized for bar/pie charts)
+      return AggregateChartEngine.execute(input);
+    }),
+
   cohort: protectedProcedure
     .input(
       z.object({

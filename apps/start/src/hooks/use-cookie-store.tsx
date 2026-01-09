@@ -10,20 +10,27 @@ const VALID_COOKIES = [
   'chartType',
   'range',
   'supporter-prompt-closed',
+  'feedback-prompt-seen',
 ] as const;
 const COOKIE_EVENT_NAME = '__cookie-change';
 
 const setCookieFn = createServerFn({ method: 'POST' })
-  .inputValidator(z.object({ key: z.enum(VALID_COOKIES), value: z.string() }))
-  .handler(({ data: { key, value } }) => {
+  .inputValidator(
+    z.object({
+      key: z.enum(VALID_COOKIES),
+      value: z.string(),
+      maxAge: z.number().optional(),
+    }),
+  )
+  .handler(({ data: { key, value, maxAge } }) => {
     if (!VALID_COOKIES.includes(key)) {
       return;
     }
-    const maxAge = 60 * 60 * 24 * 365 * 10;
+    const cookieMaxAge = maxAge ?? 60 * 60 * 24 * 365 * 10;
     setCookie(key, value, {
-      maxAge,
+      maxAge: cookieMaxAge,
       path: '/',
-      expires: new Date(Date.now() + maxAge),
+      expires: new Date(Date.now() + cookieMaxAge),
     });
   });
 
@@ -36,6 +43,7 @@ export const getCookiesFn = createServerFn({ method: 'GET' }).handler(() =>
 export function useCookieStore<T>(
   key: (typeof VALID_COOKIES)[number],
   defaultValue: T,
+  options?: { maxAge?: number },
 ) {
   const { cookies } = useRouteContext({ strict: false });
   const [value, setValue] = useState<T>((cookies?.[key] ?? defaultValue) as T);
@@ -68,7 +76,9 @@ export function useCookieStore<T>(
         value,
         (newValue: T) => {
           setValue(newValue);
-          setCookieFn({ data: { key, value: String(newValue) } });
+          setCookieFn({
+            data: { key, value: String(newValue), maxAge: options?.maxAge },
+          });
           window.dispatchEvent(
             new CustomEvent(COOKIE_EVENT_NAME, {
               detail: { key, value: newValue, from: ref.current },
@@ -76,6 +86,6 @@ export function useCookieStore<T>(
           );
         },
       ] as const,
-    [value, key],
+    [value, key, options?.maxAge],
   );
 }

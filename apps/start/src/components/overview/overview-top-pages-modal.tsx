@@ -1,11 +1,11 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 
 import { useTRPC } from '@/integrations/trpc/react';
-import { ModalContent, ModalHeader } from '@/modals/Modal/Container';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { Button } from '../ui/button';
-import { ScrollArea } from '../ui/scroll-area';
-import { OverviewWidgetTablePages } from './overview-widget-table';
+import { useQuery } from '@tanstack/react-query';
+import { ExternalLinkIcon } from 'lucide-react';
+import { SerieIcon } from '../report-chart/common/serie-icon';
+import { Tooltiper } from '../ui/tooltip';
+import { OverviewListModal } from './overview-list-modal';
 import { useOverviewOptions } from './useOverviewOptions';
 
 interface OverviewTopPagesProps {
@@ -18,44 +18,54 @@ export default function OverviewTopPagesModal({
   const [filters, setFilter] = useEventQueryFilters();
   const { startDate, endDate, range } = useOverviewOptions();
   const trpc = useTRPC();
-  const query = useInfiniteQuery(
-    trpc.overview.topPages.infiniteQueryOptions(
-      {
-        projectId,
-        filters,
-        startDate,
-        endDate,
-        mode: 'page',
-        range,
-        limit: 50,
-      },
-      {
-        getNextPageParam: (_, pages) => pages.length + 1,
-      },
-    ),
+  const query = useQuery(
+    trpc.overview.topPages.queryOptions({
+      projectId,
+      filters,
+      startDate,
+      endDate,
+      mode: 'page',
+      range,
+    }),
   );
 
-  const data = query.data?.pages.flat();
-
   return (
-    <ModalContent>
-      <ModalHeader title="Top Pages" />
-      <ScrollArea className="-mx-6 px-2">
-        <OverviewWidgetTablePages
-          data={data ?? []}
-          lastColumnName={'Sessions'}
-        />
-        <div className="row center-center p-4 pb-0">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => query.fetchNextPage()}
-            loading={query.isFetching}
-          >
-            Load more
-          </Button>
-        </div>
-      </ScrollArea>
-    </ModalContent>
+    <OverviewListModal
+      title="Top Pages"
+      searchPlaceholder="Search pages..."
+      data={query.data ?? []}
+      keyExtractor={(item) => item.path + item.origin}
+      searchFilter={(item, query) =>
+        item.path.toLowerCase().includes(query) ||
+        item.origin.toLowerCase().includes(query)
+      }
+      columnName="Path"
+      renderItem={(item) => (
+        <Tooltiper asChild content={item.origin + item.path} side="left">
+          <div className="flex items-center gap-2 min-w-0">
+            <SerieIcon name={item.origin} />
+            <button
+              type="button"
+              className="truncate hover:underline"
+              onClick={() => {
+                setFilter('path', item.path);
+                setFilter('origin', item.origin);
+              }}
+            >
+              {item.path || <span className="opacity-40">Not set</span>}
+            </button>
+            <a
+              href={item.origin + item.path}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0"
+            >
+              <ExternalLinkIcon className="size-3 opacity-0 group-hover/row:opacity-100 transition-opacity" />
+            </a>
+          </div>
+        </Tooltiper>
+      )}
+    />
   );
 }

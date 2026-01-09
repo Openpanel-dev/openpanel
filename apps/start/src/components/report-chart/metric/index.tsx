@@ -1,6 +1,9 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import { AspectContainer } from '../aspect-container';
+import { ReportChartEmpty } from '../common/empty';
+import { ReportChartError } from '../common/error';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
@@ -47,28 +50,18 @@ export function Loading() {
   );
 }
 
-export function Error() {
+function Error() {
   return (
-    <div className="relative h-[70px]">
-      <div className="opacity-50">
-        <Loading />
-      </div>
-      <div className="center-center absolute inset-0 text-muted-foreground">
-        <div className="text-sm font-medium">Error fetching data</div>
-      </div>
-    </div>
+    <AspectContainer>
+      <ReportChartError />
+    </AspectContainer>
   );
 }
 
-export function Empty() {
+function Empty() {
   return (
-    <div className="relative h-[70px]">
-      <div className="opacity-50">
-        <Loading />
-      </div>
-      <div className="center-center absolute inset-0 text-muted-foreground">
-        <div className="text-sm font-medium">No data</div>
-      </div>
-    </div>
+    <AspectContainer>
+      <ReportChartEmpty />
+    </AspectContainer>
   );
 }

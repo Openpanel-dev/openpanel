@@ -1,8 +1,8 @@
 import { useThrottle } from '@/hooks/use-throttle';
 import { cn } from '@/utils/cn';
-import { ChevronsUpDownIcon, Icon, type LucideIcon } from 'lucide-react';
+import { ChevronsUpDownIcon, type LucideIcon, SearchIcon } from 'lucide-react';
 import { last } from 'ramda';
-import { Children, useEffect, useRef, useState } from 'react';
+import { Children, useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   DropdownMenu,
@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { Input } from '../ui/input';
 import type { WidgetHeadProps, WidgetTitleProps } from '../widget';
 import { WidgetHead as WidgetHeadBase } from '../widget';
 
@@ -165,6 +166,128 @@ export function WidgetButtons({
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
+    </div>
+  );
+}
+
+interface WidgetTab<T extends string = string> {
+  key: T;
+  label: string;
+}
+
+interface WidgetHeadSearchableProps<T extends string = string> {
+  tabs: WidgetTab<T>[];
+  activeTab: T;
+  className?: string;
+  onTabChange: (key: T) => void;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
+}
+
+export function WidgetHeadSearchable<T extends string>({
+  tabs,
+  className,
+  activeTab,
+  onTabChange,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder = 'Search',
+}: WidgetHeadSearchableProps<T>) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeftGradient, setShowLeftGradient] = useState(false);
+  const [showRightGradient, setShowRightGradient] = useState(false);
+
+  const updateGradients = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const hasOverflow = scrollWidth > clientWidth;
+
+    setShowLeftGradient(hasOverflow && scrollLeft > 0);
+    setShowRightGradient(
+      hasOverflow && scrollLeft < scrollWidth - clientWidth - 1,
+    );
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    updateGradients();
+
+    el.addEventListener('scroll', updateGradients);
+    window.addEventListener('resize', updateGradients);
+
+    return () => {
+      el.removeEventListener('scroll', updateGradients);
+      window.removeEventListener('resize', updateGradients);
+    };
+  }, [updateGradients]);
+
+  // Update gradients when tabs change
+  useEffect(() => {
+    // Use RAF to ensure DOM has updated
+    requestAnimationFrame(updateGradients);
+  }, [tabs, updateGradients]);
+
+  return (
+    <div className={cn('border-b border-border', className)}>
+      {/* Scrollable tabs container */}
+      <div className="relative">
+        {/* Left gradient */}
+        <div
+          className={cn(
+            'pointer-events-none absolute left-0 top-0 z-10 h-full w-8 bg-gradient-to-r from-card to-transparent transition-opacity duration-200',
+            showLeftGradient ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+
+        {/* Scrollable tabs */}
+        <div
+          ref={scrollRef}
+          className="flex gap-1 overflow-x-auto px-2 py-3 hide-scrollbar"
+        >
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => onTabChange(tab.key)}
+              className={cn(
+                'shrink-0 rounded-md py-1.5 text-sm font-medium transition-colors px-2',
+                activeTab === tab.key
+                  ? 'text-foreground'
+                  : 'text-muted-foreground hover:bg-def-100 hover:text-foreground',
+              )}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Right gradient */}
+        <div
+          className={cn(
+            'pointer-events-none absolute right-0 top-0 z-10 bottom-px w-8 bg-gradient-to-l from-card to-transparent transition-opacity duration-200',
+            showRightGradient ? 'opacity-100' : 'opacity-0',
+          )}
+        />
+      </div>
+
+      {/* Search input */}
+      {onSearchChange && (
+        <div className="relative">
+          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder={searchPlaceholder}
+            value={searchValue ?? ''}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9 bg-transparent border-0 text-sm rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground focus-visible:ring-offset-0 border-y"
+          />
+        </div>
+      )}
     </div>
   );
 }

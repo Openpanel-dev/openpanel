@@ -1,225 +1,174 @@
-import { ReportChart } from '@/components/report-chart';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { cn } from '@/utils/cn';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import type { IChartType } from '@openpanel/validation';
+import type { IChartInput } from '@openpanel/validation';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 import { Widget, WidgetBody } from '../widget';
-import { OverviewChartToggle } from './overview-chart-toggle';
-import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
+import { WidgetFooter, WidgetHeadSearchable } from './overview-widget';
+import {
+  type EventTableItem,
+  OverviewWidgetTableEvents,
+  OverviewWidgetTableLoading,
+} from './overview-widget-table';
 import { useOverviewOptions } from './useOverviewOptions';
-import { useOverviewWidget } from './useOverviewWidget';
+import { useOverviewWidgetV2 } from './useOverviewWidget';
 
 export interface OverviewTopEventsProps {
   projectId: string;
 }
+
 export default function OverviewTopEvents({
   projectId,
 }: OverviewTopEventsProps) {
   const { interval, range, previous, startDate, endDate } =
     useOverviewOptions();
-  const [filters] = useEventQueryFilters();
+  const [filters, setFilter] = useEventQueryFilters();
   const trpc = useTRPC();
   const { data: conversions } = useQuery(
     trpc.event.conversionNames.queryOptions({ projectId }),
   );
-  const [chartType, setChartType] = useState<IChartType>('bar');
-  const [widget, setWidget, widgets] = useOverviewWidget('ev', {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [widget, setWidget, widgets] = useOverviewWidgetV2('ev', {
     your: {
-      title: 'Top events',
-      btn: 'Your',
-      chart: {
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          series: [
-            {
-              type: 'event',
-              segment: 'event',
-              filters: [
-                ...filters,
-                {
-                  id: 'ex_session',
-                  name: 'name',
-                  operator: 'isNot',
-                  value: ['session_start', 'session_end', 'screen_view'],
-                },
-              ],
-              id: 'A',
-              name: '*',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'name',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval: interval,
-          name: 'Your top events',
-          range: range,
-          previous: previous,
-          metric: 'sum',
-        },
-      },
-    },
-    all: {
-      title: 'Top events',
-      btn: 'All',
-      chart: {
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          series: [
-            {
-              type: 'event',
-              segment: 'event',
-              filters: [...filters],
-              id: 'A',
-              name: '*',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'name',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval: interval,
-          name: 'All top events',
-          range: range,
-          previous: previous,
-          metric: 'sum',
-        },
+      title: 'Events',
+      btn: 'Events',
+      meta: {
+        filters: [
+          {
+            id: 'ex_session',
+            name: 'name',
+            operator: 'isNot',
+            value: ['session_start', 'session_end', 'screen_view'],
+          },
+        ],
+        eventName: '*',
       },
     },
     conversions: {
       title: 'Conversions',
       btn: 'Conversions',
       hide: !conversions || conversions.length === 0,
-      chart: {
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          series: [
-            {
-              type: 'event',
-              segment: 'event',
-              filters: [
-                ...filters,
-                {
-                  id: 'conversion',
-                  name: 'name',
-                  operator: 'is',
-                  value: conversions?.map((c) => c.name) ?? [],
-                },
-              ],
-              id: 'A',
-              name: '*',
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'name',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval: interval,
-          name: 'Conversions',
-          range: range,
-          previous: previous,
-          metric: 'sum',
-        },
+      meta: {
+        filters: [
+          {
+            id: 'conversion',
+            name: 'name',
+            operator: 'is',
+            value: conversions?.map((c) => c.name) ?? [],
+          },
+        ],
+        eventName: '*',
       },
     },
     link_out: {
       title: 'Link out',
       btn: 'Link out',
-      chart: {
-        report: {
-          limit: 10,
-          projectId,
-          startDate,
-          endDate,
-          series: [
-            {
-              type: 'event',
-              segment: 'event',
-              id: 'A',
-              name: 'link_out',
-              filters: [],
-            },
-          ],
-          breakdowns: [
-            {
-              id: 'A',
-              name: 'properties.href',
-            },
-          ],
-          chartType,
-          lineType: 'monotone',
-          interval: interval,
-          name: 'Link out',
-          range: range,
-          previous: previous,
-          metric: 'sum',
-        },
+      meta: {
+        filters: [],
+        eventName: 'link_out',
+        breakdownProperty: 'properties.href',
       },
     },
   });
 
+  const report: IChartInput = useMemo(
+    () => ({
+      limit: 1000,
+      projectId,
+      startDate,
+      endDate,
+      series: [
+        {
+          type: 'event' as const,
+          segment: 'event' as const,
+          filters: [...filters, ...(widget.meta?.filters ?? [])],
+          id: 'A',
+          name: widget.meta?.eventName ?? '*',
+        },
+      ],
+      breakdowns: [
+        {
+          id: 'A',
+          name: widget.meta?.breakdownProperty ?? 'name',
+        },
+      ],
+      chartType: 'bar' as const,
+      lineType: 'monotone' as const,
+      interval,
+      name: widget.title,
+      range,
+      previous,
+      metric: 'sum' as const,
+    }),
+    [projectId, startDate, endDate, filters, widget, interval, range, previous],
+  );
+
+  const query = useQuery(trpc.chart.aggregate.queryOptions(report));
+
+  const tableData: EventTableItem[] = useMemo(() => {
+    if (!query.data?.series) return [];
+
+    return query.data.series.map((serie) => ({
+      id: serie.id,
+      name: serie.names[serie.names.length - 1] ?? serie.names[0] ?? '',
+      count: serie.metrics.sum,
+    }));
+  }, [query.data]);
+
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return tableData.slice(0, 15);
+    }
+    const queryLower = searchQuery.toLowerCase();
+    return tableData
+      .filter((item) => item.name?.toLowerCase().includes(queryLower))
+      .slice(0, 15);
+  }, [tableData, searchQuery]);
+
+  const tabs = useMemo(
+    () =>
+      widgets
+        .filter((item) => item.hide !== true)
+        .map((w) => ({
+          key: w.key,
+          label: w.btn,
+        })),
+    [widgets],
+  );
+
   return (
     <>
       <Widget className="col-span-6 md:col-span-3">
-        <WidgetHead>
-          <div className="title">{widget.title}</div>
-          <WidgetButtons>
-            {widgets
-              .filter((item) => item.hide !== true)
-              .map((w) => (
-                <button
-                  type="button"
-                  key={w.key}
-                  onClick={() => setWidget(w.key)}
-                  className={cn(w.key === widget.key && 'active')}
-                >
-                  {w.btn}
-                </button>
-              ))}
-          </WidgetButtons>
-        </WidgetHead>
-        <WidgetBody className="p-3">
-          <ReportChart
-            options={{
-              hideID: true,
-              columns: ['Event'],
-              renderSerieName(names) {
-                return names[1];
-              },
-            }}
-            report={{
-              ...widget.chart.report,
-              previous: false,
-            }}
-          />
+        <WidgetHeadSearchable
+          tabs={tabs}
+          activeTab={widget.key}
+          onTabChange={setWidget}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          className="border-b-0 pb-2"
+        />
+        <WidgetBody className="p-0">
+          {query.isLoading ? (
+            <OverviewWidgetTableLoading />
+          ) : (
+            <OverviewWidgetTableEvents
+              data={filteredData}
+              onItemClick={(name) => {
+                if (widget.meta?.breakdownProperty) {
+                  setFilter(widget.meta.breakdownProperty, name);
+                } else {
+                  setFilter('name', name);
+                }
+              }}
+            />
+          )}
         </WidgetBody>
         <WidgetFooter>
-          <OverviewChartToggle {...{ chartType, setChartType }} />
+          <div className="flex-1" />
         </WidgetFooter>
       </Widget>
     </>

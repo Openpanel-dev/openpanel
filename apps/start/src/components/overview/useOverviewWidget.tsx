@@ -33,7 +33,10 @@ export function useOverviewWidget<T extends string>(
 
 export function useOverviewWidgetV2<T extends string>(
   key: string,
-  widgets: Record<T, { title: string; btn: string; meta?: any }>,
+  widgets: Record<
+    T,
+    { title: string; btn: string; meta?: any; hide?: boolean }
+  >,
 ) {
   const keys = Object.keys(widgets) as T[];
   const [widget, setWidget] = useQueryState<T>(

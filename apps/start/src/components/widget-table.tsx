@@ -185,7 +185,6 @@ export function WidgetTable<T>({
                   columns.length > 1 && column !== columns[0]
                     ? 'text-right'
                     : 'text-left',
-                  column.className,
                   responsiveClass,
                 )}
                 style={{ width: column.width }}

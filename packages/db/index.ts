@@ -28,5 +28,6 @@ export * from './src/types';
 export * from './src/clickhouse/query-builder';
 export * from './src/services/import.service';
 export * from './src/services/overview.service';
+export * from './src/services/pages.service';
 export * from './src/services/insights';
 export * from './src/session-context';

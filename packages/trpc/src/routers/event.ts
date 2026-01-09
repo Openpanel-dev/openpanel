@@ -15,7 +15,7 @@ import {
   getEventList,
   getEventMetasCached,
   getSettingsForProject,
-  overviewService,
+  pagesService,
   sessionService,
 } from '@openpanel/db';
 import {
@@ -324,28 +324,17 @@ export const eventRouter = createTRPCRouter({
         search: z.string().optional(),
         range: zRange,
         interval: zTimeInterval,
-        filters: z.array(zChartEventFilter).default([]),
       }),
     )
     .query(async ({ input }) => {
       const { timezone } = await getSettingsForProject(input.projectId);
       const { startDate, endDate } = getChartStartEndDate(input, timezone);
-      if (input.search) {
-        input.filters.push({
-          id: 'path',
-          name: 'path',
-          value: [input.search],
-          operator: 'contains',
-        });
-      }
-      return overviewService.getTopPages({
+      return pagesService.getTopPages({
         projectId: input.projectId,
-        filters: input.filters,
         startDate,
         endDate,
-        cursor: input.cursor || 1,
-        limit: input.take,
         timezone,
+        search: input.search,
       });
     }),
 

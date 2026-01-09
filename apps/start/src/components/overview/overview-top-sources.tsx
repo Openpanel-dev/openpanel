@@ -1,5 +1,5 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
-import { cn } from '@/utils/cn';
+import { useMemo, useState } from 'react';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
@@ -9,7 +9,12 @@ import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Widget, WidgetBody } from '../widget';
 import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
-import { WidgetButtons, WidgetFooter, WidgetHead } from './overview-widget';
+import {
+  OverviewLineChart,
+  OverviewLineChartLoading,
+} from './overview-line-chart';
+import { OverviewViewToggle, useOverviewView } from './overview-view-toggle';
+import { WidgetFooter, WidgetHeadSearchable } from './overview-widget';
 import {
   OverviewWidgetTableGeneric,
   OverviewWidgetTableLoading,
@@ -23,16 +28,18 @@ interface OverviewTopSourcesProps {
 export default function OverviewTopSources({
   projectId,
 }: OverviewTopSourcesProps) {
-  const { range, startDate, endDate } = useOverviewOptions();
+  const { interval, range, startDate, endDate } = useOverviewOptions();
   const [filters, setFilter] = useEventQueryFilters();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [view] = useOverviewView();
   const [widget, setWidget, widgets] = useOverviewWidgetV2('sources', {
     referrer_name: {
       title: 'Top sources',
-      btn: 'All',
+      btn: 'Refs',
     },
     referrer: {
       title: 'Top urls',
-      btn: 'URLs',
+      btn: 'Urls',
     },
     referrer_type: {
       title: 'Top types',
@@ -72,31 +79,67 @@ export default function OverviewTopSources({
     }),
   );
 
+  const seriesQuery = useQuery(
+    trpc.overview.topGenericSeries.queryOptions(
+      {
+        projectId,
+        range,
+        filters,
+        column: widget.key,
+        startDate,
+        endDate,
+        interval,
+      },
+      {
+        enabled: view === 'chart',
+      },
+    ),
+  );
+
+  const filteredData = useMemo(() => {
+    const data = (query.data ?? []).slice(0, 15);
+    if (!searchQuery.trim()) {
+      return data;
+    }
+    const queryLower = searchQuery.toLowerCase();
+    return data.filter((item) => item.name?.toLowerCase().includes(queryLower));
+  }, [query.data, searchQuery]);
+
+  const tabs = widgets.map((w) => ({
+    key: w.key,
+    label: w.btn,
+  }));
+
   return (
     <>
       <Widget className="col-span-6 md:col-span-3">
-        <WidgetHead>
-          <div className="title">{widget.title}</div>
-
-          <WidgetButtons>
-            {widgets.map((w) => (
-              <button
-                type="button"
-                key={w.key}
-                onClick={() => setWidget(w.key)}
-                className={cn(w.key === widget.key && 'active')}
-              >
-                {w.btn}
-              </button>
-            ))}
-          </WidgetButtons>
-        </WidgetHead>
+        <WidgetHeadSearchable
+          tabs={tabs}
+          activeTab={widget.key}
+          onTabChange={setWidget}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder={`Search ${widget.btn.toLowerCase()}`}
+          className="border-b-0 pb-2"
+        />
         <WidgetBody className="p-0">
-          {query.isLoading ? (
+          {view === 'chart' ? (
+            seriesQuery.isLoading ? (
+              <OverviewLineChartLoading />
+            ) : seriesQuery.data ? (
+              <OverviewLineChart
+                data={seriesQuery.data}
+                interval={interval}
+                searchQuery={searchQuery}
+              />
+            ) : (
+              <OverviewLineChartLoading />
+            )
+          ) : query.isLoading ? (
             <OverviewWidgetTableLoading />
           ) : (
             <OverviewWidgetTableGeneric
-              data={query.data ?? []}
+              data={filteredData}
               column={{
                 name: OVERVIEW_COLUMNS_NAME[widget.key],
                 render(item) {
@@ -137,7 +180,8 @@ export default function OverviewTopSources({
               })
             }
           />
-          {/* <OverviewChartToggle {...{ chartType, setChartType }} /> */}
+          <div className="flex-1" />
+          <OverviewViewToggle />
         </WidgetFooter>
       </Widget>
     </>
