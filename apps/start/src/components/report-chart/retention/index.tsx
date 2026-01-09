@@ -1,6 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
@@ -12,6 +13,7 @@ import CohortTable from './table';
 export function ReportRetentionChart() {
   const {
     report: {
+      id,
       series,
       range,
       projectId,
@@ -21,7 +23,10 @@ export function ReportRetentionChart() {
       interval,
     },
     isLazyLoading,
+    shareId,
+    shareType,
   } = useReportChartContext();
+  const { range: overviewRange, startDate: overviewStartDate, endDate: overviewEndDate, interval: overviewInterval } = useOverviewOptions();
   const eventSeries = series.filter((item) => item.type === 'event');
   const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
@@ -29,23 +34,40 @@ export function ReportRetentionChart() {
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
   const trpc = useTRPC();
   const res = useQuery(
-    trpc.chart.cohort.queryOptions(
-      {
-        firstEvent,
-        secondEvent,
-        projectId,
-        range,
-        startDate,
-        endDate,
-        criteria,
-        interval,
-      },
-      {
-        placeholderData: keepPreviousData,
-        staleTime: 1000 * 60 * 1,
-        enabled: isEnabled,
-      },
-    ),
+    shareId && shareType && id
+      ? trpc.chart.cohortByReport.queryOptions(
+          {
+            reportId: id,
+            shareId,
+            shareType,
+            range: overviewRange ?? undefined,
+            startDate: overviewStartDate ?? undefined,
+            endDate: overviewEndDate ?? undefined,
+            interval: overviewInterval ?? undefined,
+          },
+          {
+            placeholderData: keepPreviousData,
+            staleTime: 1000 * 60 * 1,
+            enabled: isEnabled,
+          },
+        )
+      : trpc.chart.cohort.queryOptions(
+          {
+            firstEvent,
+            secondEvent,
+            projectId,
+            range,
+            startDate,
+            endDate,
+            criteria,
+            interval,
+          },
+          {
+            placeholderData: keepPreviousData,
+            staleTime: 1000 * 60 * 1,
+            enabled: isEnabled,
+          },
+        ),
   );
 
   if (!isEnabled) {

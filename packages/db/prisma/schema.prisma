@@ -46,16 +46,18 @@ model Chat {
 }
 
 model Organization {
-  id              String          @id @default(dbgenerated("gen_random_uuid()"))
+  id              String           @id @default(dbgenerated("gen_random_uuid()"))
   name            String
   projects        Project[]
   members         Member[]
   createdByUserId String?
-  createdBy       User?           @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdBy       User?            @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   ProjectAccess   ProjectAccess[]
   Client          Client[]
   Dashboard       Dashboard[]
   ShareOverview   ShareOverview[]
+  ShareDashboard  ShareDashboard[]
+  ShareReport     ShareReport[]
   integrations    Integration[]
   invites         Invite[]
   timezone        String?
@@ -185,13 +187,15 @@ model Project {
   /// [IPrismaProjectFilters]
   filters                    Json          @default("[]")
 
-  clients    Client[]
-  reports    Report[]
-  dashboards Dashboard[]
-  share      ShareOverview?
-  meta       EventMeta[]
-  references Reference[]
-  access     ProjectAccess[]
+  clients         Client[]
+  reports         Report[]
+  dashboards      Dashboard[]
+  share           ShareOverview?
+  shareDashboards ShareDashboard[]
+  shareReports    ShareReport[]
+  meta            EventMeta[]
+  references      Reference[]
+  access          ProjectAccess[]
 
   notificationRules NotificationRule[]
   notifications     Notification[]
@@ -283,13 +287,14 @@ enum ChartType {
 }
 
 model Dashboard {
-  id             String       @id @default(dbgenerated("gen_random_uuid()"))
+  id             String          @id @default(dbgenerated("gen_random_uuid()"))
   name           String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
   projectId      String
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reports        Report[]
+  share          ShareDashboard?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -328,6 +333,7 @@ model Report {
   dashboardId String
   dashboard   Dashboard     @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
   layout      ReportLayout?
+  share       ShareReport?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -370,6 +376,38 @@ model ShareOverview {
   updatedAt      DateTime     @default(now()) @updatedAt
 
   @@map("shares")
+}
+
+model ShareDashboard {
+  id             String       @unique
+  dashboardId    String       @unique
+  dashboard      Dashboard    @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  public         Boolean      @default(false)
+  password       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@map("share_dashboards")
+}
+
+model ShareReport {
+  id             String       @unique
+  reportId       String       @unique @db.Uuid
+  report         Report       @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  public         Boolean      @default(false)
+  password       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@map("share_reports")
 }
 
 model EventMeta {

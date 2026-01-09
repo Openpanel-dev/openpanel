@@ -1,6 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
@@ -8,15 +9,33 @@ import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
 export function ReportMetricChart() {
-  const { isLazyLoading, report } = useReportChartContext();
+  const { isLazyLoading, report, shareId, shareType } = useReportChartContext();
   const trpc = useTRPC();
+  const { range, startDate, endDate, interval } = useOverviewOptions();
 
   const res = useQuery(
-    trpc.chart.chart.queryOptions(report, {
-      placeholderData: keepPreviousData,
-      staleTime: 1000 * 60 * 1,
-      enabled: !isLazyLoading,
-    }),
+    shareId && shareType && 'id' in report && report.id
+      ? trpc.chart.chartByReport.queryOptions(
+          {
+            reportId: report.id,
+            shareId,
+            shareType,
+            range: range ?? undefined,
+            startDate: startDate ?? undefined,
+            endDate: endDate ?? undefined,
+            interval: interval ?? undefined,
+          },
+          {
+            placeholderData: keepPreviousData,
+            staleTime: 1000 * 60 * 1,
+            enabled: !isLazyLoading,
+          },
+        )
+      : trpc.chart.chart.queryOptions(report, {
+          placeholderData: keepPreviousData,
+          staleTime: 1000 * 60 * 1,
+          enabled: !isLazyLoading,
+        }),
   );
 
   if (

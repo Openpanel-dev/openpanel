@@ -23,7 +23,9 @@ import { Route as LoginResetPasswordRouteImport } from './routes/_login.reset-pa
 import { Route as LoginLoginRouteImport } from './routes/_login.login'
 import { Route as AppOrganizationIdRouteImport } from './routes/_app.$organizationId'
 import { Route as AppOrganizationIdIndexRouteImport } from './routes/_app.$organizationId.index'
+import { Route as ShareReportShareIdRouteImport } from './routes/share.report.$shareId'
 import { Route as ShareOverviewShareIdRouteImport } from './routes/share.overview.$shareId'
+import { Route as ShareDashboardShareIdRouteImport } from './routes/share.dashboard.$shareId'
 import { Route as StepsOnboardingProjectRouteImport } from './routes/_steps.onboarding.project'
 import { Route as AppOrganizationIdSettingsRouteImport } from './routes/_app.$organizationId.settings'
 import { Route as AppOrganizationIdBillingRouteImport } from './routes/_app.$organizationId.billing'
@@ -164,9 +166,19 @@ const AppOrganizationIdIndexRoute = AppOrganizationIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppOrganizationIdRoute,
 } as any)
+const ShareReportShareIdRoute = ShareReportShareIdRouteImport.update({
+  id: '/share/report/$shareId',
+  path: '/share/report/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShareOverviewShareIdRoute = ShareOverviewShareIdRouteImport.update({
   id: '/share/overview/$shareId',
   path: '/share/overview/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareDashboardShareIdRoute = ShareDashboardShareIdRouteImport.update({
+  id: '/share/dashboard/$shareId',
+  path: '/share/dashboard/$shareId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StepsOnboardingProjectRoute = StepsOnboardingProjectRouteImport.update({
@@ -498,7 +510,9 @@ export interface FileRoutesByFullPath {
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/onboarding/project': typeof StepsOnboardingProjectRoute
+  '/share/dashboard/$shareId': typeof ShareDashboardShareIdRoute
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
+  '/share/report/$shareId': typeof ShareReportShareIdRoute
   '/$organizationId/': typeof AppOrganizationIdIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
@@ -556,7 +570,9 @@ export interface FileRoutesByTo {
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/onboarding/project': typeof StepsOnboardingProjectRoute
+  '/share/dashboard/$shareId': typeof ShareDashboardShareIdRoute
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
+  '/share/report/$shareId': typeof ShareReportShareIdRoute
   '/$organizationId': typeof AppOrganizationIdIndexRoute
   '/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
@@ -614,7 +630,9 @@ export interface FileRoutesById {
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/_app/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/_steps/onboarding/project': typeof StepsOnboardingProjectRoute
+  '/share/dashboard/$shareId': typeof ShareDashboardShareIdRoute
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
+  '/share/report/$shareId': typeof ShareReportShareIdRoute
   '/_app/$organizationId/': typeof AppOrganizationIdIndexRoute
   '/_app/$organizationId/$projectId/chat': typeof AppOrganizationIdProjectIdChatRoute
   '/_app/$organizationId/$projectId/dashboards': typeof AppOrganizationIdProjectIdDashboardsRoute
@@ -683,7 +701,9 @@ export interface FileRouteTypes {
     | '/$organizationId/billing'
     | '/$organizationId/settings'
     | '/onboarding/project'
+    | '/share/dashboard/$shareId'
     | '/share/overview/$shareId'
+    | '/share/report/$shareId'
     | '/$organizationId/'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
@@ -741,7 +761,9 @@ export interface FileRouteTypes {
     | '/$organizationId/billing'
     | '/$organizationId/settings'
     | '/onboarding/project'
+    | '/share/dashboard/$shareId'
     | '/share/overview/$shareId'
+    | '/share/report/$shareId'
     | '/$organizationId'
     | '/$organizationId/$projectId/chat'
     | '/$organizationId/$projectId/dashboards'
@@ -798,7 +820,9 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/billing'
     | '/_app/$organizationId/settings'
     | '/_steps/onboarding/project'
+    | '/share/dashboard/$shareId'
     | '/share/overview/$shareId'
+    | '/share/report/$shareId'
     | '/_app/$organizationId/'
     | '/_app/$organizationId/$projectId/chat'
     | '/_app/$organizationId/$projectId/dashboards'
@@ -862,7 +886,9 @@ export interface RootRouteChildren {
   StepsRoute: typeof StepsRouteWithChildren
   ApiConfigRoute: typeof ApiConfigRoute
   ApiHealthcheckRoute: typeof ApiHealthcheckRoute
+  ShareDashboardShareIdRoute: typeof ShareDashboardShareIdRoute
   ShareOverviewShareIdRoute: typeof ShareOverviewShareIdRoute
+  ShareReportShareIdRoute: typeof ShareReportShareIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -965,11 +991,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdIndexRouteImport
       parentRoute: typeof AppOrganizationIdRoute
     }
+    '/share/report/$shareId': {
+      id: '/share/report/$shareId'
+      path: '/share/report/$shareId'
+      fullPath: '/share/report/$shareId'
+      preLoaderRoute: typeof ShareReportShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/share/overview/$shareId': {
       id: '/share/overview/$shareId'
       path: '/share/overview/$shareId'
       fullPath: '/share/overview/$shareId'
       preLoaderRoute: typeof ShareOverviewShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/dashboard/$shareId': {
+      id: '/share/dashboard/$shareId'
+      path: '/share/dashboard/$shareId'
+      fullPath: '/share/dashboard/$shareId'
+      preLoaderRoute: typeof ShareDashboardShareIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_steps/onboarding/project': {
@@ -1751,7 +1791,9 @@ const rootRouteChildren: RootRouteChildren = {
   StepsRoute: StepsRouteWithChildren,
   ApiConfigRoute: ApiConfigRoute,
   ApiHealthcheckRoute: ApiHealthcheckRoute,
+  ShareDashboardShareIdRoute: ShareDashboardShareIdRoute,
   ShareOverviewShareIdRoute: ShareOverviewShareIdRoute,
+  ShareReportShareIdRoute: ShareReportShareIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

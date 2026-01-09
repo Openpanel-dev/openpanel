@@ -28,9 +28,11 @@ export type ReportChartContextType = {
       onClick: () => void;
     }[];
   }>;
-  report: IChartProps;
+  report: IChartProps & { id?: string };
   isLazyLoading: boolean;
   isEditMode: boolean;
+  shareId?: string;
+  shareType?: 'dashboard' | 'report';
 };
 
 type ReportChartContextProviderProps = ReportChartContextType & {
@@ -40,6 +42,8 @@ type ReportChartContextProviderProps = ReportChartContextType & {
 export type ReportChartProps = Partial<ReportChartContextType> & {
   report: IChartInput;
   lazy?: boolean;
+  shareId?: string;
+  shareType?: 'dashboard' | 'report';
 };
 
 const context = createContext<ReportChartContextType | null>(null);

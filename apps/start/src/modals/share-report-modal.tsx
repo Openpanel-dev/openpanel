@@ -1,0 +1,91 @@
+import { ButtonContainer } from '@/components/button-container';
+import { Button } from '@/components/ui/button';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError } from '@/integrations/trpc/react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useNavigate } from '@tanstack/react-router';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
+
+import { zShareReport } from '@openpanel/validation';
+
+import { Input } from '@/components/ui/input';
+import { useTRPC } from '@/integrations/trpc/react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { popModal } from '.';
+import { ModalContent, ModalHeader } from './Modal/Container';
+
+const validator = zShareReport;
+
+type IForm = z.infer<typeof validator>;
+
+export default function ShareReportModal({ reportId }: { reportId: string }) {
+  const { projectId, organizationId } = useAppParams();
+  const navigate = useNavigate();
+
+  const { register, handleSubmit } = useForm<IForm>({
+    resolver: zodResolver(validator),
+    defaultValues: {
+      public: true,
+      password: '',
+      projectId,
+      organizationId,
+      reportId,
+    },
+  });
+
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const mutation = useMutation(
+    trpc.share.createReport.mutationOptions({
+      onError: handleError,
+      onSuccess(res) {
+        queryClient.invalidateQueries(trpc.share.report.pathFilter());
+        toast('Success', {
+          description: `Your report is now ${res.public ? 'public' : 'private'}`,
+          action: {
+            label: 'View',
+            onClick: () =>
+              navigate({
+                to: '/share/report/$shareId',
+                params: {
+                  shareId: res.id,
+                },
+              }),
+          },
+        });
+        popModal();
+      },
+    }),
+  );
+
+  return (
+    <ModalContent className="max-w-md">
+      <ModalHeader
+        title="Report public availability"
+        text="You can choose if you want to add a password to make it a bit more private."
+      />
+      <form
+        onSubmit={handleSubmit((values) => {
+          mutation.mutate(values);
+        })}
+      >
+        <Input
+          {...register('password')}
+          placeholder="Enter your password"
+          size="large"
+        />
+        <ButtonContainer>
+          <Button type="button" variant="outline" onClick={() => popModal()}>
+            Cancel
+          </Button>
+          <Button type="submit" loading={mutation.isPending}>
+            Make it public
+          </Button>
+        </ButtonContainer>
+      </form>
+    </ModalContent>
+  );
+}
+

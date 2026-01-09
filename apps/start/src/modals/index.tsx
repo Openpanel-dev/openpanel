@@ -30,7 +30,9 @@ import OverviewFilters from './overview-filters';
 import RequestPasswordReset from './request-reset-password';
 import SaveReport from './save-report';
 import SelectBillingPlan from './select-billing-plan';
+import ShareDashboardModal from './share-dashboard-modal';
 import ShareOverviewModal from './share-overview-modal';
+import ShareReportModal from './share-report-modal';
 import ViewChartUsers from './view-chart-users';
 
 const modals = {
@@ -51,6 +53,8 @@ const modals = {
   EditReport: EditReport,
   EditReference: EditReference,
   ShareOverviewModal: ShareOverviewModal,
+  ShareDashboardModal: ShareDashboardModal,
+  ShareReportModal: ShareReportModal,
   AddReference: AddReference,
   ViewChartUsers: ViewChartUsers,
   Instructions: Instructions,

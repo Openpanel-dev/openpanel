@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   PlusIcon,
   RotateCcw,
+  ShareIcon,
   Trash,
   TrashIcon,
 } from 'lucide-react';
@@ -30,7 +31,7 @@ import { OverviewRange } from '@/components/overview/overview-range';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
-import { showConfirm } from '@/modals';
+import { pushModal, showConfirm } from '@/modals';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -484,6 +485,12 @@ function Component() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() => pushModal('ShareDashboardModal', { dashboardId })}
+                  >
+                    <ShareIcon className="mr-2 size-4" />
+                    Share dashboard
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
                       showConfirm({

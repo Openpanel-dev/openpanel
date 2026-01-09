@@ -246,6 +246,22 @@ export const zShareOverview = z.object({
   public: z.boolean(),
 });
 
+export const zShareDashboard = z.object({
+  organizationId: z.string(),
+  projectId: z.string(),
+  dashboardId: z.string(),
+  password: z.string().nullable(),
+  public: z.boolean(),
+});
+
+export const zShareReport = z.object({
+  organizationId: z.string(),
+  projectId: z.string(),
+  reportId: z.string(),
+  password: z.string().nullable(),
+  public: z.boolean(),
+});
+
 export const zCreateReference = z.object({
   title: z.string(),
   description: z.string().nullish(),
@@ -485,6 +501,7 @@ export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;
 export const zSignInShare = z.object({
   password: z.string().min(1),
   shareId: z.string().min(1),
+  shareType: z.enum(['overview', 'dashboard', 'report']).optional().default('overview'),
 });
 export type ISignInShare = z.infer<typeof zSignInShare>;
 

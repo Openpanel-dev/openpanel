@@ -2,6 +2,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { useQuery } from '@tanstack/react-query';
 
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import type { IChartInput } from '@openpanel/validation';
 
 import { AspectContainer } from '../aspect-container';
@@ -14,6 +15,7 @@ import { Chart, Summary, Tables } from './chart';
 export function ReportFunnelChart() {
   const {
     report: {
+      id,
       series,
       range,
       projectId,
@@ -25,28 +27,48 @@ export function ReportFunnelChart() {
       breakdowns,
     },
     isLazyLoading,
+    shareId,
+    shareType,
   } = useReportChartContext();
+  const { range: overviewRange, startDate: overviewStartDate, endDate: overviewEndDate, interval: overviewInterval } = useOverviewOptions();
 
-  const input: IChartInput = {
-    series,
-    range,
-    projectId,
-    interval: 'day',
-    chartType: 'funnel',
-    breakdowns,
-    funnelWindow,
-    funnelGroup,
-    previous,
-    metric: 'sum',
-    startDate,
-    endDate,
-    limit: 20,
-  };
   const trpc = useTRPC();
   const res = useQuery(
-    trpc.chart.funnel.queryOptions(input, {
-      enabled: !isLazyLoading && input.series.length > 0,
-    }),
+    shareId && shareType && id
+      ? trpc.chart.funnelByReport.queryOptions(
+          {
+            reportId: id,
+            shareId,
+            shareType,
+            range: overviewRange ?? undefined,
+            startDate: overviewStartDate ?? undefined,
+            endDate: overviewEndDate ?? undefined,
+            interval: overviewInterval ?? undefined,
+          },
+          {
+            enabled: !isLazyLoading && series.length > 0,
+          },
+        )
+      : (() => {
+          const input: IChartInput = {
+            series,
+            range,
+            projectId,
+            interval: 'day',
+            chartType: 'funnel',
+            breakdowns,
+            funnelWindow,
+            funnelGroup,
+            previous,
+            metric: 'sum',
+            startDate,
+            endDate,
+            limit: 20,
+          };
+          return trpc.chart.funnel.queryOptions(input, {
+            enabled: !isLazyLoading && input.series.length > 0,
+          });
+        })(),
   );
 
   if (isLazyLoading || res.isLoading) {
