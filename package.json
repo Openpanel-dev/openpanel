@@ -25,7 +25,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "lint:workspace": "pnpm dlx sherif@latest",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r --no-bail typecheck",
     "update-simple-git-hooks": "npx simple-git-hooks"
   },
   "simple-git-hooks": {

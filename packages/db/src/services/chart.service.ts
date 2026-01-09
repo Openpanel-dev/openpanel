@@ -1,4 +1,3 @@
-import { uniq } from 'ramda';
 import sqlstring from 'sqlstring';
 
 import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
@@ -355,23 +354,10 @@ export function getAggregateChartSql({
   endDate,
   projectId,
   limit,
-  timezone,
 }: Omit<IGetChartDataInput, 'interval' | 'chartType'> & {
   timezone: string;
 }) {
-  const {
-    sb,
-    join,
-    getWhere,
-    getFrom,
-    getJoins,
-    getSelect,
-    getOrderBy,
-    getGroupBy,
-    getWith,
-    with: addCte,
-    getSql,
-  } = createSqlBuilder();
+  const { sb, join, getJoins, with: addCte, getSql } = createSqlBuilder();
 
   sb.where = getEventFiltersWhereClause(event.filters);
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;

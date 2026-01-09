@@ -1,7 +1,7 @@
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
 
-export interface IGetTopPagesInput {
+export interface IGetPagesInput {
   projectId: string;
   startDate: string;
   endDate: string;
@@ -28,7 +28,7 @@ export class PagesService {
     endDate,
     timezone,
     search,
-  }: IGetTopPagesInput): Promise<ITopPage[]> {
+  }: IGetPagesInput): Promise<ITopPage[]> {
     // CTE: Get titles from the last 30 days for faster retrieval
     const titlesCte = clix(this.client, timezone)
       .select([

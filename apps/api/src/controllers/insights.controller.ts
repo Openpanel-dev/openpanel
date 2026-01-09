@@ -96,8 +96,6 @@ export async function getPages(
     startDate: startDate,
     endDate: endDate,
     timezone,
-    cursor: parsed.data.cursor,
-    limit: Math.min(parsed.data.limit, 50),
   });
 }
 
@@ -170,8 +168,6 @@ export function getOverviewGeneric(
         startDate: startDate,
         endDate: endDate,
         timezone,
-        cursor: parsed.data.cursor,
-        limit: Math.min(parsed.data.limit, 50),
       }),
     );
   };

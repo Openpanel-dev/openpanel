@@ -127,6 +127,8 @@ export async function executeAggregateChart(
       endDate: normalized.endDate,
       breakdowns: normalized.breakdowns,
       limit: normalized.limit,
+      metric: normalized.metric,
+      previous: normalized.previous,
       timezone,
     };
 
@@ -251,6 +253,8 @@ export async function executeAggregateChart(
         endDate: previousPeriod.endDate,
         breakdowns: normalized.breakdowns,
         limit: normalized.limit,
+        metric: normalized.metric,
+        previous: normalized.previous,
         timezone,
       };
 
