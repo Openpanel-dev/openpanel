@@ -8,8 +8,22 @@ export type ILogger = winston.Logger;
 const logLevel = process.env.LOG_LEVEL ?? 'info';
 const silent = process.env.LOG_SILENT === 'true';
 
-// Add colors for custom levels (fatal, warn, trace) that aren't in default color schemes
+const customLevels = {
+  fatal: 0,
+  warn: 4,
+  trace: 7,
+};
+
+// naming all darn levels to make sure we never get any errors with the logger
 winston.addColors({
+  emerg: 'red',
+  alert: 'red',
+  crit: 'red',
+  error: 'red',
+  warning: 'yellow',
+  notice: 'cyan',
+  info: 'green',
+  debug: 'blue',
   fatal: 'red',
   warn: 'yellow',
   trace: 'gray',
@@ -112,11 +126,7 @@ export function createLogger({ name }: { name: string }): ILogger {
     format,
     transports,
     silent,
-    // Add ISO levels of logging from PINO
-    levels: Object.assign(
-      { fatal: 0, warn: 4, trace: 7 },
-      winston.config.syslog.levels,
-    ),
+    levels: Object.assign({}, customLevels, winston.config.syslog.levels),
   });
 
   return logger;
