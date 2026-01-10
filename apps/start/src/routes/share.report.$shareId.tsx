@@ -2,10 +2,9 @@ import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LoginNavbar } from '@/components/login-navbar';
-import { ReportChart } from '@/components/report-chart';
-import { OverviewRange } from '@/components/overview/overview-range';
 import { OverviewInterval } from '@/components/overview/overview-interval';
-import { PageContainer } from '@/components/page-container';
+import { OverviewRange } from '@/components/overview/overview-range';
+import { ReportChart } from '@/components/report-chart';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
@@ -29,13 +28,7 @@ export const Route = createFileRoute('/share/report/$shareId')({
       return { share: null };
     }
 
-    const report = await context.queryClient.ensureQueryData(
-      context.trpc.report.get.queryOptions({
-        reportId: share.reportId,
-      }),
-    );
-
-    return { share, report };
+    return { share };
   },
   head: ({ loaderData }) => {
     if (!loaderData || !loaderData.share) {
@@ -51,7 +44,7 @@ export const Route = createFileRoute('/share/report/$shareId')({
     return {
       meta: [
         {
-          title: `${loaderData.report?.name || 'Report'} - ${loaderData.share.organization?.name} - OpenPanel.dev`,
+          title: `${loaderData.share.report.name || 'Report'} - ${loaderData.share.organization?.name} - OpenPanel.dev`,
         },
       ],
     };
@@ -76,12 +69,6 @@ function RouteComponent() {
     }),
   );
 
-  const reportQuery = useSuspenseQuery(
-    trpc.report.get.queryOptions({
-      reportId: shareQuery.data!.reportId,
-    }),
-  );
-
   const hasAccess = shareQuery.data?.hasAccess;
 
   if (!shareQuery.data) {
@@ -93,7 +80,8 @@ function RouteComponent() {
   }
 
   const share = shareQuery.data;
-  const report = reportQuery.data;
+
+  console.log('share', share);
 
   // Handle password protection
   if (share.password && !hasAccess) {
@@ -110,33 +98,26 @@ function RouteComponent() {
           <LoginNavbar className="relative p-4" />
         </div>
       )}
-      <PageContainer>
-        <div className="sticky-header [animation-range:50px_100px]!">
-          <div className="p-4 col gap-2 mx-auto max-w-7xl">
-            <div className="row justify-between">
-              <div className="flex gap-2">
-                <OverviewRange />
-                <OverviewInterval />
-              </div>
+      <div className="sticky-header [animation-range:50px_100px]!">
+        <div className="p-4 col gap-2 mx-auto max-w-7xl">
+          <div className="row justify-between">
+            <div className="flex gap-2">
+              <OverviewRange />
+              <OverviewInterval />
             </div>
           </div>
         </div>
-        <div className="p-4">
-          <div className="card">
-            <div className="p-4 border-b">
-              <div className="font-medium text-xl">{report.name}</div>
-            </div>
-            <div className="p-4">
-              <ReportChart
-                report={report}
-                shareId={shareId}
-                shareType="report"
-              />
-            </div>
+      </div>
+      <div className="mx-auto max-w-7xl p-4">
+        <div className="card">
+          <div className="p-4 border-b">
+            <div className="font-medium text-xl">{share.report.name}</div>
+          </div>
+          <div className="p-4">
+            <ReportChart report={share.report} shareId={shareId} />
           </div>
         </div>
-      </PageContainer>
+      </div>
     </div>
   );
 }
-

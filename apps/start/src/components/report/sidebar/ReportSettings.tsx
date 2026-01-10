@@ -67,7 +67,7 @@ export function ReportSettings() {
   return (
     <div>
       <h3 className="mb-2 font-medium">Settings</h3>
-      <div className="col rounded-lg border bg-card p-4 gap-2">
+      <div className="col rounded-lg border bg-card p-4 gap-4">
         {fields.includes('previous') && (
           <Label className="flex items-center justify-between mb-0">
             <span className="whitespace-nowrap">
@@ -81,7 +81,9 @@ export function ReportSettings() {
         )}
         {fields.includes('criteria') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Criteria</span>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              Criteria
+            </Label>
             <Combobox
               align="end"
               placeholder="Select criteria"
@@ -102,7 +104,7 @@ export function ReportSettings() {
         )}
         {fields.includes('unit') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Unit</span>
+            <Label className="whitespace-nowrap font-medium mb-0">Unit</Label>
             <Combobox
               align="end"
               placeholder="Unit"
@@ -125,7 +127,9 @@ export function ReportSettings() {
         )}
         {fields.includes('funnelGroup') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Funnel Group</span>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              Funnel Group
+            </Label>
             <Combobox
               align="end"
               placeholder="Default: Session"
@@ -150,7 +154,9 @@ export function ReportSettings() {
         )}
         {fields.includes('funnelWindow') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Funnel Window</span>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              Funnel Window
+            </Label>
             <InputEnter
               type="number"
               value={funnelWindow ? String(funnelWindow) : ''}
@@ -168,7 +174,7 @@ export function ReportSettings() {
         )}
         {fields.includes('sankeyMode') && options?.type === 'sankey' && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Mode</span>
+            <Label className="whitespace-nowrap font-medium mb-0">Mode</Label>
             <Combobox
               align="end"
               placeholder="Select mode"
@@ -197,7 +203,7 @@ export function ReportSettings() {
         )}
         {fields.includes('sankeySteps') && options?.type === 'sankey' && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Steps</span>
+            <Label className="whitespace-nowrap font-medium mb-0">Steps</Label>
             <InputEnter
               type="number"
               value={options?.steps ? String(options.steps) : '5'}
@@ -214,10 +220,10 @@ export function ReportSettings() {
           </div>
         )}
         {fields.includes('sankeyExclude') && options?.type === 'sankey' && (
-          <div className="flex flex-col gap-2">
-            <span className="whitespace-nowrap font-medium">
+          <div className="flex flex-col">
+            <Label className="whitespace-nowrap font-medium">
               Exclude Events
-            </span>
+            </Label>
             <ComboboxEvents
               multiple
               searchable
@@ -231,10 +237,10 @@ export function ReportSettings() {
           </div>
         )}
         {fields.includes('sankeyInclude') && options?.type === 'sankey' && (
-          <div className="flex flex-col gap-2">
-            <span className="whitespace-nowrap font-medium">
+          <div className="flex flex-col">
+            <Label className="whitespace-nowrap font-medium">
               Include events
-            </span>
+            </Label>
             <ComboboxEvents
               multiple
               searchable

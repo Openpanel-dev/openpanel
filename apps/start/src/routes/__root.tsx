@@ -2,7 +2,6 @@ import {
   HeadContent,
   Scripts,
   createRootRouteWithContext,
-  useRouteContext,
 } from '@tanstack/react-router';
 
 import 'flag-icons/css/flag-icons.min.css';

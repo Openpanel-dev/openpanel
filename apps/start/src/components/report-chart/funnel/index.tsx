@@ -25,50 +25,35 @@ export function ReportFunnelChart() {
       endDate,
       previous,
       breakdowns,
+      interval,
     },
     isLazyLoading,
     shareId,
-    shareType,
   } = useReportChartContext();
   const { range: overviewRange, startDate: overviewStartDate, endDate: overviewEndDate, interval: overviewInterval } = useOverviewOptions();
 
   const trpc = useTRPC();
+  const input: IChartInput = {
+    series,
+    range: overviewRange ?? range,
+    projectId,
+    interval: overviewInterval ?? interval ?? 'day',
+    chartType: 'funnel',
+    breakdowns,
+    funnelWindow,
+    funnelGroup,
+    previous,
+    metric: 'sum',
+    startDate: overviewStartDate ?? startDate,
+    endDate: overviewEndDate ?? endDate,
+    limit: 20,
+    shareId,
+    reportId: id,
+  };
   const res = useQuery(
-    shareId && shareType && id
-      ? trpc.chart.funnelByReport.queryOptions(
-          {
-            reportId: id,
-            shareId,
-            shareType,
-            range: overviewRange ?? undefined,
-            startDate: overviewStartDate ?? undefined,
-            endDate: overviewEndDate ?? undefined,
-            interval: overviewInterval ?? undefined,
-          },
-          {
-            enabled: !isLazyLoading && series.length > 0,
-          },
-        )
-      : (() => {
-          const input: IChartInput = {
-            series,
-            range,
-            projectId,
-            interval: 'day',
-            chartType: 'funnel',
-            breakdowns,
-            funnelWindow,
-            funnelGroup,
-            previous,
-            metric: 'sum',
-            startDate,
-            endDate,
-            limit: 20,
-          };
-          return trpc.chart.funnel.queryOptions(input, {
-            enabled: !isLazyLoading && input.series.length > 0,
-          });
-        })(),
+    trpc.chart.funnel.queryOptions(input, {
+      enabled: !isLazyLoading && input.series.length > 0,
+    }),
   );
 
   if (isLazyLoading || res.isLoading) {

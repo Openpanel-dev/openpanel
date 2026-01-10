@@ -12,33 +12,27 @@ import { Chart } from './chart';
 import { Summary } from './summary';
 
 export function ReportConversionChart() {
-  const { isLazyLoading, report, shareId, shareType } = useReportChartContext();
+  const { isLazyLoading, report, shareId } = useReportChartContext();
   const trpc = useTRPC();
   const { range, startDate, endDate, interval } = useOverviewOptions();
   console.log(report.limit);
   const res = useQuery(
-    shareId && shareType && 'id' in report && report.id
-      ? trpc.chart.conversionByReport.queryOptions(
-          {
-            reportId: report.id,
-            shareId,
-            shareType,
-            range: range ?? undefined,
-            startDate: startDate ?? undefined,
-            endDate: endDate ?? undefined,
-            interval: interval ?? undefined,
-          },
-          {
-            placeholderData: keepPreviousData,
-            staleTime: 1000 * 60 * 1,
-            enabled: !isLazyLoading,
-          },
-        )
-      : trpc.chart.conversion.queryOptions(report, {
-          placeholderData: keepPreviousData,
-          staleTime: 1000 * 60 * 1,
-          enabled: !isLazyLoading,
-        }),
+    trpc.chart.conversion.queryOptions(
+      {
+        ...report,
+        shareId,
+        reportId: 'id' in report ? report.id : undefined,
+        range: range ?? report.range,
+        startDate: startDate ?? report.startDate,
+        endDate: endDate ?? report.endDate,
+        interval: interval ?? report.interval,
+      },
+      {
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 1,
+        enabled: !isLazyLoading,
+      },
+    ),
   );
 
   if (

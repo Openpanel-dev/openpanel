@@ -86,16 +86,12 @@ export const zChartBreakdown = z.object({
   name: z.string(),
 });
 
-// Support both old format (array of events without type) and new format (array of event/formula items)
-// Preprocess to normalize: if item has 'type' field, use discriminated union; otherwise, add type: 'event'
 export const zChartSeries = z
   .array(zChartEventItem)
   .describe(
     'Array of series (events or formulas) to be tracked and displayed in the chart',
   );
 
-// Keep zChartEvents as an alias for backward compatibility during migration
-export const zChartEvents = zChartSeries;
 export const zChartBreakdowns = z.array(zChartBreakdown);
 
 export const zChartType = z.enum(objectToZodEnums(chartTypes));
@@ -501,7 +497,10 @@ export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;
 export const zSignInShare = z.object({
   password: z.string().min(1),
   shareId: z.string().min(1),
-  shareType: z.enum(['overview', 'dashboard', 'report']).optional().default('overview'),
+  shareType: z
+    .enum(['overview', 'dashboard', 'report'])
+    .optional()
+    .default('overview'),
 });
 export type ISignInShare = z.infer<typeof zSignInShare>;
 

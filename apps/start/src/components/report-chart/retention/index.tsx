@@ -24,7 +24,6 @@ export function ReportRetentionChart() {
     },
     isLazyLoading,
     shareId,
-    shareType,
   } = useReportChartContext();
   const { range: overviewRange, startDate: overviewStartDate, endDate: overviewEndDate, interval: overviewInterval } = useOverviewOptions();
   const eventSeries = series.filter((item) => item.type === 'event');
@@ -34,40 +33,25 @@ export function ReportRetentionChart() {
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
   const trpc = useTRPC();
   const res = useQuery(
-    shareId && shareType && id
-      ? trpc.chart.cohortByReport.queryOptions(
-          {
-            reportId: id,
-            shareId,
-            shareType,
-            range: overviewRange ?? undefined,
-            startDate: overviewStartDate ?? undefined,
-            endDate: overviewEndDate ?? undefined,
-            interval: overviewInterval ?? undefined,
-          },
-          {
-            placeholderData: keepPreviousData,
-            staleTime: 1000 * 60 * 1,
-            enabled: isEnabled,
-          },
-        )
-      : trpc.chart.cohort.queryOptions(
-          {
-            firstEvent,
-            secondEvent,
-            projectId,
-            range,
-            startDate,
-            endDate,
-            criteria,
-            interval,
-          },
-          {
-            placeholderData: keepPreviousData,
-            staleTime: 1000 * 60 * 1,
-            enabled: isEnabled,
-          },
-        ),
+    trpc.chart.cohort.queryOptions(
+      {
+        firstEvent,
+        secondEvent,
+        projectId,
+        range: overviewRange ?? range,
+        startDate: overviewStartDate ?? startDate,
+        endDate: overviewEndDate ?? endDate,
+        criteria,
+        interval: overviewInterval ?? interval,
+        shareId,
+        reportId: id,
+      },
+      {
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 1,
+        enabled: isEnabled,
+      },
+    ),
   );
 
   if (!isEnabled) {

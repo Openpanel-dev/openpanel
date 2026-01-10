@@ -94,10 +94,11 @@ export function transformReport(
       | 'on_or_after'
       | 'on'
       | undefined,
+    layout: report.layout ?? undefined,
+    options: options ?? undefined,
+    // Depercated, just for frontend backward compatibility (will be removed)
     funnelGroup: report.funnelGroup ?? undefined,
     funnelWindow: report.funnelWindow ?? undefined,
-    options: options ?? undefined,
-    layout: report.layout ?? undefined,
   };
 }
 

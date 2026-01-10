@@ -211,7 +211,6 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
         </WidgetHead>
         <WidgetBody>
           <ReportChart
-            options={{ hideID: true }}
             report={{
               projectId,
               startDate,
@@ -232,9 +231,7 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
                 },
               ],
               chartType: 'map',
-              lineType: 'monotone',
               interval: interval,
-              name: 'Top sources',
               range: range,
               previous: previous,
               metric: 'sum',

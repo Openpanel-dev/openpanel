@@ -1,4 +1,5 @@
 import { db } from '../prisma-client';
+import { getProjectAccess } from './access.service';
 
 export function getShareOverviewById(id: string) {
   return db.shareOverview.findFirst({
@@ -96,22 +97,119 @@ export async function validateReportAccess(
     }
 
     return share;
-  } else {
-    const share = await db.shareReport.findUnique({
-      where: { id: shareId },
-      include: {
-        report: true,
-      },
-    });
+  }
 
-    if (!share || !share.public) {
+  const share = await db.shareReport.findUnique({
+    where: { id: shareId },
+    include: {
+      report: true,
+    },
+  });
+
+  if (!share || !share.public) {
+    throw new Error('Share not found or not public');
+  }
+
+  if (share.reportId !== reportId) {
+    throw new Error('Report ID mismatch');
+  }
+
+  return share;
+}
+
+// Unified validation for share access
+export async function validateShareAccess(
+  shareId: string,
+  reportId: string,
+  ctx: {
+    cookies: Record<string, string | undefined>;
+    session?: { userId?: string | null };
+  },
+): Promise<{ projectId: string; isValid: boolean }> {
+  // Check ShareDashboard first
+  const dashboardShare = await db.shareDashboard.findUnique({
+    where: { id: shareId },
+    include: {
+      dashboard: {
+        include: {
+          reports: {
+            where: { id: reportId },
+          },
+        },
+      },
+    },
+  });
+
+  if (
+    dashboardShare?.dashboard?.reports &&
+    dashboardShare.dashboard.reports.length > 0
+  ) {
+    if (!dashboardShare.public) {
       throw new Error('Share not found or not public');
     }
 
-    if (share.reportId !== reportId) {
-      throw new Error('Report ID mismatch');
+    const projectId = dashboardShare.projectId;
+
+    // If no password is set, share is public and accessible
+    if (!dashboardShare.password) {
+      return {
+        projectId,
+        isValid: true,
+      };
     }
 
-    return share;
+    // If password is set, require cookie OR member access
+    const hasCookie = !!ctx.cookies[`shared-dashboard-${shareId}`];
+    const hasMemberAccess =
+      ctx.session?.userId &&
+      (await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+      }));
+
+    return {
+      projectId,
+      isValid: hasCookie || !!hasMemberAccess,
+    };
   }
+
+  // Check ShareReport
+  const reportShare = await db.shareReport.findUnique({
+    where: { id: shareId, reportId },
+    include: {
+      report: true,
+    },
+  });
+
+  if (reportShare) {
+    if (!reportShare.public) {
+      throw new Error('Share not found or not public');
+    }
+
+    const projectId = reportShare.projectId;
+
+    // If no password is set, share is public and accessible
+    if (!reportShare.password) {
+      return {
+        projectId,
+        isValid: true,
+      };
+    }
+
+    // If password is set, require cookie OR member access
+    const hasCookie = !!ctx.cookies[`shared-report-${shareId}`];
+    const hasMemberAccess =
+      ctx.session?.userId &&
+      (await getProjectAccess({
+        userId: ctx.session.userId,
+        projectId,
+      }));
+
+    return {
+      projectId,
+      isValid: hasCookie || !!hasMemberAccess,
+    };
+  }
+
+  throw new Error('Share not found');
 }

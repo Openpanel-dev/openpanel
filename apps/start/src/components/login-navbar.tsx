@@ -33,7 +33,7 @@ export function LoginNavbar({ className }: { className?: string }) {
             </a>
           </li>
           <li>
-            <a href="https://openpanel.dev/compare/mixpanel-alternative">
+            <a href="https://openpanel.dev/compare/posthog-alternative">
               Posthog alternative
             </a>
           </li>

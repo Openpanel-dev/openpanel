@@ -1,6 +1,5 @@
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import { ReportChart } from '@/components/report-chart';
 import { Button, LinkButton } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,49 +8,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/utils/cn';
 import { createProjectTitle } from '@/utils/title';
 import {
-  CopyIcon,
   LayoutPanelTopIcon,
   MoreHorizontal,
   PlusIcon,
   RotateCcw,
   ShareIcon,
-  Trash,
   TrashIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { timeWindows } from '@openpanel/constants';
-
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import {
+  GrafanaGrid,
+  type Layout,
+  useReportLayouts,
+} from '@/components/grafana-grid';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import {
+  ReportItem,
+  ReportItemSkeleton,
+} from '@/components/report/report-item';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
-
-type Layout = {
-  i: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  minW?: number;
-  minH?: number;
-  maxW?: number;
-  maxH?: number;
-};
+import { useCallback, useEffect, useState } from 'react';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards_/$dashboardId',
@@ -94,180 +80,6 @@ export const Route = createFileRoute(
   },
   pendingComponent: FullPageLoadingState,
 });
-
-// Report Skeleton Component
-function ReportSkeleton() {
-  return (
-    <div className="card h-full flex flex-col animate-pulse">
-      <div className="flex items-center justify-between border-b border-border p-4">
-        <div className="flex-1">
-          <div className="h-5 w-32 bg-muted rounded mb-2" />
-          <div className="h-4 w-24 bg-muted/50 rounded" />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-muted rounded" />
-          <div className="w-8 h-8 bg-muted rounded" />
-        </div>
-      </div>
-      <div className="p-4 flex-1 flex items-center justify-center aspect-video" />
-    </div>
-  );
-}
-
-// Report Item Component
-function ReportItem({
-  report,
-  organizationId,
-  projectId,
-  range,
-  startDate,
-  endDate,
-  interval,
-  onDelete,
-  onDuplicate,
-}: {
-  report: any;
-  organizationId: string;
-  projectId: string;
-  range: any;
-  startDate: any;
-  endDate: any;
-  interval: any;
-  onDelete: (reportId: string) => void;
-  onDuplicate: (reportId: string) => void;
-}) {
-  const router = useRouter();
-  const chartRange = report.range;
-
-  return (
-    <div className="card h-full flex flex-col">
-      <div className="flex items-center hover:bg-muted/50 justify-between border-b border-border p-4 leading-none [&_svg]:hover:opacity-100">
-        <div
-          className="flex-1 cursor-pointer -m-4 p-4"
-          onClick={(event) => {
-            if (event.metaKey) {
-              window.open(
-                `/${organizationId}/${projectId}/reports/${report.id}`,
-                '_blank',
-              );
-              return;
-            }
-            router.navigate({
-              from: Route.fullPath,
-              to: '/$organizationId/$projectId/reports/$reportId',
-              params: {
-                reportId: report.id,
-              },
-            });
-          }}
-          onKeyUp={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              router.navigate({
-                from: Route.fullPath,
-                to: '/$organizationId/$projectId/reports/$reportId',
-                params: {
-                  reportId: report.id,
-                },
-              });
-            }
-          }}
-          role="button"
-          tabIndex={0}
-        >
-          <div className="font-medium">{report.name}</div>
-          {chartRange !== null && (
-            <div className="mt-2 flex gap-2 ">
-              <span
-                className={
-                  (chartRange !== range && range !== null) ||
-                  (startDate && endDate)
-                    ? 'line-through'
-                    : ''
-                }
-              >
-                {timeWindows[chartRange as keyof typeof timeWindows]?.label}
-              </span>
-              {startDate && endDate ? (
-                <span>Custom dates</span>
-              ) : (
-                range !== null &&
-                chartRange !== range && (
-                  <span>
-                    {timeWindows[range as keyof typeof timeWindows]?.label}
-                  </span>
-                )
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="drag-handle cursor-move p-2 hover:bg-muted rounded">
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="currentColor"
-              className="opacity-30 hover:opacity-100"
-            >
-              <circle cx="4" cy="4" r="1.5" />
-              <circle cx="4" cy="8" r="1.5" />
-              <circle cx="4" cy="12" r="1.5" />
-              <circle cx="12" cy="4" r="1.5" />
-              <circle cx="12" cy="8" r="1.5" />
-              <circle cx="12" cy="12" r="1.5" />
-            </svg>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded hover:border">
-              <MoreHorizontal size={16} />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[200px]">
-              <DropdownMenuItem
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onDuplicate(report.id);
-                }}
-              >
-                <CopyIcon size={16} className="mr-2" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuGroup>
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onDelete(report.id);
-                  }}
-                >
-                  <Trash size={16} className="mr-2" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-      <div
-        className={cn(
-          'p-4 overflow-auto flex-1',
-          report.chartType === 'metric' && 'p-0',
-        )}
-      >
-        <ReportChart
-          report={
-            {
-              ...report,
-              range: range ?? report.range,
-              startDate: startDate ?? null,
-              endDate: endDate ?? null,
-              interval: interval ?? report.interval,
-            } as any
-          }
-        />
-      </div>
-    </div>
-  );
-}
 
 function Component() {
   const router = useRouter();
@@ -364,26 +176,7 @@ function Component() {
   );
 
   // Convert reports to grid layout format for all breakpoints
-  const layouts = useMemo(() => {
-    const baseLayout = reports.map((report, index) => ({
-      i: report.id,
-      x: report.layout?.x ?? (index % 2) * 6,
-      y: report.layout?.y ?? Math.floor(index / 2) * 4,
-      w: report.layout?.w ?? 6,
-      h: report.layout?.h ?? 4,
-      minW: 3,
-      minH: 3,
-    }));
-
-    // Create responsive layouts for different breakpoints
-    return {
-      lg: baseLayout,
-      md: baseLayout,
-      sm: baseLayout.map((item) => ({ ...item, w: Math.min(item.w, 6) })),
-      xs: baseLayout.map((item) => ({ ...item, w: 4, x: 0 })),
-      xxs: baseLayout.map((item) => ({ ...item, w: 2, x: 0 })),
-    };
-  }, [reports]);
+  const layouts = useReportLayouts(reports);
 
   const handleLayoutChange = useCallback((newLayout: Layout[]) => {
     // This is called during dragging/resizing, we'll save on drag/resize stop
@@ -464,7 +257,7 @@ function Component() {
       <PageHeader
         title={dashboard.name}
         description="View and manage your reports"
-        className="mb-0"
+        className="mb-4"
         actions={
           <>
             <OverviewRange />
@@ -486,7 +279,9 @@ function Component() {
               <DropdownMenuContent align="end" className="w-[200px]">
                 <DropdownMenuGroup>
                   <DropdownMenuItem
-                    onClick={() => pushModal('ShareDashboardModal', { dashboardId })}
+                    onClick={() =>
+                      pushModal('ShareDashboardModal', { dashboardId })
+                    }
                   >
                     <ShareIcon className="mr-2 size-4" />
                     Share dashboard
@@ -539,69 +334,43 @@ function Component() {
         </FullPageEmptyState>
       ) : !isGridReady || reportsQuery.isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <ReportSkeleton />
-          <ReportSkeleton />
-          <ReportSkeleton />
-          <ReportSkeleton />
-          <ReportSkeleton />
-          <ReportSkeleton />
+          <ReportItemSkeleton />
+          <ReportItemSkeleton />
+          <ReportItemSkeleton />
+          <ReportItemSkeleton />
+          <ReportItemSkeleton />
+          <ReportItemSkeleton />
         </div>
       ) : (
-        <div className="w-full overflow-hidden -mx-4">
-          <style>{`
-            .react-grid-item {
-              transition: ${enableTransitions ? 'transform 200ms ease, width 200ms ease, height 200ms ease' : 'none'} !important;
-            }
-            .react-grid-item.react-grid-placeholder {
-              background: none !important;
-              opacity: 0.5;
-              transition-duration: 100ms;
-              border-radius: 0.5rem;
-              border: 1px dashed var(--primary);
-            }
-            .react-grid-item.resizing {
-              transition: none !important;
-            }
-          `}</style>
-          <ResponsiveGridLayout
-            className="layout"
-            layouts={layouts}
-            breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-            cols={{ lg: 12, md: 12, sm: 6, xs: 4, xxs: 2 }}
-            rowHeight={100}
-            onLayoutChange={handleLayoutChange}
-            onDragStop={handleDragStop}
-            onResizeStop={handleResizeStop}
-            draggableHandle=".drag-handle"
-            compactType="vertical"
-            preventCollision={false}
-            isDraggable={true}
-            isResizable={true}
-            margin={[16, 16]}
-            transformScale={1}
-            useCSSTransforms={true}
-          >
-            {reports.map((report) => (
-              <div key={report.id}>
-                <ReportItem
-                  report={report}
-                  organizationId={organizationId}
-                  projectId={projectId}
-                  range={range}
-                  startDate={startDate}
-                  endDate={endDate}
-                  interval={interval}
-                  onDelete={(reportId) => {
-                    reportDeletion.mutate({ reportId });
-                  }}
-                  onDuplicate={(reportId) => {
-                    reportDuplicate.mutate({ reportId });
-                  }}
-                />
-              </div>
-            ))}
-          </ResponsiveGridLayout>
-        </div>
+        <GrafanaGrid
+          transitions={enableTransitions}
+          layouts={layouts}
+          onLayoutChange={handleLayoutChange}
+          onDragStop={handleDragStop}
+          onResizeStop={handleResizeStop}
+          isDraggable={true}
+          isResizable={true}
+        >
+          {reports.map((report) => (
+            <div key={report.id}>
+              <ReportItem
+                report={report}
+                organizationId={organizationId}
+                projectId={projectId}
+                range={range}
+                startDate={startDate}
+                endDate={endDate}
+                interval={interval}
+                onDelete={(reportId) => {
+                  reportDeletion.mutate({ reportId });
+                }}
+                onDuplicate={(reportId) => {
+                  reportDuplicate.mutate({ reportId });
+                }}
+              />
+            </div>
+          ))}
+        </GrafanaGrid>
       )}
     </PageContainer>
   );

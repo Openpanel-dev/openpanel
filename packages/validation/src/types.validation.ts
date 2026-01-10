@@ -28,7 +28,6 @@ export type IChartProps = z.infer<typeof zReportInput> & {
   name: string;
   lineType: IChartLineType;
   unit?: string;
-  previousIndicatorInverted?: boolean;
 };
 export type IChartEvent = z.infer<typeof zChartEvent>;
 export type IChartFormula = z.infer<typeof zChartFormula>;

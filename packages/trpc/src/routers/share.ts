@@ -2,12 +2,17 @@ import ShortUniqueId from 'short-unique-id';
 
 import {
   db,
-  getReportsByDashboardId,
   getReportById,
+  getReportsByDashboardId,
   getShareDashboardById,
   getShareReportById,
+  transformReport,
 } from '@openpanel/db';
-import { zShareDashboard, zShareOverview, zShareReport } from '@openpanel/validation';
+import {
+  zShareDashboard,
+  zShareOverview,
+  zShareReport,
+} from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/auth';
 import { z } from 'zod';
@@ -231,11 +236,7 @@ export const shareRouter = createTRPCRouter({
               name: true,
             },
           },
-          report: {
-            select: {
-              name: true,
-            },
-          },
+          report: true,
         },
         where:
           'reportId' in input
@@ -257,6 +258,7 @@ export const shareRouter = createTRPCRouter({
       return {
         ...share,
         hasAccess: !!ctx.cookies[`shared-report-${share?.id}`],
+        report: transformReport(share.report),
       };
     }),
 

@@ -42,10 +42,10 @@ export function PreviousDiffIndicator({
   className,
 }: PreviousDiffIndicatorProps) {
   const {
-    report: { previousIndicatorInverted, previous },
+    report: { previous },
   } = useReportChartContext();
   const variant = getDiffIndicator(
-    inverted ?? previousIndicatorInverted,
+    inverted,
     state,
     'bg-emerald-300',
     'bg-rose-300',

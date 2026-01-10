@@ -11,7 +11,6 @@ import {
   clix,
   conversionService,
   createSqlBuilder,
-  db,
   formatClickhouseDate,
   funnelService,
   getChartPrevStartEndDate,
@@ -24,7 +23,7 @@ import {
   getSettingsForProject,
   onlyReportEvents,
   sankeyService,
-  validateReportAccess,
+  validateShareAccess,
 } from '@openpanel/db';
 import {
   type IChartEvent,
@@ -334,51 +333,183 @@ export const chartRouter = createTRPCRouter({
       };
     }),
 
-  funnel: protectedProcedure.input(zChartInput).query(async ({ input }) => {
-    const { timezone } = await getSettingsForProject(input.projectId);
-    const currentPeriod = getChartStartEndDate(input, timezone);
-    const previousPeriod = getChartPrevStartEndDate(currentPeriod);
+  funnel: publicProcedure
+    .input(
+      zChartInput.and(
+        z.object({
+          shareId: z.string().optional(),
+          reportId: z.string().optional(),
+        }),
+      ),
+    )
+    .query(async ({ input, ctx }) => {
+      let chartInput = input;
 
-    const [current, previous] = await Promise.all([
-      funnelService.getFunnel({ ...input, ...currentPeriod, timezone }),
-      input.previous
-        ? funnelService.getFunnel({ ...input, ...previousPeriod, timezone })
-        : Promise.resolve(null),
-    ]);
+      if (input.shareId) {
+        // Require reportId when shareId provided
+        if (!input.reportId) {
+          throw new Error('reportId required with shareId');
+        }
 
-    return {
-      current,
-      previous,
-    };
-  }),
+        // Validate share access
+        const shareValidation = await validateShareAccess(
+          input.shareId,
+          input.reportId,
+          {
+            cookies: ctx.cookies,
+            session: ctx.session?.userId
+              ? { userId: ctx.session.userId }
+              : undefined,
+          },
+        );
+        if (!shareValidation.isValid) {
+          throw TRPCAccessError('You do not have access to this share');
+        }
 
-  conversion: protectedProcedure.input(zChartInput).query(async ({ input }) => {
-    const { timezone } = await getSettingsForProject(input.projectId);
-    const currentPeriod = getChartStartEndDate(input, timezone);
-    const previousPeriod = getChartPrevStartEndDate(currentPeriod);
+        // Fetch report and merge date overrides
+        const report = await getReportById(input.reportId);
+        if (!report) {
+          throw TRPCAccessError('Report not found');
+        }
 
-    const [current, previous] = await Promise.all([
-      conversionService.getConversion({ ...input, ...currentPeriod, timezone }),
-      input.previous
-        ? conversionService.getConversion({
-            ...input,
-            ...previousPeriod,
-            timezone,
-          })
-        : Promise.resolve(null),
-    ]);
+        chartInput = {
+          ...report,
+          // Only allow date overrides
+          range: input.range ?? report.range,
+          startDate: input.startDate ?? report.startDate,
+          endDate: input.endDate ?? report.endDate,
+          interval: input.interval ?? report.interval,
+        };
+      } else {
+        // Regular member access check
+        if (!ctx.session?.userId) {
+          throw TRPCAccessError('Authentication required');
+        }
+        const access = await getProjectAccess({
+          projectId: input.projectId,
+          userId: ctx.session.userId,
+        });
+        if (!access) {
+          throw TRPCAccessError('You do not have access to this project');
+        }
+      }
 
-    return {
-      current: current.map((serie, sIndex) => ({
-        ...serie,
-        data: serie.data.map((d, dIndex) => ({
-          ...d,
-          previousRate: previous?.[sIndex]?.data?.[dIndex]?.rate,
+      const { timezone } = await getSettingsForProject(chartInput.projectId);
+      const currentPeriod = getChartStartEndDate(chartInput, timezone);
+      const previousPeriod = getChartPrevStartEndDate(currentPeriod);
+
+      const [current, previous] = await Promise.all([
+        funnelService.getFunnel({ ...chartInput, ...currentPeriod, timezone }),
+        chartInput.previous
+          ? funnelService.getFunnel({
+              ...chartInput,
+              ...previousPeriod,
+              timezone,
+            })
+          : Promise.resolve(null),
+      ]);
+
+      return {
+        current,
+        previous,
+      };
+    }),
+
+  conversion: publicProcedure
+    .input(
+      zChartInput.and(
+        z.object({
+          shareId: z.string().optional(),
+          reportId: z.string().optional(),
+        }),
+      ),
+    )
+    .query(async ({ input, ctx }) => {
+      let chartInput = input;
+
+      if (input.shareId) {
+        // Require reportId when shareId provided
+        if (!input.reportId) {
+          throw new Error('reportId required with shareId');
+        }
+
+        // Validate share access
+        const shareValidation = await validateShareAccess(
+          input.shareId,
+          input.reportId,
+          {
+            cookies: ctx.cookies,
+            session: ctx.session?.userId
+              ? { userId: ctx.session.userId }
+              : undefined,
+          },
+        );
+        if (!shareValidation.isValid) {
+          throw TRPCAccessError('You do not have access to this share');
+        }
+
+        // Fetch report and merge date overrides
+        const report = await getReportById(input.reportId);
+        if (!report) {
+          throw TRPCAccessError('Report not found');
+        }
+
+        chartInput = {
+          ...report,
+          // Only allow date overrides
+          range: input.range ?? report.range,
+          startDate: input.startDate ?? report.startDate,
+          endDate: input.endDate ?? report.endDate,
+          interval: input.interval ?? report.interval,
+        };
+      } else {
+        // Regular member access check
+        if (!ctx.session?.userId) {
+          throw TRPCAccessError('Authentication required');
+        }
+        const access = await getProjectAccess({
+          projectId: input.projectId,
+          userId: ctx.session.userId,
+        });
+        if (!access) {
+          throw TRPCAccessError('You do not have access to this project');
+        }
+      }
+
+      const { timezone } = await getSettingsForProject(chartInput.projectId);
+      const currentPeriod = getChartStartEndDate(chartInput, timezone);
+      const previousPeriod = getChartPrevStartEndDate(currentPeriod);
+
+      const interval = chartInput.interval;
+
+      const [current, previous] = await Promise.all([
+        conversionService.getConversion({
+          ...chartInput,
+          ...currentPeriod,
+          interval,
+          timezone,
+        }),
+        chartInput.previous
+          ? conversionService.getConversion({
+              ...chartInput,
+              ...previousPeriod,
+              interval,
+              timezone,
+            })
+          : Promise.resolve(null),
+      ]);
+
+      return {
+        current: current.map((serie, sIndex) => ({
+          ...serie,
+          data: serie.data.map((d, dIndex) => ({
+            ...d,
+            previousRate: previous?.[sIndex]?.data?.[dIndex]?.rate,
+          })),
         })),
-      })),
-      previous,
-    };
-  }),
+        previous,
+      };
+    }),
 
   sankey: protectedProcedure.input(zChartInput).query(async ({ input }) => {
     const { timezone } = await getSettingsForProject(input.projectId);
@@ -414,76 +545,130 @@ export const chartRouter = createTRPCRouter({
 
   chart: publicProcedure
     // .use(cacher)
-    .input(zChartInput)
+    .input(
+      zChartInput.and(
+        z.object({
+          shareId: z.string().optional(),
+          reportId: z.string().optional(),
+        }),
+      ),
+    )
     .query(async ({ input, ctx }) => {
-      if (ctx.session.userId) {
+      let chartInput = input;
+
+      if (input.shareId) {
+        // Require reportId when shareId provided
+        if (!input.reportId) {
+          throw new Error('reportId required with shareId');
+        }
+
+        // Validate share access
+        const shareValidation = await validateShareAccess(
+          input.shareId,
+          input.reportId,
+          ctx,
+        );
+
+        if (!shareValidation.isValid) {
+          throw TRPCAccessError('You do not have access to this share');
+        }
+
+        // Fetch report and merge date overrides
+        const report = await getReportById(input.reportId);
+        if (!report) {
+          throw TRPCAccessError('Report not found');
+        }
+
+        chartInput = {
+          ...report,
+          // Only allow date overrides
+          range: input.range ?? report.range,
+          startDate: input.startDate ?? report.startDate,
+          endDate: input.endDate ?? report.endDate,
+          interval: input.interval ?? report.interval,
+        };
+      } else {
+        // Regular member access check
+        if (!ctx.session?.userId) {
+          throw TRPCAccessError('Authentication required');
+        }
         const access = await getProjectAccess({
           projectId: input.projectId,
           userId: ctx.session.userId,
         });
         if (!access) {
-          const share = await db.shareOverview.findFirst({
-            where: {
-              projectId: input.projectId,
-            },
-          });
-
-          if (!share) {
-            throw TRPCAccessError('You do not have access to this project');
-          }
-        }
-      } else {
-        const share = await db.shareOverview.findFirst({
-          where: {
-            projectId: input.projectId,
-          },
-        });
-
-        if (!share) {
           throw TRPCAccessError('You do not have access to this project');
         }
       }
 
-      // Use new chart engine
-      return ChartEngine.execute(input);
+      return ChartEngine.execute(chartInput);
     }),
 
   aggregate: publicProcedure
-    .input(zChartInput)
+    .input(
+      zChartInput.and(
+        z.object({
+          shareId: z.string().optional(),
+          reportId: z.string().optional(),
+        }),
+      ),
+    )
     .query(async ({ input, ctx }) => {
-      if (ctx.session.userId) {
+      let chartInput = input;
+
+      if (input.shareId) {
+        // Require reportId when shareId provided
+        if (!input.reportId) {
+          throw new Error('reportId required with shareId');
+        }
+
+        // Validate share access
+        const shareValidation = await validateShareAccess(
+          input.shareId,
+          input.reportId,
+          {
+            cookies: ctx.cookies,
+            session: ctx.session?.userId
+              ? { userId: ctx.session.userId }
+              : undefined,
+          },
+        );
+        if (!shareValidation.isValid) {
+          throw TRPCAccessError('You do not have access to this share');
+        }
+
+        // Fetch report and merge date overrides
+        const report = await getReportById(input.reportId);
+        if (!report) {
+          throw TRPCAccessError('Report not found');
+        }
+
+        chartInput = {
+          ...report,
+          // Only allow date overrides
+          range: input.range ?? report.range,
+          startDate: input.startDate ?? report.startDate,
+          endDate: input.endDate ?? report.endDate,
+          interval: input.interval ?? report.interval,
+        };
+      } else {
+        // Regular member access check
+        if (!ctx.session?.userId) {
+          throw TRPCAccessError('Authentication required');
+        }
         const access = await getProjectAccess({
           projectId: input.projectId,
           userId: ctx.session.userId,
         });
         if (!access) {
-          const share = await db.shareOverview.findFirst({
-            where: {
-              projectId: input.projectId,
-            },
-          });
-
-          if (!share) {
-            throw TRPCAccessError('You do not have access to this project');
-          }
-        }
-      } else {
-        const share = await db.shareOverview.findFirst({
-          where: {
-            projectId: input.projectId,
-          },
-        });
-
-        if (!share) {
           throw TRPCAccessError('You do not have access to this project');
         }
       }
 
-      // Use aggregate chart engine (optimized for bar/pie charts)
-      return AggregateChartEngine.execute(input);
+      return AggregateChartEngine.execute(chartInput);
     }),
 
-  cohort: protectedProcedure
+  cohort: publicProcedure
     .input(
       z.object({
         projectId: z.string(),
@@ -494,26 +679,109 @@ export const chartRouter = createTRPCRouter({
         endDate: z.string().nullish(),
         interval: zTimeInterval.default('day'),
         range: zRange,
+        shareId: z.string().optional(),
+        reportId: z.string().optional(),
       }),
     )
-    .query(async ({ input }) => {
-      const { timezone } = await getSettingsForProject(input.projectId);
-      const { projectId, firstEvent, secondEvent } = input;
-      const dates = getChartStartEndDate(input, timezone);
+    .query(async ({ input, ctx }) => {
+      let projectId = input.projectId;
+      let firstEvent = input.firstEvent;
+      let secondEvent = input.secondEvent;
+      let criteria = input.criteria;
+      let dateRange = input.range;
+      let startDate = input.startDate;
+      let endDate = input.endDate;
+      let interval = input.interval;
+
+      if (input.shareId) {
+        // Require reportId when shareId provided
+        if (!input.reportId) {
+          throw new Error('reportId required with shareId');
+        }
+
+        // Validate share access
+        const shareValidation = await validateShareAccess(
+          input.shareId,
+          input.reportId,
+          {
+            cookies: ctx.cookies,
+            session: ctx.session?.userId
+              ? { userId: ctx.session.userId }
+              : undefined,
+          },
+        );
+        if (!shareValidation.isValid) {
+          throw TRPCAccessError('You do not have access to this share');
+        }
+
+        // Fetch report and extract events
+        const report = await getReportById(input.reportId);
+        if (!report) {
+          throw TRPCAccessError('Report not found');
+        }
+
+        projectId = report.projectId;
+        criteria = report.criteria ?? criteria;
+        dateRange = input.range ?? report.range;
+        startDate = input.startDate ?? report.startDate;
+        endDate = input.endDate ?? report.endDate;
+        interval = input.interval ?? report.interval;
+
+        // Extract events from report series
+        const eventSeries = onlyReportEvents(report.series);
+        const extractedFirstEvent = (
+          eventSeries[0]?.filters?.[0]?.value ?? []
+        ).map(String);
+        const extractedSecondEvent = (
+          eventSeries[1]?.filters?.[0]?.value ?? []
+        ).map(String);
+
+        if (
+          extractedFirstEvent.length === 0 ||
+          extractedSecondEvent.length === 0
+        ) {
+          throw new Error('Report must have at least 2 event series');
+        }
+
+        firstEvent = extractedFirstEvent;
+        secondEvent = extractedSecondEvent;
+      } else {
+        // Regular member access check
+        if (!ctx.session?.userId) {
+          throw TRPCAccessError('Authentication required');
+        }
+        const access = await getProjectAccess({
+          projectId: input.projectId,
+          userId: ctx.session.userId,
+        });
+        if (!access) {
+          throw TRPCAccessError('You do not have access to this project');
+        }
+      }
+
+      const { timezone } = await getSettingsForProject(projectId);
+      const dates = getChartStartEndDate(
+        {
+          range: dateRange,
+          startDate,
+          endDate,
+        },
+        timezone,
+      );
       const diffInterval = {
         minute: () => differenceInDays(dates.endDate, dates.startDate),
         hour: () => differenceInDays(dates.endDate, dates.startDate),
         day: () => differenceInDays(dates.endDate, dates.startDate),
         week: () => differenceInWeeks(dates.endDate, dates.startDate),
         month: () => differenceInMonths(dates.endDate, dates.startDate),
-      }[input.interval]();
+      }[interval]();
       const sqlInterval = {
         minute: 'DAY',
         hour: 'DAY',
         day: 'DAY',
         week: 'WEEK',
         month: 'MONTH',
-      }[input.interval];
+      }[interval];
 
       const sqlToStartOf = {
         minute: 'toDate',
@@ -521,9 +789,9 @@ export const chartRouter = createTRPCRouter({
         day: 'toDate',
         week: 'toStartOfWeek',
         month: 'toStartOfMonth',
-      }[input.interval];
+      }[interval];
 
-      const countCriteria = input.criteria === 'on_or_after' ? '>=' : '=';
+      const countCriteria = criteria === 'on_or_after' ? '>=' : '=';
 
       const usersSelect = range(0, diffInterval + 1)
         .map(
@@ -816,397 +1084,6 @@ export const chartRouter = createTRPCRouter({
       const profiles = await getProfilesCached(ids, projectId);
 
       return profiles;
-    }),
-
-  chartByReport: publicProcedure
-    .input(
-      z.object({
-        reportId: z.string(),
-        shareId: z.string(),
-        shareType: z.enum(['dashboard', 'report']),
-        range: z.string().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        interval: zTimeInterval.optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      // Validate access
-      await validateReportAccess(
-        input.reportId,
-        input.shareId,
-        input.shareType,
-      );
-
-      // Load report from DB
-      const report = await getReportById(input.reportId);
-      if (!report) {
-        throw TRPCAccessError('Report not found');
-      }
-
-      // Build chart input from report, merging date overrides
-      const chartInput: z.infer<typeof zChartInput> = {
-        projectId: report.projectId,
-        chartType: report.chartType,
-        series: report.series,
-        breakdowns: report.breakdowns,
-        interval: input.interval ?? report.interval,
-        range: input.range ?? report.range,
-        startDate: input.startDate ?? null,
-        endDate: input.endDate ?? null,
-        previous: report.previous,
-        formula: report.formula,
-        metric: report.metric,
-      };
-
-      return ChartEngine.execute(chartInput);
-    }),
-
-  aggregateByReport: publicProcedure
-    .input(
-      z.object({
-        reportId: z.string(),
-        shareId: z.string(),
-        shareType: z.enum(['dashboard', 'report']),
-        range: z.string().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        interval: zTimeInterval.optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      // Validate access
-      await validateReportAccess(
-        input.reportId,
-        input.shareId,
-        input.shareType,
-      );
-
-      // Load report from DB
-      const report = await getReportById(input.reportId);
-      if (!report) {
-        throw TRPCAccessError('Report not found');
-      }
-
-      // Build chart input from report, merging date overrides
-      const chartInput: z.infer<typeof zChartInput> = {
-        projectId: report.projectId,
-        chartType: report.chartType,
-        series: report.series,
-        breakdowns: report.breakdowns,
-        interval: input.interval ?? report.interval,
-        range: input.range ?? report.range,
-        startDate: input.startDate ?? null,
-        endDate: input.endDate ?? null,
-        previous: report.previous,
-        formula: report.formula,
-        metric: report.metric,
-      };
-
-      return AggregateChartEngine.execute(chartInput);
-    }),
-
-  funnelByReport: publicProcedure
-    .input(
-      z.object({
-        reportId: z.string(),
-        shareId: z.string(),
-        shareType: z.enum(['dashboard', 'report']),
-        range: z.string().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        interval: zTimeInterval.optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      // Validate access
-      await validateReportAccess(
-        input.reportId,
-        input.shareId,
-        input.shareType,
-      );
-
-      // Load report from DB
-      const report = await getReportById(input.reportId);
-      if (!report) {
-        throw TRPCAccessError('Report not found');
-      }
-
-      const { timezone } = await getSettingsForProject(report.projectId);
-      const currentPeriod = getChartStartEndDate(
-        {
-          range: input.range ?? report.range,
-          startDate: input.startDate ?? null,
-          endDate: input.endDate ?? null,
-          interval: input.interval ?? report.interval,
-        },
-        timezone,
-      );
-      const previousPeriod = getChartPrevStartEndDate(currentPeriod);
-
-      const [current, previous] = await Promise.all([
-        funnelService.getFunnel({
-          projectId: report.projectId,
-          series: report.series,
-          breakdowns: report.breakdowns,
-          ...currentPeriod,
-          timezone,
-          funnelGroup: report.funnelGroup,
-          funnelWindow: report.funnelWindow,
-        }),
-        report.previous
-          ? funnelService.getFunnel({
-              projectId: report.projectId,
-              series: report.series,
-              breakdowns: report.breakdowns,
-              ...previousPeriod,
-              timezone,
-              funnelGroup: report.funnelGroup,
-              funnelWindow: report.funnelWindow,
-            })
-          : Promise.resolve(null),
-      ]);
-
-      return {
-        current,
-        previous,
-      };
-    }),
-
-  cohortByReport: publicProcedure
-    .input(
-      z.object({
-        reportId: z.string(),
-        shareId: z.string(),
-        shareType: z.enum(['dashboard', 'report']),
-        range: z.string().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        interval: zTimeInterval.optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      // Validate access
-      await validateReportAccess(
-        input.reportId,
-        input.shareId,
-        input.shareType,
-      );
-
-      // Load report from DB
-      const report = await getReportById(input.reportId);
-      if (!report) {
-        throw TRPCAccessError('Report not found');
-      }
-
-      const { timezone } = await getSettingsForProject(report.projectId);
-      const eventSeries = onlyReportEvents(report.series);
-      const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(
-        String,
-      );
-      const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(
-        String,
-      );
-
-      if (firstEvent.length === 0 || secondEvent.length === 0) {
-        throw new Error('Report must have at least 2 event series');
-      }
-
-      const dates = getChartStartEndDate(
-        {
-          range: input.range ?? report.range,
-          startDate: input.startDate ?? null,
-          endDate: input.endDate ?? null,
-          interval: input.interval ?? report.interval,
-        },
-        timezone,
-      );
-      const interval = (input.interval ?? report.interval) as
-        | 'minute'
-        | 'hour'
-        | 'day'
-        | 'week'
-        | 'month';
-      const diffInterval = {
-        minute: () => differenceInDays(dates.endDate, dates.startDate),
-        hour: () => differenceInDays(dates.endDate, dates.startDate),
-        day: () => differenceInDays(dates.endDate, dates.startDate),
-        week: () => differenceInWeeks(dates.endDate, dates.startDate),
-        month: () => differenceInMonths(dates.endDate, dates.startDate),
-      }[interval]();
-      const sqlInterval = {
-        minute: 'DAY',
-        hour: 'DAY',
-        day: 'DAY',
-        week: 'WEEK',
-        month: 'MONTH',
-      }[interval];
-
-      const sqlToStartOf = {
-        minute: 'toDate',
-        hour: 'toDate',
-        day: 'toDate',
-        week: 'toStartOfWeek',
-        month: 'toStartOfMonth',
-      }[interval];
-
-      const countCriteria =
-        (report.criteria ?? 'on_or_after') === 'on_or_after' ? '>=' : '=';
-
-      const usersSelect = range(0, diffInterval + 1)
-        .map(
-          (index) =>
-            `groupUniqArrayIf(profile_id, x_after_cohort ${countCriteria} ${index}) AS interval_${index}_users`,
-        )
-        .join(',\n');
-
-      const countsSelect = range(0, diffInterval + 1)
-        .map(
-          (index) =>
-            `length(interval_${index}_users) AS interval_${index}_user_count`,
-        )
-        .join(',\n');
-
-      const whereEventNameIs = (event: string[]) => {
-        if (event.length === 1) {
-          return `name = ${sqlstring.escape(event[0])}`;
-        }
-        return `name IN (${event.map((e) => sqlstring.escape(e)).join(',')})`;
-      };
-
-      const cohortQuery = `
-        WITH 
-        cohort_users AS (
-          SELECT
-            profile_id AS userID,
-            project_id,
-            ${sqlToStartOf}(created_at) AS cohort_interval
-          FROM ${TABLE_NAMES.cohort_events_mv}
-          WHERE ${whereEventNameIs(firstEvent)}
-            AND project_id = ${sqlstring.escape(report.projectId)}
-            AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}')
-        ),
-        last_event AS
-        (
-            SELECT
-                profile_id,
-                project_id,
-                toDate(created_at) AS event_date
-            FROM cohort_events_mv
-            WHERE ${whereEventNameIs(secondEvent)}
-            AND project_id = ${sqlstring.escape(report.projectId)}
-            AND created_at BETWEEN toDate('${utc(dates.startDate)}') AND toDate('${utc(dates.endDate)}') + INTERVAL ${diffInterval} ${sqlInterval}
-        ),
-        retention_matrix AS
-        (
-          SELECT
-              f.cohort_interval,
-              l.profile_id,
-              dateDiff('${sqlInterval}', f.cohort_interval, ${sqlToStartOf}(l.event_date)) AS x_after_cohort
-          FROM cohort_users AS f
-          INNER JOIN last_event AS l ON f.userID = l.profile_id
-          WHERE (l.event_date >= f.cohort_interval) 
-          AND (l.event_date <= (f.cohort_interval + INTERVAL ${diffInterval} ${sqlInterval}))
-        ),
-        interval_users AS (
-          SELECT
-            cohort_interval,
-            ${usersSelect}
-          FROM retention_matrix
-          GROUP BY cohort_interval
-        ),
-        cohort_sizes AS (
-          SELECT
-            cohort_interval,
-            COUNT(DISTINCT userID) AS total_first_event_count
-          FROM cohort_users
-          GROUP BY cohort_interval
-        )
-        SELECT
-          cohort_interval,
-          cohort_sizes.total_first_event_count,
-          ${countsSelect}
-        FROM interval_users
-        LEFT JOIN cohort_sizes AS cs ON cohort_interval = cs.cohort_interval
-        ORDER BY cohort_interval ASC
-      `;
-
-      const cohortData = await chQuery<{
-        cohort_interval: string;
-        total_first_event_count: number;
-        [key: string]: any;
-      }>(cohortQuery);
-
-      return processCohortData(cohortData, diffInterval);
-    }),
-
-  conversionByReport: publicProcedure
-    .input(
-      z.object({
-        reportId: z.string(),
-        shareId: z.string(),
-        shareType: z.enum(['dashboard', 'report']),
-        range: z.string().optional(),
-        startDate: z.string().optional(),
-        endDate: z.string().optional(),
-        interval: zTimeInterval.optional(),
-      }),
-    )
-    .query(async ({ input }) => {
-      // Validate access
-      await validateReportAccess(
-        input.reportId,
-        input.shareId,
-        input.shareType,
-      );
-
-      // Load report from DB
-      const report = await getReportById(input.reportId);
-      if (!report) {
-        throw TRPCAccessError('Report not found');
-      }
-
-      const { timezone } = await getSettingsForProject(report.projectId);
-      const currentPeriod = getChartStartEndDate(
-        {
-          range: input.range ?? report.range,
-          startDate: input.startDate ?? null,
-          endDate: input.endDate ?? null,
-          interval: input.interval ?? report.interval,
-        },
-        timezone,
-      );
-      const previousPeriod = getChartPrevStartEndDate(currentPeriod);
-
-      const [current, previous] = await Promise.all([
-        conversionService.getConversion({
-          projectId: report.projectId,
-          series: report.series,
-          breakdowns: report.breakdowns,
-          ...currentPeriod,
-          timezone,
-        }),
-        report.previous
-          ? conversionService.getConversion({
-              projectId: report.projectId,
-              series: report.series,
-              breakdowns: report.breakdowns,
-              ...previousPeriod,
-              timezone,
-            })
-          : Promise.resolve(null),
-      ]);
-
-      return {
-        current: current.map((serie, sIndex) => ({
-          ...serie,
-          data: serie.data.map((d, dIndex) => ({
-            ...d,
-            previousRate: previous?.[sIndex]?.data?.[dIndex]?.rate,
-          })),
-        })),
-        previous,
-      };
     }),
 });
 

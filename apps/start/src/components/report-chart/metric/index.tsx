@@ -9,33 +9,27 @@ import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 
 export function ReportMetricChart() {
-  const { isLazyLoading, report, shareId, shareType } = useReportChartContext();
+  const { isLazyLoading, report, shareId } = useReportChartContext();
   const trpc = useTRPC();
   const { range, startDate, endDate, interval } = useOverviewOptions();
 
   const res = useQuery(
-    shareId && shareType && 'id' in report && report.id
-      ? trpc.chart.chartByReport.queryOptions(
-          {
-            reportId: report.id,
-            shareId,
-            shareType,
-            range: range ?? undefined,
-            startDate: startDate ?? undefined,
-            endDate: endDate ?? undefined,
-            interval: interval ?? undefined,
-          },
-          {
-            placeholderData: keepPreviousData,
-            staleTime: 1000 * 60 * 1,
-            enabled: !isLazyLoading,
-          },
-        )
-      : trpc.chart.chart.queryOptions(report, {
-          placeholderData: keepPreviousData,
-          staleTime: 1000 * 60 * 1,
-          enabled: !isLazyLoading,
-        }),
+    trpc.chart.chart.queryOptions(
+      {
+        ...report,
+        shareId,
+        reportId: 'id' in report ? report.id : undefined,
+        range: range ?? report.range,
+        startDate: startDate ?? report.startDate,
+        endDate: endDate ?? report.endDate,
+        interval: interval ?? report.interval,
+      },
+      {
+        placeholderData: keepPreviousData,
+        staleTime: 1000 * 60 * 1,
+        enabled: !isLazyLoading,
+      },
+    ),
   );
 
   if (

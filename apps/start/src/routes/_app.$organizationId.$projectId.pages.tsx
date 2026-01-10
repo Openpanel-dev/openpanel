@@ -274,20 +274,16 @@ const PageCard = memo(
         </div>
         <ReportChart
           options={{
-            hideID: true,
             hideXAxis: true,
             hideYAxis: true,
             aspectRatio: 0.15,
           }}
           report={{
-            lineType: 'linear',
             breakdowns: [],
-            name: 'screen_view',
             metric: 'sum',
             range,
             interval,
             previous: true,
-
             chartType: 'linear',
             projectId,
             series: [
