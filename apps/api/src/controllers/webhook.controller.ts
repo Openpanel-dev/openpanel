@@ -191,7 +191,9 @@ export async function polarWebhook(
             where: {
               subscriptionCustomerId: event.data.customer.id,
               subscriptionId: event.data.id,
-              subscriptionStatus: 'active',
+              subscriptionStatus: {
+                in: ['active', 'past_due', 'unpaid'],
+              },
             },
           });
 
