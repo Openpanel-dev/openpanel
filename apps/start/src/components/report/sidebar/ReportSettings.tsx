@@ -23,11 +23,15 @@ import {
 export function ReportSettings() {
   const chartType = useSelector((state) => state.report.chartType);
   const previous = useSelector((state) => state.report.previous);
-  const criteria = useSelector((state) => state.report.criteria);
   const unit = useSelector((state) => state.report.unit);
-  const funnelGroup = useSelector((state) => state.report.funnelGroup);
-  const funnelWindow = useSelector((state) => state.report.funnelWindow);
   const options = useSelector((state) => state.report.options);
+  
+  const retentionOptions = options?.type === 'retention' ? options : undefined;
+  const criteria = retentionOptions?.criteria ?? 'on_or_after';
+  
+  const funnelOptions = options?.type === 'funnel' ? options : undefined;
+  const funnelGroup = funnelOptions?.funnelGroup;
+  const funnelWindow = funnelOptions?.funnelWindow;
 
   const dispatch = useDispatch();
   const { projectId } = useAppParams();

@@ -332,14 +332,13 @@ export function ReportSeries() {
                 }}
                 placeholder="Select event"
                 items={eventNames}
-                className="flex-1"
               />
               {showFormula && (
                 <Button
                   type="button"
                   variant="outline"
                   icon={PiIcon}
-                  className="flex-1 justify-start text-left"
+                  className="flex-1 justify-start text-left px-4"
                   onClick={() => {
                     dispatch(
                       addSerie({
@@ -349,7 +348,6 @@ export function ReportSeries() {
                       }),
                     );
                   }}
-                  className="px-4"
                 >
                   Add Formula
                   <PlusIcon className="size-4 ml-auto text-muted-foreground" />

@@ -9,7 +9,7 @@ import {
 } from '@openpanel/db';
 import { ChartEngine } from '@openpanel/db';
 import { getCache } from '@openpanel/redis';
-import { zChartInputAI } from '@openpanel/validation';
+import { zReportInput } from '@openpanel/validation';
 import { tool } from 'ai';
 import { z } from 'zod';
 
@@ -27,7 +27,10 @@ export function getReport({
     - ${chartTypes.metric}
     - ${chartTypes.bar}
 `,
-    parameters: zChartInputAI,
+    parameters: zReportInput.extend({
+      startDate: z.string().describe('The start date for the report'),
+      endDate: z.string().describe('The end date for the report'),
+    }),
     execute: async (report) => {
       return {
         type: 'report',
@@ -72,7 +75,10 @@ export function getConversionReport({
   return tool({
     description:
       'Generate a report (a chart) for conversions between two actions a unique user took.',
-    parameters: zChartInputAI,
+    parameters: zReportInput.extend({
+      startDate: z.string().describe('The start date for the report'),
+      endDate: z.string().describe('The end date for the report'),
+    }),
     execute: async (report) => {
       return {
         type: 'report',
@@ -94,7 +100,10 @@ export function getFunnelReport({
   return tool({
     description:
       'Generate a report (a chart) for funnel between two or more actions a unique user (session_id or profile_id) took.',
-    parameters: zChartInputAI,
+    parameters: zReportInput.extend({
+      startDate: z.string().describe('The start date for the report'),
+      endDate: z.string().describe('The end date for the report'),
+    }),
     execute: async (report) => {
       return {
         type: 'report',

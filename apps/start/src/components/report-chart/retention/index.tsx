@@ -17,20 +17,29 @@ export function ReportRetentionChart() {
       series,
       range,
       projectId,
+      options,
       startDate,
       endDate,
-      criteria,
       interval,
     },
     isLazyLoading,
     shareId,
   } = useReportChartContext();
-  const { range: overviewRange, startDate: overviewStartDate, endDate: overviewEndDate, interval: overviewInterval } = useOverviewOptions();
+  const {
+    range: overviewRange,
+    startDate: overviewStartDate,
+    endDate: overviewEndDate,
+    interval: overviewInterval,
+  } = useOverviewOptions();
   const eventSeries = series.filter((item) => item.type === 'event');
   const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
+
+  const retentionOptions = options?.type === 'retention' ? options : undefined;
+  const criteria = retentionOptions?.criteria ?? 'on_or_after';
+
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.cohort.queryOptions(

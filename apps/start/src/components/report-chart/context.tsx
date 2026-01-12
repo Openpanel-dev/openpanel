@@ -2,11 +2,7 @@ import isEqual from 'lodash.isequal';
 import type { LucideIcon } from 'lucide-react';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-import type {
-  IChartInput,
-  IChartProps,
-  IChartSerie,
-} from '@openpanel/validation';
+import type { IChartSerie, IReportInput } from '@openpanel/validation';
 
 export type ReportChartContextType = {
   options: Partial<{
@@ -27,7 +23,7 @@ export type ReportChartContextType = {
       onClick: () => void;
     }[];
   }>;
-  report: IChartInput & { id?: string };
+  report: IReportInput & { id?: string };
   isLazyLoading: boolean;
   isEditMode: boolean;
   shareId?: string;
@@ -39,7 +35,7 @@ type ReportChartContextProviderProps = ReportChartContextType & {
 };
 
 export type ReportChartProps = Partial<ReportChartContextType> & {
-  report: IChartInput;
+  report: IReportInput & { id?: string };
   lazy?: boolean;
 };
 

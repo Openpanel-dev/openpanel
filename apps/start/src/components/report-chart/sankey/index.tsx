@@ -1,7 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IReportInput } from '@openpanel/validation';
 
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
@@ -28,7 +28,7 @@ export function ReportSankeyChart() {
     return <Empty />;
   }
 
-  const input: IChartInput = {
+  const input: IReportInput = {
     series,
     range,
     projectId,

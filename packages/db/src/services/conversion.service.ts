@@ -1,5 +1,5 @@
 import { NOT_SET_VALUE } from '@openpanel/constants';
-import type { IChartEvent, IChartInput } from '@openpanel/validation';
+import type { IChartEvent, IChartBreakdown, IReportInput } from '@openpanel/validation';
 import { omit } from 'ramda';
 import { TABLE_NAMES, ch } from '../clickhouse/client';
 import { clix } from '../clickhouse/query-builder';
@@ -16,21 +16,23 @@ export class ConversionService {
     projectId,
     startDate,
     endDate,
-    funnelGroup,
-    funnelWindow = 24,
+    options,
     series,
     breakdowns = [],
     limit,
     interval,
     timezone,
-  }: Omit<IChartInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
+  }: Omit<IReportInput, 'range' | 'previous' | 'metric' | 'chartType'> & {
     timezone: string;
   }) {
+    const funnelOptions = options?.type === 'funnel' ? options : undefined;
+    const funnelGroup = funnelOptions?.funnelGroup;
+    const funnelWindow = funnelOptions?.funnelWindow ?? 24;
     const group = funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
     const breakdownColumns = breakdowns.map(
-      (b, index) => `${getSelectPropertyKey(b.name)} as b_${index}`,
+      (b: IChartBreakdown, index: number) => `${getSelectPropertyKey(b.name)} as b_${index}`,
     );
-    const breakdownGroupBy = breakdowns.map((b, index) => `b_${index}`);
+    const breakdownGroupBy = breakdowns.map((b: IChartBreakdown, index: number) => `b_${index}`);
 
     const events = onlyReportEvents(series);
 

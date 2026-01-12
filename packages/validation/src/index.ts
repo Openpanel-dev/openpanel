@@ -135,7 +135,9 @@ export const zReportOptions = z.discriminatedUnion('type', [
 export type IReportOptions = z.infer<typeof zReportOptions>;
 export type ISankeyOptions = z.infer<typeof zSankeyOptions>;
 
-export const zChartInputBase = z.object({
+// Base input schema - for API calls, engine, chart queries
+export const zReportInput = z.object({
+  projectId: z.string().describe('The ID of the project this chart belongs to'),
   chartType: zChartType
     .default('linear')
     .describe('What type of chart should be displayed'),
@@ -153,6 +155,18 @@ export const zChartInputBase = z.object({
   range: zRange
     .default('30d')
     .describe('The time range for which data should be displayed'),
+  startDate: z
+    .string()
+    .nullish()
+    .describe(
+      'Custom start date for the data range (overrides range if provided)',
+    ),
+  endDate: z
+    .string()
+    .nullish()
+    .describe(
+      'Custom end date for the data range (overrides range if provided)',
+    ),
   previous: z
     .boolean()
     .default(false)
@@ -166,19 +180,6 @@ export const zChartInputBase = z.object({
     .describe(
       'The aggregation method for the metric (e.g., sum, count, average)',
     ),
-  projectId: z.string().describe('The ID of the project this chart belongs to'),
-  startDate: z
-    .string()
-    .nullish()
-    .describe(
-      'Custom start date for the data range (overrides range if provided)',
-    ),
-  endDate: z
-    .string()
-    .nullish()
-    .describe(
-      'Custom end date for the data range (overrides range if provided)',
-    ),
   limit: z
     .number()
     .optional()
@@ -187,27 +188,12 @@ export const zChartInputBase = z.object({
     .number()
     .optional()
     .describe('Skip how many series should be returned'),
-  criteria: zCriteria
+  options: zReportOptions
     .optional()
-    .describe('Filtering criteria for retention chart (e.g., on_or_after, on)'),
-  funnelGroup: z
-    .string()
-    .optional()
-    .describe(
-      'Group identifier for funnel analysis, e.g. "profile_id" or "session_id"',
-    ),
-  funnelWindow: z
-    .number()
-    .optional()
-    .describe('Time window in hours for funnel analysis'),
-  options: zReportOptions.optional(),
-});
-
-export const zChartInput = zChartInputBase;
-
-export const zReportInput = zChartInputBase.extend({
-  name: z.string().describe('The user-defined name for the report'),
-  lineType: zLineType.describe('The visual style of the line in the chart'),
+    .describe('Chart-specific options (funnel, retention, sankey)'),
+  // Optional display fields
+  name: z.string().optional().describe('The user-defined name for the report'),
+  lineType: zLineType.optional().describe('The visual style of the line in the chart'),
   unit: z
     .string()
     .optional()
@@ -216,17 +202,14 @@ export const zReportInput = zChartInputBase.extend({
     ),
 });
 
-export const zChartInputAI = zReportInput
-  .omit({
-    startDate: true,
-    endDate: true,
-    lineType: true,
-    unit: true,
-  })
-  .extend({
-    startDate: z.string().describe('The start date for the report'),
-    endDate: z.string().describe('The end date for the report'),
-  });
+// Complete report schema - for saved reports
+export const zReport = zReportInput.extend({
+  name: z.string().default('Untitled').describe('The user-defined name for the report'),
+  lineType: zLineType.default('monotone').describe('The visual style of the line in the chart'),
+});
+
+// Alias for backward compatibility
+export const zChartInput = zReportInput;
 
 export const zInviteUser = z.object({
   email: z.string().email(),

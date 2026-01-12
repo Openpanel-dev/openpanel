@@ -172,15 +172,13 @@ export function ReportItem({
         )}
       >
         <ReportChart
-          report={
-            {
-              ...report,
-              range: range ?? report.range,
-              startDate: startDate ?? null,
-              endDate: endDate ?? null,
-              interval: interval ?? report.interval,
-            } as any
-          }
+          report={{
+            ...report,
+            range: range ?? report.range,
+            startDate: startDate ?? null,
+            endDate: endDate ?? null,
+            interval: interval ?? report.interval,
+          }}
         />
       </div>
     </div>
@@ -242,7 +240,6 @@ export function ReportItemReadOnly({
         )}
       >
         <ReportChart
-          type="inputs"
           report={{
             ...report,
             range: range ?? report.range,

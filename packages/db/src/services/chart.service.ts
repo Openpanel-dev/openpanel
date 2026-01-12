@@ -3,7 +3,7 @@ import sqlstring from 'sqlstring';
 import { DateTime, stripLeadingAndTrailingSlashes } from '@openpanel/common';
 import type {
   IChartEventFilter,
-  IChartInput,
+  IReportInput,
   IChartRange,
   IGetChartDataInput,
 } from '@openpanel/validation';
@@ -973,7 +973,7 @@ export function getChartStartEndDate(
     startDate,
     endDate,
     range,
-  }: Pick<IChartInput, 'endDate' | 'startDate' | 'range'>,
+  }: Pick<IReportInput, 'endDate' | 'startDate' | 'range'>,
   timezone: string,
 ) {
   if (startDate && endDate) {

@@ -1,6 +1,6 @@
 import { pushModal } from '@/modals';
 import type {
-  IChartInputAi,
+  IReport,
   IChartRange,
   IChartType,
   IInterval,
@@ -16,7 +16,7 @@ import { Button } from '../ui/button';
 export function ChatReport({
   lazy,
   ...props
-}: { report: IChartInputAi; lazy: boolean }) {
+}: { report: IReport & { startDate: string; endDate: string }; lazy: boolean }) {
   const [chartType, setChartType] = useState<IChartType>(
     props.report.chartType,
   );

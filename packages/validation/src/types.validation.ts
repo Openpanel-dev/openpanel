@@ -10,25 +10,28 @@ import type {
   zChartEventItem,
   zChartEventSegment,
   zChartFormula,
-  zChartInput,
-  zChartInputAI,
   zChartSeries,
   zChartType,
   zCriteria,
   zLineType,
   zMetric,
   zRange,
+  zReport,
   zReportInput,
   zTimeInterval,
 } from './index';
 
-export type IChartInput = z.infer<typeof zChartInput>;
-export type IChartInputAi = z.infer<typeof zChartInputAI>;
-export type IChartProps = z.infer<typeof zReportInput> & {
-  name: string;
-  lineType: IChartLineType;
-  unit?: string;
-};
+// For saved reports - complete report with required display fields
+export type IReport = z.infer<typeof zReport>;
+
+// For API/engine use - flexible input
+export type IReportInput = z.infer<typeof zReportInput>;
+
+// With resolved dates (engine internal)
+export interface IReportInputWithDates extends IReportInput {
+  startDate: string;
+  endDate: string;
+}
 export type IChartEvent = z.infer<typeof zChartEvent>;
 export type IChartFormula = z.infer<typeof zChartFormula>;
 export type IChartEventItem = z.infer<typeof zChartEventItem>;
@@ -47,16 +50,12 @@ export type IChartType = z.infer<typeof zChartType>;
 export type IChartMetric = z.infer<typeof zMetric>;
 export type IChartLineType = z.infer<typeof zLineType>;
 export type IChartRange = z.infer<typeof zRange>;
-export interface IChartInputWithDates extends IChartInput {
-  startDate: string;
-  endDate: string;
-}
 export type IGetChartDataInput = {
   event: IChartEvent;
   projectId: string;
   startDate: string;
   endDate: string;
-} & Omit<IChartInput, 'series' | 'name' | 'startDate' | 'endDate' | 'range'>;
+} & Omit<IReportInput, 'series' | 'startDate' | 'endDate' | 'range'>;
 export type ICriteria = z.infer<typeof zCriteria>;
 
 export type PreviousValue =

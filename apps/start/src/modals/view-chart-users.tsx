@@ -13,7 +13,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
-import type { IChartInput } from '@openpanel/validation';
+import type { IReportInput } from '@openpanel/validation';
 import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useMemo, useState } from 'react';
@@ -152,7 +152,7 @@ function ProfileList({ profiles }: { profiles: any[] }) {
 // Chart-specific props and component
 interface ChartUsersViewProps {
   chartData: IChartData;
-  report: IChartInput;
+  report: IReportInput;
   date: string;
 }
 
@@ -279,7 +279,7 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
 
 // Funnel-specific props and component
 interface FunnelUsersViewProps {
-  report: IChartInput;
+  report: IReportInput;
   stepIndex: number;
 }
 
@@ -297,8 +297,14 @@ function FunnelUsersView({ report, stepIndex }: FunnelUsersViewProps) {
         series: report.series,
         stepIndex: stepIndex,
         showDropoffs: showDropoffs,
-        funnelWindow: report.funnelWindow,
-        funnelGroup: report.funnelGroup,
+        funnelWindow:
+          report.options?.type === 'funnel'
+            ? report.options.funnelWindow
+            : undefined,
+        funnelGroup:
+          report.options?.type === 'funnel'
+            ? report.options.funnelGroup
+            : undefined,
         breakdowns: report.breakdowns,
       },
       {
@@ -371,12 +377,12 @@ type ViewChartUsersProps =
   | {
       type: 'chart';
       chartData: IChartData;
-      report: IChartInput;
+      report: IReportInput;
       date: string;
     }
   | {
       type: 'funnel';
-      report: IChartInput;
+      report: IReportInput;
       stepIndex: number;
     };
 

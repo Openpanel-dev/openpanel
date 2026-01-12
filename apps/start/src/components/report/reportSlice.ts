@@ -12,29 +12,28 @@ import type {
   IChartBreakdown,
   IChartEventItem,
   IChartLineType,
-  IChartProps,
   IChartRange,
   IChartType,
   IInterval,
+  IReport,
   IReportOptions,
   UnionOmit,
   zCriteria,
 } from '@openpanel/validation';
 import type { z } from 'zod';
 
-type InitialState = IChartProps & {
+type InitialState = IReport & {
+  id?: string;
   dirty: boolean;
   ready: boolean;
   startDate: string | null;
   endDate: string | null;
-  options?: IReportOptions;
 };
 
 // First approach: define the initial state using that type
 const initialState: InitialState = {
   ready: false,
   dirty: false,
-  // TODO: remove this
   projectId: '',
   name: '',
   chartType: 'linear',
@@ -50,9 +49,6 @@ const initialState: InitialState = {
   unit: undefined,
   metric: 'sum',
   limit: 500,
-  criteria: 'on_or_after',
-  funnelGroup: undefined,
-  funnelWindow: undefined,
   options: undefined,
 };
 
@@ -75,7 +71,7 @@ export const reportSlice = createSlice({
         ready: true,
       };
     },
-    setReport(state, action: PayloadAction<IChartProps>) {
+    setReport(state, action: PayloadAction<IReport>) {
       return {
         ...state,
         ...action.payload,
@@ -265,7 +261,14 @@ export const reportSlice = createSlice({
 
     changeCriteria(state, action: PayloadAction<z.infer<typeof zCriteria>>) {
       state.dirty = true;
-      state.criteria = action.payload;
+      if (!state.options || state.options.type !== 'retention') {
+        state.options = {
+          type: 'retention',
+          criteria: action.payload,
+        };
+      } else {
+        state.options.criteria = action.payload;
+      }
     },
 
     changeUnit(state, action: PayloadAction<string | undefined>) {
@@ -275,12 +278,28 @@ export const reportSlice = createSlice({
 
     changeFunnelGroup(state, action: PayloadAction<string | undefined>) {
       state.dirty = true;
-      state.funnelGroup = action.payload || undefined;
+      if (!state.options || state.options.type !== 'funnel') {
+        state.options = {
+          type: 'funnel',
+          funnelGroup: action.payload,
+          funnelWindow: undefined,
+        };
+      } else {
+        state.options.funnelGroup = action.payload;
+      }
     },
 
     changeFunnelWindow(state, action: PayloadAction<number | undefined>) {
       state.dirty = true;
-      state.funnelWindow = action.payload || undefined;
+      if (!state.options || state.options.type !== 'funnel') {
+        state.options = {
+          type: 'funnel',
+          funnelGroup: undefined,
+          funnelWindow: action.payload,
+        };
+      } else {
+        state.options.funnelWindow = action.payload;
+      }
     },
     changeOptions(state, action: PayloadAction<IReportOptions | undefined>) {
       state.dirty = true;

@@ -131,34 +131,36 @@ export function Tables({
       series: reportSeries,
       breakdowns: reportBreakdowns,
       previous,
-      funnelWindow,
-      funnelGroup,
+      options,
     },
   } = useReportChartContext();
+
+  const funnelOptions = options?.type === 'funnel' ? options : undefined;
+  const funnelWindow = funnelOptions?.funnelWindow;
+  const funnelGroup = funnelOptions?.funnelGroup;
 
   const handleInspectStep = (step: (typeof steps)[0], stepIndex: number) => {
     if (!projectId || !step.event.id) return;
 
     // For funnels, we need to pass the step index so the modal can query
     // users who completed at least that step in the funnel sequence
-    pushModal('ViewChartUsers', {
-      type: 'funnel',
-      report: {
-        projectId,
-        series: reportSeries,
-        breakdowns: reportBreakdowns || [],
-        interval: interval || 'day',
-        startDate,
-        endDate,
-        range,
-        previous,
-        chartType: 'funnel',
-        metric: 'sum',
-        funnelWindow,
-        funnelGroup,
-      },
-      stepIndex, // Pass the step index for funnel queries
-    });
+      pushModal('ViewChartUsers', {
+        type: 'funnel',
+        report: {
+          projectId,
+          series: reportSeries,
+          breakdowns: reportBreakdowns || [],
+          interval: interval || 'day',
+          startDate,
+          endDate,
+          range,
+          previous,
+          chartType: 'funnel',
+          metric: 'sum',
+          options: funnelOptions,
+        },
+        stepIndex, // Pass the step index for funnel queries
+      });
   };
   return (
     <div className={cn('col @container divide-y divide-border card')}>

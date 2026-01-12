@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { db, getReportById, getReportsByDashboardId } from '@openpanel/db';
-import { zReportInput } from '@openpanel/validation';
+import { zReport } from '@openpanel/validation';
 
 import { getProjectAccess } from '../access';
 import { TRPCAccessError } from '../errors';
@@ -21,7 +21,7 @@ export const reportRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        report: zReportInput.omit({ projectId: true }),
+        report: zReport.omit({ projectId: true }),
         dashboardId: z.string(),
       }),
     )
@@ -55,10 +55,7 @@ export const reportRouter = createTRPCRouter({
           formula: report.formula,
           previous: report.previous ?? false,
           unit: report.unit,
-          criteria: report.criteria,
           metric: report.metric === 'count' ? 'sum' : report.metric,
-          funnelGroup: report.funnelGroup,
-          funnelWindow: report.funnelWindow,
           options: report.options,
         },
       });
@@ -67,7 +64,7 @@ export const reportRouter = createTRPCRouter({
     .input(
       z.object({
         reportId: z.string(),
-        report: zReportInput.omit({ projectId: true }),
+        report: zReport.omit({ projectId: true }),
       }),
     )
     .mutation(async ({ input: { report, reportId }, ctx }) => {
@@ -101,10 +98,7 @@ export const reportRouter = createTRPCRouter({
           formula: report.formula,
           previous: report.previous ?? false,
           unit: report.unit,
-          criteria: report.criteria,
           metric: report.metric === 'count' ? 'sum' : report.metric,
-          funnelGroup: report.funnelGroup,
-          funnelWindow: report.funnelWindow,
           options: report.options,
         },
       });
@@ -173,10 +167,7 @@ export const reportRouter = createTRPCRouter({
           formula: report.formula,
           previous: report.previous,
           unit: report.unit,
-          criteria: report.criteria,
           metric: report.metric,
-          funnelGroup: report.funnelGroup,
-          funnelWindow: report.funnelWindow,
           options: report.options,
         },
       });

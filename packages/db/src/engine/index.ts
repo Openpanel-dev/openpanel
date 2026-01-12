@@ -4,7 +4,7 @@ import { alphabetIds } from '@openpanel/constants';
 import type {
   FinalChart,
   IChartEventItem,
-  IChartInput,
+  IReportInput,
 } from '@openpanel/validation';
 import { chQuery } from '../clickhouse/client';
 import {
@@ -26,7 +26,7 @@ import type { ConcreteSeries } from './types';
  * Chart Engine - Main entry point
  * Executes the pipeline: normalize -> plan -> fetch -> compute -> format
  */
-export async function executeChart(input: IChartInput): Promise<FinalChart> {
+export async function executeChart(input: IReportInput): Promise<FinalChart> {
   // Stage 1: Normalize input
   const normalized = await normalize(input);
 
@@ -83,7 +83,7 @@ export async function executeChart(input: IChartInput): Promise<FinalChart> {
  * Executes a simplified pipeline: normalize -> fetch aggregate -> format
  */
 export async function executeAggregateChart(
-  input: IChartInput,
+  input: IReportInput,
 ): Promise<FinalChart> {
   // Stage 1: Normalize input
   const normalized = await normalize(input);

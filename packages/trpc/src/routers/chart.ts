@@ -27,7 +27,7 @@ import {
 } from '@openpanel/db';
 import {
   type IChartEvent,
-  zChartInput,
+  zReportInput,
   zChartSeries,
   zCriteria,
   zRange,
@@ -335,7 +335,7 @@ export const chartRouter = createTRPCRouter({
 
   funnel: publicProcedure
     .input(
-      zChartInput.and(
+      zReportInput.and(
         z.object({
           shareId: z.string().optional(),
           reportId: z.string().optional(),
@@ -417,7 +417,7 @@ export const chartRouter = createTRPCRouter({
 
   conversion: publicProcedure
     .input(
-      zChartInput.and(
+      zReportInput.and(
         z.object({
           shareId: z.string().optional(),
           reportId: z.string().optional(),
@@ -511,7 +511,7 @@ export const chartRouter = createTRPCRouter({
       };
     }),
 
-  sankey: protectedProcedure.input(zChartInput).query(async ({ input }) => {
+  sankey: protectedProcedure.input(zReportInput).query(async ({ input }) => {
     const { timezone } = await getSettingsForProject(input.projectId);
     const currentPeriod = getChartStartEndDate(input, timezone);
 
@@ -546,7 +546,7 @@ export const chartRouter = createTRPCRouter({
   chart: publicProcedure
     // .use(cacher)
     .input(
-      zChartInput.and(
+      zReportInput.and(
         z.object({
           shareId: z.string().optional(),
           reportId: z.string().optional(),
@@ -606,7 +606,7 @@ export const chartRouter = createTRPCRouter({
 
   aggregate: publicProcedure
     .input(
-      zChartInput.and(
+      zReportInput.and(
         z.object({
           shareId: z.string().optional(),
           reportId: z.string().optional(),
@@ -721,7 +721,8 @@ export const chartRouter = createTRPCRouter({
         }
 
         projectId = report.projectId;
-        criteria = report.criteria ?? criteria;
+        const retentionOptions = report.options?.type === 'retention' ? report.options : undefined;
+        criteria = retentionOptions?.criteria ?? criteria;
         dateRange = input.range ?? report.range;
         startDate = input.startDate ?? report.startDate;
         endDate = input.endDate ?? report.endDate;

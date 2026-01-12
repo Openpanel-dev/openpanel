@@ -1,12 +1,12 @@
 import { ReportChart } from '@/components/report-chart';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-import type { IChartProps } from '@openpanel/validation';
+import type { IReport } from '@openpanel/validation';
 
 import { ModalContent, ModalHeader } from './Modal/Container';
 
 type Props = {
-  chart: IChartProps;
+  chart: IReport;
 };
 
 const OverviewChartDetails = (props: Props) => {

@@ -10,7 +10,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import type { IChartProps } from '@openpanel/validation';
+import type { IReport } from '@openpanel/validation';
 
 import { Input } from '@/components/ui/input';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -21,7 +21,7 @@ import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 
 type SaveReportProps = {
-  report: IChartProps;
+  report: IReport;
   disableRedirect?: boolean;
 };
 

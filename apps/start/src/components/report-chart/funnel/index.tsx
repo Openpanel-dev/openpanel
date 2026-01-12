@@ -3,7 +3,7 @@ import type { RouterOutputs } from '@/trpc/client';
 import { useQuery } from '@tanstack/react-query';
 
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import type { IChartInput } from '@openpanel/validation';
+import type { IReportInput } from '@openpanel/validation';
 
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
@@ -19,8 +19,7 @@ export function ReportFunnelChart() {
       series,
       range,
       projectId,
-      funnelWindow,
-      funnelGroup,
+      options,
       startDate,
       endDate,
       previous,
@@ -32,23 +31,22 @@ export function ReportFunnelChart() {
   } = useReportChartContext();
   const { range: overviewRange, startDate: overviewStartDate, endDate: overviewEndDate, interval: overviewInterval } = useOverviewOptions();
 
+  const funnelOptions = options?.type === 'funnel' ? options : undefined;
+
   const trpc = useTRPC();
-  const input: IChartInput = {
+  const input: IReportInput = {
     series,
     range: overviewRange ?? range,
     projectId,
     interval: overviewInterval ?? interval ?? 'day',
     chartType: 'funnel',
     breakdowns,
-    funnelWindow,
-    funnelGroup,
     previous,
     metric: 'sum',
     startDate: overviewStartDate ?? startDate,
     endDate: overviewEndDate ?? endDate,
     limit: 20,
-    shareId,
-    reportId: id,
+    options: funnelOptions,
   };
   const res = useQuery(
     trpc.chart.funnel.queryOptions(input, {
