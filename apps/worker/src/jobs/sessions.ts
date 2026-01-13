@@ -38,6 +38,7 @@ const updateEventsCount = cacheable(async function updateEventsCount(
   });
 
   if (!organization) {
+    logger.warn('updateEventsCount: Organization not found', { projectId });
     return;
   }
 
