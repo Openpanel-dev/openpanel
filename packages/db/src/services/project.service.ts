@@ -1,4 +1,4 @@
-import { cacheable } from '@openpanel/redis';
+import { cacheable, getRedisCache } from '@openpanel/redis';
 import sqlstring from 'sqlstring';
 import { TABLE_NAMES, chQuery } from '../clickhouse/client';
 import type { Prisma, Project } from '../prisma-client';
@@ -102,9 +102,30 @@ export async function getProjects({
   return projects;
 }
 
-export const getProjectEventsCount = async (projectId: string) => {
-  const res = await chQuery<{ count: number }>(
-    `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`,
-  );
-  return res[0]?.count;
+const getProjectEventsCountUncached = async (projectId: string) => {
+  const lockKey = `lock:project-events-count:${projectId}`;
+  const redis = getRedisCache();
+
+  // Try to acquire lock to prevent thundering herd across workers
+  const acquired = await redis.set(lockKey, '1', 'EX', 30, 'NX');
+
+  if (!acquired) {
+    // Another worker is executing this query, skip - they'll update the count
+    return null;
+  }
+
+  try {
+    const res = await chQuery<{ count: number }>(
+      `SELECT count(*) as count FROM ${TABLE_NAMES.events} WHERE project_id = ${sqlstring.escape(projectId)} AND name NOT IN ('session_start', 'session_end')`,
+    );
+    return res[0]?.count;
+  } finally {
+    // Release lock
+    redis.del(lockKey).catch(() => {});
+  }
 };
+
+export const getProjectEventsCount = cacheable(
+  getProjectEventsCountUncached,
+  60 * 60, // 1 hour cache
+);
