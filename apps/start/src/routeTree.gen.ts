@@ -16,6 +16,9 @@ import { Route as PublicRouteImport } from './routes/_public'
 import { Route as LoginRouteImport } from './routes/_login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WidgetTestRouteImport } from './routes/widget/test'
+import { Route as WidgetRealtimeRouteImport } from './routes/widget/realtime'
+import { Route as WidgetCounterRouteImport } from './routes/widget/counter'
 import { Route as ApiHealthcheckRouteImport } from './routes/api/healthcheck'
 import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as PublicOnboardingRouteImport } from './routes/_public.onboarding'
@@ -60,6 +63,7 @@ import { Route as AppOrganizationIdProjectIdSettingsTabsIndexRouteImport } from 
 import { Route as AppOrganizationIdProjectIdProfilesTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.index'
 import { Route as AppOrganizationIdProjectIdNotificationsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.notifications._tabs.index'
 import { Route as AppOrganizationIdProjectIdEventsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.index'
+import { Route as AppOrganizationIdProjectIdSettingsTabsWidgetsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.widgets'
 import { Route as AppOrganizationIdProjectIdSettingsTabsImportsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.imports'
 import { Route as AppOrganizationIdProjectIdSettingsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.events'
 import { Route as AppOrganizationIdProjectIdSettingsTabsDetailsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.details'
@@ -117,6 +121,21 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WidgetTestRoute = WidgetTestRouteImport.update({
+  id: '/widget/test',
+  path: '/widget/test',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WidgetRealtimeRoute = WidgetRealtimeRouteImport.update({
+  id: '/widget/realtime',
+  path: '/widget/realtime',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WidgetCounterRoute = WidgetCounterRouteImport.update({
+  id: '/widget/counter',
+  path: '/widget/counter',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthcheckRoute = ApiHealthcheckRouteImport.update({
@@ -408,6 +427,12 @@ const AppOrganizationIdProjectIdEventsTabsIndexRoute =
     path: '/',
     getParentRoute: () => AppOrganizationIdProjectIdEventsTabsRoute,
   } as any)
+const AppOrganizationIdProjectIdSettingsTabsWidgetsRoute =
+  AppOrganizationIdProjectIdSettingsTabsWidgetsRouteImport.update({
+    id: '/widgets',
+    path: '/widgets',
+    getParentRoute: () => AppOrganizationIdProjectIdSettingsTabsRoute,
+  } as any)
 const AppOrganizationIdProjectIdSettingsTabsImportsRoute =
   AppOrganizationIdProjectIdSettingsTabsImportsRouteImport.update({
     id: '/imports',
@@ -506,6 +531,9 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
+  '/widget/counter': typeof WidgetCounterRoute
+  '/widget/realtime': typeof WidgetRealtimeRoute
+  '/widget/test': typeof WidgetTestRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -553,6 +581,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId/settings/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   '/$organizationId/$projectId/settings/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
   '/$organizationId/$projectId/settings/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
+  '/$organizationId/$projectId/settings/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   '/$organizationId/$projectId/events/': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
   '/$organizationId/$projectId/notifications/': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
   '/$organizationId/$projectId/profiles/': typeof AppOrganizationIdProjectIdProfilesTabsIndexRoute
@@ -567,6 +596,9 @@ export interface FileRoutesByTo {
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
+  '/widget/counter': typeof WidgetCounterRoute
+  '/widget/realtime': typeof WidgetRealtimeRoute
+  '/widget/test': typeof WidgetTestRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
   '/onboarding/project': typeof StepsOnboardingProjectRoute
@@ -611,6 +643,7 @@ export interface FileRoutesByTo {
   '/$organizationId/$projectId/settings/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   '/$organizationId/$projectId/settings/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
   '/$organizationId/$projectId/settings/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
+  '/$organizationId/$projectId/settings/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   '/$organizationId/$projectId/profiles/$profileId/events': typeof AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute
 }
 export interface FileRoutesById {
@@ -626,6 +659,9 @@ export interface FileRoutesById {
   '/_public/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
+  '/widget/counter': typeof WidgetCounterRoute
+  '/widget/realtime': typeof WidgetRealtimeRoute
+  '/widget/test': typeof WidgetTestRoute
   '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/_app/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
@@ -680,6 +716,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/$projectId/settings/_tabs/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   '/_app/$organizationId/$projectId/settings/_tabs/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
   '/_app/$organizationId/$projectId/settings/_tabs/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   '/_app/$organizationId/$projectId/events/_tabs/': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
   '/_app/$organizationId/$projectId/notifications/_tabs/': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
   '/_app/$organizationId/$projectId/profiles/_tabs/': typeof AppOrganizationIdProjectIdProfilesTabsIndexRoute
@@ -697,6 +734,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/config'
     | '/api/healthcheck'
+    | '/widget/counter'
+    | '/widget/realtime'
+    | '/widget/test'
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
@@ -744,6 +784,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/settings/details'
     | '/$organizationId/$projectId/settings/events'
     | '/$organizationId/$projectId/settings/imports'
+    | '/$organizationId/$projectId/settings/widgets'
     | '/$organizationId/$projectId/events/'
     | '/$organizationId/$projectId/notifications/'
     | '/$organizationId/$projectId/profiles/'
@@ -758,6 +799,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/config'
     | '/api/healthcheck'
+    | '/widget/counter'
+    | '/widget/realtime'
+    | '/widget/test'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
     | '/onboarding/project'
@@ -802,6 +846,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/settings/details'
     | '/$organizationId/$projectId/settings/events'
     | '/$organizationId/$projectId/settings/imports'
+    | '/$organizationId/$projectId/settings/widgets'
     | '/$organizationId/$projectId/profiles/$profileId/events'
   id:
     | '__root__'
@@ -816,6 +861,9 @@ export interface FileRouteTypes {
     | '/_public/onboarding'
     | '/api/config'
     | '/api/healthcheck'
+    | '/widget/counter'
+    | '/widget/realtime'
+    | '/widget/test'
     | '/_app/$organizationId/$projectId'
     | '/_app/$organizationId/billing'
     | '/_app/$organizationId/settings'
@@ -870,6 +918,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/$projectId/settings/_tabs/details'
     | '/_app/$organizationId/$projectId/settings/_tabs/events'
     | '/_app/$organizationId/$projectId/settings/_tabs/imports'
+    | '/_app/$organizationId/$projectId/settings/_tabs/widgets'
     | '/_app/$organizationId/$projectId/events/_tabs/'
     | '/_app/$organizationId/$projectId/notifications/_tabs/'
     | '/_app/$organizationId/$projectId/profiles/_tabs/'
@@ -886,6 +935,9 @@ export interface RootRouteChildren {
   StepsRoute: typeof StepsRouteWithChildren
   ApiConfigRoute: typeof ApiConfigRoute
   ApiHealthcheckRoute: typeof ApiHealthcheckRoute
+  WidgetCounterRoute: typeof WidgetCounterRoute
+  WidgetRealtimeRoute: typeof WidgetRealtimeRoute
+  WidgetTestRoute: typeof WidgetTestRoute
   ShareDashboardShareIdRoute: typeof ShareDashboardShareIdRoute
   ShareOverviewShareIdRoute: typeof ShareOverviewShareIdRoute
   ShareReportShareIdRoute: typeof ShareReportShareIdRoute
@@ -926,6 +978,27 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/widget/test': {
+      id: '/widget/test'
+      path: '/widget/test'
+      fullPath: '/widget/test'
+      preLoaderRoute: typeof WidgetTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/widget/realtime': {
+      id: '/widget/realtime'
+      path: '/widget/realtime'
+      fullPath: '/widget/realtime'
+      preLoaderRoute: typeof WidgetRealtimeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/widget/counter': {
+      id: '/widget/counter'
+      path: '/widget/counter'
+      fullPath: '/widget/counter'
+      preLoaderRoute: typeof WidgetCounterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/healthcheck': {
@@ -1285,6 +1358,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsTabsRoute
     }
+    '/_app/$organizationId/$projectId/settings/_tabs/widgets': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/widgets'
+      path: '/widgets'
+      fullPath: '/$organizationId/$projectId/settings/widgets'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
+    }
     '/_app/$organizationId/$projectId/settings/_tabs/imports': {
       id: '/_app/$organizationId/$projectId/settings/_tabs/imports'
       path: '/imports'
@@ -1548,6 +1628,7 @@ interface AppOrganizationIdProjectIdSettingsTabsRouteChildren {
   AppOrganizationIdProjectIdSettingsTabsDetailsRoute: typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   AppOrganizationIdProjectIdSettingsTabsEventsRoute: typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
   AppOrganizationIdProjectIdSettingsTabsImportsRoute: typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
+  AppOrganizationIdProjectIdSettingsTabsWidgetsRoute: typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   AppOrganizationIdProjectIdSettingsTabsIndexRoute: typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
 }
 
@@ -1561,6 +1642,8 @@ const AppOrganizationIdProjectIdSettingsTabsRouteChildren: AppOrganizationIdProj
       AppOrganizationIdProjectIdSettingsTabsEventsRoute,
     AppOrganizationIdProjectIdSettingsTabsImportsRoute:
       AppOrganizationIdProjectIdSettingsTabsImportsRoute,
+    AppOrganizationIdProjectIdSettingsTabsWidgetsRoute:
+      AppOrganizationIdProjectIdSettingsTabsWidgetsRoute,
     AppOrganizationIdProjectIdSettingsTabsIndexRoute:
       AppOrganizationIdProjectIdSettingsTabsIndexRoute,
   }
@@ -1791,6 +1874,9 @@ const rootRouteChildren: RootRouteChildren = {
   StepsRoute: StepsRouteWithChildren,
   ApiConfigRoute: ApiConfigRoute,
   ApiHealthcheckRoute: ApiHealthcheckRoute,
+  WidgetCounterRoute: WidgetCounterRoute,
+  WidgetRealtimeRoute: WidgetRealtimeRoute,
+  WidgetTestRoute: WidgetTestRoute,
   ShareDashboardShareIdRoute: ShareDashboardShareIdRoute,
   ShareOverviewShareIdRoute: ShareOverviewShareIdRoute,
   ShareReportShareIdRoute: ShareReportShareIdRoute,

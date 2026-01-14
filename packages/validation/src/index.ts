@@ -135,6 +135,29 @@ export const zReportOptions = z.discriminatedUnion('type', [
 export type IReportOptions = z.infer<typeof zReportOptions>;
 export type ISankeyOptions = z.infer<typeof zSankeyOptions>;
 
+export const zWidgetType = z.enum(['realtime', 'counter']);
+export type IWidgetType = z.infer<typeof zWidgetType>;
+
+export const zRealtimeWidgetOptions = z.object({
+  type: z.literal('realtime'),
+  referrers: z.boolean().default(true),
+  countries: z.boolean().default(true),
+  paths: z.boolean().default(false),
+});
+
+export const zCounterWidgetOptions = z.object({
+  type: z.literal('counter'),
+});
+
+export const zWidgetOptions = z.discriminatedUnion('type', [
+  zRealtimeWidgetOptions,
+  zCounterWidgetOptions,
+]);
+
+export type IWidgetOptions = z.infer<typeof zWidgetOptions>;
+export type ICounterWidgetOptions = z.infer<typeof zCounterWidgetOptions>;
+export type IRealtimeWidgetOptions = z.infer<typeof zRealtimeWidgetOptions>;
+
 // Base input schema - for API calls, engine, chart queries
 export const zReportInput = z.object({
   projectId: z.string().describe('The ID of the project this chart belongs to'),
@@ -193,7 +216,9 @@ export const zReportInput = z.object({
     .describe('Chart-specific options (funnel, retention, sankey)'),
   // Optional display fields
   name: z.string().optional().describe('The user-defined name for the report'),
-  lineType: zLineType.optional().describe('The visual style of the line in the chart'),
+  lineType: zLineType
+    .optional()
+    .describe('The visual style of the line in the chart'),
   unit: z
     .string()
     .optional()
@@ -204,8 +229,13 @@ export const zReportInput = z.object({
 
 // Complete report schema - for saved reports
 export const zReport = zReportInput.extend({
-  name: z.string().default('Untitled').describe('The user-defined name for the report'),
-  lineType: zLineType.default('monotone').describe('The visual style of the line in the chart'),
+  name: z
+    .string()
+    .default('Untitled')
+    .describe('The user-defined name for the report'),
+  lineType: zLineType
+    .default('monotone')
+    .describe('The visual style of the line in the chart'),
 });
 
 // Alias for backward compatibility

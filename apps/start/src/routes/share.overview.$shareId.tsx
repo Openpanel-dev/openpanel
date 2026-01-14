@@ -12,9 +12,8 @@ import OverviewTopGeo from '@/components/overview/overview-top-geo';
 import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
-import { EyeClosedIcon, FrownIcon } from 'lucide-react';
 import { z } from 'zod';
 
 const shareSearchSchema = z.object({

@@ -3,6 +3,7 @@ import type {
   IIntegrationConfig,
   INotificationRuleConfig,
   IProjectFilters,
+  IWidgetOptions,
   InsightPayload,
 } from '@openpanel/validation';
 import type {
@@ -20,6 +21,7 @@ declare global {
     type IPrismaNotificationPayload = INotificationPayload;
     type IPrismaProjectFilters = IProjectFilters[];
     type IPrismaProjectInsightPayload = InsightPayload;
+    type IPrismaWidgetOptions = IWidgetOptions;
     type IPrismaClickhouseEvent = IClickhouseEvent;
     type IPrismaClickhouseProfile = IClickhouseProfile;
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;

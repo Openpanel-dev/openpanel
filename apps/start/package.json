@@ -10,7 +10,6 @@
     "cf-typegen": "wrangler types",
     "build": "pnpm with-env vite build",
     "serve": "vite preview",
-    "test": "vitest run",
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",
@@ -26,7 +25,7 @@
     "@hookform/resolvers": "^3.3.4",
     "@hyperdx/node-opentelemetry": "^0.8.1",
     "@nivo/sankey": "^0.99.0",
-    "@number-flow/react": "0.3.5",
+    "@number-flow/react": "0.5.10",
     "@openpanel/common": "workspace:^",
     "@openpanel/constants": "workspace:^",
     "@openpanel/integrations": "workspace:^",
@@ -150,7 +149,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
-    "@cloudflare/vite-plugin": "^1.13.12",
+    "@cloudflare/vite-plugin": "1.20.3",
     "@openpanel/db": "workspace:*",
     "@openpanel/trpc": "workspace:*",
     "@tanstack/devtools-event-client": "^0.3.3",
@@ -171,6 +170,6 @@
     "vite": "^6.3.5",
     "vitest": "^3.0.5",
     "web-vitals": "^4.2.4",
-    "wrangler": "^4.42.2"
+    "wrangler": "4.59.1"
   }
 }

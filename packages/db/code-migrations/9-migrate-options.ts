@@ -23,9 +23,13 @@ export async function up() {
 
   for (const report of reports) {
     const currentOptions = report.options as IReportOptions | null | undefined;
-    
+
     // Skip if options already exists and is valid
-    if (currentOptions && typeof currentOptions === 'object' && 'type' in currentOptions) {
+    if (
+      currentOptions &&
+      typeof currentOptions === 'object' &&
+      'type' in currentOptions
+    ) {
       skippedCount++;
       continue;
     }
@@ -61,7 +65,7 @@ export async function up() {
       console.log(
         `Migrating report ${report.name} (${report.id}) - chartType: ${report.chartType}`,
       );
-      
+
       await db.report.update({
         where: { id: report.id },
         data: {
@@ -84,5 +88,3 @@ export async function up() {
     `Skipped: ${skippedCount} reports (already migrated or no legacy fields)`,
   ]);
 }
-
-

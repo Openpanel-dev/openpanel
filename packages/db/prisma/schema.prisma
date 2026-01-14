@@ -58,6 +58,7 @@ model Organization {
   ShareOverview   ShareOverview[]
   ShareDashboard  ShareDashboard[]
   ShareReport     ShareReport[]
+  ShareWidget     ShareWidget[]
   integrations    Integration[]
   invites         Invite[]
   timezone        String?
@@ -193,6 +194,7 @@ model Project {
   share           ShareOverview?
   shareDashboards ShareDashboard[]
   shareReports    ShareReport[]
+  shareWidgets    ShareWidget[]
   meta            EventMeta[]
   references      Reference[]
   access          ProjectAccess[]
@@ -408,6 +410,21 @@ model ShareReport {
   updatedAt      DateTime     @default(now()) @updatedAt
 
   @@map("share_reports")
+}
+
+model ShareWidget {
+  id             String       @unique
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  public         Boolean      @default(true)
+  /// [IPrismaWidgetOptions]
+  options        Json
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+
+  @@map("share_widgets")
 }
 
 model EventMeta {

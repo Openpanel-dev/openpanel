@@ -20,6 +20,7 @@ import { sessionRouter } from './routers/session';
 import { shareRouter } from './routers/share';
 import { subscriptionRouter } from './routers/subscription';
 import { userRouter } from './routers/user';
+import { widgetRouter } from './routers/widget';
 import { createTRPCRouter } from './trpc';
 /**
  * This is the primary router for your server.
@@ -49,6 +50,7 @@ export const appRouter = createTRPCRouter({
   realtime: realtimeRouter,
   chat: chatRouter,
   insight: insightRouter,
+  widget: widgetRouter,
 });
 
 // export type definition of API
