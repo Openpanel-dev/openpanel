@@ -2,7 +2,7 @@ import { ReportChart } from '@/components/report-chart';
 import { Widget, WidgetBody } from '@/components/widget';
 import { memo } from 'react';
 
-import type { IChartProps } from '@openpanel/validation';
+import type { IReport } from '@openpanel/validation';
 import { WidgetHead } from '../overview/overview-widget';
 
 type Props = {
@@ -12,7 +12,7 @@ type Props = {
 
 export const ProfileCharts = memo(
   ({ profileId, projectId }: Props) => {
-    const pageViewsChart: IChartProps = {
+    const pageViewsChart: IReport = {
       projectId,
       chartType: 'linear',
       series: [
@@ -46,7 +46,7 @@ export const ProfileCharts = memo(
       metric: 'sum',
     };
 
-    const eventsChart: IChartProps = {
+    const eventsChart: IReport = {
       projectId,
       chartType: 'linear',
       series: [

@@ -352,8 +352,23 @@ export const authRouter = createTRPCRouter({
     )
     .input(zSignInShare)
     .mutation(async ({ input, ctx }) => {
-      const { password, shareId } = input;
-      const share = await getShareOverviewById(input.shareId);
+      const { password, shareId, shareType = 'overview' } = input;
+      
+      let share: { password: string | null; public: boolean } | null = null;
+      let cookieName = '';
+
+      if (shareType === 'overview') {
+        share = await getShareOverviewById(shareId);
+        cookieName = `shared-overview-${shareId}`;
+      } else if (shareType === 'dashboard') {
+        const { getShareDashboardById } = await import('@openpanel/db');
+        share = await getShareDashboardById(shareId);
+        cookieName = `shared-dashboard-${shareId}`;
+      } else if (shareType === 'report') {
+        const { getShareReportById } = await import('@openpanel/db');
+        share = await getShareReportById(shareId);
+        cookieName = `shared-report-${shareId}`;
+      }
 
       if (!share) {
         throw TRPCNotFoundError('Share not found');
@@ -373,7 +388,7 @@ export const authRouter = createTRPCRouter({
         throw TRPCAccessError('Incorrect password');
       }
 
-      ctx.setCookie(`shared-overview-${shareId}`, '1', {
+      ctx.setCookie(cookieName, '1', {
         maxAge: 60 * 60 * 24 * 7,
         ...COOKIE_OPTIONS,
       });

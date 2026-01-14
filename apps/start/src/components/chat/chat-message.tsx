@@ -1,6 +1,7 @@
 import { Markdown } from '@/components/markdown';
 import { cn } from '@/utils/cn';
-import { zChartInputAI } from '@openpanel/validation';
+import { zReport } from '@openpanel/validation';
+import { z } from 'zod';
 import type { UIMessage } from 'ai';
 import { Loader2Icon, UserIcon } from 'lucide-react';
 import { Fragment, memo } from 'react';
@@ -77,7 +78,10 @@ export const ChatMessage = memo(
                 const { result } = p.toolInvocation;
 
                 if (result.type === 'report') {
-                  const report = zChartInputAI.safeParse(result.report);
+                  const report = zReport.extend({
+                    startDate: z.string(),
+                    endDate: z.string(),
+                  }).safeParse(result.report);
                   if (report.success) {
                     return (
                       <Fragment key={key}>

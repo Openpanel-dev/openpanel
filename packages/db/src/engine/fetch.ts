@@ -53,9 +53,6 @@ export async function fetch(plan: Plan): Promise<ConcreteSeries[]> {
       previous: plan.input.previous ?? false,
       limit: plan.input.limit,
       offset: plan.input.offset,
-      criteria: plan.input.criteria,
-      funnelGroup: plan.input.funnelGroup,
-      funnelWindow: plan.input.funnelWindow,
     };
 
     // Execute query

@@ -1,6 +1,7 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
@@ -12,21 +13,33 @@ import CohortTable from './table';
 export function ReportRetentionChart() {
   const {
     report: {
+      id,
       series,
       range,
       projectId,
+      options,
       startDate,
       endDate,
-      criteria,
       interval,
     },
     isLazyLoading,
+    shareId,
   } = useReportChartContext();
+  const {
+    range: overviewRange,
+    startDate: overviewStartDate,
+    endDate: overviewEndDate,
+    interval: overviewInterval,
+  } = useOverviewOptions();
   const eventSeries = series.filter((item) => item.type === 'event');
   const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
   const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
   const isEnabled =
     firstEvent.length > 0 && secondEvent.length > 0 && !isLazyLoading;
+
+  const retentionOptions = options?.type === 'retention' ? options : undefined;
+  const criteria = retentionOptions?.criteria ?? 'on_or_after';
+
   const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.cohort.queryOptions(
@@ -34,11 +47,13 @@ export function ReportRetentionChart() {
         firstEvent,
         secondEvent,
         projectId,
-        range,
-        startDate,
-        endDate,
+        range: overviewRange ?? range,
+        startDate: overviewStartDate ?? startDate,
+        endDate: overviewEndDate ?? endDate,
         criteria,
-        interval,
+        interval: overviewInterval ?? interval,
+        shareId,
+        reportId: id,
       },
       {
         placeholderData: keepPreviousData,

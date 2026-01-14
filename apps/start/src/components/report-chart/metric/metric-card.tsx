@@ -54,10 +54,7 @@ export function MetricCard({
   metric,
   unit,
 }: MetricCardProps) {
-  const {
-    report: { previousIndicatorInverted },
-    isEditMode,
-  } = useReportChartContext();
+  const { isEditMode } = useReportChartContext();
   const number = useNumber();
 
   const renderValue = (value: number | undefined, unitClassName?: string) => {
@@ -80,7 +77,7 @@ export function MetricCard({
   const previous = serie.metrics.previous?.[metric];
 
   const graphColors = getDiffIndicator(
-    previousIndicatorInverted,
+    false,
     previous?.state,
     '#6ee7b7', // green
     '#fda4af', // red

@@ -5,6 +5,7 @@ import {
   ChartColumnIncreasingIcon,
   ConeIcon,
   GaugeIcon,
+  GitBranchIcon,
   Globe2Icon,
   LineChartIcon,
   type LucideIcon,
@@ -58,6 +59,7 @@ export function ReportChartType({
     retention: UsersIcon,
     map: Globe2Icon,
     conversion: TrendingUpIcon,
+    sankey: GitBranchIcon,
   };
 
   return (

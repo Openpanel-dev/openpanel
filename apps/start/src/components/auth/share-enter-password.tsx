@@ -8,7 +8,13 @@ import { LogoSquare } from '../logo';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
-export function ShareEnterPassword({ shareId }: { shareId: string }) {
+export function ShareEnterPassword({
+  shareId,
+  shareType = 'overview',
+}: {
+  shareId: string;
+  shareType?: 'overview' | 'dashboard' | 'report';
+}) {
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInShare.mutationOptions({
@@ -25,6 +31,7 @@ export function ShareEnterPassword({ shareId }: { shareId: string }) {
     defaultValues: {
       password: '',
       shareId,
+      shareType,
     },
   });
 
@@ -32,6 +39,7 @@ export function ShareEnterPassword({ shareId }: { shareId: string }) {
     mutation.mutate({
       password: data.password,
       shareId,
+      shareType,
     });
   });
 
@@ -40,9 +48,20 @@ export function ShareEnterPassword({ shareId }: { shareId: string }) {
       <div className="bg-background p-6 rounded-lg max-w-md w-full text-left">
         <div className="col mt-1 flex-1 gap-2">
           <LogoSquare className="size-12 mb-4" />
-          <div className="text-xl font-semibold">Overview is locked</div>
+          <div className="text-xl font-semibold">
+            {shareType === 'dashboard'
+              ? 'Dashboard is locked'
+              : shareType === 'report'
+                ? 'Report is locked'
+                : 'Overview is locked'}
+          </div>
           <div className="text-lg text-muted-foreground leading-normal">
-            Please enter correct password to access this overview
+            Please enter correct password to access this{' '}
+            {shareType === 'dashboard'
+              ? 'dashboard'
+              : shareType === 'report'
+                ? 'report'
+                : 'overview'}
           </div>
         </div>
         <form onSubmit={onSubmit} className="col gap-4 mt-6">

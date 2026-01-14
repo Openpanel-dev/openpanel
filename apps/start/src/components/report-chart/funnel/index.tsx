@@ -2,7 +2,8 @@ import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { useQuery } from '@tanstack/react-query';
 
-import type { IChartInput } from '@openpanel/validation';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
+import type { IReportInput } from '@openpanel/validation';
 
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
@@ -14,35 +15,39 @@ import { Chart, Summary, Tables } from './chart';
 export function ReportFunnelChart() {
   const {
     report: {
+      id,
       series,
       range,
       projectId,
-      funnelWindow,
-      funnelGroup,
+      options,
       startDate,
       endDate,
       previous,
       breakdowns,
+      interval,
     },
     isLazyLoading,
+    shareId,
   } = useReportChartContext();
+  const { range: overviewRange, startDate: overviewStartDate, endDate: overviewEndDate, interval: overviewInterval } = useOverviewOptions();
 
-  const input: IChartInput = {
+  const funnelOptions = options?.type === 'funnel' ? options : undefined;
+
+  const trpc = useTRPC();
+  const input: IReportInput = {
     series,
-    range,
+    range: overviewRange ?? range,
     projectId,
-    interval: 'day',
+    interval: overviewInterval ?? interval ?? 'day',
     chartType: 'funnel',
     breakdowns,
-    funnelWindow,
-    funnelGroup,
     previous,
     metric: 'sum',
-    startDate,
-    endDate,
+    startDate: overviewStartDate ?? startDate,
+    endDate: overviewEndDate ?? endDate,
     limit: 20,
+    options: funnelOptions,
   };
-  const trpc = useTRPC();
   const res = useQuery(
     trpc.chart.funnel.queryOptions(input, {
       enabled: !isLazyLoading && input.series.length > 0,

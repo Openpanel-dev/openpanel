@@ -1,7 +1,7 @@
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useMemo, useState } from 'react';
 
-import type { IChartInput } from '@openpanel/validation';
+import type { IReportInput } from '@openpanel/validation';
 
 import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
@@ -74,7 +74,7 @@ export default function OverviewTopEvents({
     },
   });
 
-  const report: IChartInput = useMemo(
+  const report: IReportInput = useMemo(
     () => ({
       limit: 1000,
       projectId,
@@ -96,9 +96,7 @@ export default function OverviewTopEvents({
         },
       ],
       chartType: 'bar' as const,
-      lineType: 'monotone' as const,
       interval,
-      name: widget.title,
       range,
       previous,
       metric: 'sum' as const,

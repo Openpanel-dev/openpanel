@@ -2,16 +2,11 @@ import isEqual from 'lodash.isequal';
 import type { LucideIcon } from 'lucide-react';
 import { createContext, useContext, useEffect, useState } from 'react';
 
-import type {
-  IChartInput,
-  IChartProps,
-  IChartSerie,
-} from '@openpanel/validation';
+import type { IChartSerie, IReportInput } from '@openpanel/validation';
 
 export type ReportChartContextType = {
   options: Partial<{
     columns: React.ReactNode[];
-    hideID: boolean;
     hideLegend: boolean;
     hideXAxis: boolean;
     hideYAxis: boolean;
@@ -28,9 +23,11 @@ export type ReportChartContextType = {
       onClick: () => void;
     }[];
   }>;
-  report: IChartProps;
+  report: IReportInput & { id?: string };
   isLazyLoading: boolean;
   isEditMode: boolean;
+  shareId?: string;
+  reportId?: string;
 };
 
 type ReportChartContextProviderProps = ReportChartContextType & {
@@ -38,7 +35,7 @@ type ReportChartContextProviderProps = ReportChartContextType & {
 };
 
 export type ReportChartProps = Partial<ReportChartContextType> & {
-  report: IChartInput;
+  report: IReportInput & { id?: string };
   lazy?: boolean;
 };
 
@@ -52,20 +49,6 @@ export const useReportChartContext = () => {
     );
   }
   return ctx;
-};
-
-export const useSelectReportChartContext = <T,>(
-  selector: (ctx: ReportChartContextType) => T,
-) => {
-  const ctx = useReportChartContext();
-  const [state, setState] = useState(selector(ctx));
-  useEffect(() => {
-    const newState = selector(ctx);
-    if (!isEqual(newState, state)) {
-      setState(newState);
-    }
-  }, [ctx]);
-  return state;
 };
 
 export const ReportChartProvider = ({

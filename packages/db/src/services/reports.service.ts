@@ -8,9 +8,9 @@ import type {
   IChartEventFilter,
   IChartEventItem,
   IChartLineType,
-  IChartProps,
   IChartRange,
-  ICriteria,
+  IReport,
+  IReportOptions,
 } from '@openpanel/validation';
 
 import type { Report as DbReport, ReportLayout } from '../prisma-client';
@@ -65,17 +65,22 @@ export function transformReportEventItem(
 
 export function transformReport(
   report: DbReport & { layout?: ReportLayout | null },
-): IChartProps & { id: string; layout?: ReportLayout | null } {
+): IReport & {
+  id: string;
+  layout?: ReportLayout | null;
+} {
+  const options = report.options as IReportOptions | null | undefined;
+
   return {
     id: report.id,
     projectId: report.projectId,
-    series:
-      (report.events as IChartEventItem[]).map(transformReportEventItem) ?? [],
-    breakdowns: report.breakdowns as IChartBreakdown[],
+    name: report.name || 'Untitled',
     chartType: report.chartType,
     lineType: (report.lineType as IChartLineType) ?? lineTypes.monotone,
     interval: report.interval,
-    name: report.name || 'Untitled',
+    series:
+      (report.events as IChartEventItem[]).map(transformReportEventItem) ?? [],
+    breakdowns: report.breakdowns as IChartBreakdown[],
     range:
       report.range in deprecated_timeRanges
         ? '30d'
@@ -84,10 +89,8 @@ export function transformReport(
     formula: report.formula ?? undefined,
     metric: report.metric ?? 'sum',
     unit: report.unit ?? undefined,
-    criteria: (report.criteria as ICriteria) ?? undefined,
-    funnelGroup: report.funnelGroup ?? undefined,
-    funnelWindow: report.funnelWindow ?? undefined,
     layout: report.layout ?? undefined,
+    options: options ?? undefined,
   };
 }
 

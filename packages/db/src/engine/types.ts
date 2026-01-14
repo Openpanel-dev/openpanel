@@ -4,8 +4,8 @@ import type {
   IChartEventFilter,
   IChartEventItem,
   IChartFormula,
-  IChartInput,
-  IChartInputWithDates,
+  IReportInput,
+  IReportInputWithDates,
 } from '@openpanel/validation';
 
 /**
@@ -50,7 +50,7 @@ export type ConcreteSeries = {
 export type Plan = {
   concreteSeries: ConcreteSeries[];
   definitions: SeriesDefinition[];
-  input: IChartInputWithDates;
+  input: IReportInputWithDates;
   timezone: string;
 };
 

@@ -1,6 +1,5 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
-import { endOfDay, format, isSameDay, isSameMonth, startOfDay } from 'date-fns';
 
 import { shortId } from '@openpanel/common';
 import {
@@ -12,18 +11,19 @@ import {
 import type {
   IChartBreakdown,
   IChartEventItem,
-  IChartFormula,
   IChartLineType,
-  IChartProps,
   IChartRange,
   IChartType,
   IInterval,
+  IReport,
+  IReportOptions,
   UnionOmit,
   zCriteria,
 } from '@openpanel/validation';
 import type { z } from 'zod';
 
-type InitialState = IChartProps & {
+type InitialState = IReport & {
+  id?: string;
   dirty: boolean;
   ready: boolean;
   startDate: string | null;
@@ -34,7 +34,6 @@ type InitialState = IChartProps & {
 const initialState: InitialState = {
   ready: false,
   dirty: false,
-  // TODO: remove this
   projectId: '',
   name: '',
   chartType: 'linear',
@@ -50,9 +49,7 @@ const initialState: InitialState = {
   unit: undefined,
   metric: 'sum',
   limit: 500,
-  criteria: 'on_or_after',
-  funnelGroup: undefined,
-  funnelWindow: undefined,
+  options: undefined,
 };
 
 export const reportSlice = createSlice({
@@ -74,7 +71,7 @@ export const reportSlice = createSlice({
         ready: true,
       };
     },
-    setReport(state, action: PayloadAction<IChartProps>) {
+    setReport(state, action: PayloadAction<IReport>) {
       return {
         ...state,
         ...action.payload,
@@ -187,6 +184,16 @@ export const reportSlice = createSlice({
       state.dirty = true;
       state.chartType = action.payload;
 
+      // Initialize sankey options if switching to sankey
+      if (action.payload === 'sankey' && !state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: 5,
+          exclude: [],
+        };
+      }
+
       if (
         !isMinuteIntervalEnabledByRange(state.range) &&
         state.interval === 'minute'
@@ -254,7 +261,14 @@ export const reportSlice = createSlice({
 
     changeCriteria(state, action: PayloadAction<z.infer<typeof zCriteria>>) {
       state.dirty = true;
-      state.criteria = action.payload;
+      if (!state.options || state.options.type !== 'retention') {
+        state.options = {
+          type: 'retention',
+          criteria: action.payload,
+        };
+      } else {
+        state.options.criteria = action.payload;
+      }
     },
 
     changeUnit(state, action: PayloadAction<string | undefined>) {
@@ -264,12 +278,88 @@ export const reportSlice = createSlice({
 
     changeFunnelGroup(state, action: PayloadAction<string | undefined>) {
       state.dirty = true;
-      state.funnelGroup = action.payload || undefined;
+      if (!state.options || state.options.type !== 'funnel') {
+        state.options = {
+          type: 'funnel',
+          funnelGroup: action.payload,
+          funnelWindow: undefined,
+        };
+      } else {
+        state.options.funnelGroup = action.payload;
+      }
     },
 
     changeFunnelWindow(state, action: PayloadAction<number | undefined>) {
       state.dirty = true;
-      state.funnelWindow = action.payload || undefined;
+      if (!state.options || state.options.type !== 'funnel') {
+        state.options = {
+          type: 'funnel',
+          funnelGroup: undefined,
+          funnelWindow: action.payload,
+        };
+      } else {
+        state.options.funnelWindow = action.payload;
+      }
+    },
+    changeOptions(state, action: PayloadAction<IReportOptions | undefined>) {
+      state.dirty = true;
+      state.options = action.payload || undefined;
+    },
+    changeSankeyMode(
+      state,
+      action: PayloadAction<'between' | 'after' | 'before'>,
+    ) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: action.payload,
+          steps: 5,
+          exclude: [],
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.mode = action.payload;
+      }
+    },
+    changeSankeySteps(state, action: PayloadAction<number>) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: action.payload,
+          exclude: [],
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.steps = action.payload;
+      }
+    },
+    changeSankeyExclude(state, action: PayloadAction<string[]>) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: 5,
+          exclude: action.payload,
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.exclude = action.payload;
+      }
+    },
+    changeSankeyInclude(state, action: PayloadAction<string[] | undefined>) {
+      state.dirty = true;
+      if (!state.options) {
+        state.options = {
+          type: 'sankey',
+          mode: 'after',
+          steps: 5,
+          exclude: [],
+          include: action.payload,
+        };
+      } else if (state.options.type === 'sankey') {
+        state.options.include = action.payload;
+      }
     },
     reorderEvents(
       state,
@@ -311,6 +401,11 @@ export const {
   changeUnit,
   changeFunnelGroup,
   changeFunnelWindow,
+  changeOptions,
+  changeSankeyMode,
+  changeSankeySteps,
+  changeSankeyExclude,
+  changeSankeyInclude,
   reorderEvents,
 } = reportSlice.actions;
 

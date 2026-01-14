@@ -2,7 +2,7 @@ import { ifNaN } from '@openpanel/common';
 import type {
   IChartEvent,
   IChartEventItem,
-  IChartInput,
+  IReportInput,
 } from '@openpanel/validation';
 import { last, reverse, uniq } from 'ramda';
 import sqlstring from 'sqlstring';
@@ -185,15 +185,18 @@ export class FunnelService {
     startDate,
     endDate,
     series,
-    funnelWindow = 24,
-    funnelGroup,
+    options,
     breakdowns = [],
     limit,
     timezone = 'UTC',
-  }: IChartInput & { timezone: string; events?: IChartEvent[] }) {
+  }: IReportInput & { timezone: string; events?: IChartEvent[] }) {
     if (!startDate || !endDate) {
       throw new Error('startDate and endDate are required');
     }
+
+    const funnelOptions = options?.type === 'funnel' ? options : undefined;
+    const funnelWindow = funnelOptions?.funnelWindow ?? 24;
+    const funnelGroup = funnelOptions?.funnelGroup;
 
     const eventSeries = onlyReportEvents(series);
 

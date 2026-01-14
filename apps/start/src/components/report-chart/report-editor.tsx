@@ -11,7 +11,6 @@ import {
   changeStartDate,
   ready,
   reset,
-  setName,
   setReport,
 } from '@/components/report/reportSlice';
 import { ReportSidebar } from '@/components/report/sidebar/ReportSidebar';
@@ -19,9 +18,10 @@ import { TimeWindowPicker } from '@/components/time-window-picker';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
+import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 import { bind } from 'bind-event-listener';
-import { GanttChartSquareIcon } from 'lucide-react';
+import { GanttChartSquareIcon, ShareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 
 import type { IServiceReport } from '@openpanel/db';
@@ -54,8 +54,19 @@ export default function ReportEditor({
   return (
     <Sheet>
       <div>
-        <div className="p-4">
+        <div className="p-4 flex items-center justify-between">
           <EditReportName />
+          {initialReport?.id && (
+            <Button
+              variant="outline"
+              icon={ShareIcon}
+              onClick={() =>
+                pushModal('ShareReportModal', { reportId: initialReport.id })
+              }
+            >
+              Share
+            </Button>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-2 p-4 pt-0 md:grid-cols-6">
           <SheetTrigger asChild>

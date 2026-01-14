@@ -26,7 +26,6 @@ export const ReportChartShortcut = ({
   return (
     <ReportChart
       report={{
-        name: 'Shortcut',
         projectId,
         range,
         breakdowns: breakdowns ?? [],

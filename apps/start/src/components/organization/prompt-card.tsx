@@ -33,7 +33,7 @@ export function PromptCard({
           }}
           className="fixed bottom-0 right-0 z-50 p-4 max-w-sm"
         >
-          <div className="bg-card border rounded-lg shadow-[0_0_100px_50px_rgba(20,20,20,1)] col gap-6 py-6 overflow-hidden">
+          <div className="bg-card border rounded-lg shadow-[0_0_100px_50px_var(--color-background)] col gap-6 py-6 overflow-hidden">
             <div className="relative px-6 col gap-1">
               <div
                 className="absolute -bottom-10 -right-10 h-64 w-64 rounded-full opacity-30 blur-3xl pointer-events-none"

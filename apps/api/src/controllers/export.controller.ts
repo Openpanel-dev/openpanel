@@ -13,7 +13,7 @@ import {
   getSettingsForProject,
 } from '@openpanel/db';
 import { ChartEngine } from '@openpanel/db';
-import { zChartEvent, zChartInputBase } from '@openpanel/validation';
+import { zChartEvent, zReport } from '@openpanel/validation';
 import { omit } from 'ramda';
 
 async function getProjectId(
@@ -139,7 +139,7 @@ export async function events(
   });
 }
 
-const chartSchemeFull = zChartInputBase
+const chartSchemeFull = zReport
   .pick({
     breakdowns: true,
     interval: true,

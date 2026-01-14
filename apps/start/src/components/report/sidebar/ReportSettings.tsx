@@ -1,32 +1,46 @@
 import { Combobox } from '@/components/ui/combobox';
 import { useDispatch, useSelector } from '@/redux';
 
+import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { InputEnter } from '@/components/ui/input-enter';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useEventNames } from '@/hooks/use-event-names';
 import { useMemo } from 'react';
 import {
   changeCriteria,
   changeFunnelGroup,
   changeFunnelWindow,
   changePrevious,
+  changeSankeyExclude,
+  changeSankeyInclude,
+  changeSankeyMode,
+  changeSankeySteps,
   changeUnit,
 } from '../reportSlice';
 
 export function ReportSettings() {
   const chartType = useSelector((state) => state.report.chartType);
   const previous = useSelector((state) => state.report.previous);
-  const criteria = useSelector((state) => state.report.criteria);
   const unit = useSelector((state) => state.report.unit);
-  const funnelGroup = useSelector((state) => state.report.funnelGroup);
-  const funnelWindow = useSelector((state) => state.report.funnelWindow);
+  const options = useSelector((state) => state.report.options);
+  
+  const retentionOptions = options?.type === 'retention' ? options : undefined;
+  const criteria = retentionOptions?.criteria ?? 'on_or_after';
+  
+  const funnelOptions = options?.type === 'funnel' ? options : undefined;
+  const funnelGroup = funnelOptions?.funnelGroup;
+  const funnelWindow = funnelOptions?.funnelWindow;
 
   const dispatch = useDispatch();
+  const { projectId } = useAppParams();
+  const eventNames = useEventNames({ projectId });
 
   const fields = useMemo(() => {
     const fields = [];
 
-    if (chartType !== 'retention') {
+    if (chartType !== 'retention' && chartType !== 'sankey') {
       fields.push('previous');
     }
 
@@ -40,6 +54,13 @@ export function ReportSettings() {
       fields.push('funnelWindow');
     }
 
+    if (chartType === 'sankey') {
+      fields.push('sankeyMode');
+      fields.push('sankeySteps');
+      fields.push('sankeyExclude');
+      fields.push('sankeyInclude');
+    }
+
     return fields;
   }, [chartType]);
 
@@ -50,7 +71,7 @@ export function ReportSettings() {
   return (
     <div>
       <h3 className="mb-2 font-medium">Settings</h3>
-      <div className="col rounded-lg border bg-card p-4 gap-2">
+      <div className="col rounded-lg border bg-card p-4 gap-4">
         {fields.includes('previous') && (
           <Label className="flex items-center justify-between mb-0">
             <span className="whitespace-nowrap">
@@ -64,7 +85,9 @@ export function ReportSettings() {
         )}
         {fields.includes('criteria') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Criteria</span>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              Criteria
+            </Label>
             <Combobox
               align="end"
               placeholder="Select criteria"
@@ -85,7 +108,7 @@ export function ReportSettings() {
         )}
         {fields.includes('unit') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Unit</span>
+            <Label className="whitespace-nowrap font-medium mb-0">Unit</Label>
             <Combobox
               align="end"
               placeholder="Unit"
@@ -108,7 +131,9 @@ export function ReportSettings() {
         )}
         {fields.includes('funnelGroup') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Funnel Group</span>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              Funnel Group
+            </Label>
             <Combobox
               align="end"
               placeholder="Default: Session"
@@ -133,7 +158,9 @@ export function ReportSettings() {
         )}
         {fields.includes('funnelWindow') && (
           <div className="flex items-center justify-between gap-4">
-            <span className="whitespace-nowrap font-medium">Funnel Window</span>
+            <Label className="whitespace-nowrap font-medium mb-0">
+              Funnel Window
+            </Label>
             <InputEnter
               type="number"
               value={funnelWindow ? String(funnelWindow) : ''}
@@ -146,6 +173,89 @@ export function ReportSettings() {
                   dispatch(changeFunnelWindow(parsed));
                 }
               }}
+            />
+          </div>
+        )}
+        {fields.includes('sankeyMode') && options?.type === 'sankey' && (
+          <div className="flex items-center justify-between gap-4">
+            <Label className="whitespace-nowrap font-medium mb-0">Mode</Label>
+            <Combobox
+              align="end"
+              placeholder="Select mode"
+              value={options?.mode || 'after'}
+              onChange={(val) => {
+                dispatch(
+                  changeSankeyMode(val as 'between' | 'after' | 'before'),
+                );
+              }}
+              items={[
+                {
+                  label: 'After',
+                  value: 'after',
+                },
+                {
+                  label: 'Before',
+                  value: 'before',
+                },
+                {
+                  label: 'Between',
+                  value: 'between',
+                },
+              ]}
+            />
+          </div>
+        )}
+        {fields.includes('sankeySteps') && options?.type === 'sankey' && (
+          <div className="flex items-center justify-between gap-4">
+            <Label className="whitespace-nowrap font-medium mb-0">Steps</Label>
+            <InputEnter
+              type="number"
+              value={options?.steps ? String(options.steps) : '5'}
+              placeholder="Default: 5"
+              onChangeValue={(value) => {
+                const parsed = Number.parseInt(value, 10);
+                if (Number.isNaN(parsed) || parsed < 2 || parsed > 10) {
+                  dispatch(changeSankeySteps(5));
+                } else {
+                  dispatch(changeSankeySteps(parsed));
+                }
+              }}
+            />
+          </div>
+        )}
+        {fields.includes('sankeyExclude') && options?.type === 'sankey' && (
+          <div className="flex flex-col">
+            <Label className="whitespace-nowrap font-medium">
+              Exclude Events
+            </Label>
+            <ComboboxEvents
+              multiple
+              searchable
+              value={options?.exclude || []}
+              onChange={(value) => {
+                dispatch(changeSankeyExclude(value));
+              }}
+              items={eventNames.filter((item) => item.name !== '*')}
+              placeholder="Select events to exclude"
+            />
+          </div>
+        )}
+        {fields.includes('sankeyInclude') && options?.type === 'sankey' && (
+          <div className="flex flex-col">
+            <Label className="whitespace-nowrap font-medium">
+              Include events
+            </Label>
+            <ComboboxEvents
+              multiple
+              searchable
+              value={options?.include || []}
+              onChange={(value) => {
+                dispatch(
+                  changeSankeyInclude(value.length > 0 ? value : undefined),
+                );
+              }}
+              items={eventNames.filter((item) => item.name !== '*')}
+              placeholder="Leave empty to include all"
             />
           </div>
         )}

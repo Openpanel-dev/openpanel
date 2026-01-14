@@ -61,7 +61,8 @@
       "nuqs": "patches/nuqs.patch"
     },
     "overrides": {
-      "rolldown": "1.0.0-beta.43"
+      "rolldown": "1.0.0-beta.43",
+      "esm-env": "npm:esm-env-runtime@^0.1.0"
     }
   }
 }

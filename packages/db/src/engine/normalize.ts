@@ -2,8 +2,8 @@ import { alphabetIds } from '@openpanel/constants';
 import type {
   IChartEvent,
   IChartEventItem,
-  IChartInput,
-  IChartInputWithDates,
+  IReportInput,
+  IReportInputWithDates,
 } from '@openpanel/validation';
 import { getChartStartEndDate } from '../services/chart.service';
 import { getSettingsForProject } from '../services/organization.service';
@@ -15,8 +15,8 @@ export type NormalizedInput = Awaited<ReturnType<typeof normalize>>;
  * Normalize a chart input into a clean structure with dates and normalized series
  */
 export async function normalize(
-  input: IChartInput,
-): Promise<IChartInputWithDates & { series: SeriesDefinition[] }> {
+  input: IReportInput,
+): Promise<IReportInputWithDates & { series: SeriesDefinition[] }> {
   const { timezone } = await getSettingsForProject(input.projectId);
   const { startDate, endDate } = getChartStartEndDate(
     {

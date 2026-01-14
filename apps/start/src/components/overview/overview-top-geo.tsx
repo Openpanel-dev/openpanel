@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronRightIcon } from 'lucide-react';
 import { ReportChart } from '../report-chart';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import { ReportChartShortcut } from '../report-chart/shortcut';
 import { Widget, WidgetBody } from '../widget';
 import { OVERVIEW_COLUMNS_NAME } from './overview-constants';
 import OverviewDetailsButton from './overview-details-button';
@@ -210,9 +211,8 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
           <div className="title">Map</div>
         </WidgetHead>
         <WidgetBody>
-          <ReportChart
-            options={{ hideID: true }}
-            report={{
+          <ReportChartShortcut
+            {...{
               projectId,
               startDate,
               endDate,
@@ -232,12 +232,9 @@ export default function OverviewTopGeo({ projectId }: OverviewTopGeoProps) {
                 },
               ],
               chartType: 'map',
-              lineType: 'monotone',
               interval: interval,
-              name: 'Top sources',
               range: range,
               previous: previous,
-              metric: 'sum',
             }}
           />
         </WidgetBody>

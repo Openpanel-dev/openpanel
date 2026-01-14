@@ -86,41 +86,12 @@ export const zChartBreakdown = z.object({
   name: z.string(),
 });
 
-// Support both old format (array of events without type) and new format (array of event/formula items)
-// Preprocess to normalize: if item has 'type' field, use discriminated union; otherwise, add type: 'event'
-export const zChartSeries = z.preprocess((val) => {
-  if (!val) return val;
-  let processedVal = val;
-
-  // If the input is an object with numeric keys, convert it to an array
-  if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
-    const keys = Object.keys(val).sort(
-      (a, b) => Number.parseInt(a) - Number.parseInt(b),
-    );
-    processedVal = keys.map((key) => (val as any)[key]);
-  }
-
-  if (!Array.isArray(processedVal)) return processedVal;
-
-  return processedVal.map((item: any) => {
-    // If item already has type field, return as-is
-    if (item && typeof item === 'object' && 'type' in item) {
-      return item;
-    }
-    // Otherwise, add type: 'event' for backward compatibility
-    if (item && typeof item === 'object' && 'name' in item) {
-      return { ...item, type: 'event' };
-    }
-    return item;
-  });
-}, z
+export const zChartSeries = z
   .array(zChartEventItem)
   .describe(
     'Array of series (events or formulas) to be tracked and displayed in the chart',
-  ));
+  );
 
-// Keep zChartEvents as an alias for backward compatibility during migration
-export const zChartEvents = zChartSeries;
 export const zChartBreakdowns = z.array(zChartBreakdown);
 
 export const zChartType = z.enum(objectToZodEnums(chartTypes));
@@ -135,7 +106,61 @@ export const zRange = z.enum(objectToZodEnums(timeWindows));
 
 export const zCriteria = z.enum(['on_or_after', 'on']);
 
-export const zChartInputBase = z.object({
+// Report Options - Discriminated union based on chart type
+export const zFunnelOptions = z.object({
+  type: z.literal('funnel'),
+  funnelGroup: z.string().optional(),
+  funnelWindow: z.number().optional(),
+});
+
+export const zRetentionOptions = z.object({
+  type: z.literal('retention'),
+  criteria: zCriteria.optional(),
+});
+
+export const zSankeyOptions = z.object({
+  type: z.literal('sankey'),
+  mode: z.enum(['between', 'after', 'before']),
+  steps: z.number().min(2).max(10).default(5),
+  exclude: z.array(z.string()).default([]),
+  include: z.array(z.string()).optional(),
+});
+
+export const zReportOptions = z.discriminatedUnion('type', [
+  zFunnelOptions,
+  zRetentionOptions,
+  zSankeyOptions,
+]);
+
+export type IReportOptions = z.infer<typeof zReportOptions>;
+export type ISankeyOptions = z.infer<typeof zSankeyOptions>;
+
+export const zWidgetType = z.enum(['realtime', 'counter']);
+export type IWidgetType = z.infer<typeof zWidgetType>;
+
+export const zRealtimeWidgetOptions = z.object({
+  type: z.literal('realtime'),
+  referrers: z.boolean().default(true),
+  countries: z.boolean().default(true),
+  paths: z.boolean().default(false),
+});
+
+export const zCounterWidgetOptions = z.object({
+  type: z.literal('counter'),
+});
+
+export const zWidgetOptions = z.discriminatedUnion('type', [
+  zRealtimeWidgetOptions,
+  zCounterWidgetOptions,
+]);
+
+export type IWidgetOptions = z.infer<typeof zWidgetOptions>;
+export type ICounterWidgetOptions = z.infer<typeof zCounterWidgetOptions>;
+export type IRealtimeWidgetOptions = z.infer<typeof zRealtimeWidgetOptions>;
+
+// Base input schema - for API calls, engine, chart queries
+export const zReportInput = z.object({
+  projectId: z.string().describe('The ID of the project this chart belongs to'),
   chartType: zChartType
     .default('linear')
     .describe('What type of chart should be displayed'),
@@ -153,6 +178,18 @@ export const zChartInputBase = z.object({
   range: zRange
     .default('30d')
     .describe('The time range for which data should be displayed'),
+  startDate: z
+    .string()
+    .nullish()
+    .describe(
+      'Custom start date for the data range (overrides range if provided)',
+    ),
+  endDate: z
+    .string()
+    .nullish()
+    .describe(
+      'Custom end date for the data range (overrides range if provided)',
+    ),
   previous: z
     .boolean()
     .default(false)
@@ -166,19 +203,6 @@ export const zChartInputBase = z.object({
     .describe(
       'The aggregation method for the metric (e.g., sum, count, average)',
     ),
-  projectId: z.string().describe('The ID of the project this chart belongs to'),
-  startDate: z
-    .string()
-    .nullish()
-    .describe(
-      'Custom start date for the data range (overrides range if provided)',
-    ),
-  endDate: z
-    .string()
-    .nullish()
-    .describe(
-      'Custom end date for the data range (overrides range if provided)',
-    ),
   limit: z
     .number()
     .optional()
@@ -187,32 +211,14 @@ export const zChartInputBase = z.object({
     .number()
     .optional()
     .describe('Skip how many series should be returned'),
-  criteria: zCriteria
+  options: zReportOptions
     .optional()
-    .describe('Filtering criteria for retention chart (e.g., on_or_after, on)'),
-  funnelGroup: z
-    .string()
+    .describe('Chart-specific options (funnel, retention, sankey)'),
+  // Optional display fields
+  name: z.string().optional().describe('The user-defined name for the report'),
+  lineType: zLineType
     .optional()
-    .describe(
-      'Group identifier for funnel analysis, e.g. "profile_id" or "session_id"',
-    ),
-  funnelWindow: z
-    .number()
-    .optional()
-    .describe('Time window in hours for funnel analysis'),
-});
-
-export const zChartInput = z.preprocess((val) => {
-  if (val && typeof val === 'object' && 'events' in val && !('series' in val)) {
-    // Migrate old 'events' field to 'series'
-    return { ...val, series: val.events };
-  }
-  return val;
-}, zChartInputBase);
-
-export const zReportInput = zChartInputBase.extend({
-  name: z.string().describe('The user-defined name for the report'),
-  lineType: zLineType.describe('The visual style of the line in the chart'),
+    .describe('The visual style of the line in the chart'),
   unit: z
     .string()
     .optional()
@@ -221,17 +227,19 @@ export const zReportInput = zChartInputBase.extend({
     ),
 });
 
-export const zChartInputAI = zReportInput
-  .omit({
-    startDate: true,
-    endDate: true,
-    lineType: true,
-    unit: true,
-  })
-  .extend({
-    startDate: z.string().describe('The start date for the report'),
-    endDate: z.string().describe('The end date for the report'),
-  });
+// Complete report schema - for saved reports
+export const zReport = zReportInput.extend({
+  name: z
+    .string()
+    .default('Untitled')
+    .describe('The user-defined name for the report'),
+  lineType: zLineType
+    .default('monotone')
+    .describe('The visual style of the line in the chart'),
+});
+
+// Alias for backward compatibility
+export const zChartInput = zReportInput;
 
 export const zInviteUser = z.object({
   email: z.string().email(),
@@ -243,6 +251,22 @@ export const zInviteUser = z.object({
 export const zShareOverview = z.object({
   organizationId: z.string(),
   projectId: z.string(),
+  password: z.string().nullable(),
+  public: z.boolean(),
+});
+
+export const zShareDashboard = z.object({
+  organizationId: z.string(),
+  projectId: z.string(),
+  dashboardId: z.string(),
+  password: z.string().nullable(),
+  public: z.boolean(),
+});
+
+export const zShareReport = z.object({
+  organizationId: z.string(),
+  projectId: z.string(),
+  reportId: z.string(),
   password: z.string().nullable(),
   public: z.boolean(),
 });
@@ -486,6 +510,10 @@ export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;
 export const zSignInShare = z.object({
   password: z.string().min(1),
   shareId: z.string().min(1),
+  shareType: z
+    .enum(['overview', 'dashboard', 'report'])
+    .optional()
+    .default('overview'),
 });
 export type ISignInShare = z.infer<typeof zSignInShare>;
 

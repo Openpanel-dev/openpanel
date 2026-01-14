@@ -25,12 +25,40 @@ export function createTRPCClientWithHeaders(apiUrl: string) {
         transformer: superjson,
         url: `${apiUrl}/trpc`,
         headers: () => getIsomorphicHeaders(),
-        fetch: (url, options) => {
-          return fetch(url, {
-            ...options,
-            mode: 'cors',
-            credentials: 'include',
-          });
+        fetch: async (url, options) => {
+          try {
+            console.log('fetching', url, options);
+            const response = await fetch(url, {
+              ...options,
+              mode: 'cors',
+              credentials: 'include',
+            });
+
+            // Log HTTP errors on server
+            if (!response.ok && typeof window === 'undefined') {
+              const text = await response.clone().text();
+              console.error('[tRPC SSR Error]', {
+                url: url.toString(),
+                status: response.status,
+                statusText: response.statusText,
+                body: text,
+                options,
+              });
+            }
+
+            return response;
+          } catch (error) {
+            // Log fetch errors on server
+            if (typeof window === 'undefined') {
+              console.error('[tRPC SSR Error]', {
+                url: url.toString(),
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+                options,
+              });
+            }
+            throw error;
+          }
         },
       }),
     ],
