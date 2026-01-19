@@ -148,10 +148,14 @@ function RealtimeWidgetSection({
     countries: true,
     paths: false,
   };
-
   const [options, setOptions] = useState<IRealtimeWidgetOptions>(
     (widget?.options as IRealtimeWidgetOptions) || defaultOptions,
   );
+
+  // Create a checksum based on URL and current options to force iframe reload
+  const widgetChecksum = widgetUrl
+    ? btoa(JSON.stringify(Object.values(options)))
+    : null;
 
   // Update local options when widget data changes
   useEffect(() => {
@@ -250,7 +254,8 @@ function RealtimeWidgetSection({
             <h3 className="text-sm font-medium">Preview</h3>
             <div className="border rounded-lg overflow-hidden">
               <iframe
-                src={widgetUrl!}
+                key={widgetChecksum}
+                src={`${widgetUrl}&checksum=${widgetChecksum}`}
                 width="100%"
                 height="600"
                 className="border-0"

@@ -119,7 +119,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
   return (
     <div className="flex h-screen w-full flex-col bg-background text-foreground">
       {/* Header with live counter */}
-      <div className="border-b p-6 pb-3">
+      <div className="p-6 pb-3">
         <div className="flex items-center justify-between w-full h-4">
           <div className="flex items-center gap-3 w-full">
             <Ping />
@@ -171,10 +171,10 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-6 overflow-auto p-6 hide-scrollbar">
-        {/* Histogram */}
-        {/* Countries and Referrers */}
-        {(data.countries.length > 0 || data.referrers.length > 0) && (
+      {(data.countries.length > 0 ||
+        data.referrers.length > 0 ||
+        data.paths.length > 0) && (
+        <div className="flex flex-1 flex-col gap-6 overflow-auto p-6 hide-scrollbar border-t">
           <div className={cn('grid grid-cols-1 gap-6', grids)}>
             {/* Countries */}
             {data.countries.length > 0 && (
@@ -296,8 +296,8 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
