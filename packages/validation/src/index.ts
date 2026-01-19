@@ -126,14 +126,21 @@ export const zSankeyOptions = z.object({
   include: z.array(z.string()).optional(),
 });
 
+export const zHistogramOptions = z.object({
+  type: z.literal('histogram'),
+  stacked: z.boolean().default(false),
+});
+
 export const zReportOptions = z.discriminatedUnion('type', [
   zFunnelOptions,
   zRetentionOptions,
   zSankeyOptions,
+  zHistogramOptions,
 ]);
 
 export type IReportOptions = z.infer<typeof zReportOptions>;
 export type ISankeyOptions = z.infer<typeof zSankeyOptions>;
+export type IHistogramOptions = z.infer<typeof zHistogramOptions>;
 
 export const zWidgetType = z.enum(['realtime', 'counter']);
 export type IWidgetType = z.infer<typeof zWidgetType>;

@@ -17,6 +17,7 @@ import {
   changeSankeyInclude,
   changeSankeyMode,
   changeSankeySteps,
+  changeStacked,
   changeUnit,
 } from '../reportSlice';
 
@@ -25,13 +26,16 @@ export function ReportSettings() {
   const previous = useSelector((state) => state.report.previous);
   const unit = useSelector((state) => state.report.unit);
   const options = useSelector((state) => state.report.options);
-  
+
   const retentionOptions = options?.type === 'retention' ? options : undefined;
   const criteria = retentionOptions?.criteria ?? 'on_or_after';
-  
+
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
   const funnelGroup = funnelOptions?.funnelGroup;
   const funnelWindow = funnelOptions?.funnelWindow;
+
+  const histogramOptions = options?.type === 'histogram' ? options : undefined;
+  const stacked = histogramOptions?.stacked ?? false;
 
   const dispatch = useDispatch();
   const { projectId } = useAppParams();
@@ -59,6 +63,10 @@ export function ReportSettings() {
       fields.push('sankeySteps');
       fields.push('sankeyExclude');
       fields.push('sankeyInclude');
+    }
+
+    if (chartType === 'histogram') {
+      fields.push('stacked');
     }
 
     return fields;
@@ -258,6 +266,15 @@ export function ReportSettings() {
               placeholder="Leave empty to include all"
             />
           </div>
+        )}
+        {fields.includes('stacked') && (
+          <Label className="flex items-center justify-between mb-0">
+            <span className="whitespace-nowrap">Stack series</span>
+            <Switch
+              checked={stacked}
+              onCheckedChange={(val) => dispatch(changeStacked(!!val))}
+            />
+          </Label>
         )}
       </div>
     </div>

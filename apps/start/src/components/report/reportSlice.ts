@@ -361,6 +361,17 @@ export const reportSlice = createSlice({
         state.options.include = action.payload;
       }
     },
+    changeStacked(state, action: PayloadAction<boolean>) {
+      state.dirty = true;
+      if (!state.options || state.options.type !== 'histogram') {
+        state.options = {
+          type: 'histogram',
+          stacked: action.payload,
+        };
+      } else {
+        state.options.stacked = action.payload;
+      }
+    },
     reorderEvents(
       state,
       action: PayloadAction<{ fromIndex: number; toIndex: number }>,
@@ -406,6 +417,7 @@ export const {
   changeSankeySteps,
   changeSankeyExclude,
   changeSankeyInclude,
+  changeStacked,
   reorderEvents,
 } = reportSlice.actions;
 
