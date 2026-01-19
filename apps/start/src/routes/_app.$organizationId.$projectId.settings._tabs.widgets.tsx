@@ -86,31 +86,27 @@ function Component() {
 
   return (
     <div className="space-y-6">
-      {realtimeWidget && (
-        <RealtimeWidgetSection
-          widget={realtimeWidget as any}
-          dashboardUrl={dashboardUrl}
-          isToggling={toggleMutation.isPending}
-          isUpdatingOptions={updateOptionsMutation.isPending}
-          onToggle={(enabled) => handleToggle('realtime', enabled)}
-          onUpdateOptions={(options) =>
-            updateOptionsMutation.mutate({
-              projectId,
-              organizationId,
-              options,
-            })
-          }
-        />
-      )}
+      <RealtimeWidgetSection
+        widget={realtimeWidget as any}
+        dashboardUrl={dashboardUrl}
+        isToggling={toggleMutation.isPending}
+        isUpdatingOptions={updateOptionsMutation.isPending}
+        onToggle={(enabled) => handleToggle('realtime', enabled)}
+        onUpdateOptions={(options) =>
+          updateOptionsMutation.mutate({
+            projectId,
+            organizationId,
+            options,
+          })
+        }
+      />
 
-      {counterWidget && (
-        <CounterWidgetSection
-          widget={counterWidget}
-          dashboardUrl={dashboardUrl}
-          isToggling={toggleMutation.isPending}
-          onToggle={(enabled) => handleToggle('counter', enabled)}
-        />
-      )}
+      <CounterWidgetSection
+        widget={counterWidget as any}
+        dashboardUrl={dashboardUrl}
+        isToggling={toggleMutation.isPending}
+        onToggle={(enabled) => handleToggle('counter', enabled)}
+      />
     </div>
   );
 }
