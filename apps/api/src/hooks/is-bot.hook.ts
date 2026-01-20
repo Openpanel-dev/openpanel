@@ -44,6 +44,6 @@ export async function isBotHook(
       }
     }
 
-    return reply.status(202).send('OK');
+    return reply.status(202).send();
   }
 }
