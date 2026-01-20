@@ -11,28 +11,7 @@ import { useMemo } from 'react';
 
 export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
-    const headers = getRequestHeaders();
-    const forwardHeaders: Record<string, string> = {};
-    const skipHeaders = new Set([
-      'host',
-      'connection',
-      'upgrade-insecure-requests',
-      'sec-fetch-dest',
-      'sec-fetch-mode',
-      'sec-fetch-site',
-      'sec-fetch-user',
-      'sec-ch-ua',
-      'sec-ch-ua-mobile',
-      'sec-ch-ua-platform',
-    ]);
-
-    for (const [key, value] of Object.entries(headers)) {
-      if (!skipHeaders.has(key.toLowerCase()) && value) {
-        forwardHeaders[key] = value;
-      }
-    }
-
-    return forwardHeaders;
+    return getRequestHeaders();
   })
   .client(() => {
     return {};
