@@ -7,11 +7,12 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useRouteContext } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -28,6 +29,8 @@ export default function SidebarOrganizationMenu({
 }: {
   organization: RouterOutputs['organization']['list'][number];
 }) {
+  const { isSelfHosted } = useAppContext();
+
   return (
     <>
       <Link
@@ -52,21 +55,23 @@ export default function SidebarOrganizationMenu({
         <CogIcon size={20} />
         <div className="flex-1">Settings</div>
       </Link>
-      <Link
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
-        )}
-        activeOptions={{ exact: true }}
-        to="/$organizationId/billing"
-        from="/$organizationId"
-      >
-        <CreditCardIcon size={20} />
-        <div className="flex-1">Billing</div>
-        {organization?.isTrial && <Badge>Trial</Badge>}
-        {organization?.isExpired && <Badge>Expired</Badge>}
-        {organization?.isWillBeCanceled && <Badge>Canceled</Badge>}
-        {organization?.isCanceled && <Badge>Canceled</Badge>}
-      </Link>
+      {!isSelfHosted && (
+        <Link
+          className={cn(
+            'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
+          )}
+          activeOptions={{ exact: true }}
+          to="/$organizationId/billing"
+          from="/$organizationId"
+        >
+          <CreditCardIcon size={20} />
+          <div className="flex-1">Billing</div>
+          {organization?.isTrial && <Badge>Trial</Badge>}
+          {organization?.isExpired && <Badge>Expired</Badge>}
+          {organization?.isWillBeCanceled && <Badge>Canceled</Badge>}
+          {organization?.isCanceled && <Badge>Canceled</Badge>}
+        </Link>
+      )}
       <Link
         className={cn(
           'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-all hover:bg-def-200 text-[13px]',
