@@ -11,7 +11,33 @@ import { useMemo } from 'react';
 
 export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
-    return getRequestHeaders();
+    const headers = getRequestHeaders();
+    // Filter out headers that shouldn't be forwarded to the API
+    // - host: Would send wrong host (dashboard host instead of API host)
+    // - connection: Hop-by-hop header
+    // - upgrade-insecure-requests: Browser-specific
+    // - sec-*: Browser security headers not relevant for server-to-server
+    const forwardHeaders: Record<string, string> = {};
+    const skipHeaders = new Set([
+      'host',
+      'connection',
+      'upgrade-insecure-requests',
+      'sec-fetch-dest',
+      'sec-fetch-mode',
+      'sec-fetch-site',
+      'sec-fetch-user',
+      'sec-ch-ua',
+      'sec-ch-ua-mobile',
+      'sec-ch-ua-platform',
+    ]);
+
+    for (const [key, value] of Object.entries(headers)) {
+      if (!skipHeaders.has(key.toLowerCase()) && value) {
+        forwardHeaders[key] = value;
+      }
+    }
+
+    return forwardHeaders;
   })
   .client(() => {
     return {};
@@ -26,35 +52,54 @@ export function createTRPCClientWithHeaders(apiUrl: string) {
         url: `${apiUrl}/trpc`,
         headers: () => getIsomorphicHeaders(),
         fetch: async (url, options) => {
+          const isServer = typeof window === 'undefined';
+
+          // Build fetch options differently for server vs client
+          // Server (Node.js): Don't use browser-specific options like mode/credentials
+          // Also filter out signal: null which can cause issues in undici
+          const fetchOptions: RequestInit = {
+            method: options?.method,
+            headers: options?.headers,
+            body: options?.body,
+          };
+
+          // Only add browser-specific options on client
+          if (!isServer) {
+            fetchOptions.mode = 'cors';
+            fetchOptions.credentials = 'include';
+          }
+
+          // Only pass signal if it's a valid AbortSignal (not null)
+          if (options?.signal) {
+            fetchOptions.signal = options.signal;
+          }
+
           try {
-            console.log('fetching', url, options);
-            const response = await fetch(url, {
-              ...options,
-              mode: 'cors',
-              credentials: 'include',
-            });
+            const response = await fetch(url, fetchOptions);
 
             // Log HTTP errors on server
-            if (!response.ok && typeof window === 'undefined') {
+            if (!response.ok && isServer) {
               const text = await response.clone().text();
               console.error('[tRPC SSR Error]', {
                 url: url.toString(),
                 status: response.status,
                 statusText: response.statusText,
                 body: text,
-                options,
               });
             }
 
             return response;
           } catch (error) {
             // Log fetch errors on server
-            if (typeof window === 'undefined') {
+            if (isServer) {
               console.error('[tRPC SSR Error]', {
                 url: url.toString(),
                 error: error instanceof Error ? error.message : String(error),
                 stack: error instanceof Error ? error.stack : undefined,
-                options,
+                cause:
+                  error instanceof Error && error.cause
+                    ? String(error.cause)
+                    : undefined,
               });
             }
             throw error;
