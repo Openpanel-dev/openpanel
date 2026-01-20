@@ -295,42 +295,50 @@ export function getChartSql({
     return sql;
   }
 
-  // Note: The profile CTE (if it exists) is available in subqueries, so we can reference it directly
   if (breakdowns.length > 0) {
-    // Match breakdown properties in subquery with outer query's grouped values
-    // Since outer query groups by label_X, we reference those in the correlation
-    const breakdownMatches = breakdowns
+    const breakdownSelects = breakdowns
       .map((b, index) => {
         const propertyKey = getSelectPropertyKey(b.name);
-        // Correlate: match the property expression with outer query's label_X value
-        // ClickHouse allows referencing outer query columns in correlated subqueries
-        return `${propertyKey} = label_${index + 1}`;
+        return `${propertyKey} as breakdown_${index + 1}`;
+      })
+      .join(', ');
+
+    const breakdownGroupBy = breakdowns
+      .map((b, index) => `breakdown_${index + 1}`)
+      .join(', ');
+
+    const totalCountWhere = getWhereWithoutBar();
+
+    addCte(
+      'breakdown_totals',
+      `SELECT
+        ${breakdownSelects},
+        uniq(profile_id) as total_count
+       FROM ${TABLE_NAMES.events}
+       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${totalCountWhere}
+       GROUP BY ${breakdownGroupBy}`,
+    );
+
+    const joinConditions = breakdowns
+      .map((b, index) => {
+        const propertyKey = getSelectPropertyKey(b.name);
+        return `breakdown_totals.breakdown_${index + 1} = ${propertyKey}`;
       })
       .join(' AND ');
 
-    // Build WHERE clause for subquery - replace table alias and keep profile CTE reference
-    const subqueryWhere = getWhereWithoutBar()
-      .replace(/\be\./g, 'e2.')
-      .replace(/\bprofile\./g, 'profile.');
-
-    sb.select.total_unique_count = `(
-        SELECT uniq(profile_id)
-        FROM ${TABLE_NAMES.events} e2
-        ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
-        AND ${breakdownMatches}
-      ) as total_count`;
+    sb.joins.breakdown_totals = `LEFT JOIN breakdown_totals ON ${joinConditions}`;
+    sb.select.total_unique_count = `any(breakdown_totals.total_count) as total_count`;
   } else {
-    // No breakdowns: calculate unique count across all data
-    // Build WHERE clause for subquery - replace table alias and keep profile CTE reference
-    const subqueryWhere = getWhereWithoutBar()
-      .replace(/\be\./g, 'e2.')
-      .replace(/\bprofile\./g, 'profile.');
+    const totalCountWhere = getWhereWithoutBar();
 
-    sb.select.total_unique_count = `(
-        SELECT uniq(profile_id)
-        FROM ${TABLE_NAMES.events} e2
-        ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${subqueryWhere}
-      ) as total_count`;
+    addCte(
+      'total_unique',
+      `SELECT uniq(profile_id) as total_count
+       FROM ${TABLE_NAMES.events}
+       ${profilesJoinRef ? `${profilesJoinRef} ` : ''}${totalCountWhere}`,
+    );
+
+    sb.select.total_unique_count = `(SELECT total_count FROM total_unique) as total_count`;
   }
 
   const sql = `${getWith()}${getSelect()} ${getFrom()} ${getJoins()} ${getWhere()} ${getGroupBy()} ${getOrderBy()} ${getFill()}`;
