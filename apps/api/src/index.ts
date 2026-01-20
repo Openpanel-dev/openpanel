@@ -144,9 +144,18 @@ const startServer = async () => {
       instance.addHook('onRequest', async (req) => {
         if (req.cookies?.session) {
           try {
-            const sessionId = decodeSessionToken(req.cookies.session);
+            const sessionId = decodeSessionToken(req.cookies?.session);
             const session = await runWithAlsSession(sessionId, () =>
               validateSessionToken(req.cookies.session),
+            );
+            req.session = session;
+          } catch (e) {
+            req.session = EMPTY_SESSION;
+          }
+        } else if (process.env.DEMO_USER_ID) {
+          try {
+            const session = await runWithAlsSession('1', () =>
+              validateSessionToken(null),
             );
             req.session = session;
           } catch (e) {
