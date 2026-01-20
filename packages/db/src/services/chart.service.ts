@@ -122,15 +122,16 @@ function getChartSqlFromMaterializedView({
   if (interval === 'day') {
     sb.select.date = 'date';
     sb.groupBy.date = 'date';
+    sb.orderBy.date = 'date ASC';
   } else if (interval === 'week') {
     sb.select.date = 'toStartOfWeek(date, 1) as date';
     sb.groupBy.date = 'toStartOfWeek(date, 1)';
+    sb.orderBy.date = 'toStartOfWeek(date, 1) ASC';
   } else if (interval === 'month') {
     sb.select.date = 'toStartOfMonth(date) as date';
     sb.groupBy.date = 'toStartOfMonth(date)';
+    sb.orderBy.date = 'toStartOfMonth(date) ASC';
   }
-
-  sb.orderBy.date = 'date ASC';
 
   // Build WITH FILL for date gaps
   let fillClause = '';
