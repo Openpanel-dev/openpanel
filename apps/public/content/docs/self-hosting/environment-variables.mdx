@@ -175,6 +175,27 @@ COOKIE_SECRET=your-random-secret-here
 Never use the default value in production! Always generate a unique secret.
 </Callout>
 
+### COOKIE_TLDS
+
+**Type**: `string` (comma-separated)  
+**Required**: No  
+**Default**: None
+
+Custom multi-part TLDs for cookie domain handling. Use this when deploying on domains with public suffixes that aren't recognized by default (e.g., `.my.id`, `.web.id`, `.co.id`).
+
+**Example**:
+```bash
+# For domains like abc.my.id
+COOKIE_TLDS=my.id
+
+# Multiple TLDs
+COOKIE_TLDS=my.id,web.id,co.id
+```
+
+<Callout>
+This is required when using domain suffixes that are public suffixes (like `.co.uk`). Without this, the browser will reject authentication cookies. Common examples include Indonesian domains (`.my.id`, `.web.id`, `.co.id`).
+</Callout>
+
 ### DEMO_USER_ID
 
 **Type**: `string`  

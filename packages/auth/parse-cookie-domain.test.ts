@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseCookieDomain } from './parse-cookie-domain';
 
 describe('parseCookieDomain', () => {
@@ -396,6 +396,102 @@ describe('parseCookieDomain', () => {
           domain: `.example.${tld}`,
           secure: true,
         });
+      });
+    });
+  });
+
+  describe('custom multi-part TLDs via COOKIE_TLDS', () => {
+    const originalEnv = process.env.COOKIE_TLDS;
+
+    beforeEach(() => {
+      // Reset the environment variable before each test
+      delete process.env.COOKIE_TLDS;
+    });
+
+    afterEach(() => {
+      // Restore original value
+      if (originalEnv !== undefined) {
+        process.env.COOKIE_TLDS = originalEnv;
+      } else {
+        delete process.env.COOKIE_TLDS;
+      }
+    });
+
+    it('should handle my.id domains when COOKIE_TLDS includes my.id', () => {
+      process.env.COOKIE_TLDS = 'my.id';
+      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+        domain: '.abc.my.id',
+        secure: true,
+      });
+    });
+
+    it('should handle subdomains of my.id domains correctly', () => {
+      process.env.COOKIE_TLDS = 'my.id';
+      expect(parseCookieDomain('https://api.abc.my.id')).toEqual({
+        domain: '.abc.my.id',
+        secure: true,
+      });
+    });
+
+    it('should handle multiple custom TLDs', () => {
+      process.env.COOKIE_TLDS = 'my.id,web.id,co.id';
+
+      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+        domain: '.abc.my.id',
+        secure: true,
+      });
+
+      expect(parseCookieDomain('https://abc.web.id')).toEqual({
+        domain: '.abc.web.id',
+        secure: true,
+      });
+
+      expect(parseCookieDomain('https://abc.co.id')).toEqual({
+        domain: '.abc.co.id',
+        secure: true,
+      });
+    });
+
+    it('should handle custom TLDs with extra whitespace', () => {
+      process.env.COOKIE_TLDS = ' my.id , web.id ';
+      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+        domain: '.abc.my.id',
+        secure: true,
+      });
+    });
+
+    it('should handle case-insensitive custom TLDs', () => {
+      process.env.COOKIE_TLDS = 'MY.ID';
+      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+        domain: '.abc.my.id',
+        secure: true,
+      });
+    });
+
+    it('should not affect domains when env variable is empty', () => {
+      process.env.COOKIE_TLDS = '';
+      // Without the custom TLD, my.id is treated as a regular TLD
+      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+        domain: '.my.id',
+        secure: true,
+      });
+    });
+
+    it('should not affect domains when env variable is not set', () => {
+      delete process.env.COOKIE_TLDS;
+      // Without the custom TLD, my.id is treated as a regular TLD
+      expect(parseCookieDomain('https://abc.my.id')).toEqual({
+        domain: '.my.id',
+        secure: true,
+      });
+    });
+
+    it('should still work with built-in multi-part TLDs when custom TLDs are set', () => {
+      process.env.COOKIE_TLDS = 'my.id';
+      // Built-in TLDs should still work
+      expect(parseCookieDomain('https://example.co.uk')).toEqual({
+        domain: '.example.co.uk',
+        secure: true,
       });
     });
   });

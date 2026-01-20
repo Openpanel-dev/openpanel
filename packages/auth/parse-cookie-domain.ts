@@ -12,6 +12,26 @@ const MULTI_PART_TLDS = [
   /go\.\w{2}$/,
 ];
 
+function getCustomMultiPartTLDs(): string[] {
+  const envValue = process.env.COOKIE_TLDS || '';
+  if (!envValue.trim()) {
+    return [];
+  }
+  return envValue
+    .split(',')
+    .map((tld) => tld.trim().toLowerCase())
+    .filter((tld) => tld.length > 0);
+}
+
+function isMultiPartTLD(potentialTLD: string): boolean {
+  if (MULTI_PART_TLDS.some((pattern) => pattern.test(potentialTLD))) {
+    return true;
+  }
+
+  const customTLDs = getCustomMultiPartTLDs();
+  return customTLDs.includes(potentialTLD.toLowerCase());
+}
+
 export const parseCookieDomain = (url: string) => {
   if (!url) {
     return {
@@ -36,7 +56,7 @@ export const parseCookieDomain = (url: string) => {
   // Handle multi-part TLDs like co.uk, com.au, etc.
   if (parts.length >= 3) {
     const potentialTLD = parts.slice(-2).join('.');
-    if (MULTI_PART_TLDS.some((tld) => tld.test(potentialTLD))) {
+    if (isMultiPartTLD(potentialTLD)) {
       // For domains like example.co.uk or subdomain.example.co.uk
       // Use the last 3 parts: .example.co.uk
       return {
