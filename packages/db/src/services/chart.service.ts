@@ -92,15 +92,15 @@ function getChartSqlFromMaterializedView({
   const { sb, getSelect, getWhere, getGroupBy, getOrderBy, getFill } =
     createSqlBuilder();
 
-  // Use materialized view table
-  sb.from = 'events_daily_stats';
+  // Use materialized view table with alias to avoid column name conflicts
+  sb.from = 'events_daily_stats t';
 
-  // Base filters
-  sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
+  // Base filters (use table alias)
+  sb.where.projectId = `t.project_id = ${sqlstring.escape(projectId)}`;
   if (event.name !== '*') {
-    sb.where.eventName = `name = ${sqlstring.escape(event.name)}`;
+    sb.where.eventName = `t.name = ${sqlstring.escape(event.name)}`;
   }
-  sb.where.dateRange = `date >= toDate(${sqlstring.escape(startDate)}) AND date <= toDate(${sqlstring.escape(endDate)})`;
+  sb.where.dateRange = `t.date >= toDate(${sqlstring.escape(startDate)}) AND t.date <= toDate(${sqlstring.escape(endDate)})`;
 
   // Label
   if (event.name !== '*') {
@@ -109,28 +109,28 @@ function getChartSqlFromMaterializedView({
     sb.select.label_0 = `'*' as label_0`;
   }
 
-  // Count based on segment
+  // Count based on segment (use table alias)
   if (event.segment === 'user') {
-    sb.select.count = 'uniqMerge(unique_profiles_state) as count';
+    sb.select.count = 'uniqMerge(t.unique_profiles_state) as count';
   } else if (event.segment === 'session') {
-    sb.select.count = 'uniqMerge(unique_sessions_state) as count';
+    sb.select.count = 'uniqMerge(t.unique_sessions_state) as count';
   } else {
-    sb.select.count = 'sum(event_count) as count';
+    sb.select.count = 'sum(t.event_count) as count';
   }
 
-  // Date aggregation based on interval
+  // Date aggregation based on interval (use table alias)
   if (interval === 'day') {
-    sb.select.date = 'date';
-    sb.groupBy.date = 'date';
-    sb.orderBy.date = 'date ASC';
+    sb.select.date = 't.date';
+    sb.groupBy.date = 't.date';
+    sb.orderBy.date = 't.date ASC';
   } else if (interval === 'week') {
-    sb.select.date = 'toStartOfWeek(date, 1) as date';
-    sb.groupBy.date = 'toStartOfWeek(date, 1)';
-    sb.orderBy.date = 'toStartOfWeek(date, 1) ASC';
+    sb.select.date = 'toStartOfWeek(t.date, 1) as date';
+    sb.groupBy.date = 'toStartOfWeek(t.date, 1)';
+    sb.orderBy.date = 'toStartOfWeek(t.date, 1) ASC';
   } else if (interval === 'month') {
-    sb.select.date = 'toStartOfMonth(date) as date';
-    sb.groupBy.date = 'toStartOfMonth(date)';
-    sb.orderBy.date = 'toStartOfMonth(date) ASC';
+    sb.select.date = 'toStartOfMonth(t.date) as date';
+    sb.groupBy.date = 'toStartOfMonth(t.date)';
+    sb.orderBy.date = 'toStartOfMonth(t.date) ASC';
   }
 
   // Build WITH FILL for date gaps
