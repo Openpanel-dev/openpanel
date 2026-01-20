@@ -12,11 +12,6 @@ import { useMemo } from 'react';
 export const getIsomorphicHeaders = createIsomorphicFn()
   .server(() => {
     const headers = getRequestHeaders();
-    // Filter out headers that shouldn't be forwarded to the API
-    // - host: Would send wrong host (dashboard host instead of API host)
-    // - connection: Hop-by-hop header
-    // - upgrade-insecure-requests: Browser-specific
-    // - sec-*: Browser security headers not relevant for server-to-server
     const forwardHeaders: Record<string, string> = {};
     const skipHeaders = new Set([
       'host',
@@ -52,40 +47,35 @@ export function createTRPCClientWithHeaders(apiUrl: string) {
         url: `${apiUrl}/trpc`,
         headers: () => getIsomorphicHeaders(),
         fetch: async (url, options) => {
-          const isServer = typeof window === 'undefined';
-
-          const fetchOptions: RequestInit = {
-            method: options?.method,
-            headers: options?.headers,
-            body: options?.body,
-          };
-
           try {
-            const response = await fetch(url, fetchOptions);
+            console.log('fetching', url, options);
+            const response = await fetch(url, {
+              ...options,
+              mode: 'cors',
+              credentials: 'include',
+            });
 
             // Log HTTP errors on server
-            if (!response.ok && isServer) {
+            if (!response.ok && typeof window === 'undefined') {
               const text = await response.clone().text();
               console.error('[tRPC SSR Error]', {
                 url: url.toString(),
                 status: response.status,
                 statusText: response.statusText,
                 body: text,
+                options,
               });
             }
 
             return response;
           } catch (error) {
             // Log fetch errors on server
-            if (isServer) {
+            if (typeof window === 'undefined') {
               console.error('[tRPC SSR Error]', {
                 url: url.toString(),
                 error: error instanceof Error ? error.message : String(error),
                 stack: error instanceof Error ? error.stack : undefined,
-                cause:
-                  error instanceof Error && error.cause
-                    ? String(error.cause)
-                    : undefined,
+                options,
               });
             }
             throw error;
