@@ -49,7 +49,7 @@ function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
       identity ||
       (body.payload.profileId
         ? {
-            profileId: body.payload.profileId,
+            profileId: String(body.payload.profileId),
           }
         : undefined)
     );
