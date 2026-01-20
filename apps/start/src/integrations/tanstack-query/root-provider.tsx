@@ -54,25 +54,11 @@ export function createTRPCClientWithHeaders(apiUrl: string) {
         fetch: async (url, options) => {
           const isServer = typeof window === 'undefined';
 
-          // Build fetch options differently for server vs client
-          // Server (Node.js): Don't use browser-specific options like mode/credentials
-          // Also filter out signal: null which can cause issues in undici
           const fetchOptions: RequestInit = {
             method: options?.method,
             headers: options?.headers,
             body: options?.body,
           };
-
-          // Only add browser-specific options on client
-          if (!isServer) {
-            fetchOptions.mode = 'cors';
-            fetchOptions.credentials = 'include';
-          }
-
-          // Only pass signal if it's a valid AbortSignal (not null)
-          if (options?.signal) {
-            fetchOptions.signal = options.signal;
-          }
 
           try {
             const response = await fetch(url, fetchOptions);
