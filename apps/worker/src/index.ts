@@ -30,7 +30,10 @@ async function start() {
   const PORT = Number.parseInt(process.env.WORKER_PORT || '3000', 10);
   const app = express();
 
-  if (process.env.DISABLE_BULLBOARD === undefined) {
+  if (
+    process.env.DISABLE_BULLBOARD !== '1' &&
+    process.env.DISABLE_BULLBOARD !== 'true'
+  ) {
     const serverAdapter = new ExpressAdapter();
     serverAdapter.setBasePath('/');
     createBullBoard({
