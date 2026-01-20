@@ -8,6 +8,7 @@ on:
       - "apps/api/**"
       - "apps/worker/**"
       - "apps/public/**"
+      - "apps/start/**"
       - "packages/**"
       - "!packages/sdks/**"
       - "**Dockerfile"
