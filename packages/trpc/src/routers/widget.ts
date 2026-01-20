@@ -23,7 +23,7 @@ const uid = new ShortUniqueId({ length: 6 });
 
 // Helper to find widget by projectId and type
 async function findWidgetByType(projectId: string, type: string) {
-  const widgets = await db.shareWidget.findMany({
+  const widgets = await db.$primary().shareWidget.findMany({
     where: { projectId },
   });
   return widgets.find(
