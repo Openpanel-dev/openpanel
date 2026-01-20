@@ -94,6 +94,7 @@ model User {
   email                String          @unique
   firstName            String?
   lastName             String?
+  onboarding           Int?             // null = disabled/completed, 1-5 = next email step
   createdOrganizations Organization[]  @relation("organizationCreatedBy")
   subscriptions        Organization[]  @relation("subscriptionCreatedBy")
   membership           Member[]

@@ -115,6 +115,10 @@ export type CronQueuePayloadInsightsDaily = {
   type: 'insightsDaily';
   payload: undefined;
 };
+export type CronQueuePayloadOnboarding = {
+  type: 'onboarding';
+  payload: undefined;
+};
 export type CronQueuePayload =
   | CronQueuePayloadSalt
   | CronQueuePayloadFlushEvents
@@ -122,7 +126,8 @@ export type CronQueuePayload =
   | CronQueuePayloadFlushProfiles
   | CronQueuePayloadPing
   | CronQueuePayloadProject
-  | CronQueuePayloadInsightsDaily;
+  | CronQueuePayloadInsightsDaily
+  | CronQueuePayloadOnboarding;
 
 export type MiscQueuePayloadTrialEndingSoon = {
   type: 'trialEndingSoon';
