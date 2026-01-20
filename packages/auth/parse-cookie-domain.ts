@@ -33,6 +33,13 @@ function isMultiPartTLD(potentialTLD: string): boolean {
 }
 
 export const parseCookieDomain = (url: string) => {
+  if (process.env.CUSTOM_COOKIE_DOMAIN) {
+    return {
+      domain: process.env.CUSTOM_COOKIE_DOMAIN,
+      secure: true,
+    };
+  }
+
   if (!url) {
     return {
       domain: undefined,

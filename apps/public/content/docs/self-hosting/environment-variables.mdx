@@ -196,6 +196,27 @@ COOKIE_TLDS=my.id,web.id,co.id
 This is required when using domain suffixes that are public suffixes (like `.co.uk`). Without this, the browser will reject authentication cookies. Common examples include Indonesian domains (`.my.id`, `.web.id`, `.co.id`).
 </Callout>
 
+### CUSTOM_COOKIE_DOMAIN
+
+**Type**: `string`  
+**Required**: No  
+**Default**: None
+
+Override the automatic cookie domain detection and set a specific domain for authentication cookies. Useful when proxying the API through your main domain or when you need precise control over cookie scope.
+
+**Example**:
+```bash
+# Set cookies only on the main domain
+CUSTOM_COOKIE_DOMAIN=.example.com
+
+# Set cookies on a specific subdomain
+CUSTOM_COOKIE_DOMAIN=.app.example.com
+```
+
+<Callout>
+When set, this completely bypasses the automatic domain parsing logic. The cookie will always be set as secure. Include a leading dot (`.`) to allow the cookie to be shared across subdomains.
+</Callout>
+
 ### DEMO_USER_ID
 
 **Type**: `string`  
