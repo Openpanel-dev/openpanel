@@ -1,0 +1,344 @@
+---
+title: References
+description: Manage reference points for your OpenPanel projects. References are useful for marking important dates or events in your analytics timeline.
+---
+
+## Authentication
+
+To authenticate with the References API, you need to use your `clientId` and `clientSecret` from a root client. Root clients have organization-wide access.
+
+For detailed authentication information, see the [Authentication](/docs/api/authentication) guide.
+
+Include the following headers with your requests:
+- `openpanel-client-id`: Your OpenPanel root client ID
+- `openpanel-client-secret`: Your OpenPanel root client secret
+
+## Base URL
+
+All References API requests should be made to:
+
+```
+https://api.openpanel.dev/manage/references
+```
+
+## What are References?
+
+References are markers you can add to your analytics timeline to track important events such as:
+- Product launches
+- Marketing campaign start dates
+- Feature releases
+- Website redesigns
+- Major announcements
+
+References appear in your analytics charts and help you correlate changes in metrics with specific events.
+
+## Endpoints
+
+### List References
+
+Retrieve all references in your organization, optionally filtered by project.
+
+```
+GET /manage/references
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `projectId` | string | Optional. Filter references by project ID |
+
+#### Example Request
+
+```bash
+# List all references
+curl 'https://api.openpanel.dev/manage/references' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+
+# List references for a specific project
+curl 'https://api.openpanel.dev/manage/references?projectId=my-project' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "1af09627-2dd7-4b37-9e5c-6ffa7e450e85",
+      "title": "Product Launch",
+      "description": "Version 2.0 released",
+      "date": "2024-01-15T10:00:00.000Z",
+      "projectId": "my-project",
+      "createdAt": "2024-01-10T08:00:00.000Z",
+      "updatedAt": "2024-01-10T08:00:00.000Z"
+    },
+    {
+      "id": "2bf19738-3ee8-4c48-af6d-7ggb8f561f96",
+      "title": "Marketing Campaign Start",
+      "description": "Q1 2024 campaign launched",
+      "date": "2024-01-20T09:00:00.000Z",
+      "projectId": "my-project",
+      "createdAt": "2024-01-18T10:00:00.000Z",
+      "updatedAt": "2024-01-18T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+### Get Reference
+
+Retrieve a specific reference by ID.
+
+```
+GET /manage/references/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the reference (UUID) |
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/manage/references/1af09627-2dd7-4b37-9e5c-6ffa7e450e85' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "1af09627-2dd7-4b37-9e5c-6ffa7e450e85",
+    "title": "Product Launch",
+    "description": "Version 2.0 released",
+    "date": "2024-01-15T10:00:00.000Z",
+    "projectId": "my-project",
+    "createdAt": "2024-01-10T08:00:00.000Z",
+    "updatedAt": "2024-01-10T08:00:00.000Z"
+  }
+}
+```
+
+### Create Reference
+
+Create a new reference point for a project.
+
+```
+POST /manage/references
+```
+
+#### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `projectId` | string | Yes | The ID of the project this reference belongs to |
+| `title` | string | Yes | Reference title (minimum 1 character) |
+| `description` | string | No | Optional description or notes |
+| `datetime` | string | Yes | Date and time for the reference (ISO 8601 format) |
+
+#### Example Request
+
+```bash
+curl -X POST 'https://api.openpanel.dev/manage/references' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "projectId": "my-project",
+    "title": "Product Launch",
+    "description": "Version 2.0 released with new features",
+    "datetime": "2024-01-15T10:00:00.000Z"
+  }'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "1af09627-2dd7-4b37-9e5c-6ffa7e450e85",
+    "title": "Product Launch",
+    "description": "Version 2.0 released with new features",
+    "date": "2024-01-15T10:00:00.000Z",
+    "projectId": "my-project",
+    "createdAt": "2024-01-10T08:00:00.000Z",
+    "updatedAt": "2024-01-10T08:00:00.000Z"
+  }
+}
+```
+
+**Note**: The `date` field in the response is parsed from the `datetime` string you provided.
+
+### Update Reference
+
+Update an existing reference.
+
+```
+PATCH /manage/references/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the reference (UUID) |
+
+#### Request Body
+
+All fields are optional. Only include fields you want to update.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `title` | string | Reference title (minimum 1 character) |
+| `description` | string \| null | Description or notes (set to `null` to clear) |
+| `datetime` | string | Date and time for the reference (ISO 8601 format) |
+
+#### Example Request
+
+```bash
+curl -X PATCH 'https://api.openpanel.dev/manage/references/1af09627-2dd7-4b37-9e5c-6ffa7e450e85' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Product Launch v2.1",
+    "description": "Updated: Version 2.1 released with bug fixes",
+    "datetime": "2024-01-15T10:00:00.000Z"
+  }'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "1af09627-2dd7-4b37-9e5c-6ffa7e450e85",
+    "title": "Product Launch v2.1",
+    "description": "Updated: Version 2.1 released with bug fixes",
+    "date": "2024-01-15T10:00:00.000Z",
+    "projectId": "my-project",
+    "createdAt": "2024-01-10T08:00:00.000Z",
+    "updatedAt": "2024-01-10T09:30:00.000Z"
+  }
+}
+```
+
+### Delete Reference
+
+Permanently delete a reference. This action cannot be undone.
+
+```
+DELETE /manage/references/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the reference (UUID) |
+
+#### Example Request
+
+```bash
+curl -X DELETE 'https://api.openpanel.dev/manage/references/1af09627-2dd7-4b37-9e5c-6ffa7e450e85' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "success": true
+}
+```
+
+## Error Handling
+
+The API uses standard HTTP response codes. Common error responses:
+
+### 400 Bad Request
+
+```json
+{
+  "error": "Bad Request",
+  "message": "Invalid request body",
+  "details": [
+    {
+      "path": ["title"],
+      "message": "String must contain at least 1 character(s)"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Manage: Only root clients are allowed to manage resources"
+}
+```
+
+### 404 Not Found
+
+```json
+{
+  "error": "Not Found",
+  "message": "Reference not found"
+}
+```
+
+This error can occur if:
+- The reference ID doesn't exist
+- The reference belongs to a different organization
+
+### 429 Too Many Requests
+
+Rate limiting response includes headers indicating your rate limit status.
+
+## Rate Limiting
+
+The References API implements rate limiting:
+- **20 requests per 10 seconds** per client
+- Rate limit headers included in responses
+- Implement exponential backoff for retries
+
+## Date Format
+
+References use ISO 8601 date format. Examples:
+
+- `2024-01-15T10:00:00.000Z` - UTC timezone
+- `2024-01-15T10:00:00-05:00` - Eastern Time (UTC-5)
+- `2024-01-15` - Date only (time defaults to 00:00:00)
+
+The `datetime` field in requests is converted to a `date` field in responses, stored as a timestamp.
+
+## Use Cases
+
+References are useful for:
+
+- **Product Launches**: Mark when new versions or features are released
+- **Marketing Campaigns**: Track campaign start and end dates
+- **Website Changes**: Note when major redesigns or updates occur
+- **Business Events**: Record important business milestones
+- **A/B Testing**: Mark when experiments start or end
+- **Seasonal Events**: Track holidays, sales periods, or seasonal changes
+
+## Notes
+
+- Reference IDs are UUIDs (Universally Unique Identifiers)
+- References are scoped to projects - each reference belongs to a specific project
+- References are scoped to your organization - you can only manage references for projects in your organization
+- The `description` field is optional and can be set to `null` to clear it
+- References appear in analytics charts to help correlate metrics with events
+- When filtering by `projectId`, the project must exist and belong to your organization

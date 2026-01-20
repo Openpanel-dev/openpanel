@@ -1,0 +1,140 @@
+---
+title: Manage API Overview
+description: Programmatically manage projects, clients, and references in your OpenPanel organization using the Manage API.
+---
+
+## Overview
+
+The Manage API provides programmatic access to manage your OpenPanel resources including projects, clients, and references. This API is designed for automation, infrastructure-as-code, and administrative tasks.
+
+## Authentication
+
+The Manage API requires a **root client** for authentication. Root clients have organization-wide access and can manage all resources within their organization.
+
+To authenticate with the Manage API, you need:
+- A client with `type: 'root'`
+- Your `clientId` and `clientSecret`
+
+For detailed authentication information, see the [Authentication](/docs/api/authentication) guide.
+
+Include the following headers with your requests:
+- `openpanel-client-id`: Your OpenPanel root client ID
+- `openpanel-client-secret`: Your OpenPanel root client secret
+
+## Base URL
+
+All Manage API requests should be made to:
+
+```
+https://api.openpanel.dev/manage
+```
+
+## Available Resources
+
+The Manage API provides CRUD operations for three resource types:
+
+### Projects
+
+Manage your analytics projects programmatically:
+- **[Projects Documentation](/docs/api/manage/projects)** - Create, read, update, and delete projects
+- Automatically creates a default write client when creating a project
+- Supports project configuration including domains, CORS settings, and project types
+
+### Clients
+
+Manage API clients for your projects:
+- **[Clients Documentation](/docs/api/manage/clients)** - Create, read, update, and delete clients
+- Supports different client types: `read`, `write`, and `root`
+- Auto-generates secure secrets on creation (returned once)
+
+### References
+
+Manage reference points for your analytics:
+- **[References Documentation](/docs/api/manage/references)** - Create, read, update, and delete references
+- Useful for marking important dates or events in your analytics timeline
+- Can be filtered by project
+
+## Common Features
+
+All endpoints share these common characteristics:
+
+### Organization Scope
+
+All operations are scoped to your organization. You can only manage resources that belong to your organization.
+
+### Response Format
+
+Successful responses follow this structure:
+
+```json
+{
+  "data": {
+    // Resource data
+  }
+}
+```
+
+For list endpoints:
+
+```json
+{
+  "data": [
+    // Array of resources
+  ]
+}
+```
+
+### Error Handling
+
+The API uses standard HTTP response codes:
+
+- `200 OK` - Request successful
+- `400 Bad Request` - Invalid request parameters
+- `401 Unauthorized` - Authentication failed
+- `404 Not Found` - Resource not found
+- `429 Too Many Requests` - Rate limit exceeded
+
+## Rate Limiting
+
+The Manage API implements rate limiting:
+- **20 requests per 10 seconds** per client
+- Rate limit headers included in responses
+- Implement exponential backoff for retries
+
+## Use Cases
+
+The Manage API is ideal for:
+
+- **Infrastructure as Code**: Manage OpenPanel resources alongside your application infrastructure
+- **Automation**: Automatically create projects and clients for new deployments
+- **Bulk Operations**: Programmatically manage multiple resources
+- **CI/CD Integration**: Set up projects and clients as part of your deployment pipeline
+- **Administrative Tools**: Build custom admin interfaces
+
+## Security Best Practices
+
+1. **Root Clients Only**: Only root clients can access the Manage API
+2. **Store Credentials Securely**: Never expose root client credentials in client-side code
+3. **Use HTTPS**: Always use HTTPS for API requests
+4. **Rotate Credentials**: Regularly rotate your root client credentials
+5. **Limit Access**: Restrict root client creation to trusted administrators
+
+## Getting Started
+
+1. **Create a Root Client**: Use the dashboard to create a root client in your organization
+2. **Store Credentials**: Securely store your root client ID and secret
+3. **Make Your First Request**: Start with listing projects to verify authentication
+
+Example:
+
+```bash
+curl 'https://api.openpanel.dev/manage/projects' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+## Next Steps
+
+- Read the [Projects documentation](/docs/api/manage/projects) to manage projects
+- Read the [Clients documentation](/docs/api/manage/clients) to manage API clients
+- Read the [References documentation](/docs/api/manage/references) to manage reference points

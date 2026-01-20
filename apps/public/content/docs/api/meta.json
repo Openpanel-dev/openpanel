@@ -1,4 +1,4 @@
 {
   "title": "API",
-  "pages": ["track", "export", "insights"]
+  "pages": ["track", "export", "insights", "manage"]
 }

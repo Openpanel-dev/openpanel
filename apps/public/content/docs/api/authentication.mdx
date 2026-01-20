@@ -7,11 +7,12 @@ description: Learn how to authenticate with the OpenPanel API using client crede
 
 To authenticate with the OpenPanel API, you need to use your `clientId` and `clientSecret`. Different API endpoints may require different access levels:
 
-- **Track API**: Default client works with `track` mode
+- **Track API**: Default client works with `write` mode
 - **Export API**: Requires `read` or `root` mode
 - **Insights API**: Requires `read` or `root` mode
+- **Manage API**: Requires `root` mode only
 
-The default client does not have access to the Export or Insights APIs.
+The default client (created with a project) has `write` mode and does not have access to the Export, Insights, or Manage APIs. You'll need to create additional clients with appropriate access levels.
 
 ## Headers
 
@@ -48,15 +49,29 @@ If authentication fails, you'll receive a `401 Unauthorized` response:
 
 Common authentication errors:
 - Invalid client ID or secret
-- Client doesn't have required permissions
-- Malformed client ID
+- Client doesn't have required permissions (e.g., trying to access Manage API with a non-root client)
+- Malformed client ID (must be a valid UUIDv4)
+- Client type mismatch (e.g., `write` client trying to access Export API)
+
+## Client Types
+
+OpenPanel supports three client types with different access levels:
+
+| Type | Description | Access |
+|------|-------------|--------|
+| `write` | Write access | Track API only |
+| `read` | Read-only access | Export API, Insights API |
+| `root` | Full access | All APIs including Manage API |
+
+**Note**: Root clients have organization-wide access and can manage all resources. Use root clients carefully and store their credentials securely.
 
 ## Rate Limiting
 
 The API implements rate limiting to prevent abuse. Rate limits vary by endpoint:
 
 - **Track API**: Higher limits for event tracking
-- **Export/Insights APIs**: Lower limits for data retrieval
+- **Export/Insights APIs**: 100 requests per 10 seconds
+- **Manage API**: 20 requests per 10 seconds
 
 If you exceed the rate limit, you'll receive a `429 Too Many Requests` response. Implement exponential backoff for retries.
 

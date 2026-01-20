@@ -1,0 +1,332 @@
+---
+title: Clients
+description: Manage API clients for your OpenPanel projects. Create, read, update, and delete clients with different access levels.
+---
+
+## Authentication
+
+To authenticate with the Clients API, you need to use your `clientId` and `clientSecret` from a root client. Root clients have organization-wide access.
+
+For detailed authentication information, see the [Authentication](/docs/api/authentication) guide.
+
+Include the following headers with your requests:
+- `openpanel-client-id`: Your OpenPanel root client ID
+- `openpanel-client-secret`: Your OpenPanel root client secret
+
+## Base URL
+
+All Clients API requests should be made to:
+
+```
+https://api.openpanel.dev/manage/clients
+```
+
+## Client Types
+
+OpenPanel supports three client types with different access levels:
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| `read` | Read-only access | Export data, view insights, read-only operations |
+| `write` | Write access | Track events, send data to OpenPanel |
+| `root` | Full access | Manage resources, access Manage API |
+
+**Note**: Only `root` clients can access the Manage API.
+
+## Endpoints
+
+### List Clients
+
+Retrieve all clients in your organization, optionally filtered by project.
+
+```
+GET /manage/clients
+```
+
+#### Query Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `projectId` | string | Optional. Filter clients by project ID |
+
+#### Example Request
+
+```bash
+# List all clients
+curl 'https://api.openpanel.dev/manage/clients' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+
+# List clients for a specific project
+curl 'https://api.openpanel.dev/manage/clients?projectId=my-project' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "fa0c2780-55f2-4d9e-bea0-da2e02c7b1a9",
+      "name": "First client",
+      "type": "write",
+      "projectId": "my-project",
+      "organizationId": "org_123",
+      "ignoreCorsAndSecret": false,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "id": "b8904453-863d-4e04-8ebc-8abae30ffb1a",
+      "name": "Read-only Client",
+      "type": "read",
+      "projectId": "my-project",
+      "organizationId": "org_123",
+      "ignoreCorsAndSecret": false,
+      "createdAt": "2024-01-15T11:00:00.000Z",
+      "updatedAt": "2024-01-15T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Note**: Client secrets are never returned in list or get responses for security reasons.
+
+### Get Client
+
+Retrieve a specific client by ID.
+
+```
+GET /manage/clients/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the client (UUID) |
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/manage/clients/fa0c2780-55f2-4d9e-bea0-da2e02c7b1a9' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "fa0c2780-55f2-4d9e-bea0-da2e02c7b1a9",
+    "name": "First client",
+    "type": "write",
+    "projectId": "my-project",
+    "organizationId": "org_123",
+    "ignoreCorsAndSecret": false,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+### Create Client
+
+Create a new API client. A secure secret is automatically generated and returned once.
+
+```
+POST /manage/clients
+```
+
+#### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Client name (minimum 1 character) |
+| `projectId` | string | No | Associate client with a specific project |
+| `type` | string | No | Client type: `read`, `write`, or `root` (default: `write`) |
+
+#### Example Request
+
+```bash
+curl -X POST 'https://api.openpanel.dev/manage/clients' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "My API Client",
+    "projectId": "my-project",
+    "type": "read"
+  }'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "b8904453-863d-4e04-8ebc-8abae30ffb1a",
+    "name": "My API Client",
+    "type": "read",
+    "projectId": "my-project",
+    "organizationId": "org_123",
+    "ignoreCorsAndSecret": false,
+    "createdAt": "2024-01-15T11:00:00.000Z",
+    "updatedAt": "2024-01-15T11:00:00.000Z",
+    "secret": "sec_b2521ca283bf903b46b3"
+  }
+}
+```
+
+**Important**: The `secret` field is only returned once when the client is created. Store it securely immediately. You cannot retrieve the secret later - if lost, you'll need to delete and recreate the client.
+
+### Update Client
+
+Update an existing client's name.
+
+```
+PATCH /manage/clients/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the client (UUID) |
+
+#### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | No | New client name (minimum 1 character) |
+
+**Note**: Currently, only the `name` field can be updated. To change the client type or project association, delete and recreate the client.
+
+#### Example Request
+
+```bash
+curl -X PATCH 'https://api.openpanel.dev/manage/clients/b8904453-863d-4e04-8ebc-8abae30ffb1a' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Updated Client Name"
+  }'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "b8904453-863d-4e04-8ebc-8abae30ffb1a",
+    "name": "Updated Client Name",
+    "type": "read",
+    "projectId": "my-project",
+    "organizationId": "org_123",
+    "ignoreCorsAndSecret": false,
+    "createdAt": "2024-01-15T11:00:00.000Z",
+    "updatedAt": "2024-01-15T11:30:00.000Z"
+  }
+}
+```
+
+### Delete Client
+
+Permanently delete a client. This action cannot be undone.
+
+```
+DELETE /manage/clients/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the client (UUID) |
+
+#### Example Request
+
+```bash
+curl -X DELETE 'https://api.openpanel.dev/manage/clients/b8904453-863d-4e04-8ebc-8abae30ffb1a' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "success": true
+}
+```
+
+**Warning**: Deleting a client is permanent. Any applications using this client will immediately lose access. Make sure to update your applications before deleting a client.
+
+## Error Handling
+
+The API uses standard HTTP response codes. Common error responses:
+
+### 400 Bad Request
+
+```json
+{
+  "error": "Bad Request",
+  "message": "Invalid request body",
+  "details": [
+    {
+      "path": ["name"],
+      "message": "String must contain at least 1 character(s)"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Manage: Only root clients are allowed to manage resources"
+}
+```
+
+### 404 Not Found
+
+```json
+{
+  "error": "Not Found",
+  "message": "Client not found"
+}
+```
+
+### 429 Too Many Requests
+
+Rate limiting response includes headers indicating your rate limit status.
+
+## Rate Limiting
+
+The Clients API implements rate limiting:
+- **20 requests per 10 seconds** per client
+- Rate limit headers included in responses
+- Implement exponential backoff for retries
+
+## Security Best Practices
+
+1. **Store Secrets Securely**: Client secrets are only shown once on creation. Store them in secure credential management systems
+2. **Use Appropriate Client Types**: Use the minimum required access level for each use case
+3. **Rotate Secrets Regularly**: Delete old clients and create new ones to rotate secrets
+4. **Never Expose Secrets**: Never commit client secrets to version control or expose them in client-side code
+5. **Monitor Client Usage**: Regularly review and remove unused clients
+
+## Notes
+
+- Client IDs are UUIDs (Universally Unique Identifiers)
+- Client secrets are automatically generated with the format `sec_` followed by random hex characters
+- Secrets are hashed using argon2 before storage
+- Clients can be associated with a project or exist at the organization level
+- Clients are scoped to your organization - you can only manage clients in your organization
+- The `ignoreCorsAndSecret` field is an advanced setting that bypasses CORS and secret validation (use with caution)

@@ -1,0 +1,327 @@
+---
+title: Projects
+description: Manage your OpenPanel projects programmatically. Create, read, update, and delete projects using the Manage API.
+---
+
+## Authentication
+
+To authenticate with the Projects API, you need to use your `clientId` and `clientSecret` from a root client. Root clients have organization-wide access.
+
+For detailed authentication information, see the [Authentication](/docs/api/authentication) guide.
+
+Include the following headers with your requests:
+- `openpanel-client-id`: Your OpenPanel root client ID
+- `openpanel-client-secret`: Your OpenPanel root client secret
+
+## Base URL
+
+All Projects API requests should be made to:
+
+```
+https://api.openpanel.dev/manage/projects
+```
+
+## Endpoints
+
+### List Projects
+
+Retrieve all projects in your organization.
+
+```
+GET /manage/projects
+```
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/manage/projects' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "data": [
+    {
+      "id": "my-project",
+      "name": "My Project",
+      "organizationId": "org_123",
+      "domain": "https://example.com",
+      "cors": ["https://example.com", "https://www.example.com"],
+      "crossDomain": false,
+      "allowUnsafeRevenueTracking": false,
+      "filters": [],
+      "types": ["website"],
+      "eventsCount": 0,
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z",
+      "deleteAt": null
+    }
+  ]
+}
+```
+
+### Get Project
+
+Retrieve a specific project by ID.
+
+```
+GET /manage/projects/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the project |
+
+#### Example Request
+
+```bash
+curl 'https://api.openpanel.dev/manage/projects/my-project' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "my-project",
+    "name": "My Project",
+    "organizationId": "org_123",
+    "domain": "https://example.com",
+    "cors": ["https://example.com"],
+    "crossDomain": false,
+    "allowUnsafeRevenueTracking": false,
+    "filters": [],
+    "types": ["website"],
+    "eventsCount": 0,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z",
+    "deleteAt": null
+  }
+}
+```
+
+### Create Project
+
+Create a new project in your organization. A default write client is automatically created with the project.
+
+```
+POST /manage/projects
+```
+
+#### Request Body
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `name` | string | Yes | Project name (minimum 1 character) |
+| `domain` | string \| null | No | Primary domain for the project (URL format or empty string) |
+| `cors` | string[] | No | Array of allowed CORS origins (default: `[]`) |
+| `crossDomain` | boolean | No | Enable cross-domain tracking (default: `false`) |
+| `types` | string[] | No | Project types: `website`, `app`, `backend` (default: `[]`) |
+
+#### Project Types
+
+- `website`: Web-based project
+- `app`: Mobile application
+- `backend`: Backend/server-side project
+
+#### Example Request
+
+```bash
+curl -X POST 'https://api.openpanel.dev/manage/projects' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "My New Project",
+    "domain": "https://example.com",
+    "cors": ["https://example.com", "https://www.example.com"],
+    "crossDomain": false,
+    "types": ["website"]
+  }'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "my-new-project",
+    "name": "My New Project",
+    "organizationId": "org_123",
+    "domain": "https://example.com",
+    "cors": ["https://example.com", "https://www.example.com"],
+    "crossDomain": false,
+    "allowUnsafeRevenueTracking": false,
+    "filters": [],
+    "types": ["website"],
+    "eventsCount": 0,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z",
+    "deleteAt": null,
+    "client": {
+      "id": "fa0c2780-55f2-4d9e-bea0-da2e02c7b1a9",
+      "secret": "sec_6c8ae85a092d6c66b242"
+    }
+  }
+}
+```
+
+**Important**: The `client.secret` is only returned once when the project is created. Store it securely immediately.
+
+### Update Project
+
+Update an existing project's configuration.
+
+```
+PATCH /manage/projects/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the project |
+
+#### Request Body
+
+All fields are optional. Only include fields you want to update.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | string | Project name (minimum 1 character) |
+| `domain` | string \| null | Primary domain (URL format, empty string, or null) |
+| `cors` | string[] | Array of allowed CORS origins |
+| `crossDomain` | boolean | Enable cross-domain tracking |
+| `allowUnsafeRevenueTracking` | boolean | Allow revenue tracking without client secret |
+
+#### Example Request
+
+```bash
+curl -X PATCH 'https://api.openpanel.dev/manage/projects/my-project' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "name": "Updated Project Name",
+    "crossDomain": true,
+    "allowUnsafeRevenueTracking": false
+  }'
+```
+
+#### Response
+
+```json
+{
+  "data": {
+    "id": "my-project",
+    "name": "Updated Project Name",
+    "organizationId": "org_123",
+    "domain": "https://example.com",
+    "cors": ["https://example.com"],
+    "crossDomain": true,
+    "allowUnsafeRevenueTracking": false,
+    "filters": [],
+    "types": ["website"],
+    "eventsCount": 0,
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T11:00:00.000Z",
+    "deleteAt": null
+  }
+}
+```
+
+### Delete Project
+
+Soft delete a project. The project will be scheduled for deletion after 24 hours.
+
+```
+DELETE /manage/projects/{id}
+```
+
+#### Path Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string | The ID of the project |
+
+#### Example Request
+
+```bash
+curl -X DELETE 'https://api.openpanel.dev/manage/projects/my-project' \
+  -H 'openpanel-client-id: YOUR_ROOT_CLIENT_ID' \
+  -H 'openpanel-client-secret: YOUR_ROOT_CLIENT_SECRET'
+```
+
+#### Response
+
+```json
+{
+  "success": true
+}
+```
+
+**Note**: Projects are soft-deleted. The `deleteAt` field is set to 24 hours in the future. You can cancel deletion by updating the project before the deletion time.
+
+## Error Handling
+
+The API uses standard HTTP response codes. Common error responses:
+
+### 400 Bad Request
+
+```json
+{
+  "error": "Bad Request",
+  "message": "Invalid request body",
+  "details": [
+    {
+      "path": ["name"],
+      "message": "String must contain at least 1 character(s)"
+    }
+  ]
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Manage: Only root clients are allowed to manage resources"
+}
+```
+
+### 404 Not Found
+
+```json
+{
+  "error": "Not Found",
+  "message": "Project not found"
+}
+```
+
+### 429 Too Many Requests
+
+Rate limiting response includes headers indicating your rate limit status.
+
+## Rate Limiting
+
+The Projects API implements rate limiting:
+- **20 requests per 10 seconds** per client
+- Rate limit headers included in responses
+- Implement exponential backoff for retries
+
+## Notes
+
+- Project IDs are automatically generated from the project name using a slug format
+- If a project ID already exists, a numeric suffix is added
+- CORS domains are automatically normalized (trailing slashes removed)
+- The default client created with a project has `type: 'write'`
+- Projects are scoped to your organization - you can only manage projects in your organization
+- Soft-deleted projects are excluded from list endpoints

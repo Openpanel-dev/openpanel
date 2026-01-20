@@ -236,3 +236,40 @@ export async function validateImportRequest(
 
   return client;
 }
+
+export async function validateManageRequest(
+  headers: RawRequestDefaultExpression['headers'],
+): Promise<IServiceClientWithProject> {
+  const clientId = headers['openpanel-client-id'] as string;
+  const clientSecret = (headers['openpanel-client-secret'] as string) || '';
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(
+      clientId,
+    )
+  ) {
+    throw new Error('Manage: Client ID must be a valid UUIDv4');
+  }
+
+  const client = await getClientByIdCached(clientId);
+
+  if (!client) {
+    throw new Error('Manage: Invalid client id');
+  }
+
+  if (!client.secret) {
+    throw new Error('Manage: Client has no secret');
+  }
+
+  if (client.type !== ClientType.root) {
+    throw new Error(
+      'Manage: Only root clients are allowed to manage resources',
+    );
+  }
+
+  if (!(await verifyPassword(clientSecret, client.secret))) {
+    throw new Error('Manage: Invalid client secret');
+  }
+
+  return client;
+}

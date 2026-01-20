@@ -8,6 +8,7 @@
     "start": "dotenv -e ../../.env node dist/index.js",
     "build": "rm -rf dist && tsdown",
     "gen:bots": "jiti scripts/get-bots.ts && biome format --write src/bots/bots.ts",
+    "test:manage": "jiti scripts/test-manage-api.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
