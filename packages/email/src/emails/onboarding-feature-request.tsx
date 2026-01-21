@@ -9,9 +9,12 @@ export const zOnboardingFeatureRequest = z.object({
 
 export type Props = z.infer<typeof zOnboardingFeatureRequest>;
 export default OnboardingFeatureRequest;
-export function OnboardingFeatureRequest({ firstName }: Props) {
+export function OnboardingFeatureRequest({
+  firstName,
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
         OpenPanel aims to be the one stop shop for all your analytics needs.

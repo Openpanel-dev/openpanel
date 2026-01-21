@@ -29,7 +29,6 @@ export async function sendEmail<T extends TemplateKey>(
     return null;
   }
 
-  // Check if user has unsubscribed from this category (only for non-transactional emails)
   if ('category' in template && template.category) {
     const unsubscribed = await db.emailUnsubscribe.findUnique({
       where: {
@@ -51,8 +50,7 @@ export async function sendEmail<T extends TemplateKey>(
   if (!process.env.RESEND_API_KEY) {
     console.log('No RESEND_API_KEY found, here is the data');
     console.log('Template:', template);
-    // @ts-expect-error - TODO: fix this
-    console.log('Subject: ', subject(props.data));
+    console.log('Subject: ', template.subject(props.data as any));
     console.log('To:      ', to);
     console.log('Data:    ', JSON.stringify(data, null, 2));
     return null;
@@ -60,10 +58,10 @@ export async function sendEmail<T extends TemplateKey>(
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // Build headers for unsubscribe (only for non-transactional emails)
   const headers: Record<string, string> = {};
   if ('category' in template && template.category) {
     const unsubscribeUrl = getUnsubscribeUrl(to, template.category);
+    (data as any).unsubscribeUrl = unsubscribeUrl;
     headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
     headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
   }
@@ -72,10 +70,8 @@ export async function sendEmail<T extends TemplateKey>(
     const res = await resend.emails.send({
       from: FROM,
       to,
-      // @ts-expect-error - TODO: fix this
-      subject: subject(props.data),
-      // @ts-expect-error - TODO: fix this
-      react: <Component {...props.data} />,
+      subject: template.subject(props.data as any),
+      react: <template.Component {...(props.data as any)} />,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
     });
     if (res.error) {

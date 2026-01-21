@@ -9,9 +9,12 @@ export const zEmailResetPassword = z.object({
 
 export type Props = z.infer<typeof zEmailResetPassword>;
 export default EmailResetPassword;
-export function EmailResetPassword({ url = 'https://openpanel.dev' }: Props) {
+export function EmailResetPassword({
+  url = 'https://openpanel.dev',
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>
         You have requested to reset your password. Follow the link below to
         reset your password:

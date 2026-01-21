@@ -11,9 +11,12 @@ export const zOnboardingWelcome = z.object({
 
 export type Props = z.infer<typeof zOnboardingWelcome>;
 export default OnboardingWelcome;
-export function OnboardingWelcome({ firstName }: Props) {
+export function OnboardingWelcome({
+  firstName,
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>Thanks for trying OpenPanel.</Text>
       <Text>

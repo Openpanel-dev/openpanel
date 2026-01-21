@@ -29,7 +29,7 @@ async function createOrGetOrganization(
         subscriptionEndsAt: addDays(new Date(), TRIAL_DURATION_IN_DAYS),
         subscriptionStatus: 'trialing',
         timezone: input.timezone,
-        onboarding: 'onboarding-welcome',
+        onboarding: '',
       },
     });
 

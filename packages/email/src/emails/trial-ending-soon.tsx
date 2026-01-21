@@ -13,7 +13,8 @@ export default TrailEndingSoon;
 export function TrailEndingSoon({
   organizationName = 'Acme Co',
   url = 'https://openpanel.dev',
-}: Props) {
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   const newUrl = new URL(url);
   newUrl.searchParams.set('utm_source', 'email');
   newUrl.searchParams.set('utm_medium', 'email');

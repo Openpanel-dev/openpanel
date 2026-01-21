@@ -11,7 +11,7 @@ import React from 'react';
 
 const baseUrl = 'https://openpanel.dev';
 
-export function Footer() {
+export function Footer({ unsubscribeUrl }: { unsubscribeUrl?: string }) {
   return (
     <>
       <Hr />
@@ -71,15 +71,17 @@ export function Footer() {
           </Text>
         </Row>
 
-        {/* <Row>
-          <Link
-            className="text-[#707070] text-[14px]"
-            href="https://dashboard.openpanel.dev/settings/notifications"
-            title="Unsubscribe"
-          >
-            Notification preferences
-          </Link>
-        </Row> */}
+        {unsubscribeUrl && (
+          <Row>
+            <Link
+              className="text-[#707070] text-[14px]"
+              href={unsubscribeUrl}
+              title="Unsubscribe"
+            >
+              Notification preferences
+            </Link>
+          </Row>
+        )}
       </Section>
     </>
   );

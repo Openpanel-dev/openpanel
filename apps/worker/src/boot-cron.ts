@@ -42,7 +42,7 @@ export async function bootCron() {
     {
       name: 'onboarding',
       type: 'onboarding',
-      pattern: '0 10 * * *',
+      pattern: '0 * * * *',
     },
   ];
 

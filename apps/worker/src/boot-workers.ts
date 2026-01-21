@@ -281,10 +281,20 @@ export async function bootWorkers() {
     eventName: string,
     evtOrExitCodeOrError: number | string | Error,
   ) {
-    logger.info('Starting graceful shutdown', {
-      code: evtOrExitCodeOrError,
-      eventName,
-    });
+    // Log the actual error details for unhandled rejections/exceptions
+    if (evtOrExitCodeOrError instanceof Error) {
+      logger.error('Unhandled error triggered shutdown', {
+        eventName,
+        message: evtOrExitCodeOrError.message,
+        stack: evtOrExitCodeOrError.stack,
+        name: evtOrExitCodeOrError.name,
+      });
+    } else {
+      logger.info('Starting graceful shutdown', {
+        code: evtOrExitCodeOrError,
+        eventName,
+      });
+    }
     try {
       const time = performance.now();
 

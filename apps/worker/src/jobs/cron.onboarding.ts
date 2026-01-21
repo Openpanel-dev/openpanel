@@ -135,14 +135,16 @@ const ONBOARDING_EMAILS = [
 ];
 
 export async function onboardingJob(job: Job<CronQueuePayload>) {
+  if (process.env.SELF_HOSTED === 'true') {
+    return null;
+  }
+
   logger.info('Starting onboarding email job');
 
   // Fetch organizations that are in onboarding (not completed)
   const orgs = await db.organization.findMany({
     where: {
-      onboarding: {
-        not: 'completed',
-      },
+      OR: [{ onboarding: null }, { onboarding: { notIn: ['completed'] } }],
       deleteAt: null,
       createdBy: {
         deletedAt: null,
@@ -168,7 +170,7 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
     const daysSinceOrgCreation = differenceInDays(new Date(), org.createdAt);
 
     // Find the next email to send
-    // If org.onboarding is empty string, they haven't received any email yet
+    // If org.onboarding is null or empty string, they haven't received any email yet
     const lastSentIndex = org.onboarding
       ? ONBOARDING_EMAILS.findIndex((e) => e.template === org.onboarding)
       : -1;
@@ -192,6 +194,15 @@ export async function onboardingJob(job: Job<CronQueuePayload>) {
       continue;
     }
 
+    logger.info(
+      `Checking if enough days have passed for organization ${org.id}`,
+      {
+        daysSinceOrgCreation,
+        nextEmailDay: nextEmail.day,
+        orgCreatedAt: org.createdAt,
+        today: new Date(),
+      },
+    );
     // Check if enough days have passed
     if (daysSinceOrgCreation < nextEmail.day) {
       orgsSkipped++;

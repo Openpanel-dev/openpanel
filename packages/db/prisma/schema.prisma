@@ -62,7 +62,7 @@ model Organization {
   integrations    Integration[]
   invites         Invite[]
   timezone        String?
-  onboarding      String           @default("completed") // 'completed' or template name for next email
+  onboarding      String?          @default("completed")
 
   // Subscription
   subscriptionId                          String?

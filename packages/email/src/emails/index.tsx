@@ -39,7 +39,6 @@ export const templates = {
       'Your trial is ending soon',
     Component: TrailEndingSoon,
     schema: zTrailEndingSoon,
-    category: 'billing' as const,
   },
   'onboarding-welcome': {
     subject: () => "You're in",
@@ -69,13 +68,11 @@ export const templates = {
     subject: () => 'Your trial ends in a few days',
     Component: OnboardingTrialEnding,
     schema: zOnboardingTrialEnding,
-    category: 'onboarding' as const,
   },
   'onboarding-trial-ended': {
     subject: () => 'Your trial has ended',
     Component: OnboardingTrialEnded,
     schema: zOnboardingTrialEnded,
-    category: 'onboarding' as const,
   },
 } as const;
 

@@ -14,14 +14,15 @@ export default OnboardingDashboards;
 export function OnboardingDashboards({
   firstName,
   dashboardUrl = 'https://dashboard.openpanel.dev',
-}: Props) {
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   const newUrl = new URL(dashboardUrl);
   newUrl.searchParams.set('utm_source', 'email');
   newUrl.searchParams.set('utm_medium', 'email');
   newUrl.searchParams.set('utm_campaign', 'onboarding-dashboards');
 
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
         Tracking events is the easy part. The value comes from actually looking

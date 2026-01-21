@@ -10,9 +10,12 @@ export const zOnboardingWhatToTrack = z.object({
 
 export type Props = z.infer<typeof zOnboardingWhatToTrack>;
 export default OnboardingWhatToTrack;
-export function OnboardingWhatToTrack({ firstName }: Props) {
+export function OnboardingWhatToTrack({
+  firstName,
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
         Tracking can be overwhelming at first, and that's why its important to

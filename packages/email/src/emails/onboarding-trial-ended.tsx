@@ -16,7 +16,8 @@ export function OnboardingTrialEnded({
   firstName,
   billingUrl = 'https://dashboard.openpanel.dev',
   recommendedPlan,
-}: Props) {
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   const newUrl = new URL(billingUrl);
   newUrl.searchParams.set('utm_source', 'email');
   newUrl.searchParams.set('utm_medium', 'email');

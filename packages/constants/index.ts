@@ -3,10 +3,7 @@ import { differenceInDays, isSameDay, isSameMonth } from 'date-fns';
 export const DEFAULT_ASPECT_RATIO = 0.5625;
 export const NOT_SET_VALUE = '(not set)';
 
-export const RESERVED_EVENT_NAMES = [
-  'session_start',
-  'session_end',
-] as const;
+export const RESERVED_EVENT_NAMES = ['session_start', 'session_end'] as const;
 
 export const timeWindows = {
   '30min': {
@@ -510,7 +507,6 @@ export function getCountry(code?: string) {
 
 export const emailCategories = {
   onboarding: 'Onboarding',
-  billing: 'Billing',
 } as const;
 
 export type EmailCategory = keyof typeof emailCategories;
