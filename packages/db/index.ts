@@ -29,3 +29,4 @@ export * from './src/clickhouse/query-builder';
 export * from './src/services/import.service';
 export * from './src/services/overview.service';
 export * from './src/session-context';
+export * from './src/services/materialize-columns.service';

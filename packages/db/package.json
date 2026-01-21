@@ -9,6 +9,7 @@
     "migrate:deploy:code": "pnpm with-env jiti ./code-migrations/migrate.ts",
     "migrate:deploy:db": "pnpm with-env prisma migrate deploy",
     "migrate:deploy": "pnpm migrate:deploy:db && pnpm migrate:deploy:code",
+    "materialize:analyze": "pnpm with-env jiti ./src/cli/materialize.ts",
     "typecheck": "tsc --noEmit",
     "with-env": "dotenv -e ../../.env -c --"
   },

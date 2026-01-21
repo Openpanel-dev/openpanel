@@ -497,3 +497,19 @@ model Import {
 
   @@map("imports")
 }
+
+model MaterializedColumn {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyKey    String    @unique // e.g., "utm_source" (without "properties." prefix)
+  columnName     String // e.g., "utm_source" (usually same as propertyKey)
+  cardinality    Int // Number of unique values
+  usageCount     Int // How many reports use this property
+  benefitScore   Float // Calculated benefit score
+  estimatedSize  BigInt // Estimated storage cost in bytes
+  status         String // "active", "pending", "failed"
+  createdAt      DateTime  @default(now())
+  materializedAt DateTime? // When ALTER TABLE was executed
+  lastAnalyzedAt DateTime  @default(now()) @updatedAt
+
+  @@map("materialized_columns")
+}

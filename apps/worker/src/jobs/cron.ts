@@ -4,6 +4,7 @@ import { eventBuffer, profileBuffer, sessionBuffer } from '@openpanel/db';
 import type { CronQueuePayload } from '@openpanel/queue';
 
 import { jobdeleteProjects } from './cron.delete-projects';
+import { materializeColumns } from './cron.materialize-columns';
 import { ping } from './cron.ping';
 import { salt } from './cron.salt';
 
@@ -26,6 +27,12 @@ export async function cronJob(job: Job<CronQueuePayload>) {
     }
     case 'deleteProjects': {
       return await jobdeleteProjects(job);
+    }
+    case 'materializeColumns': {
+      return await materializeColumns({
+        dryRun: job.data.dryRun ?? false,
+        threshold: job.data.threshold ?? 150,
+      });
     }
   }
 }
