@@ -26,6 +26,13 @@ async function getOgData(
           'Support OpenPanel and get exclusive perks like latest Docker images, prioritized support, and early access to new features.',
       };
     }
+    case 'open-source': {
+      return {
+        title: 'Free analytics for open source projects',
+        description:
+          "Get free web and product analytics for your open source project. Track up to 2.5M events/month. Apply to OpenPanel's open source program today.",
+      };
+    }
     case 'pricing': {
       return {
         title: 'Pricing',

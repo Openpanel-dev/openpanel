@@ -25,6 +25,10 @@ export async function Footer() {
                 { title: 'About', url: '/about' },
                 { title: 'Contact', url: '/contact' },
                 { title: 'Become a supporter', url: '/supporter' },
+                {
+                  title: 'Free analytics for open source projects',
+                  url: '/open-source',
+                },
               ]}
             />
           </div>
