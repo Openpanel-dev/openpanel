@@ -28,9 +28,9 @@ export class MaterializeColumnsService {
   private logger: ILogger;
 
   // Thresholds for materialization decisions
-  private readonly MIN_USAGE_COUNT = 3; // Must be used in at least 3 reports
+  private readonly MIN_USAGE_COUNT = 1; // Must be used in at least 1 report
   private readonly MAX_CARDINALITY = 1000; // Don't materialize if >1000 unique values
-  private readonly MIN_BENEFIT_SCORE = 150; // Minimum benefit score to justify materialization
+  private readonly MIN_BENEFIT_SCORE = 20; // Minimum benefit score to justify materialization
   private readonly MAX_DAILY_MATERIALIZATIONS = 3; // Rate limit: max 3 new columns per day
 
   constructor() {
@@ -113,32 +113,50 @@ export class MaterializeColumnsService {
 
     this.logger.info(`Found ${propertyUsage.length} unique properties in reports`);
 
-    // Step 2: Check already materialized columns
+    // Step 2: Check already materialized columns from database tracking
     const existingColumns = await db.materializedColumn.findMany({
       where: { status: 'active' },
       select: { propertyKey: true },
     });
     const existingKeys = new Set(existingColumns.map((c) => c.propertyKey));
 
-    // Separate already materialized from new properties
-    const alreadyMaterialized = propertyUsage.filter((p) =>
+    // Step 3: Check if columns already exist in ClickHouse events table
+    const clickhouseColumns = await this.getExistingClickHouseColumns();
+    const clickhouseColumnNames = new Set(clickhouseColumns);
+
+    // Separate properties into categories
+    const alreadyTracked = propertyUsage.filter((p) =>
       existingKeys.has(p.propertyKey),
     );
+    const alreadyExistsInClickHouse = propertyUsage.filter(
+      (p) => !existingKeys.has(p.propertyKey) && clickhouseColumnNames.has(p.propertyKey),
+    );
     const newProperties = propertyUsage.filter(
-      (p) => !existingKeys.has(p.propertyKey),
+      (p) => !existingKeys.has(p.propertyKey) && !clickhouseColumnNames.has(p.propertyKey),
     );
 
     // Track all properties with their analysis
     const allProperties: PropertyAnalysis[] = [];
 
-    // Add already materialized properties
+    // Add properties already tracked in database
     allProperties.push(
-      ...alreadyMaterialized.map((p) => ({
+      ...alreadyTracked.map((p) => ({
         ...p,
         cardinality: 0,
         estimatedSize: 0,
         benefit: 0,
-        skipReason: '✅ Already materialized',
+        skipReason: '✅ Already materialized (tracked)',
+      })),
+    );
+
+    // Add properties that already exist as columns in ClickHouse
+    allProperties.push(
+      ...alreadyExistsInClickHouse.map((p) => ({
+        ...p,
+        cardinality: 0,
+        estimatedSize: 0,
+        benefit: 0,
+        skipReason: '✅ Column already exists in events table',
       })),
     );
 
@@ -184,6 +202,30 @@ export class MaterializeColumnsService {
       candidates,
       allProperties: allProperties.sort((a, b) => b.benefit - a.benefit), // Sort by benefit
     };
+  }
+
+  /**
+   * Get existing materialized column names from ClickHouse events table
+   */
+  private async getExistingClickHouseColumns(): Promise<string[]> {
+    try {
+      const result = await ch.query({
+        query: `
+          SELECT name
+          FROM system.columns
+          WHERE database = 'default'
+            AND table = 'events'
+            AND default_kind = 'MATERIALIZED'
+        `,
+        format: 'JSONEachRow',
+      });
+
+      const data = await result.json<{ name: string }>();
+      return data.map((row) => row.name);
+    } catch (error) {
+      this.logger.warn('Failed to get existing ClickHouse columns', { error });
+      return [];
+    }
   }
 
   /**
