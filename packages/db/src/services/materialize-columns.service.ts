@@ -246,7 +246,8 @@ export class MaterializeColumnsService {
   }
 
   /**
-   * Get cardinality and size from ClickHouse
+   * Get cardinality and size from ClickHouse using event_property_values_mv
+   * This is MUCH faster than scanning the entire events table
    */
   private async enrichWithClickHouseStats(usage: {
     property: string;
@@ -255,14 +256,16 @@ export class MaterializeColumnsService {
     queryFrequency: number;
   }): Promise<PropertyUsageStats> {
     try {
+      // Use the materialized view instead of scanning events table
       const result = await ch.query({
         query: `
           SELECT
-            uniq(properties['${usage.propertyKey}']) as cardinality,
-            avg(length(properties['${usage.propertyKey}'])) as avg_length,
-            count() as total_rows
-          FROM events
-          WHERE properties['${usage.propertyKey}'] != ''
+            uniqExact(property_value) as cardinality,
+            avg(length(property_value)) as avg_length,
+            count() as total_occurrences
+          FROM event_property_values_mv
+          WHERE property_key = '${usage.propertyKey}'
+            AND property_value != ''
         `,
         format: 'JSONEachRow',
       });
@@ -270,15 +273,16 @@ export class MaterializeColumnsService {
       const data = await result.json<{
         cardinality: string;
         avg_length: string;
-        total_rows: string;
+        total_occurrences: string;
       }>();
 
       const cardinality = Number(data[0]?.cardinality || 0);
       const avgLength = Number(data[0]?.avg_length || 10);
-      const totalRows = Number(data[0]?.total_rows || 0);
+      const totalOccurrences = Number(data[0]?.total_occurrences || 0);
 
-      // Estimate storage: avgLength × totalRows (existing rows)
-      const estimatedSize = Math.ceil(avgLength * totalRows);
+      // Estimate storage: avgLength × totalOccurrences
+      // Note: totalOccurrences is how many times this property appears, not event count
+      const estimatedSize = Math.ceil(avgLength * totalOccurrences);
 
       return {
         property: usage.property,
