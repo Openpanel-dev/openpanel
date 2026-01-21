@@ -13,6 +13,10 @@ interface PropertyUsageStats {
   benefit: number; // Calculated benefit score
 }
 
+interface PropertyAnalysis extends PropertyUsageStats {
+  skipReason?: string; // Why it wasn't materialized (if skipped)
+}
+
 interface MaterializedColumnCandidate {
   propertyKey: string;
   columnName: string;
@@ -41,6 +45,7 @@ export class MaterializeColumnsService {
     threshold?: number;
   }): Promise<{
     candidates: MaterializedColumnCandidate[];
+    allProperties: PropertyAnalysis[];
     report: string;
     materialized: string[];
   }> {
@@ -51,11 +56,11 @@ export class MaterializeColumnsService {
       threshold,
     });
 
-    // Step 1: Get candidates
-    const candidates = await this.analyzeDashboardProperties(threshold);
+    // Step 1: Get candidates and all analyzed properties
+    const { candidates, allProperties } = await this.analyzeDashboardProperties(threshold);
 
     // Step 2: Generate report
-    const report = this.generateReport(candidates, dryRun);
+    const report = this.generateReport(candidates, allProperties, dryRun);
 
     // Step 3: Execute if not dry-run
     const materialized: string[] = [];
@@ -83,6 +88,7 @@ export class MaterializeColumnsService {
 
     return {
       candidates,
+      allProperties,
       report,
       materialized,
     };
@@ -93,31 +99,52 @@ export class MaterializeColumnsService {
    */
   private async analyzeDashboardProperties(
     threshold: number,
-  ): Promise<MaterializedColumnCandidate[]> {
+  ): Promise<{
+    candidates: MaterializedColumnCandidate[];
+    allProperties: PropertyAnalysis[];
+  }> {
     // Step 1: Get all properties used in reports
     const propertyUsage = await this.getPropertyUsageFromReports();
 
     if (propertyUsage.length === 0) {
       this.logger.info('No properties found in reports');
-      return [];
+      return { candidates: [], allProperties: [] };
     }
 
     this.logger.info(`Found ${propertyUsage.length} unique properties in reports`);
 
-    // Step 2: Filter out already materialized columns
+    // Step 2: Check already materialized columns
     const existingColumns = await db.materializedColumn.findMany({
       where: { status: 'active' },
       select: { propertyKey: true },
     });
     const existingKeys = new Set(existingColumns.map((c) => c.propertyKey));
 
+    // Separate already materialized from new properties
+    const alreadyMaterialized = propertyUsage.filter((p) =>
+      existingKeys.has(p.propertyKey),
+    );
     const newProperties = propertyUsage.filter(
       (p) => !existingKeys.has(p.propertyKey),
     );
 
+    // Track all properties with their analysis
+    const allProperties: PropertyAnalysis[] = [];
+
+    // Add already materialized properties
+    allProperties.push(
+      ...alreadyMaterialized.map((p) => ({
+        ...p,
+        cardinality: 0,
+        estimatedSize: 0,
+        benefit: 0,
+        skipReason: '✅ Already materialized',
+      })),
+    );
+
     if (newProperties.length === 0) {
       this.logger.info('No new properties to analyze (all already materialized)');
-      return [];
+      return { candidates: [], allProperties };
     }
 
     this.logger.info(
@@ -129,16 +156,57 @@ export class MaterializeColumnsService {
       newProperties.map((usage) => this.enrichWithClickHouseStats(usage)),
     );
 
-    // Step 4: Calculate benefit scores and filter
-    const candidates = enrichedStats
-      .map((stats) => this.calculateBenefitScore(stats))
-      .filter((stats) => this.shouldMaterialize(stats, threshold))
+    // Step 4: Calculate benefit scores
+    const statsWithBenefit = enrichedStats.map((stats) =>
+      this.calculateBenefitScore(stats),
+    );
+
+    // Step 5: Determine skip reasons and separate candidates
+    const analyzed = statsWithBenefit.map((stats) => {
+      const skipReason = this.getSkipReason(stats, threshold);
+      return {
+        ...stats,
+        skipReason,
+      };
+    });
+
+    allProperties.push(...analyzed);
+
+    // Extract candidates (those without skip reason)
+    const candidates = analyzed
+      .filter((stat) => !stat.skipReason)
       .map((stats) => this.createCandidate(stats))
-      .sort((a, b) => b.stats.benefit - a.stats.benefit); // Sort by benefit descending
+      .sort((a, b) => b.stats.benefit - a.stats.benefit);
 
     this.logger.info(`Identified ${candidates.length} candidates for materialization`);
 
-    return candidates;
+    return {
+      candidates,
+      allProperties: allProperties.sort((a, b) => b.benefit - a.benefit), // Sort by benefit
+    };
+  }
+
+  /**
+   * Determine why a property should be skipped
+   */
+  private getSkipReason(stats: PropertyUsageStats, threshold: number): string | undefined {
+    if (stats.usageCount < this.MIN_USAGE_COUNT) {
+      return `❌ Low usage (${stats.usageCount} reports, need ${this.MIN_USAGE_COUNT})`;
+    }
+
+    if (stats.cardinality === 0) {
+      return `❌ No data found in event_property_values_mv`;
+    }
+
+    if (stats.cardinality > this.MAX_CARDINALITY) {
+      return `❌ Too high cardinality (${stats.cardinality} values > ${this.MAX_CARDINALITY} limit)`;
+    }
+
+    if (stats.benefit < threshold) {
+      return `❌ Benefit too low (${stats.benefit.toFixed(0)} < ${threshold} threshold)`;
+    }
+
+    return undefined; // Should be materialized
   }
 
   /**
@@ -328,28 +396,6 @@ export class MaterializeColumnsService {
   }
 
   /**
-   * Check if property should be materialized
-   */
-  private shouldMaterialize(
-    stats: PropertyUsageStats,
-    threshold: number,
-  ): boolean {
-    if (stats.usageCount < this.MIN_USAGE_COUNT) {
-      return false;
-    }
-
-    if (stats.cardinality > this.MAX_CARDINALITY) {
-      return false;
-    }
-
-    if (stats.benefit < threshold) {
-      return false;
-    }
-
-    return true;
-  }
-
-  /**
    * Create candidate object
    */
   private createCandidate(
@@ -437,10 +483,11 @@ export class MaterializeColumnsService {
   }
 
   /**
-   * Generate human-readable report
+   * Generate human-readable report with ALL properties
    */
   private generateReport(
     candidates: MaterializedColumnCandidate[],
+    allProperties: PropertyAnalysis[],
     dryRun: boolean,
   ): string {
     let report = '\n' + '='.repeat(80) + '\n';
@@ -449,35 +496,56 @@ export class MaterializeColumnsService {
       : 'Materialized Column Analysis\n';
     report += '='.repeat(80) + '\n\n';
 
-    if (candidates.length === 0) {
-      report += 'No properties found that meet materialization criteria.\n';
-      report += '\nPossible reasons:\n';
-      report += '  - All eligible properties already materialized\n';
-      report += '  - No properties used frequently enough (min 3 reports)\n';
-      report += '  - Properties have too high cardinality (>1000 unique values)\n';
-      report += '  - Benefit score below threshold\n';
-      return report;
+    report += `Total properties analyzed: ${allProperties.length}\n`;
+    report += `Candidates for materialization: ${candidates.length}\n\n`;
+
+    // Section 1: Candidates (will be materialized)
+    if (candidates.length > 0) {
+      report += '━'.repeat(80) + '\n';
+      report += '✅ RECOMMENDED FOR MATERIALIZATION\n';
+      report += '━'.repeat(80) + '\n\n';
+
+      for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i]!;
+        report += `${i + 1}. properties.${candidate.propertyKey}\n`;
+        report += `   Usage: ${candidate.stats.usageCount} reports, ~${candidate.stats.queryFrequency} queries/day\n`;
+        report += `   Cardinality: ${candidate.stats.cardinality} unique values\n`;
+        report += `   Storage: ~${(candidate.stats.estimatedSize / 1_000_000).toFixed(2)} MB\n`;
+        report += `   Benefit Score: ${candidate.stats.benefit.toFixed(2)}\n`;
+        report += `   Reason: ${candidate.reason}\n\n`;
+      }
     }
 
-    report += `Found ${candidates.length} candidate(s) for materialization:\n\n`;
+    // Section 2: All other properties with skip reasons
+    const skipped = allProperties.filter((p) => p.skipReason);
+    if (skipped.length > 0) {
+      report += '━'.repeat(80) + '\n';
+      report += 'ALL PROPERTIES ANALYZED\n';
+      report += '━'.repeat(80) + '\n\n';
 
-    for (let i = 0; i < candidates.length; i++) {
-      const candidate = candidates[i]!;
-      report += `${i + 1}. properties.${candidate.propertyKey}\n`;
-      report += `   Column: ${candidate.columnName}\n`;
-      report += `   Usage: ${candidate.stats.usageCount} reports, ~${candidate.stats.queryFrequency} queries/day\n`;
-      report += `   Cardinality: ${candidate.stats.cardinality} unique values\n`;
-      report += `   Storage: ~${(candidate.stats.estimatedSize / 1_000_000).toFixed(2)} MB\n`;
-      report += `   Benefit Score: ${candidate.stats.benefit.toFixed(2)}\n`;
-      report += `   ${candidate.reason}\n`;
-      report += '\n';
+      for (const prop of skipped) {
+        report += `• properties.${prop.propertyKey}\n`;
+        report += `  ${prop.skipReason}\n`;
+        report += `  Usage: ${prop.usageCount} reports, ~${prop.queryFrequency} queries/day`;
+        if (prop.cardinality > 0) {
+          report += `, Cardinality: ${prop.cardinality}, Benefit: ${prop.benefit.toFixed(0)}`;
+        }
+        report += '\n\n';
+      }
     }
+
+    // Summary
+    report += '━'.repeat(80) + '\n';
+    report += 'SUMMARY\n';
+    report += '━'.repeat(80) + '\n';
 
     if (dryRun) {
       report += '⚠️  DRY RUN MODE: No changes will be made.\n';
       report += 'Run with --execute flag to materialize these columns.\n';
-    } else {
+    } else if (candidates.length > 0) {
       report += `✅ Materializing top ${Math.min(candidates.length, this.MAX_DAILY_MATERIALIZATIONS)} columns...\n`;
+    } else {
+      report += 'No actions needed. All eligible properties are already materialized.\n';
     }
 
     report += '\n' + '='.repeat(80) + '\n';
