@@ -5,13 +5,25 @@ import { RESERVED_EVENT_NAMES } from '@openpanel/constants';
 export const zTrackPayload = z
   .object({
     name: z.string().min(1),
-    properties: z.record(z.unknown()).optional(),
+    properties: z.record(z.string(), z.unknown()).optional(),
     profileId: z.string().or(z.number()).optional(),
   })
   .refine((data) => !RESERVED_EVENT_NAMES.includes(data.name as any), {
     message: `Event name cannot be one of the reserved names: ${RESERVED_EVENT_NAMES.join(', ')}`,
     path: ['name'],
-  });
+  })
+  .refine(
+    (data) => {
+      if (data.name !== 'revenue') return true;
+      const revenue = data.properties?.__revenue;
+      if (revenue === undefined) return true;
+      return Number.isInteger(revenue);
+    },
+    {
+      message: '__revenue must be an integer (no floats or strings)',
+      path: ['properties', '__revenue'],
+    },
+  );
 
 export const zIdentifyPayload = z.object({
   profileId: z.string().min(1),
