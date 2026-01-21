@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as StepsRouteImport } from './routes/_steps'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as LoginRouteImport } from './routes/_login'
@@ -102,6 +103,11 @@ const AppOrganizationIdProjectIdProfilesProfileIdRouteImport = createFileRoute(
   '/_app/$organizationId/$projectId/profiles/$profileId',
 )()
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StepsRoute = StepsRouteImport.update({
   id: '/_steps',
   getParentRoute: () => rootRouteImport,
@@ -525,6 +531,7 @@ const AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/$organizationId': typeof AppOrganizationIdRouteWithChildren
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
@@ -591,6 +598,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
   '/onboarding': typeof PublicOnboardingRoute
@@ -653,6 +661,7 @@ export interface FileRoutesById {
   '/_login': typeof LoginRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_steps': typeof StepsRouteWithChildren
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_app/$organizationId': typeof AppOrganizationIdRouteWithChildren
   '/_login/login': typeof LoginLoginRoute
   '/_login/reset-password': typeof LoginResetPasswordRoute
@@ -728,6 +737,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/unsubscribe'
     | '/$organizationId'
     | '/login'
     | '/reset-password'
@@ -794,6 +804,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/unsubscribe'
     | '/login'
     | '/reset-password'
     | '/onboarding'
@@ -855,6 +866,7 @@ export interface FileRouteTypes {
     | '/_login'
     | '/_public'
     | '/_steps'
+    | '/unsubscribe'
     | '/_app/$organizationId'
     | '/_login/login'
     | '/_login/reset-password'
@@ -933,6 +945,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   StepsRoute: typeof StepsRouteWithChildren
+  UnsubscribeRoute: typeof UnsubscribeRoute
   ApiConfigRoute: typeof ApiConfigRoute
   ApiHealthcheckRoute: typeof ApiHealthcheckRoute
   WidgetCounterRoute: typeof WidgetCounterRoute
@@ -945,6 +958,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_steps': {
       id: '/_steps'
       path: ''
@@ -1872,6 +1892,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   StepsRoute: StepsRouteWithChildren,
+  UnsubscribeRoute: UnsubscribeRoute,
   ApiConfigRoute: ApiConfigRoute,
   ApiHealthcheckRoute: ApiHealthcheckRoute,
   WidgetCounterRoute: WidgetCounterRoute,

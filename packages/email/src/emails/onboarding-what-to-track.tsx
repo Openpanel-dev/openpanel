@@ -2,6 +2,7 @@ import { Text } from '@react-email/components';
 import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
+import { List } from '../components/list';
 
 export const zOnboardingWhatToTrack = z.object({
   firstName: z.string().optional(),
@@ -9,33 +10,34 @@ export const zOnboardingWhatToTrack = z.object({
 
 export type Props = z.infer<typeof zOnboardingWhatToTrack>;
 export default OnboardingWhatToTrack;
-export function OnboardingWhatToTrack({
-  firstName,
-}: Props) {
+export function OnboardingWhatToTrack({ firstName }: Props) {
   return (
     <Layout>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>
-        Track the moments that tell you whether your product is working. Track
-        things that matters to your product the most and then you can easily
-        create funnels or conversions reports to understand what happening.
+        Tracking can be overwhelming at first, and that's why its important to
+        focus on what's matters. For most products, that's something like:
       </Text>
-      <Text>For most products, that's something like:</Text>
-      <Text>- Signups</Text>
+      <List
+        items={[
+          'Find good funnels to track (onboarding or checkout)',
+          'Conversions (how many clicks your hero CTA)',
+          'What did the user do after clicking the CTA',
+        ]}
+      />
       <Text>
-        - The first meaningful action (create something, send something, buy
-        something)
-      </Text>
-      <Text>- Return visits</Text>
-      <Text>
-        You don't need 50 events. Five good ones will tell you more than fifty
-        random ones.
+        Start small and incrementally add more events as you go is usually the
+        best approach.
       </Text>
       <Text>
-        If you're not sure whether something's worth tracking, just ask. I'm
-        happy to look at your setup.
+        If you're not sure whether something's worth tracking, or have any
+        questions, just reply here.
       </Text>
-      <Text>Carl</Text>
+      <Text>
+        Best regards,
+        <br />
+        Carl
+      </Text>
     </Layout>
   );
 }

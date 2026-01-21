@@ -259,18 +259,3 @@ export const insightsQueue = new Queue<InsightsQueuePayloadProject>(
     },
   },
 );
-
-export function addTrialEndingSoonJob(organizationId: string, delay: number) {
-  return miscQueue.add(
-    'misc',
-    {
-      type: 'trialEndingSoon',
-      payload: {
-        organizationId,
-      },
-    },
-    {
-      delay,
-    },
-  );
-}

@@ -508,6 +508,13 @@ export function getCountry(code?: string) {
   return countries[code as keyof typeof countries];
 }
 
+export const emailCategories = {
+  onboarding: 'Onboarding',
+  billing: 'Billing',
+} as const;
+
+export type EmailCategory = keyof typeof emailCategories;
+
 export const chartColors = [
   { main: '#2563EB', translucent: 'rgba(37, 99, 235, 0.1)' },
   { main: '#ff7557', translucent: 'rgba(255, 117, 87, 0.1)' },

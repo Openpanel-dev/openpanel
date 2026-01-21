@@ -1,6 +1,7 @@
-import { Button, Link, Text } from '@react-email/components';
+import { Text } from '@react-email/components';
 import React from 'react';
 import { z } from 'zod';
+import { Button } from '../components/button';
 import { Layout } from '../components/layout';
 
 export const zOnboardingTrialEnding = z.object({
@@ -33,32 +34,21 @@ export function OnboardingTrialEnding({
         event history) stays intact.
       </Text>
       <Text>
-        If OpenPanel has been useful, upgrading just keeps it going. Plans
-        start at $2.50/month
-        {recommendedPlan ? ` and based on your usage we recommend ${recommendedPlan}` : ''}
+        To continue using OpenPanel, you'll need to upgrade to a paid plan.{' '}
+        {recommendedPlan
+          ? `Based on your usage we recommend upgrading to the ${recommendedPlan} plan`
+          : 'Plans start at $2.50/month'}
         .
       </Text>
       <Text>
-        If something's holding you back, I'd like to hear about it. Just
-        reply.
+        If something's holding you back, I'd like to hear about it. Just reply.
       </Text>
       <Text>
         Your project will recieve events for the next 30 days, if you haven't
         upgraded by then we'll remove your workspace and projects.
       </Text>
       <Text>
-        <Button
-          href={newUrl.toString()}
-          style={{
-            backgroundColor: '#0070f3',
-            color: 'white',
-            padding: '12px 20px',
-            borderRadius: '5px',
-            textDecoration: 'none',
-          }}
-        >
-          Upgrade Now
-        </Button>
+        <Button href={newUrl.toString()}>Upgrade Now</Button>
       </Text>
       <Text>Carl</Text>
     </Layout>

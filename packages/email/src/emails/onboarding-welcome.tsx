@@ -1,7 +1,8 @@
-import { Link, Text } from '@react-email/components';
+import { Heading, Link, Text } from '@react-email/components';
 import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
+import { List } from '../components/list';
 
 export const zOnboardingWelcome = z.object({
   firstName: z.string().optional(),
@@ -10,34 +11,42 @@ export const zOnboardingWelcome = z.object({
 
 export type Props = z.infer<typeof zOnboardingWelcome>;
 export default OnboardingWelcome;
-export function OnboardingWelcome({
-  firstName,
-  dashboardUrl = 'https://dashboard.openpanel.dev',
-}: Props) {
-  const newUrl = new URL(dashboardUrl);
-  newUrl.searchParams.set('utm_source', 'email');
-  newUrl.searchParams.set('utm_medium', 'email');
-  newUrl.searchParams.set('utm_campaign', 'onboarding-welcome');
-
+export function OnboardingWelcome({ firstName }: Props) {
   return (
     <Layout>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>Thanks for trying OpenPanel.</Text>
       <Text>
-        We built OpenPanel because most analytics tools are either too expensive,
-        too complicated, or both. OpenPanel is different.
+        We built OpenPanel because most analytics tools are either too
+        expensive, too complicated, or both. OpenPanel is different.
       </Text>
       <Text>
-        If you already have setup your tracking you should see your dashboard
-        getting filled up. If you come from another provider and want to import
-        your old events you can do that in our{' '}
-        <Link href={newUrl.toString()}>project settings</Link>.
+        We hope you find OpenPanel useful and if you have any questions,
+        regarding tracking or how to import your existing events, just reach
+        out. We're here to help.
       </Text>
+      <Text>To get started, you can:</Text>
+      <List
+        items={[
+          <Link
+            key=""
+            href={'https://openpanel.dev/docs/get-started/install-openpanel'}
+          >
+            Install tracking script
+          </Link>,
+          <Link
+            key=""
+            href={'https://openpanel.dev/docs/get-started/track-events'}
+          >
+            Start tracking your events
+          </Link>,
+        ]}
+      />
       <Text>
-        If you can't find your provider just reach out and we'll help you out.
+        Best regards,
+        <br />
+        Carl
       </Text>
-      <Text>Reach out if you have any questions. I answer all emails.</Text>
-      <Text>Carl</Text>
     </Layout>
   );
 }

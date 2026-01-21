@@ -62,6 +62,7 @@ model Organization {
   integrations    Integration[]
   invites         Invite[]
   timezone        String?
+  onboarding      String           @default("completed") // 'completed' or template name for next email
 
   // Subscription
   subscriptionId                          String?
@@ -94,7 +95,6 @@ model User {
   email                String          @unique
   firstName            String?
   lastName             String?
-  onboarding           Int?             // null = disabled/completed, 1-5 = next email step
   createdOrganizations Organization[]  @relation("organizationCreatedBy")
   subscriptions        Organization[]  @relation("subscriptionCreatedBy")
   membership           Member[]
@@ -610,4 +610,14 @@ model InsightEvent {
 
   @@index([insightId, createdAt])
   @@map("insight_events")
+}
+
+model EmailUnsubscribe {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String
+  category  String
+  createdAt DateTime @default(now())
+
+  @@unique([email, category])
+  @@map("email_unsubscribes")
 }

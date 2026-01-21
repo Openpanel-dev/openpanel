@@ -37,7 +37,7 @@ overrides:
 
 patchedDependencies:
   nuqs:
-    hash: w6thjv3pgywfrbh4sblczc6qpy
+    hash: 4f93812bf7a04685f9477b2935e3acbf2aa24dfbb1b00b9ae0ed8f7a2877a98e
     path: patches/nuqs.patch
 
 importers:
@@ -656,7 +656,7 @@ importers:
         version: 3.0.1
       nuqs:
         specifier: ^2.5.2
-        version: 2.5.2(patch_hash=w6thjv3pgywfrbh4sblczc6qpy)(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(next@16.0.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
+        version: 2.5.2(patch_hash=4f93812bf7a04685f9477b2935e3acbf2aa24dfbb1b00b9ae0ed8f7a2877a98e)(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(next@16.0.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3)
       prisma-error-enum:
         specifier: ^0.1.3
         version: 0.1.3
@@ -880,6 +880,9 @@ importers:
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@openpanel/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -1136,6 +1139,9 @@ importers:
 
   packages/email:
     dependencies:
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../db
       '@react-email/components':
         specifier: ^0.5.6
         version: 0.5.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -33178,7 +33184,7 @@ snapshots:
     dependencies:
       esm-env: esm-env-runtime@0.1.1
 
-  nuqs@2.5.2(patch_hash=w6thjv3pgywfrbh4sblczc6qpy)(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(next@16.0.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3):
+  nuqs@2.5.2(patch_hash=4f93812bf7a04685f9477b2935e3acbf2aa24dfbb1b00b9ae0ed8f7a2877a98e)(@tanstack/react-router@1.132.47(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(next@16.0.7(@babel/core@7.28.3)(@opentelemetry/api@1.9.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(react@19.2.3):
     dependencies:
       '@standard-schema/spec': 1.0.0
       react: 19.2.3

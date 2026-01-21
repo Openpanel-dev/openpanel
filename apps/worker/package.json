@@ -20,6 +20,7 @@
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/importer": "workspace:*",
+    "@openpanel/payments": "workspace:*",
     "@openpanel/queue": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "bullmq": "^5.63.0",

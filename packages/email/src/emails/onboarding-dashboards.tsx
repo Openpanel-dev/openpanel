@@ -2,6 +2,7 @@ import { Link, Text } from '@react-email/components';
 import React from 'react';
 import { z } from 'zod';
 import { Layout } from '../components/layout';
+import { List } from '../components/list';
 
 export const zOnboardingDashboards = z.object({
   firstName: z.string().optional(),
@@ -30,20 +31,34 @@ export function OnboardingDashboards({
         If you haven't yet, try building a simple dashboard. Pick one thing you
         care about and visualize it. Could be:
       </Text>
-      <Text>
-        - How many people sign up and then actually do something
-      </Text>
-      <Text>- Where users drop off in a flow (funnel)</Text>
-      <Text>- Which pages lead to conversions (entry page → CTA)</Text>
+      <List
+        items={[
+          'How many people sign up and then actually do something',
+          'Where users drop off in a flow (funnel)',
+          'Which pages lead to conversions (entry page → CTA)',
+        ]}
+      />
       <Text>
         This is usually when people go from "I have analytics" to "I understand
         what's happening." It's a different feeling.
       </Text>
       <Text>Takes maybe 10 minutes to set up. Worth it.</Text>
       <Text>
-        <Link href={newUrl.toString()}>Create your first dashboard</Link>
+        Best regards,
+        <br />
+        Carl
       </Text>
-      <Text>Carl</Text>
+      <span style={{ margin: '0 -20px', display: 'block' }}>
+        <img
+          src="https://openpanel.dev/_next/image?url=%2Fscreenshots%2Fdashboard-dark.webp&w=3840&q=75"
+          alt="Dashboard"
+          style={{
+            width: '100%',
+            height: 'auto',
+            borderRadius: '5px',
+          }}
+        />
+      </span>
     </Layout>
   );
 }
