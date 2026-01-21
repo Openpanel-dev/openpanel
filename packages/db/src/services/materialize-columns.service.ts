@@ -1,7 +1,7 @@
 import { type ILogger, createLogger } from '@openpanel/logger';
 import { ch } from '../clickhouse/client';
 import { chMigrationClient } from '../clickhouse/migration';
-import { db } from '../index';
+import { db } from '../../index';
 
 interface PropertyUsageStats {
   property: string; // Full path: "properties.utm_source"
