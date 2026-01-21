@@ -456,7 +456,6 @@ export async function moveImportsToProduction(
       referrer_name,
       referrer_type,
       duration,
-      properties,
       created_at,
       country,
       city,
@@ -472,7 +471,7 @@ export async function moveImportsToProduction(
       model,
       imported_at
     )
-    SELECT 
+    SELECT
       id,
       name,
       sdk_name,
@@ -487,7 +486,6 @@ export async function moveImportsToProduction(
       referrer_name,
       referrer_type,
       duration,
-      properties,
       created_at,
       country,
       city,
@@ -562,7 +560,6 @@ export async function backfillSessionsToProduction(
       os_version,
       sign,
       version,
-      properties,
       utm_medium,
       utm_source,
       utm_campaign,
@@ -572,7 +569,7 @@ export async function backfillSessionsToProduction(
       referrer_name,
       referrer_type
     )
-    SELECT 
+    SELECT
       any(e.session_id) as id,
       any(e.project_id) as project_id,
       if(any(nullIf(e.profile_id, e.device_id)) IS NULL, any(e.profile_id), any(nullIf(e.profile_id, e.device_id))) as profile_id,
@@ -606,7 +603,6 @@ export async function backfillSessionsToProduction(
       argMinIf(e.os_version, e.created_at, e.name = 'session_start') as os_version,
       1 as sign,
       1 as version,
-      argMinIf(e.properties, e.created_at, e.name = 'session_start') as properties,
       argMinIf(e.properties['__query.utm_medium'], e.created_at, e.name = 'session_start') as utm_medium,
       argMinIf(e.properties['__query.utm_source'], e.created_at, e.name = 'session_start') as utm_source,
       argMinIf(e.properties['__query.utm_campaign'], e.created_at, e.name = 'session_start') as utm_campaign,
