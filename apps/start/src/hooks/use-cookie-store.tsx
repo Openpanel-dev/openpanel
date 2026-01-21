@@ -35,7 +35,7 @@ const setCookieFn = createServerFn({ method: 'POST' })
   });
 
 // Called in __root.tsx beforeLoad hook to get cookies from the server
-// And recieved with useRouteContext in the client
+// And received with useRouteContext in the client
 export const getCookiesFn = createServerFn({ method: 'GET' }).handler(() =>
   pick(VALID_COOKIES, getCookies()),
 );

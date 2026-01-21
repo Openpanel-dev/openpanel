@@ -99,6 +99,6 @@ If OpenPanel has been useful, upgrading just keeps it going. Plans start at $2.5
 
 If something's holding you back, I'd like to hear about it. Just reply.
 
-Your project will recieve events for the next 30 days, if you haven't upgraded by then we'll remove your workspace and projects.
+Your project will receive events for the next 30 days, if you haven't upgraded by then we'll remove your workspace and projects.
 
 Carl

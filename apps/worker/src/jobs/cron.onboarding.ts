@@ -92,7 +92,7 @@ const ONBOARDING_EMAILS = [
   }),
   email({
     day: 14,
-    template: 'onboarding-featue-request',
+    template: 'onboarding-feature-request',
     data: (ctx) => ({
       firstName: getters.firstName(ctx),
     }),

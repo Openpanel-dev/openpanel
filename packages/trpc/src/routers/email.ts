@@ -2,6 +2,7 @@ import { emailCategories } from '@openpanel/constants';
 import { db } from '@openpanel/db';
 import { verifyUnsubscribeToken } from '@openpanel/email';
 import { z } from 'zod';
+import { TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 export const emailRouter = createTRPCRouter({
@@ -18,7 +19,7 @@ export const emailRouter = createTRPCRouter({
 
       // Verify token
       if (!verifyUnsubscribeToken(email, category, token)) {
-        throw new Error('Invalid unsubscribe link');
+        throw TRPCBadRequestError('Invalid unsubscribe link');
       }
 
       // Upsert the unsubscribe record

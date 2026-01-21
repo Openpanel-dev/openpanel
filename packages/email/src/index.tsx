@@ -61,7 +61,7 @@ export async function sendEmail<T extends TemplateKey>(
   const headers: Record<string, string> = {};
   if ('category' in template && template.category) {
     const unsubscribeUrl = getUnsubscribeUrl(to, template.category);
-    (data as any).unsubscribeUrl = unsubscribeUrl;
+    (props.data as any).unsubscribeUrl = unsubscribeUrl;
     headers['List-Unsubscribe'] = `<${unsubscribeUrl}>`;
     headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click';
   }

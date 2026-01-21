@@ -26,7 +26,7 @@ export function OnboardingTrialEnding({
   newUrl.searchParams.set('utm_campaign', 'onboarding-trial-ending');
 
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>Quick heads up: your OpenPanel trial ends soon.</Text>
       <Text>
@@ -45,7 +45,7 @@ export function OnboardingTrialEnding({
         If something's holding you back, I'd like to hear about it. Just reply.
       </Text>
       <Text>
-        Your project will recieve events for the next 30 days, if you haven't
+        Your project will receive events for the next 30 days, if you haven't
         upgraded by then we'll remove your workspace and projects.
       </Text>
       <Text>

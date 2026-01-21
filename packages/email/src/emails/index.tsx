@@ -58,7 +58,7 @@ export const templates = {
     schema: zOnboardingDashboards,
     category: 'onboarding' as const,
   },
-  'onboarding-featue-request': {
+  'onboarding-feature-request': {
     subject: () => 'One provider to rule them all',
     Component: OnboardingFeatureRequest,
     schema: zOnboardingFeatureRequest,

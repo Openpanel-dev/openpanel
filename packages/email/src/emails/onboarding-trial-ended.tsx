@@ -24,7 +24,7 @@ export function OnboardingTrialEnded({
   newUrl.searchParams.set('utm_campaign', 'onboarding-trial-ended');
 
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>Hi{firstName ? ` ${firstName}` : ''},</Text>
       <Text>Your OpenPanel trial has ended.</Text>
       <Text>

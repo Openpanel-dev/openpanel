@@ -1,4 +1,4 @@
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 const SECRET =
   process.env.UNSUBSCRIBE_SECRET ||
@@ -17,7 +17,18 @@ export function verifyUnsubscribeToken(
   token: string,
 ): boolean {
   const expectedToken = generateUnsubscribeToken(email, category);
-  return token === expectedToken;
+  const tokenBuffer = Buffer.from(token, 'hex');
+  const expectedBuffer = Buffer.from(expectedToken, 'hex');
+
+  // Handle length mismatch safely to avoid timing leaks
+  if (tokenBuffer.length !== expectedBuffer.length) {
+    // Compare against zero-filled buffer of same length as token to maintain constant time
+    const zeroBuffer = Buffer.alloc(tokenBuffer.length);
+    timingSafeEqual(tokenBuffer, zeroBuffer);
+    return false;
+  }
+
+  return timingSafeEqual(tokenBuffer, expectedBuffer);
 }
 
 export function getUnsubscribeUrl(email: string, category: string): string {
