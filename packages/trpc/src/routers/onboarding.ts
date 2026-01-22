@@ -8,7 +8,6 @@ import { zOnboardingProject } from '@openpanel/validation';
 
 import { hashPassword } from '@openpanel/common/server';
 import { addDays } from 'date-fns';
-import { addTrialEndingSoonJob, miscQueue } from '../../../queue';
 import { createTRPCRouter, protectedProcedure, publicProcedure } from '../trpc';
 
 async function createOrGetOrganization(
@@ -30,15 +29,9 @@ async function createOrGetOrganization(
         subscriptionEndsAt: addDays(new Date(), TRIAL_DURATION_IN_DAYS),
         subscriptionStatus: 'trialing',
         timezone: input.timezone,
+        onboarding: '',
       },
     });
-
-    if (!process.env.SELF_HOSTED) {
-      await addTrialEndingSoonJob(
-        organization.id,
-        1000 * 60 * 60 * 24 * TRIAL_DURATION_IN_DAYS * 0.9,
-      );
-    }
 
     return organization;
   }

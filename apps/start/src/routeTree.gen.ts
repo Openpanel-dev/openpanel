@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as StepsRouteImport } from './routes/_steps'
 import { Route as PublicRouteImport } from './routes/_public'
 import { Route as LoginRouteImport } from './routes/_login'
@@ -37,6 +38,7 @@ import { Route as AppOrganizationIdProjectIdRouteImport } from './routes/_app.$o
 import { Route as AppOrganizationIdProjectIdIndexRouteImport } from './routes/_app.$organizationId.$projectId.index'
 import { Route as StepsOnboardingProjectIdVerifyRouteImport } from './routes/_steps.onboarding.$projectId.verify'
 import { Route as StepsOnboardingProjectIdConnectRouteImport } from './routes/_steps.onboarding.$projectId.connect'
+import { Route as AppOrganizationIdProfileTabsRouteImport } from './routes/_app.$organizationId.profile._tabs'
 import { Route as AppOrganizationIdMembersTabsRouteImport } from './routes/_app.$organizationId.members._tabs'
 import { Route as AppOrganizationIdIntegrationsTabsRouteImport } from './routes/_app.$organizationId.integrations._tabs'
 import { Route as AppOrganizationIdProjectIdSessionsRouteImport } from './routes/_app.$organizationId.$projectId.sessions'
@@ -47,8 +49,10 @@ import { Route as AppOrganizationIdProjectIdPagesRouteImport } from './routes/_a
 import { Route as AppOrganizationIdProjectIdInsightsRouteImport } from './routes/_app.$organizationId.$projectId.insights'
 import { Route as AppOrganizationIdProjectIdDashboardsRouteImport } from './routes/_app.$organizationId.$projectId.dashboards'
 import { Route as AppOrganizationIdProjectIdChatRouteImport } from './routes/_app.$organizationId.$projectId.chat'
+import { Route as AppOrganizationIdProfileTabsIndexRouteImport } from './routes/_app.$organizationId.profile._tabs.index'
 import { Route as AppOrganizationIdMembersTabsIndexRouteImport } from './routes/_app.$organizationId.members._tabs.index'
 import { Route as AppOrganizationIdIntegrationsTabsIndexRouteImport } from './routes/_app.$organizationId.integrations._tabs.index'
+import { Route as AppOrganizationIdProfileTabsEmailPreferencesRouteImport } from './routes/_app.$organizationId.profile._tabs.email-preferences'
 import { Route as AppOrganizationIdMembersTabsMembersRouteImport } from './routes/_app.$organizationId.members._tabs.members'
 import { Route as AppOrganizationIdMembersTabsInvitationsRouteImport } from './routes/_app.$organizationId.members._tabs.invitations'
 import { Route as AppOrganizationIdIntegrationsTabsInstalledRouteImport } from './routes/_app.$organizationId.integrations._tabs.installed'
@@ -81,6 +85,9 @@ import { Route as AppOrganizationIdProjectIdEventsTabsConversionsRouteImport } f
 import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.index'
 import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.events'
 
+const AppOrganizationIdProfileRouteImport = createFileRoute(
+  '/_app/$organizationId/profile',
+)()
 const AppOrganizationIdMembersRouteImport = createFileRoute(
   '/_app/$organizationId/members',
 )()
@@ -103,6 +110,11 @@ const AppOrganizationIdProjectIdProfilesProfileIdRouteImport = createFileRoute(
   '/_app/$organizationId/$projectId/profiles/$profileId',
 )()
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StepsRoute = StepsRouteImport.update({
   id: '/_steps',
   getParentRoute: () => rootRouteImport,
@@ -174,6 +186,12 @@ const AppOrganizationIdRoute = AppOrganizationIdRouteImport.update({
   path: '/$organizationId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOrganizationIdProfileRoute =
+  AppOrganizationIdProfileRouteImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => AppOrganizationIdRoute,
+  } as any)
 const AppOrganizationIdMembersRoute =
   AppOrganizationIdMembersRouteImport.update({
     id: '/members',
@@ -271,6 +289,11 @@ const StepsOnboardingProjectIdConnectRoute =
     path: '/onboarding/$projectId/connect',
     getParentRoute: () => StepsRoute,
   } as any)
+const AppOrganizationIdProfileTabsRoute =
+  AppOrganizationIdProfileTabsRouteImport.update({
+    id: '/_tabs',
+    getParentRoute: () => AppOrganizationIdProfileRoute,
+  } as any)
 const AppOrganizationIdMembersTabsRoute =
   AppOrganizationIdMembersTabsRouteImport.update({
     id: '/_tabs',
@@ -335,6 +358,12 @@ const AppOrganizationIdProjectIdProfilesProfileIdRoute =
     path: '/$profileId',
     getParentRoute: () => AppOrganizationIdProjectIdProfilesRoute,
   } as any)
+const AppOrganizationIdProfileTabsIndexRoute =
+  AppOrganizationIdProfileTabsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppOrganizationIdProfileTabsRoute,
+  } as any)
 const AppOrganizationIdMembersTabsIndexRoute =
   AppOrganizationIdMembersTabsIndexRouteImport.update({
     id: '/',
@@ -346,6 +375,12 @@ const AppOrganizationIdIntegrationsTabsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AppOrganizationIdIntegrationsTabsRoute,
+  } as any)
+const AppOrganizationIdProfileTabsEmailPreferencesRoute =
+  AppOrganizationIdProfileTabsEmailPreferencesRouteImport.update({
+    id: '/email-preferences',
+    path: '/email-preferences',
+    getParentRoute: () => AppOrganizationIdProfileTabsRoute,
   } as any)
 const AppOrganizationIdMembersTabsMembersRoute =
   AppOrganizationIdMembersTabsMembersRouteImport.update({
@@ -531,6 +566,7 @@ const AppOrganizationIdProjectIdProfilesProfileIdTabsEventsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/$organizationId': typeof AppOrganizationIdRouteWithChildren
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
@@ -559,6 +595,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId/sessions': typeof AppOrganizationIdProjectIdSessionsRoute
   '/$organizationId/integrations': typeof AppOrganizationIdIntegrationsTabsRouteWithChildren
   '/$organizationId/members': typeof AppOrganizationIdMembersTabsRouteWithChildren
+  '/$organizationId/profile': typeof AppOrganizationIdProfileTabsRouteWithChildren
   '/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
   '/$organizationId/$projectId/': typeof AppOrganizationIdProjectIdIndexRoute
@@ -573,8 +610,10 @@ export interface FileRoutesByFullPath {
   '/$organizationId/integrations/installed': typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   '/$organizationId/members/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
   '/$organizationId/members/members': typeof AppOrganizationIdMembersTabsMembersRoute
+  '/$organizationId/profile/email-preferences': typeof AppOrganizationIdProfileTabsEmailPreferencesRoute
   '/$organizationId/integrations/': typeof AppOrganizationIdIntegrationsTabsIndexRoute
   '/$organizationId/members/': typeof AppOrganizationIdMembersTabsIndexRoute
+  '/$organizationId/profile/': typeof AppOrganizationIdProfileTabsIndexRoute
   '/$organizationId/$projectId/events/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
   '/$organizationId/$projectId/events/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
   '/$organizationId/$projectId/events/stats': typeof AppOrganizationIdProjectIdEventsTabsStatsRoute
@@ -598,6 +637,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/login': typeof LoginLoginRoute
   '/reset-password': typeof LoginResetPasswordRoute
   '/onboarding': typeof PublicOnboardingRoute
@@ -624,6 +664,7 @@ export interface FileRoutesByTo {
   '/$organizationId/$projectId/sessions': typeof AppOrganizationIdProjectIdSessionsRoute
   '/$organizationId/integrations': typeof AppOrganizationIdIntegrationsTabsIndexRoute
   '/$organizationId/members': typeof AppOrganizationIdMembersTabsIndexRoute
+  '/$organizationId/profile': typeof AppOrganizationIdProfileTabsIndexRoute
   '/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdIndexRoute
@@ -638,6 +679,7 @@ export interface FileRoutesByTo {
   '/$organizationId/integrations/installed': typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   '/$organizationId/members/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
   '/$organizationId/members/members': typeof AppOrganizationIdMembersTabsMembersRoute
+  '/$organizationId/profile/email-preferences': typeof AppOrganizationIdProfileTabsEmailPreferencesRoute
   '/$organizationId/$projectId/events/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
   '/$organizationId/$projectId/events/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
   '/$organizationId/$projectId/events/stats': typeof AppOrganizationIdProjectIdEventsTabsStatsRoute
@@ -661,6 +703,7 @@ export interface FileRoutesById {
   '/_login': typeof LoginRouteWithChildren
   '/_public': typeof PublicRouteWithChildren
   '/_steps': typeof StepsRouteWithChildren
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_app/$organizationId': typeof AppOrganizationIdRouteWithChildren
   '/_login/login': typeof LoginLoginRoute
   '/_login/reset-password': typeof LoginResetPasswordRoute
@@ -691,6 +734,8 @@ export interface FileRoutesById {
   '/_app/$organizationId/integrations/_tabs': typeof AppOrganizationIdIntegrationsTabsRouteWithChildren
   '/_app/$organizationId/members': typeof AppOrganizationIdMembersRouteWithChildren
   '/_app/$organizationId/members/_tabs': typeof AppOrganizationIdMembersTabsRouteWithChildren
+  '/_app/$organizationId/profile': typeof AppOrganizationIdProfileRouteWithChildren
+  '/_app/$organizationId/profile/_tabs': typeof AppOrganizationIdProfileTabsRouteWithChildren
   '/_steps/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/_steps/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
   '/_app/$organizationId/$projectId/': typeof AppOrganizationIdProjectIdIndexRoute
@@ -709,8 +754,10 @@ export interface FileRoutesById {
   '/_app/$organizationId/integrations/_tabs/installed': typeof AppOrganizationIdIntegrationsTabsInstalledRoute
   '/_app/$organizationId/members/_tabs/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
   '/_app/$organizationId/members/_tabs/members': typeof AppOrganizationIdMembersTabsMembersRoute
+  '/_app/$organizationId/profile/_tabs/email-preferences': typeof AppOrganizationIdProfileTabsEmailPreferencesRoute
   '/_app/$organizationId/integrations/_tabs/': typeof AppOrganizationIdIntegrationsTabsIndexRoute
   '/_app/$organizationId/members/_tabs/': typeof AppOrganizationIdMembersTabsIndexRoute
+  '/_app/$organizationId/profile/_tabs/': typeof AppOrganizationIdProfileTabsIndexRoute
   '/_app/$organizationId/$projectId/events/_tabs/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
   '/_app/$organizationId/$projectId/events/_tabs/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
   '/_app/$organizationId/$projectId/events/_tabs/stats': typeof AppOrganizationIdProjectIdEventsTabsStatsRoute
@@ -737,6 +784,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/unsubscribe'
     | '/$organizationId'
     | '/login'
     | '/reset-password'
@@ -765,6 +813,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/sessions'
     | '/$organizationId/integrations'
     | '/$organizationId/members'
+    | '/$organizationId/profile'
     | '/onboarding/$projectId/connect'
     | '/onboarding/$projectId/verify'
     | '/$organizationId/$projectId/'
@@ -779,8 +828,10 @@ export interface FileRouteTypes {
     | '/$organizationId/integrations/installed'
     | '/$organizationId/members/invitations'
     | '/$organizationId/members/members'
+    | '/$organizationId/profile/email-preferences'
     | '/$organizationId/integrations/'
     | '/$organizationId/members/'
+    | '/$organizationId/profile/'
     | '/$organizationId/$projectId/events/conversions'
     | '/$organizationId/$projectId/events/events'
     | '/$organizationId/$projectId/events/stats'
@@ -804,6 +855,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/unsubscribe'
     | '/login'
     | '/reset-password'
     | '/onboarding'
@@ -830,6 +882,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/sessions'
     | '/$organizationId/integrations'
     | '/$organizationId/members'
+    | '/$organizationId/profile'
     | '/onboarding/$projectId/connect'
     | '/onboarding/$projectId/verify'
     | '/$organizationId/$projectId'
@@ -844,6 +897,7 @@ export interface FileRouteTypes {
     | '/$organizationId/integrations/installed'
     | '/$organizationId/members/invitations'
     | '/$organizationId/members/members'
+    | '/$organizationId/profile/email-preferences'
     | '/$organizationId/$projectId/events/conversions'
     | '/$organizationId/$projectId/events/events'
     | '/$organizationId/$projectId/events/stats'
@@ -866,6 +920,7 @@ export interface FileRouteTypes {
     | '/_login'
     | '/_public'
     | '/_steps'
+    | '/unsubscribe'
     | '/_app/$organizationId'
     | '/_login/login'
     | '/_login/reset-password'
@@ -896,6 +951,8 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/integrations/_tabs'
     | '/_app/$organizationId/members'
     | '/_app/$organizationId/members/_tabs'
+    | '/_app/$organizationId/profile'
+    | '/_app/$organizationId/profile/_tabs'
     | '/_steps/onboarding/$projectId/connect'
     | '/_steps/onboarding/$projectId/verify'
     | '/_app/$organizationId/$projectId/'
@@ -914,8 +971,10 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/integrations/_tabs/installed'
     | '/_app/$organizationId/members/_tabs/invitations'
     | '/_app/$organizationId/members/_tabs/members'
+    | '/_app/$organizationId/profile/_tabs/email-preferences'
     | '/_app/$organizationId/integrations/_tabs/'
     | '/_app/$organizationId/members/_tabs/'
+    | '/_app/$organizationId/profile/_tabs/'
     | '/_app/$organizationId/$projectId/events/_tabs/conversions'
     | '/_app/$organizationId/$projectId/events/_tabs/events'
     | '/_app/$organizationId/$projectId/events/_tabs/stats'
@@ -945,6 +1004,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   StepsRoute: typeof StepsRouteWithChildren
+  UnsubscribeRoute: typeof UnsubscribeRoute
   ApiConfigRoute: typeof ApiConfigRoute
   ApiHealthcheckRoute: typeof ApiHealthcheckRoute
   WidgetBadgeRoute: typeof WidgetBadgeRoute
@@ -958,6 +1018,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_steps': {
       id: '/_steps'
       path: ''
@@ -1062,6 +1129,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$organizationId'
       preLoaderRoute: typeof AppOrganizationIdRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/$organizationId/profile': {
+      id: '/_app/$organizationId/profile'
+      path: '/profile'
+      fullPath: '/$organizationId/profile'
+      preLoaderRoute: typeof AppOrganizationIdProfileRouteImport
+      parentRoute: typeof AppOrganizationIdRoute
     }
     '/_app/$organizationId/members': {
       id: '/_app/$organizationId/members'
@@ -1182,6 +1256,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StepsOnboardingProjectIdConnectRouteImport
       parentRoute: typeof StepsRoute
     }
+    '/_app/$organizationId/profile/_tabs': {
+      id: '/_app/$organizationId/profile/_tabs'
+      path: '/profile'
+      fullPath: '/$organizationId/profile'
+      preLoaderRoute: typeof AppOrganizationIdProfileTabsRouteImport
+      parentRoute: typeof AppOrganizationIdProfileRoute
+    }
     '/_app/$organizationId/members/_tabs': {
       id: '/_app/$organizationId/members/_tabs'
       path: '/members'
@@ -1259,6 +1340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdProfilesProfileIdRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdProfilesRoute
     }
+    '/_app/$organizationId/profile/_tabs/': {
+      id: '/_app/$organizationId/profile/_tabs/'
+      path: '/'
+      fullPath: '/$organizationId/profile/'
+      preLoaderRoute: typeof AppOrganizationIdProfileTabsIndexRouteImport
+      parentRoute: typeof AppOrganizationIdProfileTabsRoute
+    }
     '/_app/$organizationId/members/_tabs/': {
       id: '/_app/$organizationId/members/_tabs/'
       path: '/'
@@ -1272,6 +1360,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$organizationId/integrations/'
       preLoaderRoute: typeof AppOrganizationIdIntegrationsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdIntegrationsTabsRoute
+    }
+    '/_app/$organizationId/profile/_tabs/email-preferences': {
+      id: '/_app/$organizationId/profile/_tabs/email-preferences'
+      path: '/email-preferences'
+      fullPath: '/$organizationId/profile/email-preferences'
+      preLoaderRoute: typeof AppOrganizationIdProfileTabsEmailPreferencesRouteImport
+      parentRoute: typeof AppOrganizationIdProfileTabsRoute
     }
     '/_app/$organizationId/members/_tabs/members': {
       id: '/_app/$organizationId/members/_tabs/members'
@@ -1817,6 +1912,39 @@ const AppOrganizationIdMembersRouteWithChildren =
     AppOrganizationIdMembersRouteChildren,
   )
 
+interface AppOrganizationIdProfileTabsRouteChildren {
+  AppOrganizationIdProfileTabsEmailPreferencesRoute: typeof AppOrganizationIdProfileTabsEmailPreferencesRoute
+  AppOrganizationIdProfileTabsIndexRoute: typeof AppOrganizationIdProfileTabsIndexRoute
+}
+
+const AppOrganizationIdProfileTabsRouteChildren: AppOrganizationIdProfileTabsRouteChildren =
+  {
+    AppOrganizationIdProfileTabsEmailPreferencesRoute:
+      AppOrganizationIdProfileTabsEmailPreferencesRoute,
+    AppOrganizationIdProfileTabsIndexRoute:
+      AppOrganizationIdProfileTabsIndexRoute,
+  }
+
+const AppOrganizationIdProfileTabsRouteWithChildren =
+  AppOrganizationIdProfileTabsRoute._addFileChildren(
+    AppOrganizationIdProfileTabsRouteChildren,
+  )
+
+interface AppOrganizationIdProfileRouteChildren {
+  AppOrganizationIdProfileTabsRoute: typeof AppOrganizationIdProfileTabsRouteWithChildren
+}
+
+const AppOrganizationIdProfileRouteChildren: AppOrganizationIdProfileRouteChildren =
+  {
+    AppOrganizationIdProfileTabsRoute:
+      AppOrganizationIdProfileTabsRouteWithChildren,
+  }
+
+const AppOrganizationIdProfileRouteWithChildren =
+  AppOrganizationIdProfileRoute._addFileChildren(
+    AppOrganizationIdProfileRouteChildren,
+  )
+
 interface AppOrganizationIdRouteChildren {
   AppOrganizationIdProjectIdRoute: typeof AppOrganizationIdProjectIdRouteWithChildren
   AppOrganizationIdBillingRoute: typeof AppOrganizationIdBillingRoute
@@ -1824,6 +1952,7 @@ interface AppOrganizationIdRouteChildren {
   AppOrganizationIdIndexRoute: typeof AppOrganizationIdIndexRoute
   AppOrganizationIdIntegrationsRoute: typeof AppOrganizationIdIntegrationsRouteWithChildren
   AppOrganizationIdMembersRoute: typeof AppOrganizationIdMembersRouteWithChildren
+  AppOrganizationIdProfileRoute: typeof AppOrganizationIdProfileRouteWithChildren
 }
 
 const AppOrganizationIdRouteChildren: AppOrganizationIdRouteChildren = {
@@ -1834,6 +1963,7 @@ const AppOrganizationIdRouteChildren: AppOrganizationIdRouteChildren = {
   AppOrganizationIdIntegrationsRoute:
     AppOrganizationIdIntegrationsRouteWithChildren,
   AppOrganizationIdMembersRoute: AppOrganizationIdMembersRouteWithChildren,
+  AppOrganizationIdProfileRoute: AppOrganizationIdProfileRouteWithChildren,
 }
 
 const AppOrganizationIdRouteWithChildren =
@@ -1892,6 +2022,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   StepsRoute: StepsRouteWithChildren,
+  UnsubscribeRoute: UnsubscribeRoute,
   ApiConfigRoute: ApiConfigRoute,
   ApiHealthcheckRoute: ApiHealthcheckRoute,
   WidgetBadgeRoute: WidgetBadgeRoute,

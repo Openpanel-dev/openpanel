@@ -4,7 +4,7 @@ import { type ISignInShare, zSignInShare } from '@openpanel/validation';
 import { useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { LogoSquare } from '../logo';
+import { PublicPageCard } from '../public-page-card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 
@@ -43,54 +43,27 @@ export function ShareEnterPassword({
     });
   });
 
+  const typeLabel =
+    shareType === 'dashboard'
+      ? 'Dashboard'
+      : shareType === 'report'
+        ? 'Report'
+        : 'Overview';
+
   return (
-    <div className="center-center h-screen w-screen p-4 col">
-      <div className="bg-background p-6 rounded-lg max-w-md w-full text-left">
-        <div className="col mt-1 flex-1 gap-2">
-          <LogoSquare className="size-12 mb-4" />
-          <div className="text-xl font-semibold">
-            {shareType === 'dashboard'
-              ? 'Dashboard is locked'
-              : shareType === 'report'
-                ? 'Report is locked'
-                : 'Overview is locked'}
-          </div>
-          <div className="text-lg text-muted-foreground leading-normal">
-            Please enter correct password to access this{' '}
-            {shareType === 'dashboard'
-              ? 'dashboard'
-              : shareType === 'report'
-                ? 'report'
-                : 'overview'}
-          </div>
-        </div>
-        <form onSubmit={onSubmit} className="col gap-4 mt-6">
-          <Input
-            {...form.register('password')}
-            type="password"
-            placeholder="Enter your password"
-            size="large"
-          />
-          <Button type="submit">Get access</Button>
-        </form>
-      </div>
-      <div className="p-6 text-sm max-w-sm col gap-0.5">
-        <p>
-          Powered by{' '}
-          <a href="https://openpanel.dev" className="font-medium">
-            OpenPanel.dev
-          </a>
-        </p>
-        <p>
-          The best web and product analytics tool out there (our honest
-          opinion).
-        </p>
-        <p>
-          <a href="https://dashboard.openpanel.dev/onboarding">
-            Try it for free today!
-          </a>
-        </p>
-      </div>
-    </div>
+    <PublicPageCard
+      title={`${typeLabel} is locked`}
+      description={`Please enter correct password to access this ${typeLabel.toLowerCase()}`}
+    >
+      <form onSubmit={onSubmit} className="col gap-4">
+        <Input
+          {...form.register('password')}
+          type="password"
+          placeholder="Enter your password"
+          size="large"
+        />
+        <Button type="submit">Get access</Button>
+      </form>
+    </PublicPageCard>
   );
 }

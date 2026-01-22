@@ -3,6 +3,7 @@ import { chartRouter } from './routers/chart';
 import { chatRouter } from './routers/chat';
 import { clientRouter } from './routers/client';
 import { dashboardRouter } from './routers/dashboard';
+import { emailRouter } from './routers/email';
 import { eventRouter } from './routers/event';
 import { importRouter } from './routers/import';
 import { insightRouter } from './routers/insight';
@@ -51,6 +52,7 @@ export const appRouter = createTRPCRouter({
   chat: chatRouter,
   insight: insightRouter,
   widget: widgetRouter,
+  email: emailRouter,
 });
 
 // export type definition of API

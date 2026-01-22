@@ -353,7 +353,6 @@ export const authRouter = createTRPCRouter({
     .input(zSignInShare)
     .mutation(async ({ input, ctx }) => {
       const { password, shareId, shareType = 'overview' } = input;
-      
       let share: { password: string | null; public: boolean } | null = null;
       let cookieName = '';
 

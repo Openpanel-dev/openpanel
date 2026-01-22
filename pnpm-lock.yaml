@@ -880,6 +880,9 @@ importers:
       '@openpanel/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@openpanel/payments':
+        specifier: workspace:*
+        version: link:../../packages/payments
       '@openpanel/queue':
         specifier: workspace:*
         version: link:../../packages/queue
@@ -889,6 +892,9 @@ importers:
       bullmq:
         specifier: ^5.63.0
         version: 5.63.0
+      date-fns:
+        specifier: ^3.3.1
+        version: 3.3.1
       express:
         specifier: ^4.18.2
         version: 4.18.2
@@ -1133,6 +1139,9 @@ importers:
 
   packages/email:
     dependencies:
+      '@openpanel/db':
+        specifier: workspace:*
+        version: link:../db
       '@react-email/components':
         specifier: ^0.5.6
         version: 0.5.6(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -16527,6 +16536,7 @@ packages:
   tar@6.2.0:
     resolution: {integrity: sha512-/Wo7DcT0u5HUV486xg675HtjNd3BXZ6xDbzsCUZPt5iw8bTQ63bP0Raut3mvro9u+CUyq7YQd8Cx55fsZXxqLQ==}
     engines: {node: '>=10'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exhorbitant rates) by contacting i@izs.me
 
   tar@7.4.3:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}

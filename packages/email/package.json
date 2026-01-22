@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@openpanel/db": "workspace:*",
     "@react-email/components": "^0.5.6",
     "react": "catalog:",
     "react-dom": "catalog:",

@@ -3,6 +3,22 @@ import { EmailInvite, zEmailInvite } from './email-invite';
 import EmailResetPassword, {
   zEmailResetPassword,
 } from './email-reset-password';
+import OnboardingDashboards, {
+  zOnboardingDashboards,
+} from './onboarding-dashboards';
+import OnboardingFeatureRequest, {
+  zOnboardingFeatureRequest,
+} from './onboarding-feature-request';
+import OnboardingTrialEnded, {
+  zOnboardingTrialEnded,
+} from './onboarding-trial-ended';
+import OnboardingTrialEnding, {
+  zOnboardingTrialEnding,
+} from './onboarding-trial-ending';
+import OnboardingWelcome, { zOnboardingWelcome } from './onboarding-welcome';
+import OnboardingWhatToTrack, {
+  zOnboardingWhatToTrack,
+} from './onboarding-what-to-track';
 import TrailEndingSoon, { zTrailEndingSoon } from './trial-ending-soon';
 
 export const templates = {
@@ -23,6 +39,40 @@ export const templates = {
       'Your trial is ending soon',
     Component: TrailEndingSoon,
     schema: zTrailEndingSoon,
+  },
+  'onboarding-welcome': {
+    subject: () => "You're in",
+    Component: OnboardingWelcome,
+    schema: zOnboardingWelcome,
+    category: 'onboarding' as const,
+  },
+  'onboarding-what-to-track': {
+    subject: () => "What's actually worth tracking",
+    Component: OnboardingWhatToTrack,
+    schema: zOnboardingWhatToTrack,
+    category: 'onboarding' as const,
+  },
+  'onboarding-dashboards': {
+    subject: () => 'The part most people skip',
+    Component: OnboardingDashboards,
+    schema: zOnboardingDashboards,
+    category: 'onboarding' as const,
+  },
+  'onboarding-feature-request': {
+    subject: () => 'One provider to rule them all',
+    Component: OnboardingFeatureRequest,
+    schema: zOnboardingFeatureRequest,
+    category: 'onboarding' as const,
+  },
+  'onboarding-trial-ending': {
+    subject: () => 'Your trial ends in a few days',
+    Component: OnboardingTrialEnding,
+    schema: zOnboardingTrialEnding,
+  },
+  'onboarding-trial-ended': {
+    subject: () => 'Your trial has ended',
+    Component: OnboardingTrialEnded,
+    schema: zOnboardingTrialEnded,
   },
 } as const;
 

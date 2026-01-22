@@ -39,6 +39,11 @@ export async function bootCron() {
       type: 'insightsDaily',
       pattern: '0 2 * * *',
     },
+    {
+      name: 'onboarding',
+      type: 'onboarding',
+      pattern: '0 * * * *',
+    },
   ];
 
   if (process.env.SELF_HOSTED && process.env.NODE_ENV === 'production') {

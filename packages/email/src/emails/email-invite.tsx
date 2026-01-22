@@ -13,9 +13,10 @@ export default EmailInvite;
 export function EmailInvite({
   organizationName = 'Acme Co',
   url = 'https://openpanel.dev',
-}: Props) {
+  unsubscribeUrl,
+}: Props & { unsubscribeUrl?: string }) {
   return (
-    <Layout>
+    <Layout unsubscribeUrl={unsubscribeUrl}>
       <Text>You've been invited to join {organizationName}!</Text>
       <Text>
         If you don't have an account yet, click the button below to create one
