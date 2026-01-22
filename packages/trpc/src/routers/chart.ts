@@ -27,10 +27,10 @@ import {
 } from '@openpanel/db';
 import {
   type IChartEvent,
-  zReportInput,
   zChartSeries,
   zCriteria,
   zRange,
+  zReportInput,
   zTimeInterval,
 } from '@openpanel/validation';
 
@@ -338,7 +338,7 @@ export const chartRouter = createTRPCRouter({
       zReportInput.and(
         z.object({
           shareId: z.string().optional(),
-          reportId: z.string().optional(),
+          id: z.string().optional(),
         }),
       ),
     )
@@ -347,14 +347,14 @@ export const chartRouter = createTRPCRouter({
 
       if (input.shareId) {
         // Require reportId when shareId provided
-        if (!input.reportId) {
+        if (!input.id) {
           throw new Error('reportId required with shareId');
         }
 
         // Validate share access
         const shareValidation = await validateShareAccess(
           input.shareId,
-          input.reportId,
+          input.id,
           {
             cookies: ctx.cookies,
             session: ctx.session?.userId
@@ -367,7 +367,7 @@ export const chartRouter = createTRPCRouter({
         }
 
         // Fetch report and merge date overrides
-        const report = await getReportById(input.reportId);
+        const report = await getReportById(input.id);
         if (!report) {
           throw TRPCAccessError('Report not found');
         }
@@ -420,7 +420,7 @@ export const chartRouter = createTRPCRouter({
       zReportInput.and(
         z.object({
           shareId: z.string().optional(),
-          reportId: z.string().optional(),
+          id: z.string().optional(),
         }),
       ),
     )
@@ -429,14 +429,14 @@ export const chartRouter = createTRPCRouter({
 
       if (input.shareId) {
         // Require reportId when shareId provided
-        if (!input.reportId) {
+        if (!input.id) {
           throw new Error('reportId required with shareId');
         }
 
         // Validate share access
         const shareValidation = await validateShareAccess(
           input.shareId,
-          input.reportId,
+          input.id,
           {
             cookies: ctx.cookies,
             session: ctx.session?.userId
@@ -449,7 +449,7 @@ export const chartRouter = createTRPCRouter({
         }
 
         // Fetch report and merge date overrides
-        const report = await getReportById(input.reportId);
+        const report = await getReportById(input.id);
         if (!report) {
           throw TRPCAccessError('Report not found');
         }
@@ -549,23 +549,24 @@ export const chartRouter = createTRPCRouter({
       zReportInput.and(
         z.object({
           shareId: z.string().optional(),
-          reportId: z.string().optional(),
+          id: z.string().optional(),
         }),
       ),
     )
     .query(async ({ input, ctx }) => {
       let chartInput = input;
+      console.log('input', input);
 
       if (input.shareId) {
         // Require reportId when shareId provided
-        if (!input.reportId) {
+        if (!input.id) {
           throw new Error('reportId required with shareId');
         }
 
         // Validate share access
         const shareValidation = await validateShareAccess(
           input.shareId,
-          input.reportId,
+          input.id,
           ctx,
         );
 
@@ -574,7 +575,7 @@ export const chartRouter = createTRPCRouter({
         }
 
         // Fetch report and merge date overrides
-        const report = await getReportById(input.reportId);
+        const report = await getReportById(input.id);
         if (!report) {
           throw TRPCAccessError('Report not found');
         }
@@ -609,7 +610,7 @@ export const chartRouter = createTRPCRouter({
       zReportInput.and(
         z.object({
           shareId: z.string().optional(),
-          reportId: z.string().optional(),
+          id: z.string().optional(),
         }),
       ),
     )
@@ -618,14 +619,14 @@ export const chartRouter = createTRPCRouter({
 
       if (input.shareId) {
         // Require reportId when shareId provided
-        if (!input.reportId) {
+        if (!input.id) {
           throw new Error('reportId required with shareId');
         }
 
         // Validate share access
         const shareValidation = await validateShareAccess(
           input.shareId,
-          input.reportId,
+          input.id,
           {
             cookies: ctx.cookies,
             session: ctx.session?.userId
@@ -638,7 +639,7 @@ export const chartRouter = createTRPCRouter({
         }
 
         // Fetch report and merge date overrides
-        const report = await getReportById(input.reportId);
+        const report = await getReportById(input.id);
         if (!report) {
           throw TRPCAccessError('Report not found');
         }
@@ -680,7 +681,7 @@ export const chartRouter = createTRPCRouter({
         interval: zTimeInterval.default('day'),
         range: zRange,
         shareId: z.string().optional(),
-        reportId: z.string().optional(),
+        id: z.string().optional(),
       }),
     )
     .query(async ({ input, ctx }) => {
@@ -695,14 +696,14 @@ export const chartRouter = createTRPCRouter({
 
       if (input.shareId) {
         // Require reportId when shareId provided
-        if (!input.reportId) {
+        if (!input.id) {
           throw new Error('reportId required with shareId');
         }
 
         // Validate share access
         const shareValidation = await validateShareAccess(
           input.shareId,
-          input.reportId,
+          input.id,
           {
             cookies: ctx.cookies,
             session: ctx.session?.userId
@@ -715,13 +716,14 @@ export const chartRouter = createTRPCRouter({
         }
 
         // Fetch report and extract events
-        const report = await getReportById(input.reportId);
+        const report = await getReportById(input.id);
         if (!report) {
           throw TRPCAccessError('Report not found');
         }
 
         projectId = report.projectId;
-        const retentionOptions = report.options?.type === 'retention' ? report.options : undefined;
+        const retentionOptions =
+          report.options?.type === 'retention' ? report.options : undefined;
         criteria = retentionOptions?.criteria ?? criteria;
         dateRange = input.range ?? report.range;
         startDate = input.startDate ?? report.startDate;

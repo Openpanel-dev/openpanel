@@ -4,6 +4,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { ReportChart } from '@/components/report-chart';
 import { useTRPC } from '@/integrations/trpc/react';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -63,6 +64,7 @@ function RouteComponent() {
   const { shareId } = Route.useParams();
   const { header } = useSearch({ from: '/share/report/$shareId' });
   const trpc = useTRPC();
+  const { range, startDate, endDate, interval } = useOverviewOptions();
   const shareQuery = useSuspenseQuery(
     trpc.share.report.queryOptions({
       shareId,
@@ -80,8 +82,6 @@ function RouteComponent() {
   }
 
   const share = shareQuery.data;
-
-  console.log('share', share);
 
   // Handle password protection
   if (share.password && !hasAccess) {
@@ -114,7 +114,16 @@ function RouteComponent() {
             <div className="font-medium text-xl">{share.report.name}</div>
           </div>
           <div className="p-4">
-            <ReportChart report={share.report} shareId={shareId} />
+            <ReportChart
+              report={{
+                ...share.report,
+                range: range ?? share.report.range,
+                startDate: startDate ?? share.report.startDate,
+                endDate: endDate ?? share.report.endDate,
+                interval: interval ?? share.report.interval,
+              }}
+              shareId={shareId}
+            />
           </div>
         </div>
       </div>

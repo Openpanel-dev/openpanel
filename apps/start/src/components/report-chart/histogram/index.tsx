@@ -1,7 +1,6 @@
 import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
-import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
@@ -12,18 +11,12 @@ import { Chart } from './chart';
 export function ReportHistogramChart() {
   const { isLazyLoading, report, shareId } = useReportChartContext();
   const trpc = useTRPC();
-  const { range, startDate, endDate, interval } = useOverviewOptions();
 
   const res = useQuery(
     trpc.chart.chart.queryOptions(
       {
         ...report,
         shareId,
-        reportId: 'id' in report ? report.id : undefined,
-        range: range ?? report.range,
-        startDate: startDate ?? report.startDate,
-        endDate: endDate ?? report.endDate,
-        interval: interval ?? report.interval,
       },
       {
         placeholderData: keepPreviousData,

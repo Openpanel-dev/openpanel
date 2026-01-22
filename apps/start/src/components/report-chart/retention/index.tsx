@@ -53,7 +53,7 @@ export function ReportRetentionChart() {
         criteria,
         interval: overviewInterval ?? interval,
         shareId,
-        reportId: id,
+        id,
       },
       {
         placeholderData: keepPreviousData,
