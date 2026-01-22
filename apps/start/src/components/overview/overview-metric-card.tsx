@@ -207,7 +207,7 @@ export function OverviewMetricCardNumber({
   isLoading?: boolean;
 }) {
   return (
-    <div className={cn('min-w-0 col gap-2 items-start', className)}>
+    <div className={cn('min-w-0 col gap-2', className)}>
       <div className="flex min-w-0 items-center gap-2 text-left">
         <span className="truncate text-sm font-medium text-muted-foreground leading-[1.1]">
           {label}
@@ -219,7 +219,7 @@ export function OverviewMetricCardNumber({
           <Skeleton className="h-6 w-12" />
         </div>
       ) : (
-        <div className="truncate font-mono text-3xl leading-[1.1] font-bold">
+        <div className="truncate font-mono text-3xl leading-[1.1] font-bold w-full text-left">
           {value}
         </div>
       )}
