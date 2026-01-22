@@ -8,16 +8,9 @@ import {
   transformMinimalEvent,
 } from '@openpanel/db';
 import { setSuperJson } from '@openpanel/json';
-import {
-  psubscribeToPublishedEvent,
-  subscribeToPublishedEvent,
-} from '@openpanel/redis';
+import { subscribeToPublishedEvent } from '@openpanel/redis';
 import { getProjectAccess } from '@openpanel/trpc';
 import { getOrganizationAccess } from '@openpanel/trpc/src/access';
-
-export function getLiveEventInfo(key: string) {
-  return key.split(':').slice(2) as [string, string];
-}
 
 export function wsVisitors(
   socket: WebSocket,
@@ -36,21 +29,8 @@ export function wsVisitors(
     }
   });
 
-  const punsubscribe = psubscribeToPublishedEvent(
-    '__keyevent@0__:expired',
-    (key) => {
-      const [projectId] = getLiveEventInfo(key);
-      if (projectId && projectId === params.projectId) {
-        eventBuffer.getActiveVisitorCount(params.projectId).then((count) => {
-          socket.send(String(count));
-        });
-      }
-    },
-  );
-
   socket.on('close', () => {
     unsubscribe();
-    punsubscribe();
   });
 }
 
