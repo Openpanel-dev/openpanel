@@ -390,7 +390,7 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
       ? `${dashboardUrl}/widget/badge?shareId=${widget.id}`
       : null;
   const badgeEmbedCode = badgeUrl
-    ? `<a href="https://openpanel.dev" target="_blank" rel="noopener noreferrer" style="display: inline-block; overflow: hidden; border-radius: 8px;">
+    ? `<a href="https://openpanel.dev" style="display: inline-block; overflow: hidden; border-radius: 8px;">
   <iframe src="${badgeUrl}" height="48" width="250" style="border: none; overflow: hidden; pointer-events: none;" title="OpenPanel Analytics Badge"></iframe>
 </a>`
     : null;
