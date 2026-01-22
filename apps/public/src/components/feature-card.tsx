@@ -71,6 +71,7 @@ export function FeatureCard({
         <h3 className="text-lg font-semibold">{title}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
+      {children}
     </FeatureCardContainer>
   );
 }

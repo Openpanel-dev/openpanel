@@ -189,28 +189,48 @@ export default function OpenSourcePage() {
                   description="Showcase your visitor count with our real-time analytics widget. It's completely optional but helps spread the word."
                   icon={GlobeIcon}
                 >
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Display real-time visitor counts, page views, or other
-                    metrics on your project's website.
-                  </p>
+                  <a
+                    href="https://openpanel.dev"
+                    style={{
+                      display: 'inline-block',
+                      overflow: 'hidden',
+                      borderRadius: '8px',
+                      width: '250px',
+                      height: '48px',
+                    }}
+                  >
+                    <iframe
+                      src="https://dashboard.openpanel.dev/widget/badge?shareId=ancygl&color=%231F1F1F"
+                      height="48"
+                      width="100%"
+                      style={{
+                        border: 'none',
+                        overflow: 'hidden',
+                        pointerEvents: 'none',
+                      }}
+                      title="OpenPanel Analytics Badge"
+                    />
+                  </a>
                 </FeatureCard>
                 <p className="text-muted-foreground">
                   That's it. No complicated requirements, no hidden fees, no
                   catch. We just want to help open source projects succeed.
                 </p>
               </div>
-              <div className="text-center text-xs text-muted-foreground">
-                <iframe
-                  title="Realtime Widget"
-                  src="https://dashboard.openpanel.dev/widget/realtime?shareId=26wVGY"
-                  width="300"
-                  height="400"
-                  className="rounded-xl border mb-2"
-                />
-                Analytics from{' '}
-                <a className="underline" href="https://openpanel.dev">
-                  OpenPanel.dev
-                </a>
+              <div>
+                <div className="text-center text-xs text-muted-foreground">
+                  <iframe
+                    title="Realtime Widget"
+                    src="https://dashboard.openpanel.dev/widget/realtime?shareId=26wVGY"
+                    width="300"
+                    height="400"
+                    className="rounded-xl border mb-2"
+                  />
+                  Analytics from{' '}
+                  <a className="underline" href="https://openpanel.dev">
+                    OpenPanel.dev
+                  </a>
+                </div>
               </div>
             </div>
           </Section>

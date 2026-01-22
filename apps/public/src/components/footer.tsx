@@ -79,10 +79,28 @@ export async function Footer() {
         <div className="col text-muted-foreground border-t pt-8 mt-16 gap-8 relative bg-background/70 pb-32">
           <div className="container col md:row justify-between gap-8">
             <div>
-              <Link href="/" className="row items-center font-medium -ml-3">
-                <Logo className="h-6" />
-                {baseOptions().nav?.title}
-              </Link>
+              <a
+                href="https://openpanel.dev"
+                style={{
+                  display: 'inline-block',
+                  overflow: 'hidden',
+                  borderRadius: '8px',
+                  width: '100%',
+                  height: '48px',
+                }}
+              >
+                <iframe
+                  src="https://dashboard.openpanel.dev/widget/badge?shareId=ancygl&color=%230B0B0B"
+                  height="48"
+                  width="100%"
+                  style={{
+                    border: 'none',
+                    overflow: 'hidden',
+                    pointerEvents: 'none',
+                  }}
+                  title="OpenPanel Analytics Badge"
+                />
+              </a>
             </div>
             <Social />
           </div>
