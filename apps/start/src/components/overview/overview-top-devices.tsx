@@ -351,7 +351,7 @@ export default function OverviewTopDevices({
   );
 
   const filteredData = useMemo(() => {
-    const data = (query.data ?? []).slice(0, 15);
+    const data = query.data ?? [];
     if (!searchQuery.trim()) {
       return data;
     }

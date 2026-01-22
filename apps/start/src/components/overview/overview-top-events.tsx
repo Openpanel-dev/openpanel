@@ -118,12 +118,12 @@ export default function OverviewTopEvents({
 
   const filteredData = useMemo(() => {
     if (!searchQuery.trim()) {
-      return tableData.slice(0, 15);
+      return tableData;
     }
     const queryLower = searchQuery.toLowerCase();
-    return tableData
-      .filter((item) => item.name?.toLowerCase().includes(queryLower))
-      .slice(0, 15);
+    return tableData.filter((item) =>
+      item.name?.toLowerCase().includes(queryLower),
+    );
   }, [tableData, searchQuery]);
 
   const tabs = useMemo(

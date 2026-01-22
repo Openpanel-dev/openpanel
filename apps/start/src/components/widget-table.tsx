@@ -29,6 +29,14 @@ export interface Props<T> {
      * If not provided, column is always visible.
      */
     responsive?: ColumnResponsive;
+    /**
+     * Function to extract sortable value. If provided, header becomes clickable.
+     */
+    getSortValue?: (item: T) => number | string | null;
+    /**
+     * Optional key for React keys. If not provided, will try to extract from name or use index.
+     */
+    key?: string;
   }[];
   keyExtractor: (item: T) => string;
   data: T[];
@@ -177,9 +185,16 @@ export function WidgetTable<T>({
               dataAttrs['data-min-width'] = String(column.responsive.minWidth);
             }
 
+            // Use column.key if available, otherwise try to extract string from name, fallback to index
+            const columnKey =
+              column.key ??
+              (typeof column.name === 'string'
+                ? column.name
+                : `col-${colIndex}`);
+
             return (
               <div
-                key={column.name?.toString()}
+                key={columnKey}
                 className={cn(
                   'p-2 font-medium font-sans text-sm whitespace-nowrap cell',
                   columns.length > 1 && column !== columns[0]
@@ -231,9 +246,16 @@ export function WidgetTable<T>({
                     );
                   }
 
+                  // Use column.key if available, otherwise try to extract string from name, fallback to index
+                  const columnKey =
+                    column.key ??
+                    (typeof column.name === 'string'
+                      ? column.name
+                      : `col-${colIndex}`);
+
                   return (
                     <div
-                      key={column.name?.toString()}
+                      key={columnKey}
                       className={cn(
                         'px-2 relative cell',
                         columns.length > 1 && column !== columns[0]

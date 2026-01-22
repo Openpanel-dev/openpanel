@@ -2,7 +2,8 @@ import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { ExternalLinkIcon } from 'lucide-react';
+import { ChevronDown, ChevronUp, ExternalLinkIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Skeleton } from '../skeleton';
 import { Tooltiper } from '../ui/tooltip';
@@ -45,6 +46,42 @@ function RevenuePieChart({ percentage }: { percentage: number }) {
   );
 }
 
+function SortableHeader({
+  name,
+  isSorted,
+  sortDirection,
+  onClick,
+  isRightAligned,
+}: {
+  name: string;
+  isSorted: boolean;
+  sortDirection: 'asc' | 'desc' | null;
+  onClick: () => void;
+  isRightAligned?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'row items-center gap-1 hover:opacity-80 transition-opacity',
+        isRightAligned && 'justify-end ml-auto',
+      )}
+    >
+      <span>{name}</span>
+      {isSorted ? (
+        sortDirection === 'desc' ? (
+          <ChevronDown className="size-3" />
+        ) : (
+          <ChevronUp className="size-3" />
+        )
+      ) : (
+        <ChevronDown className="size-3 opacity-30" />
+      )}
+    </button>
+  );
+}
+
 type Props<T> = WidgetTableProps<T> & {
   getColumnPercentage: (item: T) => number;
 };
@@ -56,10 +93,113 @@ export const OverviewWidgetTable = <T,>({
   getColumnPercentage,
   className,
 }: Props<T>) => {
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(
+    null,
+  );
+
+  // Handle column header click for sorting
+  const handleSort = (columnName: string) => {
+    if (sortColumn === columnName) {
+      // Cycle through: desc -> asc -> null
+      if (sortDirection === 'desc') {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortColumn(null);
+        setSortDirection(null);
+      }
+    } else {
+      // First click on a column = descending (highest to lowest)
+      setSortColumn(columnName);
+      setSortDirection('desc');
+    }
+  };
+
+  // Sort data based on current sort state
+  // Sort all available items, then limit display to top 15
+  const sortedData = useMemo(() => {
+    const allData = data ?? [];
+
+    if (!sortColumn || !sortDirection) {
+      // When not sorting, return top 15 (maintain original behavior)
+      return allData;
+    }
+
+    const column = columns.find((col) => {
+      if (typeof col.name === 'string') {
+        return col.name === sortColumn;
+      }
+      return false;
+    });
+
+    if (!column?.getSortValue) {
+      return allData;
+    }
+
+    // Sort all available items
+    const sorted = [...allData].sort((a, b) => {
+      const aValue = column.getSortValue!(a);
+      const bValue = column.getSortValue!(b);
+
+      // Handle null values
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+
+      // Compare values
+      let comparison = 0;
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      } else {
+        comparison = String(aValue).localeCompare(String(bValue));
+      }
+
+      return sortDirection === 'desc' ? -comparison : comparison;
+    });
+
+    return sorted;
+  }, [data, sortColumn, sortDirection, columns]).slice(0, 15);
+
+  // Create columns with sortable headers
+  const columnsWithSortableHeaders = useMemo(() => {
+    return columns.map((column, index) => {
+      const columnName =
+        typeof column.name === 'string' ? column.name : String(column.name);
+      const isSortable = !!column.getSortValue;
+      const isSorted = sortColumn === columnName;
+      const currentSortDirection = isSorted ? sortDirection : null;
+      const isRightAligned = index !== 0;
+
+      return {
+        ...column,
+        // Add a key property for React keys (using the original column name string)
+        key: columnName,
+        name: isSortable ? (
+          <SortableHeader
+            name={columnName}
+            isSorted={isSorted}
+            sortDirection={currentSortDirection}
+            onClick={() => handleSort(columnName)}
+            isRightAligned={isRightAligned}
+          />
+        ) : (
+          column.name
+        ),
+        className: cn(
+          index === 0
+            ? 'text-left w-full font-medium min-w-0'
+            : 'text-right font-mono',
+          // Remove old responsive logic - now handled by responsive prop
+          column.className,
+        ),
+      };
+    });
+  }, [columns, sortColumn, sortDirection]);
+
   return (
     <div className={cn(className)}>
       <WidgetTable
-        data={data ?? []}
+        data={sortedData}
         keyExtractor={keyExtractor}
         className={'text-sm min-h-[358px] @container'}
         columnClassName="[&_.cell:first-child]:pl-4 [&_.cell:last-child]:pr-4"
@@ -75,18 +215,7 @@ export const OverviewWidgetTable = <T,>({
             </div>
           );
         }}
-        columns={columns.map((column, index) => {
-          return {
-            ...column,
-            className: cn(
-              index === 0
-                ? 'text-left w-full font-medium min-w-0'
-                : 'text-right font-mono',
-              // Remove old responsive logic - now handled by responsive prop
-              column.className,
-            ),
-          };
-        })}
+        columns={columnsWithSortableHeaders}
       />
     </div>
   );
@@ -208,6 +337,8 @@ export function OverviewWidgetTablePages({
                 name: 'Revenue',
                 width: '100px',
                 responsive: { priority: 3 }, // Always show if possible
+                getSortValue: (item: (typeof data)[number]) =>
+                  item.revenue ?? 0,
                 render(item: (typeof data)[number]) {
                   const revenue = item.revenue ?? 0;
                   const revenuePercentage =
@@ -231,6 +362,7 @@ export function OverviewWidgetTablePages({
           name: 'Views',
           width: '84px',
           responsive: { priority: 2 }, // Always show if possible
+          getSortValue: (item: (typeof data)[number]) => item.pageviews,
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -245,6 +377,7 @@ export function OverviewWidgetTablePages({
           name: 'Sess.',
           width: '84px',
           responsive: { priority: 2 }, // Always show if possible
+          getSortValue: (item: (typeof data)[number]) => item.sessions,
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -339,6 +472,8 @@ export function OverviewWidgetTableEntries({
                 name: 'Revenue',
                 width: '100px',
                 responsive: { priority: 3 }, // Always show if possible
+                getSortValue: (item: (typeof data)[number]) =>
+                  item.revenue ?? 0,
                 render(item: (typeof data)[number]) {
                   const revenue = item.revenue ?? 0;
                   const revenuePercentage =
@@ -362,6 +497,7 @@ export function OverviewWidgetTableEntries({
           name: lastColumnName,
           width: '84px',
           responsive: { priority: 2 }, // Always show if possible
+          getSortValue: (item: (typeof data)[number]) => item.sessions,
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -494,6 +630,9 @@ export function OverviewWidgetTableGeneric({
                 name: 'Revenue',
                 width: '100px',
                 responsive: { priority: 3 },
+                getSortValue: (
+                  item: RouterOutputs['overview']['topGeneric'][number],
+                ) => item.revenue ?? 0,
                 render(item: RouterOutputs['overview']['topGeneric'][number]) {
                   const revenue = item.revenue ?? 0;
                   const revenuePercentage =
@@ -521,6 +660,9 @@ export function OverviewWidgetTableGeneric({
                 name: 'Views',
                 width: '84px',
                 responsive: { priority: 2 },
+                getSortValue: (
+                  item: RouterOutputs['overview']['topGeneric'][number],
+                ) => item.pageviews,
                 render(item: RouterOutputs['overview']['topGeneric'][number]) {
                   return (
                     <div className="row gap-2 justify-end">
@@ -537,6 +679,9 @@ export function OverviewWidgetTableGeneric({
           name: 'Sess.',
           width: '84px',
           responsive: { priority: 2 },
+          getSortValue: (
+            item: RouterOutputs['overview']['topGeneric'][number],
+          ) => item.sessions,
           render(item) {
             return (
               <div className="row gap-2 justify-end">
@@ -599,6 +744,7 @@ export function OverviewWidgetTableEvents({
           name: 'Count',
           width: '84px',
           responsive: { priority: 2 },
+          getSortValue: (item: EventTableItem) => item.count,
           render(item) {
             return (
               <div className="row gap-2 justify-end">

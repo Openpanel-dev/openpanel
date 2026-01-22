@@ -4,7 +4,8 @@ import { cn } from '@/utils/cn';
 import { DialogTitle } from '@radix-ui/react-dialog';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { SearchIcon } from 'lucide-react';
-import React, { useMemo, useRef, useState } from 'react';
+import type React from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Input } from '../ui/input';
 
 const ROW_HEIGHT = 36;
@@ -106,7 +107,9 @@ export function OverviewListModal<T extends OverviewListItem>({
   // Calculate totals and check for revenue
   const { maxSessions, totalRevenue, hasRevenue, hasPageviews } =
     useMemo(() => {
-      const maxSessions = Math.max(...filteredData.map((item) => item.sessions));
+      const maxSessions = Math.max(
+        ...filteredData.map((item) => item.sessions),
+      );
       const totalRevenue = filteredData.reduce(
         (sum, item) => sum + (item.revenue ?? 0),
         0,
@@ -152,7 +155,8 @@ export function OverviewListModal<T extends OverviewListItem>({
         <div
           className="grid px-4 py-2 text-sm font-medium text-muted-foreground bg-def-100"
           style={{
-            gridTemplateColumns: `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
+            gridTemplateColumns:
+              `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
           }}
         >
           <div className="text-left truncate">{columnName}</div>
@@ -204,11 +208,14 @@ export function OverviewListModal<T extends OverviewListItem>({
                 <div
                   className="relative grid h-full items-center px-4 border-b border-border"
                   style={{
-                    gridTemplateColumns: `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
+                    gridTemplateColumns:
+                      `1fr ${hasRevenue ? '100px' : ''} ${hasPageviews ? '80px' : ''} ${showSessions ? '80px' : ''}`.trim(),
                   }}
                 >
                   {/* Main content cell */}
-                  <div className="min-w-0 truncate pr-2">{renderItem(item)}</div>
+                  <div className="min-w-0 truncate pr-2">
+                    {renderItem(item)}
+                  </div>
 
                   {/* Revenue cell */}
                   {hasRevenue && (
@@ -261,4 +268,3 @@ export function OverviewListModal<T extends OverviewListItem>({
     </ModalContent>
   );
 }
-

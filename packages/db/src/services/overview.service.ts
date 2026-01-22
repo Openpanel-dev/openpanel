@@ -109,7 +109,9 @@ export const zGetTopGenericSeriesInput = zGetTopGenericInput.extend({
   interval: zTimeInterval,
 });
 
-export type IGetTopGenericSeriesInput = z.infer<typeof zGetTopGenericSeriesInput> & {
+export type IGetTopGenericSeriesInput = z.infer<
+  typeof zGetTopGenericSeriesInput
+> & {
   timezone: string;
 };
 
@@ -734,7 +736,7 @@ export class OverviewService {
     }>;
   }> {
     const prefixColumn = COLUMN_PREFIX_MAP[column] ?? null;
-    const TOP_LIMIT = 15;
+    const TOP_LIMIT = 500;
     const fillConfig = this.getFillConfig(interval, startDate, endDate);
 
     // Step 1: Get top 15 items
