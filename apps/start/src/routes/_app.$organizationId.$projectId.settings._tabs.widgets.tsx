@@ -107,6 +107,11 @@ function Component() {
         isToggling={toggleMutation.isPending}
         onToggle={(enabled) => handleToggle('counter', enabled)}
       />
+
+      <BadgeWidgetSection
+        widget={counterWidget as any}
+        dashboardUrl={dashboardUrl}
+      />
     </div>
   );
 }
@@ -366,6 +371,99 @@ function CounterWidgetSection({
           </div>
         </WidgetBody>
       )}
+    </Widget>
+  );
+}
+
+interface BadgeWidgetSectionProps {
+  widget: {
+    id: string;
+    public: boolean;
+  } | null;
+  dashboardUrl: string;
+}
+
+function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
+  const isEnabled = widget?.public ?? false;
+  const badgeUrl =
+    isEnabled && widget?.id
+      ? `${dashboardUrl}/widget/badge?shareId=${widget.id}`
+      : null;
+  const badgeEmbedCode = badgeUrl
+    ? `<a href="https://openpanel.dev" target="_blank" rel="noopener noreferrer" style="display: inline-block; overflow: hidden; border-radius: 8px;">
+  <iframe src="${badgeUrl}" height="48" width="250" style="border: none; overflow: hidden; pointer-events: none;" title="OpenPanel Analytics Badge"></iframe>
+</a>`
+    : null;
+
+  if (!isEnabled || !badgeUrl) {
+    return null;
+  }
+
+  return (
+    <Widget className="max-w-screen-md w-full">
+      <WidgetHead className="row items-center justify-between gap-6">
+        <div className="space-y-2">
+          <span className="title">Analytics Badge</span>
+          <p className="text-muted-foreground">
+            A Product Hunt-style badge showing your 30-day unique visitor count.
+            Perfect for showcasing your analytics powered by OpenPanel.
+          </p>
+        </div>
+      </WidgetHead>
+      <WidgetBody className="space-y-6">
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Widget URL</h3>
+          <CopyInput label="" value={badgeUrl} className="w-full" />
+          <p className="text-xs text-muted-foreground">
+            Direct link to the analytics badge widget.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Embed Code</h3>
+          <Syntax code={badgeEmbedCode!} language="bash" />
+          <p className="text-xs text-muted-foreground">
+            Copy this code and paste it into your website HTML where you want
+            the badge to appear.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium">Preview</h3>
+          <div className="border rounded-lg p-4 bg-muted/30">
+            <a
+              href="https://openpanel.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                overflow: 'hidden',
+                borderRadius: '8px',
+                display: 'inline-block',
+              }}
+            >
+              <iframe
+                src={badgeUrl}
+                height="48"
+                width="250"
+                className="border-0 pointer-events-none"
+                title="Analytics Badge Preview"
+              />
+            </a>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              icon={ExternalLinkIcon}
+              onClick={() =>
+                window.open(badgeUrl, '_blank', 'noopener,noreferrer')
+              }
+            >
+              Open in new tab
+            </Button>
+          </div>
+        </div>
+      </WidgetBody>
     </Widget>
   );
 }

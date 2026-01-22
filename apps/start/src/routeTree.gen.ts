@@ -19,6 +19,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WidgetTestRouteImport } from './routes/widget/test'
 import { Route as WidgetRealtimeRouteImport } from './routes/widget/realtime'
 import { Route as WidgetCounterRouteImport } from './routes/widget/counter'
+import { Route as WidgetBadgeRouteImport } from './routes/widget/badge'
 import { Route as ApiHealthcheckRouteImport } from './routes/api/healthcheck'
 import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as PublicOnboardingRouteImport } from './routes/_public.onboarding'
@@ -136,6 +137,11 @@ const WidgetRealtimeRoute = WidgetRealtimeRouteImport.update({
 const WidgetCounterRoute = WidgetCounterRouteImport.update({
   id: '/widget/counter',
   path: '/widget/counter',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WidgetBadgeRoute = WidgetBadgeRouteImport.update({
+  id: '/widget/badge',
+  path: '/widget/badge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHealthcheckRoute = ApiHealthcheckRouteImport.update({
@@ -531,6 +537,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
+  '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
   '/widget/test': typeof WidgetTestRoute
@@ -596,6 +603,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
+  '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
   '/widget/test': typeof WidgetTestRoute
@@ -659,6 +667,7 @@ export interface FileRoutesById {
   '/_public/onboarding': typeof PublicOnboardingRoute
   '/api/config': typeof ApiConfigRoute
   '/api/healthcheck': typeof ApiHealthcheckRoute
+  '/widget/badge': typeof WidgetBadgeRoute
   '/widget/counter': typeof WidgetCounterRoute
   '/widget/realtime': typeof WidgetRealtimeRoute
   '/widget/test': typeof WidgetTestRoute
@@ -734,6 +743,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/config'
     | '/api/healthcheck'
+    | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
     | '/widget/test'
@@ -799,6 +809,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/api/config'
     | '/api/healthcheck'
+    | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
     | '/widget/test'
@@ -861,6 +872,7 @@ export interface FileRouteTypes {
     | '/_public/onboarding'
     | '/api/config'
     | '/api/healthcheck'
+    | '/widget/badge'
     | '/widget/counter'
     | '/widget/realtime'
     | '/widget/test'
@@ -935,6 +947,7 @@ export interface RootRouteChildren {
   StepsRoute: typeof StepsRouteWithChildren
   ApiConfigRoute: typeof ApiConfigRoute
   ApiHealthcheckRoute: typeof ApiHealthcheckRoute
+  WidgetBadgeRoute: typeof WidgetBadgeRoute
   WidgetCounterRoute: typeof WidgetCounterRoute
   WidgetRealtimeRoute: typeof WidgetRealtimeRoute
   WidgetTestRoute: typeof WidgetTestRoute
@@ -999,6 +1012,13 @@ declare module '@tanstack/react-router' {
       path: '/widget/counter'
       fullPath: '/widget/counter'
       preLoaderRoute: typeof WidgetCounterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/widget/badge': {
+      id: '/widget/badge'
+      path: '/widget/badge'
+      fullPath: '/widget/badge'
+      preLoaderRoute: typeof WidgetBadgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/healthcheck': {
@@ -1874,6 +1894,7 @@ const rootRouteChildren: RootRouteChildren = {
   StepsRoute: StepsRouteWithChildren,
   ApiConfigRoute: ApiConfigRoute,
   ApiHealthcheckRoute: ApiHealthcheckRoute,
+  WidgetBadgeRoute: WidgetBadgeRoute,
   WidgetCounterRoute: WidgetCounterRoute,
   WidgetRealtimeRoute: WidgetRealtimeRoute,
   WidgetTestRoute: WidgetTestRoute,

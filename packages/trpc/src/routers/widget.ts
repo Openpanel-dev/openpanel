@@ -9,6 +9,7 @@ import {
   eventBuffer,
   getSettingsForProject,
 } from '@openpanel/db';
+import { getCache } from '@openpanel/redis';
 import {
   zCounterWidgetOptions,
   zRealtimeWidgetOptions,
@@ -141,6 +142,49 @@ export const widgetRouter = createTRPCRouter({
       return {
         projectId: widget.projectId,
         counter: await eventBuffer.getActiveVisitorCount(widget.projectId),
+      };
+    }),
+
+  badge: publicProcedure
+    .input(z.object({ shareId: z.string() }))
+    .query(async ({ input }) => {
+      const widget = await db.shareWidget.findUnique({
+        where: {
+          id: input.shareId,
+        },
+      });
+
+      if (!widget || !widget.public) {
+        throw TRPCNotFoundError('Widget not found');
+      }
+
+      if (widget.options.type !== 'counter') {
+        throw TRPCNotFoundError('Invalid widget type');
+      }
+
+      const { projectId } = widget;
+      const { timezone } = await getSettingsForProject(projectId);
+
+      // Cache for 5 minutes since this queries 30 days of data
+      const cacheKey = `widget:badge:${projectId}`;
+      const visitors = await getCache(
+        cacheKey,
+        5 * 60, // 5 minutes
+        async () => {
+          const uniqueVisitorsQuery = clix(ch, timezone)
+            .select<{ count: number }>(['uniq(profile_id) as count'])
+            .from(TABLE_NAMES.events)
+            .where('project_id', '=', projectId)
+            .where('created_at', '>=', clix.exp('now() - INTERVAL 30 DAY'));
+
+          const result = await uniqueVisitorsQuery.execute();
+          return result[0]?.count || 0;
+        },
+      );
+
+      return {
+        projectId,
+        visitors,
       };
     }),
 
