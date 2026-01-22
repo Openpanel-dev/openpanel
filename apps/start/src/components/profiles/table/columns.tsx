@@ -20,7 +20,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
         const profile = row.original;
         return (
           <ProjectLink
-            href={`/profiles/${profile.id}`}
+            href={`/profiles/${encodeURIComponent(profile.id)}`}
             className="flex items-center gap-2 font-medium"
             title={getProfileName(profile, false)}
           >

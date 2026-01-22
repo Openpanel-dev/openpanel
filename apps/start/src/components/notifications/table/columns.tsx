@@ -149,7 +149,7 @@ export function useColumns() {
         }
         return (
           <ProjectLink
-            href={`/profiles/${event.profileId}`}
+            href={`/profiles/${encodeURIComponent(event.profileId)}`}
             className="inline-flex min-w-full flex-none items-center gap-2"
           >
             {event.profileId}

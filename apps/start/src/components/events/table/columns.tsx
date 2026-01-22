@@ -106,7 +106,7 @@ export function useColumns() {
         if (profile) {
           return (
             <ProjectLink
-              href={`/profiles/${profile.id}`}
+              href={`/profiles/${encodeURIComponent(profile.id)}`}
               className="whitespace-nowrap font-medium hover:underline"
             >
               {getProfileName(profile)}
@@ -117,7 +117,7 @@ export function useColumns() {
         if (profileId && profileId !== deviceId) {
           return (
             <ProjectLink
-              href={`/profiles/${profileId}`}
+              href={`/profiles/${encodeURIComponent(profileId)}`}
               className="whitespace-nowrap font-medium hover:underline"
             >
               Unknown
@@ -128,7 +128,7 @@ export function useColumns() {
         if (deviceId) {
           return (
             <ProjectLink
-              href={`/profiles/${deviceId}`}
+              href={`/profiles/${encodeURIComponent(deviceId)}`}
               className="whitespace-nowrap font-medium hover:underline"
             >
               Anonymous

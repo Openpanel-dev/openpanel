@@ -232,7 +232,7 @@ function EventDetailsContent({ id, createdAt, projectId }: Props) {
         {profile && (
           <ProjectLink
             onClick={() => popModal()}
-            href={`/profiles/${profile.id}`}
+            href={`/profiles/${encodeURIComponent(profile.id)}`}
             className="card p-4 py-2 col gap-2 hover:bg-def-100"
           >
             <div className="row items-center gap-2 justify-between">

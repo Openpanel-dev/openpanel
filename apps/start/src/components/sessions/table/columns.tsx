@@ -62,7 +62,7 @@ export function useColumns() {
         if (session.profile) {
           return (
             <ProjectLink
-              href={`/profiles/${session.profile.id}`}
+              href={`/profiles/${encodeURIComponent(session.profile.id)}`}
               className="font-medium"
             >
               {getProfileName(session.profile)}
@@ -71,7 +71,7 @@ export function useColumns() {
         }
         return (
           <ProjectLink
-            href={`/profiles/${session.profileId}`}
+            href={`/profiles/${encodeURIComponent(session.profileId)}`}
             className="font-mono font-medium"
           >
             {session.profileId}
