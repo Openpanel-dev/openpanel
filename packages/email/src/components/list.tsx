@@ -1,4 +1,6 @@
 import { Text } from '@react-email/components';
+// biome-ignore lint/style/useImportType: <explanation>
+import React from 'react';
 
 export function List({ items }: { items: React.ReactNode[] }) {
   return (
