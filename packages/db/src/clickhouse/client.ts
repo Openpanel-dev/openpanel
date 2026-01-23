@@ -246,24 +246,33 @@ export async function chQueryWithMeta<T extends Record<string, any>>(
 export async function chInsertCSV(tableName: string, rows: string[]) {
   try {
     const now = performance.now();
-    // Create a readable stream in binary mode for CSV (similar to EventBuffer)
-    const csvStream = Readable.from(rows.join('\n'), {
-      objectMode: false,
-    });
+    const chunkSize = Number.parseInt(
+      process.env.IMPORT_CSV_CHUNK_SIZE || '10000',
+      10,
+    );
 
-    await ch.insert({
-      table: tableName,
-      values: csvStream,
-      format: 'CSV',
-      clickhouse_settings: {
-        format_csv_allow_double_quotes: 1,
-        format_csv_allow_single_quotes: 0,
-      },
-    });
+    // Insert in chunks to reduce memory pressure
+    for (let i = 0; i < rows.length; i += chunkSize) {
+      const chunk = rows.slice(i, i + chunkSize);
+      const csvStream = Readable.from(chunk.join('\n'), {
+        objectMode: false,
+      });
+
+      await ch.insert({
+        table: tableName,
+        values: csvStream,
+        format: 'CSV',
+        clickhouse_settings: {
+          format_csv_allow_double_quotes: 1,
+          format_csv_allow_single_quotes: 0,
+        },
+      });
+    }
 
     logger.info('CSV Insert successful', {
       elapsed: performance.now() - now,
       rows: rows.length,
+      chunks: Math.ceil(rows.length / chunkSize),
     });
   } catch (error) {
     logger.error('CSV Insert failed:', error);
