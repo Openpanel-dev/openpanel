@@ -17,6 +17,7 @@
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
     "@openpanel/integrations": "workspace:^",
+    "@openpanel/js-runtime": "workspace:*",
     "@openpanel/json": "workspace:*",
     "@openpanel/logger": "workspace:*",
     "@openpanel/importer": "workspace:*",

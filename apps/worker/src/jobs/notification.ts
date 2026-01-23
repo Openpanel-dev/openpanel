@@ -1,11 +1,22 @@
 import type { Job } from 'bullmq';
 
-import { db } from '@openpanel/db';
+import { Prisma, db } from '@openpanel/db';
 import { sendDiscordNotification } from '@openpanel/integrations/src/discord';
 import { sendSlackNotification } from '@openpanel/integrations/src/slack';
-import { setSuperJson } from '@openpanel/json';
+import { execute as executeJavaScriptTemplate } from '@openpanel/js-runtime';
 import type { NotificationQueuePayload } from '@openpanel/queue';
-import { getRedisPub, publishEvent } from '@openpanel/redis';
+import { publishEvent } from '@openpanel/redis';
+
+function isValidJson<T>(
+  value: T | Prisma.NullableJsonNullValueInput | null | undefined,
+): value is T {
+  return (
+    value !== null &&
+    value !== undefined &&
+    value !== Prisma.JsonNull &&
+    value !== Prisma.DbNull
+  );
+}
 
 export async function notificationJob(job: Job<NotificationQueuePayload>) {
   switch (job.data.type) {
@@ -14,12 +25,10 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
 
       if (notification.sendToApp) {
         publishEvent('notification', 'created', notification);
-        // empty for now
         return;
       }
 
       if (notification.sendToEmail) {
-        // empty for now
         return;
       }
 
@@ -33,18 +42,44 @@ export async function notificationJob(job: Job<NotificationQueuePayload>) {
         },
       });
 
+      const payload = notification.payload;
+
+      if (!isValidJson(payload)) {
+        return new Error('Invalid payload');
+      }
+
       switch (integration.config.type) {
         case 'webhook': {
+          let body: unknown;
+
+          if (integration.config.mode === 'javascript') {
+            // We only transform event payloads for now (not funnel)
+            if (
+              integration.config.javascriptTemplate &&
+              payload.type === 'event'
+            ) {
+              const result = executeJavaScriptTemplate(
+                integration.config.javascriptTemplate,
+                payload.event,
+              );
+              body = result;
+            } else {
+              body = payload;
+            }
+          } else {
+            body = {
+              title: notification.title,
+              message: notification.message,
+            };
+          }
+
           return fetch(integration.config.url, {
             method: 'POST',
             headers: {
               ...(integration.config.headers ?? {}),
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              title: notification.title,
-              message: notification.message,
-            }),
+            body: JSON.stringify(body),
           });
         }
         case 'discord': {

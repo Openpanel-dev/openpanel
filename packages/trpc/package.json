@@ -14,6 +14,7 @@
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
     "@openpanel/integrations": "workspace:^",
+    "@openpanel/js-runtime": "workspace:*",
     "@openpanel/payments": "workspace:^",
     "@openpanel/redis": "workspace:*",
     "@openpanel/validation": "workspace:*",

@@ -369,6 +369,8 @@ export const zWebhookConfig = z.object({
   url: z.string().url(),
   headers: z.record(z.string()),
   payload: z.record(z.string(), z.unknown()).optional(),
+  mode: z.enum(['message', 'javascript']).default('message'),
+  javascriptTemplate: z.string().optional(),
 });
 export type IWebhookConfig = z.infer<typeof zWebhookConfig>;
 

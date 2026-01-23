@@ -10,8 +10,9 @@ import {
   zCreateWebhookIntegration,
 } from '@openpanel/validation';
 import { getOrganizationAccess } from '../access';
-import { TRPCAccessError } from '../errors';
+import { TRPCAccessError, TRPCBadRequestError } from '../errors';
 import { createTRPCRouter, protectedProcedure } from '../trpc';
+import { validate as validateJavaScriptTemplate } from '@openpanel/js-runtime';
 
 export const integrationRouter = createTRPCRouter({
   get: protectedProcedure
@@ -93,6 +94,22 @@ export const integrationRouter = createTRPCRouter({
   createOrUpdate: protectedProcedure
     .input(z.union([zCreateDiscordIntegration, zCreateWebhookIntegration]))
     .mutation(async ({ input }) => {
+      // Validate JavaScript template if mode is javascript
+      if (
+        input.config.type === 'webhook' &&
+        input.config.mode === 'javascript' &&
+        input.config.javascriptTemplate
+      ) {
+        const validation = validateJavaScriptTemplate(
+          input.config.javascriptTemplate,
+        );
+        if (!validation.valid) {
+          throw TRPCBadRequestError(
+            `Invalid JavaScript template: ${validation.error}`,
+          );
+        }
+      }
+
       if (input.id) {
         return db.integration.update({
           where: {
