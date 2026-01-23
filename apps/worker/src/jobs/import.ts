@@ -139,7 +139,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
     // Phase 1: Fetch & Transform - Process events in batches
     if (shouldRunStep('loading')) {
-      const eventBatch: any = [];
+      let eventBatch: any = [];
       for await (const rawEvent of providerInstance.parseSource(
         resumeLoadingFrom,
       )) {
@@ -158,7 +158,13 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
         // Process batch when it reaches the batch size
         if (eventBatch.length >= BATCH_SIZE) {
-          jobLogger.info('Processing batch', { batchSize: eventBatch.length });
+          const memUsage = process.memoryUsage();
+          jobLogger.info('Processing batch', {
+            batchSize: eventBatch.length,
+            heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+            heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+            externalMB: Math.round(memUsage.external / 1024 / 1024),
+          });
 
           const transformedEvents: IClickhouseEvent[] = eventBatch.map(
             (
@@ -170,7 +176,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           await insertImportBatch(transformedEvents, importId);
 
           processedEvents += eventBatch.length;
-          eventBatch.length = 0;
+          eventBatch = [];
 
           const createdAt = new Date(transformedEvents[0]?.created_at || '')
             .toISOString()
@@ -190,6 +196,14 @@ export async function importJob(job: Job<ImportQueuePayload>) {
 
       // Process remaining events in the last batch
       if (eventBatch.length > 0) {
+        const memUsage = process.memoryUsage();
+        jobLogger.info('Processing final batch', {
+          batchSize: eventBatch.length,
+          heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
+          heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
+          externalMB: Math.round(memUsage.external / 1024 / 1024),
+        });
+
         const transformedEvents = eventBatch.map(
           (
             // @ts-expect-error
@@ -200,7 +214,7 @@ export async function importJob(job: Job<ImportQueuePayload>) {
         await insertImportBatch(transformedEvents, importId);
 
         processedEvents += eventBatch.length;
-        eventBatch.length = 0;
+        eventBatch = [];
 
         const createdAt = new Date(transformedEvents[0]?.created_at || '')
           .toISOString()

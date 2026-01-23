@@ -38,7 +38,7 @@ export async function insertImportBatch(
 
   // Important to have same order as events_imports table
   // CSV format: properly quotes fields that need it
-  const csvRows = events.map((event) => {
+  let csvRows = events.map((event) => {
     // Properties need to be converted to JSON for Map(String, String)
     // All fields must be CSV-escaped when joining with commas
     const fields = [
@@ -79,6 +79,9 @@ export async function insertImportBatch(
   });
 
   await chInsertCSV(TABLE_NAMES.events_imports, csvRows);
+
+  // Explicitly release memory
+  csvRows = null as any;
 
   return {
     importId,
