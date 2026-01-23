@@ -12,18 +12,6 @@ export const SESSION_TIMEOUT = 1000 * 60 * 30;
 const getSessionEndJobId = (projectId: string, deviceId: string) =>
   `sessionEnd:${projectId}:${deviceId}`;
 
-export async function createSessionStart({
-  payload,
-}: {
-  payload: IServiceCreateEventPayload;
-}) {
-  return createEvent({
-    ...payload,
-    name: 'session_start',
-    createdAt: new Date(getTime(payload.createdAt) - 100),
-  });
-}
-
 export async function createSessionEndJob({
   payload,
 }: {

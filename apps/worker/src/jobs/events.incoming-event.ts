@@ -1,10 +1,6 @@
 import { logger as baseLogger } from '@/utils/logger';
-import {
-  createSessionEndJob,
-  createSessionStart,
-  getSessionEnd,
-} from '@/utils/session-handler';
-import { isSameDomain, parsePath } from '@openpanel/common';
+import { createSessionEndJob, getSessionEnd } from '@/utils/session-handler';
+import { getTime, isSameDomain, parsePath } from '@openpanel/common';
 import {
   getReferrerWithQuery,
   parseReferrer,
@@ -193,7 +189,14 @@ export async function incomingEvent(
 
   if (!sessionEnd) {
     logger.info('Creating session start event', { event: payload });
-    await createSessionStart({ payload }).catch((error) => {
+    await createEventAndNotify(
+      {
+        ...payload,
+        name: 'session_start',
+        createdAt: new Date(getTime(payload.createdAt) - 100),
+      },
+      logger,
+    ).catch((error) => {
       logger.error('Error creating session start event', { event: payload });
       throw error;
     });
