@@ -76,6 +76,7 @@ export async function up() {
   // Aggregates events by profile for fast cohort queries
   // NOTE: This is different from cohort_events_mv (which is used for retention analysis)
   // This MV is specifically for cohort computation with frequency filters
+  // populate: false - will build incrementally from new events to avoid OOM
   if (!existingTables.includes('profile_event_summary_mv_distributed') && !existingTables.includes('profile_event_summary_mv')) {
     sqls.push(
       ...createMaterializedView({
@@ -99,7 +100,7 @@ export async function up() {
         distributionHash: 'cityHash64(project_id, profile_id)',
         replicatedVersion,
         isClustered,
-        populate: true,
+        populate: false, // Don't populate historical data - build incrementally
       }),
     );
   }
