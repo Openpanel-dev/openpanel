@@ -247,46 +247,27 @@ export function PropertiesCombobox({
   };
 
   const renderCohort = () => {
-    const cohortActions = cohorts
-      .filter((cohort) =>
-        cohort.name.toLowerCase().includes(search.toLowerCase()) ||
-        (cohort.description && cohort.description.toLowerCase().includes(search.toLowerCase()))
-      )
-      .map((cohort) => ({
-        id: cohort.id,
-        value: `cohort:${cohort.id}`,
-        label: cohort.name,
-        description: cohort.description || 'User cohort',
-      }));
+    // Just return a single action to create a cohort filter
+    // The actual cohort selection happens in CohortFilterItem
+    const cohortAction = {
+      value: 'cohort',
+      label: 'Cohort',
+      description: 'Filter by user cohort',
+    };
 
     return (
       <div className="flex flex-col">
-        <SearchHeader
-          onBack={() => handleStateChange('index')}
-          onSearch={setSearch}
-          value={search}
-        />
-        <DropdownMenuSeparator />
-        <VirtualList
-          height={300}
-          data={cohortActions}
-          itemHeight={40}
-          itemKey="id"
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-2 hover:bg-accent cursor-pointer rounded-md col gap-px"
+          onClick={() => handleSelect(cohortAction)}
         >
-          {(action) => (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-2 hover:bg-accent cursor-pointer rounded-md col gap-px"
-              onClick={() => handleSelect(action)}
-            >
-              <div className="font-medium">{action.label}</div>
-              <div className="text-sm text-muted-foreground line-clamp-1">
-                {action.description}
-              </div>
-            </motion.div>
-          )}
-        </VirtualList>
+          <div className="font-medium">{cohortAction.label}</div>
+          <div className="text-sm text-muted-foreground line-clamp-1">
+            {cohortAction.description}
+          </div>
+        </motion.div>
       </div>
     );
   };

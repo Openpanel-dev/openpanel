@@ -3,70 +3,42 @@ import { RenderDots } from '@/components/ui/RenderDots';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
-import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
-import { usePropertyValues } from '@/hooks/use-property-values';
+import { useCohorts } from '@/hooks/use-cohorts';
 import { useDispatch } from '@/redux';
-import { operators } from '@openpanel/constants';
 import type {
   IChartEvent,
   IChartEventFilter,
   IChartEventFilterOperator,
-  IChartEventFilterValue,
 } from '@openpanel/validation';
-import { mapKeys } from '@openpanel/validation';
 import { SlidersHorizontal, Trash } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
 
-interface FilterProps {
+interface CohortFilterItemProps {
   event: IChartEvent;
   filter: IChartEventFilter;
 }
 
-interface PureFilterProps {
-  eventName: string;
+interface PureCohortFilterItemProps {
   filter: IChartEventFilter;
   onRemove: (filter: IChartEventFilter) => void;
-  onChangeValue: (
-    value: IChartEventFilterValue[],
-    filter: IChartEventFilter,
-  ) => void;
   onChangeOperator: (
     operator: IChartEventFilterOperator,
     filter: IChartEventFilter,
   ) => void;
+  onChangeCohort: (cohortId: string, filter: IChartEventFilter) => void;
   className?: string;
 }
 
-export function FilterItem({ filter, event }: FilterProps) {
+export function CohortFilterItem({ filter, event }: CohortFilterItemProps) {
+  const dispatch = useDispatch();
+
   const onRemove = ({ id }: IChartEventFilter) => {
     dispatch(
       changeEvent({
         ...event,
         filters: event.filters.filter((item) => item.id !== id),
         type: 'event',
-      }),
-    );
-  };
-
-  const onChangeValue = (
-    value: IChartEventFilterValue[],
-    { id }: IChartEventFilter,
-  ) => {
-    dispatch(
-      changeEvent({
-        ...event,
-        type: 'event',
-        filters: event.filters.map((item) => {
-          if (item.id === id) {
-            return {
-              ...item,
-              value,
-            };
-          }
-
-          return item;
-        }),
       }),
     );
   };
@@ -83,7 +55,6 @@ export function FilterItem({ filter, event }: FilterProps) {
           if (item.id === id) {
             return {
               ...item,
-              value: item.value ? item.value.filter(Boolean).slice(0, 1) : [],
               operator,
             };
           }
@@ -94,51 +65,65 @@ export function FilterItem({ filter, event }: FilterProps) {
     );
   };
 
-  const dispatch = useDispatch();
+  const onChangeCohort = (cohortId: string, { id }: IChartEventFilter) => {
+    dispatch(
+      changeEvent({
+        ...event,
+        type: 'event',
+        filters: event.filters.map((item) => {
+          if (item.id === id) {
+            return {
+              ...item,
+              cohortId,
+            };
+          }
+
+          return item;
+        }),
+      }),
+    );
+  };
+
   return (
-    <PureFilterItem
+    <PureCohortFilterItem
       filter={filter}
-      eventName={event.name}
       onRemove={onRemove}
-      onChangeValue={onChangeValue}
       onChangeOperator={onChangeOperator}
+      onChangeCohort={onChangeCohort}
       className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
     />
   );
 }
 
-export function PureFilterItem({
+export function PureCohortFilterItem({
   filter,
-  eventName,
   onRemove,
-  onChangeValue,
   onChangeOperator,
+  onChangeCohort,
   className,
-}: PureFilterProps) {
+}: PureCohortFilterItemProps) {
   const { projectId } = useAppParams();
 
-  const potentialValues = usePropertyValues({
-    event: eventName,
-    property: filter.name,
-    projectId,
-  });
+  const cohorts = useCohorts({ projectId, includeCount: false });
 
-  const valuesCombobox =
-    potentialValues.map((item) => ({
-      value: item,
-      label: item,
-    })) ?? [];
+  const cohortsCombobox = cohorts.map((cohort) => ({
+    value: cohort.id,
+    label: cohort.name,
+  }));
 
   const removeFilter = () => {
     onRemove(filter);
   };
 
-  const changeFilterValue = (value: IChartEventFilterValue[]) => {
-    onChangeValue(value, filter);
-  };
-
   const changeFilterOperator = (operator: IChartEventFilterOperator) => {
     onChangeOperator(operator, filter);
+  };
+
+  const changeCohort = (cohortIds: Array<string | number>) => {
+    const cohortId = cohortIds[0];
+    if (cohortId && typeof cohortId === 'string') {
+      onChangeCohort(cohortId, filter);
+    }
   };
 
   return (
@@ -157,30 +142,23 @@ export function PureFilterItem({
       <div className="flex gap-1">
         <DropdownMenuComposed
           onChange={changeFilterOperator}
-          items={mapKeys(operators).map((key) => ({
-            value: key,
-            label: operators[key],
-          }))}
+          items={[
+            { value: 'inCohort', label: 'In cohort' },
+            { value: 'notInCohort', label: 'Not in cohort' },
+          ]}
           label="Operator"
         >
           <Button variant={'outline'} className="whitespace-nowrap">
-            {operators[filter.operator]}
+            {filter.operator === 'inCohort' ? 'In cohort' : 'Not in cohort'}
           </Button>
         </DropdownMenuComposed>
-        {filter.operator === 'is' || filter.operator === 'isNot' ? (
-          <ComboboxAdvanced
-            items={valuesCombobox}
-            value={filter.value}
-            className="flex-1"
-            onChange={changeFilterValue}
-            placeholder="Select..."
-          />
-        ) : (
-          <InputEnter
-            value={filter.value[0] ? String(filter.value[0]) : ''}
-            onChangeValue={(value) => changeFilterValue([value])}
-          />
-        )}
+        <ComboboxAdvanced
+          items={cohortsCombobox}
+          value={filter.cohortId ? [filter.cohortId] : []}
+          className="flex-1"
+          onChange={changeCohort}
+          placeholder="Select cohort..."
+        />
       </div>
     </div>
   );

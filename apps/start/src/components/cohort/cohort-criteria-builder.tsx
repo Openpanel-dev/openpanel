@@ -13,11 +13,12 @@ import type {
   IChartEventFilter,
 } from '@openpanel/validation';
 import { mapKeys } from '@openpanel/validation';
-import { PlusIcon, TrashIcon } from 'lucide-react';
+import { PlusIcon, TrashIcon, FilterIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ColorSquare } from '@/components/color-square';
 import { SlidersHorizontal } from 'lucide-react';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
+import { PropertiesCombobox } from '@/components/report/sidebar/PropertiesCombobox';
 
 interface CohortCriteriaBuilderProps {
   definition: CohortDefinition;
@@ -208,14 +209,14 @@ function EventCriteriaItem({
   onRemove,
   eventNames,
 }: EventCriteriaItemProps) {
-  const addFilter = () => {
+  const addFilter = (propertyName: string) => {
     onChange({
       ...criteria,
       filters: [
         ...criteria.filters,
         {
           id: Math.random().toString(36).substring(7),
-          name: '',
+          name: propertyName,
           operator: 'is',
           value: [],
         },
@@ -417,16 +418,26 @@ function EventCriteriaItem({
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={addFilter}
-        icon={PlusIcon}
-        disabled={!criteria.name}
+      <PropertiesCombobox
+        event={{ name: criteria.name, id: 'cohort-event' } as any}
+        onSelect={(action) => {
+          addFilter(action.value);
+        }}
+        mode="events"
       >
-        Add filter
-      </Button>
+        {(setOpen) => (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setOpen(true)}
+            icon={PlusIcon}
+            disabled={!criteria.name}
+          >
+            Add filter
+          </Button>
+        )}
+      </PropertiesCombobox>
     </div>
   );
 }
@@ -440,7 +451,7 @@ function PropertyBasedBuilder({
   definition,
   onChange,
 }: PropertyBasedBuilderProps) {
-  const addPropertyFilter = () => {
+  const addPropertyFilter = (propertyName: string) => {
     onChange({
       ...definition,
       criteria: {
@@ -449,7 +460,7 @@ function PropertyBasedBuilder({
           ...definition.criteria.properties,
           {
             id: Math.random().toString(36).substring(7),
-            name: '',
+            name: propertyName,
             operator: 'is',
             value: [],
           },
@@ -546,14 +557,23 @@ function PropertyBasedBuilder({
         </div>
       )}
 
-      <Button
-        type="button"
-        variant="outline"
-        onClick={addPropertyFilter}
-        icon={PlusIcon}
+      <PropertiesCombobox
+        onSelect={(action) => {
+          addPropertyFilter(action.value);
+        }}
+        mode="profile"
       >
-        Add property filter
-      </Button>
+        {(setOpen) => (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setOpen(true)}
+            icon={PlusIcon}
+          >
+            Add property filter
+          </Button>
+        )}
+      </PropertiesCombobox>
     </div>
   );
 }
