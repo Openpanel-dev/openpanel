@@ -10,7 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventProperties } from '@/hooks/use-event-properties';
-import { useTRPC } from '@/integrations/trpc/react';
+import { useCohorts } from '@/hooks/use-cohorts';
 import type { IChartEvent } from '@openpanel/validation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeftIcon, DatabaseIcon, UserIcon, UsersIcon } from 'lucide-react';
@@ -64,17 +64,14 @@ export function PropertiesCombobox({
 }: PropertiesComboboxProps) {
   const { projectId } = useAppParams();
   const [open, setOpen] = useState(false);
-  const trpc = useTRPC();
   const properties = useEventProperties({
     event: event?.name,
     projectId,
   });
-  // Temporarily disable cohort fetching to isolate the issue
-  const cohorts: any[] = [];
-  // const { data: cohorts = [] } = trpc.cohort.list.useQuery(
-  //   { projectId, includeCount: false },
-  //   { enabled: open }
-  // );
+  const cohorts = useCohorts(
+    { projectId, includeCount: false },
+    { enabled: open }
+  );
   const [state, setState] = useState<'index' | 'event' | 'profile' | 'cohort'>('index');
   const [search, setSearch] = useState('');
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');

@@ -104,6 +104,7 @@ function Component() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
         {cohorts.map((cohort) => {
           const count = 'currentCount' in cohort ? cohort.currentCount : cohort.profileCount;
+          const displayCount = count ?? 0;
           return (
             <Card key={cohort.id} hover>
               <div className="flex flex-col p-4">
@@ -117,7 +118,7 @@ function Component() {
                   <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <UsersIcon size={14} />
-                      <span>{count.toLocaleString()} members</span>
+                      <span>{displayCount.toLocaleString()} {displayCount === 1 ? 'member' : 'members'}</span>
                     </div>
                     {cohort.lastComputedAt && (
                       <div className={cn('text-xs')}>
