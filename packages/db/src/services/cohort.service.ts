@@ -300,7 +300,7 @@ export async function storeCohortMembership(
       ${sqlstring.escape(cohortId)},
       ${sqlstring.escape(profileId)},
       '${now}',
-      map(),
+      {},
       ${version}
     )`;
   });
@@ -308,7 +308,7 @@ export async function storeCohortMembership(
   const insertQuery = `
     INSERT INTO ${TABLE_NAMES.cohort_members}
     (project_id, cohort_id, profile_id, matched_at, matching_properties, version)
-    VALUES ${values.join(',\n')}
+    VALUES ${values.join(', ')}
   `;
 
   await chQuery(insertQuery);
