@@ -21,6 +21,7 @@ if (process.env.NITRO) {
     nitroV2Plugin({
       preset: 'node-server',
       compatibilityDate: '2025-10-21',
+      serveStatic: true,
     }),
   );
 } else {
