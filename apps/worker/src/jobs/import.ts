@@ -166,21 +166,22 @@ export async function importJob(job: Job<ImportQueuePayload>) {
             externalMB: Math.round(memUsage.external / 1024 / 1024),
           });
 
-          const transformedEvents: IClickhouseEvent[] = eventBatch.map(
+          let transformedEvents: IClickhouseEvent[] = eventBatch.map(
             (
               // @ts-expect-error
               event,
             ) => providerInstance!.transformEvent(event),
           );
 
+          const createdAt = new Date(transformedEvents[0]?.created_at || '')
+            .toISOString()
+            .split('T')[0];
+
           await insertImportBatch(transformedEvents, importId);
 
           processedEvents += eventBatch.length;
           eventBatch = [];
-
-          const createdAt = new Date(transformedEvents[0]?.created_at || '')
-            .toISOString()
-            .split('T')[0];
+          transformedEvents = null as any;
 
           await updateImportStatus(jobLogger, job, importId, {
             step: 'loading',
@@ -204,21 +205,22 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           externalMB: Math.round(memUsage.external / 1024 / 1024),
         });
 
-        const transformedEvents = eventBatch.map(
+        let transformedEvents = eventBatch.map(
           (
             // @ts-expect-error
             event,
           ) => providerInstance!.transformEvent(event),
         );
 
+        const createdAt = new Date(transformedEvents[0]?.created_at || '')
+          .toISOString()
+          .split('T')[0];
+
         await insertImportBatch(transformedEvents, importId);
 
         processedEvents += eventBatch.length;
         eventBatch = [];
-
-        const createdAt = new Date(transformedEvents[0]?.created_at || '')
-          .toISOString()
-          .split('T')[0];
+        transformedEvents = null as any;
 
         await updateImportStatus(jobLogger, job, importId, {
           step: 'loading',
