@@ -211,7 +211,7 @@ export function getChartSql({
     with: addCte,
   } = createSqlBuilder();
 
-  sb.where = getEventFiltersWhereClause(event.filters);
+  sb.where = getEventFiltersWhereClause(event.filters, projectId);
   sb.where.projectId = `project_id = ${sqlstring.escape(projectId)}`;
 
   if (event.name !== '*') {

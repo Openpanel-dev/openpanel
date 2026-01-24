@@ -156,7 +156,11 @@ export function PropertiesCombobox({
           className="group justify-between gap-2"
           onClick={(e) => {
             e.preventDefault();
-            handleStateChange('cohort');
+            handleSelect({
+              value: 'cohort',
+              label: 'Cohort',
+              description: 'Filter by user cohort',
+            });
           }}
         >
           Cohorts
