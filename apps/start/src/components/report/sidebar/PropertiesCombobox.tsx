@@ -69,10 +69,12 @@ export function PropertiesCombobox({
     event: event?.name,
     projectId,
   });
-  const { data: cohorts = [] } = trpc.cohort.list.useQuery(
-    { projectId, includeCount: false },
-    { enabled: open }
-  );
+  // Temporarily disable cohort fetching to isolate the issue
+  const cohorts: any[] = [];
+  // const { data: cohorts = [] } = trpc.cohort.list.useQuery(
+  //   { projectId, includeCount: false },
+  //   { enabled: open }
+  // );
   const [state, setState] = useState<'index' | 'event' | 'profile' | 'cohort'>('index');
   const [search, setSearch] = useState('');
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
