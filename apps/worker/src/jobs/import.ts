@@ -166,22 +166,25 @@ export async function importJob(job: Job<ImportQueuePayload>) {
             externalMB: Math.round(memUsage.external / 1024 / 1024),
           });
 
-          let transformedEvents: IClickhouseEvent[] = eventBatch.map(
-            (
-              // @ts-expect-error
-              event,
-            ) => providerInstance!.transformEvent(event),
-          );
+          let createdAt: string;
+          {
+            const transformedEvents: IClickhouseEvent[] = eventBatch.map(
+              (
+                // @ts-expect-error
+                event,
+              ) => providerInstance!.transformEvent(event),
+            );
 
-          const createdAt = new Date(transformedEvents[0]?.created_at || '')
-            .toISOString()
-            .split('T')[0];
+            createdAt = new Date(transformedEvents[0]?.created_at || '')
+              .toISOString()
+              .split('T')[0];
 
-          await insertImportBatch(transformedEvents, importId);
+            await insertImportBatch(transformedEvents, importId);
+            // transformedEvents goes out of scope here, eligible for GC
+          }
 
           processedEvents += eventBatch.length;
           eventBatch = [];
-          transformedEvents = null as any;
 
           await updateImportStatus(jobLogger, job, importId, {
             step: 'loading',
@@ -205,22 +208,25 @@ export async function importJob(job: Job<ImportQueuePayload>) {
           externalMB: Math.round(memUsage.external / 1024 / 1024),
         });
 
-        let transformedEvents = eventBatch.map(
-          (
-            // @ts-expect-error
-            event,
-          ) => providerInstance!.transformEvent(event),
-        );
+        let createdAt: string;
+        {
+          const transformedEvents = eventBatch.map(
+            (
+              // @ts-expect-error
+              event,
+            ) => providerInstance!.transformEvent(event),
+          );
 
-        const createdAt = new Date(transformedEvents[0]?.created_at || '')
-          .toISOString()
-          .split('T')[0];
+          createdAt = new Date(transformedEvents[0]?.created_at || '')
+            .toISOString()
+            .split('T')[0];
 
-        await insertImportBatch(transformedEvents, importId);
+          await insertImportBatch(transformedEvents, importId);
+          // transformedEvents goes out of scope here, eligible for GC
+        }
 
         processedEvents += eventBatch.length;
         eventBatch = [];
-        transformedEvents = null as any;
 
         await updateImportStatus(jobLogger, job, importId, {
           step: 'loading',
