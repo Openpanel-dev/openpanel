@@ -7,8 +7,7 @@ export function useCohorts(params: { projectId: string; includeCount?: boolean }
     trpc.cohort.list.queryOptions(params, {
       enabled:
         !!params.projectId && typeof options?.enabled !== 'undefined'
-          ? options.enabled
-          : true,
+          ? options.enabled : true,
     }),
   );
   return query.data ?? [];
