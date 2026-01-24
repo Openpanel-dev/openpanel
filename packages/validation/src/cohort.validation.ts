@@ -1,5 +1,29 @@
 import { z } from 'zod';
-import { zChartEventFilter } from './index';
+import { operators } from '@openpanel/constants';
+
+// Helper function for enum conversion
+function objectToZodEnums<K extends string>(
+  obj: Record<K, any>,
+): [K, ...K[]] {
+  const [firstKey, ...otherKeys] = Object.keys(obj) as K[];
+  return [firstKey!, ...otherKeys];
+}
+
+// Define zChartEventFilter locally to avoid circular dependency
+const zChartEventFilter = z.object({
+  id: z.string().optional().describe('Unique identifier for the filter'),
+  name: z.string().describe('The property name to filter on'),
+  operator: z
+    .enum(objectToZodEnums(operators))
+    .describe('The operator to use for the filter'),
+  value: z
+    .array(z.string().or(z.number()).or(z.boolean()).or(z.null()))
+    .describe('The values to filter on'),
+  cohortId: z
+    .string()
+    .optional()
+    .describe('Cohort ID when using inCohort/notInCohort operators'),
+});
 
 // Timeframe schemas
 export const zRelativeTimeframe = z.object({
