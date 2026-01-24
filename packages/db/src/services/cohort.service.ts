@@ -150,19 +150,16 @@ function getProfileFiltersWhereClause(
     }
 
     // Determine the column access pattern
+    // Replace profile. with profiles. since we're querying the profiles table directly
+    const normalizedName = name.replace(/^profile\./, 'profiles.');
     let columnAccess: string;
 
-    if (name === 'email' || name === 'first_name' || name === 'last_name') {
-      columnAccess = name;
-    } else if (name.startsWith('properties.')) {
-      const propKey = name.replace('properties.', '');
-      columnAccess = `properties['${propKey}']`;
-    } else if (name.startsWith('profile.properties.')) {
-      const propKey = name.replace('profile.properties.', '');
-      columnAccess = `properties['${propKey}']`;
+    if (normalizedName.startsWith('profiles.properties.')) {
+      const propKey = normalizedName.replace('profiles.properties.', '');
+      columnAccess = `profiles.properties['${propKey}']`;
     } else {
-      // Default fallback
-      columnAccess = name;
+      // For profiles.email, profiles.first_name, etc. or any other column
+      columnAccess = normalizedName;
     }
 
     // Build WHERE clause based on operator
