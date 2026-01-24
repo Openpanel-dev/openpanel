@@ -5,6 +5,7 @@ import OverviewTopPagesModal from '@/components/overview/overview-top-pages-moda
 import { op } from '@/utils/op';
 import Instructions from './Instructions';
 import AddClient from './add-client';
+import AddCohort from './add-cohort';
 import AddDashboard from './add-dashboard';
 import AddImport from './add-import';
 import AddIntegration from './add-integration';
@@ -18,6 +19,7 @@ import CreateInvite from './create-invite';
 import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
 import EditClient from './edit-client';
+import EditCohort from './edit-cohort';
 import EditDashboard from './edit-dashboard';
 import EditEvent from './edit-event';
 import EditMember from './edit-member';
@@ -43,6 +45,8 @@ const modals = {
   EditClient: EditClient,
   AddProject: AddProject,
   AddClient: AddClient,
+  AddCohort: AddCohort,
+  EditCohort: EditCohort,
   AddImport: AddImport,
   Confirm: Confirm,
   SaveReport: SaveReport,

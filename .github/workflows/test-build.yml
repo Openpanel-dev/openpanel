@@ -1,0 +1,89 @@
+name: Test Build
+
+on:
+  push:
+    branches:
+      - '**'
+      - '!main'
+    paths:
+      - "apps/api/**"
+      - "apps/worker/**"
+      - "apps/start/**"
+      - "packages/**"
+      - "!packages/sdks/**"
+      - "**Dockerfile"
+      - ".github/workflows/**"
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.filter.outputs.api }}
+      worker: ${{ steps.filter.outputs.worker }}
+      public: ${{ steps.filter.outputs.public }}
+      dashboard: ${{ steps.filter.outputs.dashboard }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/**'
+              - '.github/workflows/**'
+            worker:
+              - 'apps/worker/**'
+              - 'packages/**'
+              - '.github/workflows/**'
+            public:
+              - 'apps/public/**'
+              - 'packages/**'
+              - '.github/workflows/**'
+            dashboard:
+              - 'apps/start/**'
+              - 'packages/**'
+              - '.github/workflows/**'
+
+  test-build-api:
+    needs: changes
+    if: ${{ needs.changes.outputs.api == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test build
+        run: docker buildx build --file apps/api/Dockerfile --build-arg DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy .
+
+  test-build-worker:
+    needs: changes
+    if: ${{ needs.changes.outputs.worker == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test build
+        run: docker buildx build --file apps/worker/Dockerfile --build-arg DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy .
+
+  test-build-dashboard:
+    needs: changes
+    if: ${{ needs.changes.outputs.dashboard == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Test build
+        run: docker buildx build --file apps/start/Dockerfile --build-arg NO_CLOUDFLARE=1 .

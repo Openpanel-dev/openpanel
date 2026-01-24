@@ -28,6 +28,10 @@ export const zChartEventFilter = z.object({
   value: z
     .array(z.string().or(z.number()).or(z.boolean()).or(z.null()))
     .describe('The values to filter on'),
+  cohortId: z
+    .string()
+    .optional()
+    .describe('Cohort ID when using inCohort/notInCohort operators'),
 });
 
 export const zChartEventSegment = z
@@ -201,6 +205,16 @@ export const zChartInputBase = z.object({
     .number()
     .optional()
     .describe('Time window in hours for funnel analysis'),
+  cohortFilters: z
+    .array(
+      z.object({
+        cohortId: z.string(),
+        operator: z.enum(['inCohort', 'notInCohort']).default('inCohort'),
+      }),
+    )
+    .optional()
+    .default([])
+    .describe('Global cohort filters applied to the entire chart'),
 });
 
 export const zChartInput = z.preprocess((val) => {
@@ -554,3 +568,6 @@ export const zCreateImport = z.object({
 });
 
 export type ICreateImport = z.infer<typeof zCreateImport>;
+
+// Export cohort validation schemas
+export * from './cohort.validation';

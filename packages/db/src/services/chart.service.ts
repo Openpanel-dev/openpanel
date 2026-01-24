@@ -480,11 +480,35 @@ function isNumericColumn(columnName: string): boolean {
   return numericColumns.includes(columnName);
 }
 
-export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
+export function getEventFiltersWhereClause(
+  filters: IChartEventFilter[],
+  projectId?: string,
+) {
   const where: Record<string, string> = {};
   filters.forEach((filter, index) => {
     const id = `f${index}`;
-    const { name, value, operator } = filter;
+    const { name, value, operator, cohortId } = filter;
+
+    // Handle cohort operators
+    if (operator === 'inCohort' && cohortId && projectId) {
+      where[id] = `profile_id IN (
+        SELECT profile_id
+        FROM ${TABLE_NAMES.cohort_members} FINAL
+        WHERE cohort_id = ${sqlstring.escape(cohortId)}
+          AND project_id = ${sqlstring.escape(projectId)}
+      )`;
+      return;
+    }
+
+    if (operator === 'notInCohort' && cohortId && projectId) {
+      where[id] = `profile_id NOT IN (
+        SELECT profile_id
+        FROM ${TABLE_NAMES.cohort_members} FINAL
+        WHERE cohort_id = ${sqlstring.escape(cohortId)}
+          AND project_id = ${sqlstring.escape(projectId)}
+      )`;
+      return;
+    }
 
     if (
       value.length === 0 &&
@@ -867,6 +891,35 @@ export function getEventFiltersWhereClause(filters: IChartEventFilter[]) {
   });
 
   return where;
+}
+
+/**
+ * Generate WHERE clause for global cohort filters
+ * These filters apply to the entire chart, not just specific events
+ */
+export function getGlobalCohortFiltersWhereClause(
+  cohortFilters: Array<{ cohortId: string; operator: 'inCohort' | 'notInCohort' }>,
+  projectId: string,
+): string {
+  if (!cohortFilters || cohortFilters.length === 0) {
+    return '';
+  }
+
+  const conditions = cohortFilters.map((filter) => {
+    const subquery = `
+      SELECT profile_id
+      FROM ${TABLE_NAMES.cohort_members} FINAL
+      WHERE cohort_id = ${sqlstring.escape(filter.cohortId)}
+        AND project_id = ${sqlstring.escape(projectId)}
+    `;
+
+    return filter.operator === 'inCohort'
+      ? `profile_id IN (${subquery})`
+      : `profile_id NOT IN (${subquery})`;
+  });
+
+  // AND logic between multiple cohort filters
+  return conditions.join(' AND ');
 }
 
 export function getChartStartEndDate(

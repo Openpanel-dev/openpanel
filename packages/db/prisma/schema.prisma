@@ -196,6 +196,7 @@ model Project {
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
+  cohorts           Cohort[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -512,4 +513,28 @@ model MaterializedColumn {
   lastAnalyzedAt DateTime  @default(now()) @updatedAt
 
   @@map("materialized_columns")
+}
+
+model Cohort {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  description String?
+  projectId   String
+  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  // Cohort definition (JSON structure)
+  /// [IPrismaCohortDefinition]
+  definition Json
+
+  // Type and metadata
+  isStatic       Boolean   @default(false) // Static vs Dynamic
+  profileCount   Int       @default(0) // Cached count
+  lastComputedAt DateTime? // When last computed
+  computeOnDemand Boolean  @default(false) // Don't store, compute when needed
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("cohorts")
+  @@index([projectId])
 }

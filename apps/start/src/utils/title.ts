@@ -94,6 +94,7 @@ export const PAGE_TITLES = {
   PROFILES: 'Profiles',
   PROFILE_EVENTS: 'Profile events',
   PROFILE_DETAILS: 'Profile details',
+  COHORTS: 'Cohorts',
 
   // Sub-sections
   CONVERSIONS: 'Conversions',

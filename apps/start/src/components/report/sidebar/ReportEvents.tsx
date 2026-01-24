@@ -100,6 +100,10 @@ function SortableEvent({
             <PropertiesCombobox
               event={event}
               onSelect={(action) => {
+                // Check if it's a cohort selection
+                const isCohort = action.value.startsWith('cohort:');
+                const cohortId = isCohort ? action.value.replace('cohort:', '') : undefined;
+
                 dispatch(
                   changeEvent({
                     ...event,
@@ -107,9 +111,10 @@ function SortableEvent({
                       ...event.filters,
                       {
                         id: shortId(),
-                        name: action.value,
-                        operator: 'is',
+                        name: isCohort ? action.label : action.value,
+                        operator: isCohort ? 'inCohort' : 'is',
                         value: [],
+                        ...(cohortId && { cohortId }),
                       },
                     ],
                   }),

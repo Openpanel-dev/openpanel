@@ -6,6 +6,7 @@ import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
 import { usePropertyValues } from '@/hooks/use-property-values';
+import { useTRPC } from '@/integrations/trpc/react';
 import { useDispatch } from '@/redux';
 import { operators } from '@openpanel/constants';
 import type {
@@ -116,6 +117,7 @@ export function PureFilterItem({
   className,
 }: PureFilterProps) {
   const { projectId } = useAppParams();
+  const trpc = useTRPC();
 
   const potentialValues = usePropertyValues({
     event: eventName,
@@ -129,6 +131,17 @@ export function PureFilterItem({
       label: item,
     })) ?? [];
 
+  // Fetch cohorts for cohort operators
+  const { data: cohorts = [] } = trpc.cohort.list.useQuery(
+    { projectId, includeCount: false },
+    { enabled: filter.operator === 'inCohort' || filter.operator === 'notInCohort' }
+  );
+
+  const cohortsCombobox = cohorts.map((cohort) => ({
+    value: cohort.id,
+    label: cohort.name,
+  }));
+
   const removeFilter = () => {
     onRemove(filter);
   };
@@ -140,6 +153,8 @@ export function PureFilterItem({
   const changeFilterOperator = (operator: IChartEventFilterOperator) => {
     onChangeOperator(operator, filter);
   };
+
+  const isCohortOperator = filter.operator === 'inCohort' || filter.operator === 'notInCohort';
 
   return (
     <div className={className}>
@@ -167,7 +182,21 @@ export function PureFilterItem({
             {operators[filter.operator]}
           </Button>
         </DropdownMenuComposed>
-        {filter.operator === 'is' || filter.operator === 'isNot' ? (
+        {isCohortOperator ? (
+          <ComboboxAdvanced
+            items={cohortsCombobox}
+            value={filter.cohortId ? [filter.cohortId] : []}
+            className="flex-1"
+            onChange={(value) => {
+              // Update cohortId when selecting a cohort
+              const cohortId = value[0];
+              if (cohortId && typeof cohortId === 'string') {
+                onChangeValue([cohortId], { ...filter, cohortId });
+              }
+            }}
+            placeholder="Select cohort..."
+          />
+        ) : filter.operator === 'is' || filter.operator === 'isNot' ? (
           <ComboboxAdvanced
             items={valuesCombobox}
             value={filter.value}

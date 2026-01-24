@@ -91,6 +91,8 @@ export const operators = {
   lt: 'Less than',
   gte: 'Greater than or equal to',
   lte: 'Less than or equal to',
+  inCohort: 'In cohort',
+  notInCohort: 'Not in cohort',
 } as const;
 
 export const chartTypes = {
