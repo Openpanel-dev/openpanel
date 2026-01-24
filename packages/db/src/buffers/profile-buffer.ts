@@ -216,6 +216,8 @@ export class ProfileBuffer extends BaseBuffer {
          }
        ORDER BY created_at DESC
        LIMIT 1`,
+      undefined,
+      true, // Bypass concurrency limit for profile queries
     );
 
     logger.debug('Clickhouse fetch result', {

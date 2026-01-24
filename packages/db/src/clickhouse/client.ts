@@ -211,11 +211,25 @@ export const ch = new Proxy(originalCh, {
 export async function chQueryWithMeta<T extends Record<string, any>>(
   query: string,
   clickhouseSettings?: ClickHouseSettings,
+  bypassConcurrencyLimit = false,
 ): Promise<ResponseJSON<T>> {
   const start = Date.now();
+
+  // Merge settings, allowing higher concurrent query limit for critical operations
+  // to prevent profile queries from being blocked by dashboard query limits
+  const finalSettings = bypassConcurrencyLimit
+    ? {
+        ...clickhouseSettings,
+        max_concurrent_queries_for_user: Number.parseInt(
+          process.env.CLICKHOUSE_PROFILE_QUERY_LIMIT || '50',
+          10
+        )
+      }
+    : clickhouseSettings;
+
   const res = await ch.query({
     query,
-    clickhouse_settings: clickhouseSettings,
+    clickhouse_settings: finalSettings,
   });
   const json = await res.json<T>();
   const keys = Object.keys(json.data[0] || {});
@@ -286,8 +300,9 @@ export async function chInsertCSV(tableName: string, rows: string[]) {
 export async function chQuery<T extends Record<string, any>>(
   query: string,
   clickhouseSettings?: ClickHouseSettings,
+  bypassConcurrencyLimit = false,
 ): Promise<T[]> {
-  return (await chQueryWithMeta<T>(query, clickhouseSettings)).data;
+  return (await chQueryWithMeta<T>(query, clickhouseSettings, bypassConcurrencyLimit)).data;
 }
 
 export function formatClickhouseDate(

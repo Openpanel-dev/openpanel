@@ -117,15 +117,15 @@ export async function getProfileById(id: string, projectId: string) {
   }
 
   const [profile] = await chQuery<IClickhouseProfile>(
-    `SELECT 
-      id, 
+    `SELECT
+      id,
       project_id,
-      last_value(nullIf(first_name, '')) as first_name, 
-      last_value(nullIf(last_name, '')) as last_name, 
-      last_value(nullIf(email, '')) as email, 
-      last_value(nullIf(avatar, '')) as avatar, 
-      last_value(is_external) as is_external, 
-      last_value(properties) as properties, 
+      last_value(nullIf(first_name, '')) as first_name,
+      last_value(nullIf(last_name, '')) as last_name,
+      last_value(nullIf(email, '')) as email,
+      last_value(nullIf(avatar, '')) as avatar,
+      last_value(is_external) as is_external,
+      last_value(properties) as properties,
       last_value(created_at) as created_at
     FROM ${TABLE_NAMES.profiles} FINAL WHERE id = ${sqlstring.escape(String(id))} AND project_id = ${sqlstring.escape(projectId)} GROUP BY id, project_id ORDER BY created_at DESC LIMIT 1`,
   );
@@ -154,18 +154,18 @@ export async function getProfiles(ids: string[], projectId: string) {
   }
 
   const data = await chQuery<IClickhouseProfile>(
-    `SELECT 
-      id, 
+    `SELECT
+      id,
       project_id,
-      any(nullIf(first_name, '')) as first_name, 
-      any(nullIf(last_name, '')) as last_name, 
-      any(nullIf(email, '')) as email, 
-      any(nullIf(avatar, '')) as avatar, 
-      last_value(is_external) as is_external, 
-      any(properties) as properties, 
+      any(nullIf(first_name, '')) as first_name,
+      any(nullIf(last_name, '')) as last_name,
+      any(nullIf(email, '')) as email,
+      any(nullIf(avatar, '')) as avatar,
+      last_value(is_external) as is_external,
+      any(properties) as properties,
       any(created_at) as created_at
     FROM ${TABLE_NAMES.profiles}
-    WHERE 
+    WHERE
       project_id = ${sqlstring.escape(projectId)} AND
       id IN (${filteredIds.map((id) => sqlstring.escape(id)).join(',')})
     GROUP BY id, project_id
