@@ -148,6 +148,7 @@ jobs:
           context: .
           file: apps/start/Dockerfile
           push: true
+          no-cache: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
