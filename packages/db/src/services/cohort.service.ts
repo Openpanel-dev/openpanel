@@ -9,7 +9,7 @@ import type {
 } from '@openpanel/validation';
 import type { IChartEventFilter } from '@openpanel/validation';
 
-import { chQuery, TABLE_NAMES } from '../clickhouse/client';
+import { ch, chQuery, TABLE_NAMES } from '../clickhouse/client';
 import { db } from '../prisma-client';
 import { getEventFiltersWhereClause } from './chart.service';
 
@@ -292,26 +292,22 @@ export async function storeCohortMembership(
 ): Promise<void> {
   if (profileIds.length === 0) return;
 
-  // Build INSERT query
-  const values = profileIds.map((profileId) => {
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    return `(
-      ${sqlstring.escape(projectId)},
-      ${sqlstring.escape(cohortId)},
-      ${sqlstring.escape(profileId)},
-      '${now}',
-      {},
-      ${version}
-    )`;
+  // Use JSONEachRow format for better Map type handling
+  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  const data = profileIds.map((profileId) => ({
+    project_id: projectId,
+    cohort_id: cohortId,
+    profile_id: profileId,
+    matched_at: now,
+    matching_properties: {},
+    version: version,
+  }));
+
+  await ch.insert({
+    table: TABLE_NAMES.cohort_members,
+    values: data,
+    format: 'JSONEachRow',
   });
-
-  const insertQuery = `
-    INSERT INTO ${TABLE_NAMES.cohort_members}
-    (project_id, cohort_id, profile_id, matched_at, matching_properties, version)
-    VALUES ${values.join(', ')}
-  `;
-
-  await chQuery(insertQuery);
 
   // Update metadata
   const sampleProfiles = profileIds.slice(0, 10);
