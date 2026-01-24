@@ -115,7 +115,7 @@ function EventBasedBuilder({
             name: '',
             filters: [],
             timeframe: { type: 'relative', value: '30d' },
-            frequency: { operator: 'gte', value: 1 },
+            frequency: { operator: 'at_least', count: 1 },
           },
         ],
       },
@@ -259,12 +259,16 @@ function EventCriteriaItem({
         <div className="flex-1">
           <label className="mb-1 block text-sm font-medium">Event</label>
           <ComboboxAdvanced
-            items={eventNames}
+            items={eventNames.map(event => ({
+              value: event.name,
+              label: event.name,
+            }))}
             value={criteria.name ? [criteria.name] : []}
             onChange={(values) =>
               onChange({ ...criteria, name: values[0] || '' })
             }
             placeholder="Select event..."
+            searchable
             className="w-full"
           />
         </div>
@@ -291,28 +295,28 @@ function EventCriteriaItem({
               })
             }
             items={[
-              { value: 'gte', label: 'At least' },
-              { value: 'eq', label: 'Exactly' },
-              { value: 'lte', label: 'At most' },
+              { value: 'at_least', label: 'At least' },
+              { value: 'exactly', label: 'Exactly' },
+              { value: 'at_most', label: 'At most' },
             ]}
             label="Operator"
           >
             <Button variant="outline" size="sm">
-              {criteria.frequency?.operator === 'gte' && 'At least'}
-              {criteria.frequency?.operator === 'eq' && 'Exactly'}
-              {criteria.frequency?.operator === 'lte' && 'At most'}
+              {criteria.frequency?.operator === 'at_least' && 'At least'}
+              {criteria.frequency?.operator === 'exactly' && 'Exactly'}
+              {criteria.frequency?.operator === 'at_most' && 'At most'}
             </Button>
           </DropdownMenuComposed>
           <input
             type="number"
             min="1"
-            value={criteria.frequency?.value || 1}
+            value={criteria.frequency?.count || 1}
             onChange={(e) =>
               onChange({
                 ...criteria,
                 frequency: {
                   ...criteria.frequency!,
-                  value: parseInt(e.target.value) || 1,
+                  count: parseInt(e.target.value) || 1,
                 },
               })
             }
@@ -340,7 +344,7 @@ function EventCriteriaItem({
                   ...criteria,
                   timeframe: {
                     type: 'absolute',
-                    value: new Date().toISOString().split('T')[0],
+                    start: new Date().toISOString().split('T')[0],
                   },
                 });
               }
@@ -367,22 +371,27 @@ function EventCriteriaItem({
                 { value: '7d', label: '7 days' },
                 { value: '30d', label: '30 days' },
                 { value: '90d', label: '90 days' },
-                { value: '1y', label: '1 year' },
+                { value: '180d', label: '180 days' },
+                { value: '365d', label: '365 days' },
               ]}
               label="Period"
             >
               <Button variant="outline" size="sm">
-                {criteria.timeframe.value.replace('d', ' days').replace('y', ' year')}
+                {criteria.timeframe.value === '7d' && '7 days'}
+                {criteria.timeframe.value === '30d' && '30 days'}
+                {criteria.timeframe.value === '90d' && '90 days'}
+                {criteria.timeframe.value === '180d' && '180 days'}
+                {criteria.timeframe.value === '365d' && '365 days'}
               </Button>
             </DropdownMenuComposed>
           ) : (
             <input
               type="date"
-              value={criteria.timeframe.value}
+              value={criteria.timeframe.start}
               onChange={(e) =>
                 onChange({
                   ...criteria,
-                  timeframe: { type: 'absolute', value: e.target.value },
+                  timeframe: { type: 'absolute', start: e.target.value },
                 })
               }
               className="rounded border px-2 py-1 text-sm"
