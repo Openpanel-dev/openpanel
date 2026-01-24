@@ -81,9 +81,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   useSessionExtension();
+  // Build version for cache busting
+  const buildVersion = '2026-01-24';
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-build={buildVersion}>
       <head>
         <HeadContent />
       </head>
