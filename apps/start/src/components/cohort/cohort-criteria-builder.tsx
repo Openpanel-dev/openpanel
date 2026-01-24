@@ -104,6 +104,7 @@ function EventBasedBuilder({
     label: event.name,
     count: event.count,
   }));
+
   const addEventCriteria = () => {
     onChange({
       ...definition,
@@ -259,16 +260,12 @@ function EventCriteriaItem({
         <div className="flex-1">
           <label className="mb-1 block text-sm font-medium">Event</label>
           <ComboboxAdvanced
-            items={eventNames.map(event => ({
-              value: event.name,
-              label: event.name,
-            }))}
+            items={eventNames}
             value={criteria.name ? [criteria.name] : []}
             onChange={(values) =>
               onChange({ ...criteria, name: values[0] || '' })
             }
             placeholder="Select event..."
-            searchable
             className="w-full"
           />
         </div>

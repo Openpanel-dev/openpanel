@@ -311,20 +311,18 @@ export async function storeCohortMembership(
 
   // Update metadata
   const sampleProfiles = profileIds.slice(0, 10);
-  const metadataQuery = `
-    INSERT INTO ${TABLE_NAMES.cohort_metadata}
-    (project_id, cohort_id, member_count, last_computed_at, sample_profiles, version)
-    VALUES (
-      ${sqlstring.escape(projectId)},
-      ${sqlstring.escape(cohortId)},
-      ${profileIds.length},
-      now(),
-      [${sampleProfiles.map((id) => sqlstring.escape(id)).join(',')}],
-      ${version}
-    )
-  `;
-
-  await chQuery(metadataQuery);
+  await ch.insert({
+    table: TABLE_NAMES.cohort_metadata,
+    values: [{
+      project_id: projectId,
+      cohort_id: cohortId,
+      member_count: profileIds.length,
+      last_computed_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      sample_profiles: sampleProfiles,
+      version: version,
+    }],
+    format: 'JSONEachRow',
+  });
 }
 
 /**

@@ -6,7 +6,7 @@ import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { InputEnter } from '@/components/ui/input-enter';
 import { useAppParams } from '@/hooks/use-app-params';
 import { usePropertyValues } from '@/hooks/use-property-values';
-import { useTRPC } from '@/integrations/trpc/react';
+import { useCohorts } from '@/hooks/use-cohorts';
 import { useDispatch } from '@/redux';
 import { operators } from '@openpanel/constants';
 import type {
@@ -117,7 +117,6 @@ export function PureFilterItem({
   className,
 }: PureFilterProps) {
   const { projectId } = useAppParams();
-  const trpc = useTRPC();
 
   const potentialValues = usePropertyValues({
     event: eventName,
@@ -131,8 +130,8 @@ export function PureFilterItem({
       label: item,
     })) ?? [];
 
-  // Fetch cohorts for cohort operators
-  const { data: cohorts = [] } = trpc.cohort.list.useQuery(
+  // Fetch cohorts for cohort operators using the useCohorts hook
+  const cohorts = useCohorts(
     { projectId, includeCount: false },
     { enabled: filter.operator === 'inCohort' || filter.operator === 'notInCohort' }
   );
