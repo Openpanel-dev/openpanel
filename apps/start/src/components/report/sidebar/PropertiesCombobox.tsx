@@ -253,6 +253,7 @@ export function PropertiesCombobox({
         (cohort.description && cohort.description.toLowerCase().includes(search.toLowerCase()))
       )
       .map((cohort) => ({
+        id: cohort.id,
         value: `cohort:${cohort.id}`,
         label: cohort.name,
         description: cohort.description || 'User cohort',
