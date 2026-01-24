@@ -90,7 +90,7 @@ export function CohortCriteriaBuilder({
 interface EventBasedBuilderProps {
   definition: EventBasedCohortDefinition;
   onChange: (definition: EventBasedCohortDefinition) => void;
-  eventNames: string[];
+  eventNames: Array<{ name: string; count: number; meta: any }>;
 }
 
 function EventBasedBuilder({
@@ -98,11 +98,11 @@ function EventBasedBuilder({
   onChange,
   eventNames: eventNamesArray,
 }: EventBasedBuilderProps) {
-  // Transform array of strings to format expected by ComboboxAdvanced
-  const eventNames = eventNamesArray.map((name) => ({
-    value: name,
-    label: name,
-    count: 0,
+  // Transform array of event objects to format expected by ComboboxAdvanced
+  const eventNames = eventNamesArray.map((event) => ({
+    value: event.name,
+    label: event.name,
+    count: event.count,
   }));
   const addEventCriteria = () => {
     onChange({
