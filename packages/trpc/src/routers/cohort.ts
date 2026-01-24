@@ -220,8 +220,8 @@ export const cohortRouter = createTRPCRouter({
     .input(
       z.object({
         cohortId: z.string(),
-        limit: z.number().default(50).max(500),
-        offset: z.number().default(0),
+        limit: z.number().min(1).max(500).default(50),
+        offset: z.number().min(0).default(0),
       }),
     )
     .query(async ({ input, ctx }) => {
