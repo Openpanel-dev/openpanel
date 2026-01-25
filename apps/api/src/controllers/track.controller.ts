@@ -7,7 +7,7 @@ import { generateDeviceId, parseUserAgent } from '@openpanel/common/server';
 import { getProfileById, getSalts, upsertProfile } from '@openpanel/db';
 import { type GeoLocation, getGeoLocation } from '@openpanel/geo';
 import { getEventsGroupQueueShard } from '@openpanel/queue';
-import { getRedisCache } from '@openpanel/redis';
+import { getRedisCache, getRedisQueue } from '@openpanel/redis';
 
 import {
   type IDecrementPayload,
@@ -419,7 +419,7 @@ export async function fetchDeviceId(
   });
 
   try {
-    const multi = getRedisCache().multi();
+    const multi = getRedisQueue().multi();
     multi.exists(`bull:sessions:sessionEnd:${projectId}:${currentDeviceId}`);
     multi.exists(`bull:sessions:sessionEnd:${projectId}:${previousDeviceId}`);
     const res = await multi.exec();
