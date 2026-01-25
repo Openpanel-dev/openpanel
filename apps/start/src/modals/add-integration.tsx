@@ -1,6 +1,8 @@
 import { useTRPC } from '@/integrations/trpc/react';
 
 import { DiscordIntegrationForm } from '@/components/integrations/forms/discord-integration';
+import { GCSExportIntegrationForm } from '@/components/integrations/forms/gcs-export-integration';
+import { S3ExportIntegrationForm } from '@/components/integrations/forms/s3-export-integration';
 import { SlackIntegrationForm } from '@/components/integrations/forms/slack-integration';
 import { WebhookIntegrationForm } from '@/components/integrations/forms/webhook-integration';
 import { IntegrationCardContent } from '@/components/integrations/integration-card';
@@ -86,6 +88,20 @@ export default function AddIntegration(props: Props) {
       case 'slack':
         return (
           <SlackIntegrationForm
+            defaultValues={query.data}
+            onSuccess={handleSuccess}
+          />
+        );
+      case 's3_export':
+        return (
+          <S3ExportIntegrationForm
+            defaultValues={query.data}
+            onSuccess={handleSuccess}
+          />
+        );
+      case 'gcs_export':
+        return (
+          <GCSExportIntegrationForm
             defaultValues={query.data}
             onSuccess={handleSuccess}
           />

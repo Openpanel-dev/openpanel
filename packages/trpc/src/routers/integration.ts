@@ -1,11 +1,18 @@
 import { z } from 'zod';
 
 import { BASE_INTEGRATIONS, db } from '@openpanel/db';
+import { encryptCredential } from '@openpanel/common/server';
 
+import {
+  createS3Adapter,
+  createGCSAdapter,
+} from '@openpanel/integrations/src/object-store';
 import { getSlackInstallUrl } from '@openpanel/integrations/src/slack';
 import {
   type ISlackConfig,
   zCreateDiscordIntegration,
+  zCreateGCSExportIntegration,
+  zCreateS3ExportIntegration,
   zCreateSlackIntegration,
   zCreateWebhookIntegration,
 } from '@openpanel/validation';
@@ -129,6 +136,79 @@ export const integrationRouter = createTRPCRouter({
           config: input.config,
         },
       });
+    }),
+  createOrUpdateExport: protectedProcedure
+    .input(
+      z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]),
+    )
+    .mutation(async ({ input }) => {
+      // Test connection before saving (using unencrypted credentials)
+      if (input.config.type === 's3_export') {
+        const adapter = createS3Adapter(input.config);
+        const testResult = await adapter.testConnection();
+        if (!testResult.success) {
+          throw new TRPCBadRequestError(
+            `Failed to connect to S3: ${testResult.error}`,
+          );
+        }
+      } else if (input.config.type === 'gcs_export') {
+        const adapter = createGCSAdapter(input.config);
+        const testResult = await adapter.testConnection();
+        if (!testResult.success) {
+          throw new TRPCBadRequestError(
+            `Failed to connect to GCS: ${testResult.error}`,
+          );
+        }
+      }
+
+      // Encrypt sensitive credentials before storing
+      let configToSave = input.config;
+      if (input.config.type === 's3_export' && input.config.authMode === 'access_key') {
+        configToSave = {
+          ...input.config,
+          secretAccessKey: encryptCredential(input.config.secretAccessKey),
+        };
+      } else if (input.config.type === 'gcs_export') {
+        configToSave = {
+          ...input.config,
+          serviceAccountKey: encryptCredential(input.config.serviceAccountKey),
+        };
+      }
+
+      if (input.id) {
+        return db.integration.update({
+          where: {
+            id: input.id,
+            organizationId: input.organizationId,
+          },
+          data: {
+            name: input.name,
+            config: configToSave,
+          },
+        });
+      }
+      return db.integration.create({
+        data: {
+          name: input.name,
+          organizationId: input.organizationId,
+          config: configToSave,
+        },
+      });
+    }),
+  testExportConnection: protectedProcedure
+    .input(
+      z.union([zCreateS3ExportIntegration, zCreateGCSExportIntegration]),
+    )
+    .mutation(async ({ input }) => {
+      if (input.config.type === 's3_export') {
+        const adapter = createS3Adapter(input.config);
+        return adapter.testConnection();
+      }
+      if (input.config.type === 'gcs_export') {
+        const adapter = createGCSAdapter(input.config);
+        return adapter.testConnection();
+      }
+      return { success: false, error: 'Unknown export type' };
     }),
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
