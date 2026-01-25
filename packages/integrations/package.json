@@ -7,10 +7,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.974.0",
+    "@aws-sdk/client-sts": "^3.974.0",
+    "@google-cloud/storage": "^7.18.0",
+    "@openpanel/common": "workspace:*",
     "@slack/bolt": "^3.18.0",
     "@slack/oauth": "^3.0.0"
   },
   "devDependencies": {
+    "@openpanel/logger": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@openpanel/validation": "workspace:*",
     "@types/node": "catalog:",

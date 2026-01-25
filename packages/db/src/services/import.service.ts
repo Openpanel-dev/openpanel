@@ -453,14 +453,14 @@ export async function moveImportsToProduction(
       session_id, path, origin, referrer, referrer_name, referrer_type,
       duration, properties, created_at, country, city, region,
       longitude, latitude, os, os_version, browser, browser_version,
-      device, brand, model, imported_at
+      device, brand, model, imported_at, inserted_at
     )
-    SELECT 
+    SELECT
       id, name, sdk_name, sdk_version, device_id, profile_id, project_id,
       session_id, path, origin, referrer, referrer_name, referrer_type,
       duration, properties, created_at, country, city, region,
       longitude, latitude, os, os_version, browser, browser_version,
-      device, brand, model, imported_at
+      device, brand, model, imported_at, now64(3) AS inserted_at
     FROM ${TABLE_NAMES.events_imports}
     WHERE ${whereClause}
     ORDER BY created_at ASC

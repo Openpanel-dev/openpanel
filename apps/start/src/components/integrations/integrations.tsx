@@ -1,5 +1,5 @@
 import type { IIntegrationConfig } from '@openpanel/validation';
-import { WebhookIcon } from 'lucide-react';
+import { CloudIcon, DatabaseIcon, WebhookIcon } from 'lucide-react';
 import {
   IntegrationCardLogo,
   IntegrationCardLogoImage,
@@ -43,6 +43,28 @@ export const INTEGRATIONS: {
     icon: (
       <IntegrationCardLogo className="bg-foreground text-background">
         <WebhookIcon className="size-10" />
+      </IntegrationCardLogo>
+    ),
+  },
+  {
+    type: 's3_export',
+    name: 'S3 Export',
+    description:
+      'Export events to Amazon S3 for loading into Redshift, Snowflake, Athena, or other data warehouses.',
+    icon: (
+      <IntegrationCardLogo className="bg-[#FF9900] text-white">
+        <CloudIcon className="size-10" />
+      </IntegrationCardLogo>
+    ),
+  },
+  {
+    type: 'gcs_export',
+    name: 'GCS Export',
+    description:
+      'Export events to Google Cloud Storage for loading into BigQuery or other data warehouses.',
+    icon: (
+      <IntegrationCardLogo className="bg-[#4285F4] text-white">
+        <DatabaseIcon className="size-10" />
       </IntegrationCardLogo>
     ),
   },

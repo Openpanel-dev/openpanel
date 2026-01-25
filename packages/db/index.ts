@@ -4,6 +4,7 @@ export * from './src/clickhouse/query-builder';
 export * from './src/encryption';
 export * from './src/engine';
 export * from './src/engine';
+export * from './src/exports';
 export * from './src/gsc';
 export * from './src/prisma-client';
 export * from './src/services/access.service';

@@ -253,6 +253,7 @@ model Project {
   imports           Import[]
   gscConnection     GscConnection?
   cohorts           Cohort[]
+  exportWatermarks  ExportWatermark[]
 
   // When deleteAt > now(), the project will be deleted
   deleteAt DateTime?
@@ -584,10 +585,31 @@ model Integration {
   organizationId    String
   notificationRules NotificationRule[]
   notifications     Notification[]
+  exportWatermarks  ExportWatermark[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @default(now()) @updatedAt
 
   @@map("integrations")
+}
+
+// Tracks how far the object-store export (S3/GCS) has progressed for a given
+// (project, integration) pair. The cursor is ClickHouse `inserted_at` plus the
+// last event id to break ties within the same millisecond, so windowed reads
+// are exactly-once across runs.
+model ExportWatermark {
+  id             String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project        Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String
+  integration    Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  integrationId  String      @db.Uuid
+  lastInsertedAt DateTime
+  lastEventId    String      @default("")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @default(now()) @updatedAt
+
+  @@unique([projectId, integrationId])
+  @@index([integrationId])
+  @@map("export_watermarks")
 }
 
 model ResetPassword {

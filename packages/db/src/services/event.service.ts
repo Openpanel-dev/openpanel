@@ -90,6 +90,11 @@ export interface IClickhouseEvent {
   brand: string;
   model: string;
   imported_at: string | null;
+  // Ingestion (ClickHouse-insert) time. Set explicitly at insert time; the
+  // column DEFAULTs to created_at for rows that omit it. Used as the cursor for
+  // object-store exports. Optional here because most read queries don't select
+  // it.
+  inserted_at?: string;
   sdk_name: string;
   sdk_version: string;
   revenue?: number;
@@ -400,6 +405,10 @@ export async function createEvent(payload: IServiceCreateEventPayload) {
     referrer_name: payload.referrerName ?? '',
     referrer_type: payload.referrerType ?? '',
     imported_at: null,
+    // Ingestion time, used as the export cursor. Stamped here rather than via the
+    // column DEFAULT so backdated events (server-side, offline, past timestamps)
+    // still get a real, monotonic-ish insert time instead of their event time.
+    inserted_at: DateTime.utc().toFormat('yyyy-MM-dd HH:mm:ss.SSS'),
     sdk_name: payload.sdkName ?? '',
     sdk_version: payload.sdkVersion ?? '',
     revenue: payload.revenue,

@@ -449,12 +449,67 @@ export const zEmailConfig = z.object({
 });
 export type IEmailConfig = z.infer<typeof zEmailConfig>;
 
+// S3 Export Integration Config - Base fields shared by both auth modes
+const zS3ExportConfigBase = z.object({
+  type: z.literal('s3_export'),
+  bucket: z.string().min(1, 'Bucket name is required'),
+  prefix: z.string().default('openpanel-exports'),
+  region: z.string().min(1, 'Region is required'),
+  endpoint: z.string().url().optional(), // For R2, MinIO, etc.
+  format: z.enum(['jsonl_gzip', 'parquet']).default('jsonl_gzip'),
+  // Optional encryption settings (S3-side encryption)
+  encryption: z.enum(['SSE-S3', 'SSE-KMS', 'none']).default('SSE-S3'),
+  kmsKeyId: z.string().optional(),
+});
+
+// Auth mode: IAM Role assumption (AWS best practice)
+const zS3AuthIamRole = z.object({
+  authMode: z.literal('iam_role'),
+  roleArn: z.string().min(1, 'IAM Role ARN is required'),
+  externalId: z.string().optional(),
+});
+
+// Auth mode: Access Keys (for R2, MinIO, DigitalOcean Spaces, etc.)
+const zS3AuthAccessKey = z.object({
+  authMode: z.literal('access_key'),
+  accessKeyId: z.string().min(1, 'Access Key ID is required'),
+  secretAccessKey: z.string().min(1, 'Secret Access Key is required'),
+});
+
+// S3 config with IAM role auth
+export const zS3ExportConfigIamRole = zS3ExportConfigBase.merge(zS3AuthIamRole);
+export type IS3ExportConfigIamRole = z.infer<typeof zS3ExportConfigIamRole>;
+
+// S3 config with access key auth
+export const zS3ExportConfigAccessKey = zS3ExportConfigBase.merge(zS3AuthAccessKey);
+export type IS3ExportConfigAccessKey = z.infer<typeof zS3ExportConfigAccessKey>;
+
+// Combined discriminated union
+export const zS3ExportConfig = z.discriminatedUnion('authMode', [
+  zS3ExportConfigIamRole,
+  zS3ExportConfigAccessKey,
+]);
+export type IS3ExportConfig = z.infer<typeof zS3ExportConfig>;
+
+// GCS Export Integration Config
+export const zGCSExportConfig = z.object({
+  type: z.literal('gcs_export'),
+  bucket: z.string().min(1, 'Bucket name is required'),
+  prefix: z.string().default('openpanel-exports'),
+  format: z.enum(['jsonl_gzip', 'parquet']).default('jsonl_gzip'),
+  // Service account credentials (JSON key as string)
+  serviceAccountKey: z.string().min(1, 'Service account key is required'),
+});
+export type IGCSExportConfig = z.infer<typeof zGCSExportConfig>;
+
 export type IIntegrationConfig =
   | ISlackConfig
   | IDiscordConfig
   | IWebhookConfig
   | IAppConfig
-  | IEmailConfig;
+  | IEmailConfig
+  | IS3ExportConfig
+  | IGCSExportConfig;
 
 const zCreateIntegration = z.object({
   id: z.string().optional(),
@@ -471,6 +526,18 @@ export const zCreateWebhookIntegration = zCreateIntegration.extend({
 export const zCreateDiscordIntegration = zCreateIntegration.extend({
   config: zDiscordConfig,
 });
+
+export const zCreateS3ExportIntegration = zCreateIntegration.merge(
+  z.object({
+    config: zS3ExportConfig,
+  }),
+);
+
+export const zCreateGCSExportIntegration = zCreateIntegration.merge(
+  z.object({
+    config: zGCSExportConfig,
+  }),
+);
 
 export const zNotificationRuleEventConfig = z.object({
   type: z.literal('events'),
