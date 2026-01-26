@@ -150,7 +150,7 @@ async function buildContext(
         ? validatedBody.payload.properties.__deviceId
         : undefined;
 
-    const [salts] = await Promise.all([getSalts()]);
+    const salts = await getSalts();
     currentDeviceId =
       overrideDeviceId ||
       (ua

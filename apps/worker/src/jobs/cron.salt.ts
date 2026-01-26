@@ -1,25 +1,59 @@
 import { generateSalt } from '@openpanel/common/server';
-import { db, getCurrentSalt } from '@openpanel/db';
-import { getRedisCache } from '@openpanel/redis';
+import { db, getSalts } from '@openpanel/db';
 
-export async function salt() {
-  const oldSalt = await getCurrentSalt().catch(() => null);
-  const newSalt = await db.salt.create({
-    data: {
-      salt: generateSalt(),
-    },
-  });
-
-  // Delete rest of the salts
-  await db.salt.deleteMany({
-    where: {
-      salt: {
-        notIn: oldSalt ? [newSalt.salt, oldSalt] : [newSalt.salt],
+async function generateNewSalt() {
+  const newSalt = await db.$transaction(async (tx) => {
+    const existingSalts = await tx.salt.findMany({
+      orderBy: {
+        createdAt: 'desc',
       },
-    },
+      take: 2,
+    });
+
+    const created = await tx.salt.create({
+      data: {
+        salt: generateSalt(),
+      },
+    });
+
+    // Keep the new salt + the previous newest (if exists)
+    const previousNewest = existingSalts[0];
+    const saltsToKeep = previousNewest
+      ? [created.salt, previousNewest.salt]
+      : [created.salt];
+
+    await tx.salt.deleteMany({
+      where: {
+        salt: {
+          notIn: saltsToKeep,
+        },
+      },
+    });
+
+    return created;
   });
 
-  await getRedisCache().del('op:salt');
+  getSalts.clear();
 
   return newSalt;
+}
+
+export async function salt() {
+  const ALLOWED_RETRIES = 5;
+  const BASE_DELAY = 1000;
+  const generateNewSaltWithRetry = async (retryCount = 0) => {
+    try {
+      return await generateNewSalt();
+    } catch (error) {
+      if (retryCount < ALLOWED_RETRIES) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, BASE_DELAY * 2 ** retryCount),
+        );
+        return generateNewSaltWithRetry(retryCount + 1);
+      }
+      throw error;
+    }
+  };
+
+  return await generateNewSaltWithRetry();
 }
