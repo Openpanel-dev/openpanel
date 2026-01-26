@@ -1,12 +1,28 @@
 #!/bin/bash
 
-APP=$1
-VERSION=$2
-PRERELEASE=$3  # New parameter for pre-release tag
+# Check for --dry-run flag anywhere in arguments
+DRY_RUN=false
+ARGS=()
+for arg in "$@"; do
+    if [ "$arg" == "--dry-run" ] || [ "$arg" == "-n" ]; then
+        DRY_RUN=true
+    else
+        ARGS+=("$arg")
+    fi
+done
+
+APP=${ARGS[0]}
+VERSION=${ARGS[1]}
+PRERELEASE=${ARGS[2]}  # Optional pre-release tag (e.g., "rc", "beta")
 
 if [ -z "$APP" ]; then
     echo "Please provide an app name as an argument."
-    echo "Usage: $0 <app_name> <version> [pre-release-tag]"
+    echo "Usage: $0 <app_name> <version> [pre-release-tag] [--dry-run]"
+    echo "Examples:"
+    echo "  $0 all 2.1.0              # Tags: 2.1.0, 2.1, 2, latest"
+    echo "  $0 all 2.1.0 rc           # Tags: 2.1.0-rc only"
+    echo "  $0 all 2.1.0 --dry-run    # Dry run, shows what would be built"
+    echo "  $0 all 2.1.0 rc --dry-run # Dry run for pre-release"
     exit 1
 fi
 
@@ -17,28 +33,51 @@ if [ -z "$VERSION" ]; then
     exit 1
 fi
 
-# Add warning prompt
-if [ -z "$PRERELEASE" ]; then
-    read -p "You're building WITHOUT any pre-release ($VERSION). Do you wish to continue (y/N)? " -n 1 -r
-else
-    read -p "You're building WITH pre-release ($VERSION). Do you wish to continue (y/N)? " -n 1 -r
-fi
-echo    # Move to a new line
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-    echo "Aborting..."
+# Validate version format (x.x.x)
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Error: Version must be in format x.x.x (e.g., 2.1.0)"
     exit 1
 fi
 
-# Ensure Docker Buildx is available and set up a builder
-docker buildx rm multi-arch-builder 2>/dev/null || true  # Remove existing builder if it exists
-docker buildx create --name multi-arch-builder --use || true
+# Extract major and minor versions
+MAJOR=$(echo "$VERSION" | cut -d. -f1)
+MINOR=$(echo "$VERSION" | cut -d. -f1-2)
+
+# Display build info
+if [ "$DRY_RUN" = true ]; then
+    echo "=== DRY RUN MODE ==="
+    echo ""
+fi
+
+if [ -z "$PRERELEASE" ]; then
+    echo "Building RELEASE version $VERSION"
+    echo "Tags that will be created: $VERSION, $MINOR, $MAJOR, latest"
+else
+    echo "Building PRE-RELEASE version $VERSION-$PRERELEASE"
+    echo "Tags that will be created: $VERSION-$PRERELEASE"
+fi
+
+# Skip confirmation and docker setup in dry run mode
+if [ "$DRY_RUN" = true ]; then
+    echo ""
+else
+    read -p "Do you wish to continue (y/N)? " -n 1 -r
+    echo    # Move to a new line
+    if [[ ! $REPLY =~ ^[Yy]$ ]]
+    then
+        echo "Aborting..."
+        exit 1
+    fi
+
+    # Ensure Docker Buildx is available and set up a builder
+    docker buildx rm multi-arch-builder 2>/dev/null || true  # Remove existing builder if it exists
+    docker buildx create --name multi-arch-builder --use || true
+fi
 
 # Function to build a multi-architecture image
 build_image() {
     local app=$1
     local image_name="lindesvard/openpanel-$app"
-    local full_version="$image_name:$VERSION"
     
     # Use apps/start/Dockerfile for dashboard app
     local dockerfile="apps/$app/Dockerfile"
@@ -46,20 +85,44 @@ build_image() {
         dockerfile="apps/start/Dockerfile"
     fi
 
+    if [ "$DRY_RUN" = true ]; then
+        # Dry run - just show what would be built
+        echo "Would build: $app"
+        echo "  Dockerfile: $dockerfile"
+        if [ -n "$PRERELEASE" ]; then
+            echo "  Image: $image_name:$VERSION-$PRERELEASE"
+        else
+            echo "  Images:"
+            echo "    - $image_name:$VERSION"
+            echo "    - $image_name:$MINOR"
+            echo "    - $image_name:$MAJOR"
+            echo "    - $image_name:latest"
+        fi
+        echo ""
+        return 0
+    fi
+
+    # Actual build
     if [ -n "$PRERELEASE" ]; then
-        echo "(pre-release) Building multi-architecture image for $full_version-$PRERELEASE"
+        # Pre-release: only tag with x.x.x-prerelease
+        local tag="$image_name:$VERSION-$PRERELEASE"
+        echo "(pre-release) Building multi-architecture image: $tag"
         docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t "$full_version-$PRERELEASE" \
+            -t "$tag" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
             -f "$dockerfile" \
             --push \
             .
     else
-        echo "(latest) Building multi-architecture image for $full_version"
+        # Release: tag with x.x.x, x.x, x, and latest
+        echo "(release) Building multi-architecture image for $image_name"
+        echo "  Tags: $VERSION, $MINOR, $MAJOR, latest"
         docker buildx build \
             --platform linux/amd64,linux/arm64 \
-            -t "$full_version" \
+            -t "$image_name:$VERSION" \
+            -t "$image_name:$MINOR" \
+            -t "$image_name:$MAJOR" \
             -t "$image_name:latest" \
             --build-arg DATABASE_URL="postgresql://p@p:5432/p" \
             -f "$dockerfile" \
@@ -68,19 +131,35 @@ build_image() {
     fi
     
     if [ $? -ne 0 ]; then
-        echo "Failed to build $full_version"
+        echo "Failed to build $image_name:$VERSION"
         exit 1
     fi
     
-    echo "Successfully built and pushed multi-architecture image for $full_version"
+    echo "Successfully built and pushed multi-architecture image for $image_name"
 }
 
 if [ "$APP" == "all" ]; then
     build_image "dashboard"
     build_image "worker"
     build_image "api"
-    echo "All multi-architecture images have been built and pushed successfully."
+    if [ "$DRY_RUN" = false ]; then
+        echo ""
+        echo "All images built and pushed successfully!"
+        if [ -z "$PRERELEASE" ]; then
+            echo "Tagged as: $VERSION, $MINOR, $MAJOR, latest"
+        else
+            echo "Tagged as: $VERSION-$PRERELEASE"
+        fi
+    fi
 else
     build_image $APP
-    echo "Multi-architecture image for $APP has been built and pushed successfully."
+    if [ "$DRY_RUN" = false ]; then
+        echo ""
+        echo "Image for $APP built and pushed successfully!"
+        if [ -z "$PRERELEASE" ]; then
+            echo "Tagged as: $VERSION, $MINOR, $MAJOR, latest"
+        else
+            echo "Tagged as: $VERSION-$PRERELEASE"
+        fi
+    fi
 fi
