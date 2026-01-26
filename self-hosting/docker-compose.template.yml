@@ -91,7 +91,7 @@ services:
         max-file: "3"
 
   op-api:
-    image: lindesvard/openpanel-api:2.0.1-rc
+    image: lindesvard/openpanel-api:2
     restart: always
     command: >
       sh -c "
@@ -121,7 +121,7 @@ services:
         max-file: "3"
 
   op-dashboard:
-    image: lindesvard/openpanel-dashboard:2.0.1-rc
+    image: lindesvard/openpanel-dashboard:2
     restart: always
     depends_on:
       op-api:
@@ -141,7 +141,7 @@ services:
         max-file: "3"
 
   op-worker:
-    image: lindesvard/openpanel-worker:2.0.1-rc
+    image: lindesvard/openpanel-worker:2
     restart: always
     depends_on:
       op-api:

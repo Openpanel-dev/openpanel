@@ -2,10 +2,7 @@
 
 git pull
 
-echo "Pulling latest docker images"
-docker compose pull
-
-echo "Restarting services"
-docker compose up -d --remove-orphans
+echo "Updating services"
+docker compose up -d --pull always --remove-orphans
 
 echo "Done"
