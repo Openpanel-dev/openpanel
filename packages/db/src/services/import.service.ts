@@ -103,8 +103,8 @@ export async function generateSessionIds(
     importId,
     from,
     settings: {
-      mutations_sync: '2',
-      wait_end_of_query: 1,
+      mutations_sync: '1',
+      wait_end_of_query: 0,
     },
   });
 
@@ -139,35 +139,25 @@ export async function generateSessionIds(
       query: updateQuery,
       query_params: { importId, from },
       clickhouse_settings: {
-        wait_end_of_query: 1,
-        mutations_sync: '2', // Wait for mutation to complete on all replicas (critical!)
+        wait_end_of_query: 0,
+        mutations_sync: '1',
         send_progress_in_http_headers: 1,
         http_headers_progress_interval_ms: '50000',
       },
     });
 
     const elapsed = Date.now() - startTime;
-
-    console.log('ALTER TABLE session_id generation completed', {
+    console.log('Session ID generation submitted', {
       importId,
       from,
-      elapsedMs: elapsed,
       elapsedSec: Math.round(elapsed / 1000),
-      elapsedMin: (elapsed / 60000).toFixed(2),
-      status: 'success',
     });
   } catch (error) {
-    const elapsed = Date.now() - startTime;
-
-    console.error('ALTER TABLE session_id generation failed', {
+    console.error('Session ID generation failed', {
       importId,
       from,
-      elapsedMs: elapsed,
-      elapsedSec: Math.round(elapsed / 1000),
       error: (error as Error).message,
-      status: 'failed',
     });
-
     throw error;
   }
 }
@@ -652,7 +642,6 @@ export async function backfillSessionsToProduction(
  * Mark import as complete by updating status
  */
 export async function markImportComplete(importId: string): Promise<void> {
-  // In clustered mode, we must use the replicated table for mutations
   const mutationTableName = getReplicatedTableName(TABLE_NAMES.events_imports);
   const updateQuery = `
     ALTER TABLE ${mutationTableName}
@@ -664,11 +653,9 @@ export async function markImportComplete(importId: string): Promise<void> {
     query: updateQuery,
     query_params: { importId },
     clickhouse_settings: {
-      wait_end_of_query: 1,
-      mutations_sync: '2', // Wait for mutation to complete
-      // Ask ClickHouse to periodically send query execution progress in HTTP headers, creating some activity in the connection.
+      wait_end_of_query: 0,
+      mutations_sync: '1',
       send_progress_in_http_headers: 1,
-      // The interval of sending these progress headers. Here it is less than 60s,
       http_headers_progress_interval_ms: '50000',
     },
   });
