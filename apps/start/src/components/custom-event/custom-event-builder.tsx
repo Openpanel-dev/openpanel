@@ -137,8 +137,8 @@ function EventCriteriaItem({
       <div className="flex items-center gap-2">
         <div className="flex-1">
           <ComboboxAdvanced
-            value={criteria.name}
-            onChange={(name) => onChange({ ...criteria, name })}
+            value={criteria.name ? [criteria.name] : []}
+            onChange={(values) => onChange({ ...criteria, name: values[0] || '' })}
             placeholder="Select event..."
             items={eventNames}
             renderLabel={(item) => (
